@@ -1,0 +1,12 @@
+{
+  "name": "better-session-view",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Session manager for large Ableton Live sets.",
+  "scripts": {
+    "build": "node tools/build-device.mjs",
+    "dev": "node --watch-path=tools tools/build-device.mjs",
+    "postinstall": "cd bridge && npm install --no-audit --no-fund"
+  }
+}
