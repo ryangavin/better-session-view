@@ -3,156 +3,110 @@
 Session manager for large Ableton Live sets. Bulk clip naming and coloring across a
 100+ song set, driven from a real UI instead of Live's grid.
 
-**Stage 1 (this repo so far):** a Max for Live device that exposes the Live Object
-Model over a local WebSocket *and* serves the UI from the same Node process. One
-`.amxd` plus this folder — no app bundle, no code signing, no updater.
+Live stays the audio engine and the source of truth. This app is a front end that
+reads and writes the Live Object Model over a Max for Live bridge — no `.als` file
+parsing, ever.
 
-## Layout
-
-TypeScript throughout. Five projects, each with its own compile target because
-the runtimes are genuinely different.
-
-```
-protocol/   global.d.ts    the wire protocol — single source of truth
-core/       src/           pure domain logic: no I/O, no React, no Live
-ui/         src/           React 19 + Vite  ->  builds to bridge/public/
-bridge/     src/bridge.ts  ->  bridge.js   Node for Max: HTTP + WebSocket
-            src/lom.ts     ->  lom.js      Max [v8]: the only LOM code
-            types/         ambient LiveAPI / Dict / Task / max-api decls
-tools/      *.ts           .amxd pack/unpack + device generator
-```
-
-Generated, and gitignored: `bridge/bridge.js`, `bridge/lom.js`,
-`bridge/public/`, `bridge/SessionBridge.{amxd,maxpat}`, `bridge/palette.json`.
-
-### Why the two bridge targets differ
-
-`lom.ts` compiles with `module: "none"` and `alwaysStrict: false`. Max's `[v8]`
-object discovers message handlers as **top-level global function declarations**,
-so any module wrapper would hide them — and `autowatch`/`inlets`/`outlets` are
-pre-existing globals that get assigned to, which `"use strict"` puts at risk.
-That also means `lom.ts` cannot `import` anything, which is why the protocol
-lives in a global `BSV` namespace rather than a module.
-
-`bridge.ts` compiles to CommonJS for Node for Max. `core/` and `ui/` are ESM and
-consumed by Vite directly. `tools/` isn't compiled at all — Node 24 runs `.ts`
-natively via type stripping.
-
-### The rule that matters
-
-`core/` imports no transport, no React, and nothing Live-specific. That's what
-makes the domain logic testable without Live running, and what keeps a different
-backend possible later.
-
-## Build
+## Start here
 
 ```sh
-npm install       # root + bridge/ deps
-npm run build     # bridge.js, lom.js, ui -> public/, and the .amxd
-npm run dev       # watch all four in parallel
-npm test          # core/ unit tests
-npm run typecheck # all five projects
+npm install                       # root + bridge/ deps
+npm run build                     # everything, including the .amxd
 ```
 
-`npm run dev` runs four watchers: `tsc` for each bridge target, Vite for the UI,
-and a device rebuild on changes to `tools/`. Nothing needs restarting by hand —
-`node.script @watch` restarts `bridge.js`, `autowatch` reloads `lom.js`, and Live
-reloads the `.amxd` itself. Compiling into `bridge/` actually improves this: a
-reload only fires on a successful compile.
+Then in Live, drop `bridge/SessionBridge.amxd` onto any track and click **Open
+Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 
-For UI work, use the Vite dev server at <http://localhost:5173> — it proxies
-`/ws` and `/palette.json` through to the device on :17800, so you get HMR with
-React Fast Refresh and your loaded snapshot and selection survive edits. The
-built output at :17800 stays available for testing what actually ships.
-
-## Colors
-
-Clip color is written as **`color_index`** — a slot in Live's own palette — never as
-raw RGB. Snapshots carry both: `colorIndex` (what we write) and `color` (the exact
-RGB Live renders it as, so the UI needs no lookup to draw a clip).
-
-Live exposes no way to read its palette, so the bridge derives it: **Extract palette
-from Live** appends a scratch scene, walks `color_index` upward reading back each
-RGB, stops when Live clamps the index (that's how the palette size is discovered
-rather than assumed), then deletes the scene. The result is cached to
-`bridge/palette.json` and served at `/palette.json`, so it runs once per Live
-version. Nothing you own is touched, and the scene is removed even if the sweep
-throws.
-
-## Load it
-
-1. In Live, drop `bridge/SessionBridge.amxd` onto any track (it's an audio effect
-   with a `plugin~ → plugout~` passthrough, so it's inert on the signal path —
-   the Master track is a fine home).
-2. The device shows a status line and an **Open Session Manager** button. Wait for
-   it to read `connected to Live`, then click the button.
-
-Status line: `starting…` → `server up` (Node is listening) → `connected to Live`
-(the LOM handshake completed). If it sticks on the first two, open the Max window
-(**Options ▸ Max ▸ Open Max Window**) — that's where errors land.
-
-Only one copy of the device can run at a time; they'd fight over the port. A second
-instance posts a warning to the Max window rather than crashing. Override with the
-`BSV_PORT` environment variable if you need to.
-
-**Keep the folder together.** The device resolves `bridge.js` and `lom.js` relative
-to its own location, so load the `.amxd` from this repo rather than copying it into
-the User Library alone.
+| script | does |
+|---|---|
+| `npm run build` | bridge.js, lom.js, UI → `bridge/public/`, and the device |
+| `npm run dev` | four watchers in parallel; UI dev server on :5173 |
+| `npm test` | `core/` unit tests |
+| `npm run typecheck` | all five projects |
 
 ## Architecture
 
 ```
-browser ──WebSocket/JSON── node.script (bridge.js) ──Max msgs── v8 (lom.js) ──LOM── Live
+browser ──WebSocket/JSON──> node.script (bridge.js) ──Max msgs──> v8 (lom.js) ──LOM──> Live
+   :17800 or :5173 in dev        HTTP + WS server         the only LOM code
 ```
 
-`lom.js` is the only file that knows Live exists. Everything crossing between the two
-halves is **coarse-grained**: one message per *operation*, never per property. A full
-set is thousands of LOM reads; done chatty over a socket that's minutes, done as a
-single in-device walk it's whatever the LOM costs and nothing more.
+The device serves the UI from the same Node process that bridges to Live. That's
+deliberate: the whole app ships as one `.amxd` plus a folder — no app bundle, no
+code signing, no updater.
 
-Large payloads travel via named Max **Dicts** (`bsv_snapshot`, `bsv_ops`,
-`bsv_result`), not message atoms — clip names contain spaces, commas and semicolons,
-all of which are special in Max messages.
+## Modules
 
-Writes are executed in chunks of 50 ops on a `Task`, yielding between chunks. LOM
-work runs on Live's main thread; a tight 3,000-op loop freezes the UI and can glitch
-audio. Chunking also gives progress reporting for free.
+Five projects. Each has its own README; read the one you're touching.
 
-### Wire protocol
+| module | what it is | read for |
+|---|---|---|
+| [`protocol/`](protocol/README.md) | wire types, single source of truth | adding or changing a message |
+| [`core/`](core/README.md) | pure domain logic — no I/O, no React, no Live | naming, colors, anything that deserves tests |
+| [`ui/`](ui/README.md) | React 19 + Vite | components, the bridge client, dev server |
+| [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
+| [`tools/`](tools/README.md) | `.amxd` container format, device generator | changing the patcher or device type |
 
-Typed end to end from `protocol/global.d.ts`. The socket lives at **`/ws`** rather
-than `/` so Vite can proxy it in dev without colliding with the HTML route.
+## The rules that aren't negotiable
 
-Client → server:
+1. **`core/` imports no transport, no React, and nothing Live-specific.** It's what
+   makes the domain logic testable without Live running, and what keeps a different
+   backend possible later.
+2. **`lom.ts` is the only file that touches the Live Object Model.** Everything else
+   talks to it through the protocol.
+3. **The bridge protocol is coarse-grained** — one message per *operation*, never per
+   property. A full set is tens of thousands of LOM reads.
+4. **Clip color is written as `color_index`**, never raw RGB.
+5. **Nothing loads from a CDN.** This eventually runs on stage.
 
-| message | meaning |
+## Generated files
+
+Not in git; `npm run build` recreates all of them.
+
+```
+bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
+bridge/public/                           vite build output
+bridge/SessionBridge.amxd  .maxpat       device + debug patcher
+bridge/palette.json                      derived from Live at runtime
+```
+
+A fresh clone needs `npm install && npm run build` before the device exists.
+
+## Environment this was built against
+
+Nothing here is version-agnostic; the bridge in particular depends on what Live's
+embedded Max provides.
+
+| | |
 |---|---|
-| `{id, type:"snapshot"}` | walk the whole set |
-| `{id, type:"apply", ops:[{t,s,name?,colorIndex?}]}` | bulk write, clip-slot addressed |
-| `{id, type:"palette"}` | derive and cache Live's color palette |
-| `{type:"observe", on:bool}` | structural change notifications |
+| Ableton Live | 12.4.3 Suite |
+| Max embedded in Live | 9.1.4 — supplies `v8` and Node for Max |
+| Node inside Node for Max | 22.18 (bundled with Max) |
+| Node for tooling | 24.1 — runs `.ts` directly via type stripping |
 
-Server → client: `status`, `snapshot`, `progress`, `applied`, `palette`, `changed`,
-`reload`, `error`.
+## Open questions
 
-## Known unknowns
+Things only a run against a real set can answer.
 
-Things this stage exists to answer, on a real set:
+- **Snapshot cost at full size.** 243 clips / 100 scenes measured ~933ms for the LOM
+  walk before the id-addressing change. Every phase is a linear scan, so 848 scenes
+  projects to seconds, not milliseconds. The UI prints a phase breakdown and a
+  projection to the console on every snapshot — see [`ui/README.md`](ui/README.md).
+  If it stays slow, the answer is streaming partial snapshots.
+- **Palette size and theme-independence.** The sweep reports whatever Live has. If
+  switching themes changes the RGBs, the cache needs keying by theme.
+- **Write-path addressing.** `apply` still resolves a path string per op — same cost
+  class as the old slot scan. Needs an id cache from the last snapshot, plus
+  staleness handling.
+- **Cross-session clip identity.** Clips have no stable id in the LOM. Addressed
+  within a session by `(track, scene)`; persisting our own metadata across restarts
+  is unsolved and lands with song segmentation.
 
-- **LOM walk time.** The UI reports it as `LOM walk`. Decides whether snapshotting is
-  a background nicety or a loading screen.
-- **Palette size.** Whatever the sweep reports. Also worth confirming the palette is
-  theme-independent — if it isn't, the cache needs to be keyed by theme.
-- **Dict round-tripping** of clip names containing punctuation.
-- **Observer cost.** Currently structural only (track/scene lists). Per-clip observers
-  would be ~1 per slot; measure the snapshot cost before deciding that's worth it.
+## Where this is going
 
-## Testing
-
-- `npm test` — 15 unit tests over `core/` (token rendering, title parsing, color).
-- The bridge has 18 end-to-end assertions against a stubbed `max-api`, run against
-  the **compiled** `bridge.js`: static serving, path traversal, WS handshake and
-  path, readiness gating, request routing by id, dict staging with punctuation
-  intact, progress streaming, palette caching, error paths.
-- `lom.js` needs Live and stays unverified by automated tests. It's the file to
-  suspect first.
+MVP is set management: bulk naming and coloring. Not in scope yet, roughly in order —
+song segmentation (grouping scenes into songs), role assignment via shape templates,
+a declarative scheme with a pending-changes diff, and lint for drift. Setlist
+reordering is deliberately excluded: the LOM has no scene-move API, so it means
+duplicate-then-delete across every track, and it's the one operation that can damage
+a set.
