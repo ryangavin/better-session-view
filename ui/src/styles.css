@@ -16,6 +16,12 @@
   --green: #5fbfa8;
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+
+  /* Fallbacks only — ClipGrid overrides both on the table from the S/M/L
+     preset. Kept here so the grid still lays out if it ever renders without
+     them. Values match the `m` preset in lib/columnWidth.ts. */
+  --col-w: 74px;
+  --scene-col-w: 210px;
 }
 
 * {
@@ -111,6 +117,37 @@ button.primary:hover:not(:disabled) {
   border-color: #ffc961;
 }
 
+/* --- column width ------------------------------------------------- */
+
+.widths {
+  display: flex;
+  border: 1px solid var(--bd3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.widths button {
+  padding: 5px 11px;
+  border: none;
+  border-radius: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--dim2);
+}
+.widths button + button {
+  border-left: 1px solid var(--bd3);
+}
+.widths button:hover {
+  color: var(--fg2);
+  /* the generic button:hover lightens border-color, which would flicker the
+     divider between segments */
+  border-color: var(--bd3);
+}
+.widths button.on {
+  background: var(--sel);
+  color: var(--amber);
+}
+
 /* --- stats -------------------------------------------------------- */
 
 .stats {
@@ -170,9 +207,16 @@ main {
 
 /* --- grid --------------------------------------------------------- */
 
+/* table-layout: fixed takes every column width from the header row and ignores
+   the 848 rows below it — without it a long track name widens its column and
+   the grid stops being uniform, and the browser has to measure every cell.
+   ClipGrid states the table's own width because with `width: auto` a fixed
+   table stretches to fill its container and the last column absorbs the slack;
+   given a width, the used width is max(that, sum of columns). */
 table.grid {
   border-collapse: separate;
   border-spacing: 2px;
+  table-layout: fixed;
 }
 table.grid th {
   font-family: var(--mono);
@@ -182,15 +226,20 @@ table.grid th {
   text-transform: uppercase;
   font-weight: 400;
   text-align: center;
-  padding-bottom: 4px;
+  padding: 0 2px 4px;
   position: sticky;
   top: 0;
   background: var(--bg);
   z-index: 1;
+  width: var(--col-w);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 table.grid th.scene-h {
   text-align: left;
   padding-left: 2px;
+  width: var(--scene-col-w);
 }
 td.scene {
   font-family: var(--mono);
@@ -198,7 +247,8 @@ td.scene {
   color: var(--dim);
   white-space: nowrap;
   padding-right: 8px;
-  max-width: 210px;
+  width: var(--scene-col-w);
+  max-width: var(--scene-col-w);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -211,7 +261,8 @@ td.scene .unnamed {
   color: #3a3a41;
 }
 td.cell {
-  width: 74px;
+  width: var(--col-w);
+  max-width: var(--col-w);
   height: 20px;
   border-radius: 2px;
   background: #18181b;
@@ -222,7 +273,6 @@ td.cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 74px;
   color: transparent;
   border: 1px solid transparent;
   user-select: none;

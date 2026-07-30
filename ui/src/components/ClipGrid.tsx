@@ -1,10 +1,12 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, type CSSProperties } from 'react';
 import { hex, inkOn } from '../../../core/src/color.js';
 import { clipKey } from '../lib/selection.js';
+import { metricsFor, tableWidth, type ColumnWidth } from '../lib/columnWidth.js';
 
 interface Props {
   snapshot: BSV.Snapshot;
   selected: ReadonlySet<string>;
+  columnWidth: ColumnWidth;
   onToggle: (key: string) => void;
 }
 
@@ -47,7 +49,7 @@ const Row = memo(function Row({ scene, tracks, clips, selected, onToggle }: RowP
   );
 });
 
-export function ClipGrid({ snapshot, selected, onToggle }: Props) {
+export function ClipGrid({ snapshot, selected, columnWidth, onToggle }: Props) {
   const tracks = useMemo(
     () => snapshot.tracks.filter((t) => !t.isGroup),
     [snapshot.tracks],
@@ -57,13 +59,27 @@ export function ClipGrid({ snapshot, selected, onToggle }: Props) {
     [snapshot.clips],
   );
 
+  // Widths ride down as custom properties on the table rather than as props on
+  // Row. Row is memoized, and a new prop on it would re-render all 848 scenes
+  // on every width change; this way the browser just recalculates layout.
+  const style = useMemo<CSSProperties>(() => {
+    const m = metricsFor(columnWidth);
+    return {
+      '--col-w': `${m.col}px`,
+      '--scene-col-w': `${m.scene}px`,
+      width: `${tableWidth(columnWidth, tracks.length)}px`,
+    } as CSSProperties;
+  }, [columnWidth, tracks.length]);
+
   return (
-    <table className="grid">
+    <table className="grid" style={style}>
       <thead>
         <tr>
           <th className="scene-h">Scene</th>
           {tracks.map((t) => (
-            <th key={t.i}>{t.name}</th>
+            <th key={t.i} title={t.name}>
+              {t.name}
+            </th>
           ))}
         </tr>
       </thead>

@@ -3,6 +3,12 @@ import { ClipGrid } from './components/ClipGrid.js';
 import { Inspector } from './components/Inspector.js';
 import { useBridge } from './lib/useBridge.js';
 import { clipKey, parseClipKey, toggle } from './lib/selection.js';
+import {
+  COLUMN_WIDTHS,
+  loadColumnWidth,
+  saveColumnWidth,
+  type ColumnWidth,
+} from './lib/columnWidth.js';
 import { render } from '../../core/src/pattern.js';
 
 export function App() {
@@ -12,9 +18,15 @@ export function App() {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [chosenIndex, setChosenIndex] = useState<number | null>(null);
   const [pattern, setPattern] = useState('');
+  const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
 
   const onToggle = useCallback((key: string) => {
     setSelected((prev) => toggle(prev, key));
+  }, []);
+
+  const chooseColumnWidth = useCallback((w: ColumnWidth) => {
+    setColumnWidth(w);
+    saveColumnWidth(w);
   }, []);
 
   // Token values for one clip. Song/role tokens land with segmentation; until
@@ -59,6 +71,19 @@ export function App() {
         {statusPill(bridge.connection, bridge.connection === 'open')}
         {statusPill(bridge.lomReady ? 'lom ready' : 'lom waiting', bridge.lomReady)}
         <div className="spacer" />
+        <div className="widths" role="group" aria-label="Column width">
+          {COLUMN_WIDTHS.map((w) => (
+            <button
+              key={w}
+              type="button"
+              className={w === columnWidth ? 'on' : undefined}
+              aria-pressed={w === columnWidth}
+              onClick={() => chooseColumnWidth(w)}
+            >
+              {w.toUpperCase()}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
           className="primary"
@@ -84,7 +109,12 @@ export function App() {
       <main>
         <div className="grid-wrap">
           {snapshot ? (
-            <ClipGrid snapshot={snapshot} selected={selected} onToggle={onToggle} />
+            <ClipGrid
+              snapshot={snapshot}
+              selected={selected}
+              columnWidth={columnWidth}
+              onToggle={onToggle}
+            />
           ) : (
             <div className="empty">
               Load the device in Live, then hit <b>Snapshot</b>.

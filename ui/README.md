@@ -15,6 +15,7 @@ src/lib/
   client.ts           typed WebSocket client, framework-free
   useBridge.ts        React hook over the client
   selection.ts        clip addressing + selection set
+  columnWidth.ts      S/M/L grid width presets + persistence
 ```
 
 ## Dev
@@ -76,6 +77,42 @@ The projection is honest because every phase is a linear scan. `TARGET_SCENES` i
 The header also shows `LOM walk` and `Slot scan` tiles, and the footer log carries the
 headline numbers.
 
+## Column widths
+
+**Live tells us nothing here.** The LOM has no Session View column width — `Track.View`
+is `selected_device` / `device_insert_mode` / `is_collapsed`, and that last one is the
+*arranger*, not the session. Real widths live only in the `.als`, which this project
+never parses. So the widths are ours to pick.
+
+`columnWidth.ts` holds three presets, chosen over per-column dragging because the point
+of `s` is fitting a wide set on screen at once — something per-column widths actively
+work against. One setting drives both the track columns and the scene name column.
+
+| | track column | scene column | fits in ~1100px |
+|---|---|---|---|
+| `s` | 40px | 130px | ~26 tracks |
+| `m` | 74px | 210px | ~14 tracks |
+| `l` | 116px | 290px | ~9 tracks |
+
+The choice persists to `localStorage` under `bsv.columnWidth`, and `saveColumnWidth`
+swallows storage failures — a width that doesn't persist isn't worth failing a render
+over.
+
+Two things in here are load-bearing:
+
+**`table.grid` is `table-layout: fixed`.** Column widths then come from the header row
+alone and the 848 rows below it are ignored. Without it a long track name widens its own
+column and the grid stops being uniform — and the browser has to measure every cell to
+find out. With a fixed table, `width: auto` would stretch to fill the container and dump
+the slack into the last column, so `ClipGrid` states the table's own width; the used
+width becomes the greater of that and the sum of the columns. `tableWidth()` computes it,
+including the `border-spacing` gaps (n + 1 columns means n + 2 gaps).
+
+**Widths ride down as CSS custom properties on the `<table>`, not as props on `Row`.**
+`Row` is memoized; a new prop would re-render all 848 scenes on every width change. As
+custom properties the browser just recalculates layout and `Row` never re-renders. Don't
+"simplify" this by threading the width through as a prop.
+
 ## Performance notes
 
 **Rows are `memo`ized.** `ClipGrid` renders `sceneCount` rows × non-group tracks —
@@ -98,3 +135,6 @@ Plain CSS with custom properties in `:root` — dark, IBM Plex where available w
 system fallbacks. No CSS framework, no CSS-in-JS. The tokens (`--amber`, `--dim`,
 `--bd`, …) come from the original design mocks; reuse them rather than introducing
 new values.
+
+`--col-w` and `--scene-col-w` are the exception: `:root` carries fallbacks matching the
+`m` preset, but `ClipGrid` overrides both on the table element. See *Column widths*.
