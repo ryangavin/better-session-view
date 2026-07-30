@@ -82,3 +82,12 @@ debug-only — they're how we know whether the design scales. Don't drop them.
 **Colors are indexes.** `ApplyOp.colorIndex` is a slot in Live's palette. `Clip`
 carries both `colorIndex` (what we write) and `color` (the RGB Live renders, so the UI
 needs no lookup). Never write raw RGB.
+
+**"Absent" gets its own value, never a plausible default.** `Scene.colorIndex` is -1
+when the scene has no color, because Live documents it as nullable and slot 0 is a real
+color. `Track.groupIndex` is -1 when ungrouped. A field that can be absent and encodes
+it as 0 is a bug waiting to look like data.
+
+**Group membership travels as an index, not an id.** The LOM answers `group_track` with
+an object id; the bridge resolves it against the track list so the wire stays in the
+same `i`-indexed space as everything else. It's the *immediate* parent — groups nest.

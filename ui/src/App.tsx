@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ClipGrid } from './components/ClipGrid.js';
 import { Inspector } from './components/Inspector.js';
 import { useBridge } from './lib/useBridge.js';
@@ -19,9 +19,29 @@ export function App() {
   const [chosenIndex, setChosenIndex] = useState<number | null>(null);
   const [pattern, setPattern] = useState('');
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
+  const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(() => new Set());
+
+  // Seed the collapsed groups from Live's own fold state on every snapshot; a
+  // snapshot is a resync with Live, so it wins over local toggles made since
+  // the last one. Collapsing here never writes back — LOM writes don't
+  // participate in Live's undo, and this is a view operation.
+  useEffect(() => {
+    if (!snapshot) return;
+    setCollapsed(
+      new Set(snapshot.tracks.filter((t) => t.isGroup && t.isFolded).map((t) => t.i)),
+    );
+  }, [snapshot]);
 
   const onToggle = useCallback((key: string) => {
     setSelected((prev) => toggle(prev, key));
+  }, []);
+
+  const onToggleGroup = useCallback((trackIndex: number) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(trackIndex)) next.add(trackIndex);
+      return next;
+    });
   }, []);
 
   const chooseColumnWidth = useCallback((w: ColumnWidth) => {
@@ -113,7 +133,9 @@ export function App() {
               snapshot={snapshot}
               selected={selected}
               columnWidth={columnWidth}
+              collapsed={collapsed}
               onToggle={onToggle}
+              onToggleGroup={onToggleGroup}
             />
           ) : (
             <div className="empty">

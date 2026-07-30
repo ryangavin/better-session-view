@@ -17,12 +17,28 @@ declare namespace BSV {
     isMidi: boolean;
     isGroup: boolean;
     isGrouped: boolean;
+    /**
+     * Index of the *immediate* parent group track, or -1 when not grouped.
+     *
+     * Resolved from the LOM's `group_track` rather than inferred from track
+     * order, so nesting is represented honestly. Live allows groups inside
+     * groups; this is one link up, not the outermost ancestor.
+     */
+    groupIndex: number;
+    /** Live's `fold_state`. Only meaningful when `isGroup`. */
+    isFolded: boolean;
   }
 
   interface Scene {
     i: number;
     name: string;
     color: number;
+    /**
+     * Slot in Live's palette, or -1 when the scene has no color at all —
+     * `Scene.color_index` is documented as "Can be None for no color", and an
+     * uncolored scene is not the same as one on slot 0. Check this before
+     * trusting `color`.
+     */
     colorIndex: number;
     isEmpty: boolean;
     tempo: number;

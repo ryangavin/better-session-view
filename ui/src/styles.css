@@ -22,6 +22,9 @@
      them. Values match the `m` preset in lib/columnWidth.ts. */
   --col-w: 74px;
   --scene-col-w: 210px;
+  /* Height of the group header row. The track-name row sticks directly below
+     it, so this value is shared by both and must not drift. */
+  --group-h: 15px;
 }
 
 * {
@@ -190,7 +193,9 @@ main {
 .grid-wrap {
   flex: 1;
   overflow: auto;
-  padding: 12px 16px;
+  /* No padding-top: the sticky header pins below it, so any padding here is a
+     band where scrolled clip cells show through above the header. */
+  padding: 0 16px 12px;
 }
 
 .empty {
@@ -218,6 +223,15 @@ table.grid {
   border-spacing: 2px;
   table-layout: fixed;
 }
+/* Widths live on the columns, not the header cells: the group row uses colSpan,
+   and a spanning cell would otherwise have to distribute its width across the
+   columns it covers. */
+table.grid col {
+  width: var(--col-w);
+}
+table.grid col.scene-col {
+  width: var(--scene-col-w);
+}
 table.grid th {
   font-family: var(--mono);
   font-size: 9px;
@@ -228,10 +242,11 @@ table.grid th {
   text-align: center;
   padding: 0 2px 4px;
   position: sticky;
-  top: 0;
+  /* second header row — sits directly under the group row, which is
+     --group-h tall. Both rows must be sticky or the header tears on scroll. */
+  top: var(--group-h);
   background: var(--bg);
   z-index: 1;
-  width: var(--col-w);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -239,7 +254,51 @@ table.grid th {
 table.grid th.scene-h {
   text-align: left;
   padding-left: 2px;
-  width: var(--scene-col-w);
+}
+
+/* --- group header row --------------------------------------------- */
+
+/* The track-name row sticks at exactly --group-h, so this row's rendered height
+   must equal --group-h exactly — a mismatch overlaps or gaps the two on scroll.
+   A table cell treats `height` as a minimum, so nothing here may add to it:
+   line-height + the 1px border fill the box (border-box), and there is no
+   vertical padding and no inner element to grow it. Measure after changing. */
+table.grid tr.group-row th {
+  top: 0;
+  height: var(--group-h);
+  line-height: calc(var(--group-h) - 1px);
+  padding: 0 3px;
+  z-index: 2;
+}
+/* The rule under a group is what makes it read as covering its tracks. */
+table.grid th.group-h {
+  text-align: left;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid currentColor;
+}
+table.grid th.group-h:hover {
+  background: var(--sel);
+}
+table.grid th.group-h.none {
+  cursor: default;
+  border-bottom: none;
+}
+table.grid th.group-h.none:hover {
+  background: var(--bg);
+}
+table.grid th.folded-h {
+  cursor: pointer;
+  text-align: left;
+}
+table.grid th.folded-h:hover {
+  background: var(--sel);
+}
+td.cell.folded {
+  background: #131316;
+  color: var(--dim2);
+  text-align: center;
+  cursor: default;
 }
 td.scene {
   font-family: var(--mono);

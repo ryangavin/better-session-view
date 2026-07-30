@@ -113,7 +113,50 @@ including the `border-spacing` gaps (n + 1 columns means n + 2 gaps).
 custom properties the browser just recalculates layout and `Row` never re-renders. Don't
 "simplify" this by threading the width through as a prop.
 
+## Track groups
+
+Group tracks are never columns themselves — they're the header row above the track
+names, spanning their members. Live's group clip slots aren't in the snapshot anyway.
+Clicking a group header collapses it; clicking the folded column expands it again.
+
+A folded group becomes one column showing **how many of its tracks have a clip in that
+scene**, tinted with the group's color. That's the useful stand-in: you can still see
+where the material is without expanding.
+
+The layout itself lives in [`core/src/trackColumns.ts`](../core/README.md) with tests —
+nesting, ancestry and header spans are exactly the kind of logic that breaks quietly.
+
+**Collapsing never writes back to Live.** It's a view operation, and LOM writes don't
+participate in Live's undo. The collapsed set is *seeded* from Live's `fold_state` on
+every snapshot, so a snapshot resyncs with Live and local toggles win until the next
+one.
+
+Selection is deliberately left alone when a group collapses: hidden clips stay
+selected and still apply. Collapsing is about what you're looking at, not what you've
+picked — but it does mean the `Selected` count can exceed what's on screen.
+
+## Scene colors
+
+Scene names render in the scene's Live color. Two things make that work:
+
+- **`colorIndex` of -1 means no color at all**, which is not palette slot 0. Live
+  documents `Scene.color_index` as "Can be None for no color"; an uncolored scene keeps
+  the default dim treatment rather than being painted slot 0's color.
+- **`legibleOn()` guarantees the name stays readable.** Live's palette contains colors
+  far too dark to read on `--bg`, so the color is blended toward white only as far as a
+  4.5:1 contrast ratio demands. Hue survives; pure black lifts to grey rather than
+  vanishing.
+
 ## Performance notes
+
+**Two sticky header rows.** The group row pins at `top: 0` and the track-name row at
+`top: var(--group-h)`, so `--group-h` must equal the group row's *rendered* height
+exactly or the two overlap on scroll. A table cell treats `height` as a minimum, so
+nothing in that row may add to it — no vertical padding, no inner element, and
+`line-height` plus the 1px rule fill the box. It was 1.5px off when an inner bordered
+span was doing the underline. **Measure after changing it.** `.grid-wrap` also carries
+no `padding-top`: the header pins below it, so padding there is a band where scrolled
+clip cells show through above the header.
 
 **Rows are `memo`ized.** `ClipGrid` renders `sceneCount` rows × non-group tracks —
 around 6,800 cells at full size. Memoizing the row is what keeps toggling one cell
