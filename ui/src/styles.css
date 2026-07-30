@@ -120,6 +120,44 @@ button.primary:hover:not(:disabled) {
   border-color: #ffc961;
 }
 
+/* --- playback ----------------------------------------------------- */
+
+.playback {
+  display: flex;
+  border: 1px solid var(--bd3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.playback button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 0;
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1;
+}
+.playback button + button {
+  border-left: 1px solid var(--bd3);
+}
+.playback button:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--bd3);
+}
+.playback button.rolling {
+  color: var(--green);
+}
+
+.keyhint {
+  align-self: center;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--dim2);
+}
+.keyhint b {
+  color: var(--dim);
+  font-weight: 400;
+}
+
 /* --- column width ------------------------------------------------- */
 
 .widths {
@@ -310,6 +348,7 @@ td.scene {
   max-width: var(--scene-col-w);
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
 }
 td.scene .scene-n {
   color: var(--dim2);
@@ -318,6 +357,68 @@ td.scene .scene-n {
 }
 td.scene .unnamed {
   color: #3a3a41;
+}
+
+/* Scene launch. The only plain-click control in the app that makes a sound —
+   allowed because firing is the button's whole job, and scene launching is the
+   primary gesture so it has to be visible rather than a modifier away. Sized to
+   still fit the `s` preset's 130px scene column. */
+td.scene .fire {
+  padding: 0;
+  width: 12px;
+  border: none;
+  background: none;
+  color: #3a3a41;
+  font-size: 7px;
+  line-height: 1;
+  vertical-align: middle;
+}
+td.scene .fire:hover {
+  color: var(--amber);
+}
+td.scene .fire.live {
+  color: var(--green);
+}
+td.scene .fire.fired {
+  color: var(--amber);
+  animation: bsv-blink 0.5s infinite;
+}
+
+/* --- play state --------------------------------------------------- */
+
+/* A left bar rather than a border or a ring: the cell's background is the clip's
+   own Live color and its border is already spoken for by selection, so the only
+   free surface is a slice of the background. background-image paints over
+   background-color, so this composes with any clip color. */
+td.cell.playing {
+  background-image: linear-gradient(90deg, var(--green) 0 3px, transparent 3px);
+}
+td.cell.fired {
+  background-image: linear-gradient(90deg, var(--amber) 0 3px, transparent 3px);
+  animation: bsv-blink 0.5s infinite;
+}
+
+table.grid th.track-h {
+  cursor: pointer;
+}
+table.grid th.track-h.live {
+  color: var(--green);
+}
+/* fired_slot_index === -2: this track's stop button is armed and blinking. */
+table.grid th.track-h.stopping {
+  color: var(--amber);
+  animation: bsv-blink 0.5s infinite;
+}
+
+@keyframes bsv-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.3;
+  }
 }
 td.cell {
   width: var(--col-w);
@@ -339,6 +440,16 @@ td.cell {
 td.cell.sel {
   border-color: var(--amber);
   box-shadow: 0 0 0 1px rgba(240, 178, 60, 0.5);
+}
+
+/* The active cell — where the keyboard is, and what ⌘-↑↓ fires. An inset
+   outline, because selection already owns the border and the outer ring, and a
+   cell is usually both. outline doesn't participate in layout, so it can't
+   shift the grid. */
+td.cell.active,
+td.scene.active {
+  outline: 1px solid var(--fg);
+  outline-offset: -3px;
 }
 
 /* --- inspector ---------------------------------------------------- */

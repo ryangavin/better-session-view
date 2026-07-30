@@ -100,13 +100,24 @@ Things only a run against a real set can answer.
 - **Write-path addressing.** `apply` still resolves a path string per op — same cost
   class as the old slot scan. Needs an id cache from the last snapshot, plus
   staleness handling.
+- **Launching, and play state, against a real set.** `playback` and `watch_play` in
+  `lom.ts` are entirely unverified — no automated coverage reaches them. Three specific
+  unknowns: whether `2 × trackCount` observers stay cheap while a set is rolling, whether
+  `Task.schedule(0)` really defers (if it fires synchronously, coalescing degrades to one
+  message per callback rather than breaking), and whether `ClipSlot.fire`'s optional
+  `launch_quantization` arg can be passed through Max's `call()` — that's the
+  non-destructive route to instant audition, and until it's confirmed, firing respects the
+  set's global `clip_trigger_quantization`.
 - **Cross-session clip identity.** Clips have no stable id in the LOM. Addressed
   within a session by `(track, scene)`; persisting our own metadata across restarts
   is unsolved and lands with song segmentation.
 
 ## Where this is going
 
-MVP is set management: bulk naming and coloring. Not in scope yet, roughly in order —
+MVP is set management: bulk naming and coloring, with clip and scene launching so you can
+hear what you're labelling. Next up is naming and coloring **scenes and tracks**, not just
+clips — `ApplyOp` is clip-addressed today, which means the sweep-and-label loop can play a
+scene but not rename it. After that, roughly in order —
 song segmentation (grouping scenes into songs), role assignment via shape templates,
 a declarative scheme with a pending-changes diff, and lint for drift. Setlist
 reordering is deliberately excluded: the LOM has no scene-move API, so it means

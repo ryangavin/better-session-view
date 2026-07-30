@@ -57,17 +57,33 @@ export interface LogLine {
   kind: 'info' | 'ok' | 'error';
 }
 
+/**
+ * What Live is playing. `tracks` is empty until the first `playState` arrives,
+ * so `playingIn`/`firedIn` answer "nothing" rather than throwing while the
+ * observers are still being installed.
+ */
+export interface PlayState {
+  isPlaying: boolean;
+  tracks: BSV.TrackPlayState[];
+}
+
+const NOT_PLAYING: PlayState = { isPlaying: false, tracks: [] };
+
 export interface BridgeState {
   connection: ConnectionState;
   lomReady: boolean;
   snapshot: BSV.Snapshot | null;
   palette: number[];
+  play: PlayState;
   progress: { done: number; total: number } | null;
   log: LogLine[];
   busy: boolean;
   refresh: () => Promise<void>;
   extractPalette: () => Promise<void>;
   apply: (ops: BSV.ApplyOp[]) => Promise<void>;
+  /** Fire something. No await: the answer you want is `play` changing. */
+  launch: (target: BSV.LaunchTarget) => void;
+  stop: (target: BSV.StopTarget) => void;
 }
 
 export function useBridge(): BridgeState {
@@ -78,6 +94,7 @@ export function useBridge(): BridgeState {
   const [lomReady, setLomReady] = useState(false);
   const [snapshot, setSnapshot] = useState<BSV.Snapshot | null>(null);
   const [palette, setPalette] = useState<number[]>([]);
+  const [play, setPlay] = useState<PlayState>(NOT_PLAYING);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
   const [busy, setBusy] = useState(false);
@@ -92,6 +109,12 @@ export function useBridge(): BridgeState {
         case 'status':
           setConnection(client.state);
           setLomReady(event.lomReady);
+          // A dropped socket says nothing about what Live is doing, but we stop
+          // hearing about it — so show nothing rather than a frozen last frame.
+          if (!event.lomReady) setPlay(NOT_PLAYING);
+          break;
+        case 'playState':
+          setPlay({ isPlaying: event.isPlaying, tracks: event.tracks });
           break;
         case 'progress':
           setProgress({ done: event.done, total: event.total });
@@ -121,6 +144,27 @@ export function useBridge(): BridgeState {
       .then((p: BSV.Palette) => setPalette(p.colors ?? []))
       .catch(() => setPalette([]));
   }, []);
+
+  // Play-state observers are installed per track, so a set that gained or lost
+  // one leaves them stale — re-arm on every snapshot rather than only once.
+  // Keyed on trackCount and not the snapshot object because `apply` re-snapshots
+  // and would otherwise tear down 80 observers after every rename.
+  const trackCount = snapshot?.trackCount;
+  useEffect(() => {
+    if (!lomReady || trackCount === undefined) return;
+    client.send({ type: 'watchPlay', on: true });
+    return () => client.send({ type: 'watchPlay', on: false });
+  }, [client, lomReady, trackCount]);
+
+  const launch = useCallback(
+    (target: BSV.LaunchTarget) => client.send({ type: 'launch', target }),
+    [client],
+  );
+
+  const stop = useCallback(
+    (target: BSV.StopTarget) => client.send({ type: 'stop', target }),
+    [client],
+  );
 
   const guard = useCallback(
     async (label: string, fn: () => Promise<void>) => {
@@ -184,11 +228,14 @@ export function useBridge(): BridgeState {
     lomReady,
     snapshot,
     palette,
+    play,
     progress,
     log,
     busy,
     refresh,
     extractPalette,
     apply,
+    launch,
+    stop,
   };
 }

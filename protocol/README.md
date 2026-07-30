@@ -50,6 +50,9 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | `apply` `{ ops }` | bulk write, clip-slot addressed |
 | `palette` | derive and cache Live's palette |
 | `observe` `{ on }` | structural change notifications |
+| `launch` `{ target }` | fire a clip, a scene, or the song |
+| `stop` `{ target }` | stop a track, every clip, or the song |
+| `watchPlay` `{ on }` | install the per-track play-state observers |
 | `ping` | |
 
 | server → client | terminal for |
@@ -61,9 +64,10 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | `progress` | — streams during `apply` |
 | `status` | — connection / LOM readiness |
 | `changed` | — an observer fired |
+| `playState` | — a play-state observer fired |
 | `paletteUpdated` | — broadcast after extraction |
 | `reload` | — dev live-reload |
-| `error` | — terminates any pending request |
+| `error` | — terminates any pending request, or is broadcast |
 
 The socket lives at **`/ws`**, not `/`, so Vite can proxy it in dev without colliding
 with the HTML route. `WS_PATH` and `DEFAULT_PORT` are exported from `index.ts`.
@@ -91,3 +95,18 @@ it as 0 is a bug waiting to look like data.
 **Group membership travels as an index, not an id.** The LOM answers `group_track` with
 an object id; the bridge resolves it against the track list so the wire stays in the
 same `i`-indexed space as everything else. It's the *immediate* parent — groups nest.
+
+**Some requests have no reply, deliberately.** `launch`, `stop` and `watchPlay` are not
+in `TERMINAL`. What you want back from firing a clip isn't an acknowledgement, it's the
+play state changing, and that arrives on its own as `playState`. Awaiting an ack would
+only add a round trip to the one interaction that has to feel instant. The cost of that
+choice is that a failure has no request to attach to, so `bridge.ts` **broadcasts** an
+`error` with no `id` when nothing is pending — dropping it is how a silent bug hides.
+
+**Play state is per track, never per clip.** `TrackPlayState` carries
+`playing_slot_index` and `fired_slot_index`, which between them describe the whole grid
+in two properties per track. The clip-addressed version of this would need two observers
+per *slot* — tens of thousands on a real set, and exactly the chatty design the
+coarse-grained rule exists to prevent. `fired` keeps Live's own **`-2` for "the track's
+stop button is fired"** rather than folding it into `-1`: a track about to stop is a
+different state from a track with nothing pending, and the UI blinks for it.

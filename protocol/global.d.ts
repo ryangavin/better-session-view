@@ -90,6 +90,44 @@ declare namespace BSV {
     colors: number[];
   }
 
+  // --- playback --------------------------------------------------------
+
+  /** Something that can be fired. */
+  type LaunchTarget =
+    | { kind: 'clip'; t: number; s: number }
+    | { kind: 'scene'; s: number }
+    /** The song transport itself — start playing. */
+    | { kind: 'song' };
+
+  /** Something that can be stopped. */
+  type StopTarget =
+    /** One track's stop button: its running *and* triggered clips. */
+    | { kind: 'track'; t: number }
+    /** Every playing clip, leaving the song rolling. */
+    | { kind: 'clips' }
+    | { kind: 'song' };
+
+  /**
+   * What one track is doing right now.
+   *
+   * Read from Live's per-*track* properties, not per-clip: the whole grid's
+   * play state costs two reads per track instead of two per slot, which at
+   * full size is the difference between ~80 observers and ~68,000. Nothing
+   * here is clip-addressed, and that's the point.
+   */
+  interface TrackPlayState {
+    /** Scene index of the playing clip; -1 when none. Live's `playing_slot_index`. */
+    playing: number;
+    /**
+     * Scene index of the fired (blinking) slot; -1 when nothing is fired and
+     * **-2 when the track's stop button was fired**. That -2 is Live's own
+     * encoding and is kept rather than folded into -1: a track about to stop
+     * is a distinct state from a track with nothing pending, and the header
+     * blinks for it.
+     */
+    fired: number;
+  }
+
   // --- mutation --------------------------------------------------------
 
   interface ApplyOp {
@@ -107,11 +145,18 @@ declare namespace BSV {
 
   // --- client -> server ------------------------------------------------
 
+  // `launch`, `stop` and `watchPlay` deliberately have no terminal reply. What
+  // you want back from firing a clip is not an acknowledgement, it's the play
+  // state changing — which arrives as an unsolicited `playState`. A failure
+  // still surfaces: the bridge broadcasts an `error` with no id.
   type Request =
     | { id?: number; type: 'snapshot' }
     | { id?: number; type: 'apply'; ops: ApplyOp[] }
     | { id?: number; type: 'palette' }
     | { id?: number; type: 'observe'; on: boolean }
+    | { id?: number; type: 'launch'; target: LaunchTarget }
+    | { id?: number; type: 'stop'; target: StopTarget }
+    | { id?: number; type: 'watchPlay'; on: boolean }
     | { id?: number; type: 'ping' };
 
   type RequestType = Request['type'];
@@ -140,6 +185,12 @@ declare namespace BSV {
       }
     | { type: 'palette'; id?: number; count: number; colors: number[] }
     | { type: 'paletteUpdated' }
+    | {
+        type: 'playState';
+        isPlaying: boolean;
+        /** Indexed by track, in the same `i` space as `Snapshot.tracks`. */
+        tracks: TrackPlayState[];
+      }
     | { type: 'changed'; kind: string }
     | { type: 'reload' }
     | { type: 'pong'; id?: number }

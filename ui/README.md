@@ -15,6 +15,7 @@ src/lib/
   client.ts           typed WebSocket client, framework-free
   useBridge.ts        React hook over the client
   selection.ts        clip addressing + selection set
+  keys.ts             the launch modifier, and who owns a keystroke
   columnWidth.ts      S/M/L grid width presets + persistence
 ```
 
@@ -93,6 +94,51 @@ The projection is honest because every phase is a linear scan. `TARGET_SCENES` i
 
 The header also shows `LOM walk` and `Slot scan` tiles, and the footer log carries the
 headline numbers.
+
+## ⌘ is the "talk to Live" modifier
+
+One rule, and it's the reason the grid is safe to click around in while you're labelling
+a set: **unmodified input never makes a sound.** Plain clicks and plain arrow keys select,
+collapse and move. Add ⌘ and Live responds. Ctrl on non-Mac — and never both, because
+Ctrl-click on macOS is the system context-menu gesture and would fire a clip every time
+someone reached for a right-click. `keys.ts` owns that decision.
+
+| | organization (silent) | ⌘ |
+|---|---|---|
+| clip cell | click selects · ⇧ extends a block · ⌥ toggles | ⌘-click **fires the clip** |
+| scene name | click selects the row · ⇧ extends over scenes | ⌘-click **fires the scene** |
+| track header | click a group to collapse | ⌘-click **stops that track** |
+| keys | `↑↓←→` move the active cell | `⌘↑ ⌘↓` **move and fire** · `⌘⏎` fire |
+| | | `esc` stop all clips · `space` transport |
+
+`⌘↓` is the sweep — one keystroke for "next scene, and let me hear it". That deliberately
+replaces an audition *mode*: a sticky toggle you can forget you're in is worse than a
+modifier you're holding.
+
+Two exceptions, both principled. The **▶ in the scene gutter fires on a plain click** —
+firing is the button's only job, and scene launching is the primary gesture so it has to
+be visible rather than a modifier away. And **⌥, not ⌘, adds to the selection**, inverting
+the usual macOS idiom, because ⌘ is spoken for above and launching earns the scarcer key.
+
+## Selection, and the active cell
+
+Two separate things, and keeping them separate is the point:
+
+- **selection** — a `Set` of `"t:s"` keys. What `apply` writes to.
+- **the active cell** — exactly one cell, `ActiveCell` in
+  [`core/src/gridRange.ts`](../core/README.md). What you're listening to, what the arrow
+  keys move, and what will hold the name field. Called *active cell* after spreadsheets
+  rather than *cursor*, which in a DAW means a position on the timeline.
+
+The scene name column is one of the grid's cells, so the active cell can sit there;
+`moveActive` handles the crossing between it and the track columns at the left edge.
+Horizontal movement walks the **rendered column order**, so a collapsed group is invisible
+to the arrow keys as well as to the eye — that's why `columns` is computed in `App` and
+passed down rather than living in `ClipGrid`.
+
+Blocks only ever pick up cells that hold a clip. An empty slot has no name and no color,
+so sweeping a block over 4,000 of them would make the `Selected` count a lie and hand
+`apply` thousands of ops it can only skip.
 
 ## Column widths
 
@@ -188,6 +234,30 @@ exactly this reason.
 **Selection is a `Set` of `"t:s"` keys** held in `App`. `selection.ts` owns the
 encoding. Clips have no stable LOM id, so `(track, scene)` is the addressing within a
 session.
+
+**Play state must not reach `Row` as an object.** It changes several times a second while
+the set is rolling, and the whole `PlayState` as a prop would re-render all 848 rows on
+every change. `marksByScene` reduces it to one short string per *affected* scene — the
+~846 rows with nothing happening get `undefined`, memo's identity check passes, and only
+the one or two rows that changed re-render. Tokens are delimited (`|p3|`) so `p1` can't
+match inside `p10`. That map is also built by walking the **tracks**, not the scenes: a
+track contributes to at most two rows, so it's `O(trackCount)` rather than
+`848 × trackCount` per change.
+
+**The active cell lives in a ref as well as in state**, and this is not a micro-optimisation.
+`onClip` is a prop on the memoized `Row`; if it closed over `active` it would get a new
+identity on every arrow press and re-render the entire grid. `goActive` writes the ref and
+the state together, so two keystrokes in one frame can't both read a stale value. The same
+applies to `play.isPlaying`, which Space reads. **Don't put either in a dependency array of
+anything that reaches `Row`.**
+
+**Auto-scroll reads the DOM** — `querySelector('[data-active="1"]')` — rather than
+threading a ref down, for the same reason: a fresh ref callback per render is a fresh prop.
+
+**Lookups in `App` are `Map`s, not `.find()`.** Block selection can hand op assembly
+thousands of cells at once, and a linear scan of the clip list per cell makes that O(n²),
+which is enough to lock the tab up on a real set. The `clips` map is built once in `App`
+and passed to `ClipGrid` rather than built in both.
 
 ## Styling
 
