@@ -74,6 +74,28 @@ keep it that way.
 `useBridge.ts` wraps it in React state and owns the log lines. `guard()` wraps every
 operation so failures land in the log rather than as unhandled rejections.
 
+## Palette
+
+`refresh()` derives the palette before the walk **if there isn't one**, so it never needs a
+button. Three things make that safe, and all three are the reason it isn't simply run every
+time:
+
+- **Once per Live version, not once per snapshot.** The sweep appends and deletes a track
+  (it has to be a clip — see [`bridge/README.md`](../bridge/README.md)), so every refresh would
+  mark the set dirty, churn Live's undo, and trip the structural observer, whose entire job
+  is to prompt a re-snapshot. That's a feedback loop the moment `observe` is enabled.
+- **Strictly before the walk, never overlapping it.** Otherwise the snapshot sees the
+  scratch track as a real one.
+- **Failure never blocks the walk.** A set you can see without swatches beats an error
+  where the grid should be, so the derivation is caught and logged. `derivedRef` then stops
+  it retrying — a sweep that fails must not append a track on every subsequent refresh.
+
+The "have we got one?" question is answered by re-reading `/palette.json` rather than by
+React state, which may still be waiting on the mount-time fetch if Snapshot was clicked
+immediately. A local GET is cheap; appending a track to re-derive what we already have is
+not. The **Re-derive palette** button remains for a Live upgrade, and as the retry after an
+automatic attempt failed.
+
 ## Snapshot timing readout
 
 Every snapshot prints a phase breakdown to the browser console — the answer to "is

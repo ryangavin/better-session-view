@@ -95,8 +95,13 @@ Things only a run against a real set can answer.
   projects to seconds, not milliseconds. The UI prints a phase breakdown and a
   projection to the console on every snapshot — see [`ui/README.md`](ui/README.md).
   If it stays slow, the answer is streaming partial snapshots.
-- **Palette size and theme-independence.** The sweep reports whatever Live has. If
-  switching themes changes the RGBs, the cache needs keying by theme.
+- ~~**Palette size and theme-independence.**~~ **Answered.** Live 12.4.3 reports 70
+  colours, all distinct, row-major across the 14 × 5 grid in its own colour picker —
+  verified against a screenshot of it. The theme `.ask` files carry no clip colours, so the
+  palette looks theme-independent and the cache needs no theme key. Values are recorded in
+  [`bridge/README.md`](bridge/README.md). Deriving it needs a **clip**: `Scene.color_index`
+  and `Track.color_index` are documented nullable and Max's LiveAPI can read but not write
+  an optional property.
 - **Write-path addressing.** `apply` still resolves a path string per op — same cost
   class as the old slot scan. Needs an id cache from the last snapshot, plus
   staleness handling.

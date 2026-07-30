@@ -61,7 +61,7 @@ export function Inspector({
         {palette.length > 0 && <span className="dim">({palette.length})</span>}
       </div>
       {palette.length === 0 ? (
-        <div className="hint">No palette cached yet — extract it once.</div>
+        <div className="hint">No palette yet — the next snapshot derives it.</div>
       ) : (
         <div className="swatches">
           {palette.map((rgb, i) => (
@@ -82,8 +82,13 @@ export function Inspector({
         </div>
       )}
 
-      <button type="button" onClick={onExtractPalette} disabled={busy}>
-        Extract palette from Live
+      <button
+        type="button"
+        onClick={onExtractPalette}
+        disabled={busy}
+        title="Normally automatic on the first snapshot. Appends and removes one scratch track."
+      >
+        Re-derive palette
       </button>
       <button type="button" className="primary" onClick={onApply} disabled={!canApply || busy}>
         {progress ? `${progress.done} / ${progress.total}` : `Apply to ${selectedCount}`}
