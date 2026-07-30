@@ -20,7 +20,9 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | script | does |
 |---|---|
 | `npm run build` | bridge.js, lom.js, UI → `bridge/public/`, and the device |
-| `npm run dev` | four watchers in parallel; UI dev server on :5173 |
+| `npm run dev` | three watchers in parallel; UI dev server on :5173 |
+| `npm run dev:ui` | the UI dev server alone, against a device someone else is running |
+| `npm run build:device` | the `.amxd` only — deliberately not watched |
 | `npm test` | `core/` unit tests |
 | `npm run typecheck` | all five projects |
 

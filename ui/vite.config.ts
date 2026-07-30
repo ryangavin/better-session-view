@@ -4,7 +4,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const BRIDGE = 'http://127.0.0.1:17800';
+
+// One bridge, many UIs. Each worktree runs its own dev server on its own port and
+// proxies through to the same device, so several UIs share one Live session — which
+// is the multi-client case the bridge is meant to serve anyway.
+//
+// strictPort stays on deliberately: a dev server that silently drifts to the next
+// free port is worse than one that fails, because nothing downstream can then say
+// which URL it ended up on.
+const BRIDGE = process.env.BSV_BRIDGE || 'http://127.0.0.1:17800';
+const PORT = Number(process.env.BSV_UI_PORT) || 5173;
 
 export default defineConfig({
   root: here,
@@ -17,7 +26,7 @@ export default defineConfig({
     sourcemap: true,
   },
   server: {
-    port: 5173,
+    port: PORT,
     strictPort: true,
     // Dev serves the UI here but the bridge stays authoritative for data.
     proxy: {

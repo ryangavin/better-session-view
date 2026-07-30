@@ -22,11 +22,28 @@ src/lib/
 
 ```sh
 npm run dev            # from repo root — starts this plus the bridge watchers
+npm run dev:ui         # this alone, against a device someone else is running
 ```
 
 Use **<http://localhost:5173>**, not :17800. Vite proxies `/ws` and `/palette.json`
 through to the device, so you get HMR with React Fast Refresh — a loaded snapshot and
 your current selection survive edits, which matters when a snapshot takes seconds.
+
+Two env vars, both optional:
+
+| var | default | for |
+|---|---|---|
+| `BSV_UI_PORT` | `5173` | a second UI alongside the first — one per worktree |
+| `BSV_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
+
+`strictPort` is on, so a port collision fails loudly instead of drifting to the next
+free one. That's deliberate: assign the port, don't discover it.
+
+Several dev servers can share one device — they all proxy to the same bridge, and
+`BridgeClient` derives its socket URL from `location.host`, so nothing needs telling
+which port it's on. That's the multi-client path, so see
+[`bridge/README.md`](../bridge/README.md) for what the bridge does and doesn't yet
+guarantee when more than one client is connected.
 
 :17800 serves the built output and stays available for testing what actually ships.
 When you edit `public/` directly, `bridge.js` watches it and pushes a `reload` event;

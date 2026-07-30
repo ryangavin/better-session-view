@@ -9,7 +9,8 @@
     "build:bridge": "tsc -p bridge/tsconfig.node.json && tsc -p bridge/tsconfig.v8.json",
     "build:ui": "vite build --config ui/vite.config.ts",
     "build:device": "node --disable-warning=ExperimentalWarning tools/build-device.ts",
-    "dev": "concurrently -k -n bridge,lom,ui,device -c cyan,magenta,green,yellow \"tsc -p bridge/tsconfig.node.json --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config ui/vite.config.ts\" \"node --disable-warning=ExperimentalWarning --watch-path=tools tools/build-device.ts\"",
+    "dev": "concurrently -k -n bridge,lom,ui -c cyan,magenta,green \"tsc -p bridge/tsconfig.node.json --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config ui/vite.config.ts\"",
+    "dev:ui": "vite --config ui/vite.config.ts",
     "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p ui/tsconfig.json",
     "test": "vitest run",
     "postinstall": "cd bridge && npm install --no-audit --no-fund"
