@@ -40,9 +40,26 @@ declare namespace BSV {
     isMidi: boolean;
   }
 
+  /**
+   * Per-phase cost of a snapshot, in ms. Every phase is a linear scan, so these
+   * are what tell us how the walk scales to a full-size set.
+   */
+  interface SnapshotTimings {
+    tracks: number;
+    scenes: number;
+    /** Scanning every clip slot for occupancy — trackCount × sceneCount. */
+    slots: number;
+    /** Reading properties off the clips that exist. */
+    clips: number;
+    /** How many slots the scan had to look at. */
+    slotsScanned: number;
+  }
+
   interface Snapshot {
     rev: number;
+    /** Total LOM walk, ms. */
     ms: number;
+    timings: SnapshotTimings;
     tempo: number;
     trackCount: number;
     sceneCount: number;
@@ -87,7 +104,15 @@ declare namespace BSV {
 
   type Event =
     | { type: 'status'; lomReady: boolean }
-    | { type: 'snapshot'; id?: number; lomMs: number; data: Snapshot }
+    | {
+        type: 'snapshot';
+        id?: number;
+        /** JSON.stringify + Dict.parse inside v8, ms. */
+        dictMs: number;
+        /** Max.getDict() on the Node side, ms. */
+        hostMs: number;
+        data: Snapshot;
+      }
     | { type: 'progress'; id?: number; done: number; total: number }
     | {
         type: 'applied';

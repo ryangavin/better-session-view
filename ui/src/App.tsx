@@ -74,6 +74,10 @@ export function App() {
         <Stat k="Scenes" v={snapshot?.sceneCount} />
         <Stat k="Clips" v={snapshot?.clipCount} />
         <Stat k="LOM walk" v={snapshot ? `${snapshot.ms}ms` : undefined} highlight />
+        <Stat
+          k="Slot scan"
+          v={snapshot ? `${snapshot.timings.slots}ms` : undefined}
+        />
         <Stat k="Selected" v={selected.size} />
       </div>
 

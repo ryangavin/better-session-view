@@ -27,6 +27,17 @@ interface Waiter {
   resolve: (e: BridgeEvent) => void;
   reject: (e: Error) => void;
   timer: ReturnType<typeof setTimeout>;
+  sentAt: number;
+}
+
+/** Costs only the client can see: the wire and the parse. */
+export interface WireTiming {
+  /** Send → terminal reply, ms. Everything the user actually waits for. */
+  totalMs: number;
+  /** JSON.parse of the reply, ms. */
+  parseMs: number;
+  /** Reply size in bytes. */
+  bytes: number;
 }
 
 export type ConnectionState = 'connecting' | 'open' | 'closed';
@@ -41,6 +52,8 @@ export class BridgeClient {
 
   state: ConnectionState = 'connecting';
   lomReady = false;
+  /** Wire cost of the most recent terminal reply. */
+  lastWireTiming: WireTiming | null = null;
 
   constructor(private readonly url = `ws://${location.host}${WS_PATH}`) {}
 
@@ -66,12 +79,16 @@ export class BridgeClient {
     ws.onerror = () => {};
 
     ws.onmessage = (ev) => {
+      const arrivedAt = performance.now();
+      const raw = String(ev.data);
       let event: BridgeEvent;
+      const beforeParse = performance.now();
       try {
-        event = JSON.parse(String(ev.data));
+        event = JSON.parse(raw);
       } catch {
         return;
       }
+      const parseMs = performance.now() - beforeParse;
       if (event.type === 'status') this.lomReady = event.lomReady;
 
       const id = 'id' in event ? event.id : undefined;
@@ -80,6 +97,13 @@ export class BridgeClient {
         if (waiter && (event.type === waiter.expect || event.type === 'error')) {
           this.waiters.delete(id);
           clearTimeout(waiter.timer);
+          // Read synchronously right after the await that this resolves; UI
+          // requests are serialized behind a busy flag so they can't interleave.
+          this.lastWireTiming = {
+            totalMs: arrivedAt - waiter.sentAt,
+            parseMs,
+            bytes: new Blob([raw]).size,
+          };
           if (event.type === 'error') waiter.reject(new Error(event.message));
           else waiter.resolve(event);
         }
@@ -122,7 +146,13 @@ export class BridgeClient {
         this.waiters.delete(id);
         reject(new Error(`${request.type} timed out after ${timeoutMs}ms`));
       }, timeoutMs);
-      this.waiters.set(id, { expect, resolve: resolve as Waiter['resolve'], reject, timer });
+      this.waiters.set(id, {
+        expect,
+        resolve: resolve as Waiter['resolve'],
+        reject,
+        timer,
+        sentAt: performance.now(),
+      });
       this.ws!.send(JSON.stringify({ ...request, id }));
     });
   }
