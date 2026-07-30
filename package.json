@@ -5,8 +5,28 @@
   "type": "module",
   "description": "Session manager for large Ableton Live sets.",
   "scripts": {
-    "build": "node tools/build-device.mjs",
-    "dev": "node --watch-path=tools tools/build-device.mjs",
+    "build": "npm run build:bridge && npm run build:ui && npm run build:device",
+    "build:bridge": "tsc -p bridge/tsconfig.node.json && tsc -p bridge/tsconfig.v8.json",
+    "build:ui": "vite build --config ui/vite.config.ts",
+    "build:device": "node --disable-warning=ExperimentalWarning tools/build-device.ts",
+    "dev": "concurrently -k -n bridge,lom,ui,device -c cyan,magenta,green,yellow \"tsc -p bridge/tsconfig.node.json --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config ui/vite.config.ts\" \"node --disable-warning=ExperimentalWarning --watch-path=tools tools/build-device.ts\"",
+    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p ui/tsconfig.json",
+    "test": "vitest run",
     "postinstall": "cd bridge && npm install --no-audit --no-fund"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@types/ws": "^8.5.13",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

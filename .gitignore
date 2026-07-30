@@ -1,0 +1,12 @@
+node_modules/
+# generated: tsc output consumed directly by node.script and [v8]
+bridge/bridge.js
+bridge/lom.js
+# generated: vite build output
+bridge/public/
+# generated: device binary + debug patcher
+bridge/SessionBridge.amxd
+bridge/SessionBridge.maxpat
+# derived from Live at runtime
+bridge/palette.json
+.DS_Store

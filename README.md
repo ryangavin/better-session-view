@@ -9,30 +9,61 @@ Model over a local WebSocket *and* serves the UI from the same Node process. One
 
 ## Layout
 
+TypeScript throughout. Five projects, each with its own compile target because
+the runtimes are genuinely different.
+
 ```
-bridge/
-  SessionBridge.amxd     built device (do not edit — regenerate)
-  SessionBridge.maxpat   same patcher, openable in Max for debugging
-  bridge.js              Node for Max: HTTP + WebSocket server
-  lom.js                 Max [v8]: the only code that touches the LOM
-  public/index.html      diagnostic UI / first look at the grid
-tools/
-  amxd.mjs               pack/unpack .amxd containers
-  build-device.mjs       generates the patcher and packs the device
+protocol/   global.d.ts    the wire protocol — single source of truth
+core/       src/           pure domain logic: no I/O, no React, no Live
+ui/         src/           React 19 + Vite  ->  builds to bridge/public/
+bridge/     src/bridge.ts  ->  bridge.js   Node for Max: HTTP + WebSocket
+            src/lom.ts     ->  lom.js      Max [v8]: the only LOM code
+            types/         ambient LiveAPI / Dict / Task / max-api decls
+tools/      *.ts           .amxd pack/unpack + device generator
 ```
+
+Generated, and gitignored: `bridge/bridge.js`, `bridge/lom.js`,
+`bridge/public/`, `bridge/SessionBridge.{amxd,maxpat}`, `bridge/palette.json`.
+
+### Why the two bridge targets differ
+
+`lom.ts` compiles with `module: "none"` and `alwaysStrict: false`. Max's `[v8]`
+object discovers message handlers as **top-level global function declarations**,
+so any module wrapper would hide them — and `autowatch`/`inlets`/`outlets` are
+pre-existing globals that get assigned to, which `"use strict"` puts at risk.
+That also means `lom.ts` cannot `import` anything, which is why the protocol
+lives in a global `BSV` namespace rather than a module.
+
+`bridge.ts` compiles to CommonJS for Node for Max. `core/` and `ui/` are ESM and
+consumed by Vite directly. `tools/` isn't compiled at all — Node 24 runs `.ts`
+natively via type stripping.
+
+### The rule that matters
+
+`core/` imports no transport, no React, and nothing Live-specific. That's what
+makes the domain logic testable without Live running, and what keeps a different
+backend possible later.
 
 ## Build
 
 ```sh
-npm install            # also installs bridge/ deps
-npm run build          # generate the device
-npm run dev            # rebuild the device on every change to tools/
+npm install       # root + bridge/ deps
+npm run build     # bridge.js, lom.js, ui -> public/, and the .amxd
+npm run dev       # watch all four in parallel
+npm test          # core/ unit tests
+npm run typecheck # all five projects
 ```
 
-Everything else already hot-reloads: `node.script @watch 1` restarts `bridge.js`,
-`autowatch` reloads `lom.js`, and the server watches `public/` and pushes a reload
-to every open browser. Only the `.amxd` itself needs a build step, and Live picks
-up the rebuilt file on its own.
+`npm run dev` runs four watchers: `tsc` for each bridge target, Vite for the UI,
+and a device rebuild on changes to `tools/`. Nothing needs restarting by hand —
+`node.script @watch` restarts `bridge.js`, `autowatch` reloads `lom.js`, and Live
+reloads the `.amxd` itself. Compiling into `bridge/` actually improves this: a
+reload only fires on a successful compile.
+
+For UI work, use the Vite dev server at <http://localhost:5173> — it proxies
+`/ws` and `/palette.json` through to the device on :17800, so you get HMR with
+React Fast Refresh and your loaded snapshot and selection survive edits. The
+built output at :17800 stays available for testing what actually ships.
 
 ## Colors
 
@@ -89,6 +120,9 @@ audio. Chunking also gives progress reporting for free.
 
 ### Wire protocol
 
+Typed end to end from `protocol/global.d.ts`. The socket lives at **`/ws`** rather
+than `/` so Vite can proxy it in dev without colliding with the HTML route.
+
 Client → server:
 
 | message | meaning |
@@ -115,6 +149,10 @@ Things this stage exists to answer, on a real set:
 
 ## Testing
 
-`bridge.js` is covered end-to-end against a stubbed `max-api` (static serving, path
-traversal, WS handshake, readiness gating, request routing by id, dict staging,
-progress streaming, error paths). `lom.js` needs Live and is currently unverified.
+- `npm test` — 15 unit tests over `core/` (token rendering, title parsing, color).
+- The bridge has 18 end-to-end assertions against a stubbed `max-api`, run against
+  the **compiled** `bridge.js`: static serving, path traversal, WS handshake and
+  path, readiness gating, request routing by id, dict staging with punctuation
+  intact, progress streaming, palette caching, error paths.
+- `lom.js` needs Live and stays unverified by automated tests. It's the file to
+  suspect first.
