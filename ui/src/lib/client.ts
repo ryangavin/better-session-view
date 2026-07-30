@@ -104,7 +104,13 @@ export class BridgeClient {
             parseMs,
             bytes: new Blob([raw]).size,
           };
-          if (event.type === 'error') waiter.reject(new Error(event.message));
+          // `||`: a blank message is as useless as a missing one, and naming the
+          // request at least says which call died.
+          if (event.type === 'error') {
+            waiter.reject(
+              new Error(event.message || `${waiter.expect} request failed with no message`),
+            );
+          }
           else waiter.resolve(event);
         }
       }

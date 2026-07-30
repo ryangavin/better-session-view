@@ -74,6 +74,38 @@ keep it that way.
 `useBridge.ts` wraps it in React state and owns the log lines. `guard()` wraps every
 operation so failures land in the log rather than as unhandled rejections.
 
+## Color writes on click, naming doesn't
+
+The asymmetry in the Inspector is deliberate. A color is instantly legible in the grid and
+picking a different one costs nothing, so the swatch *is* the action — click it and it's
+written. A name overwrites something you can no longer see, so it keeps its preview and an
+explicit **Rename N** button.
+
+The fast path this buys is the one the app exists for: **click a scene name, click a
+swatch.** Selecting a scene name selects every clip in that row, so those two clicks
+recolor a whole scene.
+
+Both paths filter out writes that would change nothing — `colorOps` and the `nameOps` memo.
+Recoloring a scene where 22 of 30 clips are already that color writes 8, and the progress
+bar says 8. A count that includes no-op writes is a lie about how much work is happening.
+
+## Undo is ours to provide
+
+`⌘Z`, or the button. One level, and there is no redo.
+
+**LOM writes don't reach Live's own history**, so Live's ⌘Z will not bring a rename back —
+this is the only way back that exists. `useBridge` captures the reverse batch from the
+snapshot before every write (see [`core/src/ops.ts`](../core/README.md)), which costs
+nothing because the snapshot already holds every clip's name and color.
+
+One level rather than a stack, on purpose: every write re-snapshots, so a stack would have
+to stay valid across that, and a stale entry that quietly restores the wrong thing is worse
+than having no stack. The entry is consumed whether or not the undo succeeds, so a failed
+undo can't be replayed into a half-reverted state by pressing ⌘Z twice.
+
+`⌘Z` doesn't conflict with the ⌘-makes-a-sound rule below — it isn't a grid gesture, and
+it's guarded by `isTypingInto` so the rename field keeps its own undo.
+
 ## Palette
 
 `refresh()` derives the palette before the walk **if there isn't one**, so it never needs a
@@ -131,7 +163,7 @@ someone reached for a right-click. `keys.ts` owns that decision.
 | scene name | click selects the row · ⇧ extends over scenes | ⌘-click **fires the scene** |
 | track header | click a group to collapse | ⌘-click **stops that track** |
 | keys | `↑↓←→` move the active cell | `⌘↑ ⌘↓` **move and fire** · `⌘⏎` fire |
-| | | `esc` stop all clips · `space` transport |
+| | `⌘Z` undo the last write | `esc` stop all clips · `space` transport |
 
 `⌘↓` is the sweep — one keystroke for "next scene, and let me hear it". That deliberately
 replaces an audition *mode*: a sticky toggle you can forget you're in is worse than a

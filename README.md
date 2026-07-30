@@ -96,8 +96,8 @@ Things only a run against a real set can answer.
   projection to the console on every snapshot — see [`ui/README.md`](ui/README.md).
   If it stays slow, the answer is streaming partial snapshots.
 - ~~**Palette size and theme-independence.**~~ **Answered.** Live 12.4.3 reports 70
-  colours, all distinct, row-major across the 14 × 5 grid in its own colour picker —
-  verified against a screenshot of it. The theme `.ask` files carry no clip colours, so the
+  colors, all distinct, row-major across the 14 × 5 grid in its own color picker —
+  verified against a screenshot of it. The theme `.ask` files carry no clip colors, so the
   palette looks theme-independent and the cache needs no theme key. Values are recorded in
   [`bridge/README.md`](bridge/README.md). Deriving it needs a **clip**: `Scene.color_index`
   and `Track.color_index` are documented nullable and Max's LiveAPI can read but not write

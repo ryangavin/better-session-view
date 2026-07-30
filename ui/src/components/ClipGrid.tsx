@@ -117,7 +117,10 @@ const Row = memo(function Row({
       <td
         className={`scene${active === 'scene' ? ' active' : ''}`}
         data-active={active === 'scene' ? '1' : undefined}
-        title={scene.name}
+        title={
+          `${scene.name || `Scene ${scene.i + 1}`} — click selects every clip in it` +
+          ` · ⇧ extends over scenes · ${LAUNCH_KEY}-click fires it`
+        }
         onClick={(e) => onScene(scene.i, mods(e))}
       >
         <button

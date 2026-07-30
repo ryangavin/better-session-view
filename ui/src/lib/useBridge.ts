@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BridgeClient, type ConnectionState, type WireTiming } from './client.js';
+import { inverseOps } from '../../../core/src/ops.js';
 
 /** Scenes in the full-size set we're actually building for. */
 const TARGET_SCENES = 848;
@@ -51,6 +52,19 @@ function reportSnapshotTiming(
   console.groupEnd();
 }
 
+/**
+ * A non-empty description of a thrown value. `||` rather than `??`: an Error with
+ * an empty message logs as "color: " and says nothing at all.
+ */
+function errText(e: unknown): string {
+  const m = (e as Error)?.message;
+  if (typeof m === 'string' && m !== '') return m;
+  const s = String(e);
+  return s && s !== 'undefined' && s !== 'null' && s !== '[object Object]'
+    ? s
+    : 'failed with no message — check the Max window';
+}
+
 export interface LogLine {
   id: number;
   text: string;
@@ -78,9 +92,12 @@ export interface BridgeState {
   progress: { done: number; total: number } | null;
   log: LogLine[];
   busy: boolean;
+  /** 1 when the last write can be reversed, 0 otherwise. */
+  undoDepth: number;
   refresh: () => Promise<void>;
   extractPalette: () => Promise<void>;
-  apply: (ops: BSV.ApplyOp[]) => Promise<void>;
+  apply: (ops: BSV.ApplyOp[], label?: string) => Promise<void>;
+  undo: () => Promise<void>;
   /** Fire something. No await: the answer you want is `play` changing. */
   launch: (target: BSV.LaunchTarget) => void;
   stop: (target: BSV.StopTarget) => void;
@@ -126,7 +143,7 @@ export function useBridge(): BridgeState {
           location.reload();
           break;
         case 'error':
-          say(event.message, 'error');
+          say(event.message || 'bridge reported an error with no message', 'error');
           break;
       }
     });
@@ -187,7 +204,7 @@ export function useBridge(): BridgeState {
     } catch (e) {
       // Never block the walk for this. A set you can see without swatches is
       // far better than an error where the grid should be.
-      say(`palette: ${(e as Error).message} — continuing without it`, 'error');
+      say(`palette: ${errText(e)} — continuing without it`, 'error');
     }
   }, [client, say]);
 
@@ -218,7 +235,7 @@ export function useBridge(): BridgeState {
       try {
         await fn();
       } catch (e) {
-        say(`${label}: ${(e as Error).message}`, 'error');
+        say(`${label}: ${errText(e)}`, 'error');
       } finally {
         setBusy(false);
         setProgress(null);
@@ -264,16 +281,59 @@ export function useBridge(): BridgeState {
     [client, guard, say],
   );
 
-  const apply = useCallback(
-    (ops: BSV.ApplyOp[]) =>
-      guard('apply', async () => {
+  // One level of undo, captured from the snapshot rather than from Live. LOM
+  // writes don't participate in Live's own history, so ⌘Z in Live will not bring
+  // a rename back — this is the only way back there is. Deliberately one level:
+  // a stack would need to survive the re-snapshot after every write, and a stale
+  // entry that quietly restores the wrong thing is worse than no stack.
+  const snapshotRef = useRef<BSV.Snapshot | null>(null);
+  snapshotRef.current = snapshot;
+  const [undoDepth, setUndoDepth] = useState(0);
+  const undoRef = useRef<{ ops: BSV.ApplyOp[]; label: string } | null>(null);
+
+  const write = useCallback(
+    (ops: BSV.ApplyOp[], label: string, reverse: { ops: BSV.ApplyOp[]; label: string } | null) =>
+      guard(label, async () => {
+        if (ops.length === 0) {
+          say(`${label} — nothing to write`, 'ok');
+          return;
+        }
         const e = await client.request({ type: 'apply', ops });
-        say(`applied ${e.applied}, skipped ${e.skipped} in ${e.lomMs}ms`, 'ok');
+        undoRef.current = reverse;
+        setUndoDepth(reverse && reverse.ops.length > 0 ? 1 : 0);
+        // Report what we sent alongside what Live did with it. "0 written of 1
+        // sent" is a very different bug from "0 written of 0 sent", and without
+        // the sent count the two look identical.
+        const short = e.applied + e.skipped < ops.length;
+        say(
+          `${label} — ${e.applied} written, ${e.skipped} skipped of ${ops.length} sent` +
+            ` in ${e.lomMs}ms`,
+          short ? 'error' : 'ok',
+        );
         const s = await client.request({ type: 'snapshot' });
         setSnapshot(s.data);
       }),
     [client, guard, say],
   );
+
+  const apply = useCallback(
+    (ops: BSV.ApplyOp[], label = 'apply') => {
+      const before = snapshotRef.current?.clips ?? [];
+      const back = inverseOps(before, ops);
+      return write(ops, label, { ops: back, label: `undo ${label}` });
+    },
+    [write],
+  );
+
+  const undo = useCallback(() => {
+    const u = undoRef.current;
+    if (!u || u.ops.length === 0) return Promise.resolve();
+    // No redo: the entry is consumed either way, so a failed undo can't be
+    // replayed into a half-reverted state on a second press.
+    undoRef.current = null;
+    setUndoDepth(0);
+    return write(u.ops, u.label, null);
+  }, [write]);
 
   return {
     connection,
@@ -284,9 +344,11 @@ export function useBridge(): BridgeState {
     progress,
     log,
     busy,
+    undoDepth,
     refresh,
     extractPalette,
     apply,
+    undo,
     launch,
     stop,
   };

@@ -11,6 +11,7 @@ import {
   type ColumnWidth,
 } from './lib/columnWidth.js';
 import { render } from '../../core/src/pattern.js';
+import { colorOps } from '../../core/src/ops.js';
 import { buildColumns } from '../../core/src/trackColumns.js';
 import {
   cellsInBlock,
@@ -28,7 +29,7 @@ const ARROWS: Record<string, Direction> = {
 
 export function App() {
   const bridge = useBridge();
-  const { snapshot, play, launch, stop } = bridge;
+  const { snapshot, play, launch, stop, apply, undo } = bridge;
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [active, setActive] = useState<ActiveCell | null>(null);
@@ -227,12 +228,22 @@ export function App() {
       if (e.key === 'Enter' && isLaunchModified(e) && from) {
         e.preventDefault();
         fireActive(from);
+        return;
+      }
+
+      // ⌘Z is not a grid gesture, so it doesn't fight the "⌘ makes a sound" rule
+      // — and it's the only undo there is, since LOM writes never reach Live's
+      // own history. Guarded by isTypingInto above, so the rename field keeps its
+      // own undo.
+      if ((e.key === 'z' || e.key === 'Z') && isLaunchModified(e)) {
+        e.preventDefault();
+        void undo();
       }
     }
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [fireActive, goActive, launch, sceneCount, stop, trackColumns]);
+  }, [fireActive, goActive, launch, sceneCount, stop, trackColumns, undo]);
 
   // Keep the active cell on screen. Read out of the DOM rather than threading a
   // ref down: Row is memoized and a fresh ref callback per render would
@@ -256,18 +267,33 @@ export function App() {
     [clips, sceneNames, trackNames],
   );
 
-  const ops = useMemo<BSV.ApplyOp[]>(() => {
-    const keys = [...selected];
-    return keys
-      .map((key, i) => {
-        const { t, s } = parseClipKey(key);
-        const op: BSV.ApplyOp = { t, s };
-        if (chosenIndex !== null) op.colorIndex = chosenIndex;
-        if (pattern.trim()) op.name = render(pattern, valuesFor(t, s, i + 1));
-        return op;
-      })
-      .filter((op) => op.colorIndex !== undefined || op.name !== undefined);
-  }, [selected, chosenIndex, pattern, valuesFor]);
+  const selectedCells = useMemo(
+    () => [...selected].map((key) => parseClipKey(key)),
+    [selected],
+  );
+
+  // Color writes immediately on click, naming does not, and the asymmetry is
+  // deliberate. A color is instantly legible in the grid and reapplying a
+  // different one costs nothing, so a swatch may as well be the action. A name
+  // overwrites something you can't see any more, so it keeps its preview and an
+  // explicit commit. Both are undoable — see useBridge.
+  const onColor = useCallback(
+    (index: number) => {
+      setChosenIndex(index);
+      if (!snapshot || selectedCells.length === 0) return;
+      void apply(colorOps(snapshot.clips, selectedCells, index), 'color');
+    },
+    [apply, selectedCells, snapshot],
+  );
+
+  const nameOps = useMemo<BSV.ApplyOp[]>(() => {
+    if (!pattern.trim()) return [];
+    return selectedCells
+      .map(({ t, s }, i) => ({ t, s, name: render(pattern, valuesFor(t, s, i + 1)) }))
+      // Renaming a clip to what it is already called is a write Live has to make
+      // and a number the progress bar has to report, for no visible effect.
+      .filter((op) => op.name !== clips.get(clipKey(op.t, op.s))?.name);
+  }, [clips, pattern, selectedCells, valuesFor]);
 
   const preview = useMemo(() => {
     if (!pattern.trim() || selected.size === 0) return null;
@@ -348,7 +374,7 @@ export function App() {
         <div className="spacer" />
         <div className="keyhint">
           <b>{LAUNCH_KEY}</b>-click / <b>{LAUNCH_KEY}</b>-↑↓ fires · <b>⇧</b> extends ·{' '}
-          <b>⌥</b> adds · <b>esc</b> stops clips
+          <b>⌥</b> adds · <b>esc</b> stops clips · <b>{LAUNCH_KEY}Z</b> undoes
         </div>
       </div>
 
@@ -379,14 +405,17 @@ export function App() {
         <Inspector
           palette={bridge.palette}
           chosenIndex={chosenIndex}
-          onChooseIndex={setChosenIndex}
+          onColor={onColor}
           pattern={pattern}
           onPattern={setPattern}
           selectedCount={selected.size}
+          renameCount={nameOps.length}
           preview={preview}
           busy={bridge.busy}
           progress={bridge.progress}
-          onApply={() => void bridge.apply(ops)}
+          undoDepth={bridge.undoDepth}
+          onRename={() => void bridge.apply(nameOps, 'rename')}
+          onUndo={() => void bridge.undo()}
           onClear={() => setSelected(new Set())}
           onExtractPalette={() => void bridge.extractPalette()}
         />
