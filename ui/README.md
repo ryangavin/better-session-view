@@ -11,6 +11,7 @@ src/styles.css        design tokens + all styling
 src/components/
   ClipGrid.tsx        scenes × tracks, memoized per row
   Inspector.tsx       rename pattern, swatches, apply
+  RolesPanel.tsx      role chips, role→color actions, vocabulary manager
 src/lib/
   client.ts           typed WebSocket client, framework-free
   useBridge.ts        React hook over the client
@@ -88,6 +89,47 @@ recolor a whole scene.
 Both paths filter out writes that would change nothing — `colorOps` and the `nameOps` memo.
 Recoloring a scene where 22 of 30 clips are already that color writes 8, and the progress
 bar says 8. A count that includes no-op writes is a lie about how much work is happening.
+
+## Roles
+
+The rail is `<aside>` in `App`, holding `RolesPanel` above `Inspector` — roles first
+because tagging a scene and pressing its role's color is the two-click path the panel
+exists for, and the swatch grid below is the fallback for everything a role doesn't cover.
+
+The gesture is **click a scene name, click a role, click Color clips.** The role is
+written into the scene's own name as `[role]` (see [`core/README.md`](../core/README.md)
+for why the set is the storage), and the grid shows the title with the tag lifted out
+into a colored chip — so Live holds `Nightfall [chorus]` and we render
+`Nightfall · CHORUS`.
+
+**Clicking a role writes immediately, which only looks like it breaks the rule above.**
+That rule exists because a rename overwrites a name you can no longer see. A role tag is
+additive — it goes on the end, the rest of the name is untouched — and the result is
+visible as a chip the moment it lands. There's nothing to preview.
+
+**Scene selection is separate state from clip selection**, and can't be derived from it: a
+scene with no clips contributes no cells and still needs to be assignable a role. It's set
+only by the scene-name column and cleared by a clip click, so "which scenes am I about to
+tag" is never a guess. Selected scene rows get an amber left edge.
+
+**Color clips uses each scene's own role**, so one press works across a selection spanning
+several roles. Same for **Paint scenes**, which writes the scene rows themselves — a
+separate button rather than automatic, so taking over Live's scene colors is always
+something you asked for.
+
+The vocabulary is `bridge/roles.json`, unioned with every role actually tagged in the set
+(`mergeVocabulary`). A role typed straight into Live shows up in the manager uncolored
+rather than being invisible until it mysteriously colors nothing. Deleting a role only
+forgets its color — the scenes keep their tags, so it reappears uncolored, and the manager
+says so.
+
+One wart worth knowing: **undo can't take a scene color back off.** Live has no writable
+"no color", so a scene that had none can't be restored to none. `useBridge` logs a line
+saying so rather than letting the undo button promise more than it delivers.
+
+`roleColors` is memoized in `App` because it reaches the memoized `Row`; a fresh Map per
+render would re-render all 848 scenes. It changes only when the vocabulary or palette
+does, which is rare.
 
 ## Undo is ours to provide
 

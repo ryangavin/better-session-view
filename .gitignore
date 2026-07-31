@@ -9,4 +9,8 @@ bridge/SessionBridge.amxd
 bridge/SessionBridge.maxpat
 # derived from Live at runtime
 bridge/palette.json
+bridge/palette.json.tmp
+# the role vocabulary — yours, not the repo's
+bridge/roles.json
+bridge/roles.json.tmp
 .DS_Store

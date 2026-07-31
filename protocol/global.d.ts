@@ -137,6 +137,42 @@ declare namespace BSV {
     colorIndex?: number;
   }
 
+  /**
+   * A write to a scene rather than a clip slot.
+   *
+   * Separate from `ApplyOp` rather than a discriminated variant of it because
+   * the two aren't the same write with a different address: a scene's color
+   * cannot be written the way a clip's can. Keeping them apart means `lom.ts`
+   * can't accidentally send one down the other's path.
+   */
+  interface SceneOp {
+    s: number;
+    name?: string;
+    /**
+     * Slot in Live's palette. Carried as the intent — it's what the grid shows
+     * and what undo reverses — but it is *not* what gets written.
+     */
+    colorIndex?: number;
+    /**
+     * The RGB for `colorIndex`, and **the only form Live accepts here**.
+     * `Scene.color_index` is documented "Can be None for no color", and Max's
+     * LiveAPI can read an `Optional[int]` but not construct one to write —
+     * setting it answers `unsupported property type`. This is the one place the
+     * project's "colors are indexes, never raw RGB" rule has to bend, and it
+     * bends only for scenes and tracks. See `bridge/README.md`.
+     *
+     * Always sent together with `colorIndex`; neither is meaningful alone.
+     */
+    color?: number;
+  }
+
+  /** A role a scene can be marked with, and the palette slot it colors with. */
+  interface Role {
+    name: string;
+    /** Slot in Live's palette, or -1 when the role has no color yet. */
+    colorIndex: number;
+  }
+
   interface ApplyResult {
     applied: number;
     skipped: number;
@@ -151,8 +187,19 @@ declare namespace BSV {
   // still surfaces: the bridge broadcasts an `error` with no id.
   type Request =
     | { id?: number; type: 'snapshot' }
-    | { id?: number; type: 'apply'; ops: ApplyOp[] }
+    /**
+     * One batch, both kinds of target. Clip and scene writes travel together so
+     * "tag these scenes and recolor their clips" stays one operation with one
+     * progress count and one reverse batch — splitting it would give undo two
+     * halves that can succeed independently.
+     */
+    | { id?: number; type: 'apply'; ops: ApplyOp[]; sceneOps?: SceneOp[] }
     | { id?: number; type: 'palette' }
+    /**
+     * Replace the whole role vocabulary. Coarse-grained like everything else:
+     * the list is a dozen entries, so there is no per-role message.
+     */
+    | { id?: number; type: 'saveRoles'; roles: Role[] }
     | { id?: number; type: 'observe'; on: boolean }
     | { id?: number; type: 'launch'; target: LaunchTarget }
     | { id?: number; type: 'stop'; target: StopTarget }
@@ -185,6 +232,7 @@ declare namespace BSV {
       }
     | { type: 'palette'; id?: number; count: number; colors: number[] }
     | { type: 'paletteUpdated' }
+    | { type: 'rolesSaved'; id?: number; count: number }
     | {
         type: 'playState';
         isPlaying: boolean;

@@ -47,8 +47,9 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | client → server | |
 |---|---|
 | `snapshot` | walk the whole set |
-| `apply` `{ ops }` | bulk write, clip-slot addressed |
+| `apply` `{ ops, sceneOps? }` | bulk write — clip slots and/or scenes |
 | `palette` | derive and cache Live's palette |
+| `saveRoles` `{ roles }` | replace the role vocabulary |
 | `observe` `{ on }` | structural change notifications |
 | `launch` `{ target }` | fire a clip, a scene, or the song |
 | `stop` `{ target }` | stop a track, every clip, or the song |
@@ -60,6 +61,7 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | `snapshot` | `snapshot` |
 | `applied` | `apply` |
 | `palette` | `palette` |
+| `rolesSaved` | `saveRoles` |
 | `pong` | `ping` |
 | `progress` | — streams during `apply` |
 | `status` | — connection / LOM readiness |
@@ -86,6 +88,21 @@ debug-only — they're how we know whether the design scales. Don't drop them.
 **Colors are indexes.** `ApplyOp.colorIndex` is a slot in Live's palette. `Clip`
 carries both `colorIndex` (what we write) and `color` (the RGB Live renders, so the UI
 needs no lookup). Never write raw RGB.
+
+**Except for scenes, where RGB is the only writable form.** `SceneOp` carries
+`colorIndex` *and* `color`, always together: the index is the intent — what the UI shows
+and what undo reverses — while the RGB is what actually reaches Live, because
+`Scene.color_index` is documented "Can be None for no color" and Max's LiveAPI can read
+an `Optional[int]` but not construct one to write. Setting it answers `unsupported
+property type` and does nothing. This is the documented exception, it applies to scenes
+and tracks only, and `bridge/README.md` records how it was learnt.
+
+**`SceneOp` is not an `ApplyOp` with a different address.** They're separate types
+rather than a discriminated union because the two aren't the same write pointed
+somewhere else — the color rule above differs between them. Keeping them apart is what
+stops `lom.ts` sending one down the other's path. They travel in one `apply` message so
+a write that tags scenes and recolors their clips stays a single operation with one
+progress count and one reverse batch.
 
 **"Absent" gets its own value, never a plausible default.** `Scene.colorIndex` is -1
 when the scene has no color, because Live documents it as nullable and slot 0 is a real

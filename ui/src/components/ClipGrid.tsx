@@ -1,5 +1,6 @@
 import { memo, useMemo, type CSSProperties, type MouseEvent } from 'react';
 import { hex, inkOn, legibleOn } from '../../../core/src/color.js';
+import { nameWithoutRole, roleIn, roleKey } from '../../../core/src/roles.js';
 import { headerSpans, type Column } from '../../../core/src/trackColumns.js';
 import type { ActiveCell } from '../../../core/src/gridRange.js';
 import { clipKey } from '../lib/selection.js';
@@ -30,6 +31,9 @@ interface Props {
   active: ActiveCell | null;
   play: PlayState;
   columnWidth: ColumnWidth;
+  /** roleKey → the RGB its chip is painted. Must be a stable identity — see Row. */
+  roleColors: Map<string, number>;
+  selectedScenes: ReadonlySet<number>;
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
@@ -86,6 +90,8 @@ interface RowProps {
   marks: RowMarks;
   /** Track index when the active cell is a clip in this row, `'scene'` when it's the name. */
   active: number | 'scene' | undefined;
+  roleColors: Map<string, number>;
+  sceneSelected: boolean;
   onClip: Props['onClip'];
   onScene: Props['onScene'];
   onFireScene: Props['onFireScene'];
@@ -100,6 +106,8 @@ const Row = memo(function Row({
   selected,
   marks,
   active,
+  roleColors,
+  sceneSelected,
   onClip,
   onScene,
   onFireScene,
@@ -112,10 +120,20 @@ const Row = memo(function Row({
   const sceneLive = marks !== undefined && marks.indexOf('|p') >= 0;
   const sceneFired = marks !== undefined && marks.indexOf('|f') >= 0;
 
+  // The role is parsed out of the name and shown as a chip, so the grid reads
+  // as "Nightfall · CHORUS" while Live still holds the literal
+  // "Nightfall [chorus]" — which is the whole point of storing it there.
+  const role = roleIn(scene.name);
+  const title = role === null ? scene.name : nameWithoutRole(scene.name);
+  const roleRgb = role === null ? undefined : roleColors.get(roleKey(role));
+
   return (
     <tr>
       <td
-        className={`scene${active === 'scene' ? ' active' : ''}`}
+        className={
+          `scene${active === 'scene' ? ' active' : ''}` +
+          `${sceneSelected ? ' picked' : ''}`
+        }
         data-active={active === 'scene' ? '1' : undefined}
         title={
           `${scene.name || `Scene ${scene.i + 1}`} — click selects every clip in it` +
@@ -137,10 +155,27 @@ const Row = memo(function Row({
           ▶
         </button>
         <span className="scene-n">{scene.i + 1}</span>
-        {scene.name ? (
-          <span style={named ? { color: named } : undefined}>{scene.name}</span>
+        {title ? (
+          <span style={named ? { color: named } : undefined}>{title}</span>
         ) : (
           <span className="unnamed">—</span>
+        )}
+        {role !== null && (
+          <span
+            className={`role-chip${roleRgb === undefined ? ' uncolored' : ''}`}
+            style={
+              roleRgb === undefined
+                ? undefined
+                : { background: hex(roleRgb), color: inkOn(roleRgb) }
+            }
+            title={
+              roleRgb === undefined
+                ? `${role} — no color set for this role`
+                : `role: ${role}`
+            }
+          >
+            {role}
+          </span>
         )}
       </td>
       {columns.map((c) => {
@@ -205,6 +240,8 @@ export function ClipGrid({
   active,
   play,
   columnWidth,
+  roleColors,
+  selectedScenes,
   onClip,
   onScene,
   onFireScene,
@@ -313,6 +350,8 @@ export function ClipGrid({
                   ? 'scene'
                   : active.t
             }
+            roleColors={roleColors}
+            sceneSelected={selectedScenes.has(scene.i)}
             onClip={onClip}
             onScene={onScene}
             onFireScene={onFireScene}

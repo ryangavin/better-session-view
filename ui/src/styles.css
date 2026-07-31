@@ -359,6 +359,37 @@ td.scene .unnamed {
   color: #3a3a41;
 }
 
+/* The role, lifted out of the scene name. Live holds "Nightfall [chorus]"; we
+   show the title and paint the tag, which is the point of storing it there. */
+td.scene .role-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+  background: var(--bd3);
+  color: var(--fg2);
+}
+/* A role tagged in the set that nobody has given a color. Outlined rather than
+   hidden: the tag is really there, and it colors nothing until it's configured. */
+td.scene .role-chip.uncolored {
+  background: transparent;
+  border: 1px dashed var(--bd3);
+  color: var(--dim2);
+  line-height: 12px;
+}
+
+/* Scenes picked *as scenes* — what a role assignment would write to. Distinct
+   from clip selection, which paints the cells to the right. */
+td.scene.picked {
+  background: var(--sel);
+  box-shadow: inset 2px 0 0 var(--amber);
+}
+
 /* Scene launch. The only plain-click control in the app that makes a sound —
    allowed because firing is the button's whole job, and scene launching is the
    primary gesture so it has to be visible rather than a modifier away. Sized to
@@ -523,6 +554,133 @@ input[type='text']:focus {
 }
 .sw.on {
   border: 2px solid var(--amber);
+}
+
+/* --- roles -------------------------------------------------------- */
+
+.rule {
+  border-top: 1px solid var(--bd);
+  margin: 4px 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 11px;
+}
+.chip.on {
+  border-color: var(--amber);
+  color: var(--fg);
+  background: rgba(240, 178, 60, 0.1);
+}
+.chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--bd3);
+}
+/* A role with no color yet. Hollow, so "not chosen" doesn't read as a dark
+   swatch that someone did choose. */
+.chip .dot.empty {
+  background: transparent;
+  border: 1px solid var(--dim2);
+}
+.chip.clear {
+  color: var(--dim2);
+}
+
+/* --- roles manager ------------------------------------------------ */
+
+.modal-back {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.modal {
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--bd3);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.modal-h {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.role-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.role-row input[type='text'] {
+  flex: 1;
+}
+/* Blank, duplicate or illegal — Save is disabled while any row is marked. */
+.role-row.bad input[type='text'] {
+  border-color: var(--red);
+}
+.role-sw {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  background: var(--bd3);
+}
+.role-sw.empty {
+  background: transparent;
+  border: 1px dashed var(--dim2);
+}
+.role-row .used {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim2);
+  width: 34px;
+  flex: none;
+}
+.role-row .x {
+  padding: 4px 8px;
+  border-color: transparent;
+  color: var(--dim2);
+}
+.role-row .x:hover {
+  color: var(--red);
+}
+
+/* The manager is wide enough for Live's full 14-column picker. */
+.swatches.wide {
+  grid-template-columns: repeat(14, 1fr);
 }
 
 /* --- log ---------------------------------------------------------- */

@@ -41,8 +41,10 @@ export function Inspector({
   const bad = unknownTokens(pattern);
   const none = selectedCount === 0;
 
+  // A fragment, not the <aside>: App owns the rail so the roles panel can sit
+  // in the same scrolling column above this one.
   return (
-    <aside>
+    <>
       {/* Color first: it's the one that writes on click, and the common case. */}
       <div className="lbl">
         Color {none ? <span className="dim">— select clips</span> : `${selectedCount} clips`}
@@ -119,6 +121,6 @@ export function Inspector({
       >
         Re-derive palette
       </button>
-    </aside>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClipGrid, type CellClick } from './components/ClipGrid.js';
 import { Inspector } from './components/Inspector.js';
+import { RolesPanel } from './components/RolesPanel.js';
 import { useBridge } from './lib/useBridge.js';
 import { clipKey, parseClipKey, toggle } from './lib/selection.js';
 import { isLaunchModified, isTypingInto, LAUNCH_KEY } from './lib/keys.js';
@@ -13,6 +14,16 @@ import {
 import { render } from '../../core/src/pattern.js';
 import { colorOps } from '../../core/src/ops.js';
 import { buildColumns } from '../../core/src/trackColumns.js';
+import {
+  findRole,
+  mergeVocabulary,
+  roleIn,
+  roleKey,
+  roleOps,
+  rolesInUse,
+  sceneColorOps,
+  sceneFields,
+} from '../../core/src/roles.js';
 import {
   cellsInBlock,
   moveActive,
@@ -27,11 +38,20 @@ const ARROWS: Record<string, Direction> = {
   ArrowRight: 'right',
 };
 
+/** One identity, so clearing an already-empty scene selection changes nothing. */
+const EMPTY_SCENES: ReadonlySet<number> = new Set();
+
 export function App() {
   const bridge = useBridge();
-  const { snapshot, play, launch, stop, apply, undo } = bridge;
+  const { snapshot, play, launch, stop, apply, applyScenes, undo } = bridge;
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  // Scenes selected *as scenes*, which is not the same as "the scenes the clip
+  // selection touches" and can't be derived from it: a scene with no clips
+  // contributes no cells, and it still needs to be assignable a role. Set only
+  // by the scene-name column, and cleared by a clip click, so "which scenes am
+  // I about to tag" is never a guess.
+  const [selectedScenes, setSelectedScenes] = useState<ReadonlySet<number>>(new Set());
   const [active, setActive] = useState<ActiveCell | null>(null);
   const [chosenIndex, setChosenIndex] = useState<number | null>(null);
   const [pattern, setPattern] = useState('');
@@ -134,6 +154,7 @@ export function App() {
       if (m.launch) return launch({ kind: 'clip', t, s });
 
       const from = activeRef.current;
+      setSelectedScenes(EMPTY_SCENES);
       if (m.add) {
         setSelected((prev) => toggle(prev, clipKey(t, s)));
         goActive({ on: 'clip', t, s });
@@ -170,6 +191,14 @@ export function App() {
           : [],
         m.add,
       );
+      // Scene selection tracks the same gesture but is kept independently, and
+      // spans the whole range rather than only the scenes that held a clip —
+      // an empty scene still has a name to tag.
+      const lo = Math.min(firstScene, s);
+      const hi = Math.max(firstScene, s);
+      const run: number[] = [];
+      for (let i = lo; i <= hi; i++) run.push(i);
+      setSelectedScenes((prev) => (m.add ? new Set([...prev, ...run]) : new Set(run)));
       if (!m.extend) goActive({ on: 'scene', s });
     },
     [goActive, isOccupied, launch, selectCells, trackColumns],
@@ -255,12 +284,138 @@ export function App() {
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }, [active]);
 
-  // Token values for one clip. Song/role tokens land with segmentation; until
-  // then they resolve to nothing, which render() drops cleanly.
+  // --- roles -----------------------------------------------------------
+  // Stored in the scene's own name as `[role]` — see core/src/roles.ts for why
+  // the set is the storage and why the tag is bracketed.
+
+  const scenesForOps = useMemo(() => sceneFields(snapshot?.scenes ?? []), [snapshot]);
+
+  /** Roles actually tagged somewhere in the set, in order of first appearance. */
+  const inUseRoles = useMemo(
+    () => rolesInUse(snapshot?.scenes.map((sc) => sc.name) ?? []),
+    [snapshot],
+  );
+  const inUseKeys = useMemo(() => new Set(inUseRoles.map(roleKey)), [inUseRoles]);
+
+  // Configured roles plus anything tagged in the set but never configured. A
+  // vocabulary that only listed what someone remembered to configure would hide
+  // a role typed straight into Live and then fail to color it for no visible
+  // reason.
+  const vocabulary = useMemo(
+    () => mergeVocabulary(bridge.roles, inUseRoles),
+    [bridge.roles, inUseRoles],
+  );
+
+  /**
+   * roleKey → the RGB its chip is painted. Memoized because it reaches the
+   * memoized `Row`: a fresh Map every render would re-render all 848 scenes.
+   * It changes only when the vocabulary or the palette does, which is rare.
+   */
+  const roleColors = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of vocabulary) {
+      const rgb = r.colorIndex >= 0 ? bridge.palette[r.colorIndex] : undefined;
+      if (rgb !== undefined) m.set(roleKey(r.name), rgb);
+    }
+    return m;
+  }, [bridge.palette, vocabulary]);
+
+  const sceneList = useMemo(
+    () => [...selectedScenes].sort((a, b) => a - b),
+    [selectedScenes],
+  );
+
+  const clipsByScene = useMemo(() => {
+    const m = new Map<number, BSV.Clip[]>();
+    for (const c of snapshot?.clips ?? []) {
+      const list = m.get(c.s);
+      if (list) list.push(c);
+      else m.set(c.s, [c]);
+    }
+    return m;
+  }, [snapshot]);
+
+  /** The role the selection shares, and whether the selected scenes disagree. */
+  const { currentRole, mixed } = useMemo(() => {
+    let seen: string | null | undefined;
+    let disagree = false;
+    for (const s of sceneList) {
+      const r = roleIn(sceneNames.get(s) ?? '');
+      if (seen === undefined) seen = r;
+      else if (roleKey(seen ?? '') !== roleKey(r ?? '')) disagree = true;
+    }
+    return { currentRole: disagree ? null : (seen ?? null), mixed: disagree };
+  }, [sceneList, sceneNames]);
+
+  /** Selected scenes paired with the palette slot their role calls for. */
+  const roleColorTargets = useMemo(() => {
+    const byColor = new Map<number, number[]>();
+    for (const s of sceneList) {
+      const role = roleIn(sceneNames.get(s) ?? '');
+      if (role === null) continue;
+      const entry = findRole(vocabulary, role);
+      if (!entry || entry.colorIndex < 0) continue;
+      const list = byColor.get(entry.colorIndex);
+      if (list) list.push(s);
+      else byColor.set(entry.colorIndex, [s]);
+    }
+    return byColor;
+  }, [sceneList, sceneNames, vocabulary]);
+
+  // Each scene's clips take *that scene's* role color, so one press works over
+  // a selection spanning several roles. Passing the scene's own clips as the
+  // "before" is what keeps this linear — colorOps needs the previous color, and
+  // the clips in hand already carry it.
+  const roleClipOps = useMemo<BSV.ApplyOp[]>(() => {
+    const out: BSV.ApplyOp[] = [];
+    for (const [colorIndex, scenes] of roleColorTargets) {
+      for (const s of scenes) {
+        const cells = clipsByScene.get(s) ?? [];
+        out.push(...colorOps(cells, cells, colorIndex));
+      }
+    }
+    return out;
+  }, [clipsByScene, roleColorTargets]);
+
+  const rolePaintOps = useMemo<BSV.SceneOp[]>(() => {
+    const out: BSV.SceneOp[] = [];
+    for (const [colorIndex, scenes] of roleColorTargets) {
+      const rgb = bridge.palette[colorIndex];
+      // No palette entry means no RGB, and RGB is the only form Live accepts
+      // for a scene color. Skip rather than write a color we'd be inventing.
+      if (rgb === undefined) continue;
+      out.push(...sceneColorOps(scenesForOps, scenes, colorIndex, rgb));
+    }
+    return out;
+  }, [bridge.palette, roleColorTargets, scenesForOps]);
+
+  const onAssignRole = useCallback(
+    (role: string | null) => {
+      const ops = roleOps(scenesForOps, sceneList, role);
+      void applyScenes(ops, role === null ? 'clear role' : `role ${role}`);
+    },
+    [applyScenes, sceneList, scenesForOps],
+  );
+
+  const onColorClips = useCallback(
+    () => void apply(roleClipOps, 'role color'),
+    [apply, roleClipOps],
+  );
+
+  const onPaintScenes = useCallback(
+    () => void applyScenes(rolePaintOps, 'paint scenes'),
+    [applyScenes, rolePaintOps],
+  );
+
+  // Token values for one clip. `{role}` comes from the clip's own scene, so the
+  // rename pattern picks it up for free once the scene is tagged. `{song}`
+  // lands with segmentation; until then it resolves to nothing, which render()
+  // drops cleanly.
   const valuesFor = useCallback(
     (t: number, s: number, n: number) => ({
       track: trackNames.get(t),
       scene: sceneNames.get(s),
+      role: roleIn(sceneNames.get(s) ?? '') ?? undefined,
       name: clips.get(clipKey(t, s))?.name,
       n,
     }),
@@ -389,6 +544,8 @@ export function App() {
               active={active}
               play={play}
               columnWidth={columnWidth}
+              roleColors={roleColors}
+              selectedScenes={selectedScenes}
               onClip={onClip}
               onScene={onScene}
               onFireScene={onFireScene}
@@ -402,23 +559,49 @@ export function App() {
           )}
         </div>
 
-        <Inspector
-          palette={bridge.palette}
-          chosenIndex={chosenIndex}
-          onColor={onColor}
-          pattern={pattern}
-          onPattern={setPattern}
-          selectedCount={selected.size}
-          renameCount={nameOps.length}
-          preview={preview}
-          busy={bridge.busy}
-          progress={bridge.progress}
-          undoDepth={bridge.undoDepth}
-          onRename={() => void bridge.apply(nameOps, 'rename')}
-          onUndo={() => void bridge.undo()}
-          onClear={() => setSelected(new Set())}
-          onExtractPalette={() => void bridge.extractPalette()}
-        />
+        {/* Roles above color: tagging a scene and pressing its role's color is
+            the two-click path this panel exists for, and the swatch grid below
+            is the manual fallback for everything that doesn't fit a role. */}
+        <aside>
+          <RolesPanel
+            vocabulary={vocabulary}
+            palette={bridge.palette}
+            inUse={inUseKeys}
+            sceneCount={selectedScenes.size}
+            currentRole={currentRole}
+            mixed={mixed}
+            clipCount={roleClipOps.length}
+            paintCount={rolePaintOps.length}
+            busy={bridge.busy}
+            onAssign={onAssignRole}
+            onColorClips={onColorClips}
+            onPaintScenes={onPaintScenes}
+            onSaveRoles={(next) => void bridge.saveRoles(next)}
+          />
+
+          <div className="rule" />
+
+          <Inspector
+            palette={bridge.palette}
+            chosenIndex={chosenIndex}
+            onColor={onColor}
+            pattern={pattern}
+            onPattern={setPattern}
+            selectedCount={selected.size}
+            renameCount={nameOps.length}
+            preview={preview}
+            busy={bridge.busy}
+            progress={bridge.progress}
+            undoDepth={bridge.undoDepth}
+            onRename={() => void bridge.apply(nameOps, 'rename')}
+            onUndo={() => void bridge.undo()}
+            onClear={() => {
+              setSelected(new Set());
+              setSelectedScenes(EMPTY_SCENES);
+            }}
+            onExtractPalette={() => void bridge.extractPalette()}
+          />
+        </aside>
       </main>
 
       <footer>

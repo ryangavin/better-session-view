@@ -14,6 +14,7 @@ const TERMINAL = {
   snapshot: 'snapshot',
   apply: 'applied',
   palette: 'palette',
+  saveRoles: 'rolesSaved',
   ping: 'pong',
 } as const satisfies Partial<Record<BSV.RequestType, BSV.EventType>>;
 

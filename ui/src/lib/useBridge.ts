@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BridgeClient, type ConnectionState, type WireTiming } from './client.js';
 import { inverseOps } from '../../../core/src/ops.js';
+import {
+  countUnrevertableColors,
+  inverseSceneOps,
+  sceneFields,
+} from '../../../core/src/roles.js';
 
 /** Scenes in the full-size set we're actually building for. */
 const TARGET_SCENES = 848;
@@ -83,11 +88,20 @@ export interface PlayState {
 
 const NOT_PLAYING: PlayState = { isPlaying: false, tracks: [] };
 
+/** One write, of either kind or both. Empty arrays rather than optionals so
+ *  every count in here is `ops.length + sceneOps.length` with no branching. */
+interface Batch {
+  ops: BSV.ApplyOp[];
+  sceneOps: BSV.SceneOp[];
+}
+
 export interface BridgeState {
   connection: ConnectionState;
   lomReady: boolean;
   snapshot: BSV.Snapshot | null;
   palette: number[];
+  /** The configured role vocabulary, from the bridge's roles.json. */
+  roles: BSV.Role[];
   play: PlayState;
   progress: { done: number; total: number } | null;
   log: LogLine[];
@@ -97,6 +111,9 @@ export interface BridgeState {
   refresh: () => Promise<void>;
   extractPalette: () => Promise<void>;
   apply: (ops: BSV.ApplyOp[], label?: string) => Promise<void>;
+  /** Scene-addressed writes — role tags and scene colors. */
+  applyScenes: (sceneOps: BSV.SceneOp[], label?: string) => Promise<void>;
+  saveRoles: (roles: BSV.Role[]) => Promise<void>;
   undo: () => Promise<void>;
   /** Fire something. No await: the answer you want is `play` changing. */
   launch: (target: BSV.LaunchTarget) => void;
@@ -111,6 +128,7 @@ export function useBridge(): BridgeState {
   const [lomReady, setLomReady] = useState(false);
   const [snapshot, setSnapshot] = useState<BSV.Snapshot | null>(null);
   const [palette, setPalette] = useState<number[]>([]);
+  const [roles, setRoles] = useState<BSV.Role[]>([]);
   const [play, setPlay] = useState<PlayState>(NOT_PLAYING);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
@@ -160,6 +178,19 @@ export function useBridge(): BridgeState {
       .then((r) => r.json())
       .then((p: BSV.Palette) => setPalette(p.colors ?? []))
       .catch(() => setPalette([]));
+  }, []);
+
+  // The role vocabulary, likewise server-side — see the /roles.json note in
+  // bridge.ts for why it isn't in localStorage. An empty list is the correct
+  // answer for a fresh install, so a failure here is not worth a log line;
+  // roles found in the set still surface through mergeVocabulary.
+  useEffect(() => {
+    fetch('/roles.json')
+      .then((r) => r.json())
+      .then((r: { roles?: BSV.Role[] }) =>
+        setRoles(Array.isArray(r.roles) ? r.roles : []),
+      )
+      .catch(() => setRoles([]));
   }, []);
 
   const paletteRef = useRef<number[]>([]);
@@ -289,24 +320,31 @@ export function useBridge(): BridgeState {
   const snapshotRef = useRef<BSV.Snapshot | null>(null);
   snapshotRef.current = snapshot;
   const [undoDepth, setUndoDepth] = useState(0);
-  const undoRef = useRef<{ ops: BSV.ApplyOp[]; label: string } | null>(null);
+  const undoRef = useRef<{ batch: Batch; label: string } | null>(null);
+
+  const size = (b: Batch) => b.ops.length + b.sceneOps.length;
 
   const write = useCallback(
-    (ops: BSV.ApplyOp[], label: string, reverse: { ops: BSV.ApplyOp[]; label: string } | null) =>
+    (batch: Batch, label: string, reverse: { batch: Batch; label: string } | null) =>
       guard(label, async () => {
-        if (ops.length === 0) {
+        const sent = batch.ops.length + batch.sceneOps.length;
+        if (sent === 0) {
           say(`${label} — nothing to write`, 'ok');
           return;
         }
-        const e = await client.request({ type: 'apply', ops });
+        const e = await client.request({
+          type: 'apply',
+          ops: batch.ops,
+          sceneOps: batch.sceneOps,
+        });
         undoRef.current = reverse;
-        setUndoDepth(reverse && reverse.ops.length > 0 ? 1 : 0);
+        setUndoDepth(reverse && size(reverse.batch) > 0 ? 1 : 0);
         // Report what we sent alongside what Live did with it. "0 written of 1
         // sent" is a very different bug from "0 written of 0 sent", and without
         // the sent count the two look identical.
-        const short = e.applied + e.skipped < ops.length;
+        const short = e.applied + e.skipped < sent;
         say(
-          `${label} — ${e.applied} written, ${e.skipped} skipped of ${ops.length} sent` +
+          `${label} — ${e.applied} written, ${e.skipped} skipped of ${sent} sent` +
             ` in ${e.lomMs}ms`,
           short ? 'error' : 'ok',
         );
@@ -320,26 +358,64 @@ export function useBridge(): BridgeState {
     (ops: BSV.ApplyOp[], label = 'apply') => {
       const before = snapshotRef.current?.clips ?? [];
       const back = inverseOps(before, ops);
-      return write(ops, label, { ops: back, label: `undo ${label}` });
+      return write({ ops, sceneOps: [] }, label, {
+        batch: { ops: back, sceneOps: [] },
+        label: `undo ${label}`,
+      });
     },
     [write],
   );
 
+  const applyScenes = useCallback(
+    (sceneOps: BSV.SceneOp[], label = 'scenes') => {
+      const before = sceneFields(snapshotRef.current?.scenes ?? []);
+      const back = inverseSceneOps(before, sceneOps);
+      // Live gives us no way to write "no color", so a scene that had none
+      // can't be put back to having none — inverseSceneOps drops that revert
+      // rather than painting slot 0 over it. Say so instead of letting the undo
+      // button quietly promise more than it delivers.
+      const stuck = countUnrevertableColors(before, sceneOps);
+      if (stuck > 0) {
+        say(
+          `${label} — ${stuck} scene${stuck > 1 ? 's' : ''} had no color; Live has ` +
+            `no writable "no color", so undo can't take it back off`,
+          'info',
+        );
+      }
+      return write({ ops: [], sceneOps }, label, {
+        batch: { ops: [], sceneOps: back },
+        label: `undo ${label}`,
+      });
+    },
+    [say, write],
+  );
+
   const undo = useCallback(() => {
     const u = undoRef.current;
-    if (!u || u.ops.length === 0) return Promise.resolve();
+    if (!u || size(u.batch) === 0) return Promise.resolve();
     // No redo: the entry is consumed either way, so a failed undo can't be
     // replayed into a half-reverted state on a second press.
     undoRef.current = null;
     setUndoDepth(0);
-    return write(u.ops, u.label, null);
+    return write(u.batch, u.label, null);
   }, [write]);
+
+  const saveRoles = useCallback(
+    (next: BSV.Role[]) =>
+      guard('roles', async () => {
+        const e = await client.request({ type: 'saveRoles', roles: next });
+        setRoles(next);
+        say(`roles — ${e.count} saved`, 'ok');
+      }),
+    [client, guard, say],
+  );
 
   return {
     connection,
     lomReady,
     snapshot,
     palette,
+    roles,
     play,
     progress,
     log,
@@ -348,6 +424,8 @@ export function useBridge(): BridgeState {
     refresh,
     extractPalette,
     apply,
+    applyScenes,
+    saveRoles,
     undo,
     launch,
     stop,

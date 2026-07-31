@@ -70,6 +70,7 @@ bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
 bridge/public/                           vite build output
 bridge/SessionBridge.amxd  .maxpat       device + debug patcher
 bridge/palette.json                      derived from Live at runtime
+bridge/roles.json                        your role vocabulary, written by the UI
 ```
 
 A fresh clone needs `npm install && npm run build` before the device exists.
@@ -115,15 +116,20 @@ Things only a run against a real set can answer.
   set's global `clip_trigger_quantization`.
 - **Cross-session clip identity.** Clips have no stable id in the LOM. Addressed
   within a session by `(track, scene)`; persisting our own metadata across restarts
-  is unsolved and lands with song segmentation.
+  is unsolved for clips. **Answered for scenes**, and the answer generalises: put the
+  metadata in the name. A role is a `[chorus]` tag in the scene's own name, which needs
+  no id because the name *is* the record — it survives a restart, travels with the
+  `.als`, and is visible in Live. See [`core/README.md`](core/README.md).
 
 ## Where this is going
 
 MVP is set management: bulk naming and coloring, with clip and scene launching so you can
-hear what you're labelling. Next up is naming and coloring **scenes and tracks**, not just
-clips — `ApplyOp` is clip-addressed today, which means the sweep-and-label loop can play a
-scene but not rename it. After that, roughly in order —
-song segmentation (grouping scenes into songs), role assignment via shape templates,
+hear what you're labelling. Scenes are now writable as well as readable — `apply` carries
+`sceneOps` alongside clip ops — which is what **roles** are built on: a scene is marked
+`[chorus]` in its own name, and one more click colors its clips from the role's palette
+slot. Tracks are still read-only. After that, roughly in order — song segmentation
+(grouping scenes into songs, where a run of roles is the obvious boundary signal), role
+assignment via shape templates rather than one scene at a time,
 a declarative scheme with a pending-changes diff, and lint for drift. Setlist
 reordering is deliberately excluded: the LOM has no scene-move API, so it means
 duplicate-then-delete across every track, and it's the one operation that can damage
