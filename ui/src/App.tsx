@@ -33,6 +33,7 @@ import {
 } from '../../core/src/sceneTitle.js';
 import { compilePattern, DEFAULT_SCENE_PATTERN } from '../../core/src/namePattern.js';
 import { derive } from '../../core/src/derive.js';
+import { allSongKeys, songRows } from '../../core/src/songRows.js';
 import {
   cellsInBlock,
   moveActive,
@@ -138,6 +139,55 @@ export function App() {
     [clips],
   );
 
+  // --- songs -----------------------------------------------------------
+  // The mapping, read back out of the set — see core/src/derive.ts. Nothing is
+  // stored for this: which scene belongs to which song falls out of the names.
+  // It sits up here with the other lookups because `rows` below feeds every
+  // movement and selection helper, exactly as `columns` does.
+
+  const derivation = useMemo(
+    () => derive(snapshot?.scenes ?? [], SCENE_PATTERN),
+    [snapshot],
+  );
+  const [showSongs, setShowSongs] = useState(false);
+
+  // Which songs are folded. Keyed by song rather than by scene index, so it
+  // survives a re-snapshot — every write re-walks the set, and a collapsed
+  // state that reset each time would make the grid unusable during a mapping
+  // pass. Like collapsing a track group, this never writes back to Live.
+  const [collapsedSongs, setCollapsedSongs] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  const layout = useMemo(
+    () => songRows(derivation, collapsedSongs),
+    [collapsedSongs, derivation],
+  );
+
+  /**
+   * Visible scene indexes, the row-wise counterpart of `trackColumns`.
+   *
+   * Everything that moves or selects goes through this rather than through
+   * `sceneCount`, so a collapsed song is invisible to the arrow keys and to
+   * block selection. Without it ⌘↓ would descend into scenes you can't see and
+   * fire them, which is the one thing the ⌘-makes-a-sound rule exists to keep
+   * predictable.
+   */
+  const rows = layout.rows;
+
+  const onToggleSong = useCallback((songKey: string) => {
+    setCollapsedSongs((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(songKey)) next.add(songKey);
+      return next;
+    });
+  }, []);
+
+  const onCollapseAll = useCallback(
+    (all: boolean) => setCollapsedSongs(all ? new Set(allSongKeys(derivation)) : new Set()),
+    [derivation],
+  );
+
   const chooseColumnWidth = useCallback((w: ColumnWidth) => {
     setColumnWidth(w);
     saveColumnWidth(w);
@@ -179,13 +229,13 @@ export function App() {
         return;
       }
       if (m.extend && from?.on === 'clip') {
-        selectCells(cellsInBlock(trackColumns, from, { t, s }, isOccupied), false);
+        selectCells(cellsInBlock(trackColumns, rows, from, { t, s }, isOccupied), false);
         return;
       }
       selectCells([{ t, s }], false);
       goActive({ on: 'clip', t, s });
     },
-    [goActive, isOccupied, launch, selectCells, trackColumns],
+    [goActive, isOccupied, launch, rows, selectCells, trackColumns],
   );
 
   const onScene = useCallback(
@@ -202,6 +252,7 @@ export function App() {
         wide
           ? cellsInBlock(
               trackColumns,
+              rows,
               { t: trackColumns[0]!, s: firstScene },
               { t: trackColumns[trackColumns.length - 1]!, s },
               isOccupied,
@@ -211,15 +262,16 @@ export function App() {
       );
       // Scene selection tracks the same gesture but is kept independently, and
       // spans the whole range rather than only the scenes that held a clip —
-      // an empty scene still has a name to tag.
+      // an empty scene still has a name to tag. It walks the visible rows for
+      // the same reason the block does: a collapsed song between the endpoints
+      // must not be swept up and renamed.
       const lo = Math.min(firstScene, s);
       const hi = Math.max(firstScene, s);
-      const run: number[] = [];
-      for (let i = lo; i <= hi; i++) run.push(i);
+      const run = rows.filter((i) => i >= lo && i <= hi);
       setSelectedScenes((prev) => (m.add ? new Set([...prev, ...run]) : new Set(run)));
       if (!m.extend) goActive({ on: 'scene', s });
     },
-    [goActive, isOccupied, launch, selectCells, trackColumns],
+    [goActive, isOccupied, launch, rows, selectCells, trackColumns],
   );
 
   const onFireScene = useCallback((s: number) => launch({ kind: 'scene', s }), [launch]);
@@ -235,10 +287,8 @@ export function App() {
     [launch],
   );
 
-  const sceneCount = snapshot?.sceneCount ?? 0;
-
   useEffect(() => {
-    if (sceneCount === 0) return;
+    if (rows.length === 0) return;
 
     function onKey(e: KeyboardEvent) {
       if (isTypingInto(e.target)) return;
@@ -261,10 +311,11 @@ export function App() {
       if (d) {
         e.preventDefault(); // or the grid scrolls as well as moving
         // With nothing active yet, the first arrow press places the cell rather
-        // than moving it — otherwise ↓ from nowhere skips scene 1.
+        // than moving it — otherwise ↓ from nowhere skips scene 1. The first
+        // *visible* scene, since scene 0 may be inside a folded song.
         const next = from === null
-          ? ({ on: 'scene', s: 0 } as ActiveCell)
-          : moveActive(trackColumns, sceneCount, from, d);
+          ? ({ on: 'scene', s: rows[0]! } as ActiveCell)
+          : moveActive(trackColumns, rows, from, d);
         goActive(next);
         // ⌘ + arrow is the sweep: one keystroke for "next thing, and let me
         // hear it". Unmodified arrows stay silent, per the rule.
@@ -290,7 +341,7 @@ export function App() {
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [fireActive, goActive, launch, sceneCount, stop, trackColumns, undo]);
+  }, [fireActive, goActive, launch, rows, stop, trackColumns, undo]);
 
   // Keep the active cell on screen. Read out of the DOM rather than threading a
   // ref down: Row is memoized and a fresh ref callback per render would
@@ -342,14 +393,6 @@ export function App() {
     () => [...selectedScenes].sort((a, b) => a - b),
     [selectedScenes],
   );
-
-  // The mapping, read back out of the set — see core/src/derive.ts. Nothing is
-  // stored for this: which scene belongs to which song falls out of the names.
-  const derivation = useMemo(
-    () => derive(snapshot?.scenes ?? [], SCENE_PATTERN),
-    [snapshot],
-  );
-  const [showSongs, setShowSongs] = useState(false);
 
   const pickScenes = useCallback(
     (scenes: number[]) => {
@@ -639,6 +682,9 @@ export function App() {
               columnWidth={columnWidth}
               roleColors={roleColors}
               selectedScenes={selectedScenes}
+              songHeaders={layout.headers}
+              hiddenScenes={layout.hidden}
+              onToggleSong={onToggleSong}
               onClip={onClip}
               onScene={onScene}
               onFireScene={onFireScene}
@@ -710,6 +756,8 @@ export function App() {
           pattern={DEFAULT_SCENE_PATTERN}
           onPick={pickScenes}
           onPickUnmapped={() => pickScenes(derivation.unmapped)}
+          collapsedCount={collapsedSongs.size}
+          onCollapseAll={onCollapseAll}
           onClose={() => setShowSongs(false)}
         />
       )}

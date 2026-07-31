@@ -2,6 +2,7 @@ import { memo, useMemo, type CSSProperties, type MouseEvent } from 'react';
 import { hex, inkOn, legibleOn } from '../../../core/src/color.js';
 import { nameWithoutRole, roleIn, roleKey } from '../../../core/src/roles.js';
 import { headerSpans, type Column } from '../../../core/src/trackColumns.js';
+import type { SongHeader } from '../../../core/src/songRows.js';
 import type { ActiveCell } from '../../../core/src/gridRange.js';
 import { clipKey } from '../lib/selection.js';
 import { isAddModified, isLaunchModified, LAUNCH_KEY } from '../lib/keys.js';
@@ -34,6 +35,11 @@ interface Props {
   /** roleKey → the RGB its chip is painted. Must be a stable identity — see Row. */
   roleColors: Map<string, number>;
   selectedScenes: ReadonlySet<number>;
+  /** Scene index → the song header sitting directly above it. */
+  songHeaders: Map<number, SongHeader>;
+  /** Scenes inside a collapsed song. Their rows aren't rendered. */
+  hiddenScenes: ReadonlySet<number>;
+  onToggleSong: (songKey: string) => void;
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
@@ -232,6 +238,49 @@ const Row = memo(function Row({
   );
 });
 
+/**
+ * A song's header, spanning the whole grid above the first scene of one of its
+ * blocks.
+ *
+ * Memoized on primitives for the same reason `Row` is: there can be a hundred
+ * of these, and they must not all re-render because one song folded. That's why
+ * `SongHeader` in core carries rendered strings rather than the observed arrays.
+ */
+const SongHeaderRow = memo(function SongHeaderRow({
+  header,
+  span,
+  onToggle,
+}: {
+  header: SongHeader;
+  span: number;
+  onToggle: (songKey: string) => void;
+}) {
+  const facts = [header.bpm, header.key].filter((f) => f !== '');
+  return (
+    <tr className={`song-row${header.collapsed ? ' collapsed' : ''}`}>
+      <td colSpan={span} onClick={() => onToggle(header.songKey)}>
+        <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
+        <span className="song">{header.song}</span>
+        {facts.length > 0 && (
+          <span className={`facts${header.clash ? ' clash' : ''}`}>
+            {facts.join(' · ')}
+          </span>
+        )}
+        <span className="count">
+          {header.scenes} scene{header.scenes === 1 ? '' : 's'}
+        </span>
+        {/* Only worth saying when there is more than one — a song in two runs
+            is a reprise, or it's two different songs sharing a name. */}
+        {header.blocks > 1 && (
+          <span className="part">
+            part {header.block} of {header.blocks}
+          </span>
+        )}
+      </td>
+    </tr>
+  );
+});
+
 export function ClipGrid({
   snapshot,
   columns,
@@ -242,6 +291,9 @@ export function ClipGrid({
   columnWidth,
   roleColors,
   selectedScenes,
+  songHeaders,
+  hiddenScenes,
+  onToggleSong,
   onClip,
   onScene,
   onFireScene,
@@ -334,29 +386,49 @@ export function ClipGrid({
           })}
         </tr>
       </thead>
+      {/* Built as a flat list rather than a fragment per scene: a song header
+          is a sibling row, not a wrapper, and wrapping 848 memoized rows in
+          fragments to interleave them would cost more than it reads better. */}
       <tbody>
-        {snapshot.scenes.map((scene) => (
-          <Row
-            key={scene.i}
-            scene={scene}
-            columns={columns}
-            clips={clips}
-            selected={selected}
-            marks={marks.get(scene.i)}
-            active={
-              active === null || active.s !== scene.i
-                ? undefined
-                : active.on === 'scene'
-                  ? 'scene'
-                  : active.t
-            }
-            roleColors={roleColors}
-            sceneSelected={selectedScenes.has(scene.i)}
-            onClip={onClip}
-            onScene={onScene}
-            onFireScene={onFireScene}
-          />
-        ))}
+        {snapshot.scenes.flatMap((scene) => {
+          const header = songHeaders.get(scene.i);
+          const out = [];
+          if (header) {
+            out.push(
+              <SongHeaderRow
+                key={`song-${scene.i}`}
+                header={header}
+                span={columns.length + 1}
+                onToggle={onToggleSong}
+              />,
+            );
+          }
+          if (!hiddenScenes.has(scene.i)) {
+            out.push(
+              <Row
+                key={scene.i}
+                scene={scene}
+                columns={columns}
+                clips={clips}
+                selected={selected}
+                marks={marks.get(scene.i)}
+                active={
+                  active === null || active.s !== scene.i
+                    ? undefined
+                    : active.on === 'scene'
+                      ? 'scene'
+                      : active.t
+                }
+                roleColors={roleColors}
+                sceneSelected={selectedScenes.has(scene.i)}
+                onClip={onClip}
+                onScene={onScene}
+                onFireScene={onFireScene}
+              />,
+            );
+          }
+          return out;
+        })}
       </tbody>
     </table>
   );

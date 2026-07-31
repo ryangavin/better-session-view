@@ -91,6 +91,30 @@ Both paths filter out writes that would change nothing — `colorOps` and the `n
 Recoloring a scene where 22 of 30 clips are already that color writes 8, and the progress
 bar says 8. A count that includes no-op writes is a lie about how much work is happening.
 
+## Song headers, and folding
+
+Each song block gets a **full-width header row** above its first scene, which is what
+actually segments the grid — the rule above the row does more work than the text on it.
+Clicking one folds the song to just that header. A hundred songs fold to a hundred rows,
+which is the point: **Collapse all** in the songs modal turns the whole set into a table
+of contents.
+
+Three things about it are load-bearing:
+
+- **Folding is keyed by song, not by scene index**, so it survives a re-snapshot. Every
+  write re-walks the set, and a fold state that reset each time would make the grid
+  useless during a mapping pass. Like collapsing a track group, it never writes to Live.
+- **`rows` replaces `sceneCount` everywhere movement or selection happens.** `App`
+  computes it from `songRows` and threads it into `moveActive` and `cellsInBlock` exactly
+  as it threads `trackColumns`. Without that, `⌘↓` walks into folded scenes and fires
+  them — see [`core/README.md`](../core/README.md).
+- **`SongHeaderRow` is memoized on primitives**, for the same reason `Row` is. There can
+  be a hundred of them and they must not all re-render because one song folded.
+
+A song in more than one block says `part 2 of 2` rather than being silently merged, and
+a song whose scenes disagree about a fact shows the clash in amber. Both are the grid
+telling you something the library will later have to arbitrate.
+
 ## Songs, and the mapping read back
 
 The **Songs** and **Unmapped** tiles in the stats bar are derived, not stored — every

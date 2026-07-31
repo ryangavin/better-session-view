@@ -8,6 +8,9 @@ interface Props {
   onPick: (scenes: number[]) => void;
   /** Select the scenes the pattern couldn't read. */
   onPickUnmapped: () => void;
+  /** How many songs are folded in the grid right now. */
+  collapsedCount: number;
+  onCollapseAll: (all: boolean) => void;
   onClose: () => void;
 }
 
@@ -42,6 +45,8 @@ export function SongsModal({
   pattern,
   onPick,
   onPickUnmapped,
+  collapsedCount,
+  onCollapseAll,
   onClose,
 }: Props) {
   useEffect(() => {
@@ -113,12 +118,21 @@ export function SongsModal({
         )}
 
         <div className="modal-actions">
+          {/* Folding everything is how a 100-song set becomes navigable, so it
+              belongs next to the list rather than buried in the grid. */}
+          <button
+            type="button"
+            disabled={songs.length === 0}
+            onClick={() => onCollapseAll(collapsedCount < songs.length)}
+          >
+            {collapsedCount < songs.length ? 'Collapse all' : 'Expand all'}
+          </button>
           {unmapped.length > 0 ? (
             <button type="button" onClick={onPickUnmapped}>
               Select {unmapped.length} unmapped scene{unmapped.length === 1 ? '' : 's'}
             </button>
           ) : (
-            <div className="hint">Every scene matched the pattern.</div>
+            <div className="hint">Every scene matched.</div>
           )}
           <div className="spacer" />
           <button type="button" className="primary" onClick={onClose}>

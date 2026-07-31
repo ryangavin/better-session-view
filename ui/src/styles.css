@@ -417,6 +417,60 @@ td.scene.picked {
   box-shadow: inset 2px 0 0 var(--amber);
 }
 
+/* --- song header rows --------------------------------------------- */
+
+/* One per song *block*, spanning the whole grid. The rule above it is what
+   actually segments the set visually — the text is secondary. */
+tr.song-row td {
+  padding: 7px 8px 5px;
+  border-top: 1px solid var(--bd3);
+  background: var(--rail);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+tr.song-row:hover td {
+  background: #141418;
+}
+tr.song-row .fold {
+  display: inline-block;
+  width: 14px;
+  color: var(--dim2);
+  font-size: 9px;
+}
+tr.song-row .song {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+/* Facts, count and part all read as annotations on the name, never as the
+   name — hence mono, small and dim against the sans-serif title. */
+tr.song-row .facts,
+tr.song-row .count,
+tr.song-row .part {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--dim);
+  margin-left: 10px;
+}
+tr.song-row .facts.clash {
+  color: var(--amber);
+}
+tr.song-row .count,
+tr.song-row .part {
+  color: var(--dim2);
+}
+/* Folded: the header is standing in for its scenes, so it says so with a left
+   edge rather than by changing the row's whole treatment. */
+tr.song-row.collapsed td {
+  box-shadow: inset 3px 0 0 var(--dim2);
+}
+tr.song-row.collapsed .song {
+  color: var(--fg2);
+}
+
 /* Scene launch. The only plain-click control in the app that makes a sound —
    allowed because firing is the button's whole job, and scene launching is the
    primary gesture so it has to be visible rather than a modifier away. Sized to
