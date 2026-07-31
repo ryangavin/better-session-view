@@ -13,6 +13,7 @@ type Listener = (event: BridgeEvent) => void;
 const TERMINAL = {
   snapshot: 'snapshot',
   apply: 'applied',
+  move: 'moved',
   palette: 'palette',
   saveRoles: 'rolesSaved',
   ping: 'pong',

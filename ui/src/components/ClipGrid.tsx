@@ -42,6 +42,17 @@ interface Props {
   onToggleSong: (songKey: string) => void;
   /** Select every scene of a song, across all its blocks. */
   onPickSong: (songKey: string) => void;
+  /** First scene of the block being dragged, or -1. A primitive, so it can
+   *  reach the memoized header row without re-rendering all of them. */
+  dragFrom: number;
+  /** Where the drop would land, as a gap in scene numbering, or -1. */
+  dropAt: number;
+  /** What the pending move costs, for the indicator. */
+  dropNote: string;
+  onSongDragStart: (from: number, to: number) => void;
+  onSongDragOver: (from: number, to: number, below: boolean) => void;
+  onSongDrop: () => void;
+  onSongDragEnd: () => void;
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
@@ -248,24 +259,96 @@ const Row = memo(function Row({
  * of these, and they must not all re-render because one song folded. That's why
  * `SongHeader` in core carries rendered strings rather than the observed arrays.
  */
+/**
+ * Which edge of this header the drop indicator belongs on, if either.
+ *
+ * A gap between two adjacent songs is addressable from both sides — song A
+ * ending at 5 and song B starting at 6 are both "gap 6" — so this resolves
+ * toward `above` and lets `below` render only where no header begins. That's the
+ * tail of the set, which is the one gap `above` can't express.
+ */
+function dropEdgeFor(
+  header: SongHeader,
+  dropAt: number,
+  headers: Map<number, SongHeader>,
+): '' | 'above' | 'below' {
+  if (dropAt < 0) return '';
+  if (dropAt === header.from) return 'above';
+  if (dropAt === header.to + 1 && !headers.has(dropAt)) return 'below';
+  return '';
+}
+
 const SongHeaderRow = memo(function SongHeaderRow({
   header,
   span,
+  dragging,
+  dropEdge,
+  dropNote,
   onToggle,
   onPickSong,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   header: SongHeader;
   span: number;
+  /** This block is the one being dragged. */
+  dragging: boolean;
+  /** Which edge of this header the drop indicator sits on, if any. */
+  dropEdge: '' | 'above' | 'below';
+  /** What the drop would cost, shown on the indicator. `''` when not the target. */
+  dropNote: string;
   onToggle: (songKey: string) => void;
   onPickSong: (songKey: string) => void;
+  onDragStart: (from: number, to: number) => void;
+  onDragOver: (from: number, to: number, below: boolean) => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
 }) {
   const facts = [header.bpm, header.key].filter((f) => f !== '');
+  const cls = [
+    'song-row',
+    header.collapsed ? 'collapsed' : '',
+    dragging ? 'dragging' : '',
+    dropEdge ? `drop-${dropEdge}` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   return (
-    <tr className={`song-row${header.collapsed ? ' collapsed' : ''}`}>
+    <tr
+      className={cls}
+      // Which half of the row the pointer is in decides whether the block lands
+      // above or below this song. A row is tall enough for that to be a
+      // comfortable target, and it's the idiom every list-reorder UI uses.
+      onDragOver={(e) => {
+        e.preventDefault();
+        // Without this the cursor shows "copy" and, in some browsers, the drop
+        // never fires at all.
+        e.dataTransfer.dropEffect = 'move';
+        const box = e.currentTarget.getBoundingClientRect();
+        onDragOver(header.from, header.to, e.clientY > box.top + box.height / 2);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+    >
       {/* The row folds; the title selects. Two jobs on one row, and the title
           gets the smaller target because folding is the frequent navigation
           gesture while "work on this song" is the deliberate one. */}
-      <td colSpan={span} onClick={() => onToggle(header.songKey)}>
+      <td
+        colSpan={span}
+        draggable
+        onClick={() => onToggle(header.songKey)}
+        onDragStart={(e) => {
+          // Firefox refuses to start a drag unless something is set.
+          e.dataTransfer.setData('text/plain', header.song);
+          e.dataTransfer.effectAllowed = 'move';
+          onDragStart(header.from, header.to);
+        }}
+        onDragEnd={onDragEnd}
+      >
         <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
         <button
           type="button"
@@ -293,6 +376,10 @@ const SongHeaderRow = memo(function SongHeaderRow({
             part {header.block} of {header.blocks}
           </span>
         )}
+        {/* The cost, on the indicator itself. This move can't be undone from
+            here, so what it's about to do belongs in front of you while your
+            finger is still on the mouse — not in the log afterwards. */}
+        {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
       </td>
     </tr>
   );
@@ -312,6 +399,13 @@ export function ClipGrid({
   hiddenScenes,
   onToggleSong,
   onPickSong,
+  dragFrom,
+  dropAt,
+  dropNote,
+  onSongDragStart,
+  onSongDragOver,
+  onSongDrop,
+  onSongDragEnd,
   onClip,
   onScene,
   onFireScene,
@@ -417,8 +511,25 @@ export function ClipGrid({
                 key={`song-${scene.i}`}
                 header={header}
                 span={columns.length + 1}
+                dragging={dragFrom === header.from}
+                // One gap, one indicator. Deriving the edge here rather than
+                // passing an object keeps every prop on this memoized row a
+                // primitive — an object would re-render all hundred headers on
+                // every mouse move during a drag.
+                //
+                // Adjacent songs make the same gap addressable twice: song A
+                // ending at 5 and song B starting at 6 both answer to `6`, as
+                // "below A" and "above B". Resolved toward *above*, so `below`
+                // only renders where no header begins — which is the tail of the
+                // set, the one place `above` can't reach.
+                dropEdge={dropEdgeFor(header, dropAt, songHeaders)}
+                dropNote={dropEdgeFor(header, dropAt, songHeaders) ? dropNote : ''}
                 onToggle={onToggleSong}
                 onPickSong={onPickSong}
+                onDragStart={onSongDragStart}
+                onDragOver={onSongDragOver}
+                onDrop={onSongDrop}
+                onDragEnd={onSongDragEnd}
               />,
             );
           }

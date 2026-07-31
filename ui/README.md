@@ -149,6 +149,50 @@ A song in more than one block says `part 2 of 2` rather than being silently merg
 a song whose scenes disagree about a fact shows the clash in amber. Both are the grid
 telling you something the library will later have to arbitrate.
 
+## Rearranging songs
+
+**Drag a song header to move that whole run of scenes.** An amber line shows where it
+lands, and the line carries the cost — `10 scenes · 84 clips copied · 10 deleted`.
+
+This is the only gesture in the app that can destroy work, and four decisions follow from
+that:
+
+- **A drag moves one block, not one song.** A song is a label rather than a range, so it
+  can appear in several runs, each with its own header — dragging "part 2 of 2" moves the
+  part you grabbed. Gathering both runs is something `planSceneMove` supports and
+  something you can do by dragging one next to the other; doing it as a side effect of
+  grabbing one header would move sixty scenes nobody pointed at.
+- **The cost is on the drop line, not in the log.** There's no undo for this on our side,
+  so what's about to happen has to be readable while the mouse button is still down. A log
+  line afterwards is too late to be a decision.
+- **Dropping a song back where it already is does nothing at all** — `planSceneMove`
+  returns `null` rather than an empty plan, and the indicator doesn't draw. That's how most
+  drags end, and the cheapest way to never delete a scene by accident is to not run.
+- **The drop clears the selection and the undo entry.** Every `(track, scene)` address
+  just came to mean a different row, so keeping either would leave the rail offering to
+  rename scenes you never picked.
+
+A folded song is draggable, which is the point of folding: **Fold songs**, then reorder a
+hundred-song set as a table of contents.
+
+Two things in here are load-bearing for performance, and they're the same trap as `Row`:
+
+- **`onSongDrop` reads the plan from a ref.** Closing over it would give the callback a new
+  identity every time the drop gap changes — every time the pointer crosses a boundary —
+  and re-render all hundred headers mid-drag.
+- **`dragover` sets state through an identity bail-out.** It fires continuously for the
+  whole drag; returning `prev` unchanged when the gap hasn't moved lets React skip the
+  render entirely.
+
+The drop edge is resolved *toward `above`*, because a gap between two adjacent songs is
+addressable from both sides — a song ending at scene 5 and the next starting at 6 are both
+"gap 6". `below` therefore only renders where no header begins, which is the tail of the
+set and the one gap `above` can't express.
+
+What it costs in Live, and the four passes it runs, is in
+[`bridge/README.md`](../bridge/README.md) under *Reordering scenes*. **It is unverified
+against a real set.**
+
 ## Songs, and the mapping read back
 
 The **Songs** and **Unmapped** tiles in the stats bar are derived, not stored — every
@@ -245,7 +289,8 @@ does, which is rare.
 
 ## Undo is ours to provide
 
-`⌘Z`, or the button. One level, and there is no redo.
+`⌘Z`, or the button. One level, and there is no redo. **Reordering scenes is outside it
+entirely** — see below.
 
 **LOM writes don't reach Live's own history**, so Live's ⌘Z will not bring a rename back —
 this is the only way back that exists. `useBridge` captures the reverse batch from the
@@ -259,6 +304,14 @@ undo can't be replayed into a half-reverted state by pressing ⌘Z twice.
 
 `⌘Z` doesn't conflict with the ⌘-makes-a-sound rule below — it isn't a grid gesture, and
 it's guarded by `isTypingInto` so the rename field keeps its own undo.
+
+**Moving scenes has no undo here, and can't.** `inverseOps` works by reading "before" out
+of the snapshot, which holds every clip's name and color — and nothing that could rebuild a
+deleted scene's clips. So `moveScenes` *clears* the undo entry rather than replacing it:
+every scene index means something different afterwards, and a ⌘Z that wrote clip names
+against the wrong rows would be worse than no undo at all. The move asks Live to group
+itself into one step in Live's *own* history instead, and the log says whether Live agreed,
+because that mechanism is undocumented and unverified.
 
 ## Palette
 
@@ -315,6 +368,7 @@ someone reached for a right-click. `keys.ts` owns that decision.
 |---|---|---|
 | clip cell | click selects · ⇧ extends a block · ⌥ toggles | ⌘-click **fires the clip** |
 | scene name | click selects the row · ⇧ extends over scenes | ⌘-click **fires the scene** |
+| song header | click folds · title selects · **drag reorders** | — |
 | track header | click a group to collapse | ⌘-click **stops that track** |
 | keys | `↑↓←→` move the active cell | `⌘↑ ⌘↓` **move and fire** · `⌘⏎` fire |
 | | `⌘Z` undo the last write | `esc` stop all clips · `space` transport |

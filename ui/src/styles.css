@@ -483,6 +483,51 @@ tr.song-row.collapsed .song {
   color: var(--fg2);
 }
 
+/* Rearranging songs.
+   ------------------------------------------------------------------------
+   The header is the drag handle for its whole block. This is the only gesture
+   in the app that can destroy work, so it's the one place styling has a job
+   beyond looking right: the drop line has to be unmistakable about *where* the
+   scenes are going to land, and the cost has to be readable without moving your
+   eyes off the line. */
+tr.song-row td {
+  /* Explicit, because a draggable element defaults to the text I-beam in some
+     browsers even under `user-select: none`. */
+  cursor: grab;
+}
+tr.song-row.dragging td {
+  cursor: grabbing;
+  opacity: 0.4;
+}
+
+/* The drop line is an inset shadow rather than a border, so it can't change the
+   row's height — the two sticky header rows above depend on the grid's row
+   metrics staying put, and a 2px border appearing mid-drag would shift every row
+   below it. */
+tr.song-row.drop-above td {
+  box-shadow: inset 0 2px 0 var(--amber);
+}
+tr.song-row.drop-below td {
+  box-shadow: inset 0 -2px 0 var(--amber);
+}
+/* A folded song already spends its left edge on saying so; keep both. */
+tr.song-row.collapsed.drop-above td {
+  box-shadow: inset 0 2px 0 var(--amber), inset 3px 0 0 var(--dim2);
+}
+tr.song-row.collapsed.drop-below td {
+  box-shadow: inset 0 -2px 0 var(--amber), inset 3px 0 0 var(--dim2);
+}
+
+/* What the drop is about to do, on the line itself. There's no undo for this in
+   our app, so it belongs in front of you while the mouse button is still down —
+   a log line afterwards is too late to be a decision. */
+tr.song-row .drop-note {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--amber);
+  margin-left: 10px;
+}
+
 /* Scene launch. The only plain-click control in the app that makes a sound —
    allowed because firing is the button's whole job, and scene launching is the
    primary gesture so it has to be visible rather than a modifier away. Sized to

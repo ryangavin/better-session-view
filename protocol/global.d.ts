@@ -178,6 +178,43 @@ declare namespace BSV {
     tempo?: number;
   }
 
+  /**
+   * One moved scene, as `core/src/sceneMove.ts` planned it.
+   *
+   * Both indexes are **post-insert**: they already account for the blank scenes
+   * created at the destination, because inserting them renumbers everything at
+   * or after it. Don't recompute them on the far side.
+   */
+  interface MoveStep {
+    from: number;
+    to: number;
+    /** Tracks holding a clip at `from`. Only these get a `duplicate_clip_to`. */
+    tracks: number[];
+  }
+
+  /**
+   * Reordering scenes — the only structural write in the protocol, and the only
+   * one our own undo cannot reverse.
+   *
+   * Coarse-grained like everything else: one message per *move*, not per scene
+   * and certainly not per clip. A twelve-scene song across twenty-four tracks is
+   * one message describing up to 288 clip copies.
+   *
+   * The whole plan is computed in `core/` and travels as data, so `lom.ts`
+   * executes it without doing arithmetic of its own — the arithmetic is the part
+   * that can delete the wrong scenes, and it belongs where there are tests.
+   */
+  interface MovePlan {
+    /** Scene indexes to create blanks at, ascending. */
+    create: number[];
+    steps: MoveStep[];
+    /**
+     * Scene indexes to delete, **descending** — each deletion renumbers
+     * everything below it, so the order is load-bearing rather than cosmetic.
+     */
+    remove: number[];
+  }
+
   /** A role a scene can be marked with, and the palette slot it colors with. */
   interface Role {
     name: string;
@@ -206,6 +243,14 @@ declare namespace BSV {
      * halves that can succeed independently.
      */
     | { id?: number; type: 'apply'; ops: ApplyOp[]; sceneOps?: SceneOp[] }
+    /**
+     * Reorder scenes. Deliberately **not** a variant of `apply`: `apply` writes
+     * fields on things that already exist and is fully reversible from a
+     * snapshot, while this creates and destroys scenes and is not. Sharing the
+     * message would let a caller reach the destructive path by filling in one
+     * more optional field.
+     */
+    | { id?: number; type: 'move'; plan: MovePlan }
     | { id?: number; type: 'palette' }
     /**
      * Replace the whole role vocabulary. Coarse-grained like everything else:
@@ -241,6 +286,28 @@ declare namespace BSV {
         applied: number;
         skipped: number;
         total: number;
+      }
+    /**
+     * A move finished. Carries what it did rather than an `ok`, because the
+     * caller has no other way to find out — the scenes it names no longer exist
+     * at the indexes it sent, and only a re-snapshot can say what's there now.
+     */
+    | {
+        type: 'moved';
+        id?: number;
+        lomMs: number;
+        /** Scenes created, clips copied, scenes deleted. */
+        created: number;
+        copied: number;
+        removed: number;
+        /**
+         * Slots that raised and were skipped. **Non-zero means the set is not
+         * what was planned** — some clips didn't make it across, and the
+         * originals are already gone.
+         */
+        failed: number;
+        /** Whether Live accepted `begin_undo_step` — see `bridge/LOM.md`. */
+        undoStep: boolean;
       }
     | { type: 'palette'; id?: number; count: number; colors: number[] }
     | { type: 'paletteUpdated' }

@@ -7,6 +7,7 @@ this project are non-obvious and expensive to rediscover.
 | touching | read |
 |---|---|
 | anything involving Live | [`bridge/README.md`](bridge/README.md) — the LOM gotchas section especially |
+| "does Live expose X?" | [`bridge/LOM.md`](bridge/LOM.md) — **look it up, don't guess.** Includes where the published docs are wrong |
 | a wire message | [`protocol/README.md`](protocol/README.md) |
 | domain logic | [`core/README.md`](core/README.md) |
 | components, the client | [`ui/README.md`](ui/README.md) |

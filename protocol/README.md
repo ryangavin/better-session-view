@@ -48,6 +48,7 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 |---|---|
 | `snapshot` | walk the whole set |
 | `apply` `{ ops, sceneOps? }` | bulk write — clip slots and/or scenes |
+| `move` `{ plan }` | reorder scenes. **Structural, and not reversible** |
 | `palette` | derive and cache Live's palette |
 | `saveRoles` `{ roles }` | replace the role vocabulary |
 | `observe` `{ on }` | structural change notifications |
@@ -60,10 +61,11 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 |---|---|
 | `snapshot` | `snapshot` |
 | `applied` | `apply` |
+| `moved` | `move` |
 | `palette` | `palette` |
 | `rolesSaved` | `saveRoles` |
 | `pong` | `ping` |
-| `progress` | — streams during `apply` |
+| `progress` | — streams during `apply` and `move` |
 | `status` | — connection / LOM readiness |
 | `changed` | — an observer fired |
 | `playState` | — a play-state observer fired |
@@ -103,6 +105,25 @@ somewhere else — the color rule above differs between them. Keeping them apart
 stops `lom.ts` sending one down the other's path. They travel in one `apply` message so
 a write that tags scenes and recolors their clips stays a single operation with one
 progress count and one reverse batch.
+
+**`move` is separate from `apply` because it destroys things.** It would have fitted as
+one more optional field on `apply` — and that's precisely the argument against it. `apply`
+writes fields on things that already exist and is fully reversible from a snapshot; `move`
+creates and deletes scenes and is reversible from nothing. Two paths that differ that
+much should not be one typo apart.
+
+The whole plan is computed in `core/` and travels as data, so `lom.ts` executes it without
+arithmetic of its own. The arithmetic is the part that can delete the wrong scenes, and it
+belongs where there are tests. `MoveStep`'s indexes are **post-insert** — they already
+account for the blanks created at the destination — so don't recompute them on the far
+side. And `MovePlan.remove` is **descending**, because each deletion renumbers everything
+below it; that ordering is load-bearing rather than cosmetic.
+
+`moved` carries counts rather than an `ok` because the caller has no other way to find
+out what happened: the scenes it named no longer exist at the indexes it sent. A non-zero
+`failed` means the set is not what was planned — some clips didn't make it across, and the
+bridge deliberately left the originals in place rather than deleting on top of a partial
+copy.
 
 **"Absent" gets its own value, never a plausible default.** `Scene.colorIndex` is -1
 when the scene has no color, because Live documents it as nullable and slot 0 is a real

@@ -6,6 +6,14 @@ import {
   inverseSceneOps,
   sceneFields,
 } from '../../../core/src/roles.js';
+import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
+
+/**
+ * The part of a plan that goes on the wire. `SceneMovePlan` also carries counts
+ * and final positions, which are for the UI to talk about and nothing the bridge
+ * needs to be told.
+ */
+type MovePlanFor = Pick<SceneMovePlan, 'create' | 'steps' | 'remove'>;
 
 /** Scenes in the full-size set we're actually building for. */
 const TARGET_SCENES = 848;
@@ -113,6 +121,12 @@ export interface BridgeState {
   apply: (ops: BSV.ApplyOp[], label?: string) => Promise<void>;
   /** Scene-addressed writes — role tags and scene colors. */
   applyScenes: (sceneOps: BSV.SceneOp[], label?: string) => Promise<void>;
+  /**
+   * Reorder scenes. **The one write with no undo of ours** — it creates and
+   * deletes scenes, and a snapshot can't rebuild a deleted one. Clears the undo
+   * entry rather than arming it.
+   */
+  moveScenes: (plan: MovePlanFor, label: string) => Promise<void>;
   saveRoles: (roles: BSV.Role[]) => Promise<void>;
   undo: () => Promise<void>;
   /** Fire something. No await: the answer you want is `play` changing. */
@@ -412,6 +426,66 @@ export function useBridge(): BridgeState {
     [say, write],
   );
 
+  /**
+   * Reorder scenes.
+   *
+   * **Deliberately not routed through `write`**, and the difference is the whole
+   * point. `write` captures a reverse batch and arms the undo button; there is
+   * no reverse batch for this. `inverseOps` reads "before" out of the snapshot,
+   * which works because a snapshot holds every clip's name and color — it holds
+   * nothing that can rebuild a deleted scene's clips.
+   *
+   * So this **clears** the undo entry rather than replacing it. Leaving the
+   * previous one armed would offer a ⌘Z that writes clip names against scene
+   * indexes that no longer mean what they meant when it was captured, which is
+   * a worse outcome than having no undo at all.
+   *
+   * The way back is Live's own history, if `begin_undo_step` took — which is
+   * unverified, so the log line says which of the two happened rather than
+   * assuming.
+   */
+  const moveScenes = useCallback(
+    (plan: MovePlanFor, label: string) =>
+      guard(label, async () => {
+        undoRef.current = null;
+        setUndoDepth(0);
+
+        const e = await client.request({
+          type: 'move',
+          plan: { create: plan.create, steps: plan.steps, remove: plan.remove },
+        });
+
+        if (e.failed > 0) {
+          // The originals were kept — lom.ts stops before the delete pass if any
+          // copy failed. Say that plainly: the set now holds both copies, and
+          // that's a mess the user has to resolve, not something to paper over.
+          say(
+            `${label} — ${e.failed} operation${e.failed > 1 ? 's' : ''} failed, so the ` +
+              `originals were NOT deleted. The set now holds both copies; check the ` +
+              `Max window and tidy up in Live.`,
+            'error',
+          );
+        } else {
+          say(
+            `${label} — ${e.removed} scene${e.removed === 1 ? '' : 's'} moved, ` +
+              `${e.copied} clip${e.copied === 1 ? '' : 's'} copied in ${e.lomMs}ms`,
+            'ok',
+          );
+        }
+        say(
+          e.undoStep
+            ? 'this move is one step in Live\'s own undo history — ⌘Z in Live, not here'
+            : 'Live would not group this move for undo, so there is no way back — ' +
+              'our ⌘Z cannot rebuild deleted scenes',
+          e.undoStep ? 'info' : 'error',
+        );
+
+        const s = await client.request({ type: 'snapshot' });
+        setSnapshot(s.data);
+      }),
+    [client, guard, say],
+  );
+
   const undo = useCallback(() => {
     const u = undoRef.current;
     if (!u || size(u.batch) === 0) return Promise.resolve();
@@ -447,6 +521,7 @@ export function useBridge(): BridgeState {
     extractPalette,
     apply,
     applyScenes,
+    moveScenes,
     saveRoles,
     undo,
     launch,
