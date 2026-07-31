@@ -38,6 +38,23 @@ body {
   font-family: var(--sans);
   height: 100vh;
   overflow: hidden;
+
+  /* The whole app is a click surface, not a document. ⇧-click extends a block
+     and ⇧ is also the browser's own "extend the text selection", so without
+     this every range gesture drags a blue smear across the scene names it just
+     selected. Nothing here is prose; the two places that are get it back below. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* The exceptions, both because you'd want to copy out of them: fields you type
+   into, and the log — an error message you can't select is one you retype by
+   hand into a bug report. */
+input,
+textarea,
+footer {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 #root {
@@ -466,7 +483,6 @@ td.cell {
   text-overflow: ellipsis;
   color: transparent;
   border: 1px solid transparent;
-  user-select: none;
 }
 td.cell.sel {
   border-color: var(--amber);
@@ -554,6 +570,39 @@ input[type='text']:focus {
 }
 .sw.on {
   border: 2px solid var(--amber);
+}
+
+/* --- scene title -------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0; /* or a flex child refuses to shrink below its input's width */
+}
+.field > span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--dim2);
+  text-transform: uppercase;
+}
+.field.bad input[type='text'] {
+  border-color: var(--red);
+}
+/* bpm and key are short and always set together, so they share a row. */
+.field-row {
+  display: flex;
+  gap: 8px;
+}
+.field-row .field {
+  flex: 1;
+}
+/* "mixed" is a statement about the selection, not a value — it must not read
+   as text sitting in the field waiting to be written. */
+.field input::placeholder {
+  color: var(--dim2);
+  font-style: italic;
 }
 
 /* --- roles -------------------------------------------------------- */

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClipGrid, type CellClick } from './components/ClipGrid.js';
 import { Inspector } from './components/Inspector.js';
-import { RolesPanel } from './components/RolesPanel.js';
+import { ScenePanel } from './components/ScenePanel.js';
 import { useBridge } from './lib/useBridge.js';
 import { clipKey, parseClipKey, toggle } from './lib/selection.js';
 import { isLaunchModified, isTypingInto, LAUNCH_KEY } from './lib/keys.js';
@@ -24,6 +24,12 @@ import {
   sceneColorOps,
   sceneFields,
 } from '../../core/src/roles.js';
+import {
+  commonTitle,
+  titleOf,
+  titleOps,
+  type TitlePatch,
+} from '../../core/src/sceneTitle.js';
 import {
   cellsInBlock,
   moveActive,
@@ -325,6 +331,45 @@ export function App() {
     [selectedScenes],
   );
 
+  // --- scene titles ----------------------------------------------------
+  // `{song} {bpm} {key}`, everything in the name before the role tag.
+
+  /** Which title fields have been edited — see TitlePatch in core. */
+  const [titlePatch, setTitlePatch] = useState<TitlePatch>({});
+
+  // Reset the edits when the selection changes, or a song name typed for one
+  // song would sit in the field waiting to be applied to the next one.
+  const selectionKey = sceneList.join(',');
+  useEffect(() => {
+    setTitlePatch({});
+  }, [selectionKey]);
+
+  /** What the selected scenes agree on, per field. Null where they differ. */
+  const commonFields = useMemo(
+    () => commonTitle(sceneList.map((s) => titleOf(sceneNames.get(s) ?? ''))),
+    [sceneList, sceneNames],
+  );
+
+  const sceneNameOps = useMemo(
+    () => titleOps(scenesForOps, sceneList, titlePatch),
+    [sceneList, scenesForOps, titlePatch],
+  );
+
+  /** The first selected scene as it would read after the pending edit. */
+  const titlePreview = useMemo(() => {
+    const first = sceneList[0];
+    if (first === undefined) return null;
+    // titleOps drops scenes it wouldn't change, so fall back to the current
+    // name — a preview that goes blank when the edit is a no-op reads as if
+    // the rename would blank the scene.
+    return sceneNameOps.find((op) => op.s === first)?.name ?? sceneNames.get(first) ?? '';
+  }, [sceneList, sceneNameOps, sceneNames]);
+
+  const onRenameScenes = useCallback(
+    () => void applyScenes(sceneNameOps, 'rename scenes'),
+    [applyScenes, sceneNameOps],
+  );
+
   const clipsByScene = useMemo(() => {
     const m = new Map<number, BSV.Clip[]>();
     for (const c of snapshot?.clips ?? []) {
@@ -559,15 +604,22 @@ export function App() {
           )}
         </div>
 
-        {/* Roles above color: tagging a scene and pressing its role's color is
-            the two-click path this panel exists for, and the swatch grid below
-            is the manual fallback for everything that doesn't fit a role. */}
+        {/* Scenes above clips: naming a song and tagging its roles is the pass
+            you make first, and pressing the role's color is the two-click path
+            this panel exists for. The swatch grid and clip rename below are the
+            manual fallback for everything a role doesn't cover. */}
         <aside>
-          <RolesPanel
+          <ScenePanel
             vocabulary={vocabulary}
             palette={bridge.palette}
             inUse={inUseKeys}
             sceneCount={selectedScenes.size}
+            common={commonFields}
+            patch={titlePatch}
+            onPatch={setTitlePatch}
+            titleCount={sceneNameOps.length}
+            titlePreview={selectedScenes.size === 0 ? null : titlePreview}
+            onRenameScenes={onRenameScenes}
             currentRole={currentRole}
             mixed={mixed}
             clipCount={roleClipOps.length}

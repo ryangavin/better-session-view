@@ -11,7 +11,7 @@ src/styles.css        design tokens + all styling
 src/components/
   ClipGrid.tsx        scenes × tracks, memoized per row
   Inspector.tsx       rename pattern, swatches, apply
-  RolesPanel.tsx      role chips, role→color actions, vocabulary manager
+  ScenePanel.tsx      song/bpm/key fields, role chips, role→color, role manager
 src/lib/
   client.ts           typed WebSocket client, framework-free
   useBridge.ts        React hook over the client
@@ -90,11 +90,41 @@ Both paths filter out writes that would change nothing — `colorOps` and the `n
 Recoloring a scene where 22 of 30 clips are already that color writes 8, and the progress
 bar says 8. A count that includes no-op writes is a lie about how much work is happening.
 
-## Roles
+## Nothing is selectable text
 
-The rail is `<aside>` in `App`, holding `RolesPanel` above `Inspector` — roles first
-because tagging a scene and pressing its role's color is the two-click path the panel
-exists for, and the swatch grid below is the fallback for everything a role doesn't cover.
+`body` carries `user-select: none`. The whole app is a click surface, not a document, and
+⇧ is both "extend the block" here and "extend the text selection" in the browser — so
+without it every range gesture drags a blue smear across the scene names it just selected.
+
+Two exceptions, both because you'd want to copy out of them: fields you type into, and
+the footer log. An error message you can't select is one you retype by hand.
+
+## Scenes: title and role
+
+The rail is `<aside>` in `App`, holding `ScenePanel` above `Inspector` — scenes first,
+because naming a song and tagging its roles is the pass you make before touching
+individual clips, and the swatch grid below is the fallback for everything a role
+doesn't cover.
+
+A scene name is `{song} {bpm} {key} [role]`. The panel edits both halves and they
+**commit differently, on purpose**: a role writes on click, a title edit needs the
+button. See below for why.
+
+### The title fields
+
+Three fields, and the rule is **a field you leave alone stays as it is on each scene; a
+field you clear is cleared.** That's what makes "select two songs, set one shared key"
+work without flattening their different names. It can't come from the value alone —
+blank means "these scenes disagree" on arrival and "delete this part" once you've
+deleted it — so `App` holds a `TitlePatch` of which fields have been *touched*, reset
+whenever the selection changes. The preview line is what makes the rule legible; keep it.
+
+Fields prefill from `commonTitle`, which returns `null` where the selection disagrees, so
+a mixed field shows a `mixed` placeholder rather than one scene's answer. `bpm` and `key`
+are validated inline and block the button, because a bad key is a rename you'd have to
+undo across a whole song.
+
+### Roles
 
 The gesture is **click a scene name, click a role, click Color clips.** The role is
 written into the scene's own name as `[role]` (see [`core/README.md`](../core/README.md)
@@ -105,7 +135,8 @@ into a colored chip — so Live holds `Nightfall [chorus]` and we render
 **Clicking a role writes immediately, which only looks like it breaks the rule above.**
 That rule exists because a rename overwrites a name you can no longer see. A role tag is
 additive — it goes on the end, the rest of the name is untouched — and the result is
-visible as a chip the moment it lands. There's nothing to preview.
+visible as a chip the moment it lands. There's nothing to preview. A *title* edit does
+overwrite, which is why that half keeps its preview and its button.
 
 **Scene selection is separate state from clip selection**, and can't be derived from it: a
 scene with no clips contributes no cells and still needs to be assignable a role. It's set

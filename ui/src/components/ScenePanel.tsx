@@ -6,6 +6,7 @@ import {
   roleKey,
   type Role,
 } from '../../../core/src/roles.js';
+import { isBpm, isKey, type TitlePatch } from '../../../core/src/sceneTitle.js';
 
 interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */
@@ -15,6 +16,27 @@ interface Props {
   inUse: ReadonlySet<string>;
   /** How many scenes the scene-name column has selected. */
   sceneCount: number;
+  /**
+   * What the selected scenes agree on, per field; `null` where they differ.
+   * The title fields prefill from this.
+   */
+  common: { song: string | null; bpm: string | null; key: string | null };
+  /**
+   * Which title fields have been edited.
+   *
+   * A field that's absent here is left alone on every scene; a field present
+   * and empty clears that part. The distinction can't come from the value
+   * alone — blank means "these scenes disagree, don't flatten them" on arrival
+   * and "delete this part" once you've deleted it — so it's tracked, in `App`,
+   * and reset whenever the selection changes.
+   */
+  patch: TitlePatch;
+  onPatch: (patch: TitlePatch) => void;
+  /** Scenes the pending title edit would actually rename. */
+  titleCount: number;
+  /** The first selected scene's name after the pending edit. */
+  titlePreview: string | null;
+  onRenameScenes: () => void;
   /** The role all selected scenes share, or null when they have none. */
   currentRole: string | null;
   /** True when the selection spans more than one role. */
@@ -31,19 +53,28 @@ interface Props {
 }
 
 /**
- * Assigning a role writes on click, the way a swatch does.
+ * Everything that acts on the scenes picked in the scene-name column: the
+ * title — `{song} {bpm} {key}` — and the role tag that follows it.
  *
- * That looks like it breaks the Inspector's rule that naming needs an explicit
- * commit, and it doesn't: the rule exists because a rename *overwrites* a name
- * you can no longer see. A role tag is additive — it goes on the end and the
- * rest of the name is untouched — and the result is visible as a chip in the
- * grid the moment it lands. There is nothing to preview.
+ * The two commit differently, on purpose. **Assigning a role writes on click,
+ * the way a swatch does**, which only looks like it breaks the Inspector's rule
+ * that naming needs an explicit commit: that rule exists because a rename
+ * *overwrites* a name you can no longer see, and a role tag is additive — it
+ * goes on the end, the rest of the name is untouched, and it shows up as a chip
+ * the moment it lands. There is nothing to preview. **A title edit does
+ * overwrite**, so it keeps its preview and a button.
  */
-export function RolesPanel({
+export function ScenePanel({
   vocabulary,
   palette,
   inUse,
   sceneCount,
+  common,
+  patch,
+  onPatch,
+  titleCount,
+  titlePreview,
+  onRenameScenes,
   currentRole,
   mixed,
   clipCount,
@@ -58,16 +89,77 @@ export function RolesPanel({
   const none = sceneCount === 0;
   const currentKey = currentRole === null ? null : roleKey(currentRole);
 
+  const shown = (f: keyof TitlePatch) => patch[f] ?? common[f] ?? '';
+  const badBpm = shown('bpm').trim() !== '' && !isBpm(shown('bpm'));
+  const badKey = shown('key').trim() !== '' && !isKey(shown('key'));
+
+  const field = (
+    key: keyof TitlePatch,
+    label: string,
+    placeholder: string,
+    bad = false,
+  ) => (
+    <label className={`field${bad ? ' bad' : ''}`}>
+      <span>{label}</span>
+      <input
+        type="text"
+        value={shown(key)}
+        placeholder={common[key] === null && sceneCount > 1 ? 'mixed' : placeholder}
+        disabled={none || busy}
+        spellCheck={false}
+        onChange={(e) => onPatch({ ...patch, [key]: e.target.value })}
+      />
+    </label>
+  );
+
   return (
     <>
       <div className="lbl">
-        Role{' '}
+        Scene{' '}
         {none ? (
-          <span className="dim">— select a scene name</span>
+          <span className="dim">— click a scene name</span>
         ) : (
-          `${sceneCount} scene${sceneCount > 1 ? 's' : ''}`
+          `${sceneCount} selected`
         )}
       </div>
+
+      {field('song', 'song', 'Nightfall')}
+      <div className="field-row">
+        {field('bpm', 'bpm', '128', badBpm)}
+        {field('key', 'key', 'Bm', badKey)}
+      </div>
+      <div className="hint">
+        {badBpm || badKey ? (
+          <span className="bad">
+            {badBpm ? 'bpm is 2–3 digits' : ''}
+            {badBpm && badKey ? ' · ' : ''}
+            {badKey ? 'key is like Bm, F#m, Eb' : ''}
+          </span>
+        ) : none ? (
+          'Shift-click a second scene name to take a whole song.'
+        ) : (
+          'A field you leave alone stays as it is on each scene. Clear one to remove that part.'
+        )}
+      </div>
+      {titlePreview !== null && (
+        <div className="hint">
+          Preview <span className="preview">{titlePreview || '(empty)'}</span>
+        </div>
+      )}
+      {/* Not `primary`, unlike the role color below it: this one overwrites
+          names, and the loud button in the rail should be the reversible,
+          instantly-legible action rather than the destructive one. */}
+      <button
+        type="button"
+        disabled={titleCount === 0 || busy || badBpm || badKey}
+        onClick={onRenameScenes}
+      >
+        Rename {titleCount} scene{titleCount === 1 ? '' : 's'}
+      </button>
+
+      <div className="rule" />
+
+      <div className="lbl">Role</div>
 
       {vocabulary.length === 0 ? (
         <div className="hint">
