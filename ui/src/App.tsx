@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClipGrid, type CellClick } from './components/ClipGrid.js';
 import { Inspector } from './components/Inspector.js';
 import { ScenePanel } from './components/ScenePanel.js';
+import { SongsModal } from './components/SongsModal.js';
 import { useBridge } from './lib/useBridge.js';
 import { clipKey, parseClipKey, toggle } from './lib/selection.js';
 import { isLaunchModified, isTypingInto, LAUNCH_KEY } from './lib/keys.js';
@@ -30,6 +31,8 @@ import {
   titleOps,
   type TitlePatch,
 } from '../../core/src/sceneTitle.js';
+import { compilePattern, DEFAULT_SCENE_PATTERN } from '../../core/src/namePattern.js';
+import { derive } from '../../core/src/derive.js';
 import {
   cellsInBlock,
   moveActive,
@@ -46,6 +49,15 @@ const ARROWS: Record<string, Direction> = {
 
 /** One identity, so clearing an already-empty scene selection changes nothing. */
 const EMPTY_SCENES: ReadonlySet<number> = new Set();
+
+/**
+ * The scene pattern, until the scheme file lands and makes it editable.
+ *
+ * Compiled once at module scope: it never changes yet, and the compile runs a
+ * round-trip probe. `!` is safe here and nowhere else — this exact pattern has
+ * a test asserting it compiles.
+ */
+const SCENE_PATTERN = compilePattern(DEFAULT_SCENE_PATTERN)!;
 
 export function App() {
   const bridge = useBridge();
@@ -331,6 +343,31 @@ export function App() {
     [selectedScenes],
   );
 
+  // The mapping, read back out of the set — see core/src/derive.ts. Nothing is
+  // stored for this: which scene belongs to which song falls out of the names.
+  const derivation = useMemo(
+    () => derive(snapshot?.scenes ?? [], SCENE_PATTERN),
+    [snapshot],
+  );
+  const [showSongs, setShowSongs] = useState(false);
+
+  const pickScenes = useCallback(
+    (scenes: number[]) => {
+      setSelectedScenes(new Set(scenes));
+      selectCells(
+        trackColumns.length > 0
+          ? scenes.flatMap((s) =>
+              trackColumns.flatMap((t) => (isOccupied({ t, s }) ? [{ t, s }] : [])),
+            )
+          : [],
+        false,
+      );
+      if (scenes.length > 0) goActive({ on: 'scene', s: scenes[0]! });
+      setShowSongs(false);
+    },
+    [goActive, isOccupied, selectCells, trackColumns],
+  );
+
   // --- scene titles ----------------------------------------------------
   // `{song} {bpm} {key}`, everything in the name before the role tag.
 
@@ -568,6 +605,17 @@ export function App() {
         <Stat k="Tracks" v={snapshot?.trackCount} />
         <Stat k="Scenes" v={snapshot?.sceneCount} />
         <Stat k="Clips" v={snapshot?.clipCount} />
+        <Stat
+          k="Songs"
+          v={snapshot ? derivation.songs.length : undefined}
+          onClick={snapshot ? () => setShowSongs(true) : undefined}
+        />
+        <Stat
+          k="Unmapped"
+          v={snapshot ? derivation.unmapped.length : undefined}
+          warn={derivation.unmapped.length > 0}
+          onClick={snapshot ? () => setShowSongs(true) : undefined}
+        />
         <Stat k="LOM walk" v={snapshot ? `${snapshot.ms}ms` : undefined} highlight />
         <Stat k="Slot scan" v={snapshot ? `${snapshot.timings.slots}ms` : undefined} />
         <Stat k="Selected" v={selected.size} />
@@ -656,6 +704,16 @@ export function App() {
         </aside>
       </main>
 
+      {showSongs && snapshot && (
+        <SongsModal
+          derivation={derivation}
+          pattern={DEFAULT_SCENE_PATTERN}
+          onPick={pickScenes}
+          onPickUnmapped={() => pickScenes(derivation.unmapped)}
+          onClose={() => setShowSongs(false)}
+        />
+      )}
+
       <footer>
         {bridge.log.map((l) => (
           <div key={l.id} className={`log-line ${l.kind}`}>
@@ -671,15 +729,24 @@ function Stat({
   k,
   v,
   highlight,
+  warn,
+  onClick,
 }: {
   k: string;
   v: string | number | undefined;
   highlight?: boolean;
+  /** Amber, for a count that is fine at zero and worth a look above it. */
+  warn?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className="stat">
+    <div
+      className={`stat${onClick ? ' clickable' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+    >
       <div className="k">{k}</div>
-      <div className={`v${highlight ? ' hl' : ''}`}>{v ?? '—'}</div>
+      <div className={`v${highlight || warn ? ' hl' : ''}`}>{v ?? '—'}</div>
     </div>
   );
 }

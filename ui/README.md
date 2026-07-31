@@ -12,6 +12,7 @@ src/components/
   ClipGrid.tsx        scenes × tracks, memoized per row
   Inspector.tsx       rename pattern, swatches, apply
   ScenePanel.tsx      song/bpm/key fields, role chips, role→color, role manager
+  SongsModal.tsx      what the app read back out of the set — read-only
 src/lib/
   client.ts           typed WebSocket client, framework-free
   useBridge.ts        React hook over the client
@@ -89,6 +90,28 @@ recolor a whole scene.
 Both paths filter out writes that would change nothing — `colorOps` and the `nameOps` memo.
 Recoloring a scene where 22 of 30 clips are already that color writes 8, and the progress
 bar says 8. A count that includes no-op writes is a lie about how much work is happening.
+
+## Songs, and the mapping read back
+
+The **Songs** and **Unmapped** tiles in the stats bar are derived, not stored — every
+snapshot re-reads the scene names through the scene pattern and works out which song each
+scene belongs to (see [`core/README.md`](../core/README.md)). Clicking either opens
+`SongsModal`, and clicking a song there selects its scenes.
+
+**The modal is read-only on purpose.** Its job is to answer "does derivation work on a
+real set" before anything is built on top of it, and it can't give a misleading answer if
+it has nothing to write with.
+
+Two things it deliberately does not smooth over. A song whose scenes **disagree** about a
+fact shows every value in amber rather than picking one — the library arbitrates that
+later, and showing one value as though it were the answer is how drift hides. And a song
+found in **more than one block** gets a flag rather than an error, because a song is a
+label rather than a range: two blocks is a reprise, or it's two different songs sharing a
+name, and only you know which.
+
+`SCENE_PATTERN` is compiled once at module scope in `App` from `DEFAULT_SCENE_PATTERN`.
+The `!` is safe there and nowhere else — there's a test in `namePattern.test.ts` holding
+that exact constant down. It becomes editable when the scheme file lands.
 
 ## Nothing is selectable text
 

@@ -236,6 +236,16 @@ button.primary:hover:not(:disabled) {
 .stat .v.hl {
   color: var(--amber);
 }
+.stat.clickable {
+  cursor: pointer;
+}
+.stat.clickable:hover .k {
+  color: var(--dim);
+}
+.stat.clickable:hover .v {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 /* --- layout ------------------------------------------------------- */
 
@@ -682,6 +692,74 @@ input[type='text']:focus {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+.modal.wide {
+  width: 680px;
+}
+
+/* --- songs -------------------------------------------------------- */
+
+/* The table scrolls inside the modal rather than pushing it off screen —
+   a 100-song set is a long list. */
+.songs-wrap {
+  overflow: auto;
+  max-height: 52vh;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+}
+table.songs {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+table.songs th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  border-bottom: 1px solid var(--bd);
+  color: var(--dim2);
+  font-weight: 400;
+  text-align: left;
+  padding: 6px 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 9px;
+}
+table.songs td {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--bd2);
+  color: var(--fg2);
+  white-space: nowrap;
+}
+table.songs tbody tr {
+  cursor: pointer;
+}
+table.songs tbody tr:hover td {
+  background: var(--sel);
+  color: var(--fg);
+}
+table.songs .song-name {
+  color: var(--fg);
+  width: 100%; /* takes the slack, so the numeric columns stay tight */
+}
+table.songs .n {
+  text-align: right;
+}
+/* Scenes of one song that disagree about a fact. Not an error — the library
+   arbitrates — but it must not be shown as though one value were the answer. */
+.clash {
+  color: var(--amber);
+}
+.flags {
+  text-align: right;
+}
+.flag {
+  font-size: 9px;
+  padding: 1px 5px;
+  border: 1px solid var(--bd3);
+  border-radius: 8px;
+  color: var(--dim);
 }
 
 .role-rows {
