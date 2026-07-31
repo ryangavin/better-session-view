@@ -123,14 +123,71 @@ Things only a run against a real set can answer.
 
 ## Where this is going
 
-MVP is set management: bulk naming and coloring, with clip and scene launching so you can
-hear what you're labelling. Scenes are now writable as well as readable — `apply` carries
-`sceneOps` alongside clip ops — which is what **roles** are built on: a scene is marked
-`[chorus]` in its own name, and one more click colors its clips from the role's palette
-slot. Tracks are still read-only. After that, roughly in order — song segmentation
-(grouping scenes into songs, where a run of roles is the obvious boundary signal), role
-assignment via shape templates rather than one scene at a time,
-a declarative scheme with a pending-changes diff, and lint for drift. Setlist
-reordering is deliberately excluded: the LOM has no scene-move API, so it means
-duplicate-then-delete across every track, and it's the one operation that can damage
-a set.
+MVP was set management: bulk naming and coloring, with clip and scene launching so you can
+hear what you're labelling. That works, and every convention it applies still lives in
+someone's head and gets re-typed per selection.
+
+The direction is to define the conventions **outside** the current state of the set, map
+the set against them once, and thereafter re-derive the mapping by reversing the naming
+convention.
+
+```
+library (songs)              ─┐
+scheme  (patterns, rules)    ─┼─→ desired state ──┐
+mapping (scene → song, role) ─┘                   ├→ diff → apply
+snapshot (what Live holds) ───────────────────────┘
+                 ↑                           │
+                 └──── re-derived by reversing ────┘
+                       the naming convention
+```
+
+The mapping needs a human once. After the first apply the names **are** the mapping, so
+they read back on every later snapshot — no stable ids anywhere, nothing to lose, and a
+`.als` on the gig laptop stays fully self-describing.
+
+### Three layers, and what each owns
+
+| | lives | authoritative for |
+|---|---|---|
+| **Library** | one global file, outlives any `.als` | what a song *is* — bpm, key. Plus the role vocabulary (`roles.json`) |
+| **Scheme** | one global file | patterns and rules — how a name is spelled, what color a clip gets |
+| **Mapping** | **in the set**, in the scene names | which scene is which song and role |
+
+### The decisions behind it
+
+**Mapping is derived; facts are declared.** Which scene belongs to which song is always
+read out of the set. What a song *is* belongs to the library. A song is seeded from the
+set the first time it's seen; after that a set that disagrees is drift. Without that split
+the scheme is a suggestion rather than a convention, and lint has nothing to say.
+
+**The library is global and only grows.** It outlives any one `.als` — you have a library
+of songs and a given set contains some of them. Derivation unions into it. Same shape as
+`roles.json`, and it dodges the fact that we can't reliably identify which set is open.
+
+**A song is a label, not a range** — whatever scenes carry its name, wherever they sit. A
+reprise sixty scenes later is the same song for free. Boundaries are computed; a song in
+two blocks is a lint line, not an error.
+
+**Song identity is the name text, and a rename is atomic** — renaming in the library
+rewrites its scenes in the same operation, because at that moment we still know which
+scenes were attached.
+
+**Patterns are configurable but must be reversible.** At most one free-text token unless a
+non-whitespace literal separates them. The rules, and why ambiguity splits into fatal and
+resolvable, are in [`core/README.md`](core/README.md).
+
+**bpm is not like the other tokens.** It's the one fact with a home in Live —
+`Scene.tempo` — and writing it changes how the set plays. See
+[`bridge/README.md`](bridge/README.md) for the `tempo_enabled` ordering.
+
+**Clip color is layered rules, first match wins**, so you can reason about why a clip is
+the color it is, and lint can report what matched nothing.
+
+### What's left
+
+The song library, then the scheme file, then desired-state + diff, a pending-changes
+review, and lint. Tracks stay read-only for now — their rules key off something other than
+the song, and `ApplyOp` can't address a track yet.
+
+Setlist reordering is deliberately excluded: the LOM has no scene-move API, so it means
+duplicate-then-delete across every track, and it's the one operation that can damage a set.
