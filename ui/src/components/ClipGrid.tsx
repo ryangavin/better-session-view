@@ -40,6 +40,8 @@ interface Props {
   /** Scenes inside a collapsed song. Their rows aren't rendered. */
   hiddenScenes: ReadonlySet<number>;
   onToggleSong: (songKey: string) => void;
+  /** Select every scene of a song, across all its blocks. */
+  onPickSong: (songKey: string) => void;
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
@@ -250,17 +252,32 @@ const SongHeaderRow = memo(function SongHeaderRow({
   header,
   span,
   onToggle,
+  onPickSong,
 }: {
   header: SongHeader;
   span: number;
   onToggle: (songKey: string) => void;
+  onPickSong: (songKey: string) => void;
 }) {
   const facts = [header.bpm, header.key].filter((f) => f !== '');
   return (
     <tr className={`song-row${header.collapsed ? ' collapsed' : ''}`}>
+      {/* The row folds; the title selects. Two jobs on one row, and the title
+          gets the smaller target because folding is the frequent navigation
+          gesture while "work on this song" is the deliberate one. */}
       <td colSpan={span} onClick={() => onToggle(header.songKey)}>
         <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
-        <span className="song">{header.song}</span>
+        <button
+          type="button"
+          className="song"
+          title={`Work on ${header.song} — selects every scene of it`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPickSong(header.songKey);
+          }}
+        >
+          {header.song}
+        </button>
         {facts.length > 0 && (
           <span className={`facts${header.clash ? ' clash' : ''}`}>
             {facts.join(' · ')}
@@ -294,6 +311,7 @@ export function ClipGrid({
   songHeaders,
   hiddenScenes,
   onToggleSong,
+  onPickSong,
   onClip,
   onScene,
   onFireScene,
@@ -400,6 +418,7 @@ export function ClipGrid({
                 header={header}
                 span={columns.length + 1}
                 onToggle={onToggleSong}
+                onPickSong={onPickSong}
               />,
             );
           }

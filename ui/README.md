@@ -91,6 +91,40 @@ Both paths filter out writes that would change nothing — `colorOps` and the `n
 Recoloring a scene where 22 of 30 clips are already that color writes 8, and the progress
 bar says 8. A count that includes no-op writes is a lie about how much work is happening.
 
+## The snapshot happens by itself
+
+`useBridge` walks the set as soon as the LOM reports ready. **Snapshot** was the first
+thing anyone pressed every time, so it was a button that existed only to be pressed; it
+stays for re-walking after a change made in Live.
+
+It fires once per *session*, guarded by a ref, and that guard is the point: a walk that
+**fails** leaves `snapshot` null with `lomReady` still true, so without it the effect
+would re-run and retry forever — hammering the LOM with the walk that just broke.
+
+## Working on a whole song
+
+Clicking a **song title** in a header selects every scene of that song, across all its
+blocks, and unfolds it first — offering to rename eighteen rows you can't see is exactly
+the kind of write the pending-changes idea exists to prevent. The rest of the header row
+folds; only the title selects, because folding is the frequent navigation gesture and
+"work on this song" is the deliberate one.
+
+From there the rail does the three things at song scale:
+
+- **Rename** — the song/bpm/key fields, which prefill from what the song already agrees on.
+- **Set tempo on N scenes** — writes Live's own `Scene.tempo`, and is deliberately *not*
+  part of Rename. Everything else in the panel changes what a scene is called; this
+  changes what the set does, since Live takes a scene's tempo the moment it fires. Folding
+  it into a rename would make a naming pass silently alter playback. Clearing the bpm
+  field turns the button into **Clear tempo on N scenes**.
+- **Scene color** — a swatch grid that paints the scene rows themselves, so a song becomes
+  a band of color in Live's own session view. Writes on click, like the clip swatches.
+  Distinct from **Paint by role**, which gives each scene its role's color instead: one
+  shows you where songs start, the other shows you their structure.
+
+**Fold songs** in the header folds or unfolds everything at once — a view control, so it
+sits with the width presets rather than only inside the songs modal.
+
 ## Song headers, and folding
 
 Each song block gets a **full-width header row** above its first scene, which is what

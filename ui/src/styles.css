@@ -439,11 +439,23 @@ tr.song-row .fold {
   color: var(--dim2);
   font-size: 9px;
 }
-tr.song-row .song {
+/* A button, not a label: the row folds, the title selects the whole song. */
+tr.song-row button.song {
+  font-family: var(--sans);
   font-size: 12px;
   font-weight: 600;
   color: var(--fg);
   letter-spacing: -0.01em;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  text-align: left;
+}
+tr.song-row button.song:hover {
+  color: var(--amber);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 /* Facts, count and part all read as annotations on the name, never as the
    name — hence mono, small and dim against the sans-serif title. */

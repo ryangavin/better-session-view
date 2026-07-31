@@ -297,6 +297,28 @@ export function useBridge(): BridgeState {
     [client, derivePaletteOnce, guard, say],
   );
 
+  /** Tried once this session — a failed walk must not become a retry loop. */
+  const autoWalkedRef = useRef(false);
+
+  /**
+   * Walk the set as soon as there is something to walk.
+   *
+   * Pressing **Snapshot** was the first thing anyone did every time, so it was
+   * a button that existed only to be pressed. It stays, for re-walking after a
+   * change made in Live.
+   *
+   * Fires once per *session*, not once per readiness, and the ref is what makes
+   * that true. `snapshot === null` alone covers the happy path, but a walk that
+   * **fails** leaves it null with `lomReady` still true, so this effect would
+   * re-run and try again forever — hammering the LOM with the walk that just
+   * broke. One attempt, then the failure stands and the button is right there.
+   */
+  useEffect(() => {
+    if (!lomReady || autoWalkedRef.current || snapshot !== null) return;
+    autoWalkedRef.current = true;
+    void refresh();
+  }, [lomReady, refresh, snapshot]);
+
   // Manual re-derive. Normally unnecessary — refresh() does it automatically the
   // first time — so this exists for a Live upgrade that changes the palette, and
   // as the retry after an automatic attempt failed.

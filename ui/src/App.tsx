@@ -24,6 +24,7 @@ import {
   rolesInUse,
   sceneColorOps,
   sceneFields,
+  tempoOps,
 } from '../../core/src/roles.js';
 import {
   commonTitle,
@@ -32,7 +33,7 @@ import {
   type TitlePatch,
 } from '../../core/src/sceneTitle.js';
 import { compilePattern, DEFAULT_SCENE_PATTERN } from '../../core/src/namePattern.js';
-import { derive } from '../../core/src/derive.js';
+import { derive, songKey as songKeyOf } from '../../core/src/derive.js';
 import { allSongKeys, songRows } from '../../core/src/songRows.js';
 import {
   cellsInBlock,
@@ -411,6 +412,28 @@ export function App() {
     [goActive, isOccupied, selectCells, trackColumns],
   );
 
+  /**
+   * Work on a whole song: select every scene it has, across every block.
+   *
+   * Unfolds it first. Selecting scenes that are folded away would leave the
+   * panel offering to rename eighteen rows you can't see, and a write you can't
+   * preview is the one thing the pending-changes idea exists to prevent.
+   */
+  const onPickSong = useCallback(
+    (songKey: string) => {
+      const song = derivation.songs.find((s) => songKey === songKeyOf(s.name));
+      if (!song) return;
+      setCollapsedSongs((prev) => {
+        if (!prev.has(songKey)) return prev;
+        const next = new Set(prev);
+        next.delete(songKey);
+        return next;
+      });
+      pickScenes(song.scenes);
+    },
+    [derivation, pickScenes],
+  );
+
   // --- scene titles ----------------------------------------------------
   // `{song} {bpm} {key}`, everything in the name before the role tag.
 
@@ -448,6 +471,49 @@ export function App() {
   const onRenameScenes = useCallback(
     () => void applyScenes(sceneNameOps, 'rename scenes'),
     [applyScenes, sceneNameOps],
+  );
+
+  // The bpm field drives two independent things: the name token, written by
+  // Rename above, and Live's own Scene.tempo, written here. Kept apart because
+  // only one of them changes how the set plays.
+  const wantedTempo = useMemo(() => {
+    const raw = (titlePatch.bpm ?? commonFields.bpm ?? '').trim();
+    const n = Number(raw);
+    return raw !== '' && Number.isFinite(n) ? n : null;
+  }, [commonFields.bpm, titlePatch.bpm]);
+
+  const tempoWriteOps = useMemo(
+    () => tempoOps(scenesForOps, sceneList, wantedTempo),
+    [sceneList, scenesForOps, wantedTempo],
+  );
+
+  const onSetTempo = useCallback(
+    () => void applyScenes(tempoWriteOps, wantedTempo === null ? 'clear tempo' : 'set tempo'),
+    [applyScenes, tempoWriteOps, wantedTempo],
+  );
+
+  /** The palette slot every selected scene already shares, or -1 when they don't. */
+  const sceneColorIndex = useMemo(() => {
+    const first = sceneList[0];
+    if (first === undefined) return -1;
+    const shared = snapshot?.scenes[first]?.colorIndex ?? -1;
+    return sceneList.every((s) => snapshot?.scenes[s]?.colorIndex === shared)
+      ? shared
+      : -1;
+  }, [sceneList, snapshot]);
+
+  const onSceneColor = useCallback(
+    (index: number) => {
+      const rgb = bridge.palette[index];
+      // No RGB means no write: a scene's color can only be written as RGB, and
+      // inventing one would paint something we didn't choose.
+      if (rgb === undefined) return;
+      void applyScenes(
+        sceneColorOps(scenesForOps, sceneList, index, rgb),
+        'scene color',
+      );
+    },
+    [applyScenes, bridge.palette, sceneList, scenesForOps],
   );
 
   const clipsByScene = useMemo(() => {
@@ -621,6 +687,17 @@ export function App() {
         </div>
 
         <div className="spacer" />
+        {/* A view control, so it sits with the other one rather than only in
+            the songs modal. Folding everything is how a 100-song set becomes
+            navigable, and it shouldn't take two clicks to reach. */}
+        <button
+          type="button"
+          disabled={derivation.songs.length === 0}
+          title="Fold every song down to its header row"
+          onClick={() => onCollapseAll(collapsedSongs.size < derivation.songs.length)}
+        >
+          {collapsedSongs.size < derivation.songs.length ? 'Fold songs' : 'Unfold songs'}
+        </button>
         <div className="widths" role="group" aria-label="Column width">
           {COLUMN_WIDTHS.map((w) => (
             <button
@@ -685,6 +762,7 @@ export function App() {
               songHeaders={layout.headers}
               hiddenScenes={layout.hidden}
               onToggleSong={onToggleSong}
+              onPickSong={onPickSong}
               onClip={onClip}
               onScene={onScene}
               onFireScene={onFireScene}
@@ -714,6 +792,10 @@ export function App() {
             titleCount={sceneNameOps.length}
             titlePreview={selectedScenes.size === 0 ? null : titlePreview}
             onRenameScenes={onRenameScenes}
+            tempoCount={tempoWriteOps.length}
+            onSetTempo={onSetTempo}
+            sceneColorIndex={sceneColorIndex}
+            onSceneColor={onSceneColor}
             currentRole={currentRole}
             mixed={mixed}
             clipCount={roleClipOps.length}

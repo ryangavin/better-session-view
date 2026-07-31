@@ -37,6 +37,12 @@ interface Props {
   /** The first selected scene's name after the pending edit. */
   titlePreview: string | null;
   onRenameScenes: () => void;
+  /** Scenes whose own tempo the bpm field would change. */
+  tempoCount: number;
+  onSetTempo: () => void;
+  /** Palette slot the selected scenes already share, or -1 when they don't. */
+  sceneColorIndex: number;
+  onSceneColor: (index: number) => void;
   /** The role all selected scenes share, or null when they have none. */
   currentRole: string | null;
   /** True when the selection spans more than one role. */
@@ -75,6 +81,10 @@ export function ScenePanel({
   titleCount,
   titlePreview,
   onRenameScenes,
+  tempoCount,
+  onSetTempo,
+  sceneColorIndex,
+  onSceneColor,
   currentRole,
   mixed,
   clipCount,
@@ -156,6 +166,50 @@ export function ScenePanel({
       >
         Rename {titleCount} scene{titleCount === 1 ? '' : 's'}
       </button>
+
+      {/* Separate from the rename on purpose. Everything else in this panel
+          changes what a scene is *called*; this changes what the set *does* —
+          Live uses a scene's own tempo the moment that scene fires. Folding it
+          into Rename would make a naming pass quietly alter playback. */}
+      <button
+        type="button"
+        disabled={tempoCount === 0 || busy || badBpm}
+        title={
+          shown('bpm').trim() === ''
+            ? 'Clears the scene tempo, so these scenes follow the song again'
+            : `Sets Scene.tempo — firing these scenes will change the song tempo`
+        }
+        onClick={onSetTempo}
+      >
+        {shown('bpm').trim() === '' ? 'Clear tempo on' : 'Set tempo on'} {tempoCount}{' '}
+        scene{tempoCount === 1 ? '' : 's'}
+      </button>
+
+      <div className="lbl">Scene color</div>
+      {palette.length === 0 ? (
+        <div className="hint">No palette yet — the next snapshot derives it.</div>
+      ) : (
+        <>
+          <div className="swatches">
+            {palette.map((rgb, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`sw${sceneColorIndex === i ? ' on' : ''}`}
+                style={{ background: hex(rgb) }}
+                title={`index ${i} — paint ${sceneCount} scene${sceneCount === 1 ? '' : 's'}`}
+                disabled={none || busy}
+                onClick={() => onSceneColor(i)}
+              />
+            ))}
+          </div>
+          <div className="hint">
+            {none
+              ? 'One color for a whole song makes it a band you can see in Live.'
+              : 'Paints the scene rows themselves. Writes on click.'}
+          </div>
+        </>
+      )}
 
       <div className="rule" />
 

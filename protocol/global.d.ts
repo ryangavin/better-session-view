@@ -164,6 +164,18 @@ declare namespace BSV {
      * Always sent together with `colorIndex`; neither is meaningful alone.
      */
     color?: number;
+    /**
+     * The scene's own tempo, in BPM. **Below 20 disables it** — Live's own
+     * bound is 20–1000, and `Scene.tempo` reads back -1 when disabled, so
+     * anything under it is unambiguously "no tempo of its own".
+     *
+     * Writing this is not a naming change, it changes how the set *plays*:
+     * `Scene.tempo` is documented "the song will use the scene's tempo as soon
+     * as the scene is fired". `tempo_enabled` gates it, and the bridge sets
+     * both — writing `tempo` alone on a disabled scene does nothing visible and
+     * reads back -1.
+     */
+    tempo?: number;
   }
 
   /** A role a scene can be marked with, and the palette slot it colors with. */
