@@ -29,9 +29,16 @@ export default defineConfig({
     port: PORT,
     strictPort: true,
     // Dev serves the UI here but the bridge stays authoritative for data.
+    //
+    // Every non-asset route the bridge answers has to be listed. Anything missing
+    // doesn't fail — it falls through to the SPA and comes back as index.html,
+    // which `r.json()` rejects and a `.catch` turns into an empty result. That is
+    // exactly how /roles.json went missing here: the vocabulary silently never
+    // loaded in dev, and looked like a set that simply had no roles configured.
     proxy: {
       '/ws': { target: BRIDGE.replace('http', 'ws'), ws: true },
       '/palette.json': BRIDGE,
+      '/roles.json': BRIDGE,
     },
   },
 });

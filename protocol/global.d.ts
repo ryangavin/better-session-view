@@ -319,6 +319,19 @@ declare namespace BSV {
         tracks: TrackPlayState[];
       }
     | { type: 'changed'; kind: string }
+    /**
+     * Which Live Set is open, and therefore which `bsv.json` the role vocabulary
+     * is being read from and written to.
+     *
+     * Broadcast whenever that answer changes — including at boot, and including
+     * a change to "no set on disk". Clients refetch their vocabulary on it: the
+     * one they loaded a moment ago may belong to a different set entirely.
+     *
+     * `path` is the folder holding the `.als`, not the `.als` itself, and is
+     * empty for a set that has never been saved. `name` is Live's own name for
+     * the set, empty for the same reason.
+     */
+    | { type: 'setInfo'; path: string; name: string }
     | { type: 'reload' }
     | { type: 'pong'; id?: number }
     | { type: 'error'; id?: number; message: string };

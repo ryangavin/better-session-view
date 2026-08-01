@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Session manager for large Ableton Live sets.",
   "scripts": {
-    "build": "npm run build:bridge && npm run build:ui && npm run build:device",
-    "build:bridge": "tsc -p bridge/tsconfig.node.json && tsc -p bridge/tsconfig.v8.json",
+    "build": "npm run build:ui && npm run build:bridge && npm run build:device",
+    "build:bridge": "node --disable-warning=ExperimentalWarning tools/build-bridge.ts && tsc -p bridge/tsconfig.v8.json",
     "build:ui": "vite build --config ui/vite.config.ts",
     "build:device": "node --disable-warning=ExperimentalWarning tools/build-device.ts",
     "build:lom": "node --disable-warning=ExperimentalWarning tools/lom-reference.ts",
@@ -23,6 +23,7 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.0",
+    "esbuild": "^0.28.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
     "vitest": "^2.1.8"

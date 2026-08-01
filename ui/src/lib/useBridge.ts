@@ -152,6 +152,22 @@ export function useBridge(): BridgeState {
     setLog((prev) => [{ id: ++logId.current, text, kind }, ...prev].slice(0, 60));
   }, []);
 
+  /**
+   * Read the role vocabulary the bridge is currently serving.
+   *
+   * Declared before the subscription below because that effect lists it as a
+   * dependency, and a dependency array is built during render — a `const`
+   * declared further down would still be in its temporal dead zone.
+   */
+  const loadRoles = useCallback(() => {
+    fetch('/roles.json')
+      .then((r) => r.json())
+      .then((r: { roles?: BSV.Role[] }) =>
+        setRoles(Array.isArray(r.roles) ? r.roles : []),
+      )
+      .catch(() => setRoles([]));
+  }, []);
+
   useEffect(() => {
     const off = client.subscribe((event) => {
       switch (event.type) {
@@ -171,6 +187,12 @@ export function useBridge(): BridgeState {
         case 'changed':
           say(`Live set changed (${event.kind})`);
           break;
+        // The vocabulary just moved house — what's on screen may belong to a
+        // different set. Silent: this fires at boot for every client, and
+        // "loaded the roles for the set you already had open" is not news.
+        case 'setInfo':
+          loadRoles();
+          break;
         case 'reload':
           location.reload();
           break;
@@ -184,7 +206,7 @@ export function useBridge(): BridgeState {
       off();
       client.close();
     };
-  }, [client, say]);
+  }, [client, say, loadRoles]);
 
   // The palette is cached server-side; read it before any derivation.
   useEffect(() => {
@@ -196,16 +218,14 @@ export function useBridge(): BridgeState {
 
   // The role vocabulary, likewise server-side — see the /roles.json note in
   // bridge.ts for why it isn't in localStorage. An empty list is the correct
-  // answer for a fresh install, so a failure here is not worth a log line;
-  // roles found in the set still surface through mergeVocabulary.
-  useEffect(() => {
-    fetch('/roles.json')
-      .then((r) => r.json())
-      .then((r: { roles?: BSV.Role[] }) =>
-        setRoles(Array.isArray(r.roles) ? r.roles : []),
-      )
-      .catch(() => setRoles([]));
-  }, []);
+  // answer for a new set, so a failure here is not worth a log line; roles found
+  // in the set still surface through mergeVocabulary.
+  //
+  // Refetched on `setInfo`, not just on mount: the vocabulary belongs to the open
+  // Live Set, and the bridge often learns which set that is *after* this first
+  // ran — as well as when the set is saved somewhere new. `loadRoles` is defined
+  // above, with the subscription that also calls it.
+  useEffect(loadRoles, [loadRoles]);
 
   const paletteRef = useRef<number[]>([]);
   paletteRef.current = palette;

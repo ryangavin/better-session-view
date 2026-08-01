@@ -19,7 +19,7 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 
 | script | does |
 |---|---|
-| `npm run build` | bridge.js, lom.js, UI → `bridge/public/`, and the device |
+| `npm run build` | the UI, then a bundled bridge.js with that UI inlined, lom.js, and the device |
 | `npm run dev` | three watchers in parallel; UI dev server on :5173 |
 | `npm run dev:ui` | the UI dev server alone, against a device someone else is running |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
@@ -34,8 +34,13 @@ browser ──WebSocket/JSON──> node.script (bridge.js) ──Max msgs──
 ```
 
 The device serves the UI from the same Node process that bridges to Live. That's
-deliberate: the whole app ships as one `.amxd` plus a folder — no app bundle, no
-code signing, no updater.
+deliberate: the whole app ships as an `.amxd` plus two JS files — no app bundle, no
+code signing, no updater. `bridge.js` is bundled with `ws` and the built UI inlined,
+so there's no `node_modules/` and no `public/` to keep alongside it.
+
+Nothing the user makes is stored in there. The role vocabulary lives in a `bsv.json`
+beside their `.als`, so it travels with the set; the palette cache is machine-wide
+under Application Support. Replacing the device folder costs them nothing.
 
 ## Modules
 
