@@ -117,13 +117,43 @@ From there the rail does the three things at song scale:
   changes what the set does, since Live takes a scene's tempo the moment it fires. Folding
   it into a rename would make a naming pass silently alter playback. Clearing the bpm
   field turns the button into **Clear tempo on N scenes**.
-- **Scene color** — a swatch grid that paints the scene rows themselves, so a song becomes
+- **Song color** — a swatch grid that paints the scene rows themselves, so a song becomes
   a band of color in Live's own session view. Writes on click, like the clip swatches.
-  Distinct from **Paint by role**, which gives each scene its role's color instead: one
-  shows you where songs start, the other shows you their structure.
 
 **Fold songs** in the header folds or unfolds everything at once — a view control, so it
 sits with the width presets rather than only inside the songs modal.
+
+## A song is one color
+
+Coloring is **song-scoped, not selection-scoped**. Touch any scene of Nightfall and a
+swatch writes all twelve, reprise included — `scenesOfSongs` widens the selection before
+the ops are built. The panel says which songs and how many scenes before you press
+anything, because the write reaches rows you may not be able to see.
+
+That's a deliberate loss of flexibility. A solid block of color in Live's own session view
+is what a 100-song set is navigated by, and a per-scene brush is precisely what puts holes
+in it. Two things follow:
+
+- **Roles color clips only.** The old *Paint scenes* button gave each scene its role's
+  color, which stripes a song into as many colors as it has sections. Role color still
+  reaches clips, where it reads as structure *inside* the band instead of breaking it.
+- **A half-painted song shows as a fault, not as a color.** `derive` observes
+  `colorIndex` per song the way it observes bpm and key, and **-1 is a value there, not an
+  omission** — a song where some scenes are colored and some aren't reports two
+  observations. The header then says `mixed color` rather than picking one, and
+  `disagreements()` lists it for lint.
+
+The song's color rides on the header as a solid left bar plus a wash across the whole row,
+so a fully folded set is a column of bands. It's painted as two background layers: a
+border would change the row's height, which the sticky header arithmetic depends on, and
+`box-shadow` is already carrying the collapsed and drop-target indicators. **Those three
+rules sit at equal CSS specificity and resolve by source order** — folded edge, then song
+color, then drop line — so raising any of them with a `:not()` would silently take the
+drop indicator off folded rows.
+
+Live's palette holds colors dark enough to vanish on `--rail`, so the band goes through
+`legibleOn` at a low ratio (2.2). It's a block of color rather than text, so it needs far
+less contrast than a scene name — but a band you can't see is the whole thing failing.
 
 ## Song headers, and folding
 
@@ -279,9 +309,8 @@ only by the scene-name column and cleared by a clip click, so "which scenes am I
 tag" is never a guess. Selected scene rows get an amber left edge.
 
 **Color clips uses each scene's own role**, so one press works across a selection spanning
-several roles. Same for **Paint scenes**, which writes the scene rows themselves — a
-separate button rather than automatic, so taking over Live's scene colors is always
-something you asked for.
+several roles. It's the only thing role color writes: scene rows carry the *song's* color,
+and painting them per role would break the band — see *A song is one color* above.
 
 The vocabulary is `bridge/roles.json`, unioned with every role actually tagged in the set
 (`mergeVocabulary`). A role typed straight into Live shows up in the manager uncolored

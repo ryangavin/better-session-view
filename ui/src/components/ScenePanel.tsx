@@ -40,21 +40,25 @@ interface Props {
   /** Scenes whose own tempo the bpm field would change. */
   tempoCount: number;
   onSetTempo: () => void;
-  /** Palette slot the selected scenes already share, or -1 when they don't. */
-  sceneColorIndex: number;
-  onSceneColor: (index: number) => void;
+  /**
+   * Palette slot the songs in the selection already share, or -1 when they
+   * don't — which includes a song that's only half painted.
+   */
+  songColorIndex: number;
+  /** Scenes a swatch would write: every scene of every song in the selection. */
+  songColorCount: number;
+  /** Those songs in words — "NIGHTFALL", "3 songs" — for saying so first. */
+  songColorLabel: string;
+  onSongColor: (index: number) => void;
   /** The role all selected scenes share, or null when they have none. */
   currentRole: string | null;
   /** True when the selection spans more than one role. */
   mixed: boolean;
   /** Clips "Color clips" would actually write — already filtered to changes. */
   clipCount: number;
-  /** Scenes "Paint scenes" would actually write. */
-  paintCount: number;
   busy: boolean;
   onAssign: (role: string | null) => void;
   onColorClips: () => void;
-  onPaintScenes: () => void;
   onSaveRoles: (roles: Role[]) => void;
 }
 
@@ -83,16 +87,16 @@ export function ScenePanel({
   onRenameScenes,
   tempoCount,
   onSetTempo,
-  sceneColorIndex,
-  onSceneColor,
+  songColorIndex,
+  songColorCount,
+  songColorLabel,
+  onSongColor,
   currentRole,
   mixed,
   clipCount,
-  paintCount,
   busy,
   onAssign,
   onColorClips,
-  onPaintScenes,
   onSaveRoles,
 }: Props) {
   const [managing, setManaging] = useState(false);
@@ -185,7 +189,7 @@ export function ScenePanel({
         scene{tempoCount === 1 ? '' : 's'}
       </button>
 
-      <div className="lbl">Scene color</div>
+      <div className="lbl">Song color</div>
       {palette.length === 0 ? (
         <div className="hint">No palette yet — the next snapshot derives it.</div>
       ) : (
@@ -195,18 +199,34 @@ export function ScenePanel({
               <button
                 key={i}
                 type="button"
-                className={`sw${sceneColorIndex === i ? ' on' : ''}`}
+                className={`sw${songColorIndex === i ? ' on' : ''}`}
                 style={{ background: hex(rgb) }}
-                title={`index ${i} — paint ${sceneCount} scene${sceneCount === 1 ? '' : 's'}`}
+                title={
+                  none
+                    ? `index ${i}`
+                    : `index ${i} — paints all ${songColorCount} scene` +
+                      `${songColorCount === 1 ? '' : 's'} of ${songColorLabel}`
+                }
                 disabled={none || busy}
-                onClick={() => onSceneColor(i)}
+                onClick={() => onSongColor(i)}
               />
             ))}
           </div>
+          {/* Says the *song* scope out loud, every time. The selection is what
+              you clicked; what gets painted is every scene those songs have,
+              which can be a reprise sixty rows further down. */}
           <div className="hint">
-            {none
-              ? 'One color for a whole song makes it a band you can see in Live.'
-              : 'Paints the scene rows themselves. Writes on click.'}
+            {none ? (
+              'One color per song, so a set reads as bands in Live. Pick a song header.'
+            ) : (
+              <>
+                Writes on click — all{' '}
+                <b>
+                  {songColorCount} scene{songColorCount === 1 ? '' : 's'}
+                </b>{' '}
+                of {songColorLabel}.
+              </>
+            )}
           </div>
         </>
       )}
@@ -265,6 +285,9 @@ export function ScenePanel({
             : 'Clicking a role writes it into the scene name straight away.'}
       </div>
 
+      {/* A role colors clips and nothing else. Scene rows carry the song's
+          color, and painting them per role would break the one song / one band
+          rule the grid is navigated by. */}
       <button
         type="button"
         className="primary"
@@ -273,14 +296,6 @@ export function ScenePanel({
         onClick={onColorClips}
       >
         Color {clipCount} clip{clipCount === 1 ? '' : 's'}
-      </button>
-      <button
-        type="button"
-        disabled={paintCount === 0 || busy}
-        title="Paint the scene rows themselves with their role color"
-        onClick={onPaintScenes}
-      >
-        Paint {paintCount} scene{paintCount === 1 ? '' : 's'}
       </button>
       <button type="button" disabled={busy} onClick={() => setManaging(true)}>
         Manage roles

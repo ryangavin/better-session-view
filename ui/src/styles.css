@@ -263,14 +263,16 @@ main {
   padding: 0 16px 12px;
 }
 
-.empty {
+/* Scoped: `empty` is also a modifier on dots and swatches, and a bare `.empty`
+   here lands its 60px padding on them. */
+.empty-state {
   padding: 60px 20px;
   text-align: center;
   color: var(--dim);
   font-size: 13px;
   line-height: 1.7;
 }
-.empty b {
+.empty-state b {
   color: var(--amber);
   font-weight: 600;
 }
@@ -474,6 +476,15 @@ tr.song-row .count,
 tr.song-row .part {
   color: var(--dim2);
 }
+/* The one annotation that isn't a fact about the song but a fault in it: this
+   song's scenes hold several colors, so the header can't state one. */
+tr.song-row .mixed-color {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--amber);
+  margin-left: 10px;
+}
+
 /* Folded: the header is standing in for its scenes, so it says so with a left
    edge rather than by changing the row's whole treatment. */
 tr.song-row.collapsed td {
@@ -481,6 +492,42 @@ tr.song-row.collapsed td {
 }
 tr.song-row.collapsed .song {
   color: var(--fg2);
+}
+
+/* The song's color, which is most of the point of the header once everything is
+   folded: a hundred songs become a hundred bands findable by color alone.
+
+   Painted as background layers rather than a border or a box-shadow. A border
+   would change the row's height, which the two sticky header rows above depend
+   on; `box-shadow` is spoken for by the collapsed and drop indicators.
+
+   **Source order carries weight here.** This clears the grey folded edge at the
+   same specificity by sitting after it, and the drop indicators below clear
+   *this* the same way. Raising any of them with `:not()` would silently take the
+   drop line off folded rows. */
+tr.song-row.colored td {
+  box-shadow: none;
+  background-color: var(--song-wash);
+  background-image: linear-gradient(to right, var(--song-rgb) 0 4px, transparent 4px);
+  background-repeat: no-repeat;
+}
+/* Folded and colored: the grey edge is gone, so the song's own bar widens to
+   say the same thing in the color you're navigating by. Background only — it
+   must not touch box-shadow, or it would outrank the drop indicators. */
+tr.song-row.colored.collapsed td {
+  background-image: linear-gradient(to right, var(--song-rgb) 0 7px, transparent 7px);
+}
+/* Hover, without disturbing the wash: a white film over it. `color-mix` would
+   be tidier, but the wash arrives from the component as 8-digit hex. */
+tr.song-row.colored:hover td {
+  background-image:
+    linear-gradient(to right, var(--song-rgb) 0 4px, transparent 4px),
+    linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045));
+}
+tr.song-row.colored.collapsed:hover td {
+  background-image:
+    linear-gradient(to right, var(--song-rgb) 0 7px, transparent 7px),
+    linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045));
 }
 
 /* Rearranging songs.
@@ -736,15 +783,17 @@ input[type='text']:focus {
 .chips {
   display: flex;
   flex-wrap: wrap;
+  align-items: center; /* not `stretch` — one tall chip must not size the row */
   gap: 4px;
 }
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 8px;
+  padding: 3px 10px;
   font-size: 11px;
-  border-radius: 11px;
+  line-height: 16px;
+  border-radius: 999px;
 }
 .chip.on {
   border-color: var(--amber);

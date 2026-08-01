@@ -37,7 +37,12 @@ import {
   DEFAULT_SCENE_PATTERN,
   LEGACY_SCENE_PATTERN,
 } from '../../core/src/namePattern.js';
-import { derive, songKey as songKeyOf } from '../../core/src/derive.js';
+import {
+  derive,
+  scenesOfSongs,
+  songKey as songKeyOf,
+  songsOfScenes,
+} from '../../core/src/derive.js';
 import { allSongKeys, songRows } from '../../core/src/songRows.js';
 import { describeMove, planSceneMove } from '../../core/src/sceneMove.js';
 import {
@@ -592,28 +597,65 @@ export function App() {
     [applyScenes, tempoWriteOps, wantedTempo],
   );
 
-  /** The palette slot every selected scene already shares, or -1 when they don't. */
-  const sceneColorIndex = useMemo(() => {
-    const first = sceneList[0];
+  // --- song color ------------------------------------------------------
+  // **A song is one color.** Coloring is therefore song-scoped rather than
+  // selection-scoped: touch any scene of Nightfall and the swatch writes all
+  // twelve, reprise included. That's the whole value of the color — a solid
+  // block in Live's own session view is what you navigate a 100-song set by,
+  // and a per-scene brush is exactly what puts holes in it.
+  //
+  // A selected scene the pattern couldn't read has no song to widen to, so it
+  // takes the color alone. The alternative is a swatch that silently does
+  // nothing on the scenes a mapping pass hasn't reached yet.
+
+  const songColorScenes = useMemo(
+    () => scenesOfSongs(derivation, sceneList),
+    [derivation, sceneList],
+  );
+
+  /**
+   * What a swatch is about to repaint, in words.
+   *
+   * Named where it can be, because the song is the unit: "all 12 scenes of
+   * NIGHTFALL" is checkable at a glance in a way "12 scenes" isn't. Scenes the
+   * pattern couldn't read have no song to name and are counted separately
+   * rather than folded into a song's total, which would overstate it.
+   */
+  const songColorLabel = useMemo(() => {
+    const songs = songsOfScenes(derivation, sceneList);
+    const loose = songColorScenes.length - songs.reduce((n, s) => n + s.scenes.length, 0);
+    const named =
+      songs.length === 0
+        ? ''
+        : songs.length <= 2
+          ? songs.map((s) => s.name).join(' and ')
+          : `${songs.length} songs`;
+    const rest = loose === 0 ? '' : `${loose} unmapped scene${loose === 1 ? '' : 's'}`;
+    return [named, rest].filter(Boolean).join(' + ');
+  }, [derivation, sceneList, songColorScenes]);
+
+  /** The palette slot those scenes already share, or -1 when they don't. */
+  const songColorIndex = useMemo(() => {
+    const first = songColorScenes[0];
     if (first === undefined) return -1;
     const shared = snapshot?.scenes[first]?.colorIndex ?? -1;
-    return sceneList.every((s) => snapshot?.scenes[s]?.colorIndex === shared)
+    return songColorScenes.every((s) => snapshot?.scenes[s]?.colorIndex === shared)
       ? shared
       : -1;
-  }, [sceneList, snapshot]);
+  }, [snapshot, songColorScenes]);
 
-  const onSceneColor = useCallback(
+  const onSongColor = useCallback(
     (index: number) => {
       const rgb = bridge.palette[index];
       // No RGB means no write: a scene's color can only be written as RGB, and
       // inventing one would paint something we didn't choose.
       if (rgb === undefined) return;
       void applyScenes(
-        sceneColorOps(scenesForOps, sceneList, index, rgb),
-        'scene color',
+        sceneColorOps(scenesForOps, songColorScenes, index, rgb),
+        'song color',
       );
     },
-    [applyScenes, bridge.palette, sceneList, scenesForOps],
+    [applyScenes, bridge.palette, scenesForOps, songColorScenes],
   );
 
   const clipsByScene = useMemo(() => {
@@ -668,17 +710,9 @@ export function App() {
     return out;
   }, [clipsByScene, roleColorTargets]);
 
-  const rolePaintOps = useMemo<BSV.SceneOp[]>(() => {
-    const out: BSV.SceneOp[] = [];
-    for (const [colorIndex, scenes] of roleColorTargets) {
-      const rgb = bridge.palette[colorIndex];
-      // No palette entry means no RGB, and RGB is the only form Live accepts
-      // for a scene color. Skip rather than write a color we'd be inventing.
-      if (rgb === undefined) continue;
-      out.push(...sceneColorOps(scenesForOps, scenes, colorIndex, rgb));
-    }
-    return out;
-  }, [bridge.palette, roleColorTargets, scenesForOps]);
+  // Roles color *clips*, never scene rows. Painting a scene its role's color
+  // would stripe a song into as many colors as it has sections, which is the
+  // one thing the song band can't survive — see "song color" above.
 
   const onAssignRole = useCallback(
     (role: string | null) => {
@@ -691,11 +725,6 @@ export function App() {
   const onColorClips = useCallback(
     () => void apply(roleClipOps, 'role color'),
     [apply, roleClipOps],
-  );
-
-  const onPaintScenes = useCallback(
-    () => void applyScenes(rolePaintOps, 'paint scenes'),
-    [applyScenes, rolePaintOps],
   );
 
   // Token values for one clip. `{role}` comes from the clip's own scene, so the
@@ -857,6 +886,7 @@ export function App() {
               active={active}
               play={play}
               columnWidth={columnWidth}
+              palette={bridge.palette}
               roleColors={roleColors}
               selectedScenes={selectedScenes}
               songHeaders={layout.headers}
@@ -879,7 +909,7 @@ export function App() {
               onToggleGroup={onToggleGroup}
             />
           ) : (
-            <div className="empty">
+            <div className="empty-state">
               Load the device in Live, then hit <b>Snapshot</b>.
             </div>
           )}
@@ -903,16 +933,16 @@ export function App() {
             onRenameScenes={onRenameScenes}
             tempoCount={tempoWriteOps.length}
             onSetTempo={onSetTempo}
-            sceneColorIndex={sceneColorIndex}
-            onSceneColor={onSceneColor}
+            songColorIndex={songColorIndex}
+            songColorCount={songColorScenes.length}
+            songColorLabel={songColorLabel}
+            onSongColor={onSongColor}
             currentRole={currentRole}
             mixed={mixed}
             clipCount={roleClipOps.length}
-            paintCount={rolePaintOps.length}
             busy={bridge.busy}
             onAssign={onAssignRole}
             onColorClips={onColorClips}
-            onPaintScenes={onPaintScenes}
             onSaveRoles={(next) => void bridge.saveRoles(next)}
           />
 

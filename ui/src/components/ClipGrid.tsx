@@ -12,6 +12,17 @@ import type { PlayState } from '../lib/useBridge.js';
 /** --bg. Scene names are painted straight onto it, so legibility is measured against it. */
 const PANEL = 0x0a0a0b;
 
+/** --rail, the song header's own background. The color band is measured on it. */
+const RAIL = 0x0e0e10;
+
+/**
+ * A song band is a block of color rather than text, so it needs far less
+ * contrast than a scene name does — but Live's palette holds colors dark enough
+ * to vanish entirely on `--rail`, and a band you can't see is the one thing this
+ * header exists to provide.
+ */
+const BAND_CONTRAST = 2.2;
+
 /** Live's own encoding: the track's stop button is fired and blinking. */
 const STOP_FIRED = -2;
 
@@ -32,6 +43,8 @@ interface Props {
   active: ActiveCell | null;
   play: PlayState;
   columnWidth: ColumnWidth;
+  /** Live's palette, for resolving a song header's color index to an RGB. */
+  palette: number[];
   /** roleKey → the RGB its chip is painted. Must be a stable identity — see Row. */
   roleColors: Map<string, number>;
   selectedScenes: ReadonlySet<number>;
@@ -281,6 +294,7 @@ function dropEdgeFor(
 const SongHeaderRow = memo(function SongHeaderRow({
   header,
   span,
+  rgb,
   dragging,
   dropEdge,
   dropNote,
@@ -293,6 +307,9 @@ const SongHeaderRow = memo(function SongHeaderRow({
 }: {
   header: SongHeader;
   span: number;
+  /** The song's color, or -1 when it has none or its scenes disagree. A number
+   *  rather than the palette, so this row stays memoizable on primitives. */
+  rgb: number;
   /** This block is the one being dragged. */
   dragging: boolean;
   /** Which edge of this header the drop indicator sits on, if any. */
@@ -310,14 +327,28 @@ const SongHeaderRow = memo(function SongHeaderRow({
   const cls = [
     'song-row',
     header.collapsed ? 'collapsed' : '',
+    rgb >= 0 ? 'colored' : '',
     dragging ? 'dragging' : '',
     dropEdge ? `drop-${dropEdge}` : '',
   ]
     .filter(Boolean)
     .join(' ');
+  // Two custom properties rather than one: the solid left edge and the wash
+  // behind the whole row are the same color at different strengths, and a
+  // background gradient can't carry per-layer opacity. Alpha is appended as hex
+  // the same way a folded group cell tints itself.
+  const band = rgb < 0 ? rgb : legibleOn(rgb, RAIL, BAND_CONTRAST);
+  const paint =
+    rgb < 0
+      ? undefined
+      : ({
+          '--song-rgb': hex(band),
+          '--song-wash': `${hex(band)}24`,
+        } as CSSProperties);
   return (
     <tr
       className={cls}
+      style={paint}
       // Which half of the row the pointer is in decides whether the block lands
       // above or below this song. A row is tall enough for that to be a
       // comfortable target, and it's the idiom every list-reorder UI uses.
@@ -369,6 +400,17 @@ const SongHeaderRow = memo(function SongHeaderRow({
         <span className="count">
           {header.scenes} scene{header.scenes === 1 ? '' : 's'}
         </span>
+        {/* A song is one color. When its scenes hold several, the header can't
+            state one, so it says why instead of quietly showing nothing —
+            "uncolored" and "colored inconsistently" look identical otherwise. */}
+        {header.colorClash && (
+          <span
+            className="mixed-color"
+            title="This song's scenes hold more than one color — pick a swatch to make it one"
+          >
+            mixed color
+          </span>
+        )}
         {/* Only worth saying when there is more than one — a song in two runs
             is a reprise, or it's two different songs sharing a name. */}
         {header.blocks > 1 && (
@@ -393,6 +435,7 @@ export function ClipGrid({
   active,
   play,
   columnWidth,
+  palette,
   roleColors,
   selectedScenes,
   songHeaders,
@@ -511,6 +554,13 @@ export function ClipGrid({
                 key={`song-${scene.i}`}
                 header={header}
                 span={columns.length + 1}
+                // Resolved here rather than inside the row: the palette is an
+                // array whose identity changes on every snapshot, and a prop
+                // like that would re-render all hundred headers. A number
+                // doesn't.
+                rgb={
+                  header.colorIndex >= 0 ? (palette[header.colorIndex] ?? -1) : -1
+                }
                 dragging={dragFrom === header.from}
                 // One gap, one indicator. Deriving the edge here rather than
                 // passing an object keeps every prop on this memoized row a
