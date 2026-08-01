@@ -124,8 +124,23 @@ export class BridgeClient {
     this.closedByUs = true;
     clearTimeout(this.reconnectTimer);
     this.failAll('client closed');
-    this.ws?.close();
+    const ws = this.ws;
     this.ws = null;
+    if (!ws) return;
+    if (ws.readyState === WebSocket.CONNECTING) {
+      // Closing a socket mid-handshake aborts the upgrade, and through Vite's
+      // dev proxy that surfaces as `write EPIPE` in the dev server log — the
+      // proxy is still writing the 101 to a socket the browser has dropped.
+      // StrictMode does connect-then-close on every mount, so wait for the
+      // handshake and close cleanly. The handlers are detached first: this
+      // socket is already superseded and must not touch shared state.
+      ws.onmessage = null;
+      ws.onclose = null;
+      ws.onerror = () => {};
+      ws.onopen = () => ws.close();
+      return;
+    }
+    ws.close();
   }
 
   subscribe(fn: Listener): () => void {
