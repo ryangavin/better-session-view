@@ -60,13 +60,13 @@ interface Props {
 
 /**
  * Everything that acts on the scenes picked in the scene-name column: the
- * title — `{song} {bpm} {key}` — and the role tag that follows it.
+ * title — `@{bpm}-{key} {SONG}` — and the role tag that leads it.
  *
  * The two commit differently, on purpose. **Assigning a role writes on click,
  * the way a swatch does**, which only looks like it breaks the Inspector's rule
  * that naming needs an explicit commit: that rule exists because a rename
  * *overwrites* a name you can no longer see, and a role tag is additive — it
- * goes on the end, the rest of the name is untouched, and it shows up as a chip
+ * goes on the front, the rest of the name is untouched, and it shows as a chip
  * the moment it lands. There is nothing to preview. **A title edit does
  * overwrite**, so it keeps its preview and a button.
  */
@@ -366,8 +366,9 @@ function RolesManager({
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-h">Roles</div>
         <div className="hint">
-          A role is stored in the scene name as <span className="preview">[role]</span>,
-          so it travels with the set. Its color is what <b>Color clips</b> writes.
+          A role is stored at the front of the scene name as{' '}
+          <span className="preview">[ROLE]</span>, so it travels with the set. Its color
+          is what <b>Color clips</b> writes.
         </div>
 
         <div className="role-rows">

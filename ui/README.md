@@ -231,9 +231,19 @@ because naming a song and tagging its roles is the pass you make before touching
 individual clips, and the swatch grid below is the fallback for everything a role
 doesn't cover.
 
-A scene name is `{song} {bpm} {key} [role]`. The panel edits both halves and they
-**commit differently, on purpose**: a role writes on click, a title edit needs the
-button. See below for why.
+A scene name is `[ROLE] @{bpm}-{key} {SONG}` — `[CHORUS] @128-Bm NIGHTFALL`. The panel
+edits both halves and they **commit differently, on purpose**: a role writes on click, a
+title edit needs the button. See below for why.
+
+**Role first, facts second, name last**, so a column of scene names reads as structure
+rather than as a list of titles. Live's own scene column is narrow, so the trade is that
+*there* the song name truncates before the metadata does; here it doesn't, because the
+grid lifts the role into a chip. Why the facts need only `@` and `-` while the role keeps
+its brackets is in [`core/README.md`](../core/README.md).
+
+An existing set named the old way (`Nightfall 128 Bm [chorus]`) still shows its songs —
+derivation reads both conventions, and any rename converts a scene. See *Reading more
+than one convention* in [`core/README.md`](../core/README.md).
 
 ### The title fields
 
@@ -252,14 +262,14 @@ undo across a whole song.
 ### Roles
 
 The gesture is **click a scene name, click a role, click Color clips.** The role is
-written into the scene's own name as `[role]` (see [`core/README.md`](../core/README.md)
-for why the set is the storage), and the grid shows the title with the tag lifted out
-into a colored chip — so Live holds `Nightfall [chorus]` and we render
-`Nightfall · CHORUS`.
+written to the front of the scene's own name as `[ROLE]` (see
+[`core/README.md`](../core/README.md) for why the set is the storage), and the grid shows
+the title with the tag lifted out into a colored chip — so Live holds
+`[CHORUS] @128-Bm NIGHTFALL` and we render `@128-Bm NIGHTFALL · CHORUS`.
 
 **Clicking a role writes immediately, which only looks like it breaks the rule above.**
 That rule exists because a rename overwrites a name you can no longer see. A role tag is
-additive — it goes on the end, the rest of the name is untouched — and the result is
+additive — it goes on the front, the rest of the name is untouched — and the result is
 visible as a chip the moment it lands. There's nothing to preview. A *title* edit does
 overwrite, which is why that half keeps its preview and its button.
 

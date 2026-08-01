@@ -129,7 +129,7 @@ Things only a run against a real set can answer.
 - **Cross-session clip identity.** Clips have no stable id in the LOM. Addressed
   within a session by `(track, scene)`; persisting our own metadata across restarts
   is unsolved for clips. **Answered for scenes**, and the answer generalises: put the
-  metadata in the name. A role is a `[chorus]` tag in the scene's own name, which needs
+  metadata in the name. A role is a `[CHORUS]` tag in the scene's own name, which needs
   no id because the name *is* the record — it survives a restart, travels with the
   `.als`, and is visible in Live. See [`core/README.md`](core/README.md).
 
@@ -187,6 +187,12 @@ scenes were attached.
 **Patterns are configurable but must be reversible.** At most one free-text token unless a
 non-whitespace literal separates them. The rules, and why ambiguity splits into fatal and
 resolvable, are in [`core/README.md`](core/README.md).
+
+The convention this writes today is `[ROLE] @{bpm}-{key} {SONG}` — `[CHORUS] @128-Bm
+NIGHTFALL`. Role first so a column of scene names reads as structure; `@` and `-` are the
+only punctuation the facts need, because after an `@` a digit is a tempo and a letter is a
+key. **A convention change can't be a clean break**, since the mapping *is* the names — so
+derivation reads more than one pattern and a set converts scene by scene as it's renamed.
 
 **bpm is not like the other tokens.** It's the one fact with a home in Live —
 `Scene.tempo` — and writing it changes how the set plays. See

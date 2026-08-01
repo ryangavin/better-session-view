@@ -32,7 +32,11 @@ import {
   titleOps,
   type TitlePatch,
 } from '../../core/src/sceneTitle.js';
-import { compilePattern, DEFAULT_SCENE_PATTERN } from '../../core/src/namePattern.js';
+import {
+  compilePattern,
+  DEFAULT_SCENE_PATTERN,
+  LEGACY_SCENE_PATTERN,
+} from '../../core/src/namePattern.js';
 import { derive, songKey as songKeyOf } from '../../core/src/derive.js';
 import { allSongKeys, songRows } from '../../core/src/songRows.js';
 import { describeMove, planSceneMove } from '../../core/src/sceneMove.js';
@@ -54,13 +58,22 @@ const ARROWS: Record<string, Direction> = {
 const EMPTY_SCENES: ReadonlySet<number> = new Set();
 
 /**
- * The scene pattern, until the scheme file lands and makes it editable.
+ * The scene patterns, until the scheme file lands and makes them editable.
  *
- * Compiled once at module scope: it never changes yet, and the compile runs a
- * round-trip probe. `!` is safe here and nowhere else — this exact pattern has
- * a test asserting it compiles.
+ * Two, in order: the convention we write, then the one this app wrote before
+ * it. Derivation takes the first that matches, so **a set named the old way
+ * still shows its songs** and converts scene by scene as it's renamed. Without
+ * the second entry every scene would read as unmapped the moment the convention
+ * changed, and there would be nothing left to select in order to fix it.
+ *
+ * Compiled once at module scope: they never change yet, and each compile runs a
+ * round-trip probe. `!` is safe here and nowhere else — both patterns have a
+ * test asserting they compile.
  */
-const SCENE_PATTERN = compilePattern(DEFAULT_SCENE_PATTERN)!;
+const SCENE_PATTERNS = [
+  compilePattern(DEFAULT_SCENE_PATTERN)!,
+  compilePattern(LEGACY_SCENE_PATTERN)!,
+];
 
 export function App() {
   const bridge = useBridge();
@@ -148,7 +161,7 @@ export function App() {
   // movement and selection helper, exactly as `columns` does.
 
   const derivation = useMemo(
-    () => derive(snapshot?.scenes ?? [], SCENE_PATTERN),
+    () => derive(snapshot?.scenes ?? [], SCENE_PATTERNS),
     [snapshot],
   );
   const [showSongs, setShowSongs] = useState(false);
@@ -522,7 +535,7 @@ export function App() {
   }, [bridge, clearSelection]);
 
   // --- scene titles ----------------------------------------------------
-  // `{song} {bpm} {key}`, everything in the name before the role tag.
+  // `@{bpm}-{key} {SONG}`, everything in the name after the role tag.
 
   /** Which title fields have been edited — see TitlePatch in core. */
   const [titlePatch, setTitlePatch] = useState<TitlePatch>({});
