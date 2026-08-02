@@ -29,6 +29,13 @@ const RAIL = 0x0e0e10;
  */
 const BAND_CONTRAST = 2.2;
 
+/**
+ * Empty clip slots inherit their track group's hue at this opacity. The dark
+ * grid underneath does the darkening, so clips can keep using their full Live
+ * color and remain the strongest marks in the column.
+ */
+const GROUP_CELL_ALPHA = '0c';
+
 /** Live's own encoding: the track's stop button is fired and blinking. */
 const STOP_FIRED = -2;
 
@@ -292,7 +299,11 @@ const Row = memo(function Row({
             }
             data-active={active === t ? '1' : undefined}
             style={
-              clip ? { background: hex(clip.color), color: inkOn(clip.color) } : undefined
+              clip
+                ? { background: hex(clip.color), color: inkOn(clip.color) }
+                : c.group
+                  ? { background: `${hex(c.group.color)}${GROUP_CELL_ALPHA}` }
+                  : undefined
             }
             title={
               clip
@@ -310,7 +321,7 @@ const Row = memo(function Row({
 });
 
 /**
- * A song's header, spanning the whole grid above the first scene of one of its
+ * A song's header, spanning the grid above the first scene of one of its
  * blocks.
  *
  * Memoized on primitives for the same reason `Row` is: there can be a hundred
@@ -318,7 +329,7 @@ const Row = memo(function Row({
  * `SongHeader` in core carries rendered strings rather than the observed arrays.
  *
  * The four non-primitive props are all deliberate exceptions, and all safe for
- * the same reason: `columns`, `fill`, `roles` and `roleColors` are rebuilt only
+ * the same reason: `header`, `columns`, `shapes` and `roleColors` are rebuilt only
  * when the set or the vocabulary changes — never on a fold, and never on the
  * mouse moves a drag produces, which are the two gestures that would otherwise
  * cost a hundred re-renders.
@@ -345,7 +356,6 @@ function dropEdgeFor(
 const SongHeaderRow = memo(function SongHeaderRow({
   header,
   columns,
-  span,
   rgb,
   shapes,
   roleColors,
@@ -361,7 +371,6 @@ const SongHeaderRow = memo(function SongHeaderRow({
 }: {
   header: SongHeader;
   columns: Column<BSV.Track>[];
-  span: number;
   /** The song's color, or -1 when it has none or its scenes disagree. A number
    *  rather than the palette, so this row stays memoizable on primitives. */
   rgb: number;
@@ -412,7 +421,7 @@ const SongHeaderRow = memo(function SongHeaderRow({
 
   // Folded, the header stands in for the rows it hides, so each track column
   // says what that track plays in this song. Open, the clips speak for
-  // themselves and the row is one spanning cell again.
+  // themselves and the header becomes one uninterrupted band.
   const folded = header.collapsed;
   // What the tiles give up their space for. Both are things you have to act on
   // — a fault to fix, a move about to happen — and both outrank a summary of
@@ -496,8 +505,8 @@ const SongHeaderRow = memo(function SongHeaderRow({
     <tr
       className={cls}
       style={paint}
-      // Folding is the row's job, not the lead cell's — a folded row is several
-      // cells wide and a click on any of them means the same thing.
+      // Folding is the row's job, not the lead cell's — a folded header is
+      // several cells wide and a click on any of them means the same thing.
       onClick={() => onToggle(header.songKey)}
       // Which half of the row the pointer is in decides whether the block lands
       // above or below this song. A row is tall enough for that to be a
@@ -516,7 +525,7 @@ const SongHeaderRow = memo(function SongHeaderRow({
       }}
     >
       {!folded ? (
-        <td colSpan={span} {...lead}>
+        <td colSpan={columns.length + 1} {...lead}>
           {title}
         </td>
       ) : (
@@ -746,7 +755,6 @@ export function ClipGrid({
                 key={`song-${scene.i}`}
                 header={header}
                 columns={columns}
-                span={columns.length + 1}
                 // Only a folded block needs one, and asking for it here keeps
                 // the prop `undefined` — and so memo-stable — for every open
                 // song in the set.

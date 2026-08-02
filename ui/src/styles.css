@@ -473,6 +473,12 @@ td.scene.picked {
    table, both axes, is the same 2px. What sets a header apart is its own
    surface — `--rail` against the clip cells' lighter fill, the song's wash,
    and the bar down its left edge. Surfaces, not edges. */
+tr.song-row {
+  /* The tinted empty cells make the grid below read as one continuous field.
+     A soft shadow under the whole row separates the song header from that
+     field without drawing the chopped-up bevel a border on every td creates. */
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.55));
+}
 tr.song-row td {
   padding: 6px 8px;
   background: var(--rail);
@@ -658,6 +664,17 @@ tr.song-row.colored td {
 tr.song-row.colored td:first-child {
   background-color: var(--song-wash);
 }
+/* Open, the header is one uninterrupted cell again. Keep the stronger wash
+   behind the song identity, then continue the same band at half strength over
+   the track region without dividing it back into track-sized cells. */
+tr.song-row.colored:not(.collapsed) td:first-child {
+  background-color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    var(--song-wash) 0 var(--scene-col-w),
+    var(--song-wash-dim) var(--scene-col-w)
+  );
+}
 /* Hover, without disturbing the wash: a white film over it. `color-mix` would
    be tidier, but the wash arrives from the component as 8-digit hex. */
 tr.song-row.colored:hover td {
@@ -665,6 +682,15 @@ tr.song-row.colored:hover td {
     rgba(255, 255, 255, 0.045),
     rgba(255, 255, 255, 0.045)
   );
+}
+tr.song-row.colored:not(.collapsed):hover td:first-child {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045)),
+    linear-gradient(
+      90deg,
+      var(--song-wash) 0 var(--scene-col-w),
+      var(--song-wash-dim) var(--scene-col-w)
+    );
 }
 
 /* Folded, the header is several cells: the scene column carries the text and
