@@ -8,7 +8,7 @@ import {
 import { hex, inkOn, legibleOn } from '../../../core/src/color.js';
 import { nameWithoutRole, roleIn, roleKey } from '../../../core/src/roles.js';
 import { headerSpans, type Column } from '../../../core/src/trackColumns.js';
-import type { RoleTally, SongHeader } from '../../../core/src/songRows.js';
+import { mergeShapes, type SongHeader, type TrackShape } from '../../../core/src/songRows.js';
 import type { ActiveCell } from '../../../core/src/gridRange.js';
 import { clipKey } from '../lib/selection.js';
 import { isAddModified, isLaunchModified, LAUNCH_KEY } from '../lib/keys.js';
@@ -29,28 +29,31 @@ const RAIL = 0x0e0e10;
  */
 const BAND_CONTRAST = 2.2;
 
-/** What a fill tile is painted when its song has no color of its own. */
-const UNCOLORED_BAND = 0x6e6e78;
-
-/**
- * A fill tile: the song's color, opaque in proportion to how much of the song
- * that track covers.
- *
- * Floored well above nothing, because the first question the strip answers is
- * *whether* a track is used — a pad on one scene of twelve has to be visible,
- * even though a pad on all twelve should read louder.
- */
-function tint(rgb: number, fraction: number): string {
-  const base = rgb < 0 ? UNCOLORED_BAND : rgb;
-  const alpha = Math.round(0x40 + Math.min(1, fraction) * 0x8f);
-  return `${hex(base)}${alpha.toString(16).padStart(2, '0')}`;
-}
-
 /** Live's own encoding: the track's stop button is fired and blinking. */
 const STOP_FIRED = -2;
 
-/** One shared empty list, so an untagged song's header stays memo-stable. */
-const NO_ROLES: RoleTally[] = [];
+/** One shared empty map, so an open song's header stays memo-stable. */
+const NO_SHAPES: Map<number, TrackShape> = new Map();
+
+/**
+ * What a mark is painted for clips on scenes carrying no role.
+ *
+ * A neutral grey rather than the song's own color: it stands for the absence of
+ * a section, and painting it the song color would make an unmapped track look
+ * like it had been given one.
+ */
+const UNTAGGED = 0x6e6e78;
+
+function isShape(s: TrackShape | undefined): s is TrackShape {
+  return s !== undefined;
+}
+
+/** `CHORUS ×4, JAM1` — what a track plays, for the cell's tooltip. */
+function sections(shape: TrackShape): string {
+  const named = shape.roles.map((r) => (r.scenes > 1 ? `${r.name} ×${r.scenes}` : r.name));
+  if (shape.untagged > 0) named.push(`${shape.untagged} untagged`);
+  return named.length === 0 ? 'no sections' : named.join(', ');
+}
 
 export interface CellClick {
   /** True when the click carried the launch modifier — see lib/keys.ts. */
@@ -78,10 +81,8 @@ interface Props {
   songHeaders: Map<number, SongHeader>;
   /** Scenes inside a collapsed song. Their rows aren't rendered. */
   hiddenScenes: ReadonlySet<number>;
-  /** Block's first scene → track index → scenes of it holding a clip. */
-  songFills: Map<number, Map<number, number>>;
-  /** Block's first scene → the roles it uses, in first-appearance order. */
-  songRoles: Map<number, RoleTally[]>;
+  /** Block's first scene → track index → the sections that track plays. */
+  songShapes: Map<number, Map<number, TrackShape>>;
   onToggleSong: (songKey: string) => void;
   /** Select every scene of a song, across all its blocks. */
   onPickSong: (songKey: string) => void;
@@ -332,8 +333,7 @@ const SongHeaderRow = memo(function SongHeaderRow({
   columns,
   span,
   rgb,
-  fill,
-  roles,
+  shapes,
   roleColors,
   dragging,
   dropEdge,
@@ -352,16 +352,10 @@ const SongHeaderRow = memo(function SongHeaderRow({
    *  rather than the palette, so this row stays memoizable on primitives. */
   rgb: number;
   /**
-   * Track index → scenes of this block holding a clip there, or `undefined`
-   * when the song is open and there is nothing to stand in for.
+   * Track index → what that track plays in this block. Empty while the song is
+   * open: the shape stands in for rows that are on screen anyway.
    */
-  fill: Map<number, number> | undefined;
-  /**
-   * The roles this block uses, in first-appearance order — the song's shape.
-   * Empty while the song is open, for the same reason `fill` is `undefined`
-   * then: it's shown on the strip, which stands in for the hidden rows.
-   */
-  roles: RoleTally[];
+  shapes: Map<number, TrackShape>;
   /** roleKey → the RGB its square is painted. Shared with the scene rows' chips. */
   roleColors: Map<string, number>;
   /** This block is the one being dragged. */
@@ -399,10 +393,10 @@ const SongHeaderRow = memo(function SongHeaderRow({
           '--song-wash': `${hex(band)}24`,
         } as CSSProperties);
 
-  // Folded, the header stands in for the rows it hides, so it says what's in
-  // them: one tile per column, lit where this block has clips. Open, the clips
-  // speak for themselves and the row is one spanning cell again.
-  const strip = header.collapsed && fill !== undefined ? fill : null;
+  // Folded, the header stands in for the rows it hides, so each track column
+  // says what that track plays in this song. Open, the clips speak for
+  // themselves and the row is one spanning cell again.
+  const folded = header.collapsed;
   // What the tiles give up their space for. Both are things you have to act on
   // — a fault to fix, a move about to happen — and both outrank a summary of
   // what the song contains. `part 2 of 2` is neither, so it stays beside the
@@ -451,35 +445,6 @@ const SongHeaderRow = memo(function SongHeaderRow({
             part {header.block} of {header.blocks}
           </span>
         ))}
-      {/* The song's shape, one square per role in the order they first appear.
-          Color only, with the name on hover: a hundred folded songs are a page
-          of color signatures, and at that density a word per role is what turns
-          a table of contents into a wall of text. The vocabulary's colors are
-          already doing the naming, which is what they're for.
-
-          Right-anchored, so the squares run up against the fill tiles and the
-          two read as one band of color across the row. The name yields to them
-          only down to a legible minimum — past that they clip instead, because
-          a shape you can't fully see still beats a name you can't read. */}
-      {strip && (
-        <span className="roles">
-          {roles.map((r) => {
-            const roleRgb = roleColors.get(roleKey(r.name));
-            return (
-              <span
-                key={roleKey(r.name)}
-                className={`role-tile${roleRgb === undefined ? ' uncolored' : ''}`}
-                style={roleRgb === undefined ? undefined : { background: hex(roleRgb) }}
-                title={
-                  `${r.name} — ${r.scenes} scene${r.scenes === 1 ? '' : 's'}` +
-                  ` of ${header.song}` +
-                  (roleRgb === undefined ? ' · no color set for this role' : '')
-                }
-              />
-            );
-          })}
-        </span>
-      )}
       {/* Open, there's a whole row spare, so the exceptions say their piece in
           full right here. Folded, they move out to the tile region — see
           `notice`. */}
@@ -533,7 +498,7 @@ const SongHeaderRow = memo(function SongHeaderRow({
         onDrop();
       }}
     >
-      {strip === null ? (
+      {!folded ? (
         <td colSpan={span} {...lead}>
           {title}
         </td>
@@ -561,15 +526,18 @@ const SongHeaderRow = memo(function SongHeaderRow({
             </td>
           ) : (
             columns.map((c) => {
-              // A folded group is measured in *its tracks*, not in scenes: the
-              // column stands for several tracks, so "3 of 5 used" is the honest
-              // reading, and it's the same stand-in a folded cell already shows.
               const grouped = c.kind === 'folded';
-              const used = grouped
-                ? c.members.filter((t) => (strip.get(t) ?? 0) > 0).length
-                : (strip.get(c.track.i) ?? 0);
-              const of = grouped ? c.members.length : header.scenes;
+              // A folded group column stands for several tracks, so its cell
+              // shows what any of them play — the union, same as a folded clip
+              // cell stands in for the members underneath it.
+              const shape = grouped
+                ? mergeShapes(c.members.map((t) => shapes.get(t)).filter(isShape))
+                : shapes.get(c.track.i);
               const name = grouped ? c.group.name : c.track.name;
+              const used = grouped
+                ? c.members.filter((t) => shapes.has(t)).length
+                : (shape?.scenes ?? 0);
+              const of = grouped ? c.members.length : header.scenes;
               return (
                 <td
                   key={grouped ? `g${c.group.i}` : `t${c.track.i}`}
@@ -577,22 +545,50 @@ const SongHeaderRow = memo(function SongHeaderRow({
                   title={
                     used === 0
                       ? `${name} — nothing in ${header.song}`
-                      : grouped
-                        ? `${name} — ${used} of ${of} tracks used in ${header.song}`
-                        : `${name} — ${used} of ${of} scene${of === 1 ? '' : 's'} of ${header.song}`
+                      : `${name} — ${sections(shape!)} · ` +
+                        (grouped
+                          ? `${used} of ${of} tracks used in ${header.song}`
+                          : `${used} of ${of} scene${of === 1 ? '' : 's'} of ${header.song}`)
                   }
                 >
-                  {/* A bar rather than the whole cell: a header row is tall
-                      enough that a full-height block of color per column would
-                      outshout the name it belongs to. The grid's own 2px
-                      spacing separates the columns, so each bar reads as a tile
-                      under its track name. An empty column draws nothing at all
-                      — an absence answers faster than a faint presence. */}
-                  {used > 0 && (
-                    <span
-                      className="fill-bar"
-                      style={{ background: tint(band, used / of) }}
-                    />
+                  {/* The sections of the song this track plays, in order. Not a
+                      density bar: that a track is used is the smaller half of
+                      the question, and "the sparkle pad is in the choruses" is
+                      the half you're actually asking when you're deciding what
+                      to blend into next.
+
+                      Centred, matching the track name above it, and squares of
+                      the same 9px the role marks use everywhere else so the row
+                      reads as one language of tiles. An empty column draws
+                      nothing at all — an absence answers faster than a faint
+                      presence. */}
+                  {shape && (
+                    <span className="roles">
+                      {shape.roles.map((r) => {
+                        const roleRgb = roleColors.get(roleKey(r.name));
+                        return (
+                          <span
+                            key={roleKey(r.name)}
+                            className={`role-tile${roleRgb === undefined ? ' uncolored' : ''}`}
+                            style={
+                              roleRgb === undefined
+                                ? undefined
+                                : { background: hex(roleRgb) }
+                            }
+                          />
+                        );
+                      })}
+                      {/* Clips on scenes nobody has tagged yet. Shown, not
+                          dropped: a set mid-mapping is mostly untagged, and a
+                          track used only there still has to read as used or the
+                          header lies about what the song holds. */}
+                      {shape.untagged > 0 && (
+                        <span
+                          className="role-tile"
+                          style={{ background: hex(UNTAGGED) }}
+                        />
+                      )}
+                    </span>
                   )}
                 </td>
               );
@@ -617,8 +613,7 @@ export function ClipGrid({
   selectedScenes,
   songHeaders,
   hiddenScenes,
-  songFills,
-  songRoles,
+  songShapes,
   onToggleSong,
   onPickSong,
   dragFrom,
@@ -737,12 +732,11 @@ export function ClipGrid({
                 // Only a folded block needs one, and asking for it here keeps
                 // the prop `undefined` — and so memo-stable — for every open
                 // song in the set.
-                fill={header.collapsed ? songFills.get(header.from) : undefined}
-                // Asked for here, like the fill, so an open song's props stay
-                // memo-stable. `NO_ROLES` rather than a fresh `[]`, which would
-                // be a new identity on every render.
-                roles={
-                  (header.collapsed ? songRoles.get(header.from) : undefined) ?? NO_ROLES
+                // Asked for here so an open song's prop stays memo-stable, and
+                // `NO_SHAPES` rather than a fresh `new Map()`, which would be a
+                // new identity on every render.
+                shapes={
+                  (header.collapsed ? songShapes.get(header.from) : undefined) ?? NO_SHAPES
                 }
                 roleColors={roleColors}
                 // Resolved here rather than inside the row: the palette is an

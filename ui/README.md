@@ -194,8 +194,8 @@ called, what it's built from, and what's in it:
 ▾  128  Bm  NIGHTFALL··················   mixed color · part 2 of 2
    └bpm┘└key┘└──────── 170px ─────────┘   └── exceptions, unaligned ──┘
 
-▸  124  F#m GLASS TUNNEL·····  ■■■■■ │ ░░ ▓▓ ██ ░░ ▓▓ ██ ░░   ← folded
-   └── the scene column ────────────┘   └ one tile per track column ┘
+▸  124  F#m GLASS TUNNEL··············· │  ■■  │      │ ■■■■ │  ■   ← folded
+   └────────── the scene column ───────┘ └ the sections each track plays ┘
 ```
 
 - **Every slot keeps its width whether or not the song fills it.** That's the whole
@@ -231,9 +231,8 @@ and puts everything about a song on one line.
 What that cost, and what paid for it:
 
 - **The name flexes when folded** instead of taking a fixed 170px, because the scene
-  column is all the room there is. It yields to the shape only down to about ten
-  characters; past that the squares clip instead. A name you can't read is worse than a
-  shape you can't see all of, and the name is one hover away in full.
+  column is all the room there is. It gets nearly all of it: the shape lives out in the
+  track columns, not beside the name.
 - **`part 2 of 2` shortens to `2/2`** when folded — it shares the scene column now, and
   the tooltip still spells it out. It stays beside the name rather than moving out with
   the other exceptions, because a reprise is exactly where the tiles are worth most.
@@ -251,55 +250,52 @@ What that cost, and what paid for it:
   `background`, and the drop indicators own `box-shadow` — three jobs, three properties,
   no ordering.
 
-### The song's shape
+### What a folded song holds, track by track
 
-The scene column ends with **one small square per role**, in the order they first appear —
-the song's shape, which is the one thing a header can't say by naming the song or
-counting its scenes. It's what tells you a song is a two-verse build rather than a
-four-chorus wall.
+Each track column of a folded header carries **one small square per section that track
+plays** — the sparkle pad marked chorus and jam, the trance pad marked practice, intro,
+ending. Folded, a song otherwise tells you what it's *called*; this tells you what's *in*
+it, and at which point of the song, which is the question you're actually asking when
+you're choosing what to blend into next.
 
-- **Color only, name on hover.** A hundred folded songs are a page of color signatures,
-  and at that density a word per role is what turns a table of contents into a wall of
-  text. The vocabulary's colors are already doing the naming — that's what they're for.
-  Named chips still belong beside a *scene* name, where there's one role and room to
+It replaced a density bar — one bar per column, opacity by how much of the song that track
+covered. That answered "is this track used", which turned out to be the smaller half of
+the question, and it could never answer the other half.
+
+It works because the marks are **in the track columns**, not merely near them, and the
+track-name row is sticky: scroll a fully-folded set and every mark still has its track
+named above it. `blockTrackRoles` in core does the counting; `App` memoizes it against
+the *derivation*, not against `collapsedSongs`, so folding one song doesn't rebuild the
+map and hand all hundred headers a new prop.
+
+- **Color only, names on the cell's tooltip.** A hundred folded songs are a page of color
+  signatures, and at that density a word per role is what turns a table of contents into a
+  wall of text. The vocabulary's colors are already doing the naming — that's what they're
+  for. Named chips still belong beside a *scene* name, where there's one role and room to
   spell it.
-- **Folded only.** The header stands in for the scenes it's hiding, and the shape is
-  exactly that. Open, every scene shows its own role chip, in order, which beats a
-  deduped summary of them.
 - **Dimmed to 60%, up to 90% on row hover.** These are a signature to recognise, not a
-  label to read, and at full strength a row of saturated palette colors shouts louder
-  than the song name beside it.
-- **Right-anchored**, so the squares run up against the fill tiles and the two read as
-  one band of color across the row.
+  label to read, and at full strength a row of saturated palette colors shouts louder than
+  the song name beside it.
 - **Deduped, in first-appearance order, and never numbered.** `VERSE CHORUS VERSE CHORUS`
   is the arrangement, not the shape. The per-role scene count is in the tooltip, where
   reading it is a decision rather than a tax on every glance.
-- **9px, square, 2px apart, 2px corners** — the fill bars' height and radius and the
-  grid's own spacing, so the row is one language of tiles left to right. An uncolored
-  role is hollow rather than dashed: at 9px a dashed edge is mush.
+- **Clips on untagged scenes get a neutral grey mark**, not nothing. A set mid-mapping is
+  mostly untagged, and a track used only there still has to read as used or the header
+  lies about what the song holds. Grey rather than the song's own color, so an unmapped
+  track can't look like it was given a section.
+- **Centred in the column**, matching the track name in the sticky row above, so a column
+  of marks reads as belonging to it. An empty column draws nothing at all: an absence
+  answers faster than a faint presence does.
+- **9px, square, 2px apart, 2px corners** — the grid's own spacing, so a folded row reads
+  as one language of tiles left to right. An uncolored role is hollow rather than dashed:
+  at 9px a dashed edge is mush.
+- **A folded track group shows the union of its members**, via `mergeShapes`, and counts
+  in tracks rather than scenes — "3 of 5 used" — the same stand-in a folded clip cell
+  already shows, because the column stands for several tracks.
 
-### What a folded song holds
-
-The track columns of a folded header carry **one bar per column, lit where that block has
-clips**. Folded, a song otherwise tells you what it's *called*; the bars tell you what's
-*in* it — that Waterfalls carries the sparkle pad and the space arp — which is the
-question you're actually asking when you're choosing what to blend into next.
-
-It works because the bars are **in the track columns**, not merely near them, and the
-track-name row is sticky: scroll a fully-folded set and every bar still has its track
-named above it. `blockFills` in core does the counting; `App` memoizes it against the
-*derivation*, not against `collapsedSongs`, so folding one song doesn't rebuild the map
-and hand all hundred headers a new prop.
-
-- **A bar, not the whole cell.** The strip was its own 9px row and could afford to be
-  solid; a header row is tall enough that a full-height block of color per column would
-  outshout the name it belongs to. 9px keeps the tile reading.
-- **Opacity carries density** — how much of the song that track covers — floored well
-  above nothing, because *whether* a track is used is the first question and *how much*
-  is the second. An empty column draws nothing at all: an absence answers faster than a
-  faint presence does.
-- **A folded track group is measured in tracks, not scenes** — "3 of 5 used" — the same
-  stand-in a folded clip cell already shows, because the column stands for several tracks.
+There is no aggregate run of marks beside the song title. Once each track says which
+sections it plays, a second copy of the same vocabulary next to the name is the crowding
+without the information — and dropping it gives the name the rest of the scene column.
 
 ## Rearranging songs
 

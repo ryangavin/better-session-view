@@ -485,13 +485,12 @@ tr.song-row button.song {
   text-overflow: ellipsis;
 }
 /* Folded, the name is in the scene column rather than a row-wide cell, so a
-   fixed slot no longer fits — it flexes into what's left and yields to the
-   shape only down to about ten characters. Past that the squares clip instead:
-   a name you can't read is worse than a shape you can't see all of, and the
-   name is one hover away in full. */
+   fixed slot no longer fits — it takes whatever the facts leave. Which is most
+   of the column: the shape moved out to the track cells, where it says which
+   sections each track plays rather than only which the song has. */
 tr.song-row.collapsed button.song {
   flex: 1 1 auto;
-  min-width: 70px;
+  min-width: 0;
 }
 tr.song-row button.song:hover {
   color: var(--amber);
@@ -622,17 +621,8 @@ tr.song-row td.song-lead {
   overflow: hidden;
 }
 tr.song-row td.fill {
-  padding: 0;
+  padding: 0 3px;
   vertical-align: middle;
-}
-/* A bar rather than the whole cell. A header row is tall enough that a
-   full-height block of color per column would outshout the name it belongs to;
-   at 9px it reads as a tile under its track name instead. Empty columns draw
-   nothing at all — an absence answers faster than a faint presence. */
-tr.song-row .fill-bar {
-  display: block;
-  height: 9px;
-  border-radius: 2px;
 }
 /* What the tiles give up their space for: a fault to fix, or a move about to
    happen. Both are things you act on, and both outrank a summary of what the
@@ -641,24 +631,26 @@ tr.song-row td.song-notice {
   text-align: right;
 }
 
-/* The song's shape: one square per role, in the order they first appear.
+/* The song's shape, per track: one square per section that track plays.
    ------------------------------------------------------------------------
-   Color only, with the name on hover. A hundred folded songs are a page of
-   color signatures, and at that density a word per role is what turns a table
-   of contents into a wall of text — the vocabulary's colors are already doing
-   the naming, which is what they're for. Named chips still belong beside a
-   scene name, where there's one role and room to spell it: see `.role-chip`.
+   Which tracks a folded song uses was the first question and the marks answer
+   it too — an empty column draws nothing. But "the sparkle pad is in the
+   choruses" is the question you're actually asking when you're deciding what
+   to blend into next, and a density bar could never answer it.
 
-   Right-anchored, so the squares run up against the fill tiles and the two read
-   as one band of colour across the row. Square, 9px, 2px apart with 2px
-   corners — the fill bars' height and radius and the grid's own spacing, so the
-   whole row is one language of tiles left to right. */
+   Color only, with the names on the cell's tooltip. A hundred folded songs are
+   a page of color signatures, and at that density a word per role is what turns
+   a table of contents into a wall of text — the vocabulary's colors are already
+   doing the naming, which is what they're for. Named chips still belong beside
+   a scene name, where there's one role and room to spell it: see `.role-chip`.
+
+   Centred, matching the track name in the sticky row above, so a column of
+   marks reads as belonging to it. */
 tr.song-row .roles {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  margin-left: auto;
-  padding-left: 10px;
   min-width: 0;
   overflow: hidden;
 }
@@ -681,6 +673,7 @@ tr.song-row:hover .role-tile {
 tr.song-row .role-tile.uncolored {
   box-shadow: inset 0 0 0 1px var(--bd3);
 }
+
 
 /* Rearranging songs.
    ------------------------------------------------------------------------
