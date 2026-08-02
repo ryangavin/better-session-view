@@ -421,6 +421,12 @@ rather than as a list of titles. Live's own scene column is narrow, so the trade
 grid lifts the role into a chip. Why the facts need only `@` and `-` while the role keeps
 its brackets is in [`core/README.md`](../core/README.md).
 
+The chip is **one width for every role**, about nine characters wide, with longer names
+ellipsised and spelled out in the tooltip. A column of them is then a column rather than a
+ragged edge, and `[JAM1]` weighs the same as `[PRACTICE]` — which it does. It sits on a
+wide left gutter so the gap reads as a break rather than as a space in the name: Live's own
+text on one side, our reading of it on the other.
+
 An existing set named the old way (`Nightfall 128 Bm [chorus]`) still shows its songs —
 derivation reads both conventions, and any rename converts a scene. See *Reading more
 than one convention* in [`core/README.md`](../core/README.md).

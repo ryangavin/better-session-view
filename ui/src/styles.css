@@ -402,8 +402,22 @@ td.scene .unnamed {
    A folded song shows all of them at once and doesn't — see `.role-tile`. */
 td.scene .role-chip {
   display: inline-block;
-  margin-left: 6px;
+  /* Wide enough for the gutter to read as a gap rather than a space in the
+     name. The chip is a different kind of thing from the title beside it —
+     Live's own text on one side, our reading of it on the other — and it needs
+     room to say so. */
+  margin-left: 14px;
+  /* One width for every role, so a column of them is a column rather than a
+     ragged edge — and so `[JAM1]` and `[PRACTICE]` weigh the same, which they
+     do. Sized to about nine characters of this face; longer roles ellipsis and
+     the tooltip has the whole name. `box-sizing: border-box` is global, so the
+     padding and the dashed border below both sit inside it and the uncolored
+     variant measures the same. */
+  width: 62px;
   padding: 0 5px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border-radius: 3px;
   font-size: 9px;
   line-height: 14px;
