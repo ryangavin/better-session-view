@@ -356,9 +356,13 @@ const SongHeaderRow = memo(function SongHeaderRow({
    * when the song is open and there is nothing to stand in for.
    */
   fill: Map<number, number> | undefined;
-  /** The roles this block uses, in first-appearance order — the song's shape. */
+  /**
+   * The roles this block uses, in first-appearance order — the song's shape.
+   * Empty while the song is open, for the same reason `fill` is `undefined`
+   * then: it's shown on the strip, which stands in for the hidden rows.
+   */
   roles: RoleTally[];
-  /** roleKey → the RGB its pill is painted. Shared with the scene rows' chips. */
+  /** roleKey → the RGB its square is painted. Shared with the scene rows' chips. */
   roleColors: Map<string, number>;
   /** This block is the one being dragged. */
   dragging: boolean;
@@ -447,9 +451,14 @@ const SongHeaderRow = memo(function SongHeaderRow({
           {/* Fixed-width slots rather than a run of inline spans, so a hundred
               headers read as columns. Each one holds its width whether or not
               the song has anything to put in it — an empty slot is what keeps
-              the next song's name, count and chips on the same vertical line.
-              Blank rather than a placeholder dash, for the reason the content
-              strip leaves an unused column undrawn. */}
+              the next song's name on the same vertical line. Blank rather than
+              a placeholder dash, for the reason the content strip leaves an
+              unused column undrawn.
+
+              No scene count: in a set built to a house length it says the same
+              number a hundred times, and the block's size is already legible
+              from the rows it spans. It survives as the fill tiles' denominator
+              and in their tooltips. */}
           <div className="song-line">
             <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
             {/* The facts lead, so the key lands immediately left of the name it
@@ -476,44 +485,6 @@ const SongHeaderRow = memo(function SongHeaderRow({
             >
               {header.song}
             </button>
-            <span className="count">
-              {header.scenes} scene{header.scenes === 1 ? '' : 's'}
-            </span>
-            {/* The song's shape — intro, verse, chorus, outro — which is the one
-                thing the header can't say by naming the song or counting its
-                scenes. Everything to its left is fixed, so this always starts on
-                the same vertical line and a folded set reads as a column of
-                shapes.
-
-                The one item allowed to shrink. The flags after it are rare and
-                short and matter more than the tail of a long shape, and the drop
-                note in particular has to survive a narrow window. */}
-            <span className="roles">
-              {roles.map((r) => {
-                const roleRgb = roleColors.get(roleKey(r.name));
-                return (
-                  <span
-                    key={roleKey(r.name)}
-                    className={`role-chip${roleRgb === undefined ? ' uncolored' : ''}`}
-                    style={
-                      roleRgb === undefined
-                        ? undefined
-                        : { background: hex(roleRgb), color: inkOn(roleRgb) }
-                    }
-                    // The count lives here rather than on the chip: the shape is
-                    // what you read at a glance, and a run of "×3"s turns a
-                    // legible strip into a table.
-                    title={
-                      `${r.name} — ${r.scenes} scene${r.scenes === 1 ? '' : 's'}` +
-                      ` of ${header.song}` +
-                      (roleRgb === undefined ? ' · no color set for this role' : '')
-                    }
-                  >
-                    {r.name}
-                  </span>
-                );
-              })}
-            </span>
             {/* A song is one color. When its scenes hold several, the header
                 can't state one, so it says why instead of quietly showing
                 nothing — "uncolored" and "colored inconsistently" look
@@ -560,8 +531,47 @@ const SongHeaderRow = memo(function SongHeaderRow({
           onDrop={drop}
           onClick={() => onToggle(header.songKey)}
         >
-          <td className="fill-lead" title={`${strip.size} of this song's tracks hold clips`}>
-            {strip.size} track{strip.size === 1 ? '' : 's'}
+          {/* The scene column of the strip row, which the fill tiles leave
+              empty. Two summaries of one folded song share it: its shape on the
+              left, how wide it is on the right, up against the track columns
+              the tiles start under. */}
+          <td className="fill-lead">
+            <div className="fill-lead-line">
+              {/* The song's shape, one square per role in the order they first
+                  appear — intro, verse, chorus, outro. Color only, with the
+                  name on hover: a hundred folded songs are a page of color
+                  signatures, and at that density a word per role is what turned
+                  the header into a wall of text. The vocabulary's colors are
+                  doing the naming, which is what they're for.
+
+                  Folded only, and here rather than on the title row, because
+                  this whole row exists to stand in for the scenes being hidden.
+                  Open, every scene shows its own role chip, in order, which
+                  beats a deduped summary of them. */}
+              <span className="roles">
+                {roles.map((r) => {
+                  const roleRgb = roleColors.get(roleKey(r.name));
+                  return (
+                    <span
+                      key={roleKey(r.name)}
+                      className={`role-tile${roleRgb === undefined ? ' uncolored' : ''}`}
+                      style={roleRgb === undefined ? undefined : { background: hex(roleRgb) }}
+                      title={
+                        `${r.name} — ${r.scenes} scene${r.scenes === 1 ? '' : 's'}` +
+                        ` of ${header.song}` +
+                        (roleRgb === undefined ? ' · no color set for this role' : '')
+                      }
+                    />
+                  );
+                })}
+              </span>
+              <span
+                className="lead-count"
+                title={`${strip.size} of this song's tracks hold clips`}
+              >
+                {strip.size} track{strip.size === 1 ? '' : 's'}
+              </span>
+            </div>
           </td>
           {columns.map((c) => {
             // A folded group is measured in *its tracks*, not in scenes: the
@@ -732,11 +742,12 @@ export function ClipGrid({
                 // the prop `undefined` — and so memo-stable — for every open
                 // song in the set.
                 fill={header.collapsed ? songFills.get(header.from) : undefined}
-                // Unlike the fill, shown folded or not — the shape is what the
-                // header is for. `?? NO_ROLES` rather than a fresh `[]`, which
-                // would be a new identity every render and defeat the memo for
-                // every song the pattern hasn't mapped yet.
-                roles={songRoles.get(header.from) ?? NO_ROLES}
+                // Asked for here, like the fill, so an open song's props stay
+                // memo-stable. `NO_ROLES` rather than a fresh `[]`, which would
+                // be a new identity on every render.
+                roles={
+                  (header.collapsed ? songRoles.get(header.from) : undefined) ?? NO_ROLES
+                }
                 roleColors={roleColors}
                 // Resolved here rather than inside the row: the palette is an
                 // array whose identity changes on every snapshot, and a prop

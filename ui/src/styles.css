@@ -391,10 +391,9 @@ td.scene .unnamed {
 /* The role, lifted out of the scene name. Live holds "Nightfall [chorus]"; we
    show the title and paint the tag, which is the point of storing it there.
 
-   Unscoped rather than under `td.scene`, because a song header shows the same
-   chip for each role in its block. One look for one thing: a chip means "role",
-   in the color the vocabulary gives it, wherever it appears. */
-.role-chip {
+   Scoped to the scene column: a scene shows one role and has room to name it.
+   A folded song shows all of them at once and doesn't — see `.role-tile`. */
+td.scene .role-chip {
   display: inline-block;
   margin-left: 6px;
   padding: 0 5px;
@@ -409,7 +408,7 @@ td.scene .unnamed {
 }
 /* A role tagged in the set that nobody has given a color. Outlined rather than
    hidden: the tag is really there, and it colors nothing until it's configured. */
-.role-chip.uncolored {
+td.scene .role-chip.uncolored {
   background: transparent;
   border: 1px dashed var(--bd3);
   color: var(--dim2);
@@ -493,7 +492,6 @@ tr.song-row button.song:hover {
 /* Facts, count and part all read as annotations on the name, never as the
    name — hence mono, small and dim against the sans-serif title. */
 tr.song-row .facts,
-tr.song-row .count,
 tr.song-row .part {
   font-family: var(--mono);
   font-size: 9.5px;
@@ -502,7 +500,8 @@ tr.song-row .part {
 /* The facts lead the row so the key sits immediately left of the name it
    describes, and bpm before key is the order the convention itself writes:
    `@128-Bm`. Both right-aligned — "94" and "128" are the same fact at
-   different widths, and it's their right edges that should line up. */
+   different widths, and it's their right edges that should line up.
+
    Slots are sized to the values, not to the words: a bpm is three digits and a
    key is at most three characters, so anything wider is dead space on every
    song that has neither — and most sets have plenty of those. */
@@ -528,56 +527,14 @@ tr.song-row .facts .key {
      panel is where you go to read it. */
   text-overflow: ellipsis;
 }
-tr.song-row .count {
-  flex: 0 0 56px;
-}
 /* Set on the children, not inherited from `.facts` — `.facts .key` dims itself
    at the same specificity and later in the file, so it would win. */
 tr.song-row .facts.clash .bpm,
 tr.song-row .facts.clash .key {
   color: var(--amber);
 }
-tr.song-row .count,
 tr.song-row .part {
   color: var(--dim2);
-}
-/* The song's shape, as a run of role chips. A group rather than loose chips:
-   the chips sit tight against each other so the run reads as one strip —
-   "intro verse chorus outro" — rather than as four separate labels.
-
-   The one flexible item on the row. Everything to its left is fixed, so the
-   strip always starts on the same vertical line; everything to its right is
-   rare, short, and worth more than the tail of a long shape — which is why
-   this is the item that shrinks and clips rather than pushing them off. */
-tr.song-row .roles {
-  /* Flex, not inline-block, so the chips centre on the row rather than on a
-     text baseline. `.role-chip` carries a `vertical-align` nudge for sitting
-     beside a scene name, and inheriting it here left the whole strip a pixel or
-     two low — flex ignores it, and there's no invisible strut to centre
-     against either. */
-  display: flex;
-  align-items: center;
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-}
-tr.song-row .roles .role-chip {
-  /* The strip clips as a strip. Without this the chips share the squeeze and
-     every role becomes equally unreadable instead of the tail dropping off. */
-  flex: none;
-  margin-left: 3px;
-}
-tr.song-row .roles .role-chip:first-child {
-  margin-left: 0;
-}
-/* Folded, the header is standing in for its scenes, so the shape is the most
-   useful thing on the row. Open, the chips below say it per scene and in order,
-   so the summary steps back rather than competing with them. */
-tr.song-row:not(.collapsed) .roles {
-  opacity: 0.55;
-}
-tr.song-row:not(.collapsed):hover .roles {
-  opacity: 1;
 }
 
 /* The one annotation that isn't a fact about the song but a fault in it: this
@@ -664,15 +621,58 @@ tr.song-fill td {
 tr.song-fill td.fill {
   border-radius: 2px;
 }
+/* The scene column of the strip row, which the fill tiles leave empty. Two
+   summaries of one folded song share it, anchored to opposite edges: the shape
+   on the left, the width on the right, up against the columns the tiles start
+   under. Flex on a wrapper for the same reason the header uses one — a `td`
+   set to `display: flex` stops being a table cell. */
 tr.song-fill .fill-lead {
   font-family: var(--mono);
   font-size: 9px;
   color: var(--dim2);
-  text-align: right;
-  padding-right: 8px;
+  padding: 0 8px;
   white-space: nowrap;
   overflow: hidden;
   background: var(--rail);
+}
+tr.song-fill .fill-lead-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+tr.song-fill .lead-count {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The song's shape: one square per role, in the order they first appear.
+   ------------------------------------------------------------------------
+   Color only, with the name on hover. A hundred folded songs are a page of
+   color signatures, and at that density a word per role is what turns a table
+   of contents into a wall of text — the vocabulary's colors are already doing
+   the naming, which is what they're for. Named chips still belong beside a
+   scene name, where there's one role and room to spell it: see `.role-chip`.
+
+   Square and 9px, matching the fill tiles' corner radius and the grid's 2px
+   spacing, so the row reads as one language of tiles left to right. */
+tr.song-fill .roles {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+tr.song-fill .role-tile {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+/* A role tagged in the set that nobody has given a color. Hollow rather than
+   hidden — at 9px a dashed edge is mush, so this one departs from the chip. */
+tr.song-fill .role-tile.uncolored {
+  box-shadow: inset 0 0 0 1px var(--bd3);
 }
 tr.song-fill.colored .fill-lead {
   background-color: var(--song-wash);

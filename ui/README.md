@@ -185,8 +185,8 @@ A hundred headers stacked up **are** a table of contents, so the row is laid out
 columns rather than as a sentence:
 
 ```
-▸  128  Bm  NIGHTFALL·············  12 scenes  INTRO VERSE CHORUS OUTRO   ⚑
-   └bpm┘└key┘└── scene-col width ─┘└─ fixed ─┘ └── starts on a fixed line ──┘
+▾  128  Bm  NIGHTFALL·············    mixed color · part 2 of 2
+   └bpm┘└key┘└──── 170px ────────┘    └ exceptions, unaligned ┘
 ```
 
 - **Every slot keeps its width whether or not the song fills it.** That's the whole
@@ -199,40 +199,39 @@ columns rather than as a sentence:
   right edges that should line up.
 - **Every slot is sized to its values, not to its words.** Matching the name slot to
   `--scene-col-w` was the tidier rule and the wrong one: at `l` it spends 290px on names
-  rarely half that, and the hole before the scene count ends up wider than anything in
-  it. Same for the facts — a bpm is three digits and a key is at most three characters,
-  so any extra is dead space on every song carrying neither, which in most sets is a lot
-  of them.
-- **The chips centre with flex, not with a baseline.** `.role-chip` carries a
-  `vertical-align` nudge for sitting beside a scene name; inherited here it left the
-  whole strip a pixel or two low. A flex `.roles` ignores it and has no invisible text
-  strut to centre against.
+  rarely half that. Same for the facts — a bpm is three digits and a key is at most
+  three characters, so any extra is dead space on every song carrying neither, which in
+  most sets is a lot of them.
+- **No scene count.** A set built to a house length says the same number a hundred times,
+  and the block's size is legible from the rows it spans anyway. It survives as the fill
+  tiles' denominator and in their tooltips.
 - **Flex lives on a wrapper `div`, not the `td`.** `display: flex` on a table cell stops
   it being a table cell and takes the grid's fixed layout down with it.
-- **Only the chips flex.** Everything left of them is fixed; everything right of them is
-  rare, short, and worth more than the tail of a long shape — so the chips are what
-  shrinks and clips, and `mixed color` / `part 2 of 2` / the drop note always survive.
-  Those three are deliberately *un*aligned: reserving a column each across a hundred
-  songs would spend the row on what almost none of them have to say.
+- `mixed color` / `part 2 of 2` / the drop note trail the name and are deliberately
+  *un*aligned: reserving a column each across a hundred songs would spend the row on
+  what almost none of them have to say.
 
 ### The song's shape
 
-A header carries a run of **role chips** — `INTRO VERSE CHORUS OUTRO` — the same chip the
-scene rows use, in the same vocabulary color. It's the one thing a header can't say by
-naming the song or counting its scenes, and it's what tells you a song is a two-verse
-build rather than a four-chorus wall.
+The strip row leads with **one small square per role**, in the order they first appear —
+the song's shape, which is the one thing a header can't say by naming the song or
+counting its scenes. It's what tells you a song is a two-verse build rather than a
+four-chorus wall.
 
-- **Shown open as well as folded**, unlike the content strip. A twenty-scene song on
-  screen still makes you scan twenty rows to learn its shape. Open, though, the chips
-  below say it per scene *and in order*, so the summary drops to 55% opacity and comes
-  back on hover — present, not competing.
+- **Color only, name on hover.** A hundred folded songs are a page of color signatures,
+  and at that density a word per role is what turns a table of contents into a wall of
+  text. The vocabulary's colors are already doing the naming — that's what they're for.
+  Named chips still belong beside a *scene* name, where there's one role and room to
+  spell it.
+- **Folded only, and on the strip rather than the title row.** That row exists to stand
+  in for the scenes being hidden, and the shape is exactly that. Open, every scene shows
+  its own role chip, in order, which beats a deduped summary of them.
 - **Deduped, in first-appearance order, and never numbered.** `VERSE CHORUS VERSE CHORUS`
-  is the arrangement, not the shape, and it stops fitting on one row within a few songs.
-  The scene count per role is in the chip's tooltip, where reading it is a decision rather
-  than a tax on every glance.
-- **Always starts on the same vertical line**, because every slot to its left is fixed —
-  so a folded set reads as a column of shapes, and two songs built the same way look the
-  same from across the room.
+  is the arrangement, not the shape. The per-role scene count is in the tooltip, where
+  reading it is a decision rather than a tax on every glance.
+- **9px, square, 2px apart, 2px corners** — the fill tiles' radius and the grid's own
+  spacing, so the strip reads as one language of tiles from left to right. An uncolored
+  role is hollow rather than dashed: at 9px a dashed edge is mush.
 
 ### The content strip
 
@@ -253,6 +252,10 @@ a new prop.
   nothing, because *whether* a track is used is the first question and *how much* is the
   second. An empty column draws nothing at all: an absence answers faster than a faint
   presence does.
+- **The strip's own scene-column cell carries two summaries**, anchored to opposite
+  edges: the shape on the left, `N tracks` on the right, up against the columns the tiles
+  start under. The fill tiles leave that cell empty otherwise, and both things it holds
+  are answers about the same folded song.
 - **A folded track group is measured in tracks, not scenes** — "3 of 5 used" — the same
   stand-in a folded clip cell already shows, because the column stands for several tracks.
 - **The strip is the block's bottom edge while it exists**, so the drop indicator moves
