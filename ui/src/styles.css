@@ -424,11 +424,20 @@ td.scene.picked {
 
 /* --- song header rows --------------------------------------------- */
 
-/* One per song *block*, spanning the whole grid. The rule above it is what
-   actually segments the set visually — the text is secondary. */
+/* One per song *block*, spanning the whole grid. The gap above it is what
+   actually segments the set visually — the text is secondary.
+
+   **Space, not a line.** This was a 1px `--bd3` rule, and a light edge along
+   the top of a dark surface is exactly how you draw a bevel — the more so once
+   a folded header became many cells and the table's 2px `border-spacing`
+   chopped that highlight into a segment over each one, which is what made the
+   row look raised. A band in the page's own color separates just as clearly
+   and has no lit edge to catch the light. It reads as continuous across the
+   cells for the same reason: border and spacing are the same color, so the two
+   are one gutter. */
 tr.song-row td {
-  padding: 7px 8px 5px;
-  border-top: 1px solid var(--bd3);
+  padding: 5px 8px;
+  border-top: 3px solid var(--bg);
   background: var(--rail);
   cursor: pointer;
   white-space: nowrap;
