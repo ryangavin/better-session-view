@@ -17,11 +17,12 @@
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
 
-  /* Fallbacks only — ClipGrid overrides both on the table from the S/M/L
+  /* Fallbacks only — ClipGrid overrides all three on the table from the S/M/L
      preset. Kept here so the grid still lays out if it ever renders without
      them. Values match the `m` preset in lib/columnWidth.ts. */
   --col-w: 74px;
   --scene-col-w: 210px;
+  --role-chip-w: 62px;
   /* Height of the group header row. The track-name row sticks directly below
      it, so this value is shared by both and must not drift. */
   --group-h: 15px;
@@ -402,18 +403,19 @@ td.scene .unnamed {
    A folded song shows all of them at once and doesn't — see `.role-tile`. */
 td.scene .role-chip {
   display: inline-block;
-  /* Wide enough for the gutter to read as a gap rather than a space in the
-     name. The chip is a different kind of thing from the title beside it —
-     Live's own text on one side, our reading of it on the other — and it needs
-     room to say so. */
-  margin-left: 14px;
+  /* The gutter sits on the right, between the chip and the title: the chip is
+     a different kind of thing from the name beside it — Live's own text on one
+     side, our reading of it on the other — and it needs room to say so. Tight
+     to the scene number on the left, which it belongs with. */
+  margin: 0 12px 0 4px;
   /* One width for every role, so a column of them is a column rather than a
      ragged edge — and so `[JAM1]` and `[PRACTICE]` weigh the same, which they
-     do. Sized to about nine characters of this face; longer roles ellipsis and
-     the tooltip has the whole name. `box-sizing: border-box` is global, so the
-     padding and the dashed border below both sit inside it and the uncolored
-     variant measures the same. */
-  width: 62px;
+     do. It's a grid metric like the column widths, because at `s` the chip and
+     the scene name share a 130px column and the name has to keep some of it.
+     Longer roles ellipsis; the tooltip has the whole name. `box-sizing:
+     border-box` is global, so the padding and the dashed border below both sit
+     inside the width and the uncolored variant measures the same. */
+  width: var(--role-chip-w);
   padding: 0 5px;
   text-align: center;
   overflow: hidden;
@@ -426,6 +428,17 @@ td.scene .role-chip {
   vertical-align: 1px;
   background: var(--bd3);
   color: var(--fg2);
+}
+/* A scene with no role holds the chip's width and draws nothing in it, so the
+   names beside it stay on the same vertical line. Blank rather than dashed for
+   two reasons: an absence that draws nothing answers faster than a faint one,
+   and a dashed chip already means something else here — see `.uncolored`. */
+td.scene .role-chip.none {
+  background: none;
+  /* Stated, because an empty inline-block gets its height from content it
+     doesn't have — `line-height` alone would leave this 0px tall. It draws
+     nothing either way; this just keeps its box identical to a real chip's. */
+  height: 14px;
 }
 /* A role tagged in the set that nobody has given a color. Outlined rather than
    hidden: the tag is really there, and it colors nothing until it's configured. */

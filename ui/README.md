@@ -421,11 +421,25 @@ rather than as a list of titles. Live's own scene column is narrow, so the trade
 grid lifts the role into a chip. Why the facts need only `@` and `-` while the role keeps
 its brackets is in [`core/README.md`](../core/README.md).
 
-The chip is **one width for every role**, about nine characters wide, with longer names
-ellipsised and spelled out in the tooltip. A column of them is then a column rather than a
-ragged edge, and `[JAM1]` weighs the same as `[PRACTICE]` — which it does. It sits on a
-wide left gutter so the gap reads as a break rather than as a space in the name: Live's own
-text on one side, our reading of it on the other.
+**The chip leads the row, ahead of the name.** Everything to the left of the title is then
+a fixed width — fire button, scene number, chip — so a column of scene names starts on one
+vertical line and the roles beside them are a column of their own. Same reasoning as the
+song header's slots: a hundred rows of this is a table, and a table has columns.
+
+- **One width for every role.** `[JAM1]` weighs the same as `[PRACTICE]`, which it does.
+  Longer names ellipsis and the tooltip spells them out.
+- **The width is a grid metric**, in `columnWidth.ts` beside the column and scene widths,
+  rather than a constant in the stylesheet. It's sized to its content — nine characters
+  covers nearly every role and a wider chip is only more whitespace — but at `s` the chip
+  and the scene name share a 130px column, and the name has to keep some of it.
+- **A scene with no role holds the width and draws nothing in it.** Blank rather than
+  dashed for two reasons: an absence that draws nothing answers faster than a faint one,
+  and a dashed chip already means something else here — a role that exists and has no
+  color. Its `height` is stated, because an empty inline-block takes its height from
+  content it hasn't got.
+- **The gutter is on the chip's right**, between it and the title, and tight to the scene
+  number on the left, which it belongs with. Live's own text on one side of that gap, our
+  reading of it on the other.
 
 An existing set named the old way (`Nightfall 128 Bm [chorus]`) still shows its songs —
 derivation reads both conventions, and any rename converts a scene. See *Reading more

@@ -21,15 +21,24 @@ export interface ColumnMetrics {
   col: number;
   /** The scene name column, px. */
   scene: number;
+  /**
+   * The role chip that leads a scene name, px.
+   *
+   * Sized to its *content* rather than scaled with the grid: nine characters
+   * covers nearly every role, and a wider chip is only more whitespace inside
+   * it. It shrinks at `s` for the one reason that outranks that — the chip and
+   * the scene name share a 130px column there, and the name has to keep some.
+   */
+  role: number;
 }
 
 // `m` is the width the grid shipped with. `s` is sized so ~26 tracks fit in a
 // 1100px viewport; below about 36px a clip name is unreadable and the cell may
 // as well be a color chip.
 const METRICS: Record<ColumnWidth, ColumnMetrics> = {
-  s: { col: 40, scene: 130 },
-  m: { col: 74, scene: 210 },
-  l: { col: 116, scene: 290 },
+  s: { col: 40, scene: 130, role: 40 },
+  m: { col: 74, scene: 210, role: 62 },
+  l: { col: 116, scene: 290, role: 62 },
 };
 
 export function metricsFor(w: ColumnWidth): ColumnMetrics {

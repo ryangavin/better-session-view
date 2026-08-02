@@ -218,12 +218,21 @@ const Row = memo(function Row({
           ▶
         </button>
         <span className="scene-n">{scene.i + 1}</span>
-        {title ? (
-          <span style={named ? { color: named } : undefined}>{title}</span>
+        {/* The role leads, ahead of the name. Everything to the left of the
+            title is then a fixed width — fire button, scene number, chip — so a
+            column of scene names starts on one vertical line and the roles
+            beside them are a column of their own. Same reasoning as the song
+            header's slots: a hundred rows of this is a table, and a table has
+            columns.
+
+            A scene with no role still reserves the chip's width, and draws
+            nothing in it. Blank rather than dashed for two reasons: an absence
+            that draws nothing answers faster than a faint one, and a dashed
+            chip already means something else here — a role that exists and has
+            no color. */}
+        {role === null ? (
+          <span className="role-chip none" />
         ) : (
-          <span className="unnamed">—</span>
-        )}
-        {role !== null && (
           <span
             className={`role-chip${roleRgb === undefined ? ' uncolored' : ''}`}
             style={
@@ -239,6 +248,11 @@ const Row = memo(function Row({
           >
             {role}
           </span>
+        )}
+        {title ? (
+          <span style={named ? { color: named } : undefined}>{title}</span>
+        ) : (
+          <span className="unnamed">—</span>
         )}
       </td>
       {columns.map((c) => {
@@ -647,6 +661,7 @@ export function ClipGrid({
     return {
       '--col-w': `${m.col}px`,
       '--scene-col-w': `${m.scene}px`,
+      '--role-chip-w': `${m.role}px`,
       width: `${tableWidth(columnWidth, columns.length)}px`,
     } as CSSProperties;
   }, [columnWidth, columns.length]);
