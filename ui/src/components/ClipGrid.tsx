@@ -377,17 +377,12 @@ const SongHeaderRow = memo(function SongHeaderRow({
   onDrop: () => void;
   onDragEnd: () => void;
 }) {
-  // The strip stands in for the rows this song is hiding, so it exists only
-  // while it's folded. Open, the clips speak for themselves.
-  const strip = header.collapsed && fill !== undefined ? fill : null;
   const cls = [
     'song-row',
     header.collapsed ? 'collapsed' : '',
     rgb >= 0 ? 'colored' : '',
     dragging ? 'dragging' : '',
-    // The block's bottom edge is the strip's when there is one, so the drop
-    // line has to land under it rather than between the two halves.
-    dropEdge === 'above' || (dropEdge === 'below' && !strip) ? `drop-${dropEdge}` : '',
+    dropEdge ? `drop-${dropEdge}` : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -404,207 +399,208 @@ const SongHeaderRow = memo(function SongHeaderRow({
           '--song-wash': `${hex(band)}24`,
         } as CSSProperties);
 
-  // Drag handling is shared by both rows: the strip is the lower half of one
-  // folded block, so a pointer over it always means "below this song" — there
-  // is no meaningful "above" from down there.
-  const over = (below: boolean) => (e: DragEvent<HTMLTableRowElement>) => {
-    e.preventDefault();
-    // Without this the cursor shows "copy" and, in some browsers, the drop
-    // never fires at all.
-    e.dataTransfer.dropEffect = 'move';
-    onDragOver(header.from, header.to, below);
-  };
-  const drop = (e: DragEvent<HTMLTableRowElement>) => {
-    e.preventDefault();
-    onDrop();
-  };
+  // Folded, the header stands in for the rows it hides, so it says what's in
+  // them: one tile per column, lit where this block has clips. Open, the clips
+  // speak for themselves and the row is one spanning cell again.
+  const strip = header.collapsed && fill !== undefined ? fill : null;
+  // What the tiles give up their space for. Both are things you have to act on
+  // — a fault to fix, a move about to happen — and both outrank a summary of
+  // what the song contains. `part 2 of 2` is neither, so it stays beside the
+  // name; a reprise is exactly where the tiles are worth most.
+  const notice = header.colorClash || dropNote !== '';
 
-  return (
-    <>
-      <tr
-        className={cls}
-        style={paint}
-        // Which half of the row the pointer is in decides whether the block lands
-        // above or below this song. A row is tall enough for that to be a
-        // comfortable target, and it's the idiom every list-reorder UI uses.
-        onDragOver={(e) => {
-          const box = e.currentTarget.getBoundingClientRect();
-          over(e.clientY > box.top + box.height / 2)(e);
+  const title = (
+    /* Fixed-width slots rather than a run of inline spans, so a hundred headers
+       read as columns. Each holds its width whether or not the song fills it —
+       an empty slot is what keeps the next song's name on the same vertical
+       line. Blank rather than a placeholder dash, for the reason an unused
+       column draws nothing. */
+    <div className="song-line">
+      <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
+      {/* The facts lead, so the key lands immediately left of the name it
+          describes — and bpm before key is the order the naming convention
+          itself writes, `@128-Bm`. Both right-aligned: the values differ in
+          width ("94" / "128", "Bm" / "F#m") and their right edges are what a
+          column of them should line up on. */}
+      <span className={`facts${header.clash ? ' clash' : ''}`}>
+        <span className="bpm">{header.bpm}</span>
+        <span className="key">{header.key}</span>
+      </span>
+      <button
+        type="button"
+        className="song"
+        title={`Work on ${header.song} — selects every scene of it`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onPickSong(header.songKey);
         }}
-        onDrop={drop}
       >
-        {/* The row folds; the title selects. Two jobs on one row, and the title
-            gets the smaller target because folding is the frequent navigation
-            gesture while "work on this song" is the deliberate one. */}
-        <td
-          colSpan={span}
-          draggable
-          onClick={() => onToggle(header.songKey)}
-          onDragStart={(e) => {
-            // Firefox refuses to start a drag unless something is set.
-            e.dataTransfer.setData('text/plain', header.song);
-            e.dataTransfer.effectAllowed = 'move';
-            onDragStart(header.from, header.to);
-          }}
-          onDragEnd={onDragEnd}
-        >
-          {/* Fixed-width slots rather than a run of inline spans, so a hundred
-              headers read as columns. Each one holds its width whether or not
-              the song has anything to put in it — an empty slot is what keeps
-              the next song's name on the same vertical line. Blank rather than
-              a placeholder dash, for the reason the content strip leaves an
-              unused column undrawn.
+        {header.song}
+      </button>
+      {/* Only worth saying when there is more than one — a song in two runs is
+          a reprise, or it's two different songs sharing a name. Folded, it
+          shortens to `2/2`: it has to share the scene column with the shape,
+          and the tooltip still spells it out. */}
+      {header.blocks > 1 &&
+        (header.collapsed ? (
+          <span className="part" title={`part ${header.block} of ${header.blocks}`}>
+            {header.block}/{header.blocks}
+          </span>
+        ) : (
+          <span className="part">
+            part {header.block} of {header.blocks}
+          </span>
+        ))}
+      {/* The song's shape, one square per role in the order they first appear.
+          Color only, with the name on hover: a hundred folded songs are a page
+          of color signatures, and at that density a word per role is what turns
+          a table of contents into a wall of text. The vocabulary's colors are
+          already doing the naming, which is what they're for.
 
-              No scene count: in a set built to a house length it says the same
-              number a hundred times, and the block's size is already legible
-              from the rows it spans. It survives as the fill tiles' denominator
-              and in their tooltips. */}
-          <div className="song-line">
-            <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
-            {/* The facts lead, so the key lands immediately left of the name it
-                describes — and bpm before key is the order the naming
-                convention itself writes, `@128-Bm`. Both right-aligned: the
-                values differ in width ("94" / "128", "Bm" / "F#m") and their
-                right edges are what a column of them should line up on. */}
-            <span className={`facts${header.clash ? ' clash' : ''}`}>
-              <span className="bpm" title={header.bpm === '' ? undefined : 'bpm'}>
-                {header.bpm}
-              </span>
-              <span className="key" title={header.key === '' ? undefined : 'key'}>
-                {header.key}
-              </span>
-            </span>
-            <button
-              type="button"
-              className="song"
-              title={`Work on ${header.song} — selects every scene of it`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onPickSong(header.songKey);
-              }}
-            >
-              {header.song}
-            </button>
-            {/* A song is one color. When its scenes hold several, the header
-                can't state one, so it says why instead of quietly showing
-                nothing — "uncolored" and "colored inconsistently" look
-                identical otherwise. */}
-            {header.colorClash && (
-              <span
-                className="mixed-color"
-                title="This song's scenes hold more than one color — pick a swatch to make it one"
-              >
-                mixed color
-              </span>
-            )}
-            {/* Only worth saying when there is more than one — a song in two
-                runs is a reprise, or it's two different songs sharing a name. */}
-            {header.blocks > 1 && (
-              <span className="part">
-                part {header.block} of {header.blocks}
-              </span>
-            )}
-            {/* The cost, on the indicator itself. This move can't be undone from
-                here, so what it's about to do belongs in front of you while your
-                finger is still on the mouse — not in the log afterwards. */}
-            {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
-          </div>
-        </td>
-      </tr>
-      {/* What the fold is hiding, in one row: which tracks this block actually
-          uses, aligned under the track columns so the sticky header above names
-          them. A set folded to a table of contents still says what's *in* each
-          entry — which is what you need when you're picking what to blend into
-          next, not what it's called. */}
+          Right-anchored, so the squares run up against the fill tiles and the
+          two read as one band of color across the row. The name yields to them
+          only down to a legible minimum — past that they clip instead, because
+          a shape you can't fully see still beats a name you can't read. */}
       {strip && (
-        <tr
-          className={[
-            'song-fill',
-            rgb >= 0 ? 'colored' : '',
-            dragging ? 'dragging' : '',
-            dropEdge === 'below' ? 'drop-below' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          style={paint}
-          onDragOver={over(true)}
-          onDrop={drop}
-          onClick={() => onToggle(header.songKey)}
-        >
-          {/* The scene column of the strip row, which the fill tiles leave
-              empty. Two summaries of one folded song share it: its shape on the
-              left, how wide it is on the right, up against the track columns
-              the tiles start under. */}
-          <td className="fill-lead">
-            <div className="fill-lead-line">
-              {/* The song's shape, one square per role in the order they first
-                  appear — intro, verse, chorus, outro. Color only, with the
-                  name on hover: a hundred folded songs are a page of color
-                  signatures, and at that density a word per role is what turned
-                  the header into a wall of text. The vocabulary's colors are
-                  doing the naming, which is what they're for.
-
-                  Folded only, and here rather than on the title row, because
-                  this whole row exists to stand in for the scenes being hidden.
-                  Open, every scene shows its own role chip, in order, which
-                  beats a deduped summary of them. */}
-              <span className="roles">
-                {roles.map((r) => {
-                  const roleRgb = roleColors.get(roleKey(r.name));
-                  return (
-                    <span
-                      key={roleKey(r.name)}
-                      className={`role-tile${roleRgb === undefined ? ' uncolored' : ''}`}
-                      style={roleRgb === undefined ? undefined : { background: hex(roleRgb) }}
-                      title={
-                        `${r.name} — ${r.scenes} scene${r.scenes === 1 ? '' : 's'}` +
-                        ` of ${header.song}` +
-                        (roleRgb === undefined ? ' · no color set for this role' : '')
-                      }
-                    />
-                  );
-                })}
-              </span>
-              <span
-                className="lead-count"
-                title={`${strip.size} of this song's tracks hold clips`}
-              >
-                {strip.size} track{strip.size === 1 ? '' : 's'}
-              </span>
-            </div>
-          </td>
-          {columns.map((c) => {
-            // A folded group is measured in *its tracks*, not in scenes: the
-            // column stands for several tracks, so "3 of 5 used" is the honest
-            // reading, and it's the same stand-in a folded cell already shows.
-            const grouped = c.kind === 'folded';
-            const used = grouped
-              ? c.members.filter((t) => (strip.get(t) ?? 0) > 0).length
-              : (strip.get(c.track.i) ?? 0);
-            const of = grouped ? c.members.length : header.scenes;
-            const name = grouped ? c.group.name : c.track.name;
+        <span className="roles">
+          {roles.map((r) => {
+            const roleRgb = roleColors.get(roleKey(r.name));
             return (
-              <td
-                key={grouped ? `g${c.group.i}` : `t${c.track.i}`}
-                className={`fill${used > 0 ? ' has' : ''}`}
-                // The whole cell is the mark, not a bar inside it. The grid's
-                // 2px border-spacing already separates the columns, so a filled
-                // cell reads as a tile under its track name — and "which columns
-                // are lit" is the question this row exists to answer.
-                style={used > 0 ? { background: tint(band, used / of) } : undefined}
+              <span
+                key={roleKey(r.name)}
+                className={`role-tile${roleRgb === undefined ? ' uncolored' : ''}`}
+                style={roleRgb === undefined ? undefined : { background: hex(roleRgb) }}
                 title={
-                  used === 0
-                    ? `${name} — nothing in ${header.song}`
-                    : grouped
-                      ? `${name} — ${used} of ${of} tracks used in ${header.song}`
-                      : `${name} — ${used} of ${of} scene${of === 1 ? '' : 's'} of ${header.song}`
+                  `${r.name} — ${r.scenes} scene${r.scenes === 1 ? '' : 's'}` +
+                  ` of ${header.song}` +
+                  (roleRgb === undefined ? ' · no color set for this role' : '')
                 }
               />
             );
           })}
-        </tr>
+        </span>
       )}
-    </>
+      {/* Open, there's a whole row spare, so the exceptions say their piece in
+          full right here. Folded, they move out to the tile region — see
+          `notice`. */}
+      {!header.collapsed && header.colorClash && (
+        <span
+          className="mixed-color"
+          title="This song's scenes hold more than one color — pick a swatch to make it one"
+        >
+          mixed color
+        </span>
+      )}
+      {!header.collapsed && dropNote !== '' && (
+        <span className="drop-note">{dropNote}</span>
+      )}
+    </div>
+  );
+
+  // The lead cell is the drag handle whichever shape the row is in: folded it's
+  // the scene column, open it spans the grid.
+  const lead = {
+    draggable: true,
+    onDragStart: (e: DragEvent<HTMLTableCellElement>) => {
+      // Firefox refuses to start a drag unless something is set.
+      e.dataTransfer.setData('text/plain', header.song);
+      e.dataTransfer.effectAllowed = 'move';
+      onDragStart(header.from, header.to);
+    },
+    onDragEnd,
+  };
+
+  return (
+    <tr
+      className={cls}
+      style={paint}
+      // Folding is the row's job, not the lead cell's — a folded row is several
+      // cells wide and a click on any of them means the same thing.
+      onClick={() => onToggle(header.songKey)}
+      // Which half of the row the pointer is in decides whether the block lands
+      // above or below this song. A row is tall enough for that to be a
+      // comfortable target, and it's the idiom every list-reorder UI uses.
+      onDragOver={(e) => {
+        e.preventDefault();
+        // Without this the cursor shows "copy" and, in some browsers, the drop
+        // never fires at all.
+        e.dataTransfer.dropEffect = 'move';
+        const box = e.currentTarget.getBoundingClientRect();
+        onDragOver(header.from, header.to, e.clientY > box.top + box.height / 2);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+    >
+      {strip === null ? (
+        <td colSpan={span} {...lead}>
+          {title}
+        </td>
+      ) : (
+        <>
+          <td className="song-lead" {...lead}>
+            {title}
+          </td>
+          {notice ? (
+            <td className="song-notice" colSpan={columns.length}>
+              {header.colorClash && (
+                <span
+                  className="mixed-color"
+                  title="This song's scenes hold more than one color — pick a swatch to make it one"
+                >
+                  mixed color
+                </span>
+              )}
+              {/* The cost, on the indicator itself. This move can't be undone
+                  from here, so what it's about to do belongs in front of you
+                  while your finger is still on the mouse — not in the log
+                  afterwards. Worth the whole tile region for the two seconds a
+                  drag lasts. */}
+              {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
+            </td>
+          ) : (
+            columns.map((c) => {
+              // A folded group is measured in *its tracks*, not in scenes: the
+              // column stands for several tracks, so "3 of 5 used" is the honest
+              // reading, and it's the same stand-in a folded cell already shows.
+              const grouped = c.kind === 'folded';
+              const used = grouped
+                ? c.members.filter((t) => (strip.get(t) ?? 0) > 0).length
+                : (strip.get(c.track.i) ?? 0);
+              const of = grouped ? c.members.length : header.scenes;
+              const name = grouped ? c.group.name : c.track.name;
+              return (
+                <td
+                  key={grouped ? `g${c.group.i}` : `t${c.track.i}`}
+                  className="fill"
+                  title={
+                    used === 0
+                      ? `${name} — nothing in ${header.song}`
+                      : grouped
+                        ? `${name} — ${used} of ${of} tracks used in ${header.song}`
+                        : `${name} — ${used} of ${of} scene${of === 1 ? '' : 's'} of ${header.song}`
+                  }
+                >
+                  {/* A bar rather than the whole cell: a header row is tall
+                      enough that a full-height block of color per column would
+                      outshout the name it belongs to. The grid's own 2px
+                      spacing separates the columns, so each bar reads as a tile
+                      under its track name. An empty column draws nothing at all
+                      — an absence answers faster than a faint presence. */}
+                  {used > 0 && (
+                    <span
+                      className="fill-bar"
+                      style={{ background: tint(band, used / of) }}
+                    />
+                  )}
+                </td>
+              );
+            })
+          )}
+        </>
+      )}
+    </tr>
   );
 });
 

@@ -144,12 +144,17 @@ in it. Two things follow:
   `disagreements()` lists it for lint.
 
 The song's color rides on the header as a solid left bar plus a wash across the whole row,
-so a fully folded set is a column of bands. It's painted as two background layers: a
-border would change the row's height, which the sticky header arithmetic depends on, and
-`box-shadow` is already carrying the collapsed and drop-target indicators. **Those three
-rules sit at equal CSS specificity and resolve by source order** — folded edge, then song
-color, then drop line — so raising any of them with a `:not()` would silently take the
-drop indicator off folded rows.
+so a fully folded set is a column of bands. Three separate things want that row's edges,
+so they get one property each and never negotiate: the **bar** is a `::before` on the
+first cell, the **wash** is `background`, and the **collapsed and drop-target indicators**
+are `box-shadow`. A border is out because it would change the row's height, which the
+sticky header arithmetic depends on.
+
+That split is newer than it looks. The bar and the indicators used to share `box-shadow`
+and `background-image` by turns, at equal specificity, resolved by source order — folded
+edge, then song color, then drop line — with a comment warning that raising any of them
+with a `:not()` would silently take the drop indicator off folded rows. A folded header is
+several cells wide now, which broke that arrangement and forced the better one.
 
 Live's palette holds colors dark enough to vanish on `--rail`, so the band goes through
 `legibleOn` at a low ratio (2.2). It's a block of color rather than text, so it needs far
@@ -182,17 +187,21 @@ telling you something the library will later have to arbitrate.
 ### The header is a table, not a line
 
 A hundred headers stacked up **are** a table of contents, so the row is laid out as
-columns rather than as a sentence:
+columns rather than as a sentence. Folded, it's the whole song on one row — what it's
+called, what it's built from, and what's in it:
 
 ```
-▾  128  Bm  NIGHTFALL·············    mixed color · part 2 of 2
-   └bpm┘└key┘└──── 170px ────────┘    └ exceptions, unaligned ┘
+▾  128  Bm  NIGHTFALL··················   mixed color · part 2 of 2
+   └bpm┘└key┘└──────── 170px ─────────┘   └── exceptions, unaligned ──┘
+
+▸  124  F#m GLASS TUNNEL·····  ■■■■■ │ ░░ ▓▓ ██ ░░ ▓▓ ██ ░░   ← folded
+   └── the scene column ────────────┘   └ one tile per track column ┘
 ```
 
 - **Every slot keeps its width whether or not the song fills it.** That's the whole
   mechanism: an empty bpm on one song is what keeps the next song's name where your eye
-  already is. Blank rather than a placeholder dash, for the reason the content strip
-  leaves an unused column undrawn.
+  already is. Blank rather than a placeholder dash, for the reason an unused track column
+  draws nothing.
 - **The facts lead**, so the key sits immediately left of the name it describes. bpm
   before key is the order the naming convention itself writes — `@128-Bm`. Both are
   right-aligned: `94` and `128` are the same fact at different widths and it's their
@@ -207,13 +216,44 @@ columns rather than as a sentence:
   tiles' denominator and in their tooltips.
 - **Flex lives on a wrapper `div`, not the `td`.** `display: flex` on a table cell stops
   it being a table cell and takes the grid's fixed layout down with it.
-- `mixed color` / `part 2 of 2` / the drop note trail the name and are deliberately
-  *un*aligned: reserving a column each across a hundred songs would spend the row on
-  what almost none of them have to say.
+- **Open, the row is one spanning cell**; folded, it's the scene column plus one cell per
+  track column. Both shapes come out of the same component and share the same title
+  block. Only the folded shape can carry tiles, because only real cells land under the
+  columns they describe.
+
+### One row, not two
+
+The content strip used to be a second row under the header. It isn't, because it never
+needed to be: a folded header's scene column has room for the name *and* the shape, and
+the track columns to its right were empty. Merging them halves the height of a folded set
+and puts everything about a song on one line.
+
+What that cost, and what paid for it:
+
+- **The name flexes when folded** instead of taking a fixed 170px, because the scene
+  column is all the room there is. It yields to the shape only down to about ten
+  characters; past that the squares clip instead. A name you can't read is worse than a
+  shape you can't see all of, and the name is one hover away in full.
+- **`part 2 of 2` shortens to `2/2`** when folded — it shares the scene column now, and
+  the tooltip still spells it out. It stays beside the name rather than moving out with
+  the other exceptions, because a reprise is exactly where the tiles are worth most.
+- **`mixed color` and the drop note take the tile region**, as one cell spanning the
+  track columns. Both are things you have to *act* on — a fault to fix, a move about to
+  happen — and both outrank a summary of what the song contains. The drop note in
+  particular is far too long for the scene column and can't be abbreviated: it's the only
+  warning before the one write no undo of ours can reverse.
+- **The left edge moved to `::before` on the first cell.** A folded header is several
+  cells wide now, so a background gradient would repeat the bar at the left of every
+  tile and a `box-shadow` would draw it down the whole row. That turned out to be a
+  simplification: the bar used to be a background layer and a box-shadow taking turns,
+  with a comment warning that source order was load-bearing and a stray `:not()` would
+  silently take the drop line off folded rows. Now the bar owns `::before`, the wash owns
+  `background`, and the drop indicators own `box-shadow` — three jobs, three properties,
+  no ordering.
 
 ### The song's shape
 
-The strip row leads with **one small square per role**, in the order they first appear —
+The scene column ends with **one small square per role**, in the order they first appear —
 the song's shape, which is the one thing a header can't say by naming the song or
 counting its scenes. It's what tells you a song is a two-verse build rather than a
 four-chorus wall.
@@ -223,46 +263,43 @@ four-chorus wall.
   text. The vocabulary's colors are already doing the naming — that's what they're for.
   Named chips still belong beside a *scene* name, where there's one role and room to
   spell it.
-- **Folded only, and on the strip rather than the title row.** That row exists to stand
-  in for the scenes being hidden, and the shape is exactly that. Open, every scene shows
-  its own role chip, in order, which beats a deduped summary of them.
+- **Folded only.** The header stands in for the scenes it's hiding, and the shape is
+  exactly that. Open, every scene shows its own role chip, in order, which beats a
+  deduped summary of them.
+- **Dimmed to 60%, up to 90% on row hover.** These are a signature to recognise, not a
+  label to read, and at full strength a row of saturated palette colors shouts louder
+  than the song name beside it.
+- **Right-anchored**, so the squares run up against the fill tiles and the two read as
+  one band of color across the row.
 - **Deduped, in first-appearance order, and never numbered.** `VERSE CHORUS VERSE CHORUS`
   is the arrangement, not the shape. The per-role scene count is in the tooltip, where
   reading it is a decision rather than a tax on every glance.
-- **9px, square, 2px apart, 2px corners** — the fill tiles' radius and the grid's own
-  spacing, so the strip reads as one language of tiles from left to right. An uncolored
+- **9px, square, 2px apart, 2px corners** — the fill bars' height and radius and the
+  grid's own spacing, so the row is one language of tiles left to right. An uncolored
   role is hollow rather than dashed: at 9px a dashed edge is mush.
 
-### The content strip
+### What a folded song holds
 
-A folded header gets a second, short row: **one cell per grid column, lit where that block
-has clips**. Folded, a song otherwise tells you what it's *called*; the strip tells you
-what's *in* it — that Waterfalls carries the sparkle pad and the space arp — which is the
+The track columns of a folded header carry **one bar per column, lit where that block has
+clips**. Folded, a song otherwise tells you what it's *called*; the bars tell you what's
+*in* it — that Waterfalls carries the sparkle pad and the space arp — which is the
 question you're actually asking when you're choosing what to blend into next.
 
-It works because it's **aligned to the track columns**, and the track-name row is sticky:
-scroll a fully-folded set and every mark still has its track named above it. `blockFills`
-in core does the counting; `App` memoizes it against the *derivation*, not against
-`collapsedSongs`, so folding one song doesn't rebuild the map and hand all hundred headers
-a new prop.
+It works because the bars are **in the track columns**, not merely near them, and the
+track-name row is sticky: scroll a fully-folded set and every bar still has its track
+named above it. `blockFills` in core does the counting; `App` memoizes it against the
+*derivation*, not against `collapsedSongs`, so folding one song doesn't rebuild the map
+and hand all hundred headers a new prop.
 
-- **The cell is the mark**, not a bar inside it. The grid already puts 2px of
-  `border-spacing` between columns, so a filled cell reads as a tile under its track name.
-  Opacity carries density — how much of the song that track covers — floored well above
-  nothing, because *whether* a track is used is the first question and *how much* is the
-  second. An empty column draws nothing at all: an absence answers faster than a faint
-  presence does.
-- **The strip's own scene-column cell carries two summaries**, anchored to opposite
-  edges: the shape on the left, `N tracks` on the right, up against the columns the tiles
-  start under. The fill tiles leave that cell empty otherwise, and both things it holds
-  are answers about the same folded song.
+- **A bar, not the whole cell.** The strip was its own 9px row and could afford to be
+  solid; a header row is tall enough that a full-height block of color per column would
+  outshout the name it belongs to. 9px keeps the tile reading.
+- **Opacity carries density** — how much of the song that track covers — floored well
+  above nothing, because *whether* a track is used is the first question and *how much*
+  is the second. An empty column draws nothing at all: an absence answers faster than a
+  faint presence does.
 - **A folded track group is measured in tracks, not scenes** — "3 of 5 used" — the same
   stand-in a folded clip cell already shows, because the column stands for several tracks.
-- **The strip is the block's bottom edge while it exists**, so the drop indicator moves
-  onto it. `dropEdgeFor` still resolves the gap; only which row wears `drop-below`
-  changes. A pointer over the strip always means *below this song* — there's no
-  meaningful "above" from the lower half of a block — so it skips the midpoint test the
-  header does.
 
 ## Rearranging songs
 
