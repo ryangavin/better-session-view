@@ -179,6 +179,42 @@ A song in more than one block says `part 2 of 2` rather than being silently merg
 a song whose scenes disagree about a fact shows the clash in amber. Both are the grid
 telling you something the library will later have to arbitrate.
 
+### The header is a table, not a line
+
+A hundred headers stacked up **are** a table of contents, so the row is laid out as
+columns rather than as a sentence:
+
+```
+▸  128  Bm  NIGHTFALL·············  12 scenes  INTRO VERSE CHORUS OUTRO   ⚑
+   └bpm┘└key┘└── scene-col width ─┘└─ fixed ─┘ └── starts on a fixed line ──┘
+```
+
+- **Every slot keeps its width whether or not the song fills it.** That's the whole
+  mechanism: an empty bpm on one song is what keeps the next song's name where your eye
+  already is. Blank rather than a placeholder dash, for the reason the content strip
+  leaves an unused column undrawn.
+- **The facts lead**, so the key sits immediately left of the name it describes. bpm
+  before key is the order the naming convention itself writes — `@128-Bm`. Both are
+  right-aligned: `94` and `128` are the same fact at different widths and it's their
+  right edges that should line up.
+- **Every slot is sized to its values, not to its words.** Matching the name slot to
+  `--scene-col-w` was the tidier rule and the wrong one: at `l` it spends 290px on names
+  rarely half that, and the hole before the scene count ends up wider than anything in
+  it. Same for the facts — a bpm is three digits and a key is at most three characters,
+  so any extra is dead space on every song carrying neither, which in most sets is a lot
+  of them.
+- **The chips centre with flex, not with a baseline.** `.role-chip` carries a
+  `vertical-align` nudge for sitting beside a scene name; inherited here it left the
+  whole strip a pixel or two low. A flex `.roles` ignores it and has no invisible text
+  strut to centre against.
+- **Flex lives on a wrapper `div`, not the `td`.** `display: flex` on a table cell stops
+  it being a table cell and takes the grid's fixed layout down with it.
+- **Only the chips flex.** Everything left of them is fixed; everything right of them is
+  rare, short, and worth more than the tail of a long shape — so the chips are what
+  shrinks and clips, and `mixed color` / `part 2 of 2` / the drop note always survive.
+  Those three are deliberately *un*aligned: reserving a column each across a hundred
+  songs would spend the row on what almost none of them have to say.
+
 ### The song's shape
 
 A header carries a run of **role chips** — `INTRO VERSE CHORUS OUTRO` — the same chip the
@@ -194,9 +230,9 @@ build rather than a four-chorus wall.
   is the arrangement, not the shape, and it stops fitting on one row within a few songs.
   The scene count per role is in the chip's tooltip, where reading it is a decision rather
   than a tax on every glance.
-- **Last of the annotations.** The header row is `nowrap`, so something has to be what
-  ellipsis eats in a narrow window — and it should be this rather than `mixed color` or
-  the drop note.
+- **Always starts on the same vertical line**, because every slot to its left is fixed —
+  so a folded set reads as a column of shapes, and two songs built the same way look the
+  same from across the room.
 
 ### The content strip
 

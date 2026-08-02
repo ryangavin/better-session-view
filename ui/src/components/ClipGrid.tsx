@@ -373,7 +373,6 @@ const SongHeaderRow = memo(function SongHeaderRow({
   onDrop: () => void;
   onDragEnd: () => void;
 }) {
-  const facts = [header.bpm, header.key].filter((f) => f !== '');
   // The strip stands in for the rows this song is hiding, so it exists only
   // while it's folded. Open, the clips speak for themselves.
   const strip = header.collapsed && fill !== undefined ? fill : null;
@@ -445,57 +444,50 @@ const SongHeaderRow = memo(function SongHeaderRow({
           }}
           onDragEnd={onDragEnd}
         >
-          <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
-          <button
-            type="button"
-            className="song"
-            title={`Work on ${header.song} — selects every scene of it`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onPickSong(header.songKey);
-            }}
-          >
-            {header.song}
-          </button>
-          {facts.length > 0 && (
+          {/* Fixed-width slots rather than a run of inline spans, so a hundred
+              headers read as columns. Each one holds its width whether or not
+              the song has anything to put in it — an empty slot is what keeps
+              the next song's name, count and chips on the same vertical line.
+              Blank rather than a placeholder dash, for the reason the content
+              strip leaves an unused column undrawn. */}
+          <div className="song-line">
+            <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
+            {/* The facts lead, so the key lands immediately left of the name it
+                describes — and bpm before key is the order the naming
+                convention itself writes, `@128-Bm`. Both right-aligned: the
+                values differ in width ("94" / "128", "Bm" / "F#m") and their
+                right edges are what a column of them should line up on. */}
             <span className={`facts${header.clash ? ' clash' : ''}`}>
-              {facts.join(' · ')}
+              <span className="bpm" title={header.bpm === '' ? undefined : 'bpm'}>
+                {header.bpm}
+              </span>
+              <span className="key" title={header.key === '' ? undefined : 'key'}>
+                {header.key}
+              </span>
             </span>
-          )}
-          <span className="count">
-            {header.scenes} scene{header.scenes === 1 ? '' : 's'}
-          </span>
-          {/* A song is one color. When its scenes hold several, the header can't
-              state one, so it says why instead of quietly showing nothing —
-              "uncolored" and "colored inconsistently" look identical otherwise. */}
-          {header.colorClash && (
-            <span
-              className="mixed-color"
-              title="This song's scenes hold more than one color — pick a swatch to make it one"
+            <button
+              type="button"
+              className="song"
+              title={`Work on ${header.song} — selects every scene of it`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPickSong(header.songKey);
+              }}
             >
-              mixed color
+              {header.song}
+            </button>
+            <span className="count">
+              {header.scenes} scene{header.scenes === 1 ? '' : 's'}
             </span>
-          )}
-          {/* Only worth saying when there is more than one — a song in two runs
-              is a reprise, or it's two different songs sharing a name. */}
-          {header.blocks > 1 && (
-            <span className="part">
-              part {header.block} of {header.blocks}
-            </span>
-          )}
-          {/* The cost, on the indicator itself. This move can't be undone from
-              here, so what it's about to do belongs in front of you while your
-              finger is still on the mouse — not in the log afterwards. */}
-          {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
-          {/* The song's shape — intro, verse, chorus, outro — which is the one
-              thing the header can't say by naming the song or counting its
-              scenes. Shown open as well as folded: a twenty-scene song on
-              screen still makes you scan twenty rows to learn it.
+            {/* The song's shape — intro, verse, chorus, outro — which is the one
+                thing the header can't say by naming the song or counting its
+                scenes. Everything to its left is fixed, so this always starts on
+                the same vertical line and a folded set reads as a column of
+                shapes.
 
-              Last of the annotations because it's the longest and the least
-              urgent. The row is nowrap, so in a narrow window this is what
-              should ellipsis away — not "mixed color", and not the drop note. */}
-          {roles.length > 0 && (
+                The one item allowed to shrink. The flags after it are rare and
+                short and matter more than the tail of a long shape, and the drop
+                note in particular has to survive a narrow window. */}
             <span className="roles">
               {roles.map((r) => {
                 const roleRgb = roleColors.get(roleKey(r.name));
@@ -508,7 +500,7 @@ const SongHeaderRow = memo(function SongHeaderRow({
                         ? undefined
                         : { background: hex(roleRgb), color: inkOn(roleRgb) }
                     }
-                    // The count lives here rather than on the pill: the shape is
+                    // The count lives here rather than on the chip: the shape is
                     // what you read at a glance, and a run of "×3"s turns a
                     // legible strip into a table.
                     title={
@@ -522,7 +514,30 @@ const SongHeaderRow = memo(function SongHeaderRow({
                 );
               })}
             </span>
-          )}
+            {/* A song is one color. When its scenes hold several, the header
+                can't state one, so it says why instead of quietly showing
+                nothing — "uncolored" and "colored inconsistently" look
+                identical otherwise. */}
+            {header.colorClash && (
+              <span
+                className="mixed-color"
+                title="This song's scenes hold more than one color — pick a swatch to make it one"
+              >
+                mixed color
+              </span>
+            )}
+            {/* Only worth saying when there is more than one — a song in two
+                runs is a reprise, or it's two different songs sharing a name. */}
+            {header.blocks > 1 && (
+              <span className="part">
+                part {header.block} of {header.blocks}
+              </span>
+            )}
+            {/* The cost, on the indicator itself. This move can't be undone from
+                here, so what it's about to do belongs in front of you while your
+                finger is still on the mouse — not in the log afterwards. */}
+            {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
+          </div>
         </td>
       </tr>
       {/* What the fold is hiding, in one row: which tracks this block actually

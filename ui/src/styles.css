@@ -434,29 +434,56 @@ tr.song-row td {
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* The header's contents, as columns.
+   ------------------------------------------------------------------------
+   A hundred headers stacked up are a table of contents, and a table of
+   contents is a *table*: everything left of the role chips has a fixed width,
+   so each song's name, count and shape land on the same vertical line as the
+   one above it. Read down the page and each kind of fact is its own column.
+
+   Flex on a wrapper rather than on the `td`, because `display: flex` would
+   stop the cell being a table cell and take the grid's fixed layout with it.
+
+   Every slot holds its width whether or not the song fills it. That's the
+   whole mechanism — an empty bpm on one song is what keeps the next song's
+   name where the eye already is. */
+tr.song-row .song-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 tr.song-row:hover td {
   background: #141418;
 }
 tr.song-row .fold {
-  display: inline-block;
-  width: 14px;
+  flex: 0 0 14px;
   color: var(--dim2);
   font-size: 9px;
 }
-/* A button, not a label: the row folds, the title selects the whole song. */
+/* A button, not a label: the row folds, the title selects the whole song.
+
+   Sized to the song names rather than to the scene column. Matching
+   `--scene-col-w` was the tidier rule and the wrong one: at `l` it spends 290px
+   on names that are rarely half that, and the hole it leaves before the scene
+   count is wider than anything in it. 170px holds about the longest name that
+   reads at a glance; past that, ellipsis and the tooltip. */
 tr.song-row button.song {
+  flex: 0 0 170px;
+  min-width: 0;
   font-family: var(--sans);
   font-size: 12px;
   font-weight: 600;
   color: var(--fg);
   letter-spacing: -0.01em;
-  padding: 0;
+  padding: 0 10px 0 0;
   border: none;
   background: none;
   border-radius: 0;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 tr.song-row button.song:hover {
   color: var(--amber);
@@ -471,23 +498,73 @@ tr.song-row .part {
   font-family: var(--mono);
   font-size: 9.5px;
   color: var(--dim);
-  margin-left: 10px;
 }
-tr.song-row .facts.clash {
+/* The facts lead the row so the key sits immediately left of the name it
+   describes, and bpm before key is the order the convention itself writes:
+   `@128-Bm`. Both right-aligned — "94" and "128" are the same fact at
+   different widths, and it's their right edges that should line up. */
+   Slots are sized to the values, not to the words: a bpm is three digits and a
+   key is at most three characters, so anything wider is dead space on every
+   song that has neither — and most sets have plenty of those. */
+tr.song-row .facts {
+  display: flex;
+  flex: none;
+  padding-right: 8px;
+}
+tr.song-row .facts .bpm {
+  width: 26px;
+}
+tr.song-row .facts .key {
+  width: 28px;
+  color: var(--dim2);
+}
+tr.song-row .facts .bpm,
+tr.song-row .facts .key {
+  text-align: right;
+  overflow: hidden;
+  /* A disagreement renders as `128 / 130` and will outgrow its slot. Clipped
+     rather than widening the column: the amber says there *is* a clash from
+     across the room, which is the part that has to survive, and the facts
+     panel is where you go to read it. */
+  text-overflow: ellipsis;
+}
+tr.song-row .count {
+  flex: 0 0 56px;
+}
+/* Set on the children, not inherited from `.facts` — `.facts .key` dims itself
+   at the same specificity and later in the file, so it would win. */
+tr.song-row .facts.clash .bpm,
+tr.song-row .facts.clash .key {
   color: var(--amber);
 }
 tr.song-row .count,
 tr.song-row .part {
   color: var(--dim2);
 }
-/* The song's shape, as a run of role chips. A group rather than loose chips: it
-   opens on the same 10px gutter as the other annotations, then the chips sit
-   tight against each other so the run reads as one strip — "intro verse chorus
-   outro" — rather than as four separate labels. */
+/* The song's shape, as a run of role chips. A group rather than loose chips:
+   the chips sit tight against each other so the run reads as one strip —
+   "intro verse chorus outro" — rather than as four separate labels.
+
+   The one flexible item on the row. Everything to its left is fixed, so the
+   strip always starts on the same vertical line; everything to its right is
+   rare, short, and worth more than the tail of a long shape — which is why
+   this is the item that shrinks and clips rather than pushing them off. */
 tr.song-row .roles {
-  margin-left: 10px;
+  /* Flex, not inline-block, so the chips centre on the row rather than on a
+     text baseline. `.role-chip` carries a `vertical-align` nudge for sitting
+     beside a scene name, and inheriting it here left the whole strip a pixel or
+     two low — flex ignores it, and there's no invisible strut to centre
+     against either. */
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 tr.song-row .roles .role-chip {
+  /* The strip clips as a strip. Without this the chips share the squeeze and
+     every role becomes equally unreadable instead of the tail dropping off. */
+  flex: none;
   margin-left: 3px;
 }
 tr.song-row .roles .role-chip:first-child {
@@ -509,6 +586,15 @@ tr.song-row .mixed-color {
   font-family: var(--mono);
   font-size: 9.5px;
   color: var(--amber);
+}
+/* Everything after the chips. Unaligned on purpose — these are exceptions, and
+   reserving a column for each across a hundred songs would spend the row's
+   width on what almost none of them have to say. `flex: none` so they keep
+   their full text while the shape beside them clips. */
+tr.song-row .mixed-color,
+tr.song-row .part,
+tr.song-row .drop-note {
+  flex: none;
   margin-left: 10px;
 }
 
@@ -642,7 +728,7 @@ tr.song-row .drop-note {
   font-family: var(--mono);
   font-size: 9.5px;
   color: var(--amber);
-  margin-left: 10px;
+  /* Spacing comes from the flags rule up with the other exceptions. */
 }
 
 /* Scene launch. The only plain-click control in the app that makes a sound —
