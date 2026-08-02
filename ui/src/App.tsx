@@ -171,6 +171,45 @@ export function App() {
   );
   const [showSongs, setShowSongs] = useState(false);
 
+  /**
+   * The rail, and the log, both start closed.
+   *
+   * Neither is the thing you came for. The grid is, and on a 40-track set every
+   * pixel the rail isn't using is a track column you can see. The rail opens the
+   * moment you pick something to work on, which is the only time it has anything
+   * to say — see `openRail`.
+   */
+  const [showRail, setShowRail] = useState(false);
+  const [showLog, setShowLog] = useState(false);
+
+  /**
+   * Open the rail because a selection gesture just happened.
+   *
+   * Called from the three places that mean "I want to work on this" — a clip, a
+   * scene name, a song — rather than from an effect on the selection itself. An
+   * effect would also fire when a selection is *cleared*, and reopening the rail
+   * on the click that emptied it is the opposite of what closing it asked for.
+   */
+  const openRail = useCallback(() => setShowRail(true), []);
+
+  /**
+   * An error opens the log, however it got closed.
+   *
+   * Hiding diagnostics is fine right up until something fails silently, and
+   * every write in this app goes through `guard()` and lands here rather than
+   * throwing. So the one kind of line that can't be missed shows itself.
+   *
+   * Tracks the highest id seen rather than looking at `log[0]`: `say` prepends,
+   * and a burst can put an info line in front of the error that arrived with it.
+   */
+  const seenLogId = useRef(0);
+  useEffect(() => {
+    const fresh = bridge.log.filter((l) => l.id > seenLogId.current);
+    if (fresh.length === 0) return;
+    seenLogId.current = fresh[0]!.id;
+    if (fresh.some((l) => l.kind === 'error')) setShowLog(true);
+  }, [bridge.log]);
+
   // Which songs are folded. Keyed by song rather than by scene index, so it
   // survives a re-snapshot — every write re-walks the set, and a collapsed
   // state that reset each time would make the grid unusable during a mapping
@@ -260,6 +299,7 @@ export function App() {
   const onClip = useCallback(
     (t: number, s: number, m: CellClick) => {
       if (m.launch) return launch({ kind: 'clip', t, s });
+      openRail();
 
       const from = activeRef.current;
       setSelectedScenes(EMPTY_SCENES);
@@ -275,12 +315,13 @@ export function App() {
       selectCells([{ t, s }], false);
       goActive({ on: 'clip', t, s });
     },
-    [goActive, isOccupied, launch, rows, selectCells, trackColumns],
+    [goActive, isOccupied, launch, openRail, rows, selectCells, trackColumns],
   );
 
   const onScene = useCallback(
     (s: number, m: CellClick) => {
       if (m.launch) return launch({ kind: 'scene', s });
+      openRail();
 
       // The scene name column selects the whole row — every clip in the scene,
       // which is the unit bulk work actually operates on. Shift extends that
@@ -436,6 +477,7 @@ export function App() {
 
   const pickScenes = useCallback(
     (scenes: number[]) => {
+      openRail();
       setSelectedScenes(new Set(scenes));
       selectCells(
         trackColumns.length > 0
@@ -860,6 +902,18 @@ export function App() {
             </button>
           ))}
         </div>
+        {/* The log is diagnostics, so it's off by default and reachable in one
+            click. It opens itself on an error — see the effect above — because
+            a failure you can't see is a failure that didn't happen. */}
+        <button
+          type="button"
+          className={`toggle${showLog ? ' on' : ''}`}
+          aria-pressed={showLog}
+          title="Show what the bridge is saying"
+          onClick={() => setShowLog((v) => !v)}
+        >
+          Log
+        </button>
         <button
           type="button"
           className="primary"
@@ -940,53 +994,69 @@ export function App() {
             you make first, and pressing the role's color is the two-click path
             this panel exists for. The swatch grid and clip rename below are the
             manual fallback for everything a role doesn't cover. */}
-        <aside>
-          <ScenePanel
-            vocabulary={vocabulary}
-            palette={bridge.palette}
-            inUse={inUseKeys}
-            sceneCount={selectedScenes.size}
-            common={commonFields}
-            patch={titlePatch}
-            onPatch={setTitlePatch}
-            titleCount={sceneNameOps.length}
-            titlePreview={selectedScenes.size === 0 ? null : titlePreview}
-            onRenameScenes={onRenameScenes}
-            tempoCount={tempoWriteOps.length}
-            onSetTempo={onSetTempo}
-            songColorIndex={songColorIndex}
-            songColorCount={songColorScenes.length}
-            songColorLabel={songColorLabel}
-            onSongColor={onSongColor}
-            currentRole={currentRole}
-            mixed={mixed}
-            clipCount={roleClipOps.length}
-            busy={bridge.busy}
-            onAssign={onAssignRole}
-            onColorClips={onColorClips}
-            onSaveRoles={(next) => void bridge.saveRoles(next)}
-          />
+        {showRail && (
+          <aside>
+            {/* The rail is closable because it's a workspace, not chrome: shut it
+                and the grid gets its 264px back. Clicking a clip, a scene or a
+                song opens it again, so there's no state to get stranded in. */}
+            <div className="rail-head">
+              <span className="lbl">Edit</span>
+              <button
+                type="button"
+                className="icon"
+                title="Close — clicking a clip, a scene or a song reopens it"
+                onClick={() => setShowRail(false)}
+              >
+                ×
+              </button>
+            </div>
+            <ScenePanel
+              vocabulary={vocabulary}
+              palette={bridge.palette}
+              inUse={inUseKeys}
+              sceneCount={selectedScenes.size}
+              common={commonFields}
+              patch={titlePatch}
+              onPatch={setTitlePatch}
+              titleCount={sceneNameOps.length}
+              titlePreview={selectedScenes.size === 0 ? null : titlePreview}
+              onRenameScenes={onRenameScenes}
+              tempoCount={tempoWriteOps.length}
+              onSetTempo={onSetTempo}
+              songColorIndex={songColorIndex}
+              songColorCount={songColorScenes.length}
+              songColorLabel={songColorLabel}
+              onSongColor={onSongColor}
+              currentRole={currentRole}
+              mixed={mixed}
+              clipCount={roleClipOps.length}
+              busy={bridge.busy}
+              onAssign={onAssignRole}
+              onColorClips={onColorClips}
+              onSaveRoles={(next) => void bridge.saveRoles(next)}
+            />
 
-          <div className="rule" />
+            <div className="rule" />
 
-          <Inspector
-            palette={bridge.palette}
-            chosenIndex={chosenIndex}
-            onColor={onColor}
-            pattern={pattern}
-            onPattern={setPattern}
-            selectedCount={selected.size}
-            renameCount={nameOps.length}
-            preview={preview}
-            busy={bridge.busy}
-            progress={bridge.progress}
-            undoDepth={bridge.undoDepth}
-            onRename={() => void bridge.apply(nameOps, 'rename')}
-            onUndo={() => void bridge.undo()}
-            onClear={clearSelection}
-            onExtractPalette={() => void bridge.extractPalette()}
-          />
-        </aside>
+            <Inspector
+              palette={bridge.palette}
+              chosenIndex={chosenIndex}
+              onColor={onColor}
+              pattern={pattern}
+              onPattern={setPattern}
+              selectedCount={selected.size}
+              renameCount={nameOps.length}
+              preview={preview}
+              busy={bridge.busy}
+              progress={bridge.progress}
+              undoDepth={bridge.undoDepth}
+              onRename={() => void bridge.apply(nameOps, 'rename')}
+              onUndo={() => void bridge.undo()}
+              onClear={clearSelection}
+              onExtractPalette={() => void bridge.extractPalette()}
+            />
+          </aside>
+        )}
       </main>
 
       {showSongs && snapshot && (
@@ -1001,13 +1071,15 @@ export function App() {
         />
       )}
 
-      <footer>
-        {bridge.log.map((l) => (
-          <div key={l.id} className={`log-line ${l.kind}`}>
-            {l.text}
-          </div>
-        ))}
-      </footer>
+      {showLog && (
+        <footer>
+          {bridge.log.map((l) => (
+            <div key={l.id} className={`log-line ${l.kind}`}>
+              {l.text}
+            </div>
+          ))}
+        </footer>
+      )}
     </>
   );
 }

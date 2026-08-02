@@ -136,6 +136,13 @@ button.primary:hover:not(:disabled) {
   background: #ffc961;
   border-color: #ffc961;
 }
+/* A button that shows what it opened rather than doing something once. Same
+   lit-when-on treatment the width presets use, so "this is a view control"
+   looks the same wherever it appears. */
+button.toggle.on {
+  background: var(--sel);
+  color: var(--amber);
+}
 
 /* --- playback ----------------------------------------------------- */
 
@@ -834,6 +841,31 @@ td.scene.active {
 }
 
 /* --- inspector ---------------------------------------------------- */
+
+/* The rail's own head: what it is, and the way out. It's a workspace rather
+   than chrome — closed, the grid gets the 264px back — and clicking a clip, a
+   scene or a song opens it again, so nothing can get stranded shut. */
+.rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* Pulled up into the aside's own padding: the head is a title for what
+     follows, not a band of its own. */
+  margin: -2px 0 -2px;
+}
+button.icon {
+  padding: 0 4px;
+  border: none;
+  background: none;
+  border-radius: 3px;
+  color: var(--dim2);
+  font-size: 14px;
+  line-height: 16px;
+}
+button.icon:hover {
+  color: var(--fg);
+  background: var(--sel);
+}
 
 aside {
   width: 264px;

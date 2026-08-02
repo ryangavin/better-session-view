@@ -76,6 +76,27 @@ keep it that way.
 `useBridge.ts` wraps it in React state and owns the log lines. `guard()` wraps every
 operation so failures land in the log rather than as unhandled rejections.
 
+## The grid is the app; everything else opens
+
+Two panes start **closed**, because neither is what you came for. On a 40-track set every
+pixel the rail isn't using is a track column you can see.
+
+- **The rail** — scene fields, roles, swatches, rename — opens the moment you pick
+  something to work on: a clip, a scene name, or a song. Its `×` closes it and gives the
+  grid back 264px. There's no way to get stranded shut, because the next click on any of
+  those three reopens it.
+
+  It opens from those three handlers rather than from an effect on the selection, and the
+  difference matters: an effect would also fire when a selection is *cleared*, so the
+  click that empties the grid would reopen the rail you just closed.
+
+- **The log** is diagnostics, so it's behind a **Log** toggle in the header — and it
+  **opens itself on an error**. Every write in this app goes through `guard()` and lands
+  in the log rather than throwing, so a hidden log is the difference between a failed
+  write and a silent one. The effect watches for ids above the highest seen rather than
+  looking at `log[0]`, because `say` prepends and a burst can put an info line in front of
+  the error that arrived with it.
+
 ## Color writes on click, naming doesn't
 
 The asymmetry in the Inspector is deliberate. A color is instantly legible in the grid and
