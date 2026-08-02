@@ -599,9 +599,17 @@ tr.song-row.colored td:first-child::before {
   background: var(--song-rgb);
 }
 
-/* The song's color as a wash behind the whole row, at a strength the text still
-   reads through. Every cell, so a folded row's tiles sit on it too. */
+/* The song's color as a wash behind the row, at a strength the text still reads
+   through. Every cell, so a folded row's marks sit on it too — but not at equal
+   strength. The cell holding the title is the song; the track cells are what's
+   inside it, and a folded row reads faster when the two are told apart by
+   weight rather than only by a border. So the wash halves outside the first
+   cell, which also stops the marks competing with a field of color behind
+   them. */
 tr.song-row.colored td {
+  background-color: var(--song-wash-dim);
+}
+tr.song-row.colored td:first-child {
   background-color: var(--song-wash);
 }
 /* Hover, without disturbing the wash: a white film over it. `color-mix` would

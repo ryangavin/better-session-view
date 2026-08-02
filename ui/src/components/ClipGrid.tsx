@@ -391,6 +391,9 @@ const SongHeaderRow = memo(function SongHeaderRow({
       : ({
           '--song-rgb': hex(band),
           '--song-wash': `${hex(band)}24`,
+          // Half strength, for the cells right of the title — see the note on
+          // `.song-row.colored td` in styles.css.
+          '--song-wash-dim': `${hex(band)}12`,
         } as CSSProperties);
 
   // Folded, the header stands in for the rows it hides, so each track column

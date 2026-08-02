@@ -144,7 +144,10 @@ in it. Two things follow:
   `disagreements()` lists it for lint.
 
 The song's color rides on the header as a solid left bar plus a wash across the whole row,
-so a fully folded set is a column of bands. Three separate things want that row's edges,
+so a fully folded set is a column of bands. The wash **halves outside the first cell**:
+the cell holding the title is the song, the track cells are what's inside it, and a folded
+row reads faster when the two are told apart by weight than by a border. It also stops the
+section marks competing with a field of color behind them. Three separate things want that row's edges,
 so they get one property each and never negotiate: the **bar** is a `::before` on the
 first cell, the **wash** is `background`, and the **collapsed and drop-target indicators**
 are `box-shadow`. A border is out because it would change the row's height, which the
