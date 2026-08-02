@@ -424,20 +424,23 @@ td.scene.picked {
 
 /* --- song header rows --------------------------------------------- */
 
-/* One per song *block*, spanning the whole grid. The gap above it is what
-   actually segments the set visually — the text is secondary.
+/* One per song *block*, spanning the whole grid.
+   ------------------------------------------------------------------------
+   **No border at all**, top or otherwise. It began as a 1px `--bd3` rule, and
+   a light edge along the top of a dark surface is exactly how you draw a
+   bevel — the more so once a folded header became many cells and the table's
+   2px `border-spacing` chopped that highlight into a segment over each one,
+   which is what made the row look raised. Repainting it in the page's own
+   color fixed the bevel but left the header sitting in a 5px gutter where
+   every other gap in the grid is 2px, and one axis spaced differently from the
+   other is its own kind of depth cue.
 
-   **Space, not a line.** This was a 1px `--bd3` rule, and a light edge along
-   the top of a dark surface is exactly how you draw a bevel — the more so once
-   a folded header became many cells and the table's 2px `border-spacing`
-   chopped that highlight into a segment over each one, which is what made the
-   row look raised. A band in the page's own color separates just as clearly
-   and has no lit edge to catch the light. It reads as continuous across the
-   cells for the same reason: border and spacing are the same color, so the two
-   are one gutter. */
+   So the separator is `border-spacing` and nothing else: every gutter in the
+   table, both axes, is the same 2px. What sets a header apart is its own
+   surface — `--rail` against the clip cells' lighter fill, the song's wash,
+   and the bar down its left edge. Surfaces, not edges. */
 tr.song-row td {
-  padding: 5px 8px;
-  border-top: 3px solid var(--bg);
+  padding: 6px 8px;
   background: var(--rail);
   cursor: pointer;
   white-space: nowrap;

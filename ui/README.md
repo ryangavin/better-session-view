@@ -166,12 +166,15 @@ less contrast than a scene name — but a band you can't see is the whole thing 
 ## Song headers, and folding
 
 Each song block gets a **full-width header row** above its first scene, which is what
-actually segments the grid — the gap above the row does more work than the text on it.
-That gap is **space rather than a line**: a 1px light rule along the top of a dark cell is
-how you draw a bevel, and once a folded header became several cells the table's 2px
-`border-spacing` chopped that highlight into a segment over each one, which made the row
-look raised. The separator is now a 3px band in the page's own color, continuous across
-the cells because the border and the spacing are the same color.
+actually segments the grid. It carries **no border at all**. It began as a 1px light rule
+along the top, which is how you draw a bevel — and once a folded header became several
+cells the table's 2px `border-spacing` chopped that highlight into a segment over each one,
+so the row read as raised tiles. Repainting the rule in the page's own color fixed the
+bevel but left the header in a 5px gutter where every other gap in the grid is 2px, and one
+axis spaced differently from the other is its own kind of depth cue. So the separator is
+`border-spacing` and nothing else: every gutter in the table, both axes, is the same 2px.
+What sets a header apart is its own surface — `--rail` against the clip cells' lighter
+fill, the song's wash, and the bar down its left edge. **Surfaces, not edges.**
 Clicking one folds the song to just that header. A hundred songs fold to a hundred rows,
 which is the point: **Collapse all** in the songs modal turns the whole set into a table
 of contents.
