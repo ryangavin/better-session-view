@@ -179,6 +179,33 @@ A song in more than one block says `part 2 of 2` rather than being silently merg
 a song whose scenes disagree about a fact shows the clash in amber. Both are the grid
 telling you something the library will later have to arbitrate.
 
+### The content strip
+
+A folded header gets a second, short row: **one cell per grid column, lit where that block
+has clips**. Folded, a song otherwise tells you what it's *called*; the strip tells you
+what's *in* it — that Waterfalls carries the sparkle pad and the space arp — which is the
+question you're actually asking when you're choosing what to blend into next.
+
+It works because it's **aligned to the track columns**, and the track-name row is sticky:
+scroll a fully-folded set and every mark still has its track named above it. `blockFills`
+in core does the counting; `App` memoizes it against the *derivation*, not against
+`collapsedSongs`, so folding one song doesn't rebuild the map and hand all hundred headers
+a new prop.
+
+- **The cell is the mark**, not a bar inside it. The grid already puts 2px of
+  `border-spacing` between columns, so a filled cell reads as a tile under its track name.
+  Opacity carries density — how much of the song that track covers — floored well above
+  nothing, because *whether* a track is used is the first question and *how much* is the
+  second. An empty column draws nothing at all: an absence answers faster than a faint
+  presence does.
+- **A folded track group is measured in tracks, not scenes** — "3 of 5 used" — the same
+  stand-in a folded clip cell already shows, because the column stands for several tracks.
+- **The strip is the block's bottom edge while it exists**, so the drop indicator moves
+  onto it. `dropEdgeFor` still resolves the gap; only which row wears `drop-below`
+  changes. A pointer over the strip always means *below this song* — there's no
+  meaningful "above" from the lower half of a block — so it skips the midpoint test the
+  header does.
+
 ## Rearranging songs
 
 **Drag a song header to move that whole run of scenes.** An amber line shows where it

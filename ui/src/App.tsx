@@ -43,7 +43,7 @@ import {
   songKey as songKeyOf,
   songsOfScenes,
 } from '../../core/src/derive.js';
-import { allSongKeys, songRows } from '../../core/src/songRows.js';
+import { allSongKeys, blockFills, songRows } from '../../core/src/songRows.js';
 import { describeMove, planSceneMove } from '../../core/src/sceneMove.js';
 import {
   cellsInBlock,
@@ -182,6 +182,25 @@ export function App() {
   const layout = useMemo(
     () => songRows(derivation, collapsedSongs),
     [collapsedSongs, derivation],
+  );
+
+  /**
+   * What each song block holds, per track — the strip a folded header shows in
+   * place of the rows it's hiding.
+   *
+   * Computed for every block rather than only the folded ones, deliberately.
+   * It's a single pass over the clips, and keying it off `derivation` instead of
+   * `collapsedSongs` means folding a song doesn't rebuild the map — which would
+   * hand every header a new prop and re-render all hundred of them on a gesture
+   * that changed one.
+   */
+  const songFills = useMemo(
+    () =>
+      blockFills(
+        snapshot?.clips ?? [],
+        derivation.songs.flatMap((s) => s.blocks),
+      ),
+    [derivation, snapshot],
   );
 
   /**
@@ -891,6 +910,7 @@ export function App() {
               selectedScenes={selectedScenes}
               songHeaders={layout.headers}
               hiddenScenes={layout.hidden}
+              songFills={songFills}
               onToggleSong={onToggleSong}
               onPickSong={onPickSong}
               dragFrom={dragBlock?.from ?? -1}
