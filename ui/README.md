@@ -179,6 +179,25 @@ A song in more than one block says `part 2 of 2` rather than being silently merg
 a song whose scenes disagree about a fact shows the clash in amber. Both are the grid
 telling you something the library will later have to arbitrate.
 
+### The song's shape
+
+A header carries a run of **role chips** — `INTRO VERSE CHORUS OUTRO` — the same chip the
+scene rows use, in the same vocabulary color. It's the one thing a header can't say by
+naming the song or counting its scenes, and it's what tells you a song is a two-verse
+build rather than a four-chorus wall.
+
+- **Shown open as well as folded**, unlike the content strip. A twenty-scene song on
+  screen still makes you scan twenty rows to learn its shape. Open, though, the chips
+  below say it per scene *and in order*, so the summary drops to 55% opacity and comes
+  back on hover — present, not competing.
+- **Deduped, in first-appearance order, and never numbered.** `VERSE CHORUS VERSE CHORUS`
+  is the arrangement, not the shape, and it stops fitting on one row within a few songs.
+  The scene count per role is in the chip's tooltip, where reading it is a decision rather
+  than a tax on every glance.
+- **Last of the annotations.** The header row is `nowrap`, so something has to be what
+  ellipsis eats in a narrow window — and it should be this rather than `mixed color` or
+  the drop note.
+
 ### The content strip
 
 A folded header gets a second, short row: **one cell per grid column, lit where that block

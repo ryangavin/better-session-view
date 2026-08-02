@@ -43,7 +43,12 @@ import {
   songKey as songKeyOf,
   songsOfScenes,
 } from '../../core/src/derive.js';
-import { allSongKeys, blockFills, songRows } from '../../core/src/songRows.js';
+import {
+  allSongKeys,
+  blockFills,
+  blockRoles,
+  songRows,
+} from '../../core/src/songRows.js';
 import { describeMove, planSceneMove } from '../../core/src/sceneMove.js';
 import {
   cellsInBlock,
@@ -184,6 +189,12 @@ export function App() {
     [collapsedSongs, derivation],
   );
 
+  /** Every block in the set — what both per-block summaries below are keyed by. */
+  const songBlocks = useMemo(
+    () => derivation.songs.flatMap((s) => s.blocks),
+    [derivation],
+  );
+
   /**
    * What each song block holds, per track — the strip a folded header shows in
    * place of the rows it's hiding.
@@ -195,12 +206,21 @@ export function App() {
    * that changed one.
    */
   const songFills = useMemo(
-    () =>
-      blockFills(
-        snapshot?.clips ?? [],
-        derivation.songs.flatMap((s) => s.blocks),
-      ),
-    [derivation, snapshot],
+    () => blockFills(snapshot?.clips ?? [], songBlocks),
+    [songBlocks, snapshot],
+  );
+
+  /**
+   * The roles each song block uses, in first-appearance order — the song's
+   * shape, which the header shows as a run of pills.
+   *
+   * Unlike `songFills` this is shown whether or not the song is folded: the
+   * shape is what the header is *for*, and a twenty-scene song open on screen
+   * still makes you scan twenty rows to learn it.
+   */
+  const songRoles = useMemo(
+    () => blockRoles(snapshot?.scenes ?? [], songBlocks),
+    [songBlocks, snapshot],
   );
 
   /**
@@ -911,6 +931,7 @@ export function App() {
               songHeaders={layout.headers}
               hiddenScenes={layout.hidden}
               songFills={songFills}
+              songRoles={songRoles}
               onToggleSong={onToggleSong}
               onPickSong={onPickSong}
               dragFrom={dragBlock?.from ?? -1}

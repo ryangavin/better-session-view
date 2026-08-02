@@ -8,7 +8,7 @@ import {
 import { hex, inkOn, legibleOn } from '../../../core/src/color.js';
 import { nameWithoutRole, roleIn, roleKey } from '../../../core/src/roles.js';
 import { headerSpans, type Column } from '../../../core/src/trackColumns.js';
-import type { SongHeader } from '../../../core/src/songRows.js';
+import type { RoleTally, SongHeader } from '../../../core/src/songRows.js';
 import type { ActiveCell } from '../../../core/src/gridRange.js';
 import { clipKey } from '../lib/selection.js';
 import { isAddModified, isLaunchModified, LAUNCH_KEY } from '../lib/keys.js';
@@ -49,6 +49,9 @@ function tint(rgb: number, fraction: number): string {
 /** Live's own encoding: the track's stop button is fired and blinking. */
 const STOP_FIRED = -2;
 
+/** One shared empty list, so an untagged song's header stays memo-stable. */
+const NO_ROLES: RoleTally[] = [];
+
 export interface CellClick {
   /** True when the click carried the launch modifier — see lib/keys.ts. */
   launch: boolean;
@@ -77,6 +80,8 @@ interface Props {
   hiddenScenes: ReadonlySet<number>;
   /** Block's first scene → track index → scenes of it holding a clip. */
   songFills: Map<number, Map<number, number>>;
+  /** Block's first scene → the roles it uses, in first-appearance order. */
+  songRoles: Map<number, RoleTally[]>;
   onToggleSong: (songKey: string) => void;
   /** Select every scene of a song, across all its blocks. */
   onPickSong: (songKey: string) => void;
@@ -296,6 +301,12 @@ const Row = memo(function Row({
  * Memoized on primitives for the same reason `Row` is: there can be a hundred
  * of these, and they must not all re-render because one song folded. That's why
  * `SongHeader` in core carries rendered strings rather than the observed arrays.
+ *
+ * The four non-primitive props are all deliberate exceptions, and all safe for
+ * the same reason: `columns`, `fill`, `roles` and `roleColors` are rebuilt only
+ * when the set or the vocabulary changes — never on a fold, and never on the
+ * mouse moves a drag produces, which are the two gestures that would otherwise
+ * cost a hundred re-renders.
  */
 /**
  * Which edge of this header the drop indicator belongs on, if either.
@@ -322,6 +333,8 @@ const SongHeaderRow = memo(function SongHeaderRow({
   span,
   rgb,
   fill,
+  roles,
+  roleColors,
   dragging,
   dropEdge,
   dropNote,
@@ -341,12 +354,12 @@ const SongHeaderRow = memo(function SongHeaderRow({
   /**
    * Track index → scenes of this block holding a clip there, or `undefined`
    * when the song is open and there is nothing to stand in for.
-   *
-   * A Map is the one non-primitive prop here, and it's safe because `blockFills`
-   * rebuilds only on a new snapshot — not on a fold, and not on the mouse moves
-   * a drag produces.
    */
   fill: Map<number, number> | undefined;
+  /** The roles this block uses, in first-appearance order — the song's shape. */
+  roles: RoleTally[];
+  /** roleKey → the RGB its pill is painted. Shared with the scene rows' chips. */
+  roleColors: Map<string, number>;
   /** This block is the one being dragged. */
   dragging: boolean;
   /** Which edge of this header the drop indicator sits on, if any. */
@@ -474,6 +487,42 @@ const SongHeaderRow = memo(function SongHeaderRow({
               here, so what it's about to do belongs in front of you while your
               finger is still on the mouse — not in the log afterwards. */}
           {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
+          {/* The song's shape — intro, verse, chorus, outro — which is the one
+              thing the header can't say by naming the song or counting its
+              scenes. Shown open as well as folded: a twenty-scene song on
+              screen still makes you scan twenty rows to learn it.
+
+              Last of the annotations because it's the longest and the least
+              urgent. The row is nowrap, so in a narrow window this is what
+              should ellipsis away — not "mixed color", and not the drop note. */}
+          {roles.length > 0 && (
+            <span className="roles">
+              {roles.map((r) => {
+                const roleRgb = roleColors.get(roleKey(r.name));
+                return (
+                  <span
+                    key={roleKey(r.name)}
+                    className={`role-chip${roleRgb === undefined ? ' uncolored' : ''}`}
+                    style={
+                      roleRgb === undefined
+                        ? undefined
+                        : { background: hex(roleRgb), color: inkOn(roleRgb) }
+                    }
+                    // The count lives here rather than on the pill: the shape is
+                    // what you read at a glance, and a run of "×3"s turns a
+                    // legible strip into a table.
+                    title={
+                      `${r.name} — ${r.scenes} scene${r.scenes === 1 ? '' : 's'}` +
+                      ` of ${header.song}` +
+                      (roleRgb === undefined ? ' · no color set for this role' : '')
+                    }
+                  >
+                    {r.name}
+                  </span>
+                );
+              })}
+            </span>
+          )}
         </td>
       </tr>
       {/* What the fold is hiding, in one row: which tracks this block actually
@@ -548,6 +597,7 @@ export function ClipGrid({
   songHeaders,
   hiddenScenes,
   songFills,
+  songRoles,
   onToggleSong,
   onPickSong,
   dragFrom,
@@ -667,6 +717,12 @@ export function ClipGrid({
                 // the prop `undefined` — and so memo-stable — for every open
                 // song in the set.
                 fill={header.collapsed ? songFills.get(header.from) : undefined}
+                // Unlike the fill, shown folded or not — the shape is what the
+                // header is for. `?? NO_ROLES` rather than a fresh `[]`, which
+                // would be a new identity every render and defeat the memo for
+                // every song the pattern hasn't mapped yet.
+                roles={songRoles.get(header.from) ?? NO_ROLES}
+                roleColors={roleColors}
                 // Resolved here rather than inside the row: the palette is an
                 // array whose identity changes on every snapshot, and a prop
                 // like that would re-render all hundred headers. A number

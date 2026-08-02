@@ -389,8 +389,12 @@ td.scene .unnamed {
 }
 
 /* The role, lifted out of the scene name. Live holds "Nightfall [chorus]"; we
-   show the title and paint the tag, which is the point of storing it there. */
-td.scene .role-chip {
+   show the title and paint the tag, which is the point of storing it there.
+
+   Unscoped rather than under `td.scene`, because a song header shows the same
+   chip for each role in its block. One look for one thing: a chip means "role",
+   in the color the vocabulary gives it, wherever it appears. */
+.role-chip {
   display: inline-block;
   margin-left: 6px;
   padding: 0 5px;
@@ -405,7 +409,7 @@ td.scene .role-chip {
 }
 /* A role tagged in the set that nobody has given a color. Outlined rather than
    hidden: the tag is really there, and it colors nothing until it's configured. */
-td.scene .role-chip.uncolored {
+.role-chip.uncolored {
   background: transparent;
   border: 1px dashed var(--bd3);
   color: var(--dim2);
@@ -476,6 +480,29 @@ tr.song-row .count,
 tr.song-row .part {
   color: var(--dim2);
 }
+/* The song's shape, as a run of role chips. A group rather than loose chips: it
+   opens on the same 10px gutter as the other annotations, then the chips sit
+   tight against each other so the run reads as one strip — "intro verse chorus
+   outro" — rather than as four separate labels. */
+tr.song-row .roles {
+  margin-left: 10px;
+}
+tr.song-row .roles .role-chip {
+  margin-left: 3px;
+}
+tr.song-row .roles .role-chip:first-child {
+  margin-left: 0;
+}
+/* Folded, the header is standing in for its scenes, so the shape is the most
+   useful thing on the row. Open, the chips below say it per scene and in order,
+   so the summary steps back rather than competing with them. */
+tr.song-row:not(.collapsed) .roles {
+  opacity: 0.55;
+}
+tr.song-row:not(.collapsed):hover .roles {
+  opacity: 1;
+}
+
 /* The one annotation that isn't a fact about the song but a fault in it: this
    song's scenes hold several colors, so the header can't state one. */
 tr.song-row .mixed-color {
