@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import type { Derivation, DerivedSong } from '../../../core/src/derive.js';
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
 
 interface Props {
   derivation: Derivation;
@@ -49,16 +49,7 @@ export function SongsModal({
   onCollapseAll,
   onClose,
 }: Props) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation(); // or Esc also stops every clip in Live
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [onClose]);
+  useCloseOnEscape(onClose);
 
   const { songs, unmapped, scenes } = derivation;
 

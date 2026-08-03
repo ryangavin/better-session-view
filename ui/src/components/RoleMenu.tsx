@@ -1,18 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { hex } from '../../../core/src/color.js';
 import { roleKey, type Role } from '../../../core/src/roles.js';
-
-/** Where the menu hangs from — the chip's own box, in viewport coordinates. */
-export interface Anchor {
-  left: number;
-  top: number;
-  bottom: number;
-}
+import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.js';
+import { useDismissOnScroll } from '../hooks/useDismissOnScroll.js';
+import { useMenuKeyboard } from '../hooks/useMenuKeyboard.js';
 
 interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */
   vocabulary: Role[];
   palette: number[];
+  /** The chip's own box, in viewport coordinates. */
   anchor: Anchor;
   /** How many scenes a pick would write. Said out loud rather than assumed. */
   count: number;
@@ -24,9 +21,6 @@ interface Props {
   onManage: () => void;
   onClose: () => void;
 }
-
-const GAP = 4;
-const EDGE = 8;
 
 /**
  * The role picker that hangs off a scene's role chip.
@@ -59,75 +53,25 @@ export function RoleMenu({
   // two aren't a different list depending on where you tag from. The last index
   // *is* "no role"; there's no separate item to keep in step.
   const last = vocabulary.length;
-  const [cursor, setCursor] = useState(() => {
-    if (mixed) return -1;
-    if (current === null) return last;
-    return vocabulary.findIndex((r) => roleKey(r.name) === currentKey);
+  const [cursor, setCursor] = useMenuKeyboard({
+    itemCount: last + 1,
+    initialCursor: mixed
+      ? -1
+      : current === null
+        ? last
+        : vocabulary.findIndex((r) => roleKey(r.name) === currentKey),
+    onEnter: (c) => {
+      if (c === last) onPick(null);
+      else if (c >= 0) onPick(vocabulary[c]!.name);
+    },
+    onClose,
   });
 
-  // Placed after measuring rather than from the anchor alone: near the bottom
-  // of a long set the menu has to flip above the chip, and near the right edge
-  // of the scene column it has to slide left. useLayoutEffect so the correction
-  // lands before the browser paints.
-  const [pos, setPos] = useState({ left: anchor.left, top: anchor.bottom + GAP });
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const { width, height } = el.getBoundingClientRect();
-    const left = Math.max(EDGE, Math.min(anchor.left, window.innerWidth - width - EDGE));
-    const below = anchor.bottom + GAP;
-    const top =
-      below + height > window.innerHeight - EDGE
-        ? Math.max(EDGE, anchor.top - GAP - height)
-        : below;
-    setPos({ left, top });
-  }, [anchor]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // Every key this handles is a key the grid also handles — Esc stops
-      // clips, the arrows move the active cell — so each one is swallowed here
-      // while the menu is up. Capture phase, ahead of App's window listener.
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-        return;
-      }
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.stopPropagation();
-        e.preventDefault();
-        const down = e.key === 'ArrowDown';
-        setCursor((c) => {
-          if (c < 0) return down ? 0 : last;
-          return (c + (down ? 1 : -1) + last + 1) % (last + 1);
-        });
-        return;
-      }
-      if (e.key === 'Enter') {
-        e.stopPropagation();
-        e.preventDefault();
-        if (cursor === last) onPick(null);
-        else if (cursor >= 0) onPick(vocabulary[cursor]!.name);
-        return;
-      }
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [cursor, last, onClose, onPick, vocabulary]);
-
+  const pos = useAnchoredPosition(anchor, ref);
   // The menu is positioned against the viewport, so anything that moves the
-  // chip out from under it — scrolling the grid, resizing the window — closes
-  // it rather than leaving it pointing at the wrong row. Capture phase, because
-  // a scroll inside `.grid-wrap` doesn't bubble.
-  useEffect(() => {
-    const bail = () => onClose();
-    window.addEventListener('scroll', bail, true);
-    window.addEventListener('resize', bail);
-    return () => {
-      window.removeEventListener('scroll', bail, true);
-      window.removeEventListener('resize', bail);
-    };
-  }, [onClose]);
+  // chip out from under it closes it rather than leaving it pointing at the
+  // wrong row.
+  useDismissOnScroll(onClose);
 
   return (
     <div className="menu-back" onClick={onClose} onContextMenu={onClose}>

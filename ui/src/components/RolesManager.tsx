@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { hex } from '../../../core/src/color.js';
 import { findRoleProblems, MAX_ROLE_LEN, roleKey, type Role } from '../../../core/src/roles.js';
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
+import { SwatchGrid } from './SwatchGrid.js';
 
 interface Props {
   vocabulary: Role[];
@@ -28,16 +30,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
   /** Row whose color is being picked, or null when the palette is closed. */
   const [picking, setPicking] = useState<number | null>(null);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation(); // or Esc also stops every clip in Live
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [onClose]);
+  useCloseOnEscape(onClose);
 
   const problems = useMemo(() => findRoleProblems(draft), [draft]);
 
@@ -108,21 +101,15 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
             {palette.length === 0 ? (
               <div className="hint">No palette yet — take a snapshot first.</div>
             ) : (
-              <div className="swatches wide">
-                {palette.map((rgb, ci) => (
-                  <button
-                    key={ci}
-                    type="button"
-                    className={`sw${draft[picking]?.colorIndex === ci ? ' on' : ''}`}
-                    style={{ background: hex(rgb) }}
-                    title={`index ${ci}`}
-                    onClick={() => {
-                      edit(picking, { colorIndex: ci });
-                      setPicking(null);
-                    }}
-                  />
-                ))}
-              </div>
+              <SwatchGrid
+                palette={palette}
+                wide
+                current={draft[picking]?.colorIndex ?? null}
+                onPick={(ci) => {
+                  edit(picking, { colorIndex: ci });
+                  setPicking(null);
+                }}
+              />
             )}
           </>
         )}

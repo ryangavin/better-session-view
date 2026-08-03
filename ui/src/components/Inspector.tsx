@@ -1,5 +1,6 @@
 import { hex } from '../../../core/src/color.js';
 import { TOKENS, unknownTokens } from '../../../core/src/pattern.js';
+import { SwatchGrid } from './SwatchGrid.js';
 
 interface Props {
   palette: number[];
@@ -53,19 +54,15 @@ export function Inspector({
         <div className="hint">No palette yet — the next snapshot derives it.</div>
       ) : (
         <>
-          <div className="swatches">
-            {palette.map((rgb, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`sw${chosenIndex === i ? ' on' : ''}`}
-                style={{ background: hex(rgb) }}
-                title={`index ${i} — ${hex(rgb)}${none ? '' : ` — apply to ${selectedCount} clips`}`}
-                disabled={none || busy}
-                onClick={() => onColor(i)}
-              />
-            ))}
-          </div>
+          <SwatchGrid
+            palette={palette}
+            current={chosenIndex}
+            disabled={none || busy}
+            titleFor={(i, rgb) =>
+              `index ${i} — ${hex(rgb)}${none ? '' : ` — apply to ${selectedCount} clips`}`
+            }
+            onPick={onColor}
+          />
           <div className="hint">
             {none
               ? 'Click a scene name to select its clips.'

@@ -8,7 +8,7 @@ import {
   type Role,
   type SceneFields,
 } from '../../../core/src/roles.js';
-import type { Anchor } from '../components/RoleMenu.js';
+import type { Anchor } from './useAnchoredPosition.js';
 import type { BridgeState } from './useBridge.js';
 
 interface Args {

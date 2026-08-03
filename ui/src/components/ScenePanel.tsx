@@ -1,6 +1,7 @@
 import { hex } from '../../../core/src/color.js';
 import { roleKey, type Role } from '../../../core/src/roles.js';
 import { isBpm, isKey, type TitlePatch } from '../../../core/src/sceneTitle.js';
+import { SwatchGrid } from './SwatchGrid.js';
 
 interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */
@@ -185,24 +186,18 @@ export function ScenePanel({
         <div className="hint">No palette yet — the next snapshot derives it.</div>
       ) : (
         <>
-          <div className="swatches">
-            {palette.map((rgb, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`sw${songColorIndex === i ? ' on' : ''}`}
-                style={{ background: hex(rgb) }}
-                title={
-                  none
-                    ? `index ${i}`
-                    : `index ${i} — paints all ${songColorCount} scene` +
-                      `${songColorCount === 1 ? '' : 's'} of ${songColorLabel}`
-                }
-                disabled={none || busy}
-                onClick={() => onSongColor(i)}
-              />
-            ))}
-          </div>
+          <SwatchGrid
+            palette={palette}
+            current={songColorIndex}
+            disabled={none || busy}
+            titleFor={(i) =>
+              none
+                ? `index ${i}`
+                : `index ${i} — paints all ${songColorCount} scene` +
+                  `${songColorCount === 1 ? '' : 's'} of ${songColorLabel}`
+            }
+            onPick={onSongColor}
+          />
           {/* Says the *song* scope out loud, every time. The selection is what
               you clicked; what gets painted is every scene those songs have,
               which can be a reprise sixty rows further down. */}
