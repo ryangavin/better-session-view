@@ -6,21 +6,50 @@ React 19 + Vite. Builds to `bridge/public/`, which the device serves.
 index.html            vite entry
 vite.config.ts        build target + dev proxy
 src/main.tsx          root
-src/App.tsx           layout, selection state, op assembly
+src/App.tsx           the composition root — hooks in dependency order, wiring
 src/styles.css        design tokens + all styling
-src/components/
-  ClipGrid.tsx        scenes × tracks, memoized per row
+src/components/       one component per file
+  ClipGrid/
+    ClipGrid.tsx      scenes × tracks — colgroup, sticky headers, the tbody
+    Row.tsx           one scene's row, memoized
+    SongHeaderRow.tsx a song block's header row, memoized
+    constants.ts      surfaces, contrast ratios, shared empties
+  Header.tsx          header bar — pills, playback, fold, widths, log, snapshot
+  StatsBar.tsx        stat tiles + the key-hint line
+  Stat.tsx            one tile
+  Rail.tsx            the rail's chrome; App nests the panels inside it
+  ScenePanel.tsx      song/bpm/key fields, role chips, role→color
   Inspector.tsx       rename pattern, swatches, apply
+  SwatchGrid.tsx      the palette as clickable swatches, shared by all three pickers
   RoleMenu.tsx        the picker that hangs off a scene's role chip
   RolesManager.tsx    the vocabulary editor — modal, owned by App
-  ScenePanel.tsx      song/bpm/key fields, role chips, role→color
   SongsModal.tsx      what the app read back out of the set — read-only
+src/hooks/            one hook per file
+  useBridge.ts        React face of the client; composes the three below
+  useLog.ts           the shared say sink
+  useRolesConfig.ts   roles.json fetch + save (useVocabulary merges it with the set)
+  usePalette.ts       palette cache + the once-per-Live-version derivation
+  useSnapshotLookups.ts  the lookup Maps every other hook reads
+  useTrackColumns.ts  rendered column order + group collapsing
+  useSongLayout.ts    derivation, song folding, folded-header shapes
+  useGridSelection.ts both selections + the active cell (and its ref)
+  useGridKeyboard.ts  the window keydown effect
+  useSongDrag.ts      drag state + the move plan (and its ref)
+  useRailAndLog.ts    rail/log visibility, error-opens-the-log
+  useSceneTitles.ts   TitlePatch, rename + tempo ops
+  useSongColor.ts     song-scoped coloring
+  useVocabulary.ts    merged vocabulary, in-use keys, roleColors
+  useRoleAssignment.ts  role writes + the floating menu's state
+  useClipInspector.ts clip color + rename pattern
+  useCloseOnEscape.ts / useDismissOnScroll.ts /
+  useAnchoredPosition.ts / useMenuKeyboard.ts   generic overlay behavior
 src/lib/
   client.ts           typed WebSocket client, framework-free
-  useBridge.ts        React hook over the client
   selection.ts        clip addressing + selection set
   keys.ts             the launch modifier, and who owns a keystroke
   columnWidth.ts      S/M/L grid width presets + persistence
+  rowMarks.ts         play state flattened to memo-safe strings
+  snapshotTiming.ts   the console phase breakdown + error text
 ```
 
 ## Dev
@@ -75,8 +104,13 @@ keep it that way.
   reply. Read it synchronously right after the `await`. This is safe because UI
   requests are serialized behind `busy`; it would need per-id storage if that changed.
 
-`useBridge.ts` wraps it in React state and owns the log lines. `guard()` wraps every
-operation so failures land in the log rather than as unhandled rejections.
+`hooks/useBridge.ts` wraps it in React state. The separable pieces — the log
+(`useLog`), the roles.json fetch/save (`useRolesConfig`), the palette
+(`usePalette`) — are their own hooks that it composes; the connection, the
+snapshot walk and the apply/undo/moveScenes write path stay together in
+`useBridge` itself because they share `guard`, the snapshot ref and the undo
+entry. `guard()` wraps every operation so failures land in the log rather than
+as unhandled rejections.
 
 ## The grid is the app; everything else opens
 
@@ -207,9 +241,9 @@ Three things about it are load-bearing:
 - **Folding is keyed by song, not by scene index**, so it survives a re-snapshot. Every
   write re-walks the set, and a fold state that reset each time would make the grid
   useless during a mapping pass. Like collapsing a track group, it never writes to Live.
-- **`rows` replaces `sceneCount` everywhere movement or selection happens.** `App`
-  computes it from `songRows` and threads it into `moveActive` and `cellsInBlock` exactly
-  as it threads `trackColumns`. Without that, `⌘↓` walks into folded scenes and fires
+- **`rows` replaces `sceneCount` everywhere movement or selection happens.**
+  `useSongLayout` computes it from `songRows`, and `App` threads it into
+  `moveActive` and `cellsInBlock` exactly as it threads `trackColumns`. Without that, `⌘↓` walks into folded scenes and fires
   them — see [`core/README.md`](../core/README.md).
 - **`SongHeaderRow` is memoized on primitives**, for the same reason `Row` is. There can
   be a hundred of them and they must not all re-render because one song folded.
@@ -298,9 +332,9 @@ the question, and it could never answer the other half.
 
 It works because the marks are **in the track columns**, not merely near them, and the
 track-name row is sticky: scroll a fully-folded set and every mark still has its track
-named above it. `blockTrackRoles` in core does the counting; `App` memoizes it against
-the *derivation*, not against `collapsedSongs`, so folding one song doesn't rebuild the
-map and hand all hundred headers a new prop.
+named above it. `blockTrackRoles` in core does the counting; `useSongLayout`
+memoizes it against the *derivation*, not against `collapsedSongs`, so folding one
+song doesn't rebuild the map and hand all hundred headers a new prop.
 
 - **Color only, names on the cell's tooltip.** A hundred folded songs are a page of color
   signatures, and at that density a word per role is what turns a table of contents into a
@@ -393,7 +427,7 @@ found in **more than one block** gets a flag rather than an error, because a son
 label rather than a range: two blocks is a reprise, or it's two different songs sharing a
 name, and only you know which.
 
-`SCENE_PATTERN` is compiled once at module scope in `App` from `DEFAULT_SCENE_PATTERN`.
+`SCENE_PATTERN` is compiled once at module scope in `useSongLayout` from `DEFAULT_SCENE_PATTERN`.
 The `!` is safe there and nowhere else — there's a test in `namePattern.test.ts` holding
 that exact constant down. It becomes editable when the scheme file lands.
 
@@ -408,7 +442,7 @@ the footer log. An error message you can't select is one you retype by hand.
 
 ## Scenes: title and role
 
-The rail is `<aside>` in `App`, holding `ScenePanel` above `Inspector` — scenes first,
+The rail is `<aside>` (`Rail.tsx`), holding `ScenePanel` above `Inspector` — scenes first,
 because naming a song and tagging its roles is the pass you make before touching
 individual clips, and the swatch grid below is the fallback for everything a role
 doesn't cover.
@@ -454,8 +488,8 @@ Three fields, and the rule is **a field you leave alone stays as it is on each s
 field you clear is cleared.** That's what makes "select two songs, set one shared key"
 work without flattening their different names. It can't come from the value alone —
 blank means "these scenes disagree" on arrival and "delete this part" once you've
-deleted it — so `App` holds a `TitlePatch` of which fields have been *touched*, reset
-whenever the selection changes. The preview line is what makes the rule legible; keep it.
+deleted it — so `useSceneTitles` holds a `TitlePatch` of which fields have been
+*touched*, reset whenever the selection changes. The preview line is what makes the rule legible; keep it.
 
 Fields prefill from `commonTitle`, which returns `null` where the selection disagrees, so
 a mixed field shows a `mixed` placeholder rather than one scene's answer. `bpm` and `key`
@@ -521,9 +555,9 @@ One wart worth knowing: **undo can't take a scene color back off.** Live has no 
 "no color", so a scene that had none can't be restored to none. `useBridge` logs a line
 saying so rather than letting the undo button promise more than it delivers.
 
-`roleColors` is memoized in `App` because it reaches the memoized `Row`; a fresh Map per
-render would re-render all 848 scenes. It changes only when the vocabulary or palette
-does, which is rare.
+`roleColors` is memoized in `useVocabulary` because it reaches the memoized `Row`; a
+fresh Map per render would re-render all 848 scenes. It changes only when the
+vocabulary or palette does, which is rare.
 
 ## Undo is ours to provide
 
@@ -589,7 +623,7 @@ projection to 848 scenes (×8.5, linear): ~8.8s end-to-end
 ```
 
 The projection is honest because every phase is a linear scan. `TARGET_SCENES` in
-`useBridge.ts` sets the reference size.
+`lib/snapshotTiming.ts` sets the reference size.
 
 The header also shows `LOM walk` and `Slot scan` tiles, and the footer log carries the
 headline numbers.
@@ -633,8 +667,8 @@ Two separate things, and keeping them separate is the point:
 The scene name column is one of the grid's cells, so the active cell can sit there;
 `moveActive` handles the crossing between it and the track columns at the left edge.
 Horizontal movement walks the **rendered column order**, so a collapsed group is invisible
-to the arrow keys as well as to the eye — that's why `columns` is computed in `App` and
-passed down rather than living in `ClipGrid`.
+to the arrow keys as well as to the eye — that's why `columns` is computed in
+`useTrackColumns` and passed down through `App` rather than living in `ClipGrid`.
 
 Blocks only ever pick up cells that hold a clip. An empty slot has no name and no color,
 so sweeping a block over 4,000 of them would make the `Selected` count a lie and hand
@@ -737,8 +771,8 @@ stops being acceptable, `@tanstack/react-virtual` on the row list is the contain
 fix — but measure first; the console breakdown reports `react commit` separately for
 exactly this reason.
 
-**Selection is a `Set` of `"t:s"` keys** held in `App`. `selection.ts` owns the
-encoding. Clips have no stable LOM id, so `(track, scene)` is the addressing within a
+**Selection is a `Set` of `"t:s"` keys** held in `useGridSelection`. `selection.ts`
+owns the encoding. Clips have no stable LOM id, so `(track, scene)` is the addressing within a
 session.
 
 **Play state must not reach `Row` as an object.** It changes several times a second while
@@ -760,10 +794,11 @@ anything that reaches `Row`.**
 **Auto-scroll reads the DOM** — `querySelector('[data-active="1"]')` — rather than
 threading a ref down, for the same reason: a fresh ref callback per render is a fresh prop.
 
-**Lookups in `App` are `Map`s, not `.find()`.** Block selection can hand op assembly
+**Lookups are `Map`s, not `.find()`.** Block selection can hand op assembly
 thousands of cells at once, and a linear scan of the clip list per cell makes that O(n²),
-which is enough to lock the tab up on a real set. The `clips` map is built once in `App`
-and passed to `ClipGrid` rather than built in both.
+which is enough to lock the tab up on a real set. The `clips` map is built once in
+`useSnapshotLookups` and passed everywhere — `ClipGrid` included — rather than rebuilt
+per consumer.
 
 ## Styling
 
