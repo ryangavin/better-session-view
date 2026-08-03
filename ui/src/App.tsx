@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
 import { Inspector } from './components/Inspector.js';
 import { RoleMenu, type Anchor } from './components/RoleMenu.js';
@@ -9,13 +9,12 @@ import { useBridge } from './hooks/useBridge.js';
 import { useSnapshotLookups } from './hooks/useSnapshotLookups.js';
 import { useTrackColumns } from './hooks/useTrackColumns.js';
 import { useSongLayout } from './hooks/useSongLayout.js';
-import { clipKey, parseClipKey, toggle } from './lib/selection.js';
-import {
-  isLaunchModified,
-  isTypingInto,
-  LAUNCH_KEY,
-  type CellClick,
-} from './lib/keys.js';
+import { useRailAndLog } from './hooks/useRailAndLog.js';
+import { useGridSelection } from './hooks/useGridSelection.js';
+import { useGridKeyboard } from './hooks/useGridKeyboard.js';
+import { useSongDrag } from './hooks/useSongDrag.js';
+import { clipKey, parseClipKey } from './lib/selection.js';
+import { LAUNCH_KEY } from './lib/keys.js';
 import {
   COLUMN_WIDTHS,
   loadColumnWidth,
@@ -47,56 +46,15 @@ import {
   songKey as songKeyOf,
   songsOfScenes,
 } from '../../core/src/derive.js';
-import { describeMove, planSceneMove } from '../../core/src/sceneMove.js';
-import {
-  cellsInBlock,
-  moveActive,
-  type ActiveCell,
-  type Direction,
-} from '../../core/src/gridRange.js';
-
-const ARROWS: Record<string, Direction> = {
-  ArrowUp: 'up',
-  ArrowDown: 'down',
-  ArrowLeft: 'left',
-  ArrowRight: 'right',
-};
-
-/** One identity, so clearing an already-empty scene selection changes nothing. */
-const EMPTY_SCENES: ReadonlySet<number> = new Set();
+import { describeMove } from '../../core/src/sceneMove.js';
 
 export function App() {
   const bridge = useBridge();
   const { snapshot, play, launch, stop, apply, applyScenes, undo } = bridge;
 
-  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  // Scenes selected *as scenes*, which is not the same as "the scenes the clip
-  // selection touches" and can't be derived from it: a scene with no clips
-  // contributes no cells, and it still needs to be assignable a role. Set only
-  // by the scene-name column, and cleared by a clip click, so "which scenes am
-  // I about to tag" is never a guess.
-  const [selectedScenes, setSelectedScenes] = useState<ReadonlySet<number>>(new Set());
-  const [active, setActive] = useState<ActiveCell | null>(null);
   const [chosenIndex, setChosenIndex] = useState<number | null>(null);
   const [pattern, setPattern] = useState('');
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
-
-  // The active cell is read by the grid's click handlers and by the keyboard
-  // effect, and it moves constantly. Keeping it out of their dependency arrays
-  // is not a micro-optimisation: `onClip` is a prop on a memoized Row, so a new
-  // identity for it re-renders all 848 scenes on every arrow press. The ref is
-  // written by `goActive` rather than during render so two keystrokes in one
-  // frame can't both read the same stale value.
-  const activeRef = useRef<ActiveCell | null>(null);
-  const goActive = useCallback((next: ActiveCell | null) => {
-    activeRef.current = next;
-    setActive(next);
-  }, []);
-
-  // Same reasoning, for the same reason: Space reads it, and play state changes
-  // several times a second, which would otherwise re-bind the key listener.
-  const isPlayingRef = useRef(false);
-  isPlayingRef.current = play.isPlaying;
 
   const { clips, trackNames, sceneNames, isOccupied, scenesForOps, clipsByScene } =
     useSnapshotLookups(snapshot);
@@ -115,203 +73,38 @@ export function App() {
 
   const [showSongs, setShowSongs] = useState(false);
 
-  /**
-   * The rail, and the log, both start closed.
-   *
-   * Neither is the thing you came for. The grid is, and on a 40-track set every
-   * pixel the rail isn't using is a track column you can see. The rail opens the
-   * moment you pick something to work on, which is the only time it has anything
-   * to say — see `openRail`.
-   */
-  const [showRail, setShowRail] = useState(false);
-  const [showLog, setShowLog] = useState(false);
+  const { showRail, openRail, hideRail, showLog, toggleLog } = useRailAndLog(bridge.log);
 
-  /**
-   * Open the rail because a selection gesture just happened.
-   *
-   * Called from the three places that mean "I want to work on this" — a clip, a
-   * scene name, a song — rather than from an effect on the selection itself. An
-   * effect would also fire when a selection is *cleared*, and reopening the rail
-   * on the click that emptied it is the opposite of what closing it asked for.
-   */
-  const openRail = useCallback(() => setShowRail(true), []);
+  const {
+    selected,
+    selectedScenes,
+    sceneList,
+    active,
+    activeRef,
+    goActive,
+    onClip,
+    onScene,
+    onFireScene,
+    onStopTrack,
+    clearSelection,
+    pickScenes,
+  } = useGridSelection({ trackColumns, rows, isOccupied, launch, stop, openRail });
 
-  /**
-   * An error opens the log, however it got closed.
-   *
-   * Hiding diagnostics is fine right up until something fails silently, and
-   * every write in this app goes through `guard()` and lands here rather than
-   * throwing. So the one kind of line that can't be missed shows itself.
-   *
-   * Tracks the highest id seen rather than looking at `log[0]`: `say` prepends,
-   * and a burst can put an info line in front of the error that arrived with it.
-   */
-  const seenLogId = useRef(0);
-  useEffect(() => {
-    const fresh = bridge.log.filter((l) => l.id > seenLogId.current);
-    if (fresh.length === 0) return;
-    seenLogId.current = fresh[0]!.id;
-    if (fresh.some((l) => l.kind === 'error')) setShowLog(true);
-  }, [bridge.log]);
+  useGridKeyboard({
+    rows,
+    trackColumns,
+    activeRef,
+    goActive,
+    isPlaying: play.isPlaying,
+    launch,
+    stop,
+    undo,
+  });
 
   const chooseColumnWidth = useCallback((w: ColumnWidth) => {
     setColumnWidth(w);
     saveColumnWidth(w);
   }, []);
-
-  // --- selection -------------------------------------------------------
-  // Plain click replaces, shift extends a block from the active cell, ⌥ toggles.
-  // ⌥ rather than the usual ⌘ because ⌘ means "fire this" everywhere in the app.
-  //
-  // Blocks only ever pick up cells that hold a clip. An empty slot has no name
-  // and no color, so sweeping over 4,000 of them would make the Selected count
-  // a lie and hand `apply` thousands of ops it can only skip.
-
-  const selectCells = useCallback(
-    (cells: Array<{ t: number; s: number }>, add: boolean) => {
-      const keys = cells.map((c) => clipKey(c.t, c.s));
-      setSelected((prev) => (add ? new Set([...prev, ...keys]) : new Set(keys)));
-    },
-    [],
-  );
-
-  const onClip = useCallback(
-    (t: number, s: number, m: CellClick) => {
-      if (m.launch) return launch({ kind: 'clip', t, s });
-      openRail();
-
-      const from = activeRef.current;
-      setSelectedScenes(EMPTY_SCENES);
-      if (m.add) {
-        setSelected((prev) => toggle(prev, clipKey(t, s)));
-        goActive({ on: 'clip', t, s });
-        return;
-      }
-      if (m.extend && from?.on === 'clip') {
-        selectCells(cellsInBlock(trackColumns, rows, from, { t, s }, isOccupied), false);
-        return;
-      }
-      selectCells([{ t, s }], false);
-      goActive({ on: 'clip', t, s });
-    },
-    [goActive, isOccupied, launch, openRail, rows, selectCells, trackColumns],
-  );
-
-  const onScene = useCallback(
-    (s: number, m: CellClick) => {
-      if (m.launch) return launch({ kind: 'scene', s });
-      openRail();
-
-      // The scene name column selects the whole row — every clip in the scene,
-      // which is the unit bulk work actually operates on. Shift extends that
-      // over a run of scenes.
-      const from = activeRef.current;
-      const firstScene = m.extend && from?.on === 'scene' ? from.s : s;
-      const wide = trackColumns.length > 0;
-      selectCells(
-        wide
-          ? cellsInBlock(
-              trackColumns,
-              rows,
-              { t: trackColumns[0]!, s: firstScene },
-              { t: trackColumns[trackColumns.length - 1]!, s },
-              isOccupied,
-            )
-          : [],
-        m.add,
-      );
-      // Scene selection tracks the same gesture but is kept independently, and
-      // spans the whole range rather than only the scenes that held a clip —
-      // an empty scene still has a name to tag. It walks the visible rows for
-      // the same reason the block does: a collapsed song between the endpoints
-      // must not be swept up and renamed.
-      const lo = Math.min(firstScene, s);
-      const hi = Math.max(firstScene, s);
-      const run = rows.filter((i) => i >= lo && i <= hi);
-      setSelectedScenes((prev) => (m.add ? new Set([...prev, ...run]) : new Set(run)));
-      if (!m.extend) goActive({ on: 'scene', s });
-    },
-    [goActive, isOccupied, launch, rows, selectCells, trackColumns],
-  );
-
-  const onFireScene = useCallback((s: number) => launch({ kind: 'scene', s }), [launch]);
-  const onStopTrack = useCallback((t: number) => stop({ kind: 'track', t }), [stop]);
-
-  // --- keyboard --------------------------------------------------------
-
-  const fireActive = useCallback(
-    (at: ActiveCell) => {
-      if (at.on === 'scene') launch({ kind: 'scene', s: at.s });
-      else launch({ kind: 'clip', t: at.t, s: at.s });
-    },
-    [launch],
-  );
-
-  useEffect(() => {
-    if (rows.length === 0) return;
-
-    function onKey(e: KeyboardEvent) {
-      if (isTypingInto(e.target)) return;
-
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        stop({ kind: 'clips' });
-        return;
-      }
-      // Live's own binding, and the one everybody has in muscle memory.
-      if (e.code === 'Space') {
-        e.preventDefault();
-        if (isPlayingRef.current) stop({ kind: 'song' });
-        else launch({ kind: 'song' });
-        return;
-      }
-
-      const from = activeRef.current;
-      const d = ARROWS[e.key];
-      if (d) {
-        e.preventDefault(); // or the grid scrolls as well as moving
-        // With nothing active yet, the first arrow press places the cell rather
-        // than moving it — otherwise ↓ from nowhere skips scene 1. The first
-        // *visible* scene, since scene 0 may be inside a folded song.
-        const next = from === null
-          ? ({ on: 'scene', s: rows[0]! } as ActiveCell)
-          : moveActive(trackColumns, rows, from, d);
-        goActive(next);
-        // ⌘ + arrow is the sweep: one keystroke for "next thing, and let me
-        // hear it". Unmodified arrows stay silent, per the rule.
-        if (isLaunchModified(e)) fireActive(next);
-        return;
-      }
-
-      if (e.key === 'Enter' && isLaunchModified(e) && from) {
-        e.preventDefault();
-        fireActive(from);
-        return;
-      }
-
-      // ⌘Z is not a grid gesture, so it doesn't fight the "⌘ makes a sound" rule
-      // — and it's the only undo there is, since LOM writes never reach Live's
-      // own history. Guarded by isTypingInto above, so the rename field keeps its
-      // own undo.
-      if ((e.key === 'z' || e.key === 'Z') && isLaunchModified(e)) {
-        e.preventDefault();
-        void undo();
-      }
-    }
-
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [fireActive, goActive, launch, rows, stop, trackColumns, undo]);
-
-  // Keep the active cell on screen. Read out of the DOM rather than threading a
-  // ref down: Row is memoized and a fresh ref callback per render would
-  // re-render all 848 rows, which is the one thing the grid can't afford.
-  useEffect(() => {
-    if (!active) return;
-    document
-      .querySelector('[data-active="1"]')
-      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [active]);
 
   // --- roles -----------------------------------------------------------
   // Stored in the scene's own name as `[role]` — see core/src/roles.ts for why
@@ -347,29 +140,6 @@ export function App() {
     return m;
   }, [bridge.palette, vocabulary]);
 
-  const sceneList = useMemo(
-    () => [...selectedScenes].sort((a, b) => a - b),
-    [selectedScenes],
-  );
-
-  const pickScenes = useCallback(
-    (scenes: number[]) => {
-      openRail();
-      setSelectedScenes(new Set(scenes));
-      selectCells(
-        trackColumns.length > 0
-          ? scenes.flatMap((s) =>
-              trackColumns.flatMap((t) => (isOccupied({ t, s }) ? [{ t, s }] : [])),
-            )
-          : [],
-        false,
-      );
-      if (scenes.length > 0) goActive({ on: 'scene', s: scenes[0]! });
-      setShowSongs(false);
-    },
-    [goActive, isOccupied, selectCells, trackColumns],
-  );
-
   /**
    * Work on a whole song: select every scene it has, across every block.
    *
@@ -387,25 +157,6 @@ export function App() {
     [derivation, pickScenes, unfoldSong],
   );
 
-  // --- rearranging songs -----------------------------------------------
-  // Drag a song header to move that whole run of scenes somewhere else.
-  //
-  // **A drag moves one block, not one song.** A song is a label rather than a
-  // range, so it can appear in several runs, and each run has its own header —
-  // dragging the header for "part 2 of 2" has to move the part you grabbed.
-  // Gathering both runs is a thing `planSceneMove` supports and a thing you can
-  // do by dragging one next to the other; doing it as a silent side effect of
-  // grabbing one header would move sixty scenes nobody pointed at.
-  //
-  // This is the only gesture in the app that can destroy work — see
-  // core/src/sceneMove.ts. Everything the grid does otherwise is either a view
-  // change or a write our own undo reverses.
-
-  const clearSelection = useCallback(() => {
-    setSelected(new Set());
-    setSelectedScenes(EMPTY_SCENES);
-  }, []);
-
   /**
    * Closing the rail drops the selection with it.
    *
@@ -416,76 +167,19 @@ export function App() {
    * replaced the selection anyway. So closing means done, not minimized.
    */
   const closeRail = useCallback(() => {
-    setShowRail(false);
+    hideRail();
     clearSelection();
-  }, [clearSelection]);
+  }, [clearSelection, hideRail]);
 
-  const [dragBlock, setDragBlock] = useState<{ from: number; to: number } | null>(null);
-  /** Where the block would land, as a gap in the current scene numbering. */
-  const [dropAt, setDropAt] = useState<number | null>(null);
-
-  const onSongDragStart = useCallback((from: number, to: number) => {
-    setDragBlock({ from, to });
-    setDropAt(null);
-  }, []);
-
-  const onSongDragEnd = useCallback(() => {
-    setDragBlock(null);
-    setDropAt(null);
-  }, []);
-
-  /**
-   * `dragover` fires continuously — many times a second, for the whole drag.
-   *
-   * The identity bail-out is what makes that affordable: the gap only changes
-   * when the pointer crosses a boundary, and returning `prev` unchanged lets
-   * React skip the render entirely. Without it every mouse move would rebuild
-   * all 848 rows' elements.
-   */
-  const onSongDragOver = useCallback((from: number, to: number, below: boolean) => {
-    const gap = below ? to + 1 : from;
-    setDropAt((prev) => (prev === gap ? prev : gap));
-  }, []);
-
-  const movePlan = useMemo(() => {
-    if (!snapshot || !dragBlock || dropAt === null) return null;
-    const sources: number[] = [];
-    for (let s = dragBlock.from; s <= dragBlock.to; s++) sources.push(s);
-    return planSceneMove({
-      sceneCount: snapshot.sceneCount,
-      sources,
-      dest: dropAt,
-      clips: snapshot.clips,
-      tracks: snapshot.tracks,
-    });
-  }, [snapshot, dragBlock, dropAt]);
-
-  /**
-   * The plan also lives in a ref, and this is not a micro-optimisation.
-   *
-   * `onSongDrop` is a prop on the memoized `SongHeaderRow`. Closing over
-   * `movePlan` would give it a new identity every time the drop gap changes —
-   * which is every time the pointer crosses a song boundary — and re-render all
-   * hundred headers mid-drag. Same reason `active` and `play.isPlaying` are held
-   * in refs; see the note on `Row` in ui/README.md.
-   */
-  const movePlanRef = useRef(movePlan);
-  movePlanRef.current = movePlan;
-
-  const onSongDrop = useCallback(() => {
-    const plan = movePlanRef.current;
-    // Clear first. The move re-snapshots, and leaving a drop indicator pointing
-    // at a scene index that no longer means the same thing is worse than a
-    // frame of nothing.
-    setDragBlock(null);
-    setDropAt(null);
-    if (!plan) return;
-    // Selection is addressed by (track, scene), and every one of those indexes
-    // is about to mean a different row. Keeping it would leave the rail offering
-    // to rename scenes the user never picked.
-    clearSelection();
-    void bridge.moveScenes(plan, `move ${plan.scenes} scene${plan.scenes === 1 ? '' : 's'}`);
-  }, [bridge, clearSelection]);
+  const {
+    dragFrom,
+    dropAt,
+    movePlan,
+    onSongDragStart,
+    onSongDragOver,
+    onSongDrop,
+    onSongDragEnd,
+  } = useSongDrag(snapshot, clearSelection, bridge.moveScenes);
 
   // --- scene titles ----------------------------------------------------
   // `@{bpm}-{key} {SONG}`, everything in the name after the role tag.
@@ -820,7 +514,7 @@ export function App() {
           className={`toggle${showLog ? ' on' : ''}`}
           aria-pressed={showLog}
           title="Show what the bridge is saying"
-          onClick={() => setShowLog((v) => !v)}
+          onClick={toggleLog}
         >
           Log
         </button>
@@ -878,7 +572,7 @@ export function App() {
               songShapes={songShapes}
               onToggleSong={onToggleSong}
               onPickSong={onPickSong}
-              dragFrom={dragBlock?.from ?? -1}
+              dragFrom={dragFrom}
               // -1 rather than null so the prop stays a number all the way down
               // to the memoized header row.
               dropAt={movePlan ? (dropAt ?? -1) : -1}
@@ -1013,8 +707,16 @@ export function App() {
         <SongsModal
           derivation={derivation}
           pattern={DEFAULT_SCENE_PATTERN}
-          onPick={pickScenes}
-          onPickUnmapped={() => pickScenes(derivation.unmapped)}
+          // Picking closes the modal — the point of the pick is to look at the
+          // rows it just selected, and the modal is what's covering them.
+          onPick={(scenes) => {
+            pickScenes(scenes);
+            setShowSongs(false);
+          }}
+          onPickUnmapped={() => {
+            pickScenes(derivation.unmapped);
+            setShowSongs(false);
+          }}
           collapsedCount={collapsedSongs.size}
           onCollapseAll={onCollapseAll}
           onClose={() => setShowSongs(false)}
