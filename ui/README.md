@@ -24,6 +24,8 @@ src/components/       one component per file
   RoleMenu.tsx        the picker that hangs off a scene's role chip
   RolesManager.tsx    the vocabulary editor — modal, owned by App
   SongsModal.tsx      what the app read back out of the set — read-only
+  ReorderModal.tsx    the running order — drag songs, apply once
+  RecolorModal.tsx    coloring every song from a rule
 src/hooks/            one hook per file
   useBridge.ts        React face of the client; composes the three below
   useLog.ts           the shared say sink
@@ -38,6 +40,7 @@ src/hooks/            one hook per file
   useRailAndLog.ts    rail/log visibility, error-opens-the-log
   useSceneTitles.ts   TitlePatch, rename + tempo ops
   useSongColor.ts     song-scoped coloring
+  useColorRules.ts    the allowed colors, and coloring every song from a rule
   useVocabulary.ts    merged vocabulary, in-use keys, roleColors
   useRoleAssignment.ts  role writes + the floating menu's state
   useClipInspector.ts clip color + rename pattern
@@ -48,6 +51,7 @@ src/lib/
   selection.ts        clip addressing + selection set
   keys.ts             the launch modifier, and who owns a keystroke
   columnWidth.ts      S/M/L grid width presets + persistence
+  allowedColors.ts    which of Live's colors a rule may use + persistence
   rowMarks.ts         play state flattened to memo-safe strings
   snapshotTiming.ts   the console phase breakdown + error text
 ```
@@ -267,9 +271,11 @@ called, what it's built from, and what's in it:
 ```
 
 - **Every slot keeps its width whether or not the song fills it.** That's the whole
-  mechanism: an empty bpm on one song is what keeps the next song's name where your eye
-  already is. Blank rather than a placeholder dash, for the reason an unused track column
-  draws nothing.
+  mechanism: the fixed facts strip is what keeps the next song's name where your eye
+  already is. A song that states neither shows `---` and `--` rather than a gap: an empty
+  slot reads as a rendering fault, where a dash says the set never named one — which is a
+  thing to go and fix. Dimmer than any real value, and it stays dim under a clash, because
+  nothing said is not the same as two scenes disagreeing.
 - **The facts lead**, so the key sits immediately left of the name it describes. bpm
   before key is the order the naming convention itself writes — `@128-Bm`. Both are
   right-aligned: `94` and `128` are the same fact at different widths and it's their
@@ -408,6 +414,70 @@ set and the one gap `above` can't express.
 What it costs in Live, and the four passes it runs, is in
 [`bridge/README.md`](../bridge/README.md) under *Reordering scenes*. **It is unverified
 against a real set.**
+
+## Two workflows over the whole set
+
+The scene column's header carries **order…** and **color…**. They're at the head of the
+column the songs are read down, because both act on every song at once rather than on a
+selection — which is also why neither is in the rail, and the rail can be shut anyway.
+
+Both work the same way: a draft you can push around for free, a preview of exactly what
+will be written, and one button that writes it. That shape is the point of them. Doing
+either through the grid is one write per song, each with its own round trip and
+re-snapshot, and the waiting is what stops anyone *trying* an arrangement.
+
+### The running order
+
+**Drag songs into the order you want, then Apply.** One row per song, however many runs it
+has, because a running order is written in songs — and that has two consequences the modal
+has to say out loud rather than spring on you:
+
+- **Applying gathers a song found in more than one run.** The row says `2 runs → 1` and a
+  line under the list names the songs it will collect. A reprise stops being a reprise,
+  which is a real change to the set that nobody dragged.
+- **A scene the pattern couldn't read isn't in the list**, so it travels with the song it
+  currently sits after; above the first song it stays at the top. The alternative — pinning
+  it to the index it holds now — cuts a song in half the moment the songs above it change
+  length. The count is shown, per row and in total.
+
+Everything else follows the drag in the grid. The cost is stated before it runs
+(`18 scenes · 142 clips copied · 18 deleted`), the no-undo warning is permanent rather
+than conditional, and applying **closes the modal and clears the selection**, because every
+scene index is about to mean a different row.
+
+It is one plan and one `move` message, not a move per song. Live's undo grouping is
+per-message, a half-applied order is the worst state this app can leave a set in, and
+`planSceneReorder` is what makes one plan possible — see [`core/README.md`](../core/README.md).
+
+### Coloring by rule
+
+**A song is one color**, and which color is only worth deciding across the whole set:
+*by key* the bands say what will mix into what, *by bpm* they say where the set changes
+gear. *rainbow* and *random* say nothing and are for when you just need a hundred songs
+told apart. The rules are pure functions in core; this modal is the preview and the
+allowed colors.
+
+- **Which of Live's 70 colors a rule may use is a setting** — `bsv.allowedColors` in
+  `localStorage`, machine-wide like the column width, because it's a preference about how
+  you like to look at a set rather than a fact about this set. Eight chosen colors read
+  better across a hundred songs than seventy: several of Live's are hard to tell apart at
+  the size a scene row draws them. `null` means "whatever the palette holds" and is
+  deliberately not the same as a list of all 70 — a Live that shipped more colors should
+  hand them to someone who never chose, and not to someone who did.
+- **A song the rule can't answer for is left alone**, and named. No key means no color
+  here, not "the no-key color" — painting a song by a fact nobody wrote down is how a
+  color stops meaning anything. A song whose scenes *disagree* about the fact counts as
+  not stating it, for the same reason the header renders the clash instead of picking.
+- **The count on the button is scenes, not songs.** A song already carrying its color
+  writes nothing, so applying the same rule twice says `every song already carries its
+  color` rather than claiming a hundred writes.
+- **It stays open after applying**, unlike the reorder: the write is undoable, the scene
+  indexes still mean what they meant, and trying a second rule against what the first did
+  is the point of having four. The preview repaints itself off the re-snapshot.
+- **`random` takes a seed, and *roll again* is a different seed** rather than a different
+  function. The preview and the write have to be the same deal, and colors are dealt from
+  a shuffled bag so every allowed color is used before any repeats and no two songs in a
+  row match. Independent draws clump, and a clump is precisely what the band prevents.
 
 ## Songs, and the mapping read back
 

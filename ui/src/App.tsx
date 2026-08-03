@@ -3,6 +3,8 @@ import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
 import { Header } from './components/Header.js';
 import { Inspector } from './components/Inspector.js';
 import { Rail } from './components/Rail.js';
+import { RecolorModal } from './components/RecolorModal.js';
+import { ReorderModal } from './components/ReorderModal.js';
 import { RoleMenu } from './components/RoleMenu.js';
 import { RolesManager } from './components/RolesManager.js';
 import { ScenePanel } from './components/ScenePanel.js';
@@ -18,6 +20,7 @@ import { useGridKeyboard } from './hooks/useGridKeyboard.js';
 import { useSongDrag } from './hooks/useSongDrag.js';
 import { useSceneTitles } from './hooks/useSceneTitles.js';
 import { useSongColor } from './hooks/useSongColor.js';
+import { useColorRules } from './hooks/useColorRules.js';
 import { useVocabulary } from './hooks/useVocabulary.js';
 import { useRoleAssignment } from './hooks/useRoleAssignment.js';
 import { useClipInspector } from './hooks/useClipInspector.js';
@@ -151,6 +154,20 @@ export function App() {
     applyScenes,
   });
 
+  // The bulk counterpart to useSongColor: a rule over every song rather than a
+  // swatch over the selection.
+  const {
+    allowed: allowedColors,
+    setAllowed: setAllowedColors,
+    songs: songColorInputs,
+    recolorSongs,
+  } = useColorRules({
+    derivation,
+    palette: bridge.palette,
+    scenesForOps,
+    applyScenes,
+  });
+
   const { vocabulary, inUseKeys, roleColors } = useVocabulary({
     roles: bridge.roles,
     snapshot,
@@ -187,6 +204,11 @@ export function App() {
   // role menu opens it too, and the rail can be shut while it's up.
   const [managingRoles, setManagingRoles] = useState(false);
   const [showSongs, setShowSongs] = useState(false);
+  // The two bulk workflows, opened from the scene column's header. Owned here
+  // with the other modals: both act on the whole set rather than on a selection,
+  // and the grid underneath them is what they're about to change.
+  const [reordering, setReordering] = useState(false);
+  const [recoloring, setRecoloring] = useState(false);
 
   return (
     <>
@@ -234,6 +256,9 @@ export function App() {
               songShapes={songShapes}
               onToggleSong={onToggleSong}
               onPickSong={onPickSong}
+              songCount={derivation.songs.length}
+              onReorder={() => setReordering(true)}
+              onRecolor={() => setRecoloring(true)}
               dragFrom={dragFrom}
               // -1 rather than null so the prop stays a number all the way down
               // to the memoized header row.
@@ -366,6 +391,40 @@ export function App() {
           collapsedCount={collapsedSongs.size}
           onCollapseAll={onCollapseAll}
           onClose={() => setShowSongs(false)}
+        />
+      )}
+
+      {reordering && snapshot && (
+        <ReorderModal
+          derivation={derivation}
+          snapshot={snapshot}
+          busy={bridge.busy}
+          // Closes on apply: every scene index is about to mean a different
+          // row, so a list still showing the old ones is worse than no list.
+          // The selection goes for the same reason a drop clears it.
+          onApply={(plan) => {
+            setReordering(false);
+            clearSelection();
+            void bridge.moveScenes(plan, `reorder ${plan.scenes} scenes`);
+          }}
+          onClose={() => setReordering(false)}
+        />
+      )}
+
+      {recoloring && snapshot && (
+        <RecolorModal
+          derivation={derivation}
+          snapshot={snapshot}
+          palette={bridge.palette}
+          songs={songColorInputs}
+          allowed={allowedColors}
+          onAllowed={setAllowedColors}
+          busy={bridge.busy}
+          // Stays open, unlike the reorder: this one is undoable, the scene
+          // indexes still mean what they meant, and trying a second rule
+          // against what the first did is the point of having four.
+          onApply={recolorSongs}
+          onClose={() => setRecoloring(false)}
         />
       )}
 

@@ -222,3 +222,11 @@ the conclusion was wrong. `ClipSlot.duplicate_clip_to` makes build-then-delete p
 rather than wholesale, so **dragging a song header now moves that whole run of scenes**.
 It's still the one operation that can damage a set; what that costs and what guards it is
 under *Reordering scenes* in [`bridge/README.md`](bridge/README.md).
+
+Two workflows now act on **every song at once**, from the scene column's header: a running
+order you push around before committing to it, and coloring every song from a rule — by
+key, by bpm, rainbow or random. Both are a free draft, a preview of the exact write, and one
+button. The reorder is one plan and one message however many songs moved, which is what
+keeps it a single entry in Live's history; the color rules are the first piece of the
+scheme that actually ships. See [`ui/README.md`](ui/README.md) and
+[`core/README.md`](core/README.md).

@@ -40,6 +40,12 @@ export interface Props {
   onToggleSong: (songKey: string) => void;
   /** Select every scene of a song, across all its blocks. */
   onPickSong: (songKey: string) => void;
+  /** Songs derivation found — the two bulk workflows have nothing to do at 0. */
+  songCount: number;
+  /** Open the running-order modal. */
+  onReorder: () => void;
+  /** Open the rule-based coloring modal. */
+  onRecolor: () => void;
   /** First scene of the block being dragged, or -1. A primitive, so it can
    *  reach the memoized header row without re-rendering all of them. */
   dragFrom: number;
@@ -80,6 +86,9 @@ export function ClipGrid({
   songShapes,
   onToggleSong,
   onPickSong,
+  songCount,
+  onReorder,
+  onRecolor,
   dragFrom,
   dropAt,
   dropNote,
@@ -149,7 +158,38 @@ export function ClipGrid({
           )}
         </tr>
         <tr>
-          <th className="scene-h">Scene</th>
+          {/* The two workflows that act on every song at once live at the top of
+              the column the songs are read down. Both are things you do to the
+              set rather than to a selection, so neither belongs in the rail —
+              and the rail can be shut.
+
+              Flex on a wrapper div, never on the `th`: `display: flex` on a
+              table cell stops it being a table cell and takes the grid's fixed
+              layout with it. */}
+          <th className="scene-h">
+            <div className="scene-h-line">
+              <span>Scene</span>
+              <div className="spacer" />
+              <button
+                type="button"
+                className="bulk"
+                disabled={songCount === 0}
+                title="Set the running order for every song, then write it in one pass"
+                onClick={onReorder}
+              >
+                order…
+              </button>
+              <button
+                type="button"
+                className="bulk"
+                disabled={songCount === 0}
+                title="Color every song from a rule — by key, by bpm, rainbow or random"
+                onClick={onRecolor}
+              >
+                color…
+              </button>
+            </div>
+          </th>
           {columns.map((c) => {
             if (c.kind !== 'track') {
               return (
