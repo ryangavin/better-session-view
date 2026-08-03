@@ -17,11 +17,12 @@
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
 
-  /* Fallbacks only — ClipGrid overrides all three on the table from the S/M/L
-     preset. Kept here so the grid still lays out if it ever renders without
-     them. Values match the `m` preset in lib/columnWidth.ts. */
+  /* Fallbacks only — ClipGrid sets all three on the table from
+     lib/columnWidth.ts. Kept here so the grid still lays out if it ever renders
+     without them. `--col-w` matches the `m` preset; the other two are constants
+     there, and the S/M/L setting moves the track columns alone. */
   --col-w: 74px;
-  --scene-col-w: 210px;
+  --scene-col-w: 290px;
   --role-chip-w: 62px;
   /* Height of the group header row. The track-name row sticks directly below
      it, so this value is shared by both and must not drift. */
@@ -410,8 +411,8 @@ td.scene .role-chip {
   margin: 0 12px 0 4px;
   /* One width for every role, so a column of them is a column rather than a
      ragged edge — and so `[JAM1]` and `[PRACTICE]` weigh the same, which they
-     do. It's a grid metric like the column widths, because at `s` the chip and
-     the scene name share a 130px column and the name has to keep some of it.
+     do. Sized to the roles, not to the grid setting: nine characters covers
+     nearly every one, and a wider chip is only whitespace inside it.
      Longer roles ellipsis; the tooltip has the whole name. `box-sizing:
      border-box` is global, so the padding and the dashed border below both sit
      inside the width and the uncolored variant measures the same. */
@@ -803,8 +804,8 @@ tr.song-row .drop-note {
 
 /* Scene launch. The only plain-click control in the app that makes a sound —
    allowed because firing is the button's whole job, and scene launching is the
-   primary gesture so it has to be visible rather than a modifier away. Sized to
-   still fit the `s` preset's 130px scene column. */
+   primary gesture so it has to be visible rather than a modifier away. Narrow
+   because the scene column spends its width on the name and the role chip. */
 td.scene .fire {
   padding: 0;
   width: 12px;

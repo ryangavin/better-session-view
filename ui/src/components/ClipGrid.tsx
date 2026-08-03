@@ -12,7 +12,13 @@ import { mergeShapes, type SongHeader, type TrackShape } from '../../../core/src
 import type { ActiveCell } from '../../../core/src/gridRange.js';
 import { clipKey } from '../lib/selection.js';
 import { isAddModified, isLaunchModified, LAUNCH_KEY } from '../lib/keys.js';
-import { metricsFor, tableWidth, type ColumnWidth } from '../lib/columnWidth.js';
+import {
+  metricsFor,
+  tableWidth,
+  ROLE_CHIP_W,
+  SCENE_COL_W,
+  type ColumnWidth,
+} from '../lib/columnWidth.js';
 import type { PlayState } from '../lib/useBridge.js';
 
 /** --bg. Scene names are painted straight onto it, so legibility is measured against it. */
@@ -667,10 +673,13 @@ export function ClipGrid({
   // on every width change; this way the browser just recalculates layout.
   const style = useMemo<CSSProperties>(() => {
     const m = metricsFor(columnWidth);
+    // Only `--col-w` moves with the setting. The other two are constants, but
+    // still ride down from here so columnWidth.ts stays the one place the grid
+    // states a width — the styles.css values are fallbacks, not the source.
     return {
       '--col-w': `${m.col}px`,
-      '--scene-col-w': `${m.scene}px`,
-      '--role-chip-w': `${m.role}px`,
+      '--scene-col-w': `${SCENE_COL_W}px`,
+      '--role-chip-w': `${ROLE_CHIP_W}px`,
       width: `${tableWidth(columnWidth, columns.length)}px`,
     } as CSSProperties;
   }, [columnWidth, columns.length]);
