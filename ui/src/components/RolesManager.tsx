@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { hex } from '../../../core/src/color.js';
-import { isValidRoleName, MAX_ROLE_LEN, roleKey, type Role } from '../../../core/src/roles.js';
+import { findRoleProblems, MAX_ROLE_LEN, roleKey, type Role } from '../../../core/src/roles.js';
 
 interface Props {
   vocabulary: Role[];
@@ -39,21 +39,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
     return () => window.removeEventListener('keydown', onKey, true);
   }, [onClose]);
 
-  const problems = useMemo(() => {
-    const bad = new Set<number>();
-    const seen = new Map<string, number>();
-    draft.forEach((r, i) => {
-      if (!isValidRoleName(r.name)) {
-        bad.add(i);
-        return;
-      }
-      const k = roleKey(r.name);
-      const first = seen.get(k);
-      if (first === undefined) seen.set(k, i);
-      else bad.add(i); // a duplicate splits one role's color in two
-    });
-    return bad;
-  }, [draft]);
+  const problems = useMemo(() => findRoleProblems(draft), [draft]);
 
   const edit = (i: number, patch: Partial<Role>) =>
     setDraft((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)));

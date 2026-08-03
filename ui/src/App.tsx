@@ -26,6 +26,7 @@ import {
   rolesInUse,
   sceneColorOps,
   sceneFields,
+  sharedRole,
   tempoOps,
 } from '../../core/src/roles.js';
 import {
@@ -81,27 +82,6 @@ const SCENE_PATTERNS = [
   compilePattern(DEFAULT_SCENE_PATTERN)!,
   compilePattern(LEGACY_SCENE_PATTERN)!,
 ];
-
-/**
- * The role a run of scenes agrees on, and whether they disagree.
- *
- * `mixed` is not "has no role" — an untagged scene and a `[chorus]` one still
- * disagree, and a picker that showed that as "none" would offer to clear a tag
- * the user can see on the row above.
- */
-function sharedRole(
-  scenes: readonly number[],
-  names: Map<number, string>,
-): { currentRole: string | null; mixed: boolean } {
-  let seen: string | null | undefined;
-  let disagree = false;
-  for (const s of scenes) {
-    const r = roleIn(names.get(s) ?? '');
-    if (seen === undefined) seen = r;
-    else if (roleKey(seen ?? '') !== roleKey(r ?? '')) disagree = true;
-  }
-  return { currentRole: disagree ? null : (seen ?? null), mixed: disagree };
-}
 
 export function App() {
   const bridge = useBridge();
@@ -1220,5 +1200,3 @@ function Stat({
     </div>
   );
 }
-
-export { clipKey };
