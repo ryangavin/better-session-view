@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { LogLine } from './useBridge.js';
+import type { LogLine } from './useLog.js';
 
 /**
  * The rail, and the log, both start closed.
