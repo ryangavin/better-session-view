@@ -1,0 +1,95 @@
+import { useCallback, useMemo, useState } from 'react';
+import { colorOps } from '../../../core/src/ops.js';
+import { render } from '../../../core/src/pattern.js';
+import { roleIn } from '../../../core/src/roles.js';
+import { clipKey, parseClipKey } from '../lib/selection.js';
+import type { BridgeState } from './useBridge.js';
+
+interface Args {
+  selected: ReadonlySet<string>;
+  clips: Map<string, BSV.Clip>;
+  trackNames: Map<number, string>;
+  sceneNames: Map<number, string>;
+  snapshot: BSV.Snapshot | null;
+  apply: BridgeState['apply'];
+}
+
+/**
+ * The clip inspector: color swatches and the rename pattern.
+ *
+ * Color writes immediately on click, naming does not, and the asymmetry is
+ * deliberate. A color is instantly legible in the grid and reapplying a
+ * different one costs nothing, so a swatch may as well be the action. A name
+ * overwrites something you can't see any more, so it keeps its preview and an
+ * explicit commit. Both are undoable — see useBridge.
+ */
+export function useClipInspector({
+  selected,
+  clips,
+  trackNames,
+  sceneNames,
+  snapshot,
+  apply,
+}: Args) {
+  const [chosenIndex, setChosenIndex] = useState<number | null>(null);
+  const [pattern, setPattern] = useState('');
+
+  // Token values for one clip. `{role}` comes from the clip's own scene, so the
+  // rename pattern picks it up for free once the scene is tagged. `{song}`
+  // lands with segmentation; until then it resolves to nothing, which render()
+  // drops cleanly.
+  const valuesFor = useCallback(
+    (t: number, s: number, n: number) => ({
+      track: trackNames.get(t),
+      scene: sceneNames.get(s),
+      role: roleIn(sceneNames.get(s) ?? '') ?? undefined,
+      name: clips.get(clipKey(t, s))?.name,
+      n,
+    }),
+    [clips, sceneNames, trackNames],
+  );
+
+  const selectedCells = useMemo(
+    () => [...selected].map((key) => parseClipKey(key)),
+    [selected],
+  );
+
+  const onColor = useCallback(
+    (index: number) => {
+      setChosenIndex(index);
+      if (!snapshot || selectedCells.length === 0) return;
+      void apply(colorOps(snapshot.clips, selectedCells, index), 'color');
+    },
+    [apply, selectedCells, snapshot],
+  );
+
+  const nameOps = useMemo<BSV.ApplyOp[]>(() => {
+    if (!pattern.trim()) return [];
+    return selectedCells
+      .map(({ t, s }, i) => ({ t, s, name: render(pattern, valuesFor(t, s, i + 1)) }))
+      // Renaming a clip to what it is already called is a write Live has to make
+      // and a number the progress bar has to report, for no visible effect.
+      .filter((op) => op.name !== clips.get(clipKey(op.t, op.s))?.name);
+  }, [clips, pattern, selectedCells, valuesFor]);
+
+  const onRename = useCallback(
+    () => void apply(nameOps, 'rename'),
+    [apply, nameOps],
+  );
+
+  const preview = useMemo(() => {
+    if (!pattern.trim() || selected.size === 0) return null;
+    const { t, s } = parseClipKey([...selected][0]!);
+    return render(pattern, valuesFor(t, s, 1));
+  }, [pattern, selected, valuesFor]);
+
+  return {
+    chosenIndex,
+    pattern,
+    setPattern,
+    onColor,
+    renameCount: nameOps.length,
+    onRename,
+    preview,
+  };
+}
