@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ClipGrid, type CellClick } from './components/ClipGrid.js';
+import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
 import { Inspector } from './components/Inspector.js';
 import { RoleMenu, type Anchor } from './components/RoleMenu.js';
 import { RolesManager } from './components/RolesManager.js';
@@ -7,7 +7,12 @@ import { ScenePanel } from './components/ScenePanel.js';
 import { SongsModal } from './components/SongsModal.js';
 import { useBridge } from './lib/useBridge.js';
 import { clipKey, parseClipKey, toggle } from './lib/selection.js';
-import { isLaunchModified, isTypingInto, LAUNCH_KEY } from './lib/keys.js';
+import {
+  isLaunchModified,
+  isTypingInto,
+  LAUNCH_KEY,
+  type CellClick,
+} from './lib/keys.js';
 import {
   COLUMN_WIDTHS,
   loadColumnWidth,

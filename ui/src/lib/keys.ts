@@ -34,6 +34,20 @@ export function isAddModified(e: { altKey: boolean }): boolean {
   return e.altKey;
 }
 
+export interface CellClick {
+  /** True when the click carried the launch modifier — see LAUNCH_KEY above. */
+  launch: boolean;
+  /** Extend the selection from the active cell. */
+  extend: boolean;
+  /** Add to the selection instead of replacing it. */
+  add: boolean;
+}
+
+/** A mouse click's modifiers, read into the grid's own vocabulary. */
+export function mods(e: Modifiers & { shiftKey: boolean; altKey: boolean }): CellClick {
+  return { launch: isLaunchModified(e), extend: e.shiftKey, add: isAddModified(e) };
+}
+
 /**
  * True when a keystroke belongs to whatever the user is typing into, so global
  * shortcuts leave it alone. Space and the arrow keys are both a shortcut here
