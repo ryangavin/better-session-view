@@ -534,6 +534,20 @@ export function App() {
     setSelectedScenes(EMPTY_SCENES);
   }, []);
 
+  /**
+   * Closing the rail drops the selection with it.
+   *
+   * The rail is the only place a selection is *shown* as anything but painted
+   * cells — what it is, how many, what a write would say. Closing it while
+   * ninety scenes stay picked leaves a live target you can't see and can't
+   * check, and the next thing you open the rail with is a click that would have
+   * replaced the selection anyway. So closing means done, not minimized.
+   */
+  const closeRail = useCallback(() => {
+    setShowRail(false);
+    clearSelection();
+  }, [clearSelection]);
+
   const [dragBlock, setDragBlock] = useState<{ from: number; to: number } | null>(null);
   /** Where the block would land, as a gap in the current scene numbering. */
   const [dropAt, setDropAt] = useState<number | null>(null);
@@ -998,14 +1012,16 @@ export function App() {
           <aside>
             {/* The rail is closable because it's a workspace, not chrome: shut it
                 and the grid gets its 264px back. Clicking a clip, a scene or a
-                song opens it again, so there's no state to get stranded in. */}
+                song opens it again, so there's no state to get stranded in —
+                and closing drops the selection, so there's none left behind
+                either. See `closeRail`. */}
             <div className="rail-head">
               <span className="lbl">Edit</span>
               <button
                 type="button"
                 className="icon"
-                title="Close — clicking a clip, a scene or a song reopens it"
-                onClick={() => setShowRail(false)}
+                title="Close and deselect — clicking a clip, a scene or a song reopens it"
+                onClick={closeRail}
               >
                 ×
               </button>

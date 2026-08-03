@@ -232,13 +232,13 @@ const Row = memo(function Row({
             header's slots: a hundred rows of this is a table, and a table has
             columns.
 
-            A scene with no role still reserves the chip's width, and draws
-            nothing in it. Blank rather than dashed for two reasons: an absence
-            that draws nothing answers faster than a faint one, and a dashed
-            chip already means something else here — a role that exists and has
-            no color. */}
+            A scene with no role gets a pill reading "no role" — same box as a
+            real chip, a shade quieter, its text dimmer still. Filled rather
+            than dashed: a dashed chip already means something else here, a role
+            that exists and has no color. The label is lowercase in the source
+            and uppercased in CSS, like every other chip. */}
         {role === null ? (
-          <span className="role-chip none" />
+          <span className="role-chip none">no role</span>
         ) : (
           <span
             className={`role-chip${roleRgb === undefined ? ' uncolored' : ''}`}

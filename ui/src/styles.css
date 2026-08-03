@@ -429,16 +429,16 @@ td.scene .role-chip {
   background: var(--bd3);
   color: var(--fg2);
 }
-/* A scene with no role holds the chip's width and draws nothing in it, so the
-   names beside it stay on the same vertical line. Blank rather than dashed for
-   two reasons: an absence that draws nothing answers faster than a faint one,
-   and a dashed chip already means something else here — see `.uncolored`. */
+/* A scene with no role draws a pill saying so: same size and shape as a real
+   chip, a shade quieter, and the text dimmer than the fill is light — it names
+   the absence without competing with the roles beside it. Filled, not dashed: a
+   dashed chip already means something else here — see `.uncolored`.
+
+   At the `s` preset the chip is 40px and the label ellipsises; that's the same
+   thing a long role does there, and the row still reads. */
 td.scene .role-chip.none {
-  background: none;
-  /* Stated, because an empty inline-block gets its height from content it
-     doesn't have — `line-height` alone would leave this 0px tall. It draws
-     nothing either way; this just keeps its box identical to a real chip's. */
-  height: 14px;
+  background: var(--bd2);
+  color: var(--dim2);
 }
 /* A role tagged in the set that nobody has given a color. Outlined rather than
    hidden: the tag is really there, and it colors nothing until it's configured. */
