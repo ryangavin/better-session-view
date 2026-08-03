@@ -131,18 +131,24 @@ export const SongHeaderRow = memo(function SongHeaderRow({
     /* Fixed-width slots rather than a run of inline spans, so a hundred headers
        read as columns. Each holds its width whether or not the song fills it —
        an empty slot is what keeps the next song's name on the same vertical
-       line. Blank rather than a placeholder dash, for the reason an unused
-       column draws nothing. */
+       line. */
     <div className="song-line">
       <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
       {/* The facts lead, so the key lands immediately left of the name it
           describes — and bpm before key is the order the naming convention
           itself writes, `@128-Bm`. Both right-aligned: the values differ in
           width ("94" / "128", "Bm" / "F#m") and their right edges are what a
-          column of them should line up on. */}
+          column of them should line up on.
+
+          A song that states neither still shows both slots, as dashes as wide
+          as the value that's missing — three for a bpm, two for a key. An empty
+          slot reads as a rendering gap; a dash says the set never named one,
+          which is a thing to go and fix. Dimmer than any real value, and it
+          stays dim under `clash` — nothing said is not the same as two scenes
+          disagreeing. */}
       <span className={`facts${header.clash ? ' clash' : ''}`}>
-        <span className="bpm">{header.bpm}</span>
-        <span className="key">{header.key}</span>
+        <span className={`bpm${header.bpm === '' ? ' none' : ''}`}>{header.bpm || '---'}</span>
+        <span className={`key${header.key === '' ? ' none' : ''}`}>{header.key || '--'}</span>
       </span>
       <button
         type="button"

@@ -512,8 +512,8 @@ tr.song-row td {
    stop the cell being a table cell and take the grid's fixed layout with it.
 
    Every slot holds its width whether or not the song fills it. That's the
-   whole mechanism — an empty bpm on one song is what keeps the next song's
-   name where the eye already is. */
+   whole mechanism — the fixed facts strip is what keeps the next song's name
+   where the eye already is, whether that song states a bpm or shows `---`. */
 tr.song-row .song-line {
   display: flex;
   align-items: center;
@@ -606,6 +606,15 @@ tr.song-row .facts .key {
 tr.song-row .facts.clash .bpm,
 tr.song-row .facts.clash .key {
   color: var(--amber);
+}
+/* The `---` / `--` a song with no bpm or no key shows. Quiet enough that a page
+   of them reads as an empty column rather than as data, and last of the three
+   rules for the same reason the one above is explicit about ordering: it ties
+   with `.clash` on specificity and has to win, so a missing key next to a
+   disagreeing bpm isn't painted as a disagreement of its own. */
+tr.song-row .facts .bpm.none,
+tr.song-row .facts .key.none {
+  color: var(--dim2);
 }
 tr.song-row .part {
   color: var(--dim2);
