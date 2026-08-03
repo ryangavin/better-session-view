@@ -20,6 +20,7 @@ import {
   type ColumnWidth,
 } from '../lib/columnWidth.js';
 import type { PlayState } from '../lib/useBridge.js';
+import type { Anchor } from './RoleMenu.js';
 
 /** --bg. Scene names are painted straight onto it, so legibility is measured against it. */
 const PANEL = 0x0a0a0b;
@@ -113,6 +114,12 @@ interface Props {
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
+  /**
+   * Open the role picker on a scene's chip. The anchor comes from here because
+   * the chip is the only thing that knows where it ended up; the menu itself is
+   * rendered by `App`, so opening one doesn't re-render 848 memoized rows.
+   */
+  onRoleMenu: (s: number, anchor: Anchor) => void;
   onStopTrack: (t: number) => void;
   onToggleGroup: (trackIndex: number) => void;
 }
@@ -171,6 +178,7 @@ interface RowProps {
   onClip: Props['onClip'];
   onScene: Props['onScene'];
   onFireScene: Props['onFireScene'];
+  onRoleMenu: Props['onRoleMenu'];
 }
 
 // memo on the row is what keeps toggling one cell from re-rendering all 848
@@ -187,6 +195,7 @@ const Row = memo(function Row({
   onClip,
   onScene,
   onFireScene,
+  onRoleMenu,
 }: RowProps) {
   // Live allows a scene to have no color at all, which is not the same as
   // palette slot 0 — see Scene.colorIndex in the protocol.
@@ -243,25 +252,39 @@ const Row = memo(function Row({
             than dashed: a dashed chip already means something else here, a role
             that exists and has no color. The label is lowercase in the source
             and uppercased in CSS, like every other chip. */}
-        {role === null ? (
-          <span className="role-chip none">no role</span>
-        ) : (
-          <span
-            className={`role-chip${roleRgb === undefined ? ' uncolored' : ''}`}
-            style={
-              roleRgb === undefined
-                ? undefined
-                : { background: hex(roleRgb), color: inkOn(roleRgb) }
-            }
-            title={
-              roleRgb === undefined
-                ? `${role} — no color set for this role`
-                : `role: ${role}`
-            }
-          >
-            {role}
-          </span>
-        )}
+        {/* A button, not a label: the chip is where the role gets changed, and
+            the placeholder is the same button so an untagged scene is one
+            click from a role too. `stopPropagation` for the same reason the
+            fire button has it — the cell's own click selects, and pressing the
+            chip is not a selection. */}
+        <button
+          type="button"
+          aria-haspopup="menu"
+          className={
+            role === null
+              ? 'role-chip none'
+              : `role-chip${roleRgb === undefined ? ' uncolored' : ''}`
+          }
+          style={
+            role === null || roleRgb === undefined
+              ? undefined
+              : { background: hex(roleRgb), color: inkOn(roleRgb) }
+          }
+          title={
+            role === null
+              ? 'No role — click to tag this scene'
+              : roleRgb === undefined
+                ? `${role} — no color set for this role · click to change`
+                : `role: ${role} · click to change`
+          }
+          onClick={(e) => {
+            e.stopPropagation();
+            const r = e.currentTarget.getBoundingClientRect();
+            onRoleMenu(scene.i, { left: r.left, top: r.top, bottom: r.bottom });
+          }}
+        >
+          {role === null ? 'no role' : role}
+        </button>
         {title ? (
           <span style={named ? { color: named } : undefined}>{title}</span>
         ) : (
@@ -658,6 +681,7 @@ export function ClipGrid({
   onClip,
   onScene,
   onFireScene,
+  onRoleMenu,
   onStopTrack,
   onToggleGroup,
 }: Props) {
@@ -824,6 +848,7 @@ export function ClipGrid({
                 onClip={onClip}
                 onScene={onScene}
                 onFireScene={onFireScene}
+                onRoleMenu={onRoleMenu}
               />,
             );
           }

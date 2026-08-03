@@ -11,7 +11,9 @@ src/styles.css        design tokens + all styling
 src/components/
   ClipGrid.tsx        scenes × tracks, memoized per row
   Inspector.tsx       rename pattern, swatches, apply
-  ScenePanel.tsx      song/bpm/key fields, role chips, role→color, role manager
+  RoleMenu.tsx        the picker that hangs off a scene's role chip
+  RolesManager.tsx    the vocabulary editor — modal, owned by App
+  ScenePanel.tsx      song/bpm/key fields, role chips, role→color
   SongsModal.tsx      what the app read back out of the set — read-only
 src/lib/
   client.ts           typed WebSocket client, framework-free
@@ -428,15 +430,16 @@ song header's slots: a hundred rows of this is a table, and a table has columns.
 
 - **One width for every role.** `[JAM1]` weighs the same as `[PRACTICE]`, which it does.
   Longer names ellipsis and the tooltip spells them out.
-- **The width is a grid metric**, in `columnWidth.ts` beside the column and scene widths,
-  rather than a constant in the stylesheet. It's sized to its content — nine characters
-  covers nearly every role and a wider chip is only more whitespace — but at `s` the chip
-  and the scene name share a 130px column, and the name has to keep some of it.
-- **A scene with no role holds the width and draws nothing in it.** Blank rather than
-  dashed for two reasons: an absence that draws nothing answers faster than a faint one,
-  and a dashed chip already means something else here — a role that exists and has no
-  color. Its `height` is stated, because an empty inline-block takes its height from
-  content it hasn't got.
+- **The width is a grid metric**, in `columnWidth.ts` beside the column widths, rather
+  than a constant in the stylesheet. It's sized to its content — nine characters covers
+  nearly every role and a wider chip is only more whitespace — and it doesn't move with
+  the S/M/L setting; see *Column widths*.
+- **A scene with no role draws a pill saying so** — same box as a real chip, a shade
+  quieter, its text dimmer still. Filled rather than dashed: a dashed chip already means
+  something else here, a role that exists and has no color.
+- **The chip is a `<button>`**, real one and placeholder alike — it opens the role menu
+  below. That means undoing the global button rule in `td.scene .role-chip`, and it means
+  an untagged scene is one click from a role rather than a trip to the rail.
 - **The gutter is on the chip's right**, between it and the title, and tight to the scene
   number on the left, which it belongs with. Live's own text on one side of that gap, our
   reading of it on the other.
@@ -472,6 +475,32 @@ That rule exists because a rename overwrites a name you can no longer see. A rol
 additive — it goes on the front, the rest of the name is untouched — and the result is
 visible as a chip the moment it lands. There's nothing to preview. A *title* edit does
 overwrite, which is why that half keeps its preview and its button.
+
+### The role menu
+
+Clicking a chip in the grid — a role or the `no role` placeholder — opens `RoleMenu` on
+it. The rail can do this already; this exists anyway because tagging is a
+scene-at-a-time pass down the grid, and routing every one through the rail means picking
+the row, looking away, and coming back. Here the chip you're reading is the chip you
+press. It writes on click, like the rail's chips and for the same reason.
+
+- **Scope is the chip's own scene, unless that scene is already in the scene selection**
+  — then it's the whole selection, because that's the pass you're in the middle of.
+  Worked out at render from the selection as it stands, not captured when the menu opens.
+  The header says the count out loud either way, so it's never inferred from the chip.
+- **`onRoleMenu` is identity-stable and the menu renders in `App`,** not in `Row`.
+  Opening a menu must not re-render 848 memoized rows — same rule as `active` and the
+  drag plan. The chip passes its own bounding box up, because it's the only thing that
+  knows where it landed.
+- **Positioned against the viewport**, measured in `useLayoutEffect`, flipping above the
+  chip near the bottom of the window. It closes on scroll and resize (capture phase — a
+  scroll inside `.grid-wrap` doesn't bubble) rather than drifting off the row it points at.
+- **The backdrop is a transparent full-screen div**, not a document click listener: it
+  eats the dismissing click, so closing the menu can't also fire a scene or move the
+  selection. Esc and the arrows are swallowed in capture phase, ahead of `App`'s window
+  listener — otherwise Esc would also stop every clip in Live.
+- **Manage roles… opens `RolesManager`**, which is why that modal is owned by `App`
+  rather than by the rail: two things reach it, and the rail can be shut.
 
 **Scene selection is separate state from clip selection**, and can't be derived from it: a
 scene with no clips contributes no cells and still needs to be assignable a role. It's set
@@ -620,13 +649,19 @@ never parses. So the widths are ours to pick.
 
 `columnWidth.ts` holds three presets, chosen over per-column dragging because the point
 of `s` is fitting a wide set on screen at once — something per-column widths actively
-work against. One setting drives both the track columns and the scene name column.
+work against.
 
-| | track column | scene column | fits in ~1100px |
-|---|---|---|---|
-| `s` | 40px | 130px | ~26 tracks |
-| `m` | 74px | 210px | ~14 tracks |
-| `l` | 116px | 290px | ~9 tracks |
+| | track column | fits in ~1100px |
+|---|---|---|
+| `s` | 40px | ~26 tracks |
+| `m` | 74px | ~14 tracks |
+| `l` | 116px | ~9 tracks |
+
+**The setting sizes the track columns and nothing else.** The scene name column is a
+constant 290px — `SCENE_COL_W`, what `l` used to be — and the role chip a constant 62px.
+They scaled with the presets once; the question the setting answers is *how many tracks
+fit on screen*, and a scene name is the same length whatever the answer is. Shrinking it
+at `s` truncated the label you navigate the rows by to buy one more column of clips.
 
 The choice persists to `localStorage` under `bsv.columnWidth`, and `saveColumnWidth`
 swallows storage failures — a width that doesn't persist isn't worth failing a render
@@ -737,5 +772,7 @@ system fallbacks. No CSS framework, no CSS-in-JS. The tokens (`--amber`, `--dim`
 `--bd`, …) come from the original design mocks; reuse them rather than introducing
 new values.
 
-`--col-w` and `--scene-col-w` are the exception: `:root` carries fallbacks matching the
-`m` preset, but `ClipGrid` overrides both on the table element. See *Column widths*.
+`--col-w`, `--scene-col-w` and `--role-chip-w` are the exception: `:root` carries
+fallbacks, but `ClipGrid` sets all three on the table element from `columnWidth.ts`, which
+stays the one place the grid states a width. Only `--col-w` moves with the S/M/L setting.
+See *Column widths*.

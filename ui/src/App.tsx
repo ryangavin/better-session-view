@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClipGrid, type CellClick } from './components/ClipGrid.js';
 import { Inspector } from './components/Inspector.js';
+import { RoleMenu, type Anchor } from './components/RoleMenu.js';
+import { RolesManager } from './components/RolesManager.js';
 import { ScenePanel } from './components/ScenePanel.js';
 import { SongsModal } from './components/SongsModal.js';
 import { useBridge } from './lib/useBridge.js';
@@ -79,6 +81,27 @@ const SCENE_PATTERNS = [
   compilePattern(DEFAULT_SCENE_PATTERN)!,
   compilePattern(LEGACY_SCENE_PATTERN)!,
 ];
+
+/**
+ * The role a run of scenes agrees on, and whether they disagree.
+ *
+ * `mixed` is not "has no role" — an untagged scene and a `[chorus]` one still
+ * disagree, and a picker that showed that as "none" would offer to clear a tag
+ * the user can see on the row above.
+ */
+function sharedRole(
+  scenes: readonly number[],
+  names: Map<number, string>,
+): { currentRole: string | null; mixed: boolean } {
+  let seen: string | null | undefined;
+  let disagree = false;
+  for (const s of scenes) {
+    const r = roleIn(names.get(s) ?? '');
+    if (seen === undefined) seen = r;
+    else if (roleKey(seen ?? '') !== roleKey(r ?? '')) disagree = true;
+  }
+  return { currentRole: disagree ? null : (seen ?? null), mixed: disagree };
+}
 
 export function App() {
   const bridge = useBridge();
@@ -745,16 +768,10 @@ export function App() {
   }, [snapshot]);
 
   /** The role the selection shares, and whether the selected scenes disagree. */
-  const { currentRole, mixed } = useMemo(() => {
-    let seen: string | null | undefined;
-    let disagree = false;
-    for (const s of sceneList) {
-      const r = roleIn(sceneNames.get(s) ?? '');
-      if (seen === undefined) seen = r;
-      else if (roleKey(seen ?? '') !== roleKey(r ?? '')) disagree = true;
-    }
-    return { currentRole: disagree ? null : (seen ?? null), mixed: disagree };
-  }, [sceneList, sceneNames]);
+  const { currentRole, mixed } = useMemo(
+    () => sharedRole(sceneList, sceneNames),
+    [sceneList, sceneNames],
+  );
 
   /** Selected scenes paired with the palette slot their role calls for. */
   const roleColorTargets = useMemo(() => {
@@ -790,12 +807,52 @@ export function App() {
   // would stripe a song into as many colors as it has sections, which is the
   // one thing the song band can't survive — see "song color" above.
 
-  const onAssignRole = useCallback(
-    (role: string | null) => {
-      const ops = roleOps(scenesForOps, sceneList, role);
+  const assignRoleTo = useCallback(
+    (scenes: readonly number[], role: string | null) => {
+      const ops = roleOps(scenesForOps, scenes, role);
       void applyScenes(ops, role === null ? 'clear role' : `role ${role}`);
     },
-    [applyScenes, sceneList, scenesForOps],
+    [applyScenes, scenesForOps],
+  );
+
+  const onAssignRole = useCallback(
+    (role: string | null) => assignRoleTo(sceneList, role),
+    [assignRoleTo, sceneList],
+  );
+
+  /**
+   * The role picker hanging off a scene's chip in the grid.
+   *
+   * Holds the scene that was clicked and where its chip is, and nothing else:
+   * which scenes the pick writes to is worked out at render from the selection
+   * as it stands, and `onRoleMenu` stays identity-stable so opening the menu
+   * doesn't re-render all 848 memoized rows.
+   */
+  const [roleMenu, setRoleMenu] = useState<{ s: number; anchor: Anchor } | null>(null);
+  const onRoleMenu = useCallback((s: number, anchor: Anchor) => {
+    setRoleMenu({ s, anchor });
+  }, []);
+
+  // The vocabulary editor is owned here rather than by the rail: the grid's
+  // role menu opens it too, and the rail can be shut while it's up.
+  const [managingRoles, setManagingRoles] = useState(false);
+
+  /**
+   * Scenes a pick in that menu writes.
+   *
+   * The chip you pressed, unless it belongs to a scene selection you already
+   * made — then it's the whole selection, because that's the pass you're in the
+   * middle of. Either way the menu says the count out loud, so the scope is
+   * never inferred from the chip alone.
+   */
+  const roleMenuScenes = useMemo(() => {
+    if (!roleMenu) return [];
+    return selectedScenes.has(roleMenu.s) ? sceneList : [roleMenu.s];
+  }, [roleMenu, sceneList, selectedScenes]);
+
+  const roleMenuRole = useMemo(
+    () => sharedRole(roleMenuScenes, sceneNames),
+    [roleMenuScenes, sceneNames],
   );
 
   const onColorClips = useCallback(
@@ -994,6 +1051,7 @@ export function App() {
               onClip={onClip}
               onScene={onScene}
               onFireScene={onFireScene}
+              onRoleMenu={onRoleMenu}
               onStopTrack={onStopTrack}
               onToggleGroup={onToggleGroup}
             />
@@ -1029,7 +1087,6 @@ export function App() {
             <ScenePanel
               vocabulary={vocabulary}
               palette={bridge.palette}
-              inUse={inUseKeys}
               sceneCount={selectedScenes.size}
               common={commonFields}
               patch={titlePatch}
@@ -1049,7 +1106,7 @@ export function App() {
               busy={bridge.busy}
               onAssign={onAssignRole}
               onColorClips={onColorClips}
-              onSaveRoles={(next) => void bridge.saveRoles(next)}
+              onManageRoles={() => setManagingRoles(true)}
             />
 
             <div className="rule" />
@@ -1074,6 +1131,44 @@ export function App() {
           </aside>
         )}
       </main>
+
+      {/* Outside `main` with the modals: it's anchored to the viewport, and a
+          menu clipped by the grid's own scroll box would be cut off on the
+          bottom rows — the ones a set spends most of its time near. */}
+      {roleMenu && (
+        <RoleMenu
+          vocabulary={vocabulary}
+          palette={bridge.palette}
+          anchor={roleMenu.anchor}
+          count={roleMenuScenes.length}
+          current={roleMenuRole.currentRole}
+          mixed={roleMenuRole.mixed}
+          busy={bridge.busy}
+          onPick={(role) => {
+            assignRoleTo(roleMenuScenes, role);
+            setRoleMenu(null);
+          }}
+          onManage={() => {
+            setRoleMenu(null);
+            setManagingRoles(true);
+          }}
+          onClose={() => setRoleMenu(null)}
+        />
+      )}
+
+      {managingRoles && (
+        <RolesManager
+          vocabulary={vocabulary}
+          palette={bridge.palette}
+          inUse={inUseKeys}
+          busy={bridge.busy}
+          onSave={(next) => {
+            void bridge.saveRoles(next);
+            setManagingRoles(false);
+          }}
+          onClose={() => setManagingRoles(false)}
+        />
+      )}
 
       {showSongs && snapshot && (
         <SongsModal

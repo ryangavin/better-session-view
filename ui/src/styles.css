@@ -400,10 +400,15 @@ td.scene .unnamed {
 /* The role, lifted out of the scene name. Live holds "Nightfall [chorus]"; we
    show the title and paint the tag, which is the point of storing it there.
 
-   Scoped to the scene column: a scene shows one role and has room to name it.
-   A folded song shows all of them at once and doesn't — see `.role-tile`. */
+   It's a `<button>` — it opens the role menu — so the global button rule has to
+   be undone here: its border, padding and font all belong to the chip, not to
+   the rail's buttons. Scoped to the scene column: a scene shows one role and
+   has room to name it. A folded song shows all of them at once and doesn't —
+   see `.role-tile`. */
 td.scene .role-chip {
   display: inline-block;
+  border: none;
+  font-family: var(--mono);
   /* The gutter sits on the right, between the chip and the title: the chip is
      a different kind of thing from the name beside it — Live's own text on one
      side, our reading of it on the other — and it needs room to say so. Tight
@@ -430,13 +435,21 @@ td.scene .role-chip {
   background: var(--bd3);
   color: var(--fg2);
 }
+/* Hover says it's pressable without moving anything: the chip sits in a column
+   of chips, and a border or a size change on hover would shift the name beside
+   it on every row the pointer crosses. */
+td.scene .role-chip:hover {
+  filter: brightness(1.25);
+  color: var(--fg);
+}
+
 /* A scene with no role draws a pill saying so: same size and shape as a real
    chip, a shade quieter, and the text dimmer than the fill is light — it names
    the absence without competing with the roles beside it. Filled, not dashed: a
    dashed chip already means something else here — see `.uncolored`.
 
-   At the `s` preset the chip is 40px and the label ellipsises; that's the same
-   thing a long role does there, and the row still reads. */
+   It's the same button as a real chip, so an untagged scene is one click from a
+   role rather than a trip to the rail. */
 td.scene .role-chip.none {
   background: var(--bd2);
   color: var(--dim2);
@@ -1107,6 +1120,113 @@ input[type='text']:focus {
 }
 .modal.wide {
   width: 680px;
+}
+
+/* --- role menu ---------------------------------------------------- */
+
+/* The picker that hangs off a scene's role chip. A full-screen backdrop rather
+   than a document click listener: it catches the click that closes the menu
+   before anything underneath can act on it, so dismissing it can't also fire a
+   scene or move the selection. Transparent — the grid behind is what you're
+   reading while you tag, and dimming it would be a modal, which this isn't. */
+.menu-back {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+.menu {
+  position: fixed;
+  width: 190px;
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--bd3);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* The one place in the app with a drop shadow. It's the only thing that
+     floats over the grid, and it has to read as above it rather than in it. */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+.menu-h {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim2);
+  padding: 2px 6px 4px;
+}
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+/* Rows, not chips: a menu is read down its left edge, so the dots line up in a
+   column and the names start on one line. */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 15px;
+  text-align: left;
+}
+/* Keyboard and pointer land on the same highlight — the cursor follows the
+   mouse, so there's never two "here"s at once. */
+.menu-item.cursor:not(:disabled) {
+  background: var(--sel);
+  color: var(--fg);
+}
+.menu-item.on {
+  color: var(--amber);
+}
+.menu-item .menu-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-item .menu-tick {
+  flex: none;
+  font-size: 9px;
+  color: var(--amber);
+}
+.menu-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--bd3);
+}
+.menu-item .dot.empty {
+  background: transparent;
+  border: 1px solid var(--dim2);
+}
+.menu-item.clear {
+  color: var(--dim2);
+}
+.menu-rule {
+  border-top: 1px solid var(--bd);
+  margin: 4px 0 2px;
+}
+/* Ruled off from the picks above it: everything up there writes a tag on a
+   scene, this opens an editor. Same row shape so the menu stays one column. */
+.menu-manage {
+  border: none;
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 15px;
+  text-align: left;
+  color: var(--dim2);
+}
+.menu-manage:hover:not(:disabled) {
+  background: var(--sel);
 }
 
 /* --- songs -------------------------------------------------------- */
