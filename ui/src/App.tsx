@@ -5,7 +5,10 @@ import { RoleMenu, type Anchor } from './components/RoleMenu.js';
 import { RolesManager } from './components/RolesManager.js';
 import { ScenePanel } from './components/ScenePanel.js';
 import { SongsModal } from './components/SongsModal.js';
-import { useBridge } from './lib/useBridge.js';
+import { useBridge } from './hooks/useBridge.js';
+import { useSnapshotLookups } from './hooks/useSnapshotLookups.js';
+import { useTrackColumns } from './hooks/useTrackColumns.js';
+import { useSongLayout } from './hooks/useSongLayout.js';
 import { clipKey, parseClipKey, toggle } from './lib/selection.js';
 import {
   isLaunchModified,
@@ -21,7 +24,6 @@ import {
 } from './lib/columnWidth.js';
 import { render } from '../../core/src/pattern.js';
 import { colorOps } from '../../core/src/ops.js';
-import { buildColumns } from '../../core/src/trackColumns.js';
 import {
   findRole,
   mergeVocabulary,
@@ -30,7 +32,6 @@ import {
   roleOps,
   rolesInUse,
   sceneColorOps,
-  sceneFields,
   sharedRole,
   tempoOps,
 } from '../../core/src/roles.js';
@@ -40,18 +41,12 @@ import {
   titleOps,
   type TitlePatch,
 } from '../../core/src/sceneTitle.js';
+import { DEFAULT_SCENE_PATTERN } from '../../core/src/namePattern.js';
 import {
-  compilePattern,
-  DEFAULT_SCENE_PATTERN,
-  LEGACY_SCENE_PATTERN,
-} from '../../core/src/namePattern.js';
-import {
-  derive,
   scenesOfSongs,
   songKey as songKeyOf,
   songsOfScenes,
 } from '../../core/src/derive.js';
-import { allSongKeys, blockTrackRoles, songRows } from '../../core/src/songRows.js';
 import { describeMove, planSceneMove } from '../../core/src/sceneMove.js';
 import {
   cellsInBlock,
@@ -70,24 +65,6 @@ const ARROWS: Record<string, Direction> = {
 /** One identity, so clearing an already-empty scene selection changes nothing. */
 const EMPTY_SCENES: ReadonlySet<number> = new Set();
 
-/**
- * The scene patterns, until the scheme file lands and makes them editable.
- *
- * Two, in order: the convention we write, then the one this app wrote before
- * it. Derivation takes the first that matches, so **a set named the old way
- * still shows its songs** and converts scene by scene as it's renamed. Without
- * the second entry every scene would read as unmapped the moment the convention
- * changed, and there would be nothing left to select in order to fix it.
- *
- * Compiled once at module scope: they never change yet, and each compile runs a
- * round-trip probe. `!` is safe here and nowhere else — both patterns have a
- * test asserting they compile.
- */
-const SCENE_PATTERNS = [
-  compilePattern(DEFAULT_SCENE_PATTERN)!,
-  compilePattern(LEGACY_SCENE_PATTERN)!,
-];
-
 export function App() {
   const bridge = useBridge();
   const { snapshot, play, launch, stop, apply, applyScenes, undo } = bridge;
@@ -103,7 +80,6 @@ export function App() {
   const [chosenIndex, setChosenIndex] = useState<number | null>(null);
   const [pattern, setPattern] = useState('');
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
-  const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(() => new Set());
 
   // The active cell is read by the grid's click handlers and by the keyboard
   // effect, and it moves constantly. Keeping it out of their dependency arrays
@@ -122,61 +98,21 @@ export function App() {
   const isPlayingRef = useRef(false);
   isPlayingRef.current = play.isPlaying;
 
-  // Seed the collapsed groups from Live's own fold state on every snapshot; a
-  // snapshot is a resync with Live, so it wins over local toggles made since
-  // the last one. Collapsing here never writes back — LOM writes don't
-  // participate in Live's undo, and this is a view operation.
-  useEffect(() => {
-    if (!snapshot) return;
-    setCollapsed(
-      new Set(snapshot.tracks.filter((t) => t.isGroup && t.isFolded).map((t) => t.i)),
-    );
-  }, [snapshot]);
+  const { clips, trackNames, sceneNames, isOccupied, scenesForOps, clipsByScene } =
+    useSnapshotLookups(snapshot);
+  const { columns, trackColumns, onToggleGroup } = useTrackColumns(snapshot);
+  const {
+    derivation,
+    headers: songHeaders,
+    hiddenScenes,
+    rows,
+    songShapes,
+    collapsedSongs,
+    onToggleSong,
+    onCollapseAll,
+    unfoldSong,
+  } = useSongLayout(snapshot);
 
-  // Columns live here rather than in ClipGrid because keyboard movement needs
-  // them too: stepping left or right walks the rendered column order, so a
-  // collapsed group has to be invisible to the arrow keys as well as to the eye.
-  const columns = useMemo(
-    () => (snapshot ? buildColumns(snapshot.tracks, collapsed) : []),
-    [snapshot, collapsed],
-  );
-
-  /** Just the visible track indexes, which is all the movement helpers need. */
-  const trackColumns = useMemo(
-    () => columns.flatMap((c) => (c.kind === 'track' ? [c.track.i] : [])),
-    [columns],
-  );
-
-  // Lookup tables, not `.find()`. Block selection can hand op assembly thousands
-  // of cells at once, and a linear scan per cell makes that O(n²) — enough to
-  // lock the tab up on a real set.
-  const clips = useMemo(
-    () => new Map(snapshot?.clips.map((c) => [clipKey(c.t, c.s), c]) ?? []),
-    [snapshot],
-  );
-  const trackNames = useMemo(
-    () => new Map(snapshot?.tracks.map((t) => [t.i, t.name]) ?? []),
-    [snapshot],
-  );
-  const sceneNames = useMemo(
-    () => new Map(snapshot?.scenes.map((s) => [s.i, s.name]) ?? []),
-    [snapshot],
-  );
-  const isOccupied = useCallback(
-    (c: { t: number; s: number }) => clips.has(clipKey(c.t, c.s)),
-    [clips],
-  );
-
-  // --- songs -----------------------------------------------------------
-  // The mapping, read back out of the set — see core/src/derive.ts. Nothing is
-  // stored for this: which scene belongs to which song falls out of the names.
-  // It sits up here with the other lookups because `rows` below feeds every
-  // movement and selection helper, exactly as `columns` does.
-
-  const derivation = useMemo(
-    () => derive(snapshot?.scenes ?? [], SCENE_PATTERNS),
-    [snapshot],
-  );
   const [showSongs, setShowSongs] = useState(false);
 
   /**
@@ -218,74 +154,9 @@ export function App() {
     if (fresh.some((l) => l.kind === 'error')) setShowLog(true);
   }, [bridge.log]);
 
-  // Which songs are folded. Keyed by song rather than by scene index, so it
-  // survives a re-snapshot — every write re-walks the set, and a collapsed
-  // state that reset each time would make the grid unusable during a mapping
-  // pass. Like collapsing a track group, this never writes back to Live.
-  const [collapsedSongs, setCollapsedSongs] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-
-  const layout = useMemo(
-    () => songRows(derivation, collapsedSongs),
-    [collapsedSongs, derivation],
-  );
-
-  /**
-   * Per block, per track, which sections of the song that track plays — what a
-   * folded header shows in place of the rows it's hiding.
-   *
-   * Computed for every block rather than only the folded ones, deliberately.
-   * It's a single pass over the clips, and keying it off `derivation` instead of
-   * `collapsedSongs` means folding a song doesn't rebuild the map — which would
-   * hand every header a new prop and re-render all hundred of them on a gesture
-   * that changed one.
-   */
-  const songShapes = useMemo(
-    () =>
-      blockTrackRoles(
-        snapshot?.clips ?? [],
-        snapshot?.scenes ?? [],
-        derivation.songs.flatMap((s) => s.blocks),
-      ),
-    [derivation, snapshot],
-  );
-
-  /**
-   * Visible scene indexes, the row-wise counterpart of `trackColumns`.
-   *
-   * Everything that moves or selects goes through this rather than through
-   * `sceneCount`, so a collapsed song is invisible to the arrow keys and to
-   * block selection. Without it ⌘↓ would descend into scenes you can't see and
-   * fire them, which is the one thing the ⌘-makes-a-sound rule exists to keep
-   * predictable.
-   */
-  const rows = layout.rows;
-
-  const onToggleSong = useCallback((songKey: string) => {
-    setCollapsedSongs((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(songKey)) next.add(songKey);
-      return next;
-    });
-  }, []);
-
-  const onCollapseAll = useCallback(
-    (all: boolean) => setCollapsedSongs(all ? new Set(allSongKeys(derivation)) : new Set()),
-    [derivation],
-  );
-
   const chooseColumnWidth = useCallback((w: ColumnWidth) => {
     setColumnWidth(w);
     saveColumnWidth(w);
-  }, []);
-
-  const onToggleGroup = useCallback((trackIndex: number) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(trackIndex)) next.add(trackIndex);
-      return next;
-    });
   }, []);
 
   // --- selection -------------------------------------------------------
@@ -446,8 +317,6 @@ export function App() {
   // Stored in the scene's own name as `[role]` — see core/src/roles.ts for why
   // the set is the storage and why the tag is bracketed.
 
-  const scenesForOps = useMemo(() => sceneFields(snapshot?.scenes ?? []), [snapshot]);
-
   /** Roles actually tagged somewhere in the set, in order of first appearance. */
   const inUseRoles = useMemo(
     () => rolesInUse(snapshot?.scenes.map((sc) => sc.name) ?? []),
@@ -512,15 +381,10 @@ export function App() {
     (songKey: string) => {
       const song = derivation.songs.find((s) => songKey === songKeyOf(s.name));
       if (!song) return;
-      setCollapsedSongs((prev) => {
-        if (!prev.has(songKey)) return prev;
-        const next = new Set(prev);
-        next.delete(songKey);
-        return next;
-      });
+      unfoldSong(songKey);
       pickScenes(song.scenes);
     },
-    [derivation, pickScenes],
+    [derivation, pickScenes, unfoldSong],
   );
 
   // --- rearranging songs -----------------------------------------------
@@ -741,16 +605,6 @@ export function App() {
     },
     [applyScenes, bridge.palette, scenesForOps, songColorScenes],
   );
-
-  const clipsByScene = useMemo(() => {
-    const m = new Map<number, BSV.Clip[]>();
-    for (const c of snapshot?.clips ?? []) {
-      const list = m.get(c.s);
-      if (list) list.push(c);
-      else m.set(c.s, [c]);
-    }
-    return m;
-  }, [snapshot]);
 
   /** The role the selection shares, and whether the selected scenes disagree. */
   const { currentRole, mixed } = useMemo(
@@ -1019,8 +873,8 @@ export function App() {
               palette={bridge.palette}
               roleColors={roleColors}
               selectedScenes={selectedScenes}
-              songHeaders={layout.headers}
-              hiddenScenes={layout.hidden}
+              songHeaders={songHeaders}
+              hiddenScenes={hiddenScenes}
               songShapes={songShapes}
               onToggleSong={onToggleSong}
               onPickSong={onPickSong}

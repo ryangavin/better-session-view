@@ -11,7 +11,7 @@ import {
   SCENE_COL_W,
   type ColumnWidth,
 } from '../../lib/columnWidth.js';
-import type { PlayState } from '../../lib/useBridge.js';
+import type { PlayState } from '../../hooks/useBridge.js';
 import { marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../RoleMenu.js';
 import { NO_SHAPES, PANEL, STOP_FIRED } from './constants.js';

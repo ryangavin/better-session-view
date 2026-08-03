@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BridgeClient, type ConnectionState, type WireTiming } from './client.js';
+import { BridgeClient, type ConnectionState, type WireTiming } from '../lib/client.js';
 import { inverseOps } from '../../../core/src/ops.js';
 import {
   countUnrevertableColors,

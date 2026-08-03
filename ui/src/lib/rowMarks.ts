@@ -1,6 +1,6 @@
 // One row's play state, flattened to a string so it can cross a memo boundary.
 
-import type { PlayState } from './useBridge.js';
+import type { PlayState } from '../hooks/useBridge.js';
 
 /**
  * One row's play state, as a single string — `|p3|f7|` — or `undefined`.
