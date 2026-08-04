@@ -7,7 +7,22 @@ Live stays the audio engine and the source of truth. This app is a front end tha
 reads and writes the Live Object Model over a Max for Live bridge — no `.als` file
 parsing, ever.
 
-## Start here
+## Install
+
+Download the latest zip from [Releases](../../releases) and unzip it somewhere
+permanent. **Keep the three files together** — the device loads `bridge.js` and `lom.js`
+by name from beside itself.
+
+Drag `SessionBridge.amxd` onto any track (it's an inert audio passthrough; the Master
+track is fine), wait for the status line to read **connected to Live**, then click **Open
+Session Manager**.
+
+Needs Ableton Live 12 with Max for Live — built against 12.4.3 Suite. Nothing is
+downloaded at runtime and the server binds `127.0.0.1` only.
+
+## Build from source
+
+Only needed if you're working on it.
 
 ```sh
 npm install                       # root + bridge/ deps

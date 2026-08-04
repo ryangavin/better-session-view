@@ -4,6 +4,19 @@
   "private": true,
   "type": "module",
   "description": "Session manager for large Ableton Live sets.",
+  "license": "MIT",
+  "author": "Ryan Gavin",
+  "homepage": "https://github.com/ryangavin/better-session-view#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryangavin/better-session-view.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ryangavin/better-session-view/issues"
+  },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "npm run build:ui && npm run build:bridge && npm run build:device",
     "build:bridge": "node --disable-warning=ExperimentalWarning tools/build-bridge.ts && tsc -p bridge/tsconfig.v8.json",
