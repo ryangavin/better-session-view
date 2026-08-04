@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
 import { Header } from './components/Header.js';
+import { IconSync } from './components/Icon.js';
 import { Inspector } from './components/Inspector.js';
 import { Rail } from './components/Rail.js';
 import { RecolorModal } from './components/RecolorModal.js';
@@ -229,14 +230,6 @@ export function App() {
         onSnapshot={bridge.refresh}
       />
 
-      <StatsBar
-        snapshot={snapshot}
-        songCount={derivation.songs.length}
-        unmappedCount={derivation.unmapped.length}
-        selectedCount={selected.size}
-        onOpenSongs={() => setShowSongs(true)}
-      />
-
       <main>
         <div className="grid-wrap">
           {snapshot ? (
@@ -277,7 +270,14 @@ export function App() {
             />
           ) : (
             <div className="empty-state">
-              Load the device in Live, then hit <b>Snapshot</b>.
+              {/* The glyph rather than the word: the button stopped saying
+                  "Snapshot" when it became an icon, and pointing at a label
+                  that isn't there is worse than no instruction. */}
+              Load the device in Live, then hit{' '}
+              <b className="inline-glyph">
+                <IconSync />
+              </b>{' '}
+              in the header.
             </div>
           )}
         </div>
@@ -437,6 +437,19 @@ export function App() {
           ))}
         </footer>
       )}
+
+      {/* Last, so the counts are the strip along the bottom edge and the log
+          opens as a panel above them rather than shunting them off-screen.
+          They were a band under the header; nothing in here is read while you
+          work — it's glanced at afterwards — and a band across the top costs a
+          scene row on every set. */}
+      <StatsBar
+        snapshot={snapshot}
+        songCount={derivation.songs.length}
+        unmappedCount={derivation.unmapped.length}
+        selectedCount={selected.size}
+        onOpenSongs={() => setShowSongs(true)}
+      />
     </>
   );
 }

@@ -1,5 +1,13 @@
 import { COLUMN_WIDTHS, type ColumnWidth } from '../lib/columnWidth.js';
 import type { BridgeState } from '../hooks/useBridge.js';
+import {
+  IconBug,
+  IconMenu,
+  IconPlay,
+  IconStop,
+  IconStopClips,
+  IconSync,
+} from './Icon.js';
 
 interface Props {
   connection: BridgeState['connection'];
@@ -23,7 +31,15 @@ const statusPill = (label: string, ok: boolean) => (
   <div className={`pill ${ok ? 'on' : 'off'}`}>{label}</div>
 );
 
-/** The header bar: status pills, playback, the view controls, log and Snapshot. */
+/**
+ * The header bar: status pills, playback, the view controls, log and Snapshot.
+ *
+ * Every button here is a glyph, and every one carries an `aria-label` as well
+ * as a `title`. An icon-only control with no accessible name is a button that
+ * exists for sighted mouse users and nobody else — and the `title` is also the
+ * only place the longer ones (what "stop clips" spares, what Snapshot re-reads)
+ * can still be said in words.
+ */
 export function Header({
   connection,
   lomReady,
@@ -40,6 +56,11 @@ export function Header({
   onToggleLog,
   onSnapshot,
 }: Props) {
+  // Guarded on songCount so an empty set reads as "nothing folded" rather than
+  // as "all of nothing is folded", which would light the button before there's
+  // a song in the grid.
+  const allFolded = songCount > 0 && collapsedCount >= songCount;
+
   return (
     <header>
       <div className="title">Session Bridge</div>
@@ -49,42 +70,57 @@ export function Header({
       <div className="playback" role="group" aria-label="Playback">
         <button
           type="button"
-          className={isPlaying ? 'rolling' : undefined}
+          className={`icon-btn${isPlaying ? ' rolling' : ''}`}
           title="Start the song (Space)"
+          aria-label="Start the song"
           disabled={!lomReady}
           onClick={() => launch({ kind: 'song' })}
         >
-          ▶
+          <IconPlay />
         </button>
         <button
           type="button"
+          className="icon-btn"
           title="Stop the song (Space)"
+          aria-label="Stop the song"
           disabled={!lomReady}
           onClick={() => stop({ kind: 'song' })}
         >
-          ■
+          <IconStop />
         </button>
         <button
           type="button"
+          className="icon-btn"
           title="Stop all clips, keep the song rolling (Esc)"
+          aria-label="Stop all clips"
           disabled={!lomReady}
           onClick={() => stop({ kind: 'clips' })}
         >
-          stop clips
+          <IconStopClips />
         </button>
       </div>
 
       <div className="spacer" />
       {/* A view control, so it sits with the other one rather than only in
           the songs modal. Folding everything is how a 100-song set becomes
-          navigable, and it shouldn't take two clicks to reach. */}
+          navigable, and it shouldn't take two clicks to reach.
+
+          The glyph is the same either way and the button lights instead — a
+          folded set is already a list of lines, so it's the state the icon
+          draws, and swapping in a second icon would make you read the button to
+          find out which way it goes. Fold/unfold is in the label and tooltip. */}
       <button
         type="button"
+        className={`icon-btn toggle${allFolded ? ' on' : ''}`}
+        aria-pressed={allFolded}
         disabled={songCount === 0}
-        title="Fold every song down to its header row"
+        aria-label={allFolded ? 'Unfold songs' : 'Fold songs'}
+        title={
+          allFolded ? 'Unfold every song' : 'Fold every song down to its header row'
+        }
         onClick={() => onCollapseAll(collapsedCount < songCount)}
       >
-        {collapsedCount < songCount ? 'Fold songs' : 'Unfold songs'}
+        <IconMenu />
       </button>
       <div className="widths" role="group" aria-label="Column width">
         {COLUMN_WIDTHS.map((w) => (
@@ -104,15 +140,23 @@ export function Header({
           failure you can't see is a failure that didn't happen. */}
       <button
         type="button"
-        className={`toggle${showLog ? ' on' : ''}`}
+        className={`icon-btn toggle${showLog ? ' on' : ''}`}
         aria-pressed={showLog}
+        aria-label="Log"
         title="Show what the bridge is saying"
         onClick={onToggleLog}
       >
-        Log
+        <IconBug />
       </button>
-      <button type="button" className="primary" onClick={onSnapshot} disabled={!lomReady || busy}>
-        Snapshot
+      <button
+        type="button"
+        className="icon-btn primary"
+        aria-label="Snapshot"
+        title="Snapshot — re-walk the set"
+        onClick={onSnapshot}
+        disabled={!lomReady || busy}
+      >
+        <IconSync />
       </button>
     </header>
   );

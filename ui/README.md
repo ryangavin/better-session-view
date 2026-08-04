@@ -15,7 +15,8 @@ src/components/       one component per file
     SongHeaderRow.tsx a song block's header row, memoized
     constants.ts      surfaces, contrast ratios, shared empties
   Header.tsx          header bar — pills, playback, fold, widths, log, snapshot
-  StatsBar.tsx        stat tiles + the key-hint line
+  Icon.tsx            the header's glyphs, as inline SVG
+  StatsBar.tsx        the bottom status strip — stat tiles + the key-hint line
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it
   ScenePanel.tsx      song/bpm/key fields, role chips, role→color
@@ -130,12 +131,52 @@ pixel the rail isn't using is a track column you can see.
   difference matters: an effect would also fire when a selection is *cleared*, so the
   click that empties the grid would reopen the rail you just closed.
 
-- **The log** is diagnostics, so it's behind a **Log** toggle in the header — and it
+- **The log** is diagnostics, so it's behind the header's bug toggle — and it
   **opens itself on an error**. Every write in this app goes through `guard()` and lands
   in the log rather than throwing, so a hidden log is the difference between a failed
   write and a silent one. The effect watches for ids above the highest seen rather than
   looking at `log[0]`, because `say` prepends and a burst can put an info line in front of
   the error that arrived with it.
+
+The counts don't open, so they pay for their pixels differently: `StatsBar` is a **status
+strip along the bottom edge**, one line high. It was a band under the header — two lines
+per tile, a 9px label over a 15px number — which is ~52px of chrome across the full width
+on a set where the same pixels are two scene rows. Nothing in it is read *while* you work;
+it's glanced at after a snapshot or before an apply, and a number you check rather than
+read can be small. So a tile is now label and value on one baseline at 8.5/10.5px, and the
+whole strip is ~21px.
+
+It renders **after** the log, so the log opens as a panel above it rather than pushing it
+off the bottom, and it's a `div`, not a second `<footer>` — the `footer` selector carries
+the log's own type, background and `user-select: text`.
+
+Whichever of the two is *directly* after `main` casts a shadow up over the grid — the log
+when it's open, the strip when it isn't. That's what the `main + footer, main + .stats`
+pair is for: the strip is one line of the same near-black as everything else, and a 1px
+border alone doesn't read as an edge with clip cells scrolling under it. Putting the
+shadow on both unconditionally paints the strip's across the bottom of the log.
+
+## The header is glyphs
+
+Every button in the header is an icon: sync for Snapshot, a hamburger for fold, a bug for
+the log, play / stop / struck-through-slot for playback. **S M L stay as letters** —
+they're a scale, and a scale is what letters are for. That takes the bar to
+`--ctl-h + 12px`, one height for every control in it and 6px of air either side.
+
+- **`Icon.tsx` is inline SVG**, not an icon font and not a Unicode character. A font is out
+  because nothing loads from a CDN. A character is out because ▶, ⏹ and 🐛 render at
+  whatever size, weight and baseline the user's installed fonts decide, and the emoji ones
+  arrive in full color at a size nothing asked for. Drawing in `currentColor` means the
+  button's hover, `:disabled` and `.on` states reach the glyph for free.
+- **Every icon button carries an `aria-label` as well as a `title`.** An icon-only control
+  with no accessible name is a button for sighted mouse users and nobody else, and the
+  `title` is now the only place the longer meanings — what "stop clips" spares, that
+  Snapshot re-walks the whole set — can still be said in words.
+- **Fold keeps one glyph and lights instead of swapping.** A folded set already *is* a list
+  of lines, so that's the state the icon draws; a second icon for unfold would mean reading
+  the button to find out which way it goes. Same lit-when-on treatment as the width presets.
+- **The empty state shows the glyph, not the word.** It used to say *hit **Snapshot***, and
+  pointing at a label that no longer exists is worse than no instruction.
 
 ## Color writes on click, naming doesn't
 
@@ -181,7 +222,7 @@ From there the rail does the three things at song scale:
 - **Song color** — a swatch grid that paints the scene rows themselves, so a song becomes
   a band of color in Live's own session view. Writes on click, like the clip swatches.
 
-**Fold songs** in the header folds or unfolds everything at once — a view control, so it
+The header's **hamburger** folds or unfolds every song at once — a view control, so it
 sits with the width presets rather than only inside the songs modal.
 
 ## A song is one color
@@ -481,7 +522,7 @@ allowed colors.
 
 ## Songs, and the mapping read back
 
-The **Songs** and **Unmapped** tiles in the stats bar are derived, not stored — every
+The **Songs** and **Unmapped** tiles in the status strip are derived, not stored — every
 snapshot re-reads the scene names through the scene pattern and works out which song each
 scene belongs to (see [`core/README.md`](../core/README.md)). Clicking either opens
 `SongsModal`, and clicking a song there selects its scenes.
@@ -695,7 +736,7 @@ projection to 848 scenes (×8.5, linear): ~8.8s end-to-end
 The projection is honest because every phase is a linear scan. `TARGET_SCENES` in
 `lib/snapshotTiming.ts` sets the reference size.
 
-The header also shows `LOM walk` and `Slot scan` tiles, and the footer log carries the
+The status strip also shows `LOM walk` and `Slot scan` tiles, and the log carries the
 headline numbers.
 
 ## ⌘ is the "talk to Live" modifier
@@ -822,14 +863,36 @@ Scene names render in the scene's Live color. Two things make that work:
 
 ## Performance notes
 
-**Two sticky header rows.** The group row pins at `top: 0` and the track-name row at
-`top: var(--group-h)`, so `--group-h` must equal the group row's *rendered* height
-exactly or the two overlap on scroll. A table cell treats `height` as a minimum, so
-nothing in that row may add to it — no vertical padding, no inner element, and
-`line-height` plus the 1px rule fill the box. It was 1.5px off when an inner bordered
-span was doing the underline. **Measure after changing it.** `.grid-wrap` also carries
-no `padding-top`: the header pins below it, so padding there is a band where scrolled
-clip cells show through above the header.
+**Two sticky header rows, and they pin where they already are.** The rule is that a
+stuck offset must equal the row's *flow* position, or the header changes height the
+moment you scroll — which it did, by 4px. `border-spacing: 2px` applies at the table's
+top edge as well as between rows, so measured down from the scroll box the group row
+sits at 2 and the track-name row at `--group-h + 4`. Pinning them at `0` and
+`var(--group-h)` swallowed both gaps. They now pin at `2px` and
+`calc(var(--group-h) + 4px)`, so nothing moves at all.
+
+That leaves two 2px bands of `border-spacing` inside the header for body rows to show
+through, plus the side gutters between cells. Both are plugged by flat `box-shadow`
+copies in `--bg` — a `0 0 0 2px` ring on the group row, and one either side on the
+track-name row. Same color the gaps already were, so nothing looks different at rest.
+
+The track-name row carries a **drop shadow** in the same list, last so the opaque plugs
+paint over it — the header has to read as sitting *over* the grid rather than as another
+row of it, the same job the footer's does pointing the other way. Each cell casts its
+own; at a 14px blur two neighbours' falloff meets across a 2px gutter at slightly less
+than one cell's centre, which is invisible. A hard-edged shadow would have striped the
+grid once per column.
+
+`--group-h` must still equal the group row's *rendered* height exactly. A table cell
+treats `height` as a minimum, so nothing in that row may add to it — no vertical
+padding, no inner element, and `line-height` plus the 1px rule fill the box. It was
+1.5px off when an inner bordered span was doing the underline. **Measure after changing
+it.** `.grid-wrap` carries no `padding-top`: the header pins 2px below it and the ring
+covers exactly that, so padding there is a band where scrolled clip cells show through.
+
+The whole block is **32px** — 13 + 2 + 15, one `line-height` and 2px of padding per row.
+`button.bulk` is sized to the row rather than the row to it: 11px plus its 1px borders
+is the track-name row's 13px, so *order…* and *color…* cost the header no height.
 
 **Rows are `memo`ized.** `ClipGrid` renders `sceneCount` rows × non-group tracks —
 around 6,800 cells at full size. Memoizing the row is what keeps toggling one cell

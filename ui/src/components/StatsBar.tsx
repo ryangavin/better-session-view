@@ -10,7 +10,7 @@ interface Props {
   onOpenSongs: () => void;
 }
 
-/** The stat tiles under the header, and the key-hint line. */
+/** The status strip along the bottom: the stat tiles, and the key-hint line. */
 export function StatsBar({
   snapshot,
   songCount,

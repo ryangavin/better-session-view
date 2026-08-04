@@ -24,9 +24,14 @@
   --col-w: 74px;
   --scene-col-w: 290px;
   --role-chip-w: 62px;
-  /* Height of the group header row. The track-name row sticks directly below
-     it, so this value is shared by both and must not drift. */
-  --group-h: 15px;
+  /* Height of the group header row. The track-name row sticks at this plus the
+     two 2px border-spacing gaps above it, so the value is shared by both and
+     must not drift. */
+  --group-h: 13px;
+  /* One height for every control in the header, so a row of them has one top
+     and one bottom edge rather than five. Segmented groups carry the border on
+     the group, so their buttons are 2px shorter and come out the same. */
+  --ctl-h: 22px;
 }
 
 * {
@@ -67,19 +72,22 @@ footer {
 
 /* --- header ------------------------------------------------------- */
 
+/* Sized to its controls and nothing else: --ctl-h plus 6px of air either side.
+   Every button in here is a glyph now, so the row is as short as the tallest
+   thing in it, and the pixels go to the grid. */
 header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 16px;
-  height: 48px;
+  gap: 10px;
+  padding: 0 12px;
+  height: calc(var(--ctl-h) + 12px);
   background: #151517;
   border-bottom: 1px solid var(--bd);
   flex: none;
 }
 
 .title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -90,10 +98,10 @@ header {
 
 .pill {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
+  font-size: 9px;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  padding: 3px 8px;
+  padding: 2px 6px;
   border-radius: 3px;
   border: 1px solid var(--bd3);
   color: var(--dim);
@@ -146,6 +154,28 @@ button.toggle.on {
   color: var(--amber);
 }
 
+/* --- icon buttons ------------------------------------------------- */
+
+/* Every header button. The glyph is a 14px SVG drawing in `currentColor`, so
+   it picks up hover, `:disabled` and `.on` from the button without either
+   knowing about the other. Square-ish rather than text-width: a row of even
+   boxes is what makes an icon bar read as a toolbar instead of as debris. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  padding: 0;
+}
+header button {
+  height: var(--ctl-h);
+}
+/* The two segmented groups draw the border once, around the group. */
+.playback button,
+.widths button {
+  height: calc(var(--ctl-h) - 2px);
+}
+
 /* --- playback ----------------------------------------------------- */
 
 .playback {
@@ -155,12 +185,11 @@ button.toggle.on {
   overflow: hidden;
 }
 .playback button {
-  padding: 5px 10px;
+  width: 28px;
+  padding: 0;
   border: none;
   border-radius: 0;
-  font-size: 11px;
   color: var(--dim);
-  line-height: 1;
 }
 .playback button + button {
   border-left: 1px solid var(--bd3);
@@ -173,10 +202,11 @@ button.toggle.on {
   color: var(--green);
 }
 
+/* Sits in the stats strip, so it takes that row's baseline rather than
+   centring itself against a taller box. */
 .keyhint {
-  align-self: center;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 9px;
   color: var(--dim2);
 }
 .keyhint b {
@@ -193,7 +223,7 @@ button.toggle.on {
   overflow: hidden;
 }
 .widths button {
-  padding: 5px 11px;
+  padding: 0 9px;
   border: none;
   border-radius: 0;
   font-family: var(--mono);
@@ -217,29 +247,35 @@ button.toggle.on {
 
 /* --- stats -------------------------------------------------------- */
 
+/* A status strip along the bottom, not a band across the top. Every pixel it
+   doesn't use is a scene row, so a tile is one line — label then value on a
+   shared baseline — rather than the stacked pair it started as. Nothing here
+   is read while you work; it's checked, and a checked number can be small. */
 .stats {
   display: flex;
-  gap: 22px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--bd);
+  align-items: baseline;
+  gap: 14px;
+  padding: 3px 16px;
+  border-top: 1px solid var(--bd);
   background: #121214;
   flex: none;
+  line-height: 1.4;
 }
 .stat {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: baseline;
+  gap: 5px;
 }
 .stat .k {
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
   color: var(--dim2);
   text-transform: uppercase;
 }
 .stat .v {
   font-family: var(--mono);
-  font-size: 15px;
+  font-size: 10.5px;
   color: var(--fg);
 }
 .stat .v.hl {
@@ -253,7 +289,7 @@ button.toggle.on {
 }
 .stat.clickable:hover .v {
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: 2px;
 }
 
 /* --- layout ------------------------------------------------------- */
@@ -272,6 +308,22 @@ main {
   padding: 0 16px 12px;
 }
 
+/* The seam where the grid meets the bottom chrome. The strip is one line tall
+   and the same near-black as everything else, so a 1px border alone doesn't
+   read as an edge with clip cells scrolling under it — the shadow is what says
+   the grid continues behind.
+
+   Only whichever element *directly* follows the grid casts it: the log when
+   it's open, the stats strip when it isn't. Putting it on both would paint the
+   strip's shadow across the bottom of the log. Positioned so the shadow lands
+   over the rows rather than under them. */
+main + footer,
+main + .stats {
+  position: relative;
+  z-index: 3;
+  box-shadow: 0 -8px 14px -4px rgba(0, 0, 0, 0.6);
+}
+
 /* Scoped: `empty` is also a modifier on dots and swatches, and a bare `.empty`
    here lands its 60px padding on them. */
 .empty-state {
@@ -284,6 +336,12 @@ main {
 .empty-state b {
   color: var(--amber);
   font-weight: 600;
+}
+/* A header glyph quoted mid-sentence, so it needs the text's baseline rather
+   than the line box's bottom. */
+.inline-glyph {
+  display: inline-flex;
+  vertical-align: -0.2em;
 }
 
 /* --- grid --------------------------------------------------------- */
@@ -308,21 +366,49 @@ table.grid col {
 table.grid col.scene-col {
   width: var(--scene-col-w);
 }
+/* The second header row. Both rows must be sticky or the header tears on scroll.
+ *
+ * The stuck offsets have to equal the rows' *flow* positions, or the header
+ * changes height the moment you scroll. `border-spacing` puts 2px above the
+ * group row and 2px between the two, so measured from the top of the scroll box
+ * the group row sits at 2 and this one at --group-h + 4. Sticking them at 0 and
+ * --group-h — which is what this did — swallowed both gaps and took 4px off the
+ * header as soon as it left the top. Now nothing moves at all: each row is
+ * already at its stuck offset at rest.
+ *
+ * The two bands that opens up are painted by the group row's ring shadow below.
+ *
+ * Height is `line-height + padding-bottom` and nothing else: 13 + 2. The bulk
+ * buttons are sized to match rather than the other way around. */
 table.grid th {
   font-family: var(--mono);
   font-size: 9px;
+  line-height: 13px;
   letter-spacing: 0.1em;
   color: var(--dim2);
   text-transform: uppercase;
   font-weight: 400;
   text-align: center;
-  padding: 0 2px 4px;
+  padding: 0 2px 2px;
   position: sticky;
-  /* second header row — sits directly under the group row, which is
-     --group-h tall. Both rows must be sticky or the header tears on scroll. */
-  top: var(--group-h);
+  top: calc(var(--group-h) + 4px);
   background: var(--bg);
   z-index: 1;
+  /* Two jobs, and the order is what keeps them apart — the first shadow in the
+     list paints on top.
+     1. The 2px gutters *between* header cells are transparent, so a body row
+        scrolling underneath shows through them as moving slivers. Two flat
+        copies of the cell, one either side, plug them.
+     2. The drop shadow, so the header reads as sitting over the grid rather
+        than as another row of it. Same language as the footer's, pointing the
+        other way. Each cell casts its own and they meet across the gutters: at
+        this blur two neighbours' falloff sums to slightly *less* than one
+        cell's centre, which is invisible at 2px — where a hard-edged shadow
+        would have striped the grid once per column. */
+  box-shadow:
+    -2px 0 0 var(--bg),
+    2px 0 0 var(--bg),
+    0 8px 14px -4px rgba(0, 0, 0, 0.6);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -335,9 +421,10 @@ table.grid th.scene-h {
    down. Flex on a wrapper, never on the `th` — see the note above `table.grid`:
    `display: flex` on a table cell stops it being one.
 
-   Sized to the row rather than to the buttons: these carry the grid's own 9px
-   mono, not the app's 12px sans, so adding them doesn't push the track names
-   down a line. */
+   Sized to the row rather than the row to them: 11px line-height plus the 1px
+   border either side is exactly the `th`'s 13px, so the two workflows cost the
+   header no height at all. They carry the grid's own 9px mono, not the app's
+   12px sans, for the same reason. */
 table.grid th.scene-h .scene-h-line {
   display: flex;
   align-items: center;
@@ -348,24 +435,33 @@ button.bulk {
   font-size: 9px;
   letter-spacing: 0.08em;
   padding: 0 5px;
-  line-height: 13px;
+  line-height: 11px;
   border-radius: 3px;
   color: var(--dim2);
 }
 
 /* --- group header row --------------------------------------------- */
 
-/* The track-name row sticks at exactly --group-h, so this row's rendered height
-   must equal --group-h exactly — a mismatch overlaps or gaps the two on scroll.
-   A table cell treats `height` as a minimum, so nothing here may add to it:
+/* The track-name row sticks at --group-h + 4, so this row's rendered height must
+   equal --group-h exactly — a mismatch overlaps or gaps the two on scroll. A
+   table cell treats `height` as a minimum, so nothing here may add to it:
    line-height + the 1px border fill the box (border-box), and there is no
-   vertical padding and no inner element to grow it. Measure after changing. */
+   vertical padding and no inner element to grow it. Measure after changing.
+
+   The ring is what makes the fixed offsets above safe. Once the rows stick at
+   their flow positions there are two 2px bands of `border-spacing` in the
+   header — one over this row, one under it — and a body row scrolling past
+   would show through both. A 2px spread in `--bg` covers them, and the side
+   gutters between the group cells with them. It's the same color the gaps
+   already are, so nothing looks different at rest; z-index 2 keeps it over the
+   track-name row's own shadow. */
 table.grid tr.group-row th {
-  top: 0;
+  top: 2px;
   height: var(--group-h);
   line-height: calc(var(--group-h) - 1px);
   padding: 0 3px;
   z-index: 2;
+  box-shadow: 0 0 0 2px var(--bg);
 }
 /* The rule under a group is what makes it read as covering its tracks. */
 table.grid th.group-h {
