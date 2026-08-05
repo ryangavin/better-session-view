@@ -12,6 +12,7 @@ this project are non-obvious and expensive to rediscover.
 | domain logic | [`core/README.md`](core/README.md) |
 | components, the client | [`ui/README.md`](ui/README.md) |
 | the `.amxd` or the patcher | [`tools/README.md`](tools/README.md) |
+| anything a user can see or press | [`docs/`](docs/README.md) — the user manual. Change it **in the same commit**; the module READMEs explain decisions, `docs/` tells someone how to use the thing |
 
 ## Rules
 

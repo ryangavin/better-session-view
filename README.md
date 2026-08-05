@@ -9,6 +9,11 @@ Live stays the audio engine and the source of truth. This app is a front end tha
 reads and writes the Live Object Model over a Max for Live bridge — no `.als` file
 parsing, ever.
 
+> ### 📖 [**User manual →**](docs/README.md)
+>
+> Installing, reading the grid, naming, roles, color, the running order, and the
+> keyboard reference. **The rest of this README is for people working on the code.**
+
 ## Install
 
 Download the latest zip from [Releases](../../releases) and unzip it somewhere
@@ -20,7 +25,8 @@ track is fine), wait for the status line to read **connected to Live**, then cli
 Session Manager**.
 
 Needs Ableton Live 12 with Max for Live — built against 12.4.3 Suite. Nothing is
-downloaded at runtime and the server binds `127.0.0.1` only.
+downloaded at runtime and the server binds `127.0.0.1` only. Full instructions:
+[`docs/installing.md`](docs/installing.md).
 
 ## Build from source
 
@@ -70,6 +76,10 @@ Five projects. Each has its own README; read the one you're touching.
 | [`ui/`](ui/README.md) | React 19 + Vite | components, the bridge client, dev server |
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator | changing the patcher or device type |
+
+[`docs/`](docs/README.md) is the user manual — how to *use* the app, as opposed to the
+module READMEs, which are about why it's built the way it is. Anything a user can see or
+press should be changed in both.
 
 [`bridge/LOM.md`](bridge/LOM.md) is the Live Object Model itself — every class, property
 and function with its type and access mode, plus the places Cycling '74's docs are wrong
