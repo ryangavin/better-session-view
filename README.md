@@ -13,8 +13,6 @@ parsing, ever.
 >
 > Installing, reading the grid, naming, roles, color, the running order, and the
 > keyboard reference. **The rest of this README is for people working on the code.**
->
-> The wiki is published from [`docs/`](docs/README.md) — edit there, not on the wiki.
 
 ## Install
 
@@ -28,7 +26,7 @@ Session Manager**.
 
 Needs Ableton Live 12 with Max for Live — built against 12.4.3 Suite. Nothing is
 downloaded at runtime and the server binds `127.0.0.1` only. Full instructions:
-[`docs/installing.md`](docs/installing.md).
+[Installing](https://github.com/ryangavin/better-session-view/wiki/Installing).
 
 ## Build from source
 
@@ -79,16 +77,17 @@ Five projects. Each has its own README; read the one you're touching.
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator | changing the patcher or device type |
 
-[`docs/`](docs/README.md) is the user manual — how to *use* the app, as opposed to the
-module READMEs, which are about why it's built the way it is. Anything a user can see or
-press should be changed in both.
-
-It is moving to the [wiki](https://github.com/ryangavin/better-session-view/wiki), which
-is a separate git repository you clone and edit like any other:
+The **user manual** is the [wiki](https://github.com/ryangavin/better-session-view/wiki)
+— how to *use* the app, as against these READMEs, which are about why it's built the way
+it is. It's a separate git repository, so clone it and edit it like any other:
 
 ```sh
 git clone git@github.com:ryangavin/better-session-view.wiki.git
 ```
+
+Being a separate repo, it can't change in the same commit as the code. **Anything a user
+can see or press means a second push**, and nothing enforces it — a UI change that ships
+without one leaves the manual quietly wrong.
 
 [`bridge/LOM.md`](bridge/LOM.md) is the Live Object Model itself — every class, property
 and function with its type and access mode, plus the places Cycling '74's docs are wrong
