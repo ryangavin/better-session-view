@@ -9,10 +9,12 @@ Live stays the audio engine and the source of truth. This app is a front end tha
 reads and writes the Live Object Model over a Max for Live bridge — no `.als` file
 parsing, ever.
 
-> ### 📖 [**User manual →**](docs/README.md)
+> ### 📖 [**User manual →**](https://github.com/ryangavin/better-session-view/wiki)
 >
 > Installing, reading the grid, naming, roles, color, the running order, and the
 > keyboard reference. **The rest of this README is for people working on the code.**
+>
+> The wiki is published from [`docs/`](docs/README.md) — edit there, not on the wiki.
 
 ## Install
 
@@ -80,6 +82,12 @@ Five projects. Each has its own README; read the one you're touching.
 [`docs/`](docs/README.md) is the user manual — how to *use* the app, as opposed to the
 module READMEs, which are about why it's built the way it is. Anything a user can see or
 press should be changed in both.
+
+It's the **source** for the [wiki](https://github.com/ryangavin/better-session-view/wiki),
+which a workflow republishes on every push that touches it. The wiki is a separate git
+repository, so it can't be edited in the same commit as the code — edit `docs/` and let
+it publish. `tools/wiki-sync.ts` does the renaming and link rewriting, and fails if a new
+page isn't mapped.
 
 [`bridge/LOM.md`](bridge/LOM.md) is the Live Object Model itself — every class, property
 and function with its type and access mode, plus the places Cycling '74's docs are wrong
