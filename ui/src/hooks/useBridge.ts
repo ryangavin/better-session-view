@@ -37,6 +37,12 @@ export interface PlayState {
 
 const NOT_PLAYING: PlayState = { isPlaying: false, tracks: [] };
 
+export interface SongPosition {
+  bar: number;
+  beat: number;
+  sixteenth: number;
+}
+
 /** One write, of either kind or both. Empty arrays rather than optionals so
  *  every count in here is `ops.length + sceneOps.length` with no branching. */
 interface Batch {
@@ -52,6 +58,8 @@ export interface BridgeState {
   /** The configured role vocabulary, from the bridge's roles.json. */
   roles: BSV.Role[];
   play: PlayState;
+  /** Live's arrangement position, or null until its observer has reported. */
+  songPosition: SongPosition | null;
   progress: { done: number; total: number } | null;
   log: LogLine[];
   busy: boolean;
@@ -92,6 +100,7 @@ export function useBridge(): BridgeState {
   const [lomReady, setLomReady] = useState(false);
   const [snapshot, setSnapshot] = useState<BSV.Snapshot | null>(null);
   const [play, setPlay] = useState<PlayState>(NOT_PLAYING);
+  const [songPosition, setSongPosition] = useState<SongPosition | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -138,10 +147,20 @@ export function useBridge(): BridgeState {
           setLomReady(event.lomReady);
           // A dropped socket says nothing about what Live is doing, but we stop
           // hearing about it — so show nothing rather than a frozen last frame.
-          if (!event.lomReady) setPlay(NOT_PLAYING);
+          if (!event.lomReady) {
+            setPlay(NOT_PLAYING);
+            setSongPosition(null);
+          }
           break;
         case 'playState':
           setPlay({ isPlaying: event.isPlaying, tracks: event.tracks });
+          break;
+        case 'songPosition':
+          setSongPosition({
+            bar: event.bar,
+            beat: event.beat,
+            sixteenth: event.sixteenth,
+          });
           break;
         case 'progress':
           setProgress({ done: event.done, total: event.total });
@@ -396,6 +415,7 @@ export function useBridge(): BridgeState {
     palette,
     roles,
     play,
+    songPosition,
     progress,
     log,
     busy,

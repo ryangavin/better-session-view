@@ -14,7 +14,7 @@ src/components/       one component per file
     Row.tsx           one scene's row, memoized
     SongHeaderRow.tsx a song block's header row, memoized
     constants.ts      surfaces, contrast ratios, shared empties
-  Header.tsx          header bar — pills, playback, fold, widths, log, snapshot
+  Header.tsx          header bar — pills, Arrangement position, playback, view controls
   Icon.tsx            the header's glyphs, as inline SVG
   StatsBar.tsx        the bottom status strip — stat tiles + the key-hint line
   Stat.tsx            one tile
@@ -159,7 +159,10 @@ shadow on both unconditionally paints the strip's across the bottom of the log.
 ## The header is glyphs
 
 Every button in the header is an icon: sync for Snapshot, a hamburger for fold, a bug for
-the log, play / stop / struck-through-slot for playback. **S M L stay as letters** —
+the log, play / stop / struck-through-slot for playback. Live's bars, beats and sixteenths
+sit immediately left of playback while the buttons remain at the header's exact center.
+The three equal flex regions make that centering independent of the controls on either
+side. **S M L stay as letters** —
 they're a scale, and a scale is what letters are for. That takes the bar to
 `--ctl-h + 12px`, one height for every control in it and 6px of air either side.
 

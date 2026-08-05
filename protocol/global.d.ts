@@ -318,6 +318,13 @@ declare namespace BSV {
         /** Indexed by track, in the same `i` space as `Snapshot.tracks`. */
         tracks: TrackPlayState[];
       }
+    | {
+        type: 'songPosition';
+        /** First three fields of Live's bars.beats.sixteenths.ticks value. */
+        bar: number;
+        beat: number;
+        sixteenth: number;
+      }
     | { type: 'changed'; kind: string }
     /**
      * Which Live Set is open, and therefore which `bsv.json` the role vocabulary

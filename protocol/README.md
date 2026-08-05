@@ -69,6 +69,7 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | `status` | — connection / LOM readiness |
 | `changed` | — an observer fired |
 | `playState` | — a play-state observer fired |
+| `songPosition` | — the Arrangement position crossed a sixteenth |
 | `paletteUpdated` | — broadcast after extraction |
 | `reload` | — dev live-reload |
 | `error` | — terminates any pending request, or is broadcast |

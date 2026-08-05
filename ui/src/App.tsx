@@ -219,6 +219,7 @@ export function App() {
         lomReady={bridge.lomReady}
         busy={bridge.busy}
         isPlaying={play.isPlaying}
+        songPosition={bridge.songPosition}
         launch={launch}
         stop={stop}
         songCount={derivation.songs.length}
