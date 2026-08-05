@@ -55,6 +55,8 @@ export interface BridgeState {
   progress: { done: number; total: number } | null;
   log: LogLine[];
   busy: boolean;
+  /** True only while the UI is re-reading the set, not during other writes. */
+  syncing: boolean;
   /** 1 when the last write can be reversed, 0 otherwise. */
   undoDepth: number;
   refresh: () => Promise<void>;
@@ -92,6 +94,7 @@ export function useBridge(): BridgeState {
   const [play, setPlay] = useState<PlayState>(NOT_PLAYING);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const guard: Guard = useCallback(
     async (label, fn) => {
@@ -110,6 +113,22 @@ export function useBridge(): BridgeState {
 
   const { roles, loadRoles, saveRoles } = useRolesConfig(client, guard, say);
   const { palette, derivePaletteOnce, extractPalette } = usePalette(client, guard, say);
+
+  /**
+   * A snapshot is the read half shared by manual refreshes and post-write
+   * reconciliation. Keep it distinct from `busy`: writes already have local
+   * feedback, while this is the operation that needs to cover stale content.
+   */
+  const whileSyncing = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
+    setSyncing(true);
+    setProgress({ done: 0, total: 100 });
+    try {
+      return await fn();
+    } finally {
+      setSyncing(false);
+      setProgress(null);
+    }
+  }, []);
 
   useEffect(() => {
     const off = client.subscribe((event) => {
@@ -175,23 +194,25 @@ export function useBridge(): BridgeState {
   const refresh = useCallback(
     () =>
       guard('snapshot', async () => {
-        // Strictly before the walk — see derivePaletteOnce.
-        await derivePaletteOnce();
-        const e = await client.request({ type: 'snapshot' });
-        const wire = client.lastWireTiming;
-        const commitStart = performance.now();
-        setSnapshot(e.data);
-        // Queued after React's commit, so it captures render cost too.
-        requestAnimationFrame(() => {
-          reportSnapshotTiming(e, wire, performance.now() - commitStart);
+        await whileSyncing(async () => {
+          // Strictly before the walk — see derivePaletteOnce.
+          await derivePaletteOnce();
+          const e = await client.request({ type: 'snapshot' });
+          const wire = client.lastWireTiming;
+          const commitStart = performance.now();
+          setSnapshot(e.data);
+          // Queued after React's commit, so it captures render cost too.
+          requestAnimationFrame(() => {
+            reportSnapshotTiming(e, wire, performance.now() - commitStart);
+          });
+          say(
+            `snapshot — ${e.data.clipCount} clips · ${e.data.ms}ms lom` +
+              (wire ? ` · ${Math.round(wire.totalMs)}ms end-to-end` : ''),
+            'ok',
+          );
         });
-        say(
-          `snapshot — ${e.data.clipCount} clips · ${e.data.ms}ms lom` +
-            (wire ? ` · ${Math.round(wire.totalMs)}ms end-to-end` : ''),
-          'ok',
-        );
       }),
-    [client, derivePaletteOnce, guard, say],
+    [client, derivePaletteOnce, guard, say, whileSyncing],
   );
 
   /** Tried once this session — a failed walk must not become a retry loop. */
@@ -252,10 +273,12 @@ export function useBridge(): BridgeState {
             ` in ${e.lomMs}ms`,
           short ? 'error' : 'ok',
         );
-        const s = await client.request({ type: 'snapshot' });
-        setSnapshot(s.data);
+        await whileSyncing(async () => {
+          const s = await client.request({ type: 'snapshot' });
+          setSnapshot(s.data);
+        });
       }),
-    [client, guard, say],
+    [client, guard, say, whileSyncing],
   );
 
   const apply = useCallback(
@@ -348,10 +371,12 @@ export function useBridge(): BridgeState {
           e.undoStep ? 'info' : 'error',
         );
 
-        const s = await client.request({ type: 'snapshot' });
-        setSnapshot(s.data);
+        await whileSyncing(async () => {
+          const s = await client.request({ type: 'snapshot' });
+          setSnapshot(s.data);
+        });
       }),
-    [client, guard, say],
+    [client, guard, say, whileSyncing],
   );
 
   const undo = useCallback(() => {
@@ -374,6 +399,7 @@ export function useBridge(): BridgeState {
     progress,
     log,
     busy,
+    syncing,
     undoDepth,
     refresh,
     extractPalette,

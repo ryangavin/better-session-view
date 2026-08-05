@@ -11,6 +11,7 @@ import { RolesManager } from './components/RolesManager.js';
 import { ScenePanel } from './components/ScenePanel.js';
 import { SongsModal } from './components/SongsModal.js';
 import { StatsBar } from './components/StatsBar.js';
+import { SyncModal } from './components/SyncModal.js';
 import { useBridge } from './hooks/useBridge.js';
 import { useSnapshotLookups } from './hooks/useSnapshotLookups.js';
 import { useTrackColumns } from './hooks/useTrackColumns.js';
@@ -450,6 +451,8 @@ export function App() {
         selectedCount={selected.size}
         onOpenSongs={() => setShowSongs(true)}
       />
+
+      {bridge.syncing && <SyncModal progress={bridge.progress} />}
     </>
   );
 }
