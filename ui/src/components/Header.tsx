@@ -1,5 +1,6 @@
 import { COLUMN_WIDTHS, type ColumnWidth } from '../lib/columnWidth.js';
 import type { BridgeState } from '../hooks/useBridge.js';
+import './Header.css';
 import {
   IconBug,
   IconMenu,
@@ -153,7 +154,7 @@ export function Header({
             <button
               key={w}
               type="button"
-              className={w === columnWidth ? 'on' : undefined}
+              className={`toggle${w === columnWidth ? ' on' : ''}`}
               aria-pressed={w === columnWidth}
               onClick={() => onColumnWidth(w)}
             >

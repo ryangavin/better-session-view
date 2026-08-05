@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import './BulkWorkflow.css';
+import './RecolorModal.css';
 import { hex } from '../../../core/src/color.js';
 import { songKey, type Derivation } from '../../../core/src/derive.js';
 import { songFacts } from '../../../core/src/songRows.js';
@@ -145,7 +147,7 @@ export function RecolorModal({
       : `the set states no ${missing} for it`;
 
   return (
-    <div className="modal-back" onClick={onClose}>
+    <div className="viewport-overlay modal-back" onClick={onClose}>
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-h">Recolor songs — {derivation.songs.length}</div>
 
@@ -154,7 +156,7 @@ export function RecolorModal({
             <button
               key={r.rule}
               type="button"
-              className={r.rule === rule ? 'on' : undefined}
+              className={`toggle${r.rule === rule ? ' on' : ''}`}
               aria-pressed={r.rule === rule}
               title={r.says}
               onClick={() => setRule(r.rule)}

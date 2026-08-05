@@ -1,0 +1,23 @@
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+.sw {
+  height: 18px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+}
+.sw:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.sw.on {
+  border: 2px solid var(--amber);
+}
+
+/* The manager is wide enough for Live's full 14-column picker. */
+.swatches.wide {
+  grid-template-columns: repeat(14, 1fr);
+}

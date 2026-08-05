@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import './Rail.css';
 
 interface Props {
   /** Close and deselect — see `closeRail` in App. */

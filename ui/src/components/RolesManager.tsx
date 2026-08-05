@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import './RolesManager.css';
 import { hex } from '../../../core/src/color.js';
 import { findRoleProblems, MAX_ROLE_LEN, roleKey, type Role } from '../../../core/src/roles.js';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
@@ -38,7 +39,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
     setDraft((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
   return (
-    <div className="modal-back" onClick={onClose}>
+    <div className="viewport-overlay modal-back" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-h">Roles</div>
         <div className="hint">

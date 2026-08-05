@@ -1,4 +1,6 @@
 import { useMemo, useState, type DragEvent } from 'react';
+import './BulkWorkflow.css';
+import './ReorderModal.css';
 import { songKey, type Derivation, type DerivedSong } from '../../../core/src/derive.js';
 import { songFacts } from '../../../core/src/songRows.js';
 import { orderScenes } from '../../../core/src/songOrder.js';
@@ -125,7 +127,7 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
   };
 
   return (
-    <div className="modal-back" onClick={onClose}>
+    <div className="viewport-overlay modal-back" onClick={onClose}>
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-h">Reorder songs — {shown.length}</div>
         <div className="hint">

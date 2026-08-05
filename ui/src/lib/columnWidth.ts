@@ -57,7 +57,7 @@ export function metricsFor(w: ColumnWidth): ColumnMetrics {
 
 /**
  * Total table width for `n` track columns, px. `table-layout: fixed` needs this
- * stated explicitly — see the note in styles.css.
+ * stated explicitly — see the note in ClipGrid/ClipGrid.css.
  *
  * border-spacing sits between every column *and* at both table edges, so n + 1
  * track columns (the scene column is the +1) means n + 2 gaps.

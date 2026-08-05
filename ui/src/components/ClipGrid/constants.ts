@@ -1,4 +1,4 @@
-// Values shared by the grid's three components. Colors mirror styles.css
+// Values shared by the grid's three components. Colors mirror shared.css
 // tokens; they're duplicated here because legibility math needs numbers.
 
 import type { TrackShape } from '../../../../core/src/songRows.js';

@@ -1,0 +1,58 @@
+/* Sits in the stats strip, so it takes that row's baseline rather than
+   centring itself against a taller box. */
+.keyhint {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim2);
+}
+.keyhint b {
+  color: var(--dim);
+  font-weight: 400;
+}
+
+/* --- stats -------------------------------------------------------- */
+
+/* A status strip along the bottom, not a band across the top. Every pixel it
+   doesn't use is a scene row, so a tile is one line — label then value on a
+   shared baseline — rather than the stacked pair it started as. Nothing here
+   is read while you work; it's checked, and a checked number can be small. */
+.stats {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 3px 16px;
+  border-top: 1px solid var(--bd);
+  background: var(--surface-stats);
+  flex: none;
+  line-height: 1.4;
+}
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.stat .k {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  color: var(--dim2);
+  text-transform: uppercase;
+}
+.stat .v {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg);
+}
+.stat .v.hl {
+  color: var(--amber);
+}
+.stat.clickable {
+  cursor: pointer;
+}
+.stat.clickable:hover .k {
+  color: var(--dim);
+}
+.stat.clickable:hover .v {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

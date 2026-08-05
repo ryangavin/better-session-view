@@ -1,4 +1,5 @@
 import { useMemo, type CSSProperties } from 'react';
+import './ClipGrid.css';
 import { hex, legibleOn } from '../../../../core/src/color.js';
 import { headerSpans, type Column } from '../../../../core/src/trackColumns.js';
 import type { SongHeader, TrackShape } from '../../../../core/src/songRows.js';
@@ -117,7 +118,7 @@ export function ClipGrid({
     const m = metricsFor(columnWidth);
     // Only `--col-w` moves with the setting. The other two are constants, but
     // still ride down from here so columnWidth.ts stays the one place the grid
-    // states a width — the styles.css values are fallbacks, not the source.
+    // states a width — the shared.css values are fallbacks, not the source.
     return {
       '--col-w': `${m.col}px`,
       '--scene-col-w': `${SCENE_COL_W}px`,

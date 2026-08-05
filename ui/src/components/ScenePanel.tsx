@@ -1,4 +1,5 @@
 import { hex } from '../../../core/src/color.js';
+import './ScenePanel.css';
 import { roleKey, type Role } from '../../../core/src/roles.js';
 import { isBpm, isKey, type TitlePatch } from '../../../core/src/sceneTitle.js';
 import { SwatchGrid } from './SwatchGrid.js';
@@ -244,7 +245,7 @@ export function ScenePanel({
                 onClick={() => onAssign(on ? null : r.name)}
               >
                 <span
-                  className={`dot${swatch === undefined ? ' empty' : ''}`}
+                  className={`color-dot${swatch === undefined ? ' empty' : ''}`}
                   style={swatch === undefined ? undefined : { background: hex(swatch) }}
                 />
                 {r.name}

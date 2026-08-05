@@ -7,8 +7,10 @@ index.html            vite entry
 vite.config.ts        build target + dev proxy
 src/main.tsx          root
 src/App.tsx           the composition root — hooks in dependency order, wiring
-src/styles.css        design tokens + all styling
+src/shared.css        design tokens, global reset, shared controls and primitives
+src/App.css           app shell, empty state and log
 src/components/       one component per file
+  *.css               component styles, imported by the component that owns them
   ClipGrid/
     ClipGrid.tsx      scenes × tracks — colgroup, sticky headers, the tbody
     Row.tsx           one scene's row, memoized
@@ -56,6 +58,18 @@ src/lib/
   rowMarks.ts         play state flattened to memo-safe strings
   snapshotTiming.ts   the console phase breakdown + error text
 ```
+
+## CSS ownership
+
+`shared.css` is the single source of truth for color, typography, control-height and
+radius tokens, plus the small set of primitives genuinely shared across components:
+buttons, text fields, labels, modal shells and scrollbars. Component-specific rules live
+beside their `.tsx` owner and are imported from there. The two bulk workflows share
+`BulkWorkflow.css`; the grid's table, scene rows and song rows each own separate files.
+
+Keep a value in a component file when it describes that component's layout. Promote it to
+`shared.css` only when changing it should intentionally change the same concept everywhere.
+In particular, components use `--radius-*` rather than choosing literal corner radii.
 
 ## Dev
 

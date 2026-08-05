@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import './Row.css';
 import { hex, inkOn, legibleOn } from '../../../../core/src/color.js';
 import { nameWithoutRole, roleIn, roleKey } from '../../../../core/src/roles.js';
 import type { Column } from '../../../../core/src/trackColumns.js';

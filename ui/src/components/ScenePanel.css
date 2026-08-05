@@ -1,0 +1,59 @@
+/* --- scene title -------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0; /* or a flex child refuses to shrink below its input's width */
+}
+.field > span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--dim2);
+  text-transform: uppercase;
+}
+.field.bad input[type='text'] {
+  border-color: var(--red);
+}
+/* bpm and key are short and always set together, so they share a row. */
+.field-row {
+  display: flex;
+  gap: 8px;
+}
+.field-row .field {
+  flex: 1;
+}
+/* "mixed" is a statement about the selection, not a value — it must not read
+   as text sitting in the field waiting to be written. */
+.field input::placeholder {
+  color: var(--dim2);
+  font-style: italic;
+}
+
+/* --- roles -------------------------------------------------------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center; /* not `stretch` — one tall chip must not size the row */
+  gap: 4px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font-size: 11px;
+  line-height: 16px;
+  border-radius: var(--radius-pill);
+}
+.chip.on {
+  border-color: var(--amber);
+  color: var(--fg);
+  background: rgba(240, 178, 60, 0.1);
+}
+.chip.clear {
+  color: var(--dim2);
+}
+

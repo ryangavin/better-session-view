@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import './RoleMenu.css';
 import { hex } from '../../../core/src/color.js';
 import { roleKey, type Role } from '../../../core/src/roles.js';
 import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.js';
@@ -74,7 +75,7 @@ export function RoleMenu({
   useDismissOnScroll(onClose);
 
   return (
-    <div className="menu-back" onClick={onClose} onContextMenu={onClose}>
+    <div className="viewport-overlay menu-back" onClick={onClose} onContextMenu={onClose}>
       <div
         ref={ref}
         className="menu"
@@ -109,7 +110,7 @@ export function RoleMenu({
                   onClick={() => onPick(r.name)}
                 >
                   <span
-                    className={`dot${swatch === undefined ? ' empty' : ''}`}
+                    className={`color-dot${swatch === undefined ? ' empty' : ''}`}
                     style={swatch === undefined ? undefined : { background: hex(swatch) }}
                   />
                   <span className="menu-label">{r.name}</span>
@@ -128,7 +129,7 @@ export function RoleMenu({
               onMouseEnter={() => setCursor(last)}
               onClick={() => onPick(null)}
             >
-              <span className="dot empty" />
+              <span className="color-dot empty" />
               <span className="menu-label">no role</span>
             </button>
           </div>

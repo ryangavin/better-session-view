@@ -1,4 +1,5 @@
 import { hex } from '../../../core/src/color.js';
+import './SwatchGrid.css';
 
 interface Props {
   palette: number[];

@@ -1,0 +1,352 @@
+/* --- song header rows --------------------------------------------- */
+
+/* One per song *block*, spanning the whole grid.
+   ------------------------------------------------------------------------
+   **No border at all**, top or otherwise. It began as a 1px `--bd3` rule, and
+   a light edge along the top of a dark surface is exactly how you draw a
+   bevel — the more so once a folded header became many cells and the table's
+   2px `border-spacing` chopped that highlight into a segment over each one,
+   which is what made the row look raised. Repainting it in the page's own
+   color fixed the bevel but left the header sitting in a 5px gutter where
+   every other gap in the grid is 2px, and one axis spaced differently from the
+   other is its own kind of depth cue.
+
+   So the separator is `border-spacing` and nothing else: every gutter in the
+   table, both axes, is the same 2px. What sets a header apart is its own
+   surface — `--rail` against the clip cells' lighter fill, the song's wash,
+   and the bar down its left edge. Surfaces, not edges. */
+tr.song-row {
+  /* The tinted empty cells make the grid below read as one continuous field.
+     A soft shadow under the whole row separates the song header from that
+     field without drawing the chopped-up bevel a border on every td creates. */
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.55));
+}
+tr.song-row td {
+  padding: 6px 8px;
+  background: var(--rail);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The header's contents, as columns.
+   ------------------------------------------------------------------------
+   A hundred headers stacked up are a table of contents, and a table of
+   contents is a *table*: everything left of the role chips has a fixed width,
+   so each song's name, count and shape land on the same vertical line as the
+   one above it. Read down the page and each kind of fact is its own column.
+
+   Flex on a wrapper rather than on the `td`, because `display: flex` would
+   stop the cell being a table cell and take the grid's fixed layout with it.
+
+   Every slot holds its width whether or not the song fills it. That's the
+   whole mechanism — the fixed facts strip is what keeps the next song's name
+   where the eye already is, whether that song states a bpm or shows `---`. */
+tr.song-row .song-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+tr.song-row:hover td {
+  background: var(--surface-song-hover);
+}
+tr.song-row .fold {
+  flex: 0 0 14px;
+  color: var(--dim2);
+  font-size: 9px;
+}
+/* A button, not a label: the row folds, the title selects the whole song.
+
+   Sized to the song names rather than to the scene column. Matching
+   `--scene-col-w` was the tidier rule and the wrong one: at `l` it spends 290px
+   on names that are rarely half that, and the hole it leaves before the scene
+   count is wider than anything in it. 170px holds about the longest name that
+   reads at a glance; past that, ellipsis and the tooltip. */
+tr.song-row button.song {
+  flex: 0 0 170px;
+  min-width: 0;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+  padding: 0 10px 0 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Folded, the name is in the scene column rather than a row-wide cell, so a
+   fixed slot no longer fits — it takes whatever the facts leave. Which is most
+   of the column: the shape moved out to the track cells, where it says which
+   sections each track plays rather than only which the song has. */
+tr.song-row.collapsed button.song {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+tr.song-row button.song:hover {
+  color: var(--amber);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Facts, count and part all read as annotations on the name, never as the
+   name — hence mono, small and dim against the sans-serif title. */
+tr.song-row .facts,
+tr.song-row .part {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--dim);
+}
+/* The facts lead the row so the key sits immediately left of the name it
+   describes, and bpm before key is the order the convention itself writes:
+   `@128-Bm`. Both right-aligned — "94" and "128" are the same fact at
+   different widths, and it's their right edges that should line up.
+
+   Slots are sized to the values, not to the words: a bpm is three digits and a
+   key is at most three characters, so anything wider is dead space on every
+   song that has neither — and most sets have plenty of those. */
+tr.song-row .facts {
+  display: flex;
+  flex: none;
+  padding-right: 8px;
+}
+tr.song-row .facts .bpm {
+  width: 26px;
+}
+tr.song-row .facts .key {
+  width: 28px;
+  color: var(--dim2);
+}
+tr.song-row .facts .bpm,
+tr.song-row .facts .key {
+  text-align: right;
+  overflow: hidden;
+  /* A disagreement renders as `128 / 130` and will outgrow its slot. Clipped
+     rather than widening the column: the amber says there *is* a clash from
+     across the room, which is the part that has to survive, and the facts
+     panel is where you go to read it. */
+  text-overflow: ellipsis;
+}
+/* Set on the children, not inherited from `.facts` — `.facts .key` dims itself
+   at the same specificity and later in the file, so it would win. */
+tr.song-row .facts.clash .bpm,
+tr.song-row .facts.clash .key {
+  color: var(--amber);
+}
+/* The `---` / `--` a song with no bpm or no key shows. Quiet enough that a page
+   of them reads as an empty column rather than as data, and last of the three
+   rules for the same reason the one above is explicit about ordering: it ties
+   with `.clash` on specificity and has to win, so a missing key next to a
+   disagreeing bpm isn't painted as a disagreement of its own. */
+tr.song-row .facts .bpm.none,
+tr.song-row .facts .key.none {
+  color: var(--dim2);
+}
+tr.song-row .part {
+  color: var(--dim2);
+}
+
+/* The one annotation that isn't a fact about the song but a fault in it: this
+   song's scenes hold several colors, so the header can't state one. */
+tr.song-row .mixed-color {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--amber);
+}
+/* Everything after the chips. Unaligned on purpose — these are exceptions, and
+   reserving a column for each across a hundred songs would spend the row's
+   width on what almost none of them have to say. `flex: none` so they keep
+   their full text while the shape beside them clips. */
+tr.song-row .mixed-color,
+tr.song-row .part,
+tr.song-row .drop-note {
+  flex: none;
+  margin-left: 10px;
+}
+
+tr.song-row.collapsed .song {
+  color: var(--fg2);
+}
+
+/* The left edge: grey while folded, the song's own color when it has one.
+   ------------------------------------------------------------------------
+   A pseudo-element on the first cell, which is the only thing that works now a
+   folded header is several cells wide — a background gradient would repeat the
+   bar at the left of every tile, and `box-shadow` would draw it down the whole
+   row.
+
+   That's a simplification, not a workaround. The bar used to be a background
+   layer and a box-shadow taking turns, with a comment warning that source order
+   was load-bearing and `:not()` would silently take the drop line off folded
+   rows. Now the bar owns `::before`, the wash owns `background`, and the drop
+   indicators own `box-shadow`. Three jobs, three properties, no ordering. */
+tr.song-row td:first-child {
+  position: relative;
+}
+tr.song-row.collapsed td:first-child::before,
+tr.song-row.colored td:first-child::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--dim2);
+}
+/* Folded: wider, because once everything is folded a hundred songs are a
+   hundred bands and finding one by color is most of what the header is for. */
+tr.song-row.collapsed td:first-child::before {
+  width: 7px;
+}
+tr.song-row.colored td:first-child::before {
+  background: var(--song-rgb);
+}
+
+/* The song's color as a wash behind the row, at a strength the text still reads
+   through. Every cell, so a folded row's marks sit on it too — but not at equal
+   strength. The cell holding the title is the song; the track cells are what's
+   inside it, and a folded row reads faster when the two are told apart by
+   weight rather than only by a border. So the wash halves outside the first
+   cell, which also stops the marks competing with a field of color behind
+   them. */
+tr.song-row.colored td {
+  background-color: var(--song-wash-dim);
+}
+tr.song-row.colored td:first-child {
+  background-color: var(--song-wash);
+}
+/* Open, the header is one uninterrupted cell again. Keep the stronger wash
+   behind the song identity, then continue the same band at half strength over
+   the track region without dividing it back into track-sized cells. */
+tr.song-row.colored:not(.collapsed) td:first-child {
+  background-color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    var(--song-wash) 0 var(--scene-col-w),
+    var(--song-wash-dim) var(--scene-col-w)
+  );
+}
+/* Hover, without disturbing the wash: a white film over it. `color-mix` would
+   be tidier, but the wash arrives from the component as 8-digit hex. */
+tr.song-row.colored:hover td {
+  background-image: linear-gradient(
+    rgba(255, 255, 255, 0.045),
+    rgba(255, 255, 255, 0.045)
+  );
+}
+tr.song-row.colored:not(.collapsed):hover td:first-child {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045)),
+    linear-gradient(
+      90deg,
+      var(--song-wash) 0 var(--scene-col-w),
+      var(--song-wash-dim) var(--scene-col-w)
+    );
+}
+
+/* Folded, the header is several cells: the scene column carries the text and
+   the shape, the rest carry one tile per track column. That's what lets it be
+   one row — the tiles land under the columns they describe, and the track-name
+   row is sticky, so a fully-folded set still has every tile named above it. */
+tr.song-row td.song-lead {
+  overflow: hidden;
+}
+tr.song-row td.fill {
+  padding: 0 3px;
+  vertical-align: middle;
+}
+/* What the tiles give up their space for: a fault to fix, or a move about to
+   happen. Both are things you act on, and both outrank a summary of what the
+   song contains. */
+tr.song-row td.song-notice {
+  text-align: right;
+}
+
+/* The song's shape, per track: one square per section that track plays.
+   ------------------------------------------------------------------------
+   Which tracks a folded song uses was the first question and the marks answer
+   it too — an empty column draws nothing. But "the sparkle pad is in the
+   choruses" is the question you're actually asking when you're deciding what
+   to blend into next, and a density bar could never answer it.
+
+   Color only, with the names on the cell's tooltip. A hundred folded songs are
+   a page of color signatures, and at that density a word per role is what turns
+   a table of contents into a wall of text — the vocabulary's colors are already
+   doing the naming, which is what they're for. Named chips still belong beside
+   a scene name, where there's one role and room to spell it: see `.role-chip`.
+
+   Centred, matching the track name in the sticky row above, so a column of
+   marks reads as belonging to it. */
+tr.song-row .roles {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+tr.song-row .role-tile {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-xs);
+  /* Dimmed. These are a signature to recognise, not a label to read, and at
+     full strength a row of saturated palette colors shouts louder than the song
+     name beside it. Hovering the row brings them up — that's when you're
+     actually reading one. */
+  opacity: 0.6;
+}
+tr.song-row:hover .role-tile {
+  opacity: 0.9;
+}
+/* A role tagged in the set that nobody has given a color. Hollow rather than
+   hidden — at 9px a dashed edge is mush, so this one departs from the chip. */
+tr.song-row .role-tile.uncolored {
+  box-shadow: inset 0 0 0 1px var(--bd3);
+}
+
+/* Rearranging songs.
+   ------------------------------------------------------------------------
+   The header is the drag handle for its whole block. This is the only gesture
+   in the app that can destroy work, so it's the one place styling has a job
+   beyond looking right: the drop line has to be unmistakable about *where* the
+   scenes are going to land, and the cost has to be readable without moving your
+   eyes off the line. */
+/* Only the first cell is the handle — folded, the rest are tiles, and a grab
+   cursor over them would promise a drag that doesn't start. Explicit, because a
+   draggable element defaults to the text I-beam in some browsers even under
+   `user-select: none`. */
+tr.song-row td:first-child {
+  cursor: grab;
+}
+tr.song-row.dragging td {
+  opacity: 0.4;
+}
+tr.song-row.dragging td:first-child {
+  cursor: grabbing;
+}
+
+/* The drop line is an inset shadow rather than a border, so it can't change the
+   row's height — the two sticky header rows above depend on the grid's row
+   metrics staying put, and a 2px border appearing mid-drag would shift every row
+   below it.
+
+   `box-shadow` is now this and nothing else. The folded and colored left edges
+   used to take turns with it and had to be re-stated here to survive; they live
+   on `::before` instead, so these two rules stand alone. */
+tr.song-row.drop-above td {
+  box-shadow: inset 0 2px 0 var(--amber);
+}
+tr.song-row.drop-below td {
+  box-shadow: inset 0 -2px 0 var(--amber);
+}
+
+/* What the drop is about to do, on the line itself. There's no undo for this in
+   our app, so it belongs in front of you while the mouse button is still down —
+   a log line afterwards is too late to be a decision. */
+tr.song-row .drop-note {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--amber);
+  /* Spacing comes from the flags rule up with the other exceptions. */
+}

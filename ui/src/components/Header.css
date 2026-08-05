@@ -1,0 +1,160 @@
+/* --- header ------------------------------------------------------- */
+
+/* Sized to its controls and nothing else: --ctl-h plus 6px of air either side.
+   Every button in here is a glyph now, so the row is as short as the tallest
+   thing in it, and the pixels go to the grid. */
+header {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  height: calc(var(--ctl-h) + 12px);
+  background: var(--surface-control);
+  border-bottom: 1px solid var(--bd);
+  flex: none;
+}
+
+.header-section {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.header-left,
+.header-right {
+  gap: 10px;
+}
+.header-center {
+  justify-content: center;
+}
+.header-right {
+  justify-content: flex-end;
+}
+
+.transport-side {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.transport-position-side {
+  justify-content: flex-end;
+  padding-right: 10px;
+}
+
+.brand-logo {
+  display: block;
+  height: var(--ctl-h);
+  width: auto;
+  flex: none;
+}
+
+.pill {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--bd3);
+  color: var(--dim);
+}
+.pill.on {
+  color: var(--green);
+  border-color: rgba(95, 191, 168, 0.4);
+}
+.pill.off {
+  color: var(--red);
+  border-color: rgba(212, 84, 79, 0.4);
+}
+
+/* --- icon buttons ------------------------------------------------- */
+
+/* Every header button. The glyph is a 14px SVG drawing in `currentColor`, so
+   it picks up hover, `:disabled` and `.on` from the button without either
+   knowing about the other. Square-ish rather than text-width: a row of even
+   boxes is what makes an icon bar read as a toolbar instead of as debris. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  padding: 0;
+}
+header button {
+  height: var(--ctl-h);
+}
+/* The two segmented groups draw the border once, around the group. */
+.playback button,
+.widths button {
+  height: calc(var(--ctl-h) - 2px);
+}
+
+/* --- playback ----------------------------------------------------- */
+
+.arrangement-position {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--ctl-h);
+  min-width: 98px;
+  padding: 0 8px;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  background: var(--sel);
+  color: var(--fg2);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.position-field {
+  display: inline-block;
+  min-width: 2ch;
+  text-align: right;
+}
+.position-separator {
+  padding: 0 4px;
+  color: var(--dim2);
+}
+
+.playback,
+.widths {
+  display: flex;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.playback button {
+  width: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  color: var(--dim);
+}
+.playback button + button,
+.widths button + button {
+  border-left: 1px solid var(--bd3);
+}
+.playback button:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--bd3);
+}
+.playback button.rolling {
+  color: var(--green);
+}
+
+/* --- column width ------------------------------------------------- */
+.widths button {
+  padding: 0 9px;
+  border: none;
+  border-radius: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--dim2);
+}
+.widths button:hover {
+  color: var(--fg2);
+  /* the generic button:hover lightens border-color, which would flicker the
+     divider between segments */
+  border-color: var(--bd3);
+}

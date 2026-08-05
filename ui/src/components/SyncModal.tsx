@@ -1,3 +1,5 @@
+import './SyncModal.css';
+
 interface Props {
   progress: { done: number; total: number } | null;
 }
@@ -21,7 +23,7 @@ export function SyncModal({ progress }: Props) {
               : 'Updating session view…';
 
   return (
-    <div className="modal-back sync-back">
+    <div className="viewport-overlay modal-back sync-back">
       <div
         className="modal sync-modal"
         role="dialog"

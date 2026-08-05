@@ -1,0 +1,165 @@
+/* --- scene rows --------------------------------------------------- */
+
+td.scene {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  white-space: nowrap;
+  padding-right: 8px;
+  width: var(--scene-col-w);
+  max-width: var(--scene-col-w);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+td.scene .scene-n {
+  color: var(--dim2);
+  display: inline-block;
+  min-width: 26px;
+}
+td.scene .unnamed {
+  color: var(--fg-faint);
+}
+
+/* The role, lifted out of the scene name. Live holds "Nightfall [chorus]"; we
+   show the title and paint the tag, which is the point of storing it there.
+
+   It's a `<button>` — it opens the role menu — so the global button rule has to
+   be undone here: its border, padding and font all belong to the chip, not to
+   the rail's buttons. Scoped to the scene column: a scene shows one role and
+   has room to name it. A folded song shows all of them at once and doesn't —
+   see `.role-tile`. */
+td.scene .role-chip {
+  display: inline-block;
+  border: none;
+  font-family: var(--mono);
+  /* The gutter sits on the right, between the chip and the title: the chip is
+     a different kind of thing from the name beside it — Live's own text on one
+     side, our reading of it on the other — and it needs room to say so. Tight
+     to the scene number on the left, which it belongs with. */
+  margin: 0 12px 0 4px;
+  /* One width for every role, so a column of them is a column rather than a
+     ragged edge — and so `[JAM1]` and `[PRACTICE]` weigh the same, which they
+     do. Sized to the roles, not to the grid setting: nine characters covers
+     nearly every one, and a wider chip is only whitespace inside it.
+     Longer roles ellipsis; the tooltip has the whole name. `box-sizing:
+     border-box` is global, so the padding and the dashed border below both sit
+     inside the width and the uncolored variant measures the same. */
+  width: var(--role-chip-w);
+  padding: 0 5px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: var(--radius-sm);
+  font-size: 9px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+  background: var(--bd3);
+  color: var(--fg2);
+}
+/* Hover says it's pressable without moving anything: the chip sits in a column
+   of chips, and a border or a size change on hover would shift the name beside
+   it on every row the pointer crosses. */
+td.scene .role-chip:hover {
+  filter: brightness(1.25);
+  color: var(--fg);
+}
+
+/* A scene with no role draws a pill saying so: same size and shape as a real
+   chip, a shade quieter, and the text dimmer than the fill is light — it names
+   the absence without competing with the roles beside it. Filled, not dashed: a
+   dashed chip already means something else here — see `.uncolored`.
+
+   It's the same button as a real chip, so an untagged scene is one click from a
+   role rather than a trip to the rail. */
+td.scene .role-chip.none {
+  background: var(--bd2);
+  color: var(--dim2);
+}
+/* A role tagged in the set that nobody has given a color. Outlined rather than
+   hidden: the tag is really there, and it colors nothing until it's configured. */
+td.scene .role-chip.uncolored {
+  background: transparent;
+  border: 1px dashed var(--bd3);
+  color: var(--dim2);
+  line-height: 12px;
+}
+
+/* Scenes picked *as scenes* — what a role assignment would write to. Distinct
+   from clip selection, which paints the cells to the right. */
+td.scene.picked {
+  background: var(--sel);
+  box-shadow: inset 2px 0 0 var(--amber);
+}
+
+/* Scene launch. The only plain-click control in the app that makes a sound —
+   allowed because firing is the button's whole job, and scene launching is the
+   primary gesture so it has to be visible rather than a modifier away. Narrow
+   because the scene column spends its width on the name and the role chip. */
+td.scene .fire {
+  padding: 0;
+  width: 12px;
+  border: none;
+  background: none;
+  color: var(--fg-faint);
+  font-size: 7px;
+  line-height: 1;
+  vertical-align: middle;
+}
+td.scene .fire:hover {
+  color: var(--amber);
+}
+td.scene .fire.live {
+  color: var(--green);
+}
+td.scene .fire.fired {
+  color: var(--amber);
+  animation: bsv-blink 0.5s infinite;
+}
+
+/* --- play state --------------------------------------------------- */
+
+/* A left bar rather than a border or a ring: the cell's background is the clip's
+   own Live color and its border is already spoken for by selection, so the only
+   free surface is a slice of the background. background-image paints over
+   background-color, so this composes with any clip color. */
+td.cell.playing {
+  background-image: linear-gradient(90deg, var(--green) 0 3px, transparent 3px);
+}
+td.cell.fired {
+  background-image: linear-gradient(90deg, var(--amber) 0 3px, transparent 3px);
+  animation: bsv-blink 0.5s infinite;
+}
+
+td.cell {
+  width: var(--col-w);
+  max-width: var(--col-w);
+  height: 20px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-cell);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  padding: 0 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: transparent;
+  border: 1px solid transparent;
+}
+td.cell.sel {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 1px rgba(240, 178, 60, 0.5);
+}
+
+/* The active cell — where the keyboard is, and what ⌘-↑↓ fires. An inset
+   outline, because selection already owns the border and the outer ring, and a
+   cell is usually both. outline doesn't participate in layout, so it can't
+   shift the grid. */
+td.cell.active,
+td.scene.active {
+  outline: 1px solid var(--fg);
+  outline-offset: -3px;
+}

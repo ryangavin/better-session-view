@@ -1,4 +1,5 @@
 import type { Derivation, DerivedSong } from '../../../core/src/derive.js';
+import './SongsModal.css';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
 
 interface Props {
@@ -54,7 +55,7 @@ export function SongsModal({
   const { songs, unmapped, scenes } = derivation;
 
   return (
-    <div className="modal-back" onClick={onClose}>
+    <div className="viewport-overlay modal-back" onClick={onClose}>
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-h">
           Songs — {songs.length} in {scenes.length} scenes

@@ -1,5 +1,6 @@
 import { LAUNCH_KEY } from '../lib/keys.js';
 import { Stat } from './Stat.js';
+import './StatsBar.css';
 
 interface Props {
   snapshot: BSV.Snapshot | null;

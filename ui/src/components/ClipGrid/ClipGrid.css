@@ -1,0 +1,172 @@
+/* --- grid --------------------------------------------------------- */
+
+/* table-layout: fixed takes every column width from the header row and ignores
+   the 848 rows below it — without it a long track name widens its column and
+   the grid stops being uniform, and the browser has to measure every cell.
+   ClipGrid states the table's own width because with `width: auto` a fixed
+   table stretches to fill its container and the last column absorbs the slack;
+   given a width, the used width is max(that, sum of columns). */
+table.grid {
+  border-collapse: separate;
+  border-spacing: 2px;
+  table-layout: fixed;
+}
+/* Widths live on the columns, not the header cells: the group row uses colSpan,
+   and a spanning cell would otherwise have to distribute its width across the
+   columns it covers. */
+table.grid col {
+  width: var(--col-w);
+}
+table.grid col.scene-col {
+  width: var(--scene-col-w);
+}
+/* The second header row. Both rows must be sticky or the header tears on scroll.
+ *
+ * The stuck offsets have to equal the rows' *flow* positions, or the header
+ * changes height the moment you scroll. `border-spacing` puts 2px above the
+ * group row and 2px between the two, so measured from the top of the scroll box
+ * the group row sits at 2 and this one at --group-h + 4. Sticking them at 0 and
+ * --group-h — which is what this did — swallowed both gaps and took 4px off the
+ * header as soon as it left the top. Now nothing moves at all: each row is
+ * already at its stuck offset at rest.
+ *
+ * The two bands that opens up are painted by the group row's ring shadow below.
+ *
+ * Height is `line-height + padding-bottom` and nothing else: 13 + 2. The bulk
+ * buttons are sized to match rather than the other way around. */
+table.grid th {
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 13px;
+  letter-spacing: 0.1em;
+  color: var(--dim2);
+  text-transform: uppercase;
+  font-weight: 400;
+  text-align: center;
+  padding: 0 2px 2px;
+  position: sticky;
+  top: calc(var(--group-h) + 4px);
+  background: var(--bg);
+  z-index: 1;
+  /* Two jobs, and the order is what keeps them apart — the first shadow in the
+     list paints on top.
+     1. The 2px gutters *between* header cells are transparent, so a body row
+        scrolling underneath shows through them as moving slivers. Two flat
+        copies of the cell, one either side, plug them.
+     2. The drop shadow, so the header reads as sitting over the grid rather
+        than as another row of it. Same language as the footer's, pointing the
+        other way. Each cell casts its own and they meet across the gutters: at
+        this blur two neighbours' falloff sums to slightly *less* than one
+        cell's centre, which is invisible at 2px — where a hard-edged shadow
+        would have striped the grid once per column. */
+  box-shadow:
+    -2px 0 0 var(--bg),
+    2px 0 0 var(--bg),
+    0 8px 14px -4px var(--shadow-edge);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+table.grid th.scene-h {
+  text-align: left;
+  padding-left: 2px;
+}
+/* The two bulk workflows sit at the head of the column their songs are read
+   down. Flex on a wrapper, never on the `th` — see the note above `table.grid`:
+   `display: flex` on a table cell stops it being one.
+
+   Sized to the row rather than the row to them: 11px line-height plus the 1px
+   border either side is exactly the `th`'s 13px, so the two workflows cost the
+   header no height at all. They carry the grid's own 9px mono, not the app's
+   12px sans, for the same reason. */
+table.grid th.scene-h .scene-h-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+button.bulk {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 0 5px;
+  line-height: 11px;
+  border-radius: var(--radius-sm);
+  color: var(--dim2);
+}
+
+/* --- group header row --------------------------------------------- */
+
+/* The track-name row sticks at --group-h + 4, so this row's rendered height must
+   equal --group-h exactly — a mismatch overlaps or gaps the two on scroll. A
+   table cell treats `height` as a minimum, so nothing here may add to it:
+   line-height + the 1px border fill the box (border-box), and there is no
+   vertical padding and no inner element to grow it. Measure after changing.
+
+   The ring is what makes the fixed offsets above safe. Once the rows stick at
+   their flow positions there are two 2px bands of `border-spacing` in the
+   header — one over this row, one under it — and a body row scrolling past
+   would show through both. A 2px spread in `--bg` covers them, and the side
+   gutters between the group cells with them. It's the same color the gaps
+   already are, so nothing looks different at rest; z-index 2 keeps it over the
+   track-name row's own shadow. */
+table.grid tr.group-row th {
+  top: 2px;
+  height: var(--group-h);
+  line-height: calc(var(--group-h) - 1px);
+  padding: 0 3px;
+  z-index: 2;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+/* The rule under a group is what makes it read as covering its tracks. */
+table.grid th.group-h {
+  text-align: left;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid currentColor;
+}
+table.grid th.group-h:hover {
+  background: var(--sel);
+}
+table.grid th.group-h.none {
+  cursor: default;
+  border-bottom: none;
+}
+table.grid th.group-h.none:hover {
+  background: var(--bg);
+}
+table.grid th.folded-h {
+  cursor: pointer;
+  text-align: left;
+}
+table.grid th.folded-h:hover {
+  background: var(--sel);
+}
+td.cell.folded {
+  background: var(--surface-cell-muted);
+  color: var(--dim2);
+  text-align: center;
+  cursor: default;
+}
+
+table.grid th.track-h {
+  cursor: pointer;
+}
+table.grid th.track-h.live {
+  color: var(--green);
+}
+/* fired_slot_index === -2: this track's stop button is armed and blinking. */
+table.grid th.track-h.stopping {
+  color: var(--amber);
+  animation: bsv-blink 0.5s infinite;
+}
+
+@keyframes bsv-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.3;
+  }
+}

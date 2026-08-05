@@ -1,0 +1,43 @@
+.role-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.role-row input[type='text'] {
+  flex: 1;
+}
+/* Blank, duplicate or illegal — Save is disabled while any row is marked. */
+.role-row.bad input[type='text'] {
+  border-color: var(--red);
+}
+.sw.role-sw {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  background: var(--bd3);
+}
+.sw.role-sw.empty {
+  background: transparent;
+  border: 1px dashed var(--dim2);
+}
+.role-row .used {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim2);
+  width: 34px;
+  flex: none;
+}
+.role-row .x {
+  padding: 4px 8px;
+  border-color: transparent;
+  color: var(--dim2);
+}
+.role-row .x:hover {
+  color: var(--red);
+}
+

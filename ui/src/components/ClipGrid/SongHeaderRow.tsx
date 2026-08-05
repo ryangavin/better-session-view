@@ -1,4 +1,5 @@
 import { memo, type CSSProperties, type DragEvent } from 'react';
+import './SongHeaderRow.css';
 import { hex, legibleOn } from '../../../../core/src/color.js';
 import { roleKey } from '../../../../core/src/roles.js';
 import type { Column } from '../../../../core/src/trackColumns.js';
@@ -113,7 +114,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
           '--song-rgb': hex(band),
           '--song-wash': `${hex(band)}24`,
           // Half strength, for the cells right of the title — see the note on
-          // `.song-row.colored td` in styles.css.
+          // `.song-row.colored td` in SongHeaderRow.css.
           '--song-wash-dim': `${hex(band)}12`,
         } as CSSProperties);
 

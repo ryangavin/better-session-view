@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import './App.css';
 import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
 import { Header } from './components/Header.js';
 import { IconSync } from './components/Icon.js';
