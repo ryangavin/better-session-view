@@ -1,5 +1,7 @@
 # better-session-view
 
+[![ci](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml/badge.svg)](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml)
+
 Session manager for large Ableton Live sets. Bulk clip naming and coloring across a
 100+ song set, driven from a real UI instead of Live's grid.
 
