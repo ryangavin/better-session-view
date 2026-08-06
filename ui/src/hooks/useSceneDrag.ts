@@ -31,7 +31,18 @@ export function useSceneDrag(
   /** Where they would land, as a gap in the current scene numbering. */
   const [dropAt, setDropAt] = useState<number | null>(null);
 
+  /**
+   * Whether *this* drag is the one in progress.
+   *
+   * `dragover` bubbles, and a clip dragged across the grid passes over the rows
+   * on its way — so without this, a clip drag would drive the scene drop
+   * indicator too. A ref rather than state because the handler below must keep
+   * one identity: it is a prop on 848 memoized rows.
+   */
+  const draggingRef = useRef(false);
+
   const onDragStart = useCallback((picked: readonly number[]) => {
+    draggingRef.current = true;
     // Sorted here rather than at each grip: the plan reads them in order, and a
     // selection arrives in whatever order it was clicked.
     setSources([...picked].sort((a, b) => a - b));
@@ -39,6 +50,7 @@ export function useSceneDrag(
   }, []);
 
   const onDragEnd = useCallback(() => {
+    draggingRef.current = false;
     setSources([]);
     setDropAt(null);
   }, []);
@@ -52,6 +64,7 @@ export function useSceneDrag(
    * all 848 rows' elements.
    */
   const onDragOver = useCallback((from: number, to: number, below: boolean) => {
+    if (!draggingRef.current) return;
     const gap = below ? to + 1 : from;
     setDropAt((prev) => (prev === gap ? prev : gap));
   }, []);
@@ -80,6 +93,8 @@ export function useSceneDrag(
   movePlanRef.current = movePlan;
 
   const onDrop = useCallback(() => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
     const plan = movePlanRef.current;
     // Clear first. The move re-snapshots, and leaving a drop indicator pointing
     // at a scene index that no longer means the same thing is worse than a

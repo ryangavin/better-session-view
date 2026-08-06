@@ -191,6 +191,27 @@ td.cell.sel {
   box-shadow: 0 0 0 1px rgba(240, 178, 60, 0.5);
 }
 
+/* --- dragging clips ----------------------------------------------- */
+
+/* The clips you picked up. Dimmed rather than hidden: a drag is a move, and
+   showing the source empty before the drop implies it has already happened. */
+td.cell.lifting {
+  opacity: 0.35;
+}
+
+/* Where they would land. A dashed outline rather than a fill, because the fill
+   is the clip's Live color and a target is usually a slot that already has one
+   — the outline has to read *over* whatever is there, including the clip it is
+   about to overwrite. `outline` doesn't participate in layout, so a row of
+   these can't shift the grid mid-drag.
+
+   Same amber as selection and the drop line. This grid has one color for "what
+   your gesture is about to act on", and a second would only ask which is which. */
+td.cell.landing {
+  outline: 1px dashed var(--amber);
+  outline-offset: -1px;
+}
+
 /* The active cell — where the keyboard is, and what ⌘-↑↓ fires. An inset
    outline, because selection already owns the border and the outer ring, and a
    cell is usually both. outline doesn't participate in layout, so it can't

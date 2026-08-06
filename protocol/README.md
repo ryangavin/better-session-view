@@ -153,3 +153,19 @@ per *slot* — tens of thousands on a real set, and exactly the chatty design th
 coarse-grained rule exists to prevent. `fired` keeps Live's own **`-2` for "the track's
 stop button is fired"** rather than folding it into `-1`: a track about to stop is a
 different state from a track with nothing pending, and the UI blinks for it.
+
+## `moveClips`
+
+Dragging clips between slots. Separate from `move` for the reason `move` is separate from
+`apply`: `move` creates and deletes *scenes* and renumbers the set, while this touches
+only slots and leaves every index meaning what it meant. Sharing a message would let a
+caller reach the scene-deleting path by filling in one more field.
+
+**`steps` is ordered and must not be re-sorted.** A drag is a rigid translation, so one
+clip's target is often another's source; `core/src/clipMove.ts` orders the copies against
+the direction of travel so nothing is overwritten before it has been read. Re-sorting on
+the far side doesn't raise — it silently drops clips in the overlap.
+
+Copy-then-delete, because Live has no move. Every copy runs before any delete, so
+`failed > 0` means **nothing was deleted** and the set holds both copies: not what was
+asked for, but nothing lost.

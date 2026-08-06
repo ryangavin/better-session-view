@@ -14,6 +14,7 @@ const TERMINAL = {
   snapshot: 'snapshot',
   apply: 'applied',
   move: 'moved',
+  moveClips: 'clipsMoved',
   palette: 'palette',
   saveRoles: 'rolesSaved',
   ping: 'pong',

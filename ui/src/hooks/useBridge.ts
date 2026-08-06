@@ -7,6 +7,7 @@ import {
   sceneFields,
 } from '../../../core/src/roles.js';
 import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
+import type { ClipMovePlan } from '../../../core/src/clipMove.js';
 import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.js';
 import { useLog, type LogLine } from './useLog.js';
 import { usePalette } from './usePalette.js';
@@ -18,6 +19,9 @@ import { useRolesConfig } from './useRolesConfig.js';
  * needs to be told.
  */
 type MovePlanFor = Pick<SceneMovePlan, 'create' | 'steps' | 'remove'>;
+
+/** The same split for a clip drag: the counts stay behind for the UI. */
+type ClipMovePlanFor = Pick<ClipMovePlan, 'steps' | 'remove'>;
 
 /**
  * The shared busy/error wrapper — every write path runs inside one of these,
@@ -80,6 +84,12 @@ export interface BridgeState {
    * entry rather than arming it.
    */
   moveScenes: (plan: MovePlanFor, label: string) => Promise<void>;
+  /**
+   * Move clips around the grid. **Also has no undo of ours** — it overwrites
+   * whatever was at the target, and a snapshot can't rebuild an overwritten
+   * clip any more than it can a deleted scene. Clears the undo entry.
+   */
+  moveClips: (plan: ClipMovePlanFor, label: string) => Promise<void>;
   saveRoles: (roles: BSV.Role[]) => Promise<void>;
   undo: () => Promise<void>;
   /** Fire something. No await: the answer you want is `play` changing. */
@@ -438,6 +448,59 @@ export function useBridge(watchMeters = false): BridgeState {
     [client, guard, say, whileSyncing],
   );
 
+  /**
+   * The clip-drag counterpart to `moveScenes`, and it makes the same bargain
+   * with undo for a slightly different reason. A scene move can't be reversed
+   * because a snapshot can't rebuild a deleted scene's clips; a clip move can't
+   * be reversed because it **overwrites**, and what was at the target is gone.
+   * Moving the clips back would restore their positions and not the casualties.
+   *
+   * So this clears the undo entry too. Live's own history is the way back, if
+   * `begin_undo_step` took — which is unverified, so the log says which.
+   */
+  const moveClips = useCallback(
+    (plan: ClipMovePlanFor, label: string) =>
+      guard(label, async () => {
+        undoRef.current = null;
+        setUndoDepth(0);
+
+        const e = await client.request({
+          type: 'moveClips',
+          plan: { steps: plan.steps, remove: plan.remove },
+        });
+
+        if (e.failed > 0) {
+          // lom.ts skips the whole delete pass if any copy failed, so the
+          // originals are all still there and the set holds both copies.
+          say(
+            `${label} — ${e.failed} operation${e.failed > 1 ? 's' : ''} failed, so ` +
+              `nothing was deleted. The originals are all still where they were; ` +
+              `check the Max window and tidy up in Live.`,
+            'error',
+          );
+        } else {
+          say(
+            `${label} — ${e.copied} clip${e.copied === 1 ? '' : 's'} copied, ` +
+              `${e.removed} cleared in ${e.lomMs}ms`,
+            'ok',
+          );
+        }
+        say(
+          e.undoStep
+            ? "this move is one step in Live's own undo history — ⌘Z in Live, not here"
+            : 'Live would not group this move for undo, so there is no way back — ' +
+              'our ⌘Z cannot restore an overwritten clip',
+          e.undoStep ? 'info' : 'error',
+        );
+
+        await whileSyncing(async () => {
+          const s = await client.request({ type: 'snapshot' });
+          setSnapshot(s.data);
+        });
+      }),
+    [client, guard, say, whileSyncing],
+  );
+
   const undo = useCallback(() => {
     const u = undoRef.current;
     if (!u || size(u.batch) === 0) return Promise.resolve();
@@ -466,6 +529,7 @@ export function useBridge(watchMeters = false): BridgeState {
     apply,
     applyScenes,
     moveScenes,
+    moveClips,
     saveRoles,
     undo,
     launch,

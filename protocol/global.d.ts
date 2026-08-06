@@ -231,6 +231,49 @@ declare namespace BSV {
     remove: number[];
   }
 
+  /**
+   * One clip copied from where it is to where it's going, as
+   * `core/src/clipMove.ts` ordered it.
+   *
+   * **The order of `steps` is load-bearing and must not be re-sorted.** A drag
+   * is a rigid translation, so a clip's target is often another clip's source;
+   * the planner runs the copies against the direction of travel so nothing is
+   * overwritten before it has been read. Sorting these by anything on the far
+   * side silently destroys clips in the overlap.
+   */
+  interface ClipMoveStep {
+    fromT: number;
+    fromS: number;
+    toT: number;
+    toS: number;
+  }
+
+  /**
+   * Moving clips around the grid.
+   *
+   * A second structural write, and separate from `MovePlan` for the reason that
+   * one is separate from `apply`: `MovePlan` creates and deletes *scenes* and
+   * renumbers the set, while this touches only slots and leaves every index
+   * meaning what it meant. Sharing a message would let a caller reach the
+   * scene-deleting path by filling in one more field.
+   *
+   * Coarse-grained like everything else: one message per *drag*, however many
+   * clips it carries.
+   *
+   * Copy-then-delete, because Live has no move — `duplicate_clip_to` then
+   * `delete_clip`. Every copy runs before any delete, so a failure partway
+   * leaves clips copied and the originals still there, which is the direction
+   * you can recover from by hand.
+   */
+  interface ClipMovePlan {
+    steps: ClipMoveStep[];
+    /**
+     * Sources to clear once every copy is done. Only the ones nothing landed
+     * on — a source that is also someone's target holds the moved clip now.
+     */
+    remove: Array<{ t: number; s: number }>;
+  }
+
   /** A role a scene can be marked with, and the palette slot it colors with. */
   interface Role {
     name: string;
@@ -273,6 +316,11 @@ declare namespace BSV {
      * more optional field.
      */
     | { id?: number; type: 'move'; plan: MovePlan }
+    /**
+     * Drag clips somewhere else. Not a variant of `move`: that one is about
+     * scenes and renumbers the set, this one is about slots and doesn't.
+     */
+    | { id?: number; type: 'moveClips'; plan: ClipMovePlan }
     | { id?: number; type: 'palette' }
     /**
      * Replace the whole role vocabulary. Coarse-grained like everything else:
@@ -342,6 +390,22 @@ declare namespace BSV {
          * what was planned** — some clips didn't make it across, and the
          * originals are already gone.
          */
+        failed: number;
+        /** Whether Live accepted `begin_undo_step` — see `bridge/LOM.md`. */
+        undoStep: boolean;
+      }
+    /**
+     * Clips finished moving. Carries counts rather than an `ok` for the same
+     * reason `moved` does — and `failed` matters more here than anywhere else:
+     * **non-zero means the originals were not deleted**, so the set holds both
+     * copies and is not what was asked for, but nothing has been lost.
+     */
+    | {
+        type: 'clipsMoved';
+        id?: number;
+        lomMs: number;
+        copied: number;
+        removed: number;
         failed: number;
         /** Whether Live accepted `begin_undo_step` — see `bridge/LOM.md`. */
         undoStep: boolean;

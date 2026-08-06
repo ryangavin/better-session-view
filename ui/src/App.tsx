@@ -21,6 +21,8 @@ import { useRailAndLog } from './hooks/useRailAndLog.js';
 import { useGridSelection } from './hooks/useGridSelection.js';
 import { useGridKeyboard } from './hooks/useGridKeyboard.js';
 import { useSceneDrag } from './hooks/useSceneDrag.js';
+import { clipsFromKeys, useClipDrag } from './hooks/useClipDrag.js';
+import { clipKey } from './lib/selection.js';
 import { useSceneTitles } from './hooks/useSceneTitles.js';
 import { useSongColor } from './hooks/useSongColor.js';
 import { useColorRules } from './hooks/useColorRules.js';
@@ -162,6 +164,35 @@ export function App() {
   );
 
   const {
+    lifting,
+    landing,
+    onDragStart: onClipDragBegin,
+    onDragOver: onClipDragOver,
+    onDrop: onClipDrop,
+    onDragEnd: onClipDragEnd,
+  } = useClipDrag(snapshot, clearSelection, bridge.moveClips);
+
+  /**
+   * Grabbing a clip drags that clip — unless it's part of a selection, in which
+   * case the whole selection travels. The same rule the scene grip follows, and
+   * the same reason the selection is read through a ref: this is a prop on 848
+   * memoized rows and has to keep one identity.
+   */
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  const onClipDragStart = useCallback(
+    (t: number, s: number) => {
+      const picked = selectedRef.current;
+      const key = clipKey(t, s);
+      onClipDragBegin(
+        picked.size > 1 && picked.has(key) ? clipsFromKeys(picked) : [{ t, s }],
+        { t, s },
+      );
+    },
+    [onClipDragBegin],
+  );
+
+  const {
     titlePatch,
     setTitlePatch,
     commonFields,
@@ -297,6 +328,12 @@ export function App() {
               onSceneDragOver={onDragOver}
               onSceneDrop={onDrop}
               onSceneDragEnd={onDragEnd}
+              lifting={lifting}
+              landing={landing}
+              onClipDragStart={onClipDragStart}
+              onClipDragOver={onClipDragOver}
+              onClipDrop={onClipDrop}
+              onClipDragEnd={onClipDragEnd}
               onClip={onClip}
               onScene={onScene}
               onFireScene={onFireScene}

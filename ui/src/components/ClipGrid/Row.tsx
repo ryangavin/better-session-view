@@ -48,6 +48,10 @@ interface RowProps {
   dragging: boolean;
   /** Which edge the drop line sits on, if this row is the target. */
   dropEdge: '' | 'above' | 'below';
+  /** Tracks whose clip in this row is in flight, as `|t|t|`. See RowMarks. */
+  lifting: RowMarks;
+  /** Tracks whose slot in this row is a drop target, same shape. */
+  landing: RowMarks;
   onClip: Props['onClip'];
   onScene: Props['onScene'];
   onFireScene: Props['onFireScene'];
@@ -57,6 +61,10 @@ interface RowProps {
   onSceneDragOver: Props['onSceneDragOver'];
   onSceneDrop: Props['onSceneDrop'];
   onSceneDragEnd: Props['onSceneDragEnd'];
+  onClipDragStart: Props['onClipDragStart'];
+  onClipDragOver: Props['onClipDragOver'];
+  onClipDrop: Props['onClipDrop'];
+  onClipDragEnd: Props['onClipDragEnd'];
 }
 
 // memo on the row is what keeps toggling one cell from re-rendering all 848
@@ -72,6 +80,8 @@ export const Row = memo(function Row({
   sceneSelected,
   dragging,
   dropEdge,
+  lifting,
+  landing,
   onClip,
   onScene,
   onFireScene,
@@ -81,6 +91,10 @@ export const Row = memo(function Row({
   onSceneDragOver,
   onSceneDrop,
   onSceneDragEnd,
+  onClipDragStart,
+  onClipDragOver,
+  onClipDrop,
+  onClipDragEnd,
 }: RowProps) {
   // Live allows a scene to have no color at all, which is not the same as
   // palette slot 0 — see Scene.colorIndex in the protocol.
@@ -273,15 +287,40 @@ export const Row = memo(function Row({
         const isSel = selected.has(key);
         const playing = has(marks, `p${t}`);
         const fired = has(marks, `f${t}`);
+        const isLifting = has(lifting, String(t));
+        const isLanding = has(landing, String(t));
         return (
           <td
             key={key}
             className={
               `cell${clip ? ' has' : ''}${isSel ? ' sel' : ''}` +
               `${active === t ? ' active' : ''}${playing ? ' playing' : ''}` +
-              `${fired ? ' fired' : ''}`
+              `${fired ? ' fired' : ''}${isLifting ? ' lifting' : ''}` +
+              `${isLanding ? ' landing' : ''}`
             }
             data-active={active === t ? '1' : undefined}
+            // Only a slot holding a clip can start a drag. An empty one is
+            // still a drop *target*, which is the whole point of dragging.
+            draggable={clip !== undefined}
+            onDragStart={(e: DragEvent<HTMLTableCellElement>) => {
+              // Firefox refuses to start a drag unless something is set.
+              e.dataTransfer.setData('text/plain', clip?.name ?? '');
+              e.dataTransfer.effectAllowed = 'move';
+              onClipDragStart(t, scene.i);
+            }}
+            onDragEnd={onClipDragEnd}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              onClipDragOver(t, scene.i);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              // Stop the row's own handler firing too — a clip landing on a
+              // slot is not a request to reorder the scene it landed in.
+              e.stopPropagation();
+              onClipDrop();
+            }}
             style={
               clip
                 ? { background: hex(clip.color), color: inkOn(clip.color) }

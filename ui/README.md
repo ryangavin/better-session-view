@@ -40,6 +40,7 @@ src/hooks/            one hook per file
   useGridSelection.ts both selections + the active cell (and its ref)
   useGridKeyboard.ts  the window keydown effect
   useSceneDrag.ts     drag state + the move plan (and its ref), for both grips
+  useClipDrag.ts      the same, for dragging clips between slots
   useRailAndLog.ts    rail/log visibility, error-opens-the-log
   useSceneTitles.ts   TitlePatch, rename + tempo ops
   useSongColor.ts     song-scoped coloring
@@ -804,6 +805,32 @@ does — extending a selection *is* adding to it, and a second key for the same 
 made the first look incomplete. There are two selection gestures now, not three. What
 went with it is toggling one cell back out of a selection; ⇧ can shrink a block by
 re-extending it, so the loss is a cell at a time rather than a range.
+
+## Dragging clips
+
+**Drag a clip to move it**, or drag one that's part of a selection to move the whole
+block. The clips you picked up dim; the slots they'd land on take a dashed amber
+outline — the same amber as selection and the scene drop line, because the grid has one
+color for "what your gesture is about to act on".
+
+**It overwrites, like Live.** The outline is drawn over whatever is already in the target,
+including the clip about to be replaced, which is why it's an outline and not a fill.
+
+The ordering, the refusals and what gets cleared afterwards all live in
+[`core/src/clipMove.ts`](../core/README.md). Two things belong here:
+
+- **An invalid drop draws nothing and does nothing.** `planClipMove` returns `null` for
+  the whole drag if any clip would land off the grid, on a group track, or on a track of
+  the other type — so a bad drop has no indicator to follow and no plan to run.
+- **The two drags don't talk to each other.** `dragover` bubbles, so a clip crossing the
+  grid passes over the rows and a scene crossing it passes over the cells. Each hook
+  holds a `draggingRef` and ignores events that aren't its own; without it, dragging a
+  clip would drive the scene drop indicator at the same time.
+
+`lifting` and `landing` reach the rows as `|3|7|` strings per scene, the same shape as
+`RowMarks` and for the same reason. `landing` is rebuilt every time the pointer crosses a
+cell, so as a `Set` prop it would re-render all 848 rows several times a second; per
+scene, only the rows that gained or lost a mark change.
 
 ## Selection, and the active cell
 

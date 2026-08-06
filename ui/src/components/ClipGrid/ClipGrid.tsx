@@ -75,6 +75,14 @@ export interface Props {
   onSceneDragOver: (from: number, to: number, below: boolean) => void;
   onSceneDrop: () => void;
   onSceneDragEnd: () => void;
+  /** scene -> the tracks lifting / landing in that row. See Row and RowMarks. */
+  lifting: Map<number, string>;
+  landing: Map<number, string>;
+  /** Grab a clip. App decides whether that's the clip or the whole selection. */
+  onClipDragStart: (t: number, s: number) => void;
+  onClipDragOver: (t: number, s: number) => void;
+  onClipDrop: () => void;
+  onClipDragEnd: () => void;
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
@@ -123,6 +131,12 @@ export function ClipGrid({
   onSceneDragOver,
   onSceneDrop,
   onSceneDragEnd,
+  lifting,
+  landing,
+  onClipDragStart,
+  onClipDragOver,
+  onClipDrop,
+  onClipDragEnd,
   onClip,
   onScene,
   onFireScene,
@@ -363,6 +377,12 @@ export function ClipGrid({
                 onSceneDragOver={onSceneDragOver}
                 onSceneDrop={onSceneDrop}
                 onSceneDragEnd={onSceneDragEnd}
+                lifting={lifting.get(scene.i)}
+                landing={landing.get(scene.i)}
+                onClipDragStart={onClipDragStart}
+                onClipDragOver={onClipDragOver}
+                onClipDrop={onClipDrop}
+                onClipDragEnd={onClipDragEnd}
               />,
             );
           }
