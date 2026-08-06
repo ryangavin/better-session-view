@@ -903,6 +903,23 @@ why there's no `endsBand` to go with it.
 It costs the `th` its `overflow: hidden` (the bridge has to escape the cell), so clipping
 moved onto `.th-label` inside a flex `.th-line` — the only thing that ever needed it.
 
+**Under the band, a member's header is held off it by the gutter.** When a group and its
+tracks are near-neighbours in the palette, the band and the fill below meet as one field
+of green and the bar stops reading as a bar. What separates them is the same 2px of
+background that separates every other pair of cells in the grid — no new border and no
+shadow, just `--gutter`, drawn by hand here because it falls *inside* a cell rather than
+between two.
+
+The group's own column never gets it, and that's the whole point of the rule: its band
+is the top of its own header, in its own color, so the group track reads as one
+continuous shape whose header extends across everything it holds. A nested group is a
+group here too — it keeps its shape over its own run.
+
+`--gutter` is named rather than written as `2px` in nine places. It's the grid's one
+separator: no cell in the body has a border, so anything that needs to divide two things
+is this gap at this width. `border-spacing` produces it between cells, the header's plug
+shadows paint into it, and the band's gutter draws it.
+
 **Play state on a header is a bar down the left edge, not the text color** — the same
 language the clip cells use for the same fact. Once the header carries the track's own
 fill, a green *word* on a green track says nothing, and overriding the label color

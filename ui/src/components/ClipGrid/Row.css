@@ -140,7 +140,7 @@ td.cell.fired {
    Grew from a rough edge into a real one when the header got taller. */
 td.cell,
 td.scene {
-  scroll-margin-top: calc(var(--header-h) + 2px);
+  scroll-margin-top: calc(var(--header-h) + var(--gutter));
 }
 
 td.cell {

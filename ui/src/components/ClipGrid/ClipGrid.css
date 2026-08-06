@@ -8,8 +8,15 @@
    given a width, the used width is max(that, sum of columns). */
 table.grid {
   border-collapse: separate;
-  border-spacing: 2px;
+  border-spacing: var(--gutter);
   table-layout: fixed;
+
+  /* The 2px of background between every cell and the next. It's the grid's one
+     separator — no cell in the body has a border — so anything that needs to
+     divide two things here is this gap at this width, and it's named so that
+     stays true. `border-spacing` produces it between cells; the header's plug
+     shadows paint into it; the band's gutter below draws it by hand. */
+  --gutter: 2px;
 
   /* The group band's weight, and the header height that follows from it.
      A group and its tracks are often near-neighbours in Live's palette — a
@@ -25,12 +32,13 @@ table.grid {
      is already the floor. Stated as its parts so `--header-h` can't drift from
      the padding that produces it — both are written from these. */
   --band-w: 5px;
-  /* Clearance between the band and the label, and below the label. */
+  /* Clearance between the label and whatever sits above it. */
   --label-gap: 2px;
   --label-h: 13px;
   --header-pad-b: 5px;
   --header-h: calc(
-    var(--band-w) + var(--label-gap) + var(--label-h) + var(--header-pad-b)
+    var(--band-w) + var(--gutter) + var(--label-gap) + var(--label-h) +
+      var(--header-pad-b)
   );
 }
 /* Widths live on the columns, not the header cells: the song header's notice
@@ -52,7 +60,7 @@ table.grid col.scene-col {
  * top. (There were two header rows once, a band of group names above this one;
  * the offsets were the fiddly part of that and are worth keeping right.)
  *
- * The 2px band that opens above is plugged by this rule's own third shadow.
+ * The gutter that opens above is plugged by this rule's own third shadow.
  *
  * Height is `--header-h` — see `table.grid` above. The padding here is what
  * actually produces it, so the two are written from the same variables. The
@@ -70,17 +78,20 @@ table.grid th {
   text-transform: uppercase;
   font-weight: 400;
   text-align: center;
-  padding: calc(var(--band-w) + var(--label-gap)) 2px var(--header-pad-b);
+  padding: calc(var(--band-w) + var(--gutter) + var(--label-gap)) var(--gutter)
+    var(--header-pad-b);
   position: sticky;
-  top: 2px;
+  top: var(--gutter);
   background: var(--bg);
   z-index: 1;
-  /* Two jobs, and the order is what keeps them apart — the first shadow in the
-     list paints on top.
-     1. The 2px gutters *between* header cells are transparent, so a body row
+  /* Three jobs, and the order is what keeps them apart — the first shadow in
+     the list paints on top. Named `--header-plugs` because the banded rules
+     below restate the whole `box-shadow` to add their insets, and this is the
+     part they must not lose in the process.
+     1. The gutters *between* header cells are transparent, so a body row
         scrolling underneath shows through them as moving slivers. Two flat
         copies of the cell, one either side, plug them.
-     2. The same 2px gap sits *above* the row, between it and the top of the
+     2. The same gap sits *above* the row, between it and the top of the
         scroll box, and a body row scrolling past shows through that one too.
         A third flat copy plugs it. (The group header row above this one used
         to cover it with a ring; it's gone, and this replaces that job.)
@@ -90,11 +101,11 @@ table.grid th {
         this blur two neighbours' falloff sums to slightly *less* than one
         cell's centre, which is invisible at 2px — where a hard-edged shadow
         would have striped the grid once per column. */
-  box-shadow:
-    -2px 0 0 var(--bg),
-    2px 0 0 var(--bg),
-    0 -2px 0 var(--bg),
+  --header-plugs:
+    calc(-1 * var(--gutter)) 0 0 var(--bg), var(--gutter) 0 0 var(--bg),
+    0 calc(-1 * var(--gutter)) 0 var(--bg),
     0 8px 14px -4px var(--shadow-edge);
+  box-shadow: var(--header-plugs);
   white-space: nowrap;
 }
 /* Flex on a wrapper, never on the `th` itself — `display: flex` on a table cell
@@ -112,7 +123,7 @@ table.grid th .th-label {
 }
 table.grid th.scene-h {
   text-align: left;
-  padding-left: 2px;
+  padding-left: var(--gutter);
 }
 /* The two bulk workflows sit at the head of the column their songs are read
    down. Flex on a wrapper, never on the `th` — see the note above `table.grid`:
@@ -149,16 +160,36 @@ button.bulk {
    box and would come out of the label's line-height, where this rides in the
    padding widened for it.
 
-   The ring in `--bg` on the sides is what the group row's used to do — it
-   plugs the 2px `border-spacing` gutters so a body row scrolling underneath
-   doesn't show through them. */
+   This is the group's *own* column — the band is the top of its header and the
+   same color as it, so the two are one shape. Members get the rule below. */
 table.grid th.banded {
   box-shadow:
     inset 0 var(--band-w) 0 var(--band),
-    -2px 0 0 var(--bg),
-    2px 0 0 var(--bg),
-    0 -2px 0 var(--bg),
-    0 8px 14px -4px var(--shadow-edge);
+    var(--header-plugs);
+}
+/* A member's header, held under the band rather than joined to it.
+ *
+ * When a group and its tracks are near-neighbours in Live's palette, the band
+ * and the fill beneath it meet as one field of green and the bar stops reading
+ * as a bar. What separates them is the same 2px of background that separates
+ * every other pair of cells in this grid — no new border, no shadow, just the
+ * gutter, drawn here by hand because it falls inside a cell rather than between
+ * two.
+ *
+ * Both insets are listed together because a second `box-shadow` would replace
+ * the first rather than add to it. The band is first so it paints on top: the
+ * `--bg` inset fills from the top edge down past it, and the band covers back
+ * over the first `--band-w` of that, leaving exactly the gutter showing.
+ *
+ * `:not(.group-h)` is the whole rule. A group's own column never gets this —
+ * including a nested group over its own run — so the group track keeps looking
+ * like one continuous shape whose header extends across everything it holds.
+ */
+table.grid th.banded:not(.group-h) {
+  box-shadow:
+    inset 0 var(--band-w) 0 var(--band),
+    inset 0 calc(var(--band-w) + var(--gutter)) 0 var(--bg),
+    var(--header-plugs);
 }
 /* The bridge. An inset shadow stops at the cell edge, so on its own the band
    comes out as one segment per column with a 2px notch at every gutter, where
@@ -180,8 +211,8 @@ table.grid th.banded:not(.band-start)::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -2px;
-  width: 2px;
+  left: calc(-1 * var(--gutter));
+  width: var(--gutter);
   height: var(--band-w);
   background: var(--band);
 }

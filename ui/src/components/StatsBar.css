@@ -50,10 +50,10 @@
 .stat .v {
   font-family: var(--mono);
   font-size: 10.5px;
-  color: var(--fg);
+  color: var(--dim);
 }
 .stat .v.hl {
-  color: var(--amber);
+  color: var(--amber-muted);
 }
 .stat.clickable {
   cursor: pointer;
