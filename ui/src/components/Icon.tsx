@@ -101,12 +101,14 @@ export const IconGitHub = () => (
  * The ring is what makes it a *badge*: at a glance down the header row, the
  * group tracks are the ones wearing one.
  *
- * Smaller than the header glyphs and drawn heavier to compensate — 2.4 on the
- * 24-grid at 11px lands near 1.1 device pixels, where BASE's 1.8 would come out
- * thin enough to shimmer against a saturated track color.
+ * Smaller than the header glyphs and drawn heavier to compensate — 3 on the
+ * 24-grid at 11px lands near 1.4 device pixels, where BASE's 1.8 would come out
+ * thin enough to shimmer against a saturated track color. Weighted to sit with
+ * the 600 the group's name is set in; a hairline ring beside a bold word reads
+ * as an artefact rather than as a badge.
  */
 export const IconGroupFold = ({ folded }: { folded: boolean }) => (
-  <svg {...BASE} width={11} height={11} strokeWidth={2.4}>
+  <svg {...BASE} width={11} height={11} strokeWidth={3}>
     <circle cx="12" cy="12" r="9.6" />
     {folded ? (
       <polyline points="10.2 7.8 14.4 12 10.2 16.2" />

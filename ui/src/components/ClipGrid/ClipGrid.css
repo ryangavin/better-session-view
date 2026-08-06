@@ -116,10 +116,16 @@ table.grid th .th-line {
   align-items: center;
   justify-content: center;
 }
+/* Track and group names carry weight; the `Scene` header and its two bulk
+   buttons don't, which is why this sits on the label rather than on `th`. A
+   name now sits on a saturated fill instead of on the near-black background,
+   and 9px regular gets thin against a light one — `inkOn` picks a color that
+   clears contrast, but contrast at that weight is still a hairline. */
 table.grid th .th-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
 }
 table.grid th.scene-h {
   text-align: left;
@@ -241,14 +247,14 @@ table.grid th.group-h:hover {
    ellipsises a long group name beside it.
 
    Inherits the header's `inkOn` color, so it stays legible on any track color
-   without being told which one it's on. */
+   without being told which one it's on — at full strength, not the 85% it wore
+   while the name beside it was still regular weight. */
 table.grid th.group-h .fold {
   display: flex;
   align-items: center;
   flex: none;
   height: var(--label-h);
   margin-right: 3px;
-  opacity: 0.85;
 }
 
 /* The group's clip slot. A launcher, not a cell you can select — no hover
