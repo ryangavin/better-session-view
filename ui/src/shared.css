@@ -41,10 +41,6 @@
   --col-w: 74px;
   --scene-col-w: 290px;
   --role-chip-w: 62px;
-  /* Height of the group header row. The track-name row sticks at this plus the
-     two 2px border-spacing gaps above it, so the value is shared by both and
-     must not drift. */
-  --group-h: 13px;
   /* One height for every control in the header, so a row of them has one top
      and one bottom edge rather than five. Segmented groups carry the border on
      the group, so their buttons are 2px shorter and come out the same. */

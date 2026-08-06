@@ -1,12 +1,13 @@
 import { memo } from 'react';
 import './Row.css';
 import { hex, inkOn, legibleOn } from '../../../../core/src/color.js';
+import { groupSlot } from '../../../../core/src/groupSlot.js';
 import { nameWithoutRole, roleIn, roleKey } from '../../../../core/src/roles.js';
 import type { Column } from '../../../../core/src/trackColumns.js';
 import { clipKey } from '../../lib/selection.js';
 import { LAUNCH_KEY, mods } from '../../lib/keys.js';
 import { has, type RowMarks } from '../../lib/rowMarks.js';
-import { GROUP_CELL_ALPHA, PANEL } from './constants.js';
+import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA, PANEL } from './constants.js';
 import type { Props } from './ClipGrid.js';
 
 interface RowProps {
@@ -22,6 +23,7 @@ interface RowProps {
   onClip: Props['onClip'];
   onScene: Props['onScene'];
   onFireScene: Props['onFireScene'];
+  onFireGroup: Props['onFireGroup'];
   onRoleMenu: Props['onRoleMenu'];
 }
 
@@ -39,6 +41,7 @@ export const Row = memo(function Row({
   onClip,
   onScene,
   onFireScene,
+  onFireGroup,
   onRoleMenu,
 }: RowProps) {
   // Live allows a scene to have no color at all, which is not the same as
@@ -136,22 +139,53 @@ export const Row = memo(function Row({
         )}
       </td>
       {columns.map((c) => {
-        if (c.kind === 'folded') {
-          // The group's own clip slots aren't in the snapshot, so stand in for
-          // it with what's underneath: how many of its tracks have a clip here.
-          const n = c.members.reduce(
-            (acc, t) => acc + (clips.has(clipKey(t, scene.i)) ? 1 : 0),
-            0,
-          );
-          const live = c.members.some((t) => has(marks, `p${t}`));
+        if (c.kind === 'group') {
+          // A real Live slot: firing it fires every clip the group holds in
+          // this scene. Its color is the first of those clips, which is Live's
+          // own rule — see core/groupSlot.
+          const slot = groupSlot(c.members, (t) => clips.get(clipKey(t, scene.i)));
+          const t = c.group.i;
+          // The group track reports its own play state, but only if Live fills
+          // in playing_slot_index for group tracks — unconfirmed, so fall back
+          // to the members, which is what this cell has always used.
+          const live = has(marks, `p${t}`) || c.members.some((m) => has(marks, `p${m}`));
+          const fired = has(marks, `f${t}`) || c.members.some((m) => has(marks, `f${m}`));
           return (
             <td
-              key={`g${c.group.i}`}
-              className={`cell folded${n ? ' has' : ''}${live ? ' playing' : ''}`}
-              style={n ? { background: hex(c.group.color) + '2e' } : undefined}
-              title={`${c.group.name} — ${n} of ${c.members.length} tracks have a clip here`}
+              key={`g${t}`}
+              className={`cell group${live ? ' playing' : ''}${fired ? ' fired' : ''}`}
+              style={
+                slot.count ? { background: `${hex(slot.color)}${GROUP_SLOT_ALPHA}` } : undefined
+              }
+              title={
+                slot.count
+                  ? `${c.group.name} — fire ${slot.count} of ${c.members.length} tracks` +
+                    ` in scene ${scene.i + 1}`
+                  : `${c.group.name} — nothing to fire in scene ${scene.i + 1}`
+              }
             >
-              {n || ''}
+              {/* Plain click fires, like the scene row's button and unlike a
+                  clip cell, because there is nothing here to select — the
+                  modifier rule exists to keep firing away from selection, and
+                  a group slot has no selection to protect. Absent entirely
+                  when the group has nothing here: Live draws no launcher on an
+                  empty group slot either. */}
+              {slot.count > 0 && (
+                <>
+                  <button
+                    type="button"
+                    className="fire"
+                    title={`Fire ${c.group.name} in scene ${scene.i + 1}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFireGroup(t, scene.i);
+                    }}
+                  >
+                    ▶
+                  </button>
+                  <span className="group-n">{slot.count}</span>
+                </>
+              )}
             </td>
           );
         }

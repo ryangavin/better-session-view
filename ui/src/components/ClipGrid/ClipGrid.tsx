@@ -1,7 +1,7 @@
 import { useMemo, type CSSProperties } from 'react';
 import './ClipGrid.css';
 import { hex, legibleOn } from '../../../../core/src/color.js';
-import { headerSpans, type Column } from '../../../../core/src/trackColumns.js';
+import { startsBand, type Column } from '../../../../core/src/trackColumns.js';
 import type { SongHeader, TrackShape } from '../../../../core/src/songRows.js';
 import type { ActiveCell } from '../../../../core/src/gridRange.js';
 import { isLaunchModified, LAUNCH_KEY, type CellClick } from '../../lib/keys.js';
@@ -61,6 +61,8 @@ export interface Props {
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
+  /** Fire a group track's slot — every clip the group holds in that scene. */
+  onFireGroup: (t: number, s: number) => void;
   /**
    * Open the role picker on a scene's chip. The anchor comes from here because
    * the chip is the only thing that knows where it ended up; the menu itself is
@@ -100,15 +102,11 @@ export function ClipGrid({
   onClip,
   onScene,
   onFireScene,
+  onFireGroup,
   onRoleMenu,
   onStopTrack,
   onToggleGroup,
 }: Props) {
-  const spans = useMemo(
-    () => headerSpans(snapshot.tracks, columns),
-    [snapshot.tracks, columns],
-  );
-
   const marks = useMemo(() => marksByScene(play), [play]);
 
   // Widths ride down as custom properties on the table rather than as props on
@@ -129,9 +127,10 @@ export function ClipGrid({
 
   return (
     <table className="grid" style={style}>
-      {/* Column widths come from here rather than the header row: a colSpan in
-          the group row would otherwise have to distribute its width across the
-          columns it covers, and the widths stop being exact. */}
+      {/* Column widths come from here rather than the header row: the song
+          header's notice cell spans the whole grid, and a colSpan would
+          otherwise have to distribute its width across the columns it covers,
+          at which point the widths stop being exact. */}
       <colgroup>
         <col className="scene-col" />
         {columns.map((c) => (
@@ -139,25 +138,6 @@ export function ClipGrid({
         ))}
       </colgroup>
       <thead>
-        <tr className="group-row">
-          <th className="group-pad" />
-          {spans.map((s, i) =>
-            s.group ? (
-              <th
-                key={`s${s.group.i}`}
-                colSpan={s.span}
-                className="group-h"
-                style={{ color: hex(legibleOn(s.group.color, PANEL)) }}
-                title={`${s.group.name} — click to collapse`}
-                onClick={() => onToggleGroup(s.group!.i)}
-              >
-                {s.group.name}
-              </th>
-            ) : (
-              <th key={`n${i}`} colSpan={s.span} className="group-h none" />
-            ),
-          )}
-        </tr>
         <tr>
           {/* The two workflows that act on every song at once live at the top of
               the column the songs are read down. Both are things you do to the
@@ -191,29 +171,68 @@ export function ClipGrid({
               </button>
             </div>
           </th>
-          {columns.map((c) => {
-            if (c.kind !== 'track') {
+          {columns.map((c, i) => {
+            // The band that replaced the group header row. A colored rule along
+            // the top of every column in a group, capped at the left where the
+            // run starts so two adjacent groups never read as one.
+            const band = c.group
+              ? ({
+                  '--band': hex(c.group.color),
+                } as CSSProperties)
+              : undefined;
+            const bandClass = c.group
+              ? ` banded${startsBand(columns, i) ? ' band-start' : ''}`
+              : '';
+
+            // The header row re-renders on every play change and is ~40 cells,
+            // so it reads PlayState directly rather than going through marks.
+            const track = c.kind === 'track' ? c.track : c.group;
+            const st = play.tracks[track.i];
+            const live = st !== undefined && st.playing >= 0;
+            const stopping = st !== undefined && st.fired === STOP_FIRED;
+            const state = `${live ? ' live' : ''}${stopping ? ' stopping' : ''}`;
+
+            if (c.kind === 'group') {
+              // The whole header is the fold control, so the triangle isn't a
+              // separate button — the name is as much a click target as the
+              // arrow, which is what makes a 40-column grid tolerable to fold.
+              // ⌘-click still stops, same as any track header, and on a group
+              // Live's stop_all_clips takes the members with it.
               return (
                 <th
                   key={`g${c.group.i}`}
-                  className="folded-h"
-                  style={{ color: hex(legibleOn(c.group.color, PANEL)) }}
-                  title={`${c.group.name} (${c.members.length} tracks) — click to expand`}
-                  onClick={() => onToggleGroup(c.group.i)}
+                  className={`track-h group-h${state}${bandClass}`}
+                  // The name's color rides down as a custom property rather
+                  // than as `color` directly: an inline `color` outranks every
+                  // stylesheet rule, and `.live` / `.stopping` have to be able
+                  // to win here the same way they do on a track header.
+                  style={
+                    {
+                      ...band,
+                      '--group-fg': hex(legibleOn(c.group.color, PANEL)),
+                    } as CSSProperties
+                  }
+                  title={
+                    `${c.group.name} — ${c.members.length} track` +
+                    `${c.members.length === 1 ? '' : 's'} · click to ` +
+                    `${c.collapsed ? 'expand' : 'collapse'} · ` +
+                    `${LAUNCH_KEY}-click stops the group`
+                  }
+                  onClick={(e) => {
+                    if (isLaunchModified(e)) onStopTrack(c.group.i);
+                    else onToggleGroup(c.group.i);
+                  }}
                 >
-                  ▸ {c.group.name}
+                  <span className="fold">{c.collapsed ? '▸' : '▾'}</span>
+                  {c.group.name}
                 </th>
               );
             }
-            // The header row re-renders on every play change and is ~40 cells,
-            // so it reads PlayState directly rather than going through marks.
-            const st = play.tracks[c.track.i];
-            const live = st !== undefined && st.playing >= 0;
-            const stopping = st !== undefined && st.fired === STOP_FIRED;
             return (
               <th
                 key={`t${c.track.i}`}
-                className={`track-h${live ? ' live' : ''}${stopping ? ' stopping' : ''}`}
+                className={`track-h${state}${bandClass}`}
+                style={band}
                 title={`${c.track.name} — ${LAUNCH_KEY}-click to stop this track`}
                 onClick={(e) => {
                   if (isLaunchModified(e)) onStopTrack(c.track.i);
@@ -298,6 +317,7 @@ export function ClipGrid({
                 onClip={onClip}
                 onScene={onScene}
                 onFireScene={onFireScene}
+                onFireGroup={onFireGroup}
                 onRoleMenu={onRoleMenu}
               />,
             );

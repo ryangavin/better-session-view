@@ -124,6 +124,13 @@ export function useGridSelection({
   );
 
   const onFireScene = useCallback((s: number) => launch({ kind: 'scene', s }), [launch]);
+  // A group track's slot, fired by position like any other. It holds no clip
+  // of its own — Live fires everything the group has in that scene. Nothing is
+  // selected on the way: a group slot is not a cell you can name or color.
+  const onFireGroup = useCallback(
+    (t: number, s: number) => launch({ kind: 'clip', t, s }),
+    [launch],
+  );
   const onStopTrack = useCallback((t: number) => stop({ kind: 'track', t }), [stop]);
 
   const clearSelection = useCallback(() => {
@@ -174,6 +181,7 @@ export function useGridSelection({
     onClip,
     onScene,
     onFireScene,
+    onFireGroup,
     onStopTrack,
     clearSelection,
     pickScenes,

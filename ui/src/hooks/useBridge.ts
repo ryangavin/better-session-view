@@ -83,6 +83,11 @@ export interface BridgeState {
   /** Fire something. No await: the answer you want is `play` changing. */
   launch: (target: BSV.LaunchTarget) => void;
   stop: (target: BSV.StopTarget) => void;
+  /**
+   * Fold or unfold a group track in Live. No await, and no reply — the grid
+   * has already moved its own columns. See `setFold` in the protocol.
+   */
+  setFold: (t: number, folded: boolean) => void;
 }
 
 /**
@@ -207,6 +212,11 @@ export function useBridge(): BridgeState {
 
   const stop = useCallback(
     (target: BSV.StopTarget) => client.send({ type: 'stop', target }),
+    [client],
+  );
+
+  const setFold = useCallback(
+    (t: number, folded: boolean) => client.send({ type: 'setFold', t, folded }),
     [client],
   );
 
@@ -430,5 +440,6 @@ export function useBridge(): BridgeState {
     undo,
     launch,
     stop,
+    setFold,
   };
 }

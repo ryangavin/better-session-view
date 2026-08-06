@@ -11,26 +11,26 @@ table.grid {
   border-spacing: 2px;
   table-layout: fixed;
 }
-/* Widths live on the columns, not the header cells: the group row uses colSpan,
-   and a spanning cell would otherwise have to distribute its width across the
-   columns it covers. */
+/* Widths live on the columns, not the header cells: the song header's notice
+   cell uses colSpan, and a spanning cell would otherwise have to distribute its
+   width across the columns it covers. */
 table.grid col {
   width: var(--col-w);
 }
 table.grid col.scene-col {
   width: var(--scene-col-w);
 }
-/* The second header row. Both rows must be sticky or the header tears on scroll.
+/* The header row. Sticky, or it tears away on scroll.
  *
- * The stuck offsets have to equal the rows' *flow* positions, or the header
- * changes height the moment you scroll. `border-spacing` puts 2px above the
- * group row and 2px between the two, so measured from the top of the scroll box
- * the group row sits at 2 and this one at --group-h + 4. Sticking them at 0 and
- * --group-h — which is what this did — swallowed both gaps and took 4px off the
- * header as soon as it left the top. Now nothing moves at all: each row is
- * already at its stuck offset at rest.
+ * The stuck offset has to equal the row's *flow* position, or the header
+ * changes height the moment you scroll. `border-spacing` puts 2px above it, so
+ * measured from the top of the scroll box the row sits at 2 and sticks at 2 —
+ * already at its stuck offset at rest, so nothing moves at all. Sticking it at
+ * 0 would swallow that gap and take 2px off the header as soon as it left the
+ * top. (There were two header rows once, a band of group names above this one;
+ * the offsets were the fiddly part of that and are worth keeping right.)
  *
- * The two bands that opens up are painted by the group row's ring shadow below.
+ * The 2px band that opens above is plugged by this rule's own third shadow.
  *
  * Height is `line-height + padding-bottom` and nothing else: 13 + 2. The bulk
  * buttons are sized to match rather than the other way around. */
@@ -45,7 +45,7 @@ table.grid th {
   text-align: center;
   padding: 0 2px 2px;
   position: sticky;
-  top: calc(var(--group-h) + 4px);
+  top: 2px;
   background: var(--bg);
   z-index: 1;
   /* Two jobs, and the order is what keeps them apart — the first shadow in the
@@ -53,7 +53,11 @@ table.grid th {
      1. The 2px gutters *between* header cells are transparent, so a body row
         scrolling underneath shows through them as moving slivers. Two flat
         copies of the cell, one either side, plug them.
-     2. The drop shadow, so the header reads as sitting over the grid rather
+     2. The same 2px gap sits *above* the row, between it and the top of the
+        scroll box, and a body row scrolling past shows through that one too.
+        A third flat copy plugs it. (The group header row above this one used
+        to cover it with a ring; it's gone, and this replaces that job.)
+     3. The drop shadow, so the header reads as sitting over the grid rather
         than as another row of it. Same language as the footer's, pointing the
         other way. Each cell casts its own and they meet across the gutters: at
         this blur two neighbours' falloff sums to slightly *less* than one
@@ -62,6 +66,7 @@ table.grid th {
   box-shadow:
     -2px 0 0 var(--bg),
     2px 0 0 var(--bg),
+    0 -2px 0 var(--bg),
     0 8px 14px -4px var(--shadow-edge);
   white-space: nowrap;
   overflow: hidden;
@@ -94,58 +99,108 @@ button.bulk {
   color: var(--dim2);
 }
 
-/* --- group header row --------------------------------------------- */
+/* --- groups ---------------------------------------------------------- */
 
-/* The track-name row sticks at --group-h + 4, so this row's rendered height must
-   equal --group-h exactly — a mismatch overlaps or gaps the two on scroll. A
-   table cell treats `height` as a minimum, so nothing here may add to it:
-   line-height + the 1px border fill the box (border-box), and there is no
-   vertical padding and no inner element to grow it. Measure after changing.
+/* A group's extent, which used to be a header row of spanning cells above the
+   track names. A group track carries its own name in the header now, so a
+   second row repeating that word said nothing the column didn't. What the span
+   row did carry was *how far the group reaches*, and that survives as a rule in
+   the group's color along the top of every column in the run.
 
-   The ring is what makes the fixed offsets above safe. Once the rows stick at
-   their flow positions there are two 2px bands of `border-spacing` in the
-   header — one over this row, one under it — and a body row scrolling past
-   would show through both. A 2px spread in `--bg` covers them, and the side
-   gutters between the group cells with them. It's the same color the gaps
-   already are, so nothing looks different at rest; z-index 2 keeps it over the
-   track-name row's own shadow. */
-table.grid tr.group-row th {
-  top: 2px;
-  height: var(--group-h);
-  line-height: calc(var(--group-h) - 1px);
-  padding: 0 3px;
-  z-index: 2;
-  box-shadow: 0 0 0 2px var(--bg);
+   Drawn as a shadow rather than a border: `border-top` would be inside the
+   cell's box and would have to come out of the 13px line-height, which the
+   sticky offsets above are measured against. An inset shadow costs no height.
+
+   The ring in `--bg` on the sides is what the group row's used to do — it
+   plugs the 2px `border-spacing` gutters so a body row scrolling underneath
+   doesn't show through them. */
+table.grid th.banded {
+  box-shadow:
+    inset 0 2px 0 var(--band),
+    -2px 0 0 var(--bg),
+    2px 0 0 var(--bg),
+    0 -2px 0 var(--bg),
+    0 8px 14px -4px var(--shadow-edge);
 }
-/* The rule under a group is what makes it read as covering its tracks. */
+/* Capped at the left where a run starts, so two adjacent groups read as two.
+   The gutter is only 2px, and without this their bands meet across it. */
+table.grid th.banded.band-start {
+  box-shadow:
+    inset 2px 2px 0 var(--band),
+    -2px 0 0 var(--bg),
+    2px 0 0 var(--bg),
+    0 -2px 0 var(--bg),
+    0 8px 14px -4px var(--shadow-edge);
+}
+
+/* The group track's own header. Left-aligned behind its triangle, because the
+   name is the fold control and a centred one moves as the triangle changes.
+
+   The color comes through `--group-fg` so that `.track-h.live` and
+   `.track-h.stopping` still outrank it — a group header reports play state
+   like any other track header, and an inline `color` would have beaten both. */
 table.grid th.group-h {
   text-align: left;
-  cursor: pointer;
   letter-spacing: 0.08em;
-  border-bottom: 1px solid currentColor;
+  color: var(--group-fg);
 }
 table.grid th.group-h:hover {
   background: var(--sel);
 }
-table.grid th.group-h.none {
-  cursor: default;
-  border-bottom: none;
+table.grid th.group-h .fold {
+  display: inline-block;
+  width: 8px;
+  margin-right: 2px;
+  color: var(--dim2);
 }
-table.grid th.group-h.none:hover {
-  background: var(--bg);
-}
-table.grid th.folded-h {
-  cursor: pointer;
-  text-align: left;
-}
-table.grid th.folded-h:hover {
-  background: var(--sel);
-}
-td.cell.folded {
+
+/* The group's clip slot. A launcher, not a cell you can select — no hover
+   affordance on the cell itself, only on the button inside it. */
+td.cell.group {
   background: var(--surface-cell-muted);
   color: var(--dim2);
-  text-align: center;
   cursor: default;
+  text-align: center;
+  padding: 0 2px;
+}
+/* The two marks sit at the ends: the launcher reads down the column as a strip
+   you can aim at, and the count stays out of its way.
+
+   Plain click fires — the second control in the app allowed to, after the scene
+   button, and for the same reason: firing is the button's whole job. The
+   modifier rule that keeps ⌘ in front of launching exists to protect
+   selection, and there is no selection here to protect. */
+td.cell.group > .fire {
+  float: left;
+  padding: 0;
+  width: 12px;
+  border: none;
+  background: none;
+  color: var(--fg-faint);
+  font-size: 7px;
+  line-height: 18px;
+  vertical-align: middle;
+}
+td.cell.group > .fire:hover {
+  color: var(--amber);
+}
+td.cell.group.playing > .fire {
+  color: var(--green);
+}
+td.cell.group.fired > .fire {
+  color: var(--amber);
+}
+/* How many of the group's tracks have a clip here — the one thing a collapsed
+   group hides that nothing else on screen answers. */
+td.cell.group > .group-n {
+  float: right;
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 18px;
+  color: var(--dim2);
+}
+td.cell.group.playing > .group-n {
+  color: var(--green);
 }
 
 table.grid th.track-h {

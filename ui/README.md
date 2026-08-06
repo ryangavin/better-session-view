@@ -12,7 +12,7 @@ src/App.css           app shell, empty state and log
 src/components/       one component per file
   *.css               component styles, imported by the component that owns them
   ClipGrid/
-    ClipGrid.tsx      scenes × tracks — colgroup, sticky headers, the tbody
+    ClipGrid.tsx      scenes × tracks — colgroup, sticky header, group bands, the tbody
     Row.tsx           one scene's row, memoized
     SongHeaderRow.tsx a song block's header row, memoized
     constants.ts      surfaces, contrast ratios, shared empties
@@ -846,25 +846,50 @@ custom properties the browser just recalculates layout and `Row` never re-render
 
 ## Track groups
 
-Group tracks are never columns themselves — they're the header row above the track
-names, spanning their members. Live's group clip slots aren't in the snapshot anyway.
-Clicking a group header collapses it; clicking the folded column expands it again.
+**A group track is a column, like it is in Live.** It's a real track with real clip
+slots, and firing its slot fires every clip the group holds in that scene. Collapsing
+hides its *members*, not the group — so the column is there either way, and there is no
+separate "stands in for its members" column kind.
 
-A folded group becomes one column showing **how many of its tracks have a clip in that
-scene**, tinted with the group's color. That's the useful stand-in: you can still see
-where the material is without expanding.
+Clicking the group's header folds and unfolds it. ⌘-click stops the group, the same
+gesture as any track header; on a group Live's `stop_all_clips` takes the members with
+it.
 
-The layout itself lives in [`core/src/trackColumns.ts`](../core/README.md) with tests —
-nesting, ancestry and header spans are exactly the kind of logic that breaks quietly.
+The group's cell carries a launcher and a count — how many of its tracks have a clip in
+that scene — tinted with the first of those clips, which is the color Live paints the
+slot. The count is the one thing a collapsed group hides that nothing else on screen
+answers. Plain click fires it, which is the second exception to the ⌘-to-fire rule after
+the scene button, and for the same reason: there is nothing in a group slot to select,
+so there's no selection for the modifier to protect.
 
-**Collapsing never writes back to Live.** It's a view operation, and LOM writes don't
-participate in Live's undo. The collapsed set is *seeded* from Live's `fold_state` on
-every snapshot, so a snapshot resyncs with Live and local toggles win until the next
-one.
+**Grouping reads as a colored rule along the top of the columns in a run**, capped where
+the run starts. It used to be a header row of spanning cells above the track names; a
+group track carries its own name now, so that row was repeating a word the column
+already had. Nesting falls out of it — a group inside another opens its own run, in its
+own color.
+
+The layout lives in [`core/src/trackColumns.ts`](../core/README.md) and what a group
+slot shows in [`core/src/groupSlot.ts`](../core/README.md), both with tests — nesting,
+ancestry and "which clip is first" are exactly the kind of logic that breaks quietly.
+
+**None of this costs the snapshot anything.** The LOM does expose group slots directly
+(`ClipSlot.controls_other_clips` and the slot's own `color`), but only per slot, which
+is trackCount × sceneCount reads for something the clips already answer. Firing is the
+one thing that goes to Live, and it needs no new message: `launch` addresses a *slot*,
+not a clip, so a group slot fires over the path that was already there.
+
+**Folding writes back to Live** (`setFold` → `fold_state`), so the grid and the Session
+view agree and a fold survives the next snapshot. The folded set is still seeded from
+Live's `fold_state` on every snapshot; that's only safe *because* it writes back —
+before it did, every write silently unfolded whatever you had folded. The write is
+fire-and-forget: the columns move before Live is told, because waiting a round trip to
+redraw a fold you just clicked is the one thing that would feel slow.
 
 Selection is deliberately left alone when a group collapses: hidden clips stay
 selected and still apply. Collapsing is about what you're looking at, not what you've
-picked — but it does mean the `Selected` count can exceed what's on screen.
+picked — but it does mean the `Selected` count can exceed what's on screen. A group
+column is never selectable and the arrow keys step over it, for the same reason its
+slots can't be named or colored: there is no clip there.
 
 ## Scene colors
 

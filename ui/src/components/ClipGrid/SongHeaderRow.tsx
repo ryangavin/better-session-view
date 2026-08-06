@@ -257,21 +257,26 @@ export const SongHeaderRow = memo(function SongHeaderRow({
             </td>
           ) : (
             columns.map((c) => {
-              const grouped = c.kind === 'folded';
-              // A folded group column stands for several tracks, so its cell
-              // shows what any of them play — the union, same as a folded clip
-              // cell stands in for the members underneath it.
-              const shape = grouped
-                ? mergeShapes(c.members.map((t) => shapes.get(t)).filter(isShape))
-                : shapes.get(c.track.i);
-              const name = grouped ? c.group.name : c.track.name;
-              const used = grouped
-                ? c.members.filter((t) => shapes.has(t)).length
-                : (shape?.scenes ?? 0);
-              const of = grouped ? c.members.length : header.scenes;
+              // A group column stands for several tracks, so its cell shows
+              // what any of them play — the union, same as the group's clip
+              // slot stands in for the clips underneath it. Branching on
+              // `c.kind` at each use rather than through a boolean: the
+              // boolean reads better and narrows nothing, so `c.members` on a
+              // track column would only fail at runtime.
+              const grouped = c.kind === 'group';
+              const shape =
+                c.kind === 'group'
+                  ? mergeShapes(c.members.map((t) => shapes.get(t)).filter(isShape))
+                  : shapes.get(c.track.i);
+              const name = c.kind === 'group' ? c.group.name : c.track.name;
+              const used =
+                c.kind === 'group'
+                  ? c.members.filter((t) => shapes.has(t)).length
+                  : (shape?.scenes ?? 0);
+              const of = c.kind === 'group' ? c.members.length : header.scenes;
               return (
                 <td
-                  key={grouped ? `g${c.group.i}` : `t${c.track.i}`}
+                  key={c.kind === 'group' ? `g${c.group.i}` : `t${c.track.i}`}
                   className="fill"
                   title={
                     used === 0

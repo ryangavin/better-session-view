@@ -94,6 +94,14 @@ declare namespace BSV {
 
   /** Something that can be fired. */
   type LaunchTarget =
+    /**
+     * A clip *slot*, addressed by position — not a clip. The distinction is
+     * load-bearing in two places, and both are Live's own behaviour rather than
+     * ours: firing an empty slot triggers that slot's stop button, and firing a
+     * **group track's** slot fires every clip the group holds in that scene.
+     * Neither needs a message of its own, because in the LOM both are one
+     * `ClipSlot.fire()` on the slot at `t, s`.
+     */
     | { kind: 'clip'; t: number; s: number }
     | { kind: 'scene'; s: number }
     /** The song transport itself — start playing. */
@@ -230,10 +238,15 @@ declare namespace BSV {
 
   // --- client -> server ------------------------------------------------
 
-  // `launch`, `stop` and `watchPlay` deliberately have no terminal reply. What
-  // you want back from firing a clip is not an acknowledgement, it's the play
-  // state changing — which arrives as an unsolicited `playState`. A failure
-  // still surfaces: the bridge broadcasts an `error` with no id.
+  // `launch`, `stop`, `setFold` and `watchPlay` deliberately have no terminal
+  // reply. What you want back from firing a clip is not an acknowledgement,
+  // it's the play state changing — which arrives as an unsolicited `playState`.
+  // A failure still surfaces: the bridge broadcasts an `error` with no id.
+  //
+  // `setFold` is the same bargain for a different reason: the client already
+  // moved its own columns before it sent, because waiting a round trip to
+  // redraw a fold you just clicked is the one thing that would make it feel
+  // slow. Live is being told, not asked.
   type Request =
     | { id?: number; type: 'snapshot' }
     /**
@@ -258,6 +271,20 @@ declare namespace BSV {
      */
     | { id?: number; type: 'saveRoles'; roles: Role[] }
     | { id?: number; type: 'observe'; on: boolean }
+    /**
+     * Fold or unfold a group track — Live's `fold_state`, which is what hides
+     * a group's member tracks behind it.
+     *
+     * A view operation, not a set edit: it changes nothing about what plays and
+     * nothing a snapshot would call content. It's here rather than kept local
+     * to the client so that folding the grid folds the Session view too, and
+     * survives the next snapshot — which re-seeds fold state from Live and
+     * would otherwise undo it.
+     *
+     * `t` must be a group track. Live only exposes `fold_state` when
+     * `is_foldable`, so the bridge checks rather than writing blind.
+     */
+    | { id?: number; type: 'setFold'; t: number; folded: boolean }
     | { id?: number; type: 'launch'; target: LaunchTarget }
     | { id?: number; type: 'stop'; target: StopTarget }
     | { id?: number; type: 'watchPlay'; on: boolean }

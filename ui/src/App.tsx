@@ -45,7 +45,7 @@ import { describeMove } from '../../core/src/sceneMove.js';
  */
 export function App() {
   const bridge = useBridge();
-  const { snapshot, play, launch, stop, apply, applyScenes, undo } = bridge;
+  const { snapshot, play, launch, stop, setFold, apply, applyScenes, undo } = bridge;
 
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
   const chooseColumnWidth = useCallback((w: ColumnWidth) => {
@@ -55,7 +55,7 @@ export function App() {
 
   const { clips, trackNames, sceneNames, isOccupied, scenesForOps, clipsByScene } =
     useSnapshotLookups(snapshot);
-  const { columns, trackColumns, onToggleGroup } = useTrackColumns(snapshot);
+  const { columns, trackColumns, onToggleGroup } = useTrackColumns(snapshot, setFold);
   const {
     derivation,
     headers: songHeaders,
@@ -80,6 +80,7 @@ export function App() {
     onClip,
     onScene,
     onFireScene,
+    onFireGroup,
     onStopTrack,
     clearSelection,
     pickScenes,
@@ -267,6 +268,7 @@ export function App() {
               onClip={onClip}
               onScene={onScene}
               onFireScene={onFireScene}
+              onFireGroup={onFireGroup}
               onRoleMenu={onRoleMenu}
               onStopTrack={onStopTrack}
               onToggleGroup={onToggleGroup}

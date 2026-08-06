@@ -24,6 +24,14 @@ export const BAND_CONTRAST = 2.2;
  */
 export const GROUP_CELL_ALPHA = '0c';
 
+/**
+ * A group track's own slot, tinted with the first clip the group holds in that
+ * scene. Stronger than an empty member cell and weaker than a real clip: it is
+ * a launcher standing for clips that are themselves on screen, so it has to
+ * read as present without competing with the clips it fires.
+ */
+export const GROUP_SLOT_ALPHA = '38';
+
 /** Live's own encoding: the track's stop button is fired and blinking. */
 export const STOP_FIRED = -2;
 
