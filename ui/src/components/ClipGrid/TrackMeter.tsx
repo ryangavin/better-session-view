@@ -6,16 +6,18 @@ interface Props {
 }
 
 const MIN_DB = -60;
-const DB_TICKS = [0, -12, -24, -36, -48] as const;
+const MAX_DB = 6;
+const DB_TICKS = [6, 0, -12, -24, -36, -48] as const;
 
 /** Treat Live's normalized peak as amplitude for a conventional logarithmic scale. */
 function decibels(level: number): number {
   if (level <= 0) return MIN_DB;
-  return Math.max(MIN_DB, Math.min(0, 20 * Math.log10(level)));
+  return Math.max(MIN_DB, Math.min(MAX_DB, 20 * Math.log10(level) + MAX_DB));
 }
 
 function meterFraction(db: number): number {
-  return (db - MIN_DB) / -MIN_DB;
+  const fraction = (db - MIN_DB) / (MAX_DB - MIN_DB);
+  return Number.isFinite(fraction) ? Math.max(0, Math.min(1, fraction)) : 0;
 }
 
 /** A track-owned meter cell, mounted only while that track has a visible column. */
@@ -32,11 +34,20 @@ export function TrackMeter({ track, meters }: Props) {
           role="meter"
           aria-label={`${track.name} output level`}
           aria-valuemin={MIN_DB}
-          aria-valuemax={0}
+          aria-valuemax={MAX_DB}
           aria-valuenow={Math.round(db)}
           aria-valuetext={level <= 0 ? 'silence' : `${db.toFixed(1)} decibels`}
         >
           <span className="meter-level" style={{ transform: `scaleY(${fraction})` }} />
+          <span className="meter-rules" aria-hidden="true">
+            {DB_TICKS.slice(1).map((tick) => (
+              <span
+                key={tick}
+                className="meter-rule"
+                style={{ bottom: `${meterFraction(tick) * 100}%` }}
+              />
+            ))}
+          </span>
         </div>
         <div className="meter-db-scale" aria-hidden="true">
           {DB_TICKS.map((tick) => (
@@ -45,7 +56,7 @@ export function TrackMeter({ track, meters }: Props) {
               className={`meter-db-tick${tick === 0 ? ' top' : ''}`}
               style={{ bottom: `${meterFraction(tick) * 100}%` }}
             >
-              {tick}
+              {tick > 0 ? `+${tick}` : tick}
             </span>
           ))}
         </div>

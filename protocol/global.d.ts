@@ -140,7 +140,7 @@ declare namespace BSV {
   interface TrackMeterLevel {
     /** Track index, in the same space as `Snapshot.tracks`. */
     t: number;
-    /** Live's `output_meter_level`, clamped to its documented 0–1 range. */
+    /** Current mono output peak, clamped to Live's documented 0–1 range. */
     level: number;
   }
 

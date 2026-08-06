@@ -393,25 +393,28 @@ table.grid tfoot td.meter-spacer {
   background-color: #000;
 }
 
-.meter-well::after {
-  content: '';
+.meter-rules {
   position: absolute;
   z-index: 1;
   inset: 0;
-  background-image: repeating-linear-gradient(
-    to top,
-    transparent 0 calc(20% - 1px),
-    rgba(255, 255, 255, 0.1) calc(20% - 1px) 20%
-  );
   pointer-events: none;
+}
+
+.meter-rule {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .meter-level {
   position: absolute;
   inset: 0;
+  transform: scaleY(0);
   transform-origin: center bottom;
   background: var(--green);
-  transition: transform 45ms linear;
+  transition: transform 24ms linear;
 }
 
 .meter-db-scale {
