@@ -57,7 +57,8 @@ interface SongHeaderRowProps {
   dropNote: string;
   onToggle: (songKey: string) => void;
   onPickSong: (songKey: string) => void;
-  onDragStart: (from: number, to: number) => void;
+  /** The scenes this grip picks up. A block header hands over its whole run. */
+  onDragStart: (sources: readonly number[]) => void;
   onDragOver: (from: number, to: number, below: boolean) => void;
   onDrop: () => void;
   onDragEnd: () => void;
@@ -201,7 +202,9 @@ export const SongHeaderRow = memo(function SongHeaderRow({
       // Firefox refuses to start a drag unless something is set.
       e.dataTransfer.setData('text/plain', header.song);
       e.dataTransfer.effectAllowed = 'move';
-      onDragStart(header.from, header.to);
+      const run: number[] = [];
+      for (let s = header.from; s <= header.to; s++) run.push(s);
+      onDragStart(run);
     },
     onDragEnd,
   };

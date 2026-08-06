@@ -1,14 +1,38 @@
-import { memo } from 'react';
+import { memo, type DragEvent } from 'react';
 import './Row.css';
 import { hex, inkOn, legibleOn } from '../../../../core/src/color.js';
 import { groupSlot } from '../../../../core/src/groupSlot.js';
 import { nameWithoutRole, roleIn, roleKey } from '../../../../core/src/roles.js';
 import type { Column } from '../../../../core/src/trackColumns.js';
+import type { SongHeader } from '../../../../core/src/songRows.js';
 import { clipKey } from '../../lib/selection.js';
 import { LAUNCH_KEY, mods } from '../../lib/keys.js';
 import { has, type RowMarks } from '../../lib/rowMarks.js';
 import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA, PANEL } from './constants.js';
 import type { Props } from './ClipGrid.js';
+
+/**
+ * Which edge of this scene row the drop indicator belongs on, if either.
+ *
+ * The counterpart to `dropEdgeFor`, and it defers to it: a gap that starts a
+ * song is drawn by that song's header, which is already sitting on that
+ * boundary. Without the check both would draw a line for the same gap.
+ *
+ * Everything else resolves toward `above`, because gap `g` is the top of scene
+ * `g`. `below` renders on the last scene alone — the end of the set is the one
+ * gap no scene's top can express.
+ */
+export function sceneDropEdge(
+  s: number,
+  dropAt: number,
+  lastScene: number,
+  songHeaders: Map<number, SongHeader>,
+): '' | 'above' | 'below' {
+  if (dropAt < 0 || songHeaders.has(dropAt)) return '';
+  if (dropAt === s) return 'above';
+  if (dropAt === s + 1 && s === lastScene) return 'below';
+  return '';
+}
 
 interface RowProps {
   scene: BSV.Scene;
@@ -20,11 +44,19 @@ interface RowProps {
   active: number | 'scene' | undefined;
   roleColors: Map<string, number>;
   sceneSelected: boolean;
+  /** This scene is one of the ones in flight. */
+  dragging: boolean;
+  /** Which edge the drop line sits on, if this row is the target. */
+  dropEdge: '' | 'above' | 'below';
   onClip: Props['onClip'];
   onScene: Props['onScene'];
   onFireScene: Props['onFireScene'];
   onFireGroup: Props['onFireGroup'];
   onRoleMenu: Props['onRoleMenu'];
+  onSceneDragStart: Props['onSceneDragStart'];
+  onSceneDragOver: Props['onSceneDragOver'];
+  onSceneDrop: Props['onSceneDrop'];
+  onSceneDragEnd: Props['onSceneDragEnd'];
 }
 
 // memo on the row is what keeps toggling one cell from re-rendering all 848
@@ -38,11 +70,17 @@ export const Row = memo(function Row({
   active,
   roleColors,
   sceneSelected,
+  dragging,
+  dropEdge,
   onClip,
   onScene,
   onFireScene,
   onFireGroup,
   onRoleMenu,
+  onSceneDragStart,
+  onSceneDragOver,
+  onSceneDrop,
+  onSceneDragEnd,
 }: RowProps) {
   // Live allows a scene to have no color at all, which is not the same as
   // palette slot 0 — see Scene.colorIndex in the protocol.
@@ -60,7 +98,27 @@ export const Row = memo(function Row({
   const roleRgb = role === null ? undefined : roleColors.get(roleKey(role));
 
   return (
-    <tr>
+    <tr
+      className={
+        `scene-row${dragging ? ' dragging' : ''}${dropEdge ? ` drop-${dropEdge}` : ''}`
+      }
+      // The whole row is the drop target, not just the scene column: a row is a
+      // wide, easy thing to aim at, and which half the pointer is in decides
+      // whether the scenes land above or below it. Same idiom as the song
+      // header, and the same reason.
+      onDragOver={(e: DragEvent<HTMLTableRowElement>) => {
+        e.preventDefault();
+        // Without this the cursor shows "copy" and, in some browsers, the drop
+        // never fires at all.
+        e.dataTransfer.dropEffect = 'move';
+        const box = e.currentTarget.getBoundingClientRect();
+        onSceneDragOver(scene.i, scene.i, e.clientY > box.top + box.height / 2);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onSceneDrop();
+      }}
+    >
       <td
         className={
           `scene${active === 'scene' ? ' active' : ''}` +
@@ -86,7 +144,26 @@ export const Row = memo(function Row({
         >
           ▶
         </button>
-        <span className="scene-n">{scene.i + 1}</span>
+        {/* The number is the grip. The cell around it already means "select",
+            and ⇧ already means "extend", so the row itself can't be the handle
+            without one gesture stealing from the other — where the number is
+            inert, sits at a fixed x down the whole column, and is the one part
+            of the row that names the position being changed. Clicking it still
+            selects: a drag and a click are different gestures. */}
+        <span
+          className="scene-n"
+          draggable
+          title={`Scene ${scene.i + 1} — drag to move it`}
+          onDragStart={(e: DragEvent<HTMLSpanElement>) => {
+            // Firefox refuses to start a drag unless something is set.
+            e.dataTransfer.setData('text/plain', String(scene.i));
+            e.dataTransfer.effectAllowed = 'move';
+            onSceneDragStart(scene.i);
+          }}
+          onDragEnd={onSceneDragEnd}
+        >
+          {scene.i + 1}
+        </span>
         {/* The role leads, ahead of the name. Everything to the left of the
             title is then a fixed width — fire button, scene number, chip — so a
             column of scene names starts on one vertical line and the roles

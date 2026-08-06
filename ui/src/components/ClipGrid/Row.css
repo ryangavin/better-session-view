@@ -12,10 +12,37 @@ td.scene {
   text-overflow: ellipsis;
   cursor: pointer;
 }
+/* The scene number, and the grip that moves the scene. The cell around it
+   already means "select" and ⇧ already means "extend", so the row can't be the
+   handle without one gesture stealing from the other. `grab` is the only thing
+   that says so — there's no room for a dedicated handle in a column already
+   carrying a fire button, a role chip and a name. */
 td.scene .scene-n {
   color: var(--dim2);
   display: inline-block;
   min-width: 26px;
+  cursor: grab;
+}
+td.scene .scene-n:active {
+  cursor: grabbing;
+}
+
+/* Mid-drag. The rows in flight dim, so what you picked up is legible as a set
+   even when it's a non-contiguous one — which it can be, since a selection
+   moves together. */
+tr.scene-row.dragging td {
+  opacity: 0.4;
+}
+
+/* The drop line, matching the song header's exactly: an inset shadow rather
+   than a border so it can't change a row's height. 848 rows sit under a sticky
+   header whose offset is measured in row metrics, and a 2px border appearing
+   mid-drag would shift every row below it. */
+tr.scene-row.drop-above td {
+  box-shadow: inset 0 2px 0 var(--amber);
+}
+tr.scene-row.drop-below td {
+  box-shadow: inset 0 -2px 0 var(--amber);
 }
 td.scene .unnamed {
   color: var(--fg-faint);

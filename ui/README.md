@@ -39,7 +39,7 @@ src/hooks/            one hook per file
   useSongLayout.ts    derivation, song folding, folded-header shapes
   useGridSelection.ts both selections + the active cell (and its ref)
   useGridKeyboard.ts  the window keydown effect
-  useSongDrag.ts      drag state + the move plan (and its ref)
+  useSceneDrag.ts     drag state + the move plan (and its ref), for both grips
   useRailAndLog.ts    rail/log visibility, error-opens-the-log
   useSceneTitles.ts   TitlePatch, rename + tempo ops
   useSongColor.ts     song-scoped coloring
@@ -429,10 +429,27 @@ There is no aggregate run of marks beside the song title. Once each track says w
 sections it plays, a second copy of the same vocabulary next to the name is the crowding
 without the information — and dropping it gives the name the rest of the scene column.
 
-## Rearranging songs
+## Rearranging songs and scenes
 
-**Drag a song header to move that whole run of scenes.** An amber line shows where it
-lands, and the line carries the cost — `10 scenes · 84 clips copied · 10 deleted`.
+**Drag a song header to move that whole run of scenes**, or **a scene by its number to
+move that scene**. An amber line shows where it lands, and on a header the line carries
+the cost — `10 scenes · 84 clips copied · 10 deleted`.
+
+One gesture, two grips, and one plan underneath: `planSceneMove` has always taken a set
+of scene indexes and a destination gap, and a set of one is a scene. Nothing in `core/`
+or the bridge changed to add the second grip.
+
+**The scene number is the grip, not the row.** The row already means "select" and ⇧
+already means "extend", so making the whole row the handle would have one gesture
+stealing from the other. The number is inert, holds a fixed x down the column, and is
+the one part of a row that names the thing being changed. Clicking it still selects — a
+drag and a click are different gestures.
+
+**Dragging a scene that's part of a selection moves the whole selection**, including a
+non-contiguous one, which the planner already supported. Dragging a scene outside the
+selection moves just that scene. App decides which, reading the selection through a ref
+so the callback keeps one identity: it's a prop on 848 memoized rows, and rebuilding it
+on every selection change would re-render all of them for a value only the drag reads.
 
 This is the only gesture in the app that can destroy work, and four decisions follow from
 that:

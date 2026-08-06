@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import './App.css';
 import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
 import { Header } from './components/Header.js';
@@ -20,7 +20,7 @@ import { useSongLayout } from './hooks/useSongLayout.js';
 import { useRailAndLog } from './hooks/useRailAndLog.js';
 import { useGridSelection } from './hooks/useGridSelection.js';
 import { useGridKeyboard } from './hooks/useGridKeyboard.js';
-import { useSongDrag } from './hooks/useSongDrag.js';
+import { useSceneDrag } from './hooks/useSceneDrag.js';
 import { useSceneTitles } from './hooks/useSceneTitles.js';
 import { useSongColor } from './hooks/useSongColor.js';
 import { useColorRules } from './hooks/useColorRules.js';
@@ -130,13 +130,35 @@ export function App() {
 
   const {
     dragFrom,
+    dragScenes,
     dropAt,
     movePlan,
-    onSongDragStart,
-    onSongDragOver,
-    onSongDrop,
-    onSongDragEnd,
-  } = useSongDrag(snapshot, clearSelection, bridge.moveScenes);
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
+  } = useSceneDrag(snapshot, clearSelection, bridge.moveScenes);
+
+  /**
+   * Grabbing a scene by its number moves that scene — unless it's part of a
+   * selection, in which case it moves the lot. Picking several rows and then
+   * dragging one of them anywhere else is the gesture every list does, and
+   * `planSceneMove` takes a non-contiguous set, so this needs no special case
+   * below it.
+   *
+   * The selection is read through a ref so this callback keeps one identity.
+   * It's a prop on 848 memoized rows; rebuilding it whenever the selection
+   * changes would re-render all of them for a value only the drag reads.
+   */
+  const selectedScenesRef = useRef(selectedScenes);
+  selectedScenesRef.current = selectedScenes;
+  const onSceneDragStart = useCallback(
+    (s: number) => {
+      const picked = selectedScenesRef.current;
+      onDragStart(picked.size > 1 && picked.has(s) ? [...picked] : [s]);
+    },
+    [onDragStart],
+  );
 
   const {
     titlePatch,
@@ -257,14 +279,19 @@ export function App() {
               onReorder={() => setReordering(true)}
               onRecolor={() => setRecoloring(true)}
               dragFrom={dragFrom}
+              dragScenes={dragScenes}
               // -1 rather than null so the prop stays a number all the way down
               // to the memoized header row.
               dropAt={movePlan ? (dropAt ?? -1) : -1}
               dropNote={movePlan ? describeMove(movePlan) : ''}
-              onSongDragStart={onSongDragStart}
-              onSongDragOver={onSongDragOver}
-              onSongDrop={onSongDrop}
-              onSongDragEnd={onSongDragEnd}
+              onSongDragStart={onDragStart}
+              onSongDragOver={onDragOver}
+              onSongDrop={onDrop}
+              onSongDragEnd={onDragEnd}
+              onSceneDragStart={onSceneDragStart}
+              onSceneDragOver={onDragOver}
+              onSceneDrop={onDrop}
+              onSceneDragEnd={onDragEnd}
               onClip={onClip}
               onScene={onScene}
               onFireScene={onFireScene}

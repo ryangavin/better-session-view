@@ -17,7 +17,7 @@ import { marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../../hooks/useAnchoredPosition.js';
 import { NO_SHAPES, STOP_FIRED } from './constants.js';
 import { IconGroupFold } from '../Icon.js';
-import { Row } from './Row.js';
+import { Row, sceneDropEdge } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
 
 export interface Props {
@@ -51,14 +51,26 @@ export interface Props {
   /** First scene of the block being dragged, or -1. A primitive, so it can
    *  reach the memoized header row without re-rendering all of them. */
   dragFrom: number;
+  /** Every scene in flight. Identity turns over only at drag start and end. */
+  dragScenes: ReadonlySet<number>;
   /** Where the drop would land, as a gap in scene numbering, or -1. */
   dropAt: number;
   /** What the pending move costs, for the indicator. */
   dropNote: string;
-  onSongDragStart: (from: number, to: number) => void;
+  /** A song header hands over its whole run; a scene row hands over one index. */
+  onSongDragStart: (sources: readonly number[]) => void;
   onSongDragOver: (from: number, to: number, below: boolean) => void;
   onSongDrop: () => void;
   onSongDragEnd: () => void;
+  /**
+   * Grab one scene by its number. App decides whether that means the scene or
+   * the whole selection it belongs to — Row can't, without holding the
+   * selection and re-rendering all 848 of itself to keep it.
+   */
+  onSceneDragStart: (s: number) => void;
+  onSceneDragOver: (from: number, to: number, below: boolean) => void;
+  onSceneDrop: () => void;
+  onSceneDragEnd: () => void;
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
@@ -94,12 +106,17 @@ export function ClipGrid({
   onReorder,
   onRecolor,
   dragFrom,
+  dragScenes,
   dropAt,
   dropNote,
   onSongDragStart,
   onSongDragOver,
   onSongDrop,
   onSongDragEnd,
+  onSceneDragStart,
+  onSceneDragOver,
+  onSceneDrop,
+  onSceneDragEnd,
   onClip,
   onScene,
   onFireScene,
@@ -323,11 +340,22 @@ export function ClipGrid({
                 }
                 roleColors={roleColors}
                 sceneSelected={selectedScenes.has(scene.i)}
+                dragging={dragScenes.has(scene.i)}
+                dropEdge={sceneDropEdge(
+                  scene.i,
+                  dropAt,
+                  snapshot.sceneCount - 1,
+                  songHeaders,
+                )}
                 onClip={onClip}
                 onScene={onScene}
                 onFireScene={onFireScene}
                 onFireGroup={onFireGroup}
                 onRoleMenu={onRoleMenu}
+                onSceneDragStart={onSceneDragStart}
+                onSceneDragOver={onSceneDragOver}
+                onSceneDrop={onSceneDrop}
+                onSceneDragEnd={onSceneDragEnd}
               />,
             );
           }
