@@ -38,7 +38,7 @@ export function StatsBar({
         warn={unmappedCount > 0}
         onClick={snapshot ? onOpenSongs : undefined}
       />
-      <Stat k="LOM walk" v={snapshot ? `${snapshot.ms}ms` : undefined} highlight />
+      <Stat k="LOM walk" v={snapshot ? `${snapshot.ms}ms` : undefined} />
       <Stat k="Slot scan" v={snapshot ? `${snapshot.timings.slots}ms` : undefined} />
       <Stat k="Selected" v={selectedCount} />
       <div className="spacer" />

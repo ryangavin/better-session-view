@@ -52,7 +52,7 @@
   font-size: 10.5px;
   color: var(--dim);
 }
-.stat .v.hl {
+.stat .v.warn {
   color: var(--amber-muted);
 }
 .stat.clickable {
