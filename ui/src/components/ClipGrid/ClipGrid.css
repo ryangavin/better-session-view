@@ -17,6 +17,9 @@ table.grid {
      stays true. `border-spacing` produces it between cells; the header's plug
      shadows paint into it; the band's gutter below draws it by hand. */
   --gutter: 2px;
+  /* Track names sit inside saturated header cells rather than in the gutter.
+     Enough inset to clear the 3px play-state bar, without starving S columns. */
+  --track-pad-x: 5px;
 
   /* The group band's weight, and the header height that follows from it.
      A group and its tracks are often near-neighbours in Live's palette — a
@@ -114,7 +117,7 @@ table.grid th {
 table.grid th .th-line {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 }
 /* Track and group names carry weight; the `Scene` header and its two bulk
    buttons don't, which is why this sits on the label rather than on `th`. A
@@ -315,7 +318,10 @@ td.cell.group.playing > .group-n {
 
 table.grid th.track-h {
   cursor: pointer;
+  padding-right: var(--track-pad-x);
+  padding-left: var(--track-pad-x);
 }
+
 /* Play state as a bar down the left edge, not as text color.
    The header is filled with the track's own Live color now, and a green *word*
    on a green track says nothing — worse, `inkOn` picked the text color for
@@ -340,4 +346,92 @@ table.grid th.track-h.stopping {
   100% {
     opacity: 0.3;
   }
+}
+
+/* --- output meters -------------------------------------------------- */
+
+/* The mixer section is part of the same table as the clips. Its cells inherit
+   the exact colgroup widths and horizontal scroll position, while sticky keeps
+   the row at the bottom of the grid viewport. The body can therefore move
+   behind it without the meter columns ever drifting away from their tracks. */
+table.grid tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  height: 112px;
+  padding: 8px 4px;
+  background: var(--rail);
+  box-shadow:
+    calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
+    0 var(--gutter) 0 var(--rail), 0 -8px 14px -4px var(--shadow-edge);
+  vertical-align: middle;
+}
+
+table.grid tfoot td.meter-spacer {
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.vertical-meter {
+  display: flex;
+  justify-content: center;
+  height: 94px;
+  gap: 3px;
+}
+
+/* No signal is literally black. Tick rules are painted over the well rather
+   than interrupting the green fill, so the bar stays one continuous reading. */
+.meter-well {
+  position: relative;
+  width: 12px;
+  height: 100%;
+  overflow: hidden;
+  flex: none;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-xs);
+  background-color: #000;
+}
+
+.meter-well::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    to top,
+    transparent 0 calc(20% - 1px),
+    rgba(255, 255, 255, 0.1) calc(20% - 1px) 20%
+  );
+  pointer-events: none;
+}
+
+.meter-level {
+  position: absolute;
+  inset: 0;
+  transform-origin: center bottom;
+  background: var(--green);
+  transition: transform 45ms linear;
+}
+
+.meter-db-scale {
+  position: relative;
+  width: 15px;
+  height: 100%;
+  flex: none;
+  color: var(--dim2);
+  font-family: var(--mono);
+  font-size: 7px;
+  line-height: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter-db-tick {
+  position: absolute;
+  left: 0;
+  transform: translateY(50%);
+}
+
+.meter-db-tick.top {
+  transform: translateY(100%);
 }

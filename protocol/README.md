@@ -55,6 +55,7 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | `launch` `{ target }` | fire a clip, a scene, or the song |
 | `stop` `{ target }` | stop a track, every clip, or the song |
 | `watchPlay` `{ on }` | install the per-track play-state observers |
+| `watchMeters` `{ on }` | install the per-track output-meter observers |
 | `ping` | |
 
 | server → client | terminal for |
@@ -69,6 +70,7 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | `status` | — connection / LOM readiness |
 | `changed` | — an observer fired |
 | `playState` | — a play-state observer fired |
+| `meterLevels` | — complete current track/output-level frame |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
 | `paletteUpdated` | — broadcast after extraction |
 | `reload` | — dev live-reload |
@@ -135,12 +137,14 @@ it as 0 is a bug waiting to look like data.
 an object id; the bridge resolves it against the track list so the wire stays in the
 same `i`-indexed space as everything else. It's the *immediate* parent — groups nest.
 
-**Some requests have no reply, deliberately.** `launch`, `stop` and `watchPlay` are not
-in `TERMINAL`. What you want back from firing a clip isn't an acknowledgement, it's the
-play state changing, and that arrives on its own as `playState`. Awaiting an ack would
-only add a round trip to the one interaction that has to feel instant. The cost of that
-choice is that a failure has no request to attach to, so `bridge.ts` **broadcasts** an
-`error` with no `id` when nothing is pending — dropping it is how a silent bug hides.
+**Some requests have no reply, deliberately.** `launch`, `stop`, `watchPlay` and
+`watchMeters` are not in `TERMINAL`. What you want back from firing a clip isn't an
+acknowledgement, it's the play state changing, and that arrives on its own as
+`playState`. Meter watching likewise answers with the first `meterLevels` push. Awaiting
+an ack would only add a round trip to streams that report their own readiness. The cost
+of that choice is that a failure has no request to attach to, so `bridge.ts`
+**broadcasts** an `error` with no `id` when nothing is pending — dropping it is how a
+silent bug hides.
 
 **Play state is per track, never per clip.** `TrackPlayState` carries
 `playing_slot_index` and `fired_slot_index`, which between them describe the whole grid

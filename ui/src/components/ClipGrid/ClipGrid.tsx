@@ -12,13 +12,15 @@ import {
   SCENE_COL_W,
   type ColumnWidth,
 } from '../../lib/columnWidth.js';
-import type { PlayState } from '../../hooks/useBridge.js';
+import type { BridgeState, PlayState } from '../../hooks/useBridge.js';
+import { useMeters } from '../../hooks/useMeters.js';
 import { marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../../hooks/useAnchoredPosition.js';
 import { NO_SHAPES, STOP_FIRED } from './constants.js';
 import { IconGroupFold } from '../Icon.js';
 import { Row, sceneDropEdge } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
+import { TrackMeter } from './TrackMeter.js';
 
 export interface Props {
   snapshot: BSV.Snapshot;
@@ -27,6 +29,8 @@ export interface Props {
   selected: ReadonlySet<string>;
   active: ActiveCell | null;
   play: PlayState;
+  showMeters: boolean;
+  subscribeMeters: BridgeState['subscribeMeters'];
   columnWidth: ColumnWidth;
   /** Live's palette, for resolving a song header's color index to an RGB. */
   palette: number[];
@@ -93,6 +97,8 @@ export function ClipGrid({
   selected,
   active,
   play,
+  showMeters,
+  subscribeMeters,
   columnWidth,
   palette,
   roleColors,
@@ -126,6 +132,7 @@ export function ClipGrid({
   onToggleGroup,
 }: Props) {
   const marks = useMemo(() => marksByScene(play), [play]);
+  const meters = useMeters(subscribeMeters, showMeters);
 
   // Widths ride down as custom properties on the table rather than as props on
   // Row. Row is memoized, and a new prop on it would re-render all 848 scenes
@@ -362,6 +369,20 @@ export function ClipGrid({
           return out;
         })}
       </tbody>
+      {showMeters && (
+        <tfoot>
+          <tr className="meter-row">
+            {/* Structural only: it holds the scene column's place so the first
+                meter lands under the first track, but paints no mixer panel
+                over scene names. */}
+            <td className="meter-spacer" aria-hidden="true" />
+            {columns.map((column) => {
+              const track = column.kind === 'track' ? column.track : column.group;
+              return <TrackMeter key={track.i} track={track} meters={meters} />;
+            })}
+          </tr>
+        </tfoot>
+      )}
     </table>
   );
 }

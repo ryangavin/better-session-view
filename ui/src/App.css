@@ -14,6 +14,12 @@ main {
   padding: 0 16px 12px;
 }
 
+/* The sticky mixer row is the grid's bottom edge while it is visible. Its own
+   panel chrome replaces the ordinary breathing room below the last scene. */
+.grid-wrap.meters-open {
+  padding-bottom: 0;
+}
+
 /* The seam where the grid meets the bottom chrome. The strip is one line tall
    and the same near-black as everything else, so a 1px border alone doesn't
    read as an edge with clip cells scrolling under it — the shadow is what says

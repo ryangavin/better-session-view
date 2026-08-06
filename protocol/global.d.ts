@@ -136,6 +136,14 @@ declare namespace BSV {
     fired: number;
   }
 
+  /** One track from a complete output-meter frame. */
+  interface TrackMeterLevel {
+    /** Track index, in the same space as `Snapshot.tracks`. */
+    t: number;
+    /** Live's `output_meter_level`, clamped to its documented 0–1 range. */
+    level: number;
+  }
+
   // --- mutation --------------------------------------------------------
 
   interface ApplyOp {
@@ -238,10 +246,11 @@ declare namespace BSV {
 
   // --- client -> server ------------------------------------------------
 
-  // `launch`, `stop`, `setFold` and `watchPlay` deliberately have no terminal
-  // reply. What you want back from firing a clip is not an acknowledgement,
-  // it's the play state changing — which arrives as an unsolicited `playState`.
-  // A failure still surfaces: the bridge broadcasts an `error` with no id.
+  // `launch`, `stop`, `setFold`, `watchPlay` and `watchMeters` deliberately have
+  // no terminal reply. What you want back from firing a clip is not an
+  // acknowledgement, it's the play state changing — which arrives as an
+  // unsolicited `playState`. A failure still surfaces: the bridge broadcasts
+  // an `error` with no id.
   //
   // `setFold` is the same bargain for a different reason: the client already
   // moved its own columns before it sent, because waiting a round trip to
@@ -288,6 +297,7 @@ declare namespace BSV {
     | { id?: number; type: 'launch'; target: LaunchTarget }
     | { id?: number; type: 'stop'; target: StopTarget }
     | { id?: number; type: 'watchPlay'; on: boolean }
+    | { id?: number; type: 'watchMeters'; on: boolean }
     | { id?: number; type: 'ping' };
 
   type RequestType = Request['type'];
@@ -344,6 +354,11 @@ declare namespace BSV {
         isPlaying: boolean;
         /** Indexed by track, in the same `i` space as `Snapshot.tracks`. */
         tracks: TrackPlayState[];
+      }
+    | {
+        type: 'meterLevels';
+        /** Every track's latest level, in track order. */
+        meters: TrackMeterLevel[];
       }
     | {
         type: 'songPosition';

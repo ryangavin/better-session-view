@@ -58,6 +58,15 @@ export const IconBug = () => (
   </svg>
 );
 
+/** Track output meters — three live level bars. */
+export const IconMeter = () => (
+  <svg {...BASE}>
+    <line x1="5" y1="18.5" x2="5" y2="13" />
+    <line x1="12" y1="18.5" x2="12" y2="8" />
+    <line x1="19" y1="18.5" x2="19" y2="4.5" />
+  </svg>
+);
+
 /** Start the song. */
 export const IconPlay = () => (
   <svg {...BASE} fill="currentColor" stroke="none">

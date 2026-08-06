@@ -3,6 +3,7 @@ import type { BridgeState } from '../hooks/useBridge.js';
 import './Header.css';
 import {
   IconBug,
+  IconMeter,
   IconMenu,
   IconPlay,
   IconStop,
@@ -26,6 +27,8 @@ interface Props {
   onColumnWidth: (w: ColumnWidth) => void;
   showLog: boolean;
   onToggleLog: () => void;
+  showMeters: boolean;
+  onToggleMeters: () => void;
   onSnapshot: () => void;
 }
 
@@ -34,7 +37,7 @@ const statusPill = (label: string, ok: boolean) => (
 );
 
 /**
- * The header bar: status pills, playback, the view controls, log and Snapshot.
+ * The header bar: status pills, playback, view controls, meters, log and Snapshot.
  *
  * Every button here is a glyph, and every one carries an `aria-label` as well
  * as a `title`. An icon-only control with no accessible name is a button that
@@ -57,6 +60,8 @@ export function Header({
   onColumnWidth,
   showLog,
   onToggleLog,
+  showMeters,
+  onToggleMeters,
   onSnapshot,
 }: Props) {
   // Guarded on songCount so an empty set reads as "nothing folded" rather than
@@ -80,7 +85,7 @@ export function Header({
       </div>
 
       <div className="header-section header-center">
-        <div className="transport-side transport-position-side">
+        <div className="transport">
           <div className="arrangement-position" role="timer" aria-label={positionLabel}>
             <span aria-hidden="true">
               {positionParts.map((part, i) => (
@@ -91,40 +96,39 @@ export function Header({
               ))}
             </span>
           </div>
+          <div className="playback" role="group" aria-label="Playback">
+            <button
+              type="button"
+              className={`icon-btn${isPlaying ? ' rolling' : ''}`}
+              title="Start the song (Space)"
+              aria-label="Start the song"
+              disabled={!lomReady}
+              onClick={() => launch({ kind: 'song' })}
+            >
+              <IconPlay />
+            </button>
+            <button
+              type="button"
+              className="icon-btn"
+              title="Stop the song (Space)"
+              aria-label="Stop the song"
+              disabled={!lomReady}
+              onClick={() => stop({ kind: 'song' })}
+            >
+              <IconStop />
+            </button>
+            <button
+              type="button"
+              className="icon-btn"
+              title="Stop all clips, keep the song rolling (Esc)"
+              aria-label="Stop all clips"
+              disabled={!lomReady}
+              onClick={() => stop({ kind: 'clips' })}
+            >
+              <IconStopClips />
+            </button>
+          </div>
         </div>
-        <div className="playback" role="group" aria-label="Playback">
-          <button
-            type="button"
-            className={`icon-btn${isPlaying ? ' rolling' : ''}`}
-            title="Start the song (Space)"
-            aria-label="Start the song"
-            disabled={!lomReady}
-            onClick={() => launch({ kind: 'song' })}
-          >
-            <IconPlay />
-          </button>
-          <button
-            type="button"
-            className="icon-btn"
-            title="Stop the song (Space)"
-            aria-label="Stop the song"
-            disabled={!lomReady}
-            onClick={() => stop({ kind: 'song' })}
-          >
-            <IconStop />
-          </button>
-          <button
-            type="button"
-            className="icon-btn"
-            title="Stop all clips, keep the song rolling (Esc)"
-            aria-label="Stop all clips"
-            disabled={!lomReady}
-            onClick={() => stop({ kind: 'clips' })}
-          >
-            <IconStopClips />
-          </button>
-        </div>
-        <div className="transport-side" aria-hidden="true" />
       </div>
 
       <div className="header-section header-right">
@@ -162,6 +166,17 @@ export function Header({
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          className={`icon-btn toggle${showMeters ? ' on' : ''}`}
+          aria-pressed={showMeters}
+          aria-label="Track meters"
+          title={`${showMeters ? 'Hide' : 'Show'} track output meters`}
+          onClick={onToggleMeters}
+          disabled={!lomReady && !showMeters}
+        >
+          <IconMeter />
+        </button>
         {/* The log is diagnostics, so it's off by default and reachable in one
             click. It opens itself on an error — see useRailAndLog — because a
             failure you can't see is a failure that didn't happen. */}

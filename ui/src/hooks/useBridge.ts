@@ -43,6 +43,8 @@ export interface SongPosition {
   sixteenth: number;
 }
 
+export type MeterListener = (meters: readonly BSV.TrackMeterLevel[]) => void;
+
 /** One write, of either kind or both. Empty arrays rather than optionals so
  *  every count in here is `ops.length + sceneOps.length` with no branching. */
 interface Batch {
@@ -88,6 +90,11 @@ export interface BridgeState {
    * has already moved its own columns. See `setFold` in the protocol.
    */
   setFold: (t: number, folded: boolean) => void;
+  /**
+   * Listen to the high-frequency meter stream without putting it in the
+   * composition root's state and re-rendering the entire grid every frame.
+   */
+  subscribeMeters: (listener: MeterListener) => () => void;
 }
 
 /**
@@ -97,7 +104,7 @@ export interface BridgeState {
  * apply/undo/moveScenes write path, which all share `guard`, the snapshot ref
  * and the undo entry.
  */
-export function useBridge(): BridgeState {
+export function useBridge(watchMeters = false): BridgeState {
   const client = useMemo(() => new BridgeClient(), []);
   const { log, say } = useLog();
 
@@ -160,6 +167,10 @@ export function useBridge(): BridgeState {
         case 'playState':
           setPlay({ isPlaying: event.isPlaying, tracks: event.tracks });
           break;
+        // The track meters subscribe to this stream directly. Putting 30 Hz
+        // frames in this hook's state would re-render App and the whole grid.
+        case 'meterLevels':
+          break;
         case 'songPosition':
           setSongPosition({
             bar: event.bar,
@@ -204,6 +215,25 @@ export function useBridge(): BridgeState {
     client.send({ type: 'watchPlay', on: true });
     return () => client.send({ type: 'watchPlay', on: false });
   }, [client, lomReady, trackCount]);
+
+  // Meters are more expensive and only useful while their footer is visible.
+  // Like play state, their observer list is track-addressed and must be rebuilt
+  // when a snapshot discovers a different track count.
+  useEffect(() => {
+    if (!lomReady || trackCount === undefined || !watchMeters) return;
+    client.send({ type: 'watchMeters', on: true });
+    return () => client.send({ type: 'watchMeters', on: false });
+  }, [client, lomReady, trackCount, watchMeters]);
+
+  const subscribeMeters = useCallback(
+    (listener: MeterListener) =>
+      client.subscribe((event) => {
+        if (event.type === 'meterLevels') listener(event.meters);
+        // A frozen level looks live. Clear it as soon as the source disappears.
+        if (event.type === 'status' && !event.lomReady) listener([]);
+      }),
+    [client],
+  );
 
   const launch = useCallback(
     (target: BSV.LaunchTarget) => client.send({ type: 'launch', target }),
@@ -441,5 +471,6 @@ export function useBridge(): BridgeState {
     launch,
     stop,
     setFold,
+    subscribeMeters,
   };
 }

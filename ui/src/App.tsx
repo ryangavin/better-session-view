@@ -44,7 +44,8 @@ import { describeMove } from '../../core/src/sceneMove.js';
  * compositions that genuinely span two hooks.
  */
 export function App() {
-  const bridge = useBridge();
+  const [showMeters, setShowMeters] = useState(false);
+  const bridge = useBridge(showMeters);
   const { snapshot, play, launch, stop, setFold, apply, applyScenes, undo } = bridge;
 
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
@@ -253,11 +254,13 @@ export function App() {
         onColumnWidth={chooseColumnWidth}
         showLog={showLog}
         onToggleLog={toggleLog}
+        showMeters={showMeters}
+        onToggleMeters={() => setShowMeters((shown) => !shown)}
         onSnapshot={bridge.refresh}
       />
 
       <main>
-        <div className="grid-wrap">
+        <div className={`grid-wrap${showMeters ? ' meters-open' : ''}`}>
           {snapshot ? (
             <ClipGrid
               snapshot={snapshot}
@@ -266,6 +269,8 @@ export function App() {
               selected={selected}
               active={active}
               play={play}
+              showMeters={showMeters}
+              subscribeMeters={bridge.subscribeMeters}
               columnWidth={columnWidth}
               palette={bridge.palette}
               roleColors={roleColors}
