@@ -134,24 +134,22 @@ table.grid th.banded.band-start {
 }
 
 /* The group track's own header. Left-aligned behind its triangle, because the
-   name is the fold control and a centred one moves as the triangle changes.
-
-   The color comes through `--group-fg` so that `.track-h.live` and
-   `.track-h.stopping` still outrank it — a group header reports play state
-   like any other track header, and an inline `color` would have beaten both. */
+   name is the fold control and a centred one moves as the triangle changes. */
 table.grid th.group-h {
   text-align: left;
   letter-spacing: 0.08em;
-  color: var(--group-fg);
 }
+/* Hover lightens the track's own fill rather than replacing it: the fill *is*
+   the group's identity here, and swapping it for a flat highlight would drop
+   the one thing the header is saying. */
 table.grid th.group-h:hover {
-  background: var(--sel);
+  filter: brightness(1.15);
 }
 table.grid th.group-h .fold {
   display: inline-block;
   width: 8px;
   margin-right: 2px;
-  color: var(--dim2);
+  opacity: 0.7;
 }
 
 /* The group's clip slot. A launcher, not a cell you can select — no hover
@@ -206,12 +204,18 @@ td.cell.group.playing > .group-n {
 table.grid th.track-h {
   cursor: pointer;
 }
+/* Play state as a bar down the left edge, not as text color.
+   The header is filled with the track's own Live color now, and a green *word*
+   on a green track says nothing — worse, `inkOn` picked the text color for
+   contrast against that fill, and overriding it throws that away. A bar is the
+   same language the clip cells already use for the same fact, and it composes
+   over any fill because background-image paints above background-color. */
 table.grid th.track-h.live {
-  color: var(--green);
+  background-image: linear-gradient(90deg, var(--green) 0 3px, transparent 3px);
 }
 /* fired_slot_index === -2: this track's stop button is armed and blinking. */
 table.grid th.track-h.stopping {
-  color: var(--amber);
+  background-image: linear-gradient(90deg, var(--amber) 0 3px, transparent 3px);
   animation: bsv-blink 0.5s infinite;
 }
 

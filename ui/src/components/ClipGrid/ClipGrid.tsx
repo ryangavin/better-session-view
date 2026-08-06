@@ -1,6 +1,6 @@
 import { useMemo, type CSSProperties } from 'react';
 import './ClipGrid.css';
-import { hex, legibleOn } from '../../../../core/src/color.js';
+import { hex, inkOn } from '../../../../core/src/color.js';
 import { startsBand, type Column } from '../../../../core/src/trackColumns.js';
 import type { SongHeader, TrackShape } from '../../../../core/src/songRows.js';
 import type { ActiveCell } from '../../../../core/src/gridRange.js';
@@ -15,7 +15,7 @@ import {
 import type { PlayState } from '../../hooks/useBridge.js';
 import { marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../../hooks/useAnchoredPosition.js';
-import { NO_SHAPES, PANEL, STOP_FIRED } from './constants.js';
+import { NO_SHAPES, STOP_FIRED } from './constants.js';
 import { Row } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
 
@@ -192,6 +192,17 @@ export function ClipGrid({
             const stopping = st !== undefined && st.fired === STOP_FIRED;
             const state = `${live ? ' live' : ''}${stopping ? ' stopping' : ''}`;
 
+            // Every header is filled with its own Live color, which is the
+            // thing that makes a group read as containing its tracks rather
+            // than sitting beside them: the band says where the group reaches,
+            // and the fills underneath say these are tracks. Painting only the
+            // group's color — which is what this did — left the members looking
+            // like ungrouped tracks that happened to be adjacent.
+            //
+            // `inkOn` picks black or white per swatch. Live's palette runs from
+            // near-black to near-white, so no single text color survives it.
+            const fill = { background: hex(track.color), color: inkOn(track.color) };
+
             if (c.kind === 'group') {
               // The whole header is the fold control, so the triangle isn't a
               // separate button — the name is as much a click target as the
@@ -202,16 +213,7 @@ export function ClipGrid({
                 <th
                   key={`g${c.group.i}`}
                   className={`track-h group-h${state}${bandClass}`}
-                  // The name's color rides down as a custom property rather
-                  // than as `color` directly: an inline `color` outranks every
-                  // stylesheet rule, and `.live` / `.stopping` have to be able
-                  // to win here the same way they do on a track header.
-                  style={
-                    {
-                      ...band,
-                      '--group-fg': hex(legibleOn(c.group.color, PANEL)),
-                    } as CSSProperties
-                  }
+                  style={{ ...band, ...fill } as CSSProperties}
                   title={
                     `${c.group.name} — ${c.members.length} track` +
                     `${c.members.length === 1 ? '' : 's'} · click to ` +
@@ -232,7 +234,7 @@ export function ClipGrid({
               <th
                 key={`t${c.track.i}`}
                 className={`track-h${state}${bandClass}`}
-                style={band}
+                style={{ ...band, ...fill } as CSSProperties}
                 title={`${c.track.name} — ${LAUNCH_KEY}-click to stop this track`}
                 onClick={(e) => {
                   if (isLaunchModified(e)) onStopTrack(c.track.i);

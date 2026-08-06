@@ -862,11 +862,27 @@ answers. Plain click fires it, which is the second exception to the ⌘-to-fire 
 the scene button, and for the same reason: there is nothing in a group slot to select,
 so there's no selection for the modifier to protect.
 
-**Grouping reads as a colored rule along the top of the columns in a run**, capped where
-the run starts. It used to be a header row of spanning cells above the track names; a
-group track carries its own name now, so that row was repeating a word the column
-already had. Nesting falls out of it — a group inside another opens its own run, in its
-own color.
+**Every track header is filled with that track's own Live color**, group tracks
+included, and grouping reads as a colored rule along the top of the columns in a run,
+capped where the run starts. Both halves are load-bearing and the fills are the half
+that took two tries: with only the group's color painted, a group read as a track
+sitting *beside* its members rather than containing them. The band says how far the
+group reaches; the fills underneath say these are tracks. `inkOn` picks the label's
+black or white per swatch, because Live's palette runs from near-black to near-white
+and no single text color survives it.
+
+The rule used to be a header row of spanning cells carrying the group's name; a group
+track carries its own name now, so that row was repeating a word the column already had.
+Nesting falls out of it — a group inside another opens its own run, in its own color.
+
+Live draws that rule as **one unbroken bar** across the group. Ours is still a segment
+per column: the gaps are `border-spacing`, which the sticky header already paints into,
+and bridging them is a separate problem from the color being bridged.
+
+**Play state on a header is a bar down the left edge, not the text color** — the same
+language the clip cells use for the same fact. Once the header carries the track's own
+fill, a green *word* on a green track says nothing, and overriding the label color
+throws away the contrast `inkOn` just chose.
 
 The layout lives in [`core/src/trackColumns.ts`](../core/README.md) and what a group
 slot shows in [`core/src/groupSlot.ts`](../core/README.md), both with tests — nesting,
