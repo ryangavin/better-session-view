@@ -226,10 +226,12 @@ export function ClipGrid({
                     else onToggleGroup(c.group.i);
                   }}
                 >
-                  <span className="fold">
-                    <IconGroupFold folded={c.collapsed} />
+                  <span className="th-line">
+                    <span className="fold">
+                      <IconGroupFold folded={c.collapsed} />
+                    </span>
+                    <span className="th-label">{c.group.name}</span>
                   </span>
-                  {c.group.name}
                 </th>
               );
             }
@@ -243,7 +245,9 @@ export function ClipGrid({
                   if (isLaunchModified(e)) onStopTrack(c.track.i);
                 }}
               >
-                {c.track.name}
+                <span className="th-line">
+                  <span className="th-label">{c.track.name}</span>
+                </span>
               </th>
             );
           })}

@@ -15,19 +15,23 @@ table.grid {
      A group and its tracks are often near-neighbours in Live's palette — a
      green group over light-green tracks — and at 2px the band lost that
      argument every time. It's thick enough now to read as the group's color
-     rather than as an edge on the track's, and it's closed at the bottom, so a
-     run is bracketed rather than just topped.
+     rather than as an edge on the track's.
+
+     Top only. It briefly closed at the bottom too, to bracket the run, and that
+     reads as the group's color leaking down the sides of every track rather
+     than as one bar over all of them. Live puts it on top and only on top.
 
      The header grew to fit rather than the label shrinking: 9px uppercase mono
-     is already the floor. Stated here as its parts so `--header-h` can't drift
-     from the padding that produces it — the label sits `+2px` clear of each
-     band. */
-  --band-top: 5px;
-  --band-bottom: 3px;
-  /* The cap on the left end of a run, so two adjacent groups read as two. */
-  --band-side: 3px;
+     is already the floor. Stated as its parts so `--header-h` can't drift from
+     the padding that produces it — both are written from these. */
+  --band-w: 5px;
+  /* Clearance between the band and the label, and below the label. */
+  --label-gap: 2px;
   --label-h: 13px;
-  --header-h: calc(var(--band-top) + var(--label-h) + var(--band-bottom) + 4px);
+  --header-pad-b: 5px;
+  --header-h: calc(
+    var(--band-w) + var(--label-gap) + var(--label-h) + var(--header-pad-b)
+  );
 }
 /* Widths live on the columns, not the header cells: the song header's notice
    cell uses colSpan, and a spanning cell would otherwise have to distribute its
@@ -50,10 +54,13 @@ table.grid col.scene-col {
  *
  * The 2px band that opens above is plugged by this rule's own third shadow.
  *
- * Height is `--header-h`, which is the two band widths plus the label's
- * line-height plus 2px of clearance either side — see `table.grid` above. The
- * padding here is what actually produces it, so the two are written from the
- * same variables. The bulk buttons are sized to the label, not the row. */
+ * Height is `--header-h` — see `table.grid` above. The padding here is what
+ * actually produces it, so the two are written from the same variables. The
+ * bulk buttons are sized to the label, not the row.
+ *
+ * No `overflow: hidden` here, deliberately: the band bridges the gutter with a
+ * pseudo-element that has to escape the cell by 2px. Clipping moved onto
+ * `.th-label` instead, which is the only thing that ever needed it. */
 table.grid th {
   font-family: var(--mono);
   font-size: 9px;
@@ -63,7 +70,7 @@ table.grid th {
   text-transform: uppercase;
   font-weight: 400;
   text-align: center;
-  padding: calc(var(--band-top) + 2px) 2px calc(var(--band-bottom) + 2px);
+  padding: calc(var(--band-w) + var(--label-gap)) 2px var(--header-pad-b);
   position: sticky;
   top: 2px;
   background: var(--bg);
@@ -89,6 +96,17 @@ table.grid th {
     0 -2px 0 var(--bg),
     0 8px 14px -4px var(--shadow-edge);
   white-space: nowrap;
+}
+/* Flex on a wrapper, never on the `th` itself — `display: flex` on a table cell
+   stops it being a table cell and takes the fixed layout with it. `min-width: 0`
+   on the label is what lets a flex item shrink far enough to ellipsis at all. */
+table.grid th .th-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+table.grid th .th-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -124,48 +142,60 @@ button.bulk {
 /* A group's extent, which used to be a header row of spanning cells above the
    track names. A group track carries its own name in the header now, so a
    second row repeating that word said nothing the column didn't. What the span
-   row did carry was *how far the group reaches*, and that survives as rules in
-   the group's color above and below every column in the run.
+   row did carry was *how far the group reaches*, and that survives as a rule in
+   the group's color along the top of every column in the run.
 
-   Drawn as inset shadows rather than borders: a border is inside the cell's box
-   and would come out of the label's line-height, where these ride in the
-   padding that was widened for them. Several insets compose, which is what lets
-   the top, bottom and left caps be three separate statements.
+   Drawn as an inset shadow rather than a border: a border is inside the cell's
+   box and would come out of the label's line-height, where this rides in the
+   padding widened for it.
 
    The ring in `--bg` on the sides is what the group row's used to do — it
    plugs the 2px `border-spacing` gutters so a body row scrolling underneath
    doesn't show through them. */
 table.grid th.banded {
   box-shadow:
-    inset 0 var(--band-top) 0 var(--band),
-    inset 0 calc(-1 * var(--band-bottom)) 0 var(--band),
+    inset 0 var(--band-w) 0 var(--band),
     -2px 0 0 var(--bg),
     2px 0 0 var(--bg),
     0 -2px 0 var(--bg),
     0 8px 14px -4px var(--shadow-edge);
 }
-/* Capped at the left where a run starts, so two adjacent groups read as two.
-   The gutter is only 2px, and without this their bands meet across it.
+/* The bridge. An inset shadow stops at the cell edge, so on its own the band
+   comes out as one segment per column with a 2px notch at every gutter, where
+   Live draws one unbroken bar. Each column in a run reaches back across the gap
+   to its left and fills the band's height in the band's color.
 
-   Not only the group's own column: a run also starts where a parent's band
-   resumes after a nested group has interrupted it, and there the cap is the
-   only thing separating the two. */
-table.grid th.banded.band-start {
-  box-shadow:
-    inset var(--band-side) 0 0 var(--band),
-    inset 0 var(--band-top) 0 var(--band),
-    inset 0 calc(-1 * var(--band-bottom)) 0 var(--band),
-    -2px 0 0 var(--bg),
-    2px 0 0 var(--bg),
-    0 -2px 0 var(--bg),
-    0 8px 14px -4px var(--shadow-edge);
+   Reaching *left* rather than right is what makes it work without knowing where
+   a run ends. Sibling cells at the same z-index paint in document order, so the
+   later cell's bridge lands on the shared gutter after the earlier cell's `--bg`
+   plug has covered it — the opposite direction would be painted over. A run's
+   right end then needs no rule at all: whatever follows is either unbanded or
+   starts its own run, and neither reaches back.
+
+   `band-start` is exactly the column that must not reach back — the group's own
+   column, and the column where a parent's band resumes after a nested group
+   interrupted it. Both are where two runs meet, and the unbridged gutter is
+   what separates them. */
+table.grid th.banded:not(.band-start)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 2px;
+  height: var(--band-w);
+  background: var(--band);
 }
 
-/* The group track's own header. Left-aligned behind its triangle, because the
-   name is the fold control and a centred one moves as the triangle changes. */
+/* The group track's own header. Slightly tighter tracking than a plain track's,
+   to buy back the width the badge takes from the name. */
 table.grid th.group-h {
-  text-align: left;
   letter-spacing: 0.08em;
+}
+/* The badge leads and the name follows it, rather than the pair sitting centred
+   as a unit: a column of group headers reads as a column of badges down the
+   left, which is the point of giving them one. */
+table.grid th.group-h .th-line {
+  justify-content: flex-start;
 }
 /* Hover lightens the track's own fill rather than replacing it: the fill *is*
    the group's identity here, and swapping it for a flat highlight would drop
@@ -173,20 +203,19 @@ table.grid th.group-h {
 table.grid th.group-h:hover {
   filter: brightness(1.15);
 }
-/* The fold badge. Boxed to exactly the label's line-height and aligned to the
-   top of it, so an 11px glyph on a 13px line can't grow the line box — the
-   header's height is a calculation (`--header-h`), and anything that quietly
-   adds a pixel here puts every cell's `scroll-margin-top` out with it. Centred
-   inside that box rather than sat on the baseline, which the ring needs: it has
-   no baseline of its own the way a chevron glyph did.
+/* The fold badge. A flex item boxed to the label's line-height, so an 11px glyph
+   on a 13px line can't grow the row — the header's height is a calculation
+   (`--header-h`), and anything that quietly adds a pixel here puts every cell's
+   `scroll-margin-top` out with it. `flex: none` so it survives the squeeze that
+   ellipsises a long group name beside it.
 
    Inherits the header's `inkOn` color, so it stays legible on any track color
    without being told which one it's on. */
 table.grid th.group-h .fold {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  flex: none;
   height: var(--label-h);
-  vertical-align: top;
   margin-right: 3px;
   opacity: 0.85;
 }

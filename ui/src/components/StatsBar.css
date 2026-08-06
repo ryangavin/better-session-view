@@ -9,6 +9,15 @@
   color: var(--dim);
   font-weight: 400;
 }
+.repository-link {
+  display: inline-flex;
+  align-self: center;
+  flex: none;
+  color: var(--dim2);
+}
+.repository-link:hover {
+  color: var(--fg);
+}
 
 /* --- stats -------------------------------------------------------- */
 

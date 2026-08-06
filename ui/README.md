@@ -875,21 +875,33 @@ The rule used to be a header row of spanning cells carrying the group's name; a 
 track carries its own name now, so that row was repeating a word the column already had.
 Nesting falls out of it — a group inside another opens its own run, in its own color.
 
-The band is deliberately heavy — 5px above, 3px closing it below — because a group and
-its tracks are usually near-neighbours in Live's palette, a green group over light-green
-tracks, and a hairline rule lost that argument every time. The header grew to fit rather
-than the label shrinking; 9px uppercase mono is already the floor. `--band-top`,
-`--band-bottom` and `--header-h` are written as one calculation in `ClipGrid.css`, and
-the padding that produces the height is written from the same variables, so the two
-can't drift.
+The band is deliberately heavy — 5px, and on the top edge only — because a group and its
+tracks are usually near-neighbours in Live's palette, a green group over light-green
+tracks, and a hairline rule lost that argument every time. It briefly closed at the
+bottom too, to bracket the run; that reads as the group's color leaking down the sides
+of every track rather than as one bar over all of them. The header grew to fit rather
+than the label shrinking; 9px uppercase mono is already the floor. `--band-w`,
+`--label-h` and `--header-h` are written as one calculation in `ClipGrid.css`, and the
+padding that produces the height is written from the same variables, so the two can't
+drift.
 
 A group track also wears **Live's circled chevron** rather than a bare `▸`. The ring is
 the part that matters: a plain chevron reads as an ordinary disclosure arrow, and the
 badge is what makes group tracks findable at a glance down the header row.
 
-Live draws that rule as **one unbroken bar** across the group. Ours is still a segment
-per column: the gaps are `border-spacing`, which the sticky header already paints into,
-and bridging them is a separate problem from the color being bridged.
+**The band is one unbroken bar**, the way Live draws it, which means crossing the 2px
+`border-spacing` gaps between headers. An inset shadow stops at the cell edge, so each
+column in a run reaches back over the gap to its left with a pseudo-element.
+
+Reaching *left* is what makes that work without knowing where a run ends. Sibling cells
+paint in document order, so the later cell's bridge lands on the shared gutter after the
+earlier cell's `--bg` plug has covered it; reaching right would be painted over. The
+right end of a run then needs no rule at all — whatever follows is either unbanded or
+starts its own run, and neither reaches back. That's the whole job of `startsBand`, and
+why there's no `endsBand` to go with it.
+
+It costs the `th` its `overflow: hidden` (the bridge has to escape the cell), so clipping
+moved onto `.th-label` inside a flex `.th-line` — the only thing that ever needed it.
 
 **Play state on a header is a bar down the left edge, not the text color** — the same
 language the clip cells use for the same fact. Once the header carries the track's own

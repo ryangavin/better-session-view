@@ -1,6 +1,9 @@
 import { LAUNCH_KEY } from '../lib/keys.js';
+import { IconGitHub } from './Icon.js';
 import { Stat } from './Stat.js';
 import './StatsBar.css';
+
+const REPOSITORY_URL = 'https://github.com/ryangavin/better-session-view';
 
 interface Props {
   snapshot: BSV.Snapshot | null;
@@ -43,6 +46,16 @@ export function StatsBar({
         <b>{LAUNCH_KEY}</b>-click / <b>{LAUNCH_KEY}</b>-↑↓ fires · <b>⇧</b> extends ·{' '}
         <b>⌥</b> adds · <b>esc</b> stops clips · <b>{LAUNCH_KEY}Z</b> undoes
       </div>
+      <a
+        className="repository-link"
+        href={REPOSITORY_URL}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="View Better Session View on GitHub"
+        title="View source on GitHub"
+      >
+        <IconGitHub />
+      </a>
     </div>
   );
 }
