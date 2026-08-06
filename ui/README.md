@@ -885,9 +885,15 @@ than the label shrinking; 9px uppercase mono is already the floor. `--band-w`,
 padding that produces the height is written from the same variables, so the two can't
 drift.
 
-A group track also wears **Live's circled chevron** rather than a bare `▸`. The ring is
-the part that matters: a plain chevron reads as an ordinary disclosure arrow, and the
-badge is what makes group tracks findable at a glance down the header row.
+A group track also wears **Live's circled chevron**, pinned to the right edge of the
+header the way Live places it, with the name reading from the left. The ring is the part
+that matters: a plain chevron reads as an ordinary disclosure arrow, and the badge is
+what makes group tracks findable at a glance down the header row. Pinning it also holds
+it at one position per column rather than letting it drift with the length of the name.
+
+The label takes the slack (`flex: 1`) rather than the line using `space-between`, so it
+is both the thing that grows and the thing that shrinks — a long group name ellipsises
+against the badge instead of shoving it out of the cell.
 
 **The band is one unbroken bar**, the way Live draws it, which means crossing the 2px
 `border-spacing` gaps between headers. An inset shadow stops at the cell edge, so each

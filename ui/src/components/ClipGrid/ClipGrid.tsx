@@ -227,10 +227,10 @@ export function ClipGrid({
                   }}
                 >
                   <span className="th-line">
+                    <span className="th-label">{c.group.name}</span>
                     <span className="fold">
                       <IconGroupFold folded={c.collapsed} />
                     </span>
-                    <span className="th-label">{c.group.name}</span>
                   </span>
                 </th>
               );

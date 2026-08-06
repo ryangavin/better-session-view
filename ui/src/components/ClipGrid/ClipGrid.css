@@ -224,15 +224,22 @@ table.grid th.banded:not(.band-start)::before {
 }
 
 /* The group track's own header. Slightly tighter tracking than a plain track's,
-   to buy back the width the badge takes from the name. */
+   to buy back the width the badge takes from the name, and left-read rather
+   than centred — the name starts at the same x in every group column. */
 table.grid th.group-h {
   letter-spacing: 0.08em;
 }
-/* The badge leads and the name follows it, rather than the pair sitting centred
-   as a unit: a column of group headers reads as a column of badges down the
-   left, which is the point of giving them one. */
-table.grid th.group-h .th-line {
-  justify-content: flex-start;
+/* Live pins the badge to the right edge of the header and reads the name from
+   the left, so the label takes all the slack and the badge sits after it. That
+   also means the badge holds one position per column instead of drifting with
+   the length of the name, which is what makes a row of them scannable.
+
+   `flex: 1` rather than `justify-content: space-between`: the label has to be
+   the thing that grows *and* the thing that shrinks, so a long group name
+   ellipsises against the badge instead of shoving it out of the cell. */
+table.grid th.group-h .th-label {
+  flex: 1;
+  text-align: left;
 }
 /* Hover lightens the track's own fill rather than replacing it: the fill *is*
    the group's identity here, and swapping it for a flat highlight would drop
@@ -254,7 +261,7 @@ table.grid th.group-h .fold {
   align-items: center;
   flex: none;
   height: var(--label-h);
-  margin-right: 3px;
+  margin-left: 3px;
 }
 
 /* The group's clip slot. A launcher, not a cell you can select — no hover
