@@ -2,17 +2,47 @@
 
 [![ci](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml/badge.svg)](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml)
 
-Session manager for large Ableton Live sets. Bulk clip naming and coloring across a
-100+ song set, driven from a real UI instead of Live's grid.
+**Ableton has no idea what a song is.**
 
-Live stays the audio engine and the source of truth. This app is a front end that
-reads and writes the Live Object Model over a Max for Live bridge — no `.als` file
-parsing, ever.
+Session View gives you clips and scenes and stops there. If your set is one song, that's
+fine. If your set is a hundred songs — a covers band's whole book, a wedding repertoire,
+a night that has to run in a particular order — then *you* are the one holding the
+structure in your head. Which scenes belong to which song. Which one is the intro and
+which one is the last chorus. What the colors are supposed to mean. Live will happily let
+you name scene 412 anything at all; it will never mention that it doesn't match the other
+847.
+
+So it gets done by hand. Click a scene, type a name, click a clip, pick a color, scroll,
+repeat. Change your mind about how names should be spelled and there goes the afternoon.
+Want a song to happen earlier in the night and you're dragging scenes one at a time,
+hoping you didn't leave one behind.
+
+This is the layer Live is missing. A real app with a real grid that reads your set out of
+Live and writes back into it — so naming, coloring, and running order are things you
+decide once and apply to everything, instead of conventions that live in your head and get
+re-typed per selection.
+
+Live stays the audio engine and the source of truth. Nothing here parses `.als` files,
+ever.
+
+## What it does
+
+- **Names in bulk.** Select a block of clips or a run of scenes and write them all from
+  one pattern, rather than one at a time.
+- **Colors from a rule.** Color every song in the set at once — by key, by bpm, rainbow or
+  random — with a preview of the exact write before anything happens.
+- **Reads the songs back out.** The names *are* the record, so the app re-derives which
+  scene belongs to which song every time it looks at your set. Nothing to keep in sync,
+  nothing to lose, and the `.als` on your gig laptop still describes itself.
+- **Moves a whole song.** Drag a song in the running order and every scene it owns follows
+  — as one entry in Live's undo history, not eighty.
+- **Plays what you're looking at.** Fire a clip or a scene from the grid so you can hear
+  the thing you're labelling.
 
 > ### 📖 [**User manual →**](https://github.com/ryangavin/better-session-view/wiki)
 >
 > Installing, reading the grid, naming, roles, color, the running order, and the
-> keyboard reference. **The rest of this README is for people working on the code.**
+> keyboard reference.
 
 ## Install
 
@@ -49,219 +79,18 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm test` | `core/` unit tests |
 | `npm run typecheck` | all five projects |
 
-## Architecture
-
-```
-browser ──WebSocket/JSON──> node.script (bridge.js) ──Max msgs──> v8 (lom.js) ──LOM──> Live
-   :17800 or :5173 in dev        HTTP + WS server         the only LOM code
-```
-
-The device serves the UI from the same Node process that bridges to Live. That's
-deliberate: the whole app ships as an `.amxd` plus two JS files — no app bundle, no
-code signing, no updater. `bridge.js` is bundled with `ws` and the built UI inlined,
-so there's no `node_modules/` and no `public/` to keep alongside it.
-
-Nothing the user makes is stored in there. The role vocabulary lives in a `bsv.json`
-beside their `.als`, so it travels with the set; the palette cache is machine-wide
-under Application Support. Replacing the device folder costs them nothing.
-
-## Modules
-
-Five projects. Each has its own README; read the one you're touching.
-
-| module | what it is | read for |
-|---|---|---|
-| [`protocol/`](protocol/README.md) | wire types, single source of truth | adding or changing a message |
-| [`core/`](core/README.md) | pure domain logic — no I/O, no React, no Live | naming, colors, anything that deserves tests |
-| [`ui/`](ui/README.md) | React 19 + Vite | components, the bridge client, dev server |
-| [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
-| [`tools/`](tools/README.md) | `.amxd` container format, device generator | changing the patcher or device type |
-
-The **user manual** is the [wiki](https://github.com/ryangavin/better-session-view/wiki)
-— how to *use* the app, as against these READMEs, which are about why it's built the way
-it is. It's a separate git repository, so clone it and edit it like any other:
-
-```sh
-git clone git@github.com:ryangavin/better-session-view.wiki.git
-```
-
-Being a separate repo, it can't change in the same commit as the code. **Anything a user
-can see or press means a second push**, and nothing enforces it — a UI change that ships
-without one leaves the manual quietly wrong.
-
-[`bridge/LOM.md`](bridge/LOM.md) is the Live Object Model itself — every class, property
-and function with its type and access mode, plus the places Cycling '74's docs are wrong
-about the version we run. Generated by `npm run build:lom`. **Check it before assuming
-Live exposes something, and before assuming a property you can read is one you can
-write.**
-
-## The rules that aren't negotiable
-
-1. **`core/` imports no transport, no React, and nothing Live-specific.** It's what
-   makes the domain logic testable without Live running, and what keeps a different
-   backend possible later.
-2. **`lom.ts` is the only file that touches the Live Object Model.** Everything else
-   talks to it through the protocol.
-3. **The bridge protocol is coarse-grained** — one message per *operation*, never per
-   property. A full set is tens of thousands of LOM reads.
-4. **Clip color is written as `color_index`**, never raw RGB.
-5. **Nothing loads from a CDN.** This eventually runs on stage.
-
-## Generated files
-
-Not in git; `npm run build` recreates all of them.
-
-```
-bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
-bridge/public/                           vite build output
-bridge/SessionBridge.amxd  .maxpat       device + debug patcher
-bridge/palette.json                      derived from Live at runtime
-bridge/roles.json                        your role vocabulary, written by the UI
-```
-
 A fresh clone needs `npm install && npm run build` before the device exists.
 
-## Environment this was built against
+## Contributing
 
-Nothing here is version-agnostic; the bridge in particular depends on what Live's
-embedded Max provides.
+[**CONTRIBUTING.md**](CONTRIBUTING.md) is the map — architecture, the five modules and
+which README to read for each, and the handful of rules that aren't negotiable. Read it
+before your first change; most of the constraints in this project are non-obvious and
+expensive to rediscover.
 
-| | |
-|---|---|
-| Ableton Live | 12.4.3 Suite |
-| Max embedded in Live | 9.1.4 — supplies `v8` and Node for Max |
-| Node inside Node for Max | 22.18 (bundled with Max) |
-| Node for tooling | 24.1 — runs `.ts` directly via type stripping |
+Planned work and the questions only a run against a real set can answer live in
+[Issues](../../issues).
 
-## Open questions
+## License
 
-Things only a run against a real set can answer.
-
-- **Snapshot cost at full size.** 243 clips / 100 scenes measured ~933ms for the LOM
-  walk before the id-addressing change. Every phase is a linear scan, so 848 scenes
-  projects to seconds, not milliseconds. The UI prints a phase breakdown and a
-  projection to the console on every snapshot — see [`ui/README.md`](ui/README.md).
-  If it stays slow, the answer is streaming partial snapshots.
-- ~~**Palette size and theme-independence.**~~ **Answered.** Live 12.4.3 reports 70
-  colors, all distinct, row-major across the 14 × 5 grid in its own color picker —
-  verified against a screenshot of it. The theme `.ask` files carry no clip colors, so the
-  palette looks theme-independent and the cache needs no theme key. Values are recorded in
-  [`bridge/README.md`](bridge/README.md). Deriving it needs a **clip**: `Scene.color_index`
-  and `Track.color_index` are documented nullable and Max's LiveAPI can read but not write
-  an optional property.
-- **Write-path addressing.** `apply` still resolves a path string per op — same cost
-  class as the old slot scan. Needs an id cache from the last snapshot, plus
-  staleness handling.
-- **Launching, and play state, against a real set.** `playback` and `watch_play` in
-  `lom.ts` are entirely unverified — no automated coverage reaches them. Three specific
-  unknowns: whether `2 × trackCount` observers stay cheap while a set is rolling, whether
-  `Task.schedule(0)` really defers (if it fires synchronously, coalescing degrades to one
-  message per callback rather than breaking), and whether `ClipSlot.fire`'s optional
-  `launch_quantization` arg can be passed through Max's `call()` — that's the
-  non-destructive route to instant audition, and until it's confirmed, firing respects the
-  set's global `clip_trigger_quantization`.
-- **Whether `begin_undo_step` captures LOM writes.** It and `end_undo_step` exist in Live
-  12.4.3's binary and are documented nowhere — see [`bridge/LOM.md`](bridge/LOM.md). Scene
-  reordering wraps itself in them, which is the only thing standing between a mis-drag and
-  unrecoverable work, since our own undo cannot rebuild a deleted scene. If they turn out
-  to be inert, reordering needs a pending-changes review in front of it rather than
-  writing on drop.
-- **Cross-session clip identity.** Clips have no stable id in the LOM. Addressed
-  within a session by `(track, scene)`; persisting our own metadata across restarts
-  is unsolved for clips. **Answered for scenes**, and the answer generalises: put the
-  metadata in the name. A role is a `[CHORUS]` tag in the scene's own name, which needs
-  no id because the name *is* the record — it survives a restart, travels with the
-  `.als`, and is visible in Live. See [`core/README.md`](core/README.md).
-
-## Where this is going
-
-MVP was set management: bulk naming and coloring, with clip and scene launching so you can
-hear what you're labelling. That works, and every convention it applies still lives in
-someone's head and gets re-typed per selection.
-
-The direction is to define the conventions **outside** the current state of the set, map
-the set against them once, and thereafter re-derive the mapping by reversing the naming
-convention.
-
-```
-library (songs)              ─┐
-scheme  (patterns, rules)    ─┼─→ desired state ──┐
-mapping (scene → song, role) ─┘                   ├→ diff → apply
-snapshot (what Live holds) ───────────────────────┘
-                 ↑                           │
-                 └──── re-derived by reversing ────┘
-                       the naming convention
-```
-
-The mapping needs a human once. After the first apply the names **are** the mapping, so
-they read back on every later snapshot — no stable ids anywhere, nothing to lose, and a
-`.als` on the gig laptop stays fully self-describing.
-
-### Three layers, and what each owns
-
-| | lives | authoritative for |
-|---|---|---|
-| **Library** | one global file, outlives any `.als` | what a song *is* — bpm, key. Plus the role vocabulary (`roles.json`) |
-| **Scheme** | one global file | patterns and rules — how a name is spelled, what color a clip gets |
-| **Mapping** | **in the set**, in the scene names | which scene is which song and role |
-
-### The decisions behind it
-
-**Mapping is derived; facts are declared.** Which scene belongs to which song is always
-read out of the set. What a song *is* belongs to the library. A song is seeded from the
-set the first time it's seen; after that a set that disagrees is drift. Without that split
-the scheme is a suggestion rather than a convention, and lint has nothing to say.
-
-**The library is global and only grows.** It outlives any one `.als` — you have a library
-of songs and a given set contains some of them. Derivation unions into it. Same shape as
-`roles.json`, and it dodges the fact that we can't reliably identify which set is open.
-
-**A song is a label, not a range** — whatever scenes carry its name, wherever they sit. A
-reprise sixty scenes later is the same song for free. Boundaries are computed; a song in
-two blocks is a lint line, not an error.
-
-**Song identity is the name text, and a rename is atomic** — renaming in the library
-rewrites its scenes in the same operation, because at that moment we still know which
-scenes were attached.
-
-**Patterns are configurable but must be reversible.** At most one free-text token unless a
-non-whitespace literal separates them. The rules, and why ambiguity splits into fatal and
-resolvable, are in [`core/README.md`](core/README.md).
-
-The convention this writes today is `[ROLE] @{bpm}-{key} {SONG}` — `[CHORUS] @128-Bm
-NIGHTFALL`. Role first so a column of scene names reads as structure; `@` and `-` are the
-only punctuation the facts need, because after an `@` a digit is a tempo and a letter is a
-key. **A convention change can't be a clean break**, since the mapping *is* the names — so
-derivation reads more than one pattern and a set converts scene by scene as it's renamed.
-
-**bpm is not like the other tokens.** It's the one fact with a home in Live —
-`Scene.tempo` — and writing it changes how the set plays. See
-[`bridge/README.md`](bridge/README.md) for the `tempo_enabled` ordering.
-
-**Clip color is layered rules, first match wins**, so you can reason about why a clip is
-the color it is, and lint can report what matched nothing.
-
-### What's left
-
-The song library, then the scheme file, then desired-state + diff, a pending-changes
-review, and lint. Tracks stay read-only for now — their rules key off something other than
-the song, and `ApplyOp` can't address a track yet.
-
-The pending-changes review has a second customer now: **scene reordering writes on drop**,
-which is the one write no undo of ours can reverse. Staging a reorder alongside the rest
-of a diff is the obvious home for it.
-
-Setlist reordering used to be excluded on the grounds that the LOM has no scene-move API.
-The premise is right — verified in both sources, see [`bridge/LOM.md`](bridge/LOM.md) — but
-the conclusion was wrong. `ClipSlot.duplicate_clip_to` makes build-then-delete precise
-rather than wholesale, so **dragging a song header now moves that whole run of scenes**.
-It's still the one operation that can damage a set; what that costs and what guards it is
-under *Reordering scenes* in [`bridge/README.md`](bridge/README.md).
-
-Two workflows now act on **every song at once**, from the scene column's header: a running
-order you push around before committing to it, and coloring every song from a rule — by
-key, by bpm, rainbow or random. Both are a free draft, a preview of the exact write, and one
-button. The reorder is one plan and one message however many songs moved, which is what
-keeps it a single entry in Live's history; the color rules are the first piece of the
-scheme that actually ships. See [`ui/README.md`](ui/README.md) and
-[`core/README.md`](core/README.md).
+MIT. See [LICENSE](LICENSE).

@@ -1,8 +1,12 @@
 # CLAUDE.md
 
-Read [`README.md`](README.md) first — it's a table of contents. Then read the README
-of the module you're about to touch. They exist because most of the constraints in
-this project are non-obvious and expensive to rediscover.
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first — it's the table of contents. Then read
+the README of the module you're about to touch. They exist because most of the constraints
+in this project are non-obvious and expensive to rediscover.
+
+[`README.md`](README.md) is for users, not for you: what the app is, install, build. Keep
+it that way — architecture and rules go in `CONTRIBUTING.md`, planned work goes in
+[Issues](../../issues).
 
 | touching | read |
 |---|---|
