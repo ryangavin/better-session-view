@@ -133,6 +133,16 @@ td.cell.fired {
   animation: bsv-blink 0.5s infinite;
 }
 
+/* Keyboard movement scrolls the active cell into view with `block: 'nearest'`,
+   which parks it at the very top of the scroll box — underneath the sticky
+   header, which is painted over it. `scroll-margin-top` reserves the header's
+   height plus the 2px it sticks at, so "nearest" means nearest *visible*.
+   Grew from a rough edge into a real one when the header got taller. */
+td.cell,
+td.scene {
+  scroll-margin-top: calc(var(--header-h) + 2px);
+}
+
 td.cell {
   width: var(--col-w);
   max-width: var(--col-w);

@@ -85,3 +85,26 @@ export const IconStopClips = () => (
     <line x1="6.8" y1="17.2" x2="17.2" y2="6.8" />
   </svg>
 );
+
+/**
+ * A group track's fold control — Live's circled chevron.
+ *
+ * The chevron alone was a bare `▸`/`▾`, which reads as an ordinary disclosure
+ * arrow and left "is this column a group?" to be inferred from the color band.
+ * The ring is what makes it a *badge*: at a glance down the header row, the
+ * group tracks are the ones wearing one.
+ *
+ * Smaller than the header glyphs and drawn heavier to compensate — 2.4 on the
+ * 24-grid at 11px lands near 1.1 device pixels, where BASE's 1.8 would come out
+ * thin enough to shimmer against a saturated track color.
+ */
+export const IconGroupFold = ({ folded }: { folded: boolean }) => (
+  <svg {...BASE} width={11} height={11} strokeWidth={2.4}>
+    <circle cx="12" cy="12" r="9.6" />
+    {folded ? (
+      <polyline points="10.2 7.8 14.4 12 10.2 16.2" />
+    ) : (
+      <polyline points="7.8 10.2 12 14.4 16.2 10.2" />
+    )}
+  </svg>
+);

@@ -875,6 +875,18 @@ The rule used to be a header row of spanning cells carrying the group's name; a 
 track carries its own name now, so that row was repeating a word the column already had.
 Nesting falls out of it — a group inside another opens its own run, in its own color.
 
+The band is deliberately heavy — 5px above, 3px closing it below — because a group and
+its tracks are usually near-neighbours in Live's palette, a green group over light-green
+tracks, and a hairline rule lost that argument every time. The header grew to fit rather
+than the label shrinking; 9px uppercase mono is already the floor. `--band-top`,
+`--band-bottom` and `--header-h` are written as one calculation in `ClipGrid.css`, and
+the padding that produces the height is written from the same variables, so the two
+can't drift.
+
+A group track also wears **Live's circled chevron** rather than a bare `▸`. The ring is
+the part that matters: a plain chevron reads as an ordinary disclosure arrow, and the
+badge is what makes group tracks findable at a glance down the header row.
+
 Live draws that rule as **one unbroken bar** across the group. Ours is still a segment
 per column: the gaps are `border-spacing`, which the sticky header already paints into,
 and bridging them is a separate problem from the color being bridged.

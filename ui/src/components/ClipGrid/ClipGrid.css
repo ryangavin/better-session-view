@@ -10,6 +10,24 @@ table.grid {
   border-collapse: separate;
   border-spacing: 2px;
   table-layout: fixed;
+
+  /* The group band's weight, and the header height that follows from it.
+     A group and its tracks are often near-neighbours in Live's palette — a
+     green group over light-green tracks — and at 2px the band lost that
+     argument every time. It's thick enough now to read as the group's color
+     rather than as an edge on the track's, and it's closed at the bottom, so a
+     run is bracketed rather than just topped.
+
+     The header grew to fit rather than the label shrinking: 9px uppercase mono
+     is already the floor. Stated here as its parts so `--header-h` can't drift
+     from the padding that produces it — the label sits `+2px` clear of each
+     band. */
+  --band-top: 5px;
+  --band-bottom: 3px;
+  /* The cap on the left end of a run, so two adjacent groups read as two. */
+  --band-side: 3px;
+  --label-h: 13px;
+  --header-h: calc(var(--band-top) + var(--label-h) + var(--band-bottom) + 4px);
 }
 /* Widths live on the columns, not the header cells: the song header's notice
    cell uses colSpan, and a spanning cell would otherwise have to distribute its
@@ -32,18 +50,20 @@ table.grid col.scene-col {
  *
  * The 2px band that opens above is plugged by this rule's own third shadow.
  *
- * Height is `line-height + padding-bottom` and nothing else: 13 + 2. The bulk
- * buttons are sized to match rather than the other way around. */
+ * Height is `--header-h`, which is the two band widths plus the label's
+ * line-height plus 2px of clearance either side — see `table.grid` above. The
+ * padding here is what actually produces it, so the two are written from the
+ * same variables. The bulk buttons are sized to the label, not the row. */
 table.grid th {
   font-family: var(--mono);
   font-size: 9px;
-  line-height: 13px;
+  line-height: var(--label-h);
   letter-spacing: 0.1em;
   color: var(--dim2);
   text-transform: uppercase;
   font-weight: 400;
   text-align: center;
-  padding: 0 2px 2px;
+  padding: calc(var(--band-top) + 2px) 2px calc(var(--band-bottom) + 2px);
   position: sticky;
   top: 2px;
   background: var(--bg);
@@ -104,29 +124,37 @@ button.bulk {
 /* A group's extent, which used to be a header row of spanning cells above the
    track names. A group track carries its own name in the header now, so a
    second row repeating that word said nothing the column didn't. What the span
-   row did carry was *how far the group reaches*, and that survives as a rule in
-   the group's color along the top of every column in the run.
+   row did carry was *how far the group reaches*, and that survives as rules in
+   the group's color above and below every column in the run.
 
-   Drawn as a shadow rather than a border: `border-top` would be inside the
-   cell's box and would have to come out of the 13px line-height, which the
-   sticky offsets above are measured against. An inset shadow costs no height.
+   Drawn as inset shadows rather than borders: a border is inside the cell's box
+   and would come out of the label's line-height, where these ride in the
+   padding that was widened for them. Several insets compose, which is what lets
+   the top, bottom and left caps be three separate statements.
 
    The ring in `--bg` on the sides is what the group row's used to do — it
    plugs the 2px `border-spacing` gutters so a body row scrolling underneath
    doesn't show through them. */
 table.grid th.banded {
   box-shadow:
-    inset 0 2px 0 var(--band),
+    inset 0 var(--band-top) 0 var(--band),
+    inset 0 calc(-1 * var(--band-bottom)) 0 var(--band),
     -2px 0 0 var(--bg),
     2px 0 0 var(--bg),
     0 -2px 0 var(--bg),
     0 8px 14px -4px var(--shadow-edge);
 }
 /* Capped at the left where a run starts, so two adjacent groups read as two.
-   The gutter is only 2px, and without this their bands meet across it. */
+   The gutter is only 2px, and without this their bands meet across it.
+
+   Not only the group's own column: a run also starts where a parent's band
+   resumes after a nested group has interrupted it, and there the cap is the
+   only thing separating the two. */
 table.grid th.banded.band-start {
   box-shadow:
-    inset 2px 2px 0 var(--band),
+    inset var(--band-side) 0 0 var(--band),
+    inset 0 var(--band-top) 0 var(--band),
+    inset 0 calc(-1 * var(--band-bottom)) 0 var(--band),
     -2px 0 0 var(--bg),
     2px 0 0 var(--bg),
     0 -2px 0 var(--bg),
@@ -145,11 +173,22 @@ table.grid th.group-h {
 table.grid th.group-h:hover {
   filter: brightness(1.15);
 }
+/* The fold badge. Boxed to exactly the label's line-height and aligned to the
+   top of it, so an 11px glyph on a 13px line can't grow the line box — the
+   header's height is a calculation (`--header-h`), and anything that quietly
+   adds a pixel here puts every cell's `scroll-margin-top` out with it. Centred
+   inside that box rather than sat on the baseline, which the ring needs: it has
+   no baseline of its own the way a chevron glyph did.
+
+   Inherits the header's `inkOn` color, so it stays legible on any track color
+   without being told which one it's on. */
 table.grid th.group-h .fold {
-  display: inline-block;
-  width: 8px;
-  margin-right: 2px;
-  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  height: var(--label-h);
+  vertical-align: top;
+  margin-right: 3px;
+  opacity: 0.85;
 }
 
 /* The group's clip slot. A launcher, not a cell you can select — no hover

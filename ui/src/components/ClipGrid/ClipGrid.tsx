@@ -16,6 +16,7 @@ import type { PlayState } from '../../hooks/useBridge.js';
 import { marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../../hooks/useAnchoredPosition.js';
 import { NO_SHAPES, STOP_FIRED } from './constants.js';
+import { IconGroupFold } from '../Icon.js';
 import { Row } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
 
@@ -225,7 +226,9 @@ export function ClipGrid({
                     else onToggleGroup(c.group.i);
                   }}
                 >
-                  <span className="fold">{c.collapsed ? '▸' : '▾'}</span>
+                  <span className="fold">
+                    <IconGroupFold folded={c.collapsed} />
+                  </span>
                   {c.group.name}
                 </th>
               );
