@@ -12,9 +12,3 @@ export function parseClipKey(key: ClipKey): { t: number; s: number } {
   const [t, s] = key.split(':');
   return { t: Number(t), s: Number(s) };
 }
-
-export function toggle(set: ReadonlySet<ClipKey>, key: ClipKey): Set<ClipKey> {
-  const next = new Set(set);
-  if (!next.delete(key)) next.add(key);
-  return next;
-}

@@ -783,8 +783,8 @@ someone reached for a right-click. `keys.ts` owns that decision.
 
 | | organization (silent) | ⌘ |
 |---|---|---|
-| clip cell | click selects · ⇧ extends a block · ⌥ toggles | ⌘-click **fires the clip** |
-| scene name | click selects the row · ⇧ extends over scenes | ⌘-click **fires the scene** |
+| clip cell | click selects · ⇧ extends a block | ⌘-click **fires the clip** |
+| scene name | click selects the row · ⇧ extends over scenes · **number drags** | ⌘-click **fires the scene** |
 | song header | click folds · title selects · **drag reorders** | — |
 | track header | click a group to collapse | ⌘-click **stops that track** |
 | keys | `↑↓←→` move the active cell | `⌘↑ ⌘↓` **move and fire** · `⌘⏎` fire |
@@ -794,10 +794,16 @@ someone reached for a right-click. `keys.ts` owns that decision.
 replaces an audition *mode*: a sticky toggle you can forget you're in is worse than a
 modifier you're holding.
 
-Two exceptions, both principled. The **▶ in the scene gutter fires on a plain click** —
-firing is the button's only job, and scene launching is the primary gesture so it has to
-be visible rather than a modifier away. And **⌥, not ⌘, adds to the selection**, inverting
-the usual macOS idiom, because ⌘ is spoken for above and launching earns the scarcer key.
+Two plain-click exceptions, both for the same principled reason: firing is the button's
+only job. The **▶ in the scene gutter** fires the scene, and the **▶ in a group's slot**
+fires the group — scene launching is the primary gesture and has to be visible rather
+than a modifier away, and a group slot has no selection for a modifier to protect.
+
+**⌥ means nothing on a click.** It used to add to the selection, which is what ⇧ already
+does — extending a selection *is* adding to it, and a second key for the same idea only
+made the first look incomplete. There are two selection gestures now, not three. What
+went with it is toggling one cell back out of a selection; ⇧ can shrink a block by
+re-extending it, so the loss is a cell at a time rather than a range.
 
 ## Selection, and the active cell
 

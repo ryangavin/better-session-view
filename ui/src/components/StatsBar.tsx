@@ -44,7 +44,7 @@ export function StatsBar({
       <div className="spacer" />
       <div className="keyhint">
         <b>{LAUNCH_KEY}</b>-click / <b>{LAUNCH_KEY}</b>-↑↓ fires · <b>⇧</b> extends ·{' '}
-        <b>⌥</b> adds · <b>esc</b> stops clips · <b>{LAUNCH_KEY}Z</b> undoes
+        <b>esc</b> stops clips · <b>{LAUNCH_KEY}Z</b> undoes
       </div>
       <a
         className="repository-link"

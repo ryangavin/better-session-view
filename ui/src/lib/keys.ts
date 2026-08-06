@@ -25,27 +25,24 @@ export function isLaunchModified(e: Modifiers): boolean {
   return IS_MAC ? e.metaKey : e.ctrlKey;
 }
 
-/**
- * Add to the selection rather than replacing it. ⌥ rather than the usual ⌘,
- * because ⌘ is spoken for above — launching is the scarcer, more valuable
- * gesture on this grid.
- */
-export function isAddModified(e: { altKey: boolean }): boolean {
-  return e.altKey;
-}
-
 export interface CellClick {
   /** True when the click carried the launch modifier — see LAUNCH_KEY above. */
   launch: boolean;
   /** Extend the selection from the active cell. */
   extend: boolean;
-  /** Add to the selection instead of replacing it. */
-  add: boolean;
 }
 
-/** A mouse click's modifiers, read into the grid's own vocabulary. */
-export function mods(e: Modifiers & { shiftKey: boolean; altKey: boolean }): CellClick {
-  return { launch: isLaunchModified(e), extend: e.shiftKey, add: isAddModified(e) };
+/**
+ * A mouse click's modifiers, read into the grid's own vocabulary.
+ *
+ * ⌥ is deliberately absent. It used to mean "add to the selection", which is
+ * what ⇧ already does — extending a selection *is* adding to it, and a second
+ * key for the same idea only made the first one look incomplete. Freeing it
+ * leaves the grid two selection gestures instead of three, and leaves ⌥ to mean
+ * one thing during a drag rather than something else during a click.
+ */
+export function mods(e: Modifiers & { shiftKey: boolean }): CellClick {
+  return { launch: isLaunchModified(e), extend: e.shiftKey };
 }
 
 /**

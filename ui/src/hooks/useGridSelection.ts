@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cellsInBlock, type ActiveCell } from '../../../core/src/gridRange.js';
-import { clipKey, toggle } from '../lib/selection.js';
+import { clipKey } from '../lib/selection.js';
 import type { CellClick } from '../lib/keys.js';
 import type { BridgeState } from './useBridge.js';
 
@@ -20,8 +20,10 @@ interface Args {
 /**
  * The clip selection, the scene selection, and the active cell.
  *
- * Plain click replaces, shift extends a block from the active cell, ⌥ toggles.
- * ⌥ rather than the usual ⌘ because ⌘ means "fire this" everywhere in the app.
+ * Plain click replaces; ⇧ extends a block from the active cell. Those are the
+ * only two, and ⌘ is not among them — it means "fire this" everywhere in the
+ * app, which is the rule that keeps a grid full of clips safe to click around
+ * in while you're labelling it.
  *
  * Blocks only ever pick up cells that hold a clip. An empty slot has no name
  * and no color, so sweeping over 4,000 of them would make the Selected count
@@ -56,13 +58,9 @@ export function useGridSelection({
     setActive(next);
   }, []);
 
-  const selectCells = useCallback(
-    (cells: Array<{ t: number; s: number }>, add: boolean) => {
-      const keys = cells.map((c) => clipKey(c.t, c.s));
-      setSelected((prev) => (add ? new Set([...prev, ...keys]) : new Set(keys)));
-    },
-    [],
-  );
+  const selectCells = useCallback((cells: Array<{ t: number; s: number }>) => {
+    setSelected(new Set(cells.map((c) => clipKey(c.t, c.s))));
+  }, []);
 
   const onClip = useCallback(
     (t: number, s: number, m: CellClick) => {
@@ -71,16 +69,11 @@ export function useGridSelection({
 
       const from = activeRef.current;
       setSelectedScenes(EMPTY_SCENES);
-      if (m.add) {
-        setSelected((prev) => toggle(prev, clipKey(t, s)));
-        goActive({ on: 'clip', t, s });
-        return;
-      }
       if (m.extend && from?.on === 'clip') {
-        selectCells(cellsInBlock(trackColumns, rows, from, { t, s }, isOccupied), false);
+        selectCells(cellsInBlock(trackColumns, rows, from, { t, s }, isOccupied));
         return;
       }
-      selectCells([{ t, s }], false);
+      selectCells([{ t, s }]);
       goActive({ on: 'clip', t, s });
     },
     [goActive, isOccupied, launch, openRail, rows, selectCells, trackColumns],
@@ -107,7 +100,6 @@ export function useGridSelection({
               isOccupied,
             )
           : [],
-        m.add,
       );
       // Scene selection tracks the same gesture but is kept independently, and
       // spans the whole range rather than only the scenes that held a clip —
@@ -117,7 +109,7 @@ export function useGridSelection({
       const lo = Math.min(firstScene, s);
       const hi = Math.max(firstScene, s);
       const run = rows.filter((i) => i >= lo && i <= hi);
-      setSelectedScenes((prev) => (m.add ? new Set([...prev, ...run]) : new Set(run)));
+      setSelectedScenes(new Set(run));
       if (!m.extend) goActive({ on: 'scene', s });
     },
     [goActive, isOccupied, launch, openRail, rows, selectCells, trackColumns],
@@ -154,7 +146,6 @@ export function useGridSelection({
               trackColumns.flatMap((t) => (isOccupied({ t, s }) ? [{ t, s }] : [])),
             )
           : [],
-        false,
       );
       if (scenes.length > 0) goActive({ on: 'scene', s: scenes[0]! });
     },
