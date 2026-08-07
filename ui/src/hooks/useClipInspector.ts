@@ -48,6 +48,7 @@ export function useClipInspector({
         scene,
         role: roleIn(scene) ?? undefined,
         song: title.song || undefined,
+        tag: title.tag || undefined,
         bpm: title.bpm || undefined,
         key: title.key || undefined,
         name: clips.get(clipKey(t, s))?.name,

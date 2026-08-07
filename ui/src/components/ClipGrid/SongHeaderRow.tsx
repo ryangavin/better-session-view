@@ -152,17 +152,34 @@ export const SongHeaderRow = memo(function SongHeaderRow({
         <span className={`bpm${header.bpm === '' ? ' none' : ''}`}>{header.bpm || '---'}</span>
         <span className={`key${header.key === '' ? ' none' : ''}`}>{header.key || '--'}</span>
       </span>
-      <button
-        type="button"
-        className="song"
-        title={`Work on ${header.song} — selects every scene of it`}
-        onClick={(e) => {
-          e.stopPropagation();
-          onPickSong(header.songKey);
-        }}
-      >
-        {header.song}
-      </button>
+      {/* Name and tag share one constrained identity slot. Keeping the pill
+          inside it matters when the song is open: the header spans the whole
+          table, but its identity still belongs entirely to the scene column. */}
+      <span className="song-identity">
+        <button
+          type="button"
+          className="song"
+          title={`Work on ${header.song} — selects every scene of it`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPickSong(header.songKey);
+          }}
+        >
+          {header.song}
+        </button>
+        {header.tag !== '' && (
+          <span
+            className={`song-tag${header.tagClash ? ' clash' : ''}`}
+            title={
+              header.tagClash
+                ? `This song's scenes disagree: ${header.tag}`
+                : `song tag: ${header.tag}`
+            }
+          >
+            {header.tag}
+          </span>
+        )}
+      </span>
       {/* Only worth saying when there is more than one — a song in two runs is
           a reprise, or it's two different songs sharing a name. Folded, it
           shortens to `2/2`: it has to share the scene column with the shape,

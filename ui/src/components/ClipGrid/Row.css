@@ -12,6 +12,15 @@ td.scene {
   text-overflow: ellipsis;
   cursor: pointer;
 }
+/* A real layout row rather than adjacent inline boxes. Inline whitespace was
+   enough to push the right-aligned tag outside the fixed table cell, where the
+   cell turned it into an ellipsis. Flex gives that remaining width explicitly. */
+td.scene .scene-line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
 /* The scene number, and the grip that moves the scene. The cell around it
    already means "select" and ⇧ already means "extend", so the row can't be the
    handle without one gesture stealing from the other. `grab` is the only thing
@@ -19,8 +28,7 @@ td.scene {
    carrying a fire button, a role chip and a name. */
 td.scene .scene-n {
   color: var(--dim2);
-  display: inline-block;
-  min-width: 26px;
+  flex: 0 0 26px;
   cursor: grab;
 }
 td.scene .scene-n:active {
@@ -44,20 +52,35 @@ tr.scene-row.drop-above td {
 tr.scene-row.drop-below td {
   box-shadow: inset 0 -2px 0 var(--amber);
 }
-td.scene .unnamed {
-  color: var(--fg-faint);
+/* The first piece of scene metadata, matching the key slot in song headers.
+   Fixed width and right alignment make Bm / F#m share an edge down the grid;
+   the storage-only `@` stays out of the rendered value. */
+td.scene .scene-key {
+  flex: 0 0 28px;
+  margin-right: 8px;
+  color: var(--dim2);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: 1px;
+}
+td.scene .scene-key.none {
+  color: var(--dim2);
 }
 
 /* The role, lifted out of the scene name. Live holds "Nightfall [chorus]"; we
-   show the title and paint the tag, which is the point of storing it there.
+   paint the role while the song header owns the name, which is the point of
+   storing both in a name we can parse back.
 
    It's a `<button>` — it opens the role menu — so the global button rule has to
    be undone here: its border, padding and font all belong to the chip, not to
-   the rail's buttons. Scoped to the scene column: a scene shows one role and
-   has room to name it. A folded song shows all of them at once and doesn't —
-   see `.role-tile`. */
+   the rail's buttons. Scoped to the scene column: a scene shows one role,
+   while a folded song summarizes its roles as full-width bands. */
 td.scene .role-chip {
   display: inline-block;
+  flex: none;
   border: none;
   font-family: var(--mono);
   /* The gutter sits on the right, between the chip and the title: the chip is
@@ -112,6 +135,32 @@ td.scene .role-chip.uncolored {
   border: 1px dashed var(--bd3);
   color: var(--dim2);
   line-height: 12px;
+}
+
+/* Song metadata takes whatever remains after the fixed controls. Its contents
+   justify right, matching the header identity's right edge above it. */
+td.scene .song-tag-slot {
+  display: flex;
+  flex: 1 1 0;
+  justify-content: flex-end;
+  min-width: 0;
+  vertical-align: 1px;
+}
+/* It follows the song's scene color, but inverts the role treatment:
+   transparent fill, colored outline and matching text. */
+td.scene .song-tag-chip {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--dim2);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 1px;
 }
 
 /* Scenes picked *as scenes* — what a role assignment would write to. Distinct

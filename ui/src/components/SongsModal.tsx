@@ -77,6 +77,7 @@ export function SongsModal({
                   <th className="n">scenes</th>
                   <th>bpm</th>
                   <th>key</th>
+                  <th>tag</th>
                   <th>tempo</th>
                   <th />
                 </tr>
@@ -91,6 +92,9 @@ export function SongsModal({
                     </td>
                     <td>
                       <Observed values={song.observed.key} />
+                    </td>
+                    <td>
+                      <Observed values={song.observed.tag} />
                     </td>
                     <td>
                       <Observed values={song.observed.tempo} />

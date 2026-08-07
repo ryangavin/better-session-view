@@ -141,7 +141,7 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
           <div className="order-rows">
             {shown.map((p, i) => {
               const song = songs.get(p.songKey);
-              const facts = song ? songFacts(song) : { bpm: '', key: '' };
+              const facts = song ? songFacts(song) : { bpm: '', key: '', tag: '' };
               const runs = song?.blocks.length ?? 1;
               return (
                 <div
@@ -196,6 +196,7 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
                     </span>
                   </span>
                   <span className="song">{song?.name ?? p.songKey}</span>
+                  {facts.tag !== '' && <span className="song-tag">{`{${facts.tag}}`}</span>}
                   <span className="count">
                     {p.scenes.length} scene{p.scenes.length === 1 ? '' : 's'}
                   </span>

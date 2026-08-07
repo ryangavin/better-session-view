@@ -57,6 +57,7 @@ export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScene
     () =>
       titleOps(scenesForOps, sceneList, {
         song: titlePatch.song,
+        tag: titlePatch.tag,
         key: titlePatch.key,
       }),
     [sceneList, scenesForOps, titlePatch],

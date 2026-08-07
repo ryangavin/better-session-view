@@ -16,7 +16,7 @@
 .field.bad input[type='text'] {
   border-color: var(--red);
 }
-/* bpm and key are short and always set together, so they share a row. */
+/* The compact song facts share a row beneath the title. */
 .field-row {
   display: flex;
   gap: 8px;
@@ -56,4 +56,3 @@
 .chip.clear {
   color: var(--dim2);
 }
-

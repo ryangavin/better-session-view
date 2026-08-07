@@ -623,21 +623,32 @@ because naming a song and tagging its roles is the pass you make before touching
 individual clips, and the swatch grid below is the fallback for everything a role
 doesn't cover.
 
-A scene name is `[ROLE] @{key} {SONG}` — `[CHORUS] @Bm NIGHTFALL`. BPM lives on the
-scene's own `Scene.tempo` property instead. The panel edits all three pieces and they
+A scene name is `[ROLE] {TAG} @{key} {SONG}` —
+`[CHORUS] {COVER} @Bm NIGHTFALL`. The tag is optional and open-ended; `COVER`, `ORIGINAL`
+and `JAM` are suggestions rather than a fixed vocabulary. BPM lives on the scene's own
+`Scene.tempo` property instead. The panel edits all four pieces and they
 **commit differently, on purpose**: a role writes on click, a title edit and a tempo
 edit each have their own button. See below for why.
 
-**Role first, key second, name last**, so a column of scene names reads as structure
-rather than as a list of titles. Live's own scene column is narrow, so the trade is that
-*there* the song name truncates before the metadata does; here it doesn't, because the
-grid lifts the role into a chip. Why the key needs only `@` while the role keeps its
-brackets is in [`core/README.md`](../core/README.md).
+**Role first, song tag and key next, name last**, so a column of scene names reads as
+structure rather than as a list of titles. Live's own scene column is narrow, so the
+trade is that *there* the song name truncates before the metadata does; here it doesn't,
+because the grid lifts the role into a chip. Why the facts have distinct delimiters is in
+[`core/README.md`](../core/README.md).
 
-**The chip leads the row, ahead of the name.** Everything to the left of the title is then
-a fixed width — fire button, scene number, chip — so a column of scene names starts on one
-vertical line and the roles beside them are a column of their own. Same reasoning as the
-song header's slots: a hundred rows of this is a table, and a table has columns.
+**The key leads the rendered metadata**, without the storage-only `@`, in the same
+fixed-width, right-aligned slot used by song headers. Fire button, scene number, key and
+role chip keep fixed widths, so the metadata reads as columns. The song name is not
+repeated on each scene: the header already owns it, and every child scene necessarily
+belongs to that same song.
+
+When present, the song tag follows the role as an inverted pill: its fill is transparent,
+while its outline and text use the scene's song color. The role remains the solid
+structural marker; `COVER` / `ORIGINAL` reads as separate song metadata rather than a
+second role. The header uses the same pill, constrained together with the song name inside
+the scene column even while the song is expanded. Both header and scene pills are
+right-aligned to that column's content edge, so their right edges form one vertical line
+through the whole expanded song.
 
 - **One width for every role.** `[JAM1]` weighs the same as `[PRACTICE]`, which it does.
   Longer names ellipsis and the tooltip spells them out.
@@ -661,16 +672,17 @@ than one convention* in [`core/README.md`](../core/README.md).
 
 ### The title fields
 
-Three fields, and the rule is **a field you leave alone stays as it is on each scene; a
+Four fields, and the rule is **a field you leave alone stays as it is on each scene; a
 field you clear is cleared.** That's what makes "select two songs, set one shared key"
 work without flattening their different names. It can't come from the value alone —
 blank means "these scenes disagree" on arrival and "delete this part" once you've
 deleted it — so `useSceneTitles` holds a `TitlePatch` of which fields have been
 *touched*, reset whenever the selection changes. The preview line is what makes the rule legible; keep it.
 
-Song and key prefill from `commonTitle`; BPM comes from `Scene.tempo`, with older names
-used only as a migration fallback. A mixed field shows a `mixed` placeholder rather than
-one scene's answer. BPM and key are validated inline against their respective actions.
+Song, tag and key prefill from `commonTitle`; BPM comes from `Scene.tempo`, with older
+names used only as a migration fallback. A mixed field shows a `mixed` placeholder rather
+than one scene's answer. Tag, BPM and key are validated inline against their respective
+actions.
 
 ### Roles
 
@@ -678,7 +690,7 @@ The gesture is **click a scene name, click a role, click Color clips.** The role
 written to the front of the scene's own name as `[ROLE]` (see
 [`core/README.md`](../core/README.md) for why the set is the storage), and the grid shows
 the title with the tag lifted out into a colored chip — so Live holds
-`[CHORUS] @Bm NIGHTFALL` and we render `@Bm NIGHTFALL · CHORUS`.
+`[CHORUS] {COVER} @Bm NIGHTFALL` and we render `{COVER} @Bm NIGHTFALL · CHORUS`.
 
 **Clicking a role writes immediately, which only looks like it breaks the rule above.**
 That rule exists because a rename overwrites a name you can no longer see. A role tag is

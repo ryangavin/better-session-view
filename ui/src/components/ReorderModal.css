@@ -35,6 +35,12 @@
 .order-row .x:hover:not(:disabled) {
   color: var(--fg);
 }
+.order-row .song-tag {
+  color: var(--dim2);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  flex: none;
+}
 
 /* Something the write will do that nobody asked it to — a reprise gathered
    into one run — or the fact that it can't be taken back. Marked rather than
@@ -46,4 +52,3 @@
   border-left: 2px solid var(--amber);
   padding-left: 8px;
 }
-

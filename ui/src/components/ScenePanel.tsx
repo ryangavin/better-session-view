@@ -1,7 +1,8 @@
 import { hex } from '../../../core/src/color.js';
 import './ScenePanel.css';
 import { roleKey, type Role } from '../../../core/src/roles.js';
-import { isBpm, isKey, type TitlePatch } from '../../../core/src/sceneTitle.js';
+import { isBpm, isKey, isTag, type TitlePatch } from '../../../core/src/sceneTitle.js';
+import { SUGGESTED_SONG_TAGS } from '../../../core/src/songTags.js';
 import { SwatchGrid } from './SwatchGrid.js';
 
 interface Props {
@@ -14,7 +15,7 @@ interface Props {
    * What the selected scenes agree on, per field; `null` where they differ.
    * The title fields prefill from this.
    */
-  common: { song: string | null; bpm: string | null; key: string | null };
+  common: { song: string | null; tag: string | null; bpm: string | null; key: string | null };
   /**
    * Which title fields have been edited.
    *
@@ -59,7 +60,7 @@ interface Props {
 
 /**
  * Everything that acts on the scenes picked in the scene-name column: the
- * name — `@{key} {SONG}` — its Scene.tempo, and the role tag that leads it.
+ * name — `{TAG} @{key} {SONG}` — its Scene.tempo, and the role tag that leads it.
  *
  * The two commit differently, on purpose. **Assigning a role writes on click,
  * the way a swatch does**, which only looks like it breaks the Inspector's rule
@@ -97,6 +98,7 @@ export function ScenePanel({
   const currentKey = currentRole === null ? null : roleKey(currentRole);
 
   const shown = (f: keyof TitlePatch) => patch[f] ?? common[f] ?? '';
+  const badTag = shown('tag').trim() !== '' && !isTag(shown('tag'));
   const badBpm = shown('bpm').trim() !== '' && !isBpm(shown('bpm'));
   const badKey = shown('key').trim() !== '' && !isKey(shown('key'));
 
@@ -105,6 +107,7 @@ export function ScenePanel({
     label: string,
     placeholder: string,
     bad = false,
+    transform: (value: string) => string = (value) => value,
   ) => (
     <label className={`field${bad ? ' bad' : ''}`}>
       <span>{label}</span>
@@ -114,7 +117,8 @@ export function ScenePanel({
         placeholder={common[key] === null && sceneCount > 1 ? 'mixed' : placeholder}
         disabled={none || busy}
         spellCheck={false}
-        onChange={(e) => onPatch({ ...patch, [key]: e.target.value })}
+        list={key === 'tag' ? 'song-tags' : undefined}
+        onChange={(e) => onPatch({ ...patch, [key]: transform(e.target.value) })}
       />
     </label>
   );
@@ -132,12 +136,20 @@ export function ScenePanel({
 
       {field('song', 'song', 'Nightfall')}
       <div className="field-row">
+        {field('tag', 'tag', 'COVER', badTag, (value) => value.toUpperCase())}
         {field('bpm', 'bpm', '128', badBpm)}
         {field('key', 'key', 'Bm', badKey)}
       </div>
+      <datalist id="song-tags">
+        {SUGGESTED_SONG_TAGS.map((tag) => (
+          <option key={tag} value={tag} />
+        ))}
+      </datalist>
       <div className="hint">
-        {badBpm || badKey ? (
+        {badTag || badBpm || badKey ? (
           <span className="bad">
+            {badTag ? "tag uses letters, numbers, spaces, &, ' or -" : ''}
+            {badTag && (badBpm || badKey) ? ' · ' : ''}
             {badBpm ? 'bpm is 2–3 digits' : ''}
             {badBpm && badKey ? ' · ' : ''}
             {badKey ? 'key is like Bm, F#m, Eb' : ''}
@@ -145,7 +157,7 @@ export function ScenePanel({
         ) : none ? (
           'Shift-click a second scene name to take a whole song.'
         ) : (
-          'Song and key rename scenes. BPM writes Scene.tempo with the button below.'
+          'Song, tag and key rename scenes. BPM writes Scene.tempo with the button below.'
         )}
       </div>
       {titlePreview !== null && (
@@ -158,7 +170,7 @@ export function ScenePanel({
           instantly-legible action rather than the destructive one. */}
       <button
         type="button"
-        disabled={titleCount === 0 || busy || badKey}
+        disabled={titleCount === 0 || busy || badTag || badKey}
         onClick={onRenameScenes}
       >
         Rename {titleCount} scene{titleCount === 1 ? '' : 's'}

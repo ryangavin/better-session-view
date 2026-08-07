@@ -2,7 +2,8 @@ import { memo, type DragEvent } from 'react';
 import './Row.css';
 import { hex, inkOn, legibleOn } from '../../../../core/src/color.js';
 import { groupSlot } from '../../../../core/src/groupSlot.js';
-import { nameWithoutRole, roleIn, roleKey } from '../../../../core/src/roles.js';
+import { roleIn, roleKey } from '../../../../core/src/roles.js';
+import { titleOf } from '../../../../core/src/sceneTitle.js';
 import type { Column } from '../../../../core/src/trackColumns.js';
 import type { SongHeader } from '../../../../core/src/songRows.js';
 import { clipKey } from '../../lib/selection.js';
@@ -104,11 +105,12 @@ export const Row = memo(function Row({
   const sceneLive = marks !== undefined && marks.indexOf('|p') >= 0;
   const sceneFired = marks !== undefined && marks.indexOf('|f') >= 0;
 
-  // The role is parsed out of the name and shown as a chip, so the grid reads
-  // as "Nightfall · CHORUS" while Live still holds the literal
-  // "Nightfall [chorus]" — which is the whole point of storing it there.
+  // The role is parsed out of the name and shown as a chip. The song header
+  // owns the shared title; child scenes only repeat the metadata that actually
+  // differs from row to row while Live keeps the complete literal name.
   const role = roleIn(scene.name);
-  const title = role === null ? scene.name : nameWithoutRole(scene.name);
+  const metadata = titleOf(scene.name);
+  const { key, tag } = metadata;
   const roleRgb = role === null ? undefined : roleColors.get(roleKey(role));
 
   return (
@@ -145,45 +147,52 @@ export const Row = memo(function Row({
         }
         onClick={(e) => onScene(scene.i, mods(e))}
       >
-        <button
-          type="button"
-          className={`fire${sceneLive ? ' live' : ''}${sceneFired ? ' fired' : ''}`}
-          title={`Fire scene ${scene.i + 1}`}
-          // The row's own click selects; this button only ever fires, so let it
-          // do that on a plain click without breaking the modifier rule.
-          onClick={(e) => {
-            e.stopPropagation();
-            onFireScene(scene.i);
-          }}
-        >
-          ▶
-        </button>
+        <span className="scene-line">
+          <button
+            type="button"
+            className={`fire${sceneLive ? ' live' : ''}${sceneFired ? ' fired' : ''}`}
+            title={`Fire scene ${scene.i + 1}`}
+            // The row's own click selects; this button only ever fires, so let it
+            // do that on a plain click without breaking the modifier rule.
+            onClick={(e) => {
+              e.stopPropagation();
+              onFireScene(scene.i);
+            }}
+          >
+            ▶
+          </button>
         {/* The number is the grip. The cell around it already means "select",
             and ⇧ already means "extend", so the row itself can't be the handle
             without one gesture stealing from the other — where the number is
             inert, sits at a fixed x down the whole column, and is the one part
             of the row that names the position being changed. Clicking it still
             selects: a drag and a click are different gestures. */}
-        <span
-          className="scene-n"
-          draggable
-          title={`Scene ${scene.i + 1} — drag to move it`}
-          onDragStart={(e: DragEvent<HTMLSpanElement>) => {
-            // Firefox refuses to start a drag unless something is set.
-            e.dataTransfer.setData('text/plain', String(scene.i));
-            e.dataTransfer.effectAllowed = 'move';
-            onSceneDragStart(scene.i);
-          }}
-          onDragEnd={onSceneDragEnd}
-        >
-          {scene.i + 1}
-        </span>
-        {/* The role leads, ahead of the name. Everything to the left of the
-            title is then a fixed width — fire button, scene number, chip — so a
-            column of scene names starts on one vertical line and the roles
-            beside them are a column of their own. Same reasoning as the song
-            header's slots: a hundred rows of this is a table, and a table has
-            columns.
+          <span
+            className="scene-n"
+            draggable
+            title={`Scene ${scene.i + 1} — drag to move it`}
+            onDragStart={(e: DragEvent<HTMLSpanElement>) => {
+              // Firefox refuses to start a drag unless something is set.
+              e.dataTransfer.setData('text/plain', String(scene.i));
+              e.dataTransfer.effectAllowed = 'move';
+              onSceneDragStart(scene.i);
+            }}
+            onDragEnd={onSceneDragEnd}
+          >
+            {scene.i + 1}
+          </span>
+        {/* The musical key leads the scene metadata, matching the fixed key
+            slot in song headers. The `@` belongs to the storage syntax, not
+            the value, so the grid shows the clean `Bm` / `F#m` reading. */}
+          <span
+            className={`scene-key${key === '' ? ' none' : ''}`}
+            title={key === '' ? 'No key set for this scene' : `key: ${key}`}
+          >
+            {key || '--'}
+          </span>
+        {/* The role follows the key. Fire button, scene number, key and chip
+            are fixed-width columns; the optional song tag takes the remaining
+            space at the right edge.
 
             A scene with no role gets a pill reading "no role" — same box as a
             real chip, a shade quieter, its text dimmer still. Filled rather
@@ -195,39 +204,49 @@ export const Row = memo(function Row({
             click from a role too. `stopPropagation` for the same reason the
             fire button has it — the cell's own click selects, and pressing the
             chip is not a selection. */}
-        <button
-          type="button"
-          aria-haspopup="menu"
-          className={
-            role === null
-              ? 'role-chip none'
-              : `role-chip${roleRgb === undefined ? ' uncolored' : ''}`
-          }
-          style={
-            role === null || roleRgb === undefined
-              ? undefined
-              : { background: hex(roleRgb), color: inkOn(roleRgb) }
-          }
-          title={
-            role === null
-              ? 'No role — click to tag this scene'
-              : roleRgb === undefined
-                ? `${role} — no color set for this role · click to change`
-                : `role: ${role} · click to change`
-          }
-          onClick={(e) => {
-            e.stopPropagation();
-            const r = e.currentTarget.getBoundingClientRect();
-            onRoleMenu(scene.i, { left: r.left, top: r.top, bottom: r.bottom });
-          }}
-        >
-          {role === null ? 'no role' : role}
-        </button>
-        {title ? (
-          <span style={named ? { color: named } : undefined}>{title}</span>
-        ) : (
-          <span className="unnamed">—</span>
-        )}
+          <button
+            type="button"
+            aria-haspopup="menu"
+            className={
+              role === null
+                ? 'role-chip none'
+                : `role-chip${roleRgb === undefined ? ' uncolored' : ''}`
+            }
+            style={
+              role === null || roleRgb === undefined
+                ? undefined
+                : { background: hex(roleRgb), color: inkOn(roleRgb) }
+            }
+            title={
+              role === null
+                ? 'No role — click to tag this scene'
+                : roleRgb === undefined
+                  ? `${role} — no color set for this role · click to change`
+                  : `role: ${role} · click to change`
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              const r = e.currentTarget.getBoundingClientRect();
+              onRoleMenu(scene.i, { left: r.left, top: r.top, bottom: r.bottom });
+            }}
+          >
+            {role === null ? 'no role' : role}
+          </button>
+        {/* A fixed slot through the scene column's right edge. The pill itself
+            hugs that edge, so COVER and ORIGINAL line up with each other and
+            with the song header regardless of their different widths. */}
+          <span className="song-tag-slot">
+            {tag !== '' && (
+              <span
+                className="song-tag-chip"
+                style={named ? { borderColor: named, color: named } : undefined}
+                title={`song tag: ${tag}`}
+              >
+                {tag}
+              </span>
+            )}
+          </span>
+        </span>
       </td>
       {columns.map((c) => {
         if (c.kind === 'group') {
