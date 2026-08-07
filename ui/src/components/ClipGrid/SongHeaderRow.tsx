@@ -47,7 +47,7 @@ interface SongHeaderRowProps {
    * open: the shape stands in for rows that are on screen anyway.
    */
   shapes: Map<number, TrackShape>;
-  /** roleKey → the RGB its square is painted. Shared with the scene rows' chips. */
+  /** roleKey → the RGB its band is painted. Shared with the scene rows' chips. */
   roleColors: Map<string, number>;
   /** This block is the one being dragged. */
   dragging: boolean;
@@ -290,43 +290,41 @@ export const SongHeaderRow = memo(function SongHeaderRow({
                           : `${used} of ${of} scene${of === 1 ? '' : 's'} of ${header.song}`)
                   }
                 >
-                  {/* The sections of the song this track plays, in order. Not a
-                      density bar: that a track is used is the smaller half of
-                      the question, and "the sparkle pad is in the choruses" is
-                      the half you're actually asking when you're deciding what
-                      to blend into next.
-
-                      Centred, matching the track name above it, and squares of
-                      the same 9px the role marks use everywhere else so the row
-                      reads as one language of tiles. An empty column draws
-                      nothing at all — an absence answers faster than a faint
-                      presence. */}
+                  {/* One slice per scene, in song order. A clip paints its
+                      scene's role color; an empty clip slot stays blank. This
+                      is the whole hidden run compressed into one track cell,
+                      rather than only a list of its distinct roles. An empty
+                      track still draws nothing at all — an absence answers
+                      faster than a faint presence. */}
                   {shape && (
-                    <span className="roles">
-                      {shape.roles.map((r) => {
-                        const roleRgb = roleColors.get(roleKey(r.name));
+                    <span className="role-bands" aria-hidden="true">
+                      {shape.slots.map((slot, i) => {
+                        const roleRgb =
+                          slot?.role === null || slot === null
+                            ? undefined
+                            : roleColors.get(roleKey(slot.role));
+                        const kind =
+                          slot === null
+                            ? ' empty'
+                            : slot.role === null
+                              ? ' untagged'
+                              : roleRgb === undefined
+                                ? ' uncolored'
+                                : '';
                         return (
                           <span
-                            key={roleKey(r.name)}
-                            className={`role-tile${roleRgb === undefined ? ' uncolored' : ''}`}
+                            key={i}
+                            className={`role-band${kind}`}
                             style={
-                              roleRgb === undefined
-                                ? undefined
-                                : { background: hex(roleRgb) }
+                              slot?.role === null
+                                ? { background: hex(UNTAGGED) }
+                                : roleRgb === undefined
+                                  ? undefined
+                                  : { background: hex(roleRgb) }
                             }
                           />
                         );
                       })}
-                      {/* Clips on scenes nobody has tagged yet. Shown, not
-                          dropped: a set mid-mapping is mostly untagged, and a
-                          track used only there still has to read as used or the
-                          header lies about what the song holds. */}
-                      {shape.untagged > 0 && (
-                        <span
-                          className="role-tile"
-                          style={{ background: hex(UNTAGGED) }}
-                        />
-                      )}
                     </span>
                   )}
                 </td>

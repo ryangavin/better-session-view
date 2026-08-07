@@ -252,8 +252,14 @@ tr.song-row td.song-lead {
   overflow: hidden;
 }
 tr.song-row td.fill {
-  padding: 0 3px;
+  position: relative;
+  padding: 0;
   vertical-align: middle;
+}
+/* A folded row is a miniature scene sequence now, so give its slices enough
+   height to remain distinct without turning the song list back into a grid. */
+tr.song-row.collapsed td {
+  height: 36px;
 }
 /* What the tiles give up their space for: a fault to fix, or a move about to
    happen. Both are things you act on, and both outrank a summary of what the
@@ -262,46 +268,40 @@ tr.song-row td.song-notice {
   text-align: right;
 }
 
-/* The song's shape, per track: one square per section that track plays.
+/* The song's shape, per track: one full-width band per scene in the block.
    ------------------------------------------------------------------------
    Which tracks a folded song uses was the first question and the marks answer
    it too — an empty column draws nothing. But "the sparkle pad is in the
    choruses" is the question you're actually asking when you're deciding what
    to blend into next, and a density bar could never answer it.
 
-   Color only, with the names on the cell's tooltip. A hundred folded songs are
-   a page of color signatures, and at that density a word per role is what turns
-   a table of contents into a wall of text — the vocabulary's colors are already
-   doing the naming, which is what they're for. Named chips still belong beside
-   a scene name, where there's one role and room to spell it: see `.role-chip`.
-
-   Centred, matching the track name in the sticky row above, so a column of
-   marks reads as belonging to it. */
-tr.song-row .roles {
+   Color only, with the names on the cell's tooltip. Every scene gets an equal
+   slice in song order: its role color when this track has a clip there, a
+   neutral fill for an untagged clip, or transparent when the clip slot is
+   empty. The result is the hidden run compressed vertically into the header.
+   Named chips still belong beside a scene name, where there's one role and
+   room to spell it: see `.role-chip`. */
+tr.song-row .role-bands {
+  position: absolute;
+  inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 0;
+  flex-direction: column;
   overflow: hidden;
+  pointer-events: none;
 }
-tr.song-row .role-tile {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: var(--radius-xs);
-  /* Dimmed. These are a signature to recognise, not a label to read, and at
-     full strength a row of saturated palette colors shouts louder than the song
-     name beside it. Hovering the row brings them up — that's when you're
-     actually reading one. */
+tr.song-row .role-band {
+  flex: 1 1 0;
+  min-height: 0;
+  /* Slightly dimmed so a page of saturated palette colors stays behind the
+     song names. Hovering the row brings its signature forward. */
   opacity: 0.6;
 }
-tr.song-row:hover .role-tile {
+tr.song-row:hover .role-band {
   opacity: 0.9;
 }
-/* A role tagged in the set that nobody has given a color. Hollow rather than
-   hidden — at 9px a dashed edge is mush, so this one departs from the chip. */
-tr.song-row .role-tile.uncolored {
+/* A role tagged in the set that nobody has given a color. Outlined rather than
+   hidden so an incomplete vocabulary still reads as a present section. */
+tr.song-row .role-band.uncolored {
   box-shadow: inset 0 0 0 1px var(--bd3);
 }
 
