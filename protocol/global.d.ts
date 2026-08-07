@@ -337,6 +337,18 @@ declare namespace BSV {
     /** Developer diagnostic: sweep Live and compare it with the embedded palette. */
     | { id?: number; type: 'palette' }
     /**
+     * Developer diagnostics against a real set — id addressing, `ClipSlot`
+     * color semantics, what Live's selection reports, and what observers cost.
+     *
+     * **Answers go to the Max window, not back over the wire**, so there is no
+     * reply event and nothing in `TERMINAL`. That isn't laziness: every
+     * question here is about what Live does *while you drag something in it*,
+     * and the readout has to be somewhere you can watch without leaving Live.
+     *
+     * Nothing in `ui/` sends this — `tools/diag.ts` does.
+     */
+    | { id?: number; type: 'diag'; what: string; arg?: number }
+    /**
      * Replace the whole role vocabulary. Coarse-grained like everything else:
      * the list is a dozen entries, so there is no per-role message.
      */
