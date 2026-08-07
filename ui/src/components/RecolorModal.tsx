@@ -172,7 +172,7 @@ export function RecolorModal({
         </div>
         <div className="hint">{said}</div>
 
-        {/* Which of Live's 70 a rule may hand out. Eight chosen colors read
+        {/* Which of Live's 70 this set's rules may hand out. Eight chosen colors read
             better across a set than seventy: several of Live's are hard to tell
             apart at the size a scene row draws them, and two bands you can't
             tell apart aren't doing the job the color is there for. */}
@@ -196,7 +196,7 @@ export function RecolorModal({
           </button>
         </div>
         {palette.length === 0 ? (
-          <div className="hint">No palette yet — take a snapshot first.</div>
+          <div className="hint">Built-in palette unavailable — rebuild the app.</div>
         ) : (
           <SwatchGrid
             palette={palette}

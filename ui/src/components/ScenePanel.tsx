@@ -184,7 +184,7 @@ export function ScenePanel({
 
       <div className="lbl">Song color</div>
       {palette.length === 0 ? (
-        <div className="hint">No palette yet — the next snapshot derives it.</div>
+        <div className="hint">Built-in palette unavailable — rebuild the app.</div>
       ) : (
         <>
           <SwatchGrid

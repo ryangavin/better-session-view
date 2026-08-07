@@ -19,8 +19,8 @@ interface Props {
  * The vocabulary editor.
  *
  * Edits a draft and commits on Save, rather than writing per keystroke: every
- * save is a round trip to the bridge and a file write, and a half-typed role
- * name is not something to persist.
+ * save updates the device parameter stored in the Live Set, and a half-typed
+ * role name is not something to persist.
  *
  * Owned by `App` rather than by whatever opened it — the rail's Manage roles
  * button and the grid's role menu both reach it, and the rail can be shut while
@@ -100,7 +100,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
           <>
             <div className="lbl">Color for {draft[picking]?.name || 'this role'}</div>
             {palette.length === 0 ? (
-              <div className="hint">No palette yet — take a snapshot first.</div>
+              <div className="hint">Built-in palette unavailable — rebuild the app.</div>
             ) : (
               <SwatchGrid
                 palette={palette}

@@ -9,10 +9,10 @@ import {
 } from '../../../core/src/roles.js';
 import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
 import { applyClipMove, type ClipMovePlan } from '../../../core/src/clipMove.js';
+import { LIVE_PALETTE } from '../../../core/src/livePalette.js';
 import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.js';
 import { useLog, type LogLine } from './useLog.js';
-import { usePalette } from './usePalette.js';
-import { useRolesConfig } from './useRolesConfig.js';
+import { useDeviceState } from './useDeviceState.js';
 
 /**
  * The part of a plan that goes on the wire. `SceneMovePlan` also carries counts
@@ -62,8 +62,9 @@ export interface BridgeState {
   lomReady: boolean;
   snapshot: BSV.Snapshot | null;
   palette: number[];
-  /** The configured role vocabulary, from the bridge's roles.json. */
+  /** Set-owned configuration restored from the device's Stored Only parameter. */
   roles: BSV.Role[];
+  allowedColors: number[] | null;
   play: PlayState;
   /** Live's arrangement position, or null until its observer has reported. */
   songPosition: SongPosition | null;
@@ -75,7 +76,6 @@ export interface BridgeState {
   /** 1 when the last write can be reversed, 0 otherwise. */
   undoDepth: number;
   refresh: () => Promise<void>;
-  extractPalette: () => Promise<void>;
   apply: (ops: BSV.ApplyOp[], label?: string) => Promise<void>;
   /** Scene-addressed writes — role tags and scene colors. */
   applyScenes: (sceneOps: BSV.SceneOp[], label?: string) => Promise<void>;
@@ -92,6 +92,7 @@ export interface BridgeState {
    */
   moveClips: (plan: ClipMovePlanFor, label: string) => Promise<void>;
   saveRoles: (roles: BSV.Role[]) => Promise<void>;
+  setAllowedColors: (colors: number[] | null) => void;
   undo: () => Promise<void>;
   /** Fire something. No await: the answer you want is `play` changing. */
   launch: (target: BSV.LaunchTarget) => void;
@@ -110,7 +111,7 @@ export interface BridgeState {
 
 /**
  * The React face of the bridge. The separable pieces live in their own hooks —
- * useLog, useRolesConfig, usePalette — and this composes them with the parts
+ * useLog and useDeviceState — and this composes them with the parts
  * that are one cohesive unit: the connection, the snapshot walk, and the
  * apply/undo/moveScenes write path, which all share `guard`, the snapshot ref
  * and the undo entry.
@@ -143,8 +144,14 @@ export function useBridge(watchMeters = false): BridgeState {
     [say],
   );
 
-  const { roles, loadRoles, saveRoles } = useRolesConfig(client, guard, say);
-  const { palette, derivePaletteOnce, extractPalette } = usePalette(client, guard, say);
+  const palette = useMemo<number[]>(() => Array.from(LIVE_PALETTE), []);
+  const {
+    roles,
+    allowedColors,
+    adoptDeviceState,
+    saveRoles,
+    setAllowedColors,
+  } = useDeviceState(client, guard, say);
 
   /**
    * A snapshot is the read half shared by manual refreshes and post-write
@@ -195,11 +202,8 @@ export function useBridge(watchMeters = false): BridgeState {
         case 'changed':
           say(`Live set changed (${event.kind})`);
           break;
-        // The vocabulary just moved house — what's on screen may belong to a
-        // different set. Silent: this fires at boot for every client, and
-        // "loaded the roles for the set you already had open" is not news.
-        case 'setInfo':
-          loadRoles();
+        case 'deviceState':
+          adoptDeviceState(event.state);
           break;
         case 'reload':
           location.reload();
@@ -214,7 +218,7 @@ export function useBridge(watchMeters = false): BridgeState {
       off();
       client.close();
     };
-  }, [client, say, loadRoles]);
+  }, [adoptDeviceState, client, say]);
 
   // Play-state observers are installed per track, so a set that gained or lost
   // one leaves them stale — re-arm on every snapshot rather than only once.
@@ -265,8 +269,6 @@ export function useBridge(watchMeters = false): BridgeState {
     () =>
       guard('snapshot', async () => {
         await whileSyncing(async () => {
-          // Strictly before the walk — see derivePaletteOnce.
-          await derivePaletteOnce();
           const e = await client.request({ type: 'snapshot' });
           const wire = client.lastWireTiming;
           const commitStart = performance.now();
@@ -282,7 +284,7 @@ export function useBridge(watchMeters = false): BridgeState {
           );
         });
       }),
-    [client, derivePaletteOnce, guard, say, whileSyncing],
+    [client, guard, say, whileSyncing],
   );
 
   /** Tried once this session — a failed walk must not become a retry loop. */
@@ -582,6 +584,7 @@ export function useBridge(watchMeters = false): BridgeState {
     snapshot,
     palette,
     roles,
+    allowedColors,
     play,
     songPosition,
     progress,
@@ -590,12 +593,12 @@ export function useBridge(watchMeters = false): BridgeState {
     syncing,
     undoDepth,
     refresh,
-    extractPalette,
     apply,
     applyScenes,
     moveScenes,
     moveClips,
     saveRoles,
+    setAllowedColors,
     undo,
     launch,
     stop,

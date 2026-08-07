@@ -1,4 +1,4 @@
-// Which of Live's colors a rule is allowed to hand out.
+// One-time migration for the browser-owned allowed-color setting.
 //
 // Live 12.4.3 reports 70, and a set list that uses eight of them deliberately
 // reads better than one that uses all seventy: several of Live's colors are hard
@@ -10,36 +10,35 @@
 // palette shouldn't silently exclude colors 70+ if a later Live ships more. Not
 // having chosen stays not having chosen.
 //
-// Machine-wide, like the palette cache and the column width: it's a preference
-// about how you like to look at a set, not a fact about this set. The role
-// vocabulary is the opposite and lives beside the .als for exactly that reason.
+// New writes go to the bridge device's Stored Only parameter and travel inside
+// the .als. This key is read only when an older device state has no
+// `allowedColors` field, then removed after the bridge confirms the migration.
 
 const KEY = 'bsv.allowedColors';
 
-/** The chosen slots, or `null` for "whatever the palette holds". */
-export function loadAllowedColors(): number[] | null {
+/** The old chosen slots, or `undefined` when this origin never stored a list. */
+export function loadLegacyAllowedColors(): number[] | undefined {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw === null) return null;
+    if (raw === null) return undefined;
     const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return null;
+    if (!Array.isArray(parsed)) return undefined;
     // An empty list is kept as an empty list, not read as "all". The picker can
     // get you there — it's how you start from nothing and choose the few you
     // want — and coming back to a set of colors you didn't choose would be a
     // stranger answer than coming back to none.
     return parsed.filter((v): v is number => Number.isInteger(v) && (v as number) >= 0);
   } catch {
-    return null;
+    return undefined;
   }
 }
 
-export function saveAllowedColors(colors: number[] | null): void {
+export function clearLegacyAllowedColors(): void {
   try {
-    if (colors === null) localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, JSON.stringify(colors));
+    localStorage.removeItem(KEY);
   } catch {
-    // Storage can be unavailable (private windows, embedded webviews). A choice
-    // that doesn't persist is not worth failing a render over.
+    // The embedded webview may not expose storage. Absence already means there
+    // is nothing to migrate, so this is harmless.
   }
 }
 

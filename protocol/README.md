@@ -42,15 +42,16 @@ compile error rather than a silent no-op. Keep them that way.
 ## Shape
 
 Requests carry an optional `id`; replies echo it so `client.ts` can correlate them.
-Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id.
+Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 
 | client → server | |
 |---|---|
 | `snapshot` | walk the whole set |
 | `apply` `{ ops, sceneOps? }` | bulk write — clip slots and/or scenes |
 | `move` `{ plan }` | reorder scenes. **Structural, and not reversible** |
-| `palette` | derive and cache Live's palette |
-| `saveRoles` `{ roles }` | replace the role vocabulary |
+| `palette` | developer-only sweep of Live's palette |
+| `saveRoles` `{ roles }` | store the role vocabulary in the device |
+| `saveAllowedColors` `{ colors }` | store the bulk-color subset in the device |
 | `observe` `{ on }` | structural change notifications |
 | `launch` `{ target }` | fire a clip, a scene, or the song |
 | `stop` `{ target }` | stop a track, every clip, or the song |
@@ -65,6 +66,7 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | `moved` | `move` |
 | `palette` | `palette` |
 | `rolesSaved` | `saveRoles` |
+| `allowedColorsSaved` | `saveAllowedColors` |
 | `pong` | `ping` |
 | `progress` | — streams during `apply` and `move` |
 | `status` | — connection / LOM readiness |
@@ -72,7 +74,7 @@ Unsolicited events (`status`, `changed`, `reload`, `paletteUpdated`) carry no id
 | `playState` | — a play-state observer fired |
 | `meterLevels` | — complete current track/output-level frame |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
-| `paletteUpdated` | — broadcast after extraction |
+| `deviceState` | — restored or changed set-owned configuration |
 | `reload` | — dev live-reload |
 | `error` | — terminates any pending request, or is broadcast |
 

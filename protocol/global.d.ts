@@ -281,6 +281,19 @@ declare namespace BSV {
     colorIndex: number;
   }
 
+  /**
+   * Configuration owned by one Session Bridge device instance and stored in
+   * the Live Set through a parameter-enabled Max `pattr` blob.
+   *
+   * `allowedColors` is optional only while migrating an older device that kept
+   * it in browser localStorage. A stored `null` deliberately means all colors.
+   */
+  interface DeviceState {
+    version: 1;
+    roles: Role[];
+    allowedColors?: number[] | null;
+  }
+
   interface ApplyResult {
     applied: number;
     skipped: number;
@@ -321,12 +334,14 @@ declare namespace BSV {
      * scenes and renumbers the set, this one is about slots and doesn't.
      */
     | { id?: number; type: 'moveClips'; plan: ClipMovePlan }
+    /** Developer diagnostic: sweep Live and compare it with the embedded palette. */
     | { id?: number; type: 'palette' }
     /**
      * Replace the whole role vocabulary. Coarse-grained like everything else:
      * the list is a dozen entries, so there is no per-role message.
      */
     | { id?: number; type: 'saveRoles'; roles: Role[] }
+    | { id?: number; type: 'saveAllowedColors'; colors: number[] | null }
     | { id?: number; type: 'observe'; on: boolean }
     /**
      * Fold or unfold a group track — Live's `fold_state`, which is what hides
@@ -411,8 +426,10 @@ declare namespace BSV {
         undoStep: boolean;
       }
     | { type: 'palette'; id?: number; count: number; colors: number[] }
-    | { type: 'paletteUpdated' }
     | { type: 'rolesSaved'; id?: number; count: number }
+    | { type: 'allowedColorsSaved'; id?: number; colors: number[] | null }
+    /** The state restored from the device, and every later persisted revision. */
+    | { type: 'deviceState'; state: DeviceState }
     | {
         type: 'playState';
         isPlaying: boolean;
@@ -432,19 +449,6 @@ declare namespace BSV {
         sixteenth: number;
       }
     | { type: 'changed'; kind: string }
-    /**
-     * Which Live Set is open, and therefore which `bsv.json` the role vocabulary
-     * is being read from and written to.
-     *
-     * Broadcast whenever that answer changes — including at boot, and including
-     * a change to "no set on disk". Clients refetch their vocabulary on it: the
-     * one they loaded a moment ago may belong to a different set entirely.
-     *
-     * `path` is the folder holding the `.als`, not the `.als` itself, and is
-     * empty for a set that has never been saved. `name` is Live's own name for
-     * the set, empty for the same reason.
-     */
-    | { type: 'setInfo'; path: string; name: string }
     | { type: 'reload' }
     | { type: 'pong'; id?: number }
     | { type: 'error'; id?: number; message: string };

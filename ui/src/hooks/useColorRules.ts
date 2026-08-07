@@ -1,18 +1,16 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { songKey, type Derivation } from '../../../core/src/derive.js';
 import { songFacts } from '../../../core/src/songRows.js';
 import type { SongColorInput } from '../../../core/src/colorRules.js';
 import { sceneColorOps, type SceneFields } from '../../../core/src/roles.js';
-import {
-  loadAllowedColors,
-  resolveAllowed,
-  saveAllowedColors,
-} from '../lib/allowedColors.js';
+import { resolveAllowed } from '../lib/allowedColors.js';
 import type { BridgeState } from './useBridge.js';
 
 interface Args {
   derivation: Derivation;
   palette: number[];
+  storedColors: number[] | null;
+  setStoredColors: (next: number[] | null) => void;
   scenesForOps: SceneFields[];
   applyScenes: BridgeState['applyScenes'];
 }
@@ -22,21 +20,21 @@ interface Args {
  * which paints the songs you have selected with a swatch you pressed.
  *
  * The rules themselves are `core/src/colorRules.ts`; this is the part that
- * can't be pure: which colors you allow (a machine-wide preference), what the
- * set currently states, and turning the answer into scene writes.
+ * can't be pure: which colors this device stores for the set, what the set
+ * currently states, and turning the answer into scene writes.
  */
-export function useColorRules({ derivation, palette, scenesForOps, applyScenes }: Args) {
-  const [stored, setStored] = useState<number[] | null>(loadAllowedColors);
-
+export function useColorRules({
+  derivation,
+  palette,
+  storedColors,
+  setStoredColors,
+  scenesForOps,
+  applyScenes,
+}: Args) {
   const allowed = useMemo(
-    () => resolveAllowed(stored, palette.length),
-    [stored, palette.length],
+    () => resolveAllowed(storedColors, palette.length),
+    [storedColors, palette.length],
   );
-
-  const setAllowed = useCallback((next: number[] | null) => {
-    setStored(next);
-    saveAllowedColors(next);
-  }, []);
 
   /**
    * What each song states, for a rule to key on.
@@ -85,5 +83,5 @@ export function useColorRules({ derivation, palette, scenesForOps, applyScenes }
     [applyScenes, derivation, palette, scenesForOps],
   );
 
-  return { allowed, setAllowed, songs, recolorSongs };
+  return { allowed, setAllowed: setStoredColors, songs, recolorSongs };
 }

@@ -10,6 +10,7 @@ export type Palette = BSV.Palette;
 export type ApplyOp = BSV.ApplyOp;
 export type SceneOp = BSV.SceneOp;
 export type Role = BSV.Role;
+export type DeviceState = BSV.DeviceState;
 export type ApplyResult = BSV.ApplyResult;
 export type Request = BSV.Request;
 export type RequestType = BSV.RequestType;

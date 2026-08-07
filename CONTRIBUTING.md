@@ -19,9 +19,9 @@ deliberate: the whole app ships as an `.amxd` plus two JS files — no app bundl
 code signing, no updater. `bridge.js` is bundled with `ws` and the built UI inlined,
 so there's no `node_modules/` and no `public/` to keep alongside it.
 
-Nothing the user makes is stored in there. The role vocabulary lives in a `bsv.json`
-beside their `.als`, so it travels with the set; the palette cache is machine-wide
-under Application Support. Replacing the device folder costs them nothing.
+Set-owned configuration lives in a hidden parameter on the bridge device, so Live
+stores it directly in the `.als`. The fixed Live color table is compiled into the app.
+Replacing the device folder or clearing browser storage costs the user nothing.
 
 ## Modules
 
@@ -98,8 +98,6 @@ Not in git; `npm run build` recreates all of them.
 bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
 bridge/public/                           vite build output
 bridge/SessionBridge.amxd  .maxpat       device + debug patcher
-bridge/palette.json                      derived from Live at runtime
-bridge/roles.json                        your role vocabulary, written by the UI
 ```
 
 ## Environment this was built against
@@ -142,9 +140,9 @@ they read back on every later snapshot — no stable ids anywhere, nothing to lo
 
 | | lives | authoritative for |
 |---|---|---|
-| **Library** | one global file, outlives any `.als` | what a song *is* — bpm, key. Plus the role vocabulary (`roles.json`) |
+| **Library** | one global file, outlives any `.als` | what a song *is* — bpm, key |
 | **Scheme** | one global file | patterns and rules — how a name is spelled, what color a clip gets |
-| **Mapping** | **in the set**, in the scene names | which scene is which song and role |
+| **Mapping** | **in the set**, in scene names + device state | which scene is which song and role, plus its color configuration |
 
 ### The decisions behind it
 
@@ -154,8 +152,8 @@ set the first time it's seen; after that a set that disagrees is drift. Without 
 the scheme is a suggestion rather than a convention, and lint has nothing to say.
 
 **The library is global and only grows.** It outlives any one `.als` — you have a library
-of songs and a given set contains some of them. Derivation unions into it. Same shape as
-`roles.json`, and it dodges the fact that we can't reliably identify which set is open.
+of songs and a given set contains some of them. Derivation unions into it. Role colors
+are different: they describe one set and live in that set's bridge-device state.
 
 **A song is a label, not a range** — whatever scenes carry its name, wherever they sit. A
 reprise sixty scenes later is the same song for free. Boundaries are computed; a song in

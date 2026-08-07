@@ -222,6 +222,8 @@ export function App() {
   } = useColorRules({
     derivation,
     palette: bridge.palette,
+    storedColors: bridge.allowedColors,
+    setStoredColors: bridge.setAllowedColors,
     scenesForOps,
     applyScenes,
   });
@@ -404,7 +406,6 @@ export function App() {
               onRename={onRename}
               onUndo={() => void bridge.undo()}
               onClear={clearSelection}
-              onExtractPalette={() => void bridge.extractPalette()}
             />
           </Rail>
         )}

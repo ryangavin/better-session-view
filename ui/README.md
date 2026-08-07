@@ -30,10 +30,9 @@ src/components/       one component per file
   ReorderModal.tsx    the running order — drag songs, apply once
   RecolorModal.tsx    coloring every song from a rule
 src/hooks/            one hook per file
-  useBridge.ts        React face of the client; composes the three below
+  useBridge.ts        React face of the client; composes the two below
   useLog.ts           the shared say sink
-  useRolesConfig.ts   roles.json fetch + save (useVocabulary merges it with the set)
-  usePalette.ts       palette cache + the once-per-Live-version derivation
+  useDeviceState.ts   roles + allowed colors stored in the Live device
   useSnapshotLookups.ts  the lookup Maps every other hook reads
   useTrackColumns.ts  rendered column order + group collapsing
   useSongLayout.ts    derivation, song folding, folded-header shapes
@@ -55,7 +54,7 @@ src/lib/
   selection.ts        clip addressing + selection set
   keys.ts             the launch modifier, and who owns a keystroke
   columnWidth.ts      S/M/L grid width presets + persistence
-  allowedColors.ts    which of Live's colors a rule may use + persistence
+  allowedColors.ts    one-time migration from the old localStorage setting
   rowMarks.ts         play state flattened to memo-safe strings
   snapshotTiming.ts   the console phase breakdown + error text
 ```
@@ -79,8 +78,8 @@ npm run dev            # from repo root — starts this plus the bridge watchers
 npm run dev:ui         # this alone, against a device someone else is running
 ```
 
-Use **<http://localhost:5173>**, not :17800. Vite proxies `/ws` and `/palette.json`
-through to the device, so you get HMR with React Fast Refresh — a loaded snapshot and
+Use **<http://localhost:5173>**, not :17800. Vite proxies `/ws` through to the device,
+so you get HMR with React Fast Refresh — a loaded snapshot and
 your current selection survive edits, which matters when a snapshot takes seconds.
 
 Two env vars, both optional:
@@ -125,8 +124,8 @@ keep it that way.
   requests are serialized behind `busy`; it would need per-id storage if that changed.
 
 `hooks/useBridge.ts` wraps it in React state. The separable pieces — the log
-(`useLog`), the roles.json fetch/save (`useRolesConfig`), the palette
-(`usePalette`) — are their own hooks that it composes; the connection, the
+(`useLog`) and the set-owned configuration (`useDeviceState`) — are their own hooks
+that it composes; the connection, the
 snapshot walk and the apply/undo/moveScenes write path stay together in
 `useBridge` itself because they share `guard`, the snapshot ref and the undo
 entry. `guard()` wraps every operation so failures land in the log rather than
@@ -563,9 +562,9 @@ gear. *rainbow* and *random* say nothing and are for when you just need a hundre
 told apart. The rules are pure functions in core; this modal is the preview and the
 allowed colors.
 
-- **Which of Live's 70 colors a rule may use is a setting** — `bsv.allowedColors` in
-  `localStorage`, machine-wide like the column width, because it's a preference about how
-  you like to look at a set rather than a fact about this set. Eight chosen colors read
+- **Which of Live's 70 colors a rule may use is set-owned device state.** It is stored
+  beside the role vocabulary in a hidden Max parameter, so Save, Save As, presets and
+  moving the `.als` carry it without a sidecar file. Eight chosen colors read
   better across a hundred songs than seventy: several of Live's are hard to tell apart at
   the size a scene row draws them. `null` means "whatever the palette holds" and is
   deliberately not the same as a list of all 70 — a Live that shipped more colors should
@@ -722,8 +721,8 @@ tag" is never a guess. Selected scene rows get an amber left edge.
 several roles. It's the only thing role color writes: scene rows carry the *song's* color,
 and painting them per role would break the band — see *A song is one color* above.
 
-The vocabulary is `bridge/roles.json`, unioned with every role actually tagged in the set
-(`mergeVocabulary`). A role typed straight into Live shows up in the manager uncolored
+The vocabulary comes from the device state saved in the `.als`, unioned with every role
+actually tagged in the set (`mergeVocabulary`). A role typed straight into Live shows up in the manager uncolored
 rather than being invisible until it mysteriously colors nothing. Deleting a role only
 forgets its color — the scenes keep their tags, so it reappears uncolored, and the manager
 says so.
@@ -766,25 +765,15 @@ because that mechanism is undocumented and unverified.
 
 ## Palette
 
-`refresh()` derives the palette before the walk **if there isn't one**, so it never needs a
-button. Three things make that safe, and all three are the reason it isn't simply run every
-time:
+`LIVE_PALETTE` in `core/src/livePalette.ts` is the 70-color table the app renders. It is
+part of the UI bundle, available before the first snapshot, and never mutates a set to
+discover stable product data. The old LOM sweep remains a developer-only diagnostic for
+checking the table after an Ableton update; no user-facing path calls it.
 
-- **Once per Live version, not once per snapshot.** The sweep appends and deletes a track
-  (it has to be a clip — see [`bridge/README.md`](../bridge/README.md)), so every refresh would
-  mark the set dirty, churn Live's undo, and trip the structural observer, whose entire job
-  is to prompt a re-snapshot. That's a feedback loop the moment `observe` is enabled.
-- **Strictly before the walk, never overlapping it.** Otherwise the snapshot sees the
-  scratch track as a real one.
-- **Failure never blocks the walk.** A set you can see without swatches beats an error
-  where the grid should be, so the derivation is caught and logged. `derivedRef` then stops
-  it retrying — a sweep that fails must not append a track on every subsequent refresh.
-
-The "have we got one?" question is answered by re-reading `/palette.json` rather than by
-React state, which may still be waiting on the mount-time fetch if Snapshot was clicked
-immediately. A local GET is cheap; appending a track to re-derive what we already have is
-not. The **Re-derive palette** button remains for a Live upgrade, and as the retry after an
-automatic attempt failed.
+The role vocabulary and the allowed subset are different: they are authored state, so
+`useDeviceState` receives them from the bridge device's hidden Stored Only parameter.
+Older `bsv.json`/`roles.json` values and any `bsv.allowedColors` list visible to the
+current browser origin are imported once when that parameter is empty.
 
 ## Snapshot timing readout
 

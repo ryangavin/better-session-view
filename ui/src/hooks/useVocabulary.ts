@@ -13,7 +13,7 @@ export function useVocabulary({
   snapshot,
   palette,
 }: {
-  /** The configured vocabulary, from the bridge's roles.json. */
+  /** The configured vocabulary restored from the bridge device state. */
   roles: BSV.Role[];
   snapshot: BSV.Snapshot | null;
   palette: number[];

@@ -19,7 +19,6 @@ interface Props {
   onRename: () => void;
   onUndo: () => void;
   onClear: () => void;
-  onExtractPalette: () => void;
 }
 
 export function Inspector({
@@ -37,7 +36,6 @@ export function Inspector({
   onRename,
   onUndo,
   onClear,
-  onExtractPalette,
 }: Props) {
   const bad = unknownTokens(pattern);
   const none = selectedCount === 0;
@@ -51,7 +49,7 @@ export function Inspector({
         Color {none ? <span className="dim">— select clips</span> : `${selectedCount} clips`}
       </div>
       {palette.length === 0 ? (
-        <div className="hint">No palette yet — the next snapshot derives it.</div>
+        <div className="hint">Built-in palette unavailable — rebuild the app.</div>
       ) : (
         <>
           <SwatchGrid
@@ -109,14 +107,6 @@ export function Inspector({
       </button>
       <button type="button" onClick={onClear} disabled={none}>
         Clear selection
-      </button>
-      <button
-        type="button"
-        onClick={onExtractPalette}
-        disabled={busy}
-        title="Normally automatic on the first snapshot. Appends and removes one scratch track."
-      >
-        Re-derive palette
       </button>
     </>
   );

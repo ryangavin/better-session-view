@@ -17,6 +17,7 @@ const TERMINAL = {
   moveClips: 'clipsMoved',
   palette: 'palette',
   saveRoles: 'rolesSaved',
+  saveAllowedColors: 'allowedColorsSaved',
   ping: 'pong',
 } as const satisfies Partial<Record<BSV.RequestType, BSV.EventType>>;
 
