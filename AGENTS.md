@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first — it's the table of contents. Then read
 the README of the module you're about to touch. They exist because most of the constraints
@@ -34,6 +34,10 @@ it that way — architecture and rules go in `CONTRIBUTING.md`, planned work goe
    is play/stop/record. Same trap: scene, clip, cue, bus, send, return, warp, quantize,
    follow action, slot, take, punch, bounce, freeze. Where a DAW term *is* the right
    word for the actual Live concept, use it precisely and don't overload it.
+8. **Whenever feature functionality is added or changed, update the relevant wiki page
+   in the same change.** The wiki is the user manual, so documentation is part of the
+   feature being done rather than follow-up work. It lives in the separate
+   `better-session-view.wiki.git` repository and requires its own commit and push.
 
 ## Before you claim something works
 
