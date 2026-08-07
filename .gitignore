@@ -13,4 +13,6 @@ bridge/palette.json.tmp
 # the role vocabulary — yours, not the repo's
 bridge/roles.json
 bridge/roles.json.tmp
+# the user manual — its own repo (…wiki.git), cloned here so it edits alongside the code
+wiki/
 .DS_Store
