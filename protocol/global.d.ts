@@ -71,7 +71,50 @@ declare namespace BSV {
     slotsScanned: number;
   }
 
+  /**
+   * A partial re-read of the set: everything in `tracks`, and nothing else.
+   *
+   * Pushed rather than requested. `lom.ts` watches Live's Session cursor —
+   * `selected_track` and `selected_scene`, two observers — and re-reads the
+   * track the cursor moved to *and* the one it left. You have to select a clip
+   * to drag it, so the previous cursor position is where a moved clip came
+   * from; re-reading only the destination would learn that a clip arrived and
+   * never that it left. See `bridge/README.md` under *Following Live*.
+   *
+   * Merge with `mergeTrackDelta` in `core/`, which replaces by scope rather
+   * than upserting by `(t, s)` — the difference is whether a deleted clip
+   * disappears or is drawn in two places.
+   */
+  interface SnapshotDelta {
+    /** The set's revision after this delta. See `Snapshot.rev`. */
+    rev: number;
+    /**
+     * The revision this was computed against. Apply only when it equals the rev
+     * you hold — anything else means a message was missed, and the answer is a
+     * full snapshot rather than a retry. `canApplyDelta` in `core/` is this
+     * check.
+     */
+    prevRev: number;
+    /**
+     * Track indexes re-read in full. Authoritative in both directions: a track
+     * listed here with no clips in `clips` is empty, not unreported.
+     */
+    tracks: number[];
+    /** Every clip now in those tracks. */
+    clips: Clip[];
+    /** LOM time for the re-read, ms. */
+    ms: number;
+  }
+
   interface Snapshot {
+    /**
+     * Monotonic counter owned by `lom.ts`, bumped once per publish — snapshots
+     * and deltas share the sequence. It is what lets a client tell "this delta
+     * follows what I hold" from "I missed one"; see `SnapshotDelta.prevRev`.
+     *
+     * Deliberately not a timestamp. Two publishes inside one millisecond would
+     * be indistinguishable, and the whole point is to order them.
+     */
     rev: number;
     /** Total LOM walk, ms. */
     ms: number;
@@ -373,6 +416,13 @@ declare namespace BSV {
     | { id?: number; type: 'stop'; target: StopTarget }
     | { id?: number; type: 'watchPlay'; on: boolean }
     | { id?: number; type: 'watchMeters'; on: boolean }
+    /**
+     * Follow changes the user makes in Live, by watching the Session cursor
+     * and re-reading the tracks it touches. Two observers, not one per slot —
+     * the LOM has no aggregate "a clip in this track changed" signal at all.
+     * Answers arrive as `delta` events.
+     */
+    | { id?: number; type: 'watchSelection'; on: boolean }
     | { id?: number; type: 'ping' };
 
   type RequestType = Request['type'];
@@ -461,6 +511,11 @@ declare namespace BSV {
         sixteenth: number;
       }
     | { type: 'changed'; kind: string }
+    /**
+     * Someone changed the set in Live and we re-read the affected tracks.
+     * Broadcast, never a reply — nothing asked for it.
+     */
+    | { type: 'delta'; data: SnapshotDelta }
     | { type: 'reload' }
     | { type: 'pong'; id?: number }
     | { type: 'error'; id?: number; message: string };

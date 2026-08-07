@@ -8,6 +8,7 @@ import {
   sceneFields,
 } from '../../../core/src/roles.js';
 import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
+import { canApplyDelta, mergeTrackDelta } from '../../../core/src/snapshotDelta.js';
 import { applyClipMove, type ClipMovePlan } from '../../../core/src/clipMove.js';
 import { LIVE_PALETTE } from '../../../core/src/livePalette.js';
 import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.js';
@@ -129,6 +130,18 @@ export function useBridge(watchMeters = false): BridgeState {
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
+  // Both of these are refs rather than dependencies so the socket subscription
+  // can be established once. Making it depend on either identity would tear the
+  // listener down and rebuild it — and with it every meter subscription — each
+  // time a snapshot arrived, which is exactly when it must not.
+  const snapshotRef = useRef<BSV.Snapshot | null>(null);
+  const resyncRef = useRef<(() => Promise<void>) | null>(null);
+  // Read by the focus backstop, which must not walk the set on top of a write.
+  const busyRef = useRef(false);
+  const syncingRef = useRef(false);
+  busyRef.current = busy;
+  syncingRef.current = syncing;
+
   const guard: Guard = useCallback(
     async (label, fn) => {
       setBusy(true);
@@ -199,9 +212,32 @@ export function useBridge(watchMeters = false): BridgeState {
         case 'progress':
           setProgress({ done: event.done, total: event.total });
           break;
+        // Structural: a track or scene was added, removed or reordered, so
+        // every index means something different now. Nothing can be patched —
+        // re-walk. `moved` and the write kinds are our own doing and already
+        // reconciled locally, so re-walking for those would be a second full
+        // read of a set we just wrote.
         case 'changed':
           say(`Live set changed (${event.kind})`);
+          if (event.kind === 'structure') void resyncRef.current?.();
           break;
+        // A partial re-read from Live. `prevRev` is the guard: a delta rewrites
+        // only its own scope, so applying one to any state but the exact one it
+        // was computed against would splice two different revisions of the set
+        // together. A mismatch means a message was missed, and the answer to
+        // that is a full walk, not a retry.
+        case 'delta': {
+          const held = snapshotRef.current;
+          if (!held) break;
+          if (!canApplyDelta(held.rev, event.data.prevRev)) {
+            say('missed an update from Live — re-reading the set', 'info');
+            void resyncRef.current?.();
+            break;
+          }
+          const clips = mergeTrackDelta(held.clips, event.data.tracks, event.data.clips);
+          setSnapshot({ ...held, rev: event.data.rev, clips, clipCount: clips.length });
+          break;
+        }
         case 'deviceState':
           adoptDeviceState(event.state);
           break;
@@ -239,6 +275,46 @@ export function useBridge(watchMeters = false): BridgeState {
     client.send({ type: 'watchMeters', on: true });
     return () => client.send({ type: 'watchMeters', on: false });
   }, [client, lomReady, trackCount, watchMeters]);
+
+  // Follow what the user does in Live. Two things, and they cover different
+  // failures: `observe` reports structural changes (a track or scene added,
+  // removed or reordered), and `watchSelection` re-reads the tracks the Session
+  // cursor touches, which is how a clip dragged in Live reaches the grid.
+  //
+  // Not keyed on trackCount, unlike the play and meter watchers. Those install
+  // an observer per track and go stale when the count changes; these watch
+  // `live_set` and `live_set view`, which are the same two objects however many
+  // tracks there are.
+  useEffect(() => {
+    if (!lomReady) return;
+    client.send({ type: 'observe', on: true });
+    client.send({ type: 'watchSelection', on: true });
+    return () => {
+      client.send({ type: 'watchSelection', on: false });
+      client.send({ type: 'observe', on: false });
+    };
+  }, [client, lomReady]);
+
+  // The backstop, and it covers the one thing watching the cursor cannot.
+  // Deleting, renaming or recoloring a clip in place moves nothing, so no
+  // selection change fires and no delta is sent. Coming back to this window is
+  // the moment that costs nothing to spend a full walk on — and it's the moment
+  // you're about to look at the grid and trust it.
+  useEffect(() => {
+    if (!lomReady) return;
+    const onFocus = () => {
+      if (document.visibilityState !== 'visible') return;
+      // Never interrupt a write in flight; it re-reads or reconciles on its own.
+      if (busyRef.current || syncingRef.current) return;
+      void resyncRef.current?.();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [lomReady]);
 
   const subscribeMeters = useCallback(
     (listener: MeterListener) =>
@@ -314,7 +390,6 @@ export function useBridge(watchMeters = false): BridgeState {
   // a rename back — this is the only way back there is. Deliberately one level:
   // a stack would need to survive the re-snapshot after every write, and a stale
   // entry that quietly restores the wrong thing is worse than no stack.
-  const snapshotRef = useRef<BSV.Snapshot | null>(null);
   snapshotRef.current = snapshot;
   const [undoDepth, setUndoDepth] = useState(0);
   const undoRef = useRef<{ batch: Batch; label: string } | null>(null);
@@ -340,6 +415,7 @@ export function useBridge(watchMeters = false): BridgeState {
       }),
     [client, whileSyncing],
   );
+  resyncRef.current = resync;
 
   /**
    * The snapshot as it reads once `batch` has landed, or `null` when we can't

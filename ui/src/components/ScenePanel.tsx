@@ -60,7 +60,7 @@ interface Props {
 
 /**
  * Everything that acts on the scenes picked in the scene-name column: the
- * name — `{TAG} @{key} {SONG}` — its Scene.tempo, and the role tag that leads it.
+ * name — `@{key} {SONG} {TAG}` — its Scene.tempo, and the role tag that leads it.
  *
  * The two commit differently, on purpose. **Assigning a role writes on click,
  * the way a swatch does**, which only looks like it breaks the Inspector's rule

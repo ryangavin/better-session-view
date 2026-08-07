@@ -214,7 +214,37 @@ bar says 8. A count that includes no-op writes is a lie about how much work is h
 
 `useBridge` walks the set as soon as the LOM reports ready. **Snapshot** was the first
 thing anyone pressed every time, so it was a button that existed only to be pressed; it
-stays for re-walking after a change made in Live.
+stays as the manual override now that the grid mostly keeps up on its own.
+
+## Keeping up with Live
+
+`useBridge` subscribes to two things on mount and covers a third with the browser:
+
+| | catches | costs |
+|---|---|---|
+| `observe` → `changed structure` | a track or scene added, removed, reordered | a full re-walk, and it has to be — every index changed meaning |
+| `watchSelection` → `delta` | **a clip moved, copied or deleted in Live** | ~11ms a track |
+| window focus | everything else | a full walk, at the moment you were about to trust the grid anyway |
+
+The middle one is the interesting one, and how it works is in
+[`bridge/README.md`](../bridge/README.md) under *Following Live*: the bridge watches
+Live's Session cursor — two observers, not one per slot — and re-reads the track the
+cursor moved to **and the one it left**, because you have to select a clip to drag it, so
+the position it left is where the clip came from.
+
+The client's job is the merge, and it is deliberately paranoid about one thing. A `delta`
+carries `prevRev`, and it is applied **only** when that equals the rev in hand; anything
+else means a message was missed and the answer is `resync()`, not a retry. Applying a
+delta to the wrong base would splice two revisions of the set together — the tracks in
+scope from one, everything else from another — and the result would look plausible.
+`canApplyDelta` and `mergeTrackDelta` are both in `core/` with tests, for the reason
+everything else that merges is: a grid disagreeing with Live gives no hint which of the
+two is lying.
+
+**Focus-resync exists for what the cursor cannot see.** Deleting, renaming or recoloring
+a clip *in place* moves nothing, so no selection change fires and no delta is sent. A
+rename is the one that stings, because in this project the scene name is the mapping. It
+skips while a write is in flight, since those reconcile on their own.
 
 It fires once per *session*, guarded by a ref, and that guard is the point: a walk that
 **fails** leaves `snapshot` null with `lomReady` still true, so without it the effect
@@ -602,7 +632,7 @@ found in **more than one block** gets a flag rather than an error, because a son
 label rather than a range: two blocks is a reprise, or it's two different songs sharing a
 name, and only you know which.
 
-The current and two prior scene patterns are compiled once at module scope in
+The current scene pattern and three compatibility patterns are compiled once at module scope in
 `useSongLayout`. The `!` is safe there and nowhere else — tests in
 `namePattern.test.ts` hold those constants down. They become editable when the scheme
 file lands.
@@ -623,17 +653,16 @@ because naming a song and tagging its roles is the pass you make before touching
 individual clips, and the swatch grid below is the fallback for everything a role
 doesn't cover.
 
-A scene name is `[ROLE] {TAG} @{key} {SONG}` —
-`[CHORUS] {COVER} @Bm NIGHTFALL`. The tag is optional and open-ended; `COVER`, `ORIGINAL`
+A scene name is `[ROLE] @{key} {SONG} {TAG}` —
+`[CHORUS] @Bm NIGHTFALL {COVER}`. The tag is optional and open-ended; `COVER`, `ORIGINAL`
 and `JAM` are suggestions rather than a fixed vocabulary. BPM lives on the scene's own
 `Scene.tempo` property instead. The panel edits all four pieces and they
 **commit differently, on purpose**: a role writes on click, a title edit and a tempo
 edit each have their own button. See below for why.
 
-**Role first, song tag and key next, name last**, so a column of scene names reads as
-structure rather than as a list of titles. Live's own scene column is narrow, so the
-trade is that *there* the song name truncates before the metadata does; here it doesn't,
-because the grid lifts the role into a chip. Why the facts have distinct delimiters is in
+**Role and key first, name next, song tag last.** Live's own scene column is narrow, so
+the performance metadata stays visible while the app-only tag truncates first; here it
+doesn't, because the grid lifts every field into its own presentation. Why the facts have distinct delimiters is in
 [`core/README.md`](../core/README.md).
 
 **The key leads the rendered metadata**, without the storage-only `@`, in the same
@@ -690,7 +719,7 @@ The gesture is **click a scene name, click a role, click Color clips.** The role
 written to the front of the scene's own name as `[ROLE]` (see
 [`core/README.md`](../core/README.md) for why the set is the storage), and the grid shows
 the title with the tag lifted out into a colored chip — so Live holds
-`[CHORUS] {COVER} @Bm NIGHTFALL` and we render `{COVER} @Bm NIGHTFALL · CHORUS`.
+`[CHORUS] @Bm NIGHTFALL {COVER}` and we render `Bm · CHORUS · COVER` beneath the song header.
 
 **Clicking a role writes immediately, which only looks like it breaks the rule above.**
 That rule exists because a rename overwrites a name you can no longer see. A role tag is

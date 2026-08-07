@@ -4,6 +4,7 @@ import {
   BPM_SCENE_PATTERN,
   compilePattern,
   DEFAULT_SCENE_PATTERN,
+  LEADING_TAG_SCENE_PATTERN,
   LEGACY_SCENE_PATTERN,
 } from '../../../core/src/namePattern.js';
 import { allSongKeys, blockTrackRoles, songRows } from '../../../core/src/songRows.js';
@@ -11,18 +12,20 @@ import { allSongKeys, blockTrackRoles, songRows } from '../../../core/src/songRo
 /**
  * The scene patterns, until the scheme file lands and makes them editable.
  *
- * Three, in order: the convention we write, then the two this app wrote before
- * it. Derivation chooses the richest match, so **a set named the old way
+ * Four, in order: the convention we write, the short-lived leading-tag form,
+ * then the two BPM-bearing forms this app wrote before it. Derivation chooses
+ * the richest match, so **a set named an old way
  * still shows its songs** and converts scene by scene as it's renamed. Without
- * the second entry every scene would read as unmapped the moment the convention
+ * the compatibility entries every scene would read as unmapped the moment the convention
  * changed, and there would be nothing left to select in order to fix it.
  *
  * Compiled once at module scope: they never change yet, and each compile runs a
  * round-trip probe. `!` is safe here and nowhere else — both patterns have a
- * test asserting it compiles.
+ * test asserting they compile.
  */
 const SCENE_PATTERNS = [
   compilePattern(DEFAULT_SCENE_PATTERN)!,
+  compilePattern(LEADING_TAG_SCENE_PATTERN)!,
   compilePattern(BPM_SCENE_PATTERN)!,
   compilePattern(LEGACY_SCENE_PATTERN)!,
 ];

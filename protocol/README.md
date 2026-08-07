@@ -57,6 +57,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `stop` `{ target }` | stop a track, every clip, or the song |
 | `watchPlay` `{ on }` | install the per-track play-state observers |
 | `watchMeters` `{ on }` | install the per-track output-meter observers |
+| `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
 | `ping` | |
 
 | server → client | terminal for |
@@ -71,6 +72,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `progress` | — streams during `apply` and `move` |
 | `status` | — connection / LOM readiness |
 | `changed` | — an observer fired |
+| `delta` | — a partial re-read after a change made in Live |
 | `playState` | — a play-state observer fired |
 | `meterLevels` | — complete current track/output-level frame |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
