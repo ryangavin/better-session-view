@@ -48,6 +48,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 |---|---|
 | `snapshot` | walk the whole set |
 | `apply` `{ ops, sceneOps? }` | bulk write — clip slots and/or scenes |
+| `addScenes` `{ addition }` | insert and configure a contiguous run of blank scenes |
 | `move` `{ plan }` | reorder scenes. **Structural, and not reversible** |
 | `palette` | developer-only sweep of Live's palette |
 | `saveRoles` `{ roles }` | store the role vocabulary in the device |
@@ -64,6 +65,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 |---|---|
 | `snapshot` | `snapshot` |
 | `applied` | `apply` |
+| `scenesAdded` | `addScenes` |
 | `moved` | `move` |
 | `palette` | `palette` |
 | `rolesSaved` | `saveRoles` |
@@ -112,6 +114,12 @@ somewhere else — the color rule above differs between them. Keeping them apart
 stops `lom.ts` sending one down the other's path. They travel in one `apply` message so
 a write that tags scenes and recolors their clips stays a single operation with one
 progress count and one reverse batch.
+
+**`addScenes` is separate from `move` because addition should be incapable of
+deletion.** It creates exactly eight blank scenes at one insertion gap, then gives each
+the same name and optional RGB/tempo. Both bridge layers validate the fixed count. The
+result carries created/configured/failed counts, and every client re-snapshots because
+all scene indexes below the gap shifted.
 
 **`move` is separate from `apply` because it destroys things.** It would have fitted as
 one more optional field on `apply` — and that's precisely the argument against it. `apply`

@@ -13,6 +13,7 @@ type Listener = (event: BridgeEvent) => void;
 const TERMINAL = {
   snapshot: 'snapshot',
   apply: 'applied',
+  addScenes: 'scenesAdded',
   move: 'moved',
   moveClips: 'clipsMoved',
   palette: 'palette',

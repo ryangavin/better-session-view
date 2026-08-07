@@ -8,6 +8,7 @@ import {
   type SongHeader,
   type TrackShape,
 } from '../../../../core/src/songRows.js';
+import { IconGroupFold } from '../Icon.js';
 import { TagChip } from '../TagChip.js';
 import { BAND_CONTRAST, isShape, RAIL, UNTAGGED } from './constants.js';
 
@@ -136,7 +137,9 @@ export const SongHeaderRow = memo(function SongHeaderRow({
        an empty slot is what keeps the next song's name on the same vertical
        line. */
     <div className="song-line">
-      <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
+      <span className="fold">
+        <IconGroupFold folded={header.collapsed} />
+      </span>
       {/* The facts lead, so the key lands immediately left of the name it
           describes. BPM stays outside it as the numeric tempo column. Both
           are right-aligned: the values differ in

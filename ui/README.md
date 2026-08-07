@@ -264,7 +264,7 @@ So `write` and `moveClips` patch the copy in hand instead. The arithmetic is in 
 grid disagreeing with Live and gives no hint which of the two is lying, and that deserves
 tests rather than a hook.
 
-**`resync()` is still there and three things still reach for it**, which is what makes
+**`resync()` is still there and four things still reach for it**, which is what makes
 being optimistic safe:
 
 - **A write Live didn't take in full.** `apply` answers with counts, never with *which*
@@ -274,6 +274,9 @@ being optimistic safe:
   copy failed, so the set holds both copies — a state the plan doesn't describe.
 - **`moveScenes`, always.** It creates and deletes scenes, so every index below the edit
   means something different. That isn't a patch to the set we hold, it's a different set.
+- **`addScenes`, always.** It deletes nothing, but insertion still renumbers every scene
+  below the gap. The bridge coalesces eight Live observer callbacks into one structural
+  change, then every client walks the finished block once.
 
 What this gives up is the free ride: a re-walk after every write also picked up changes
 *you* made in Live, so the grid quietly caught up on a track you renamed there. It no

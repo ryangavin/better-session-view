@@ -48,3 +48,16 @@
   color: var(--dim2);
   padding: 0 0 6px;
 }
+.color-select-none {
+  width: 100%;
+  margin-top: 6px;
+  padding: 4px 6px;
+  border-color: transparent;
+  color: var(--dim2);
+  font-family: var(--mono);
+  font-size: 9px;
+  text-align: left;
+}
+.color-select-none:hover:not(:disabled) {
+  background: var(--sel);
+}

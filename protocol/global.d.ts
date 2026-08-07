@@ -252,8 +252,8 @@ declare namespace BSV {
   }
 
   /**
-   * Reordering scenes — the only structural write in the protocol, and the only
-   * one our own undo cannot reverse.
+   * Reordering scenes — the delete-capable structural write in the protocol.
+   * Scene addition is separate specifically so it cannot reach this remove pass.
    *
    * Coarse-grained like everything else: one message per *move*, not per scene
    * and certainly not per clip. A twelve-scene song across twenty-four tracks is
@@ -272,6 +272,35 @@ declare namespace BSV {
      * everything below it, so the order is load-bearing rather than cosmetic.
      */
     remove: number[];
+  }
+
+  /**
+   * Add a contiguous run of blank scenes and give every one the same song
+   * metadata. Unlike `MovePlan`, this is additive only: there is no copy pass
+   * and no delete pass for a malformed request to stumble into.
+   */
+  interface SceneAddition {
+    /** Insertion gap, from 0 through the current scene count. */
+    at: number;
+    /** Fixed at eight by the quick-add workflow and validated on both bridge sides. */
+    count: number;
+    /** Complete rendered scene name, including an optional key prefix. */
+    name: string;
+    /** Scene RGB. Omitted leaves Live's new scenes uncolored. */
+    color?: number;
+    /** Scene.tempo. Omitted leaves the scenes following the Live Set tempo. */
+    tempo?: number;
+  }
+
+  interface ScenesAddedResult {
+    created: number;
+    configured: number;
+    failed: number;
+    /** First created scene index, or the requested gap when none were created. */
+    from: number;
+    /** Last created scene index, or `from - 1` when none were created. */
+    to: number;
+    undoStep: boolean;
   }
 
   /**
@@ -294,7 +323,7 @@ declare namespace BSV {
   /**
    * Moving clips around the grid.
    *
-   * A second structural write, and separate from `MovePlan` for the reason that
+   * A second move write, and separate from `MovePlan` for the reason that
    * one is separate from `apply`: `MovePlan` creates and deletes *scenes* and
    * renumbers the set, while this touches only slots and leaves every index
    * meaning what it meant. Sharing a message would let a caller reach the
@@ -364,6 +393,8 @@ declare namespace BSV {
      * halves that can succeed independently.
      */
     | { id?: number; type: 'apply'; ops: ApplyOp[]; sceneOps?: SceneOp[] }
+    /** Insert and configure scenes without entering the delete-capable move path. */
+    | { id?: number; type: 'addScenes'; addition: SceneAddition }
     /**
      * Reorder scenes. Deliberately **not** a variant of `apply`: `apply` writes
      * fields on things that already exist and is fully reversible from a
@@ -449,6 +480,7 @@ declare namespace BSV {
         skipped: number;
         total: number;
       }
+    | ({ type: 'scenesAdded'; id?: number; lomMs: number } & ScenesAddedResult)
     /**
      * A move finished. Carries what it did rather than an `ok`, because the
      * caller has no other way to find out — the scenes it names no longer exist

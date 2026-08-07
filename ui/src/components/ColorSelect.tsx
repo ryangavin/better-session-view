@@ -12,6 +12,8 @@ interface Props {
   /** The palette slot shown in the closed control, or null/-1 when unknown. */
   current: number | null;
   onPick: (index: number) => void;
+  /** Optional "No color" choice for draft values that have not been written yet. */
+  onClear?: () => void;
   disabled?: boolean;
   /** Visible label, accessible name and the small heading over the open palette. */
   label: string;
@@ -30,6 +32,7 @@ function ColorPopover({
   palette,
   current,
   onPick,
+  onClear,
   label,
   titleFor,
   anchor,
@@ -61,6 +64,18 @@ function ColorPopover({
             onPick(index);
           }}
         />
+        {onClear && (
+          <button
+            type="button"
+            className="color-select-none"
+            onClick={() => {
+              onClose();
+              onClear();
+            }}
+          >
+            No color
+          </button>
+        )}
       </div>
     </div>,
     document.body,
@@ -78,6 +93,7 @@ export function ColorSelect({
   palette,
   current,
   onPick,
+  onClear,
   disabled,
   label,
   showLabel = true,
@@ -129,6 +145,7 @@ export function ColorSelect({
           palette={palette}
           current={current}
           onPick={onPick}
+          onClear={onClear}
           label={label}
           titleFor={titleFor}
           anchor={anchor}

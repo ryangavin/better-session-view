@@ -4,6 +4,7 @@ import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
 import { Header } from './components/Header.js';
 import { IconSync } from './components/Icon.js';
 import { Inspector } from './components/Inspector.js';
+import { NewSongModal } from './components/NewSongModal.js';
 import { Rail } from './components/Rail.js';
 import { RecolorModal } from './components/RecolorModal.js';
 import { ReorderModal } from './components/ReorderModal.js';
@@ -270,9 +271,9 @@ export function App() {
   // role menu opens it too, and the rail can be shut while it's up.
   const [managingRoles, setManagingRoles] = useState(false);
   const [showSongs, setShowSongs] = useState(false);
-  // The two bulk workflows, opened from the scene column's header. Owned here
-  // with the other modals: both act on the whole set rather than on a selection,
-  // and the grid underneath them is what they're about to change.
+  // Song workflows opened from the scene column's header. Owned here with the
+  // other modals: they act on set structure rather than only on a selection.
+  const [addingSong, setAddingSong] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [recoloring, setRecoloring] = useState(false);
 
@@ -320,6 +321,7 @@ export function App() {
               onToggleSong={onToggleSong}
               onPickSong={onPickSong}
               songCount={derivation.songs.length}
+              onAddSong={() => setAddingSong(true)}
               onReorder={() => setReordering(true)}
               onRecolor={() => setRecoloring(true)}
               dragFrom={dragFrom}
@@ -471,6 +473,22 @@ export function App() {
           collapsedCount={collapsedSongs.size}
           onCollapseAll={onCollapseAll}
           onClose={() => setShowSongs(false)}
+        />
+      )}
+
+      {addingSong && snapshot && (
+        <NewSongModal
+          derivation={derivation}
+          sceneCount={snapshot.sceneCount}
+          palette={bridge.palette}
+          busy={bridge.busy}
+          onAdd={(addition) => {
+            setAddingSong(false);
+            // Insertion renumbers every selected address at or below it.
+            clearSelection();
+            void bridge.addScenes(addition, `add song ${addition.name}`);
+          }}
+          onClose={() => setAddingSong(false)}
         />
       )}
 

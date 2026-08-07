@@ -46,8 +46,10 @@ export interface Props {
   onToggleSong: (songKey: string) => void;
   /** Select every scene of a song, across all its blocks. */
   onPickSong: (songKey: string) => void;
-  /** Songs derivation found — the two bulk workflows have nothing to do at 0. */
+  /** Songs derivation found — order and rule-based color have nothing to do at 0. */
   songCount: number;
+  /** Open the additive eight-scene song scaffold. */
+  onAddSong: () => void;
   /** Open the running-order modal. */
   onReorder: () => void;
   /** Open the rule-based coloring modal. */
@@ -117,6 +119,7 @@ export function ClipGrid({
   onToggleSong,
   onPickSong,
   songCount,
+  onAddSong,
   onReorder,
   onRecolor,
   dragFrom,
@@ -178,10 +181,9 @@ export function ClipGrid({
       </colgroup>
       <thead>
         <tr>
-          {/* The two workflows that act on every song at once live at the top of
-              the column the songs are read down. Both are things you do to the
-              set rather than to a selection, so neither belongs in the rail —
-              and the rail can be shut.
+          {/* Set-wide song workflows live at the top of the column the songs
+              are read down. They do not belong to a selection, so neither do
+              they belong in the rail — and the rail can be shut.
 
               Flex on a wrapper div, never on the `th`: `display: flex` on a
               table cell stops it being a table cell and takes the grid's fixed
@@ -190,6 +192,14 @@ export function ClipGrid({
             <div className="scene-h-line">
               <span>Scene</span>
               <div className="spacer" />
+              <button
+                type="button"
+                className="bulk"
+                title="Insert eight empty scenes for a new song"
+                onClick={onAddSong}
+              >
+                new…
+              </button>
               <button
                 type="button"
                 className="bulk"
@@ -243,9 +253,9 @@ export function ClipGrid({
             const fill = { background: hex(track.color), color: inkOn(track.color) };
 
             if (c.kind === 'group') {
-              // The whole header is the fold control, so the triangle isn't a
+              // The whole header is the fold control, so the badge isn't a
               // separate button — the name is as much a click target as the
-              // arrow, which is what makes a 40-column grid tolerable to fold.
+              // icon, which is what makes a 40-column grid tolerable to fold.
               // ⌘-click still stops, same as any track header, and on a group
               // Live's stop_all_clips takes the members with it.
               return (

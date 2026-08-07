@@ -52,8 +52,11 @@ tr.song-row:hover td {
 }
 tr.song-row .fold {
   flex: 0 0 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--dim2);
-  font-size: 9px;
 }
 /* Name and outlined tag are one identity slot. The row spans all columns when
    open, but this slot stays within the scene column so song metadata cannot

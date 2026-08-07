@@ -5,6 +5,11 @@ td.scene {
   font-size: 10px;
   color: var(--dim);
   white-space: nowrap;
+  /* The header reaches its key after an 8px cell inset, a 14px fold badge and
+     the 26px BPM slot. Scene rows reach theirs after a 12px launcher and the
+     same 26px number slot, so this 10px inset puts both key columns on the
+     exact same x coordinate. It also lines the launcher up under the badge. */
+  padding-left: 10px;
   padding-right: 8px;
   width: var(--scene-col-w);
   max-width: var(--scene-col-w);

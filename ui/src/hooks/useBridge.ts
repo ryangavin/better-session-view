@@ -80,6 +80,8 @@ export interface BridgeState {
   apply: (ops: BSV.ApplyOp[], label?: string) => Promise<void>;
   /** Scene-addressed writes — role tags and scene colors. */
   applyScenes: (sceneOps: BSV.SceneOp[], label?: string) => Promise<void>;
+  /** Insert and configure blank scenes. Additive, but structural: indexes shift. */
+  addScenes: (addition: BSV.SceneAddition, label?: string) => Promise<void>;
   /**
    * Reorder scenes. **The one write with no undo of ours** — it creates and
    * deletes scenes, and a snapshot can't rebuild a deleted one. Clears the undo
@@ -523,6 +525,46 @@ export function useBridge(watchMeters = false): BridgeState {
   );
 
   /**
+   * Add scenes without touching the delete-capable reorder path.
+   *
+   * This still clears our undo entry: inserting above an old operation shifts
+   * every scene address it captured. Live's grouped history is the only safe
+   * reversal because our snapshots deliberately cannot delete scenes.
+   */
+  const addScenes = useCallback(
+    (addition: BSV.SceneAddition, label = 'add scenes') =>
+      guard(label, async () => {
+        undoRef.current = null;
+        setUndoDepth(0);
+
+        const e = await client.request({ type: 'addScenes', addition });
+        if (e.failed > 0 || e.configured !== e.created) {
+          say(
+            `${label} — ${e.created} created, ${e.configured} configured, ` +
+              `${e.failed} failed. Check the new rows and the Max window.`,
+            'error',
+          );
+        } else {
+          say(
+            `${label} — ${e.created} scenes inserted at ${e.from + 1}–${e.to + 1} ` +
+              `in ${e.lomMs}ms`,
+            'ok',
+          );
+        }
+        say(
+          e.undoStep
+            ? "the addition is one step in Live's own undo history — ⌘Z in Live, not here"
+            : 'Live would not group the addition for undo; our ⌘Z does not delete scenes',
+          e.undoStep ? 'info' : 'error',
+        );
+
+        // The bridge broadcasts one structural change after the whole run is
+        // configured. That drives the re-read for this and every other client.
+      }),
+    [client, guard, say],
+  );
+
+  /**
    * Reorder scenes.
    *
    * **Deliberately not routed through `write`**, and the difference is the whole
@@ -671,6 +713,7 @@ export function useBridge(watchMeters = false): BridgeState {
     refresh,
     apply,
     applyScenes,
+    addScenes,
     moveScenes,
     moveClips,
     saveRoles,
