@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { tempoOps, type SceneFields } from '../../../core/src/roles.js';
+import { MIN_TEMPO } from '../../../core/src/derive.js';
 import {
   commonTitle,
   titleOf,
@@ -17,8 +18,8 @@ interface Args {
 }
 
 /**
- * Editing the selected scenes' titles — `@{bpm}-{key} {SONG}`, everything in
- * the name after the role tag — and their own `Scene.tempo`.
+ * Editing the selected scenes' names — `@{key} {SONG}`, everything after the
+ * role tag — and their independent `Scene.tempo`.
  */
 export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScenes }: Args) {
   /** Which title fields have been edited — see TitlePatch in core. */
@@ -31,14 +32,33 @@ export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScene
     setTitlePatch({});
   }, [selectionKey]);
 
-  /** What the selected scenes agree on, per field. Null where they differ. */
-  const commonFields = useMemo(
-    () => commonTitle(sceneList.map((s) => titleOf(sceneNames.get(s) ?? ''))),
+  const selectedTitles = useMemo(
+    () => sceneList.map((s) => titleOf(sceneNames.get(s) ?? '')),
     [sceneList, sceneNames],
   );
 
+  /**
+   * What the selection agrees on. Song and key come from the names; BPM comes
+   * from Scene.tempo, falling back to a legacy name only during migration.
+   */
+  const commonFields = useMemo(() => {
+    const named = commonTitle(selectedTitles);
+    if (sceneList.length === 0) return named;
+    const scenes = new Map(scenesForOps.map((scene) => [scene.s, scene]));
+    const bpms = sceneList.map((s, i) => {
+      const tempo = scenes.get(s)?.tempo ?? -1;
+      return tempo >= MIN_TEMPO ? String(tempo) : (selectedTitles[i]?.bpm ?? '');
+    });
+    const bpm = bpms.every((value) => value === bpms[0]) ? bpms[0]! : null;
+    return { ...named, bpm };
+  }, [sceneList, scenesForOps, selectedTitles]);
+
   const sceneNameOps = useMemo(
-    () => titleOps(scenesForOps, sceneList, titlePatch),
+    () =>
+      titleOps(scenesForOps, sceneList, {
+        song: titlePatch.song,
+        key: titlePatch.key,
+      }),
     [sceneList, scenesForOps, titlePatch],
   );
 
@@ -57,9 +77,8 @@ export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScene
     [applyScenes, sceneNameOps],
   );
 
-  // The bpm field drives two independent things: the name token, written by
-  // Rename above, and Live's own Scene.tempo, written here. Kept apart because
-  // only one of them changes how the set plays.
+  // BPM belongs to Live's Scene.tempo, not to the name. A legacy name supplies
+  // the initial field only when the scene has no tempo property yet.
   const wantedTempo = useMemo(() => {
     const raw = (titlePatch.bpm ?? commonFields.bpm ?? '').trim();
     const n = Number(raw);

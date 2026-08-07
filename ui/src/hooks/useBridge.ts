@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BridgeClient, type ConnectionState } from '../lib/client.js';
-import { inverseOps } from '../../../core/src/ops.js';
+import { applyOps, inverseOps } from '../../../core/src/ops.js';
 import {
+  applySceneOps,
   countUnrevertableColors,
   inverseSceneOps,
   sceneFields,
 } from '../../../core/src/roles.js';
 import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
-import type { ClipMovePlan } from '../../../core/src/clipMove.js';
+import { applyClipMove, type ClipMovePlan } from '../../../core/src/clipMove.js';
 import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.js';
 import { useLog, type LogLine } from './useLog.js';
 import { usePalette } from './usePalette.js';
@@ -318,6 +319,60 @@ export function useBridge(watchMeters = false): BridgeState {
 
   const size = (b: Batch) => b.ops.length + b.sceneOps.length;
 
+  // Refs, not deps, for both of these: `write` is handed down to memoized
+  // components, and an identity that changes when the palette arrives would
+  // re-render the grid for a value it only reads inside an await.
+  const paletteRef = useRef<number[]>([]);
+  paletteRef.current = palette;
+
+  /**
+   * Re-read the whole set. The honest answer to any write, and the expensive
+   * one — a full walk is tens of thousands of LOM reads, so it's the fallback
+   * rather than the routine.
+   */
+  const resync = useCallback(
+    () =>
+      whileSyncing(async () => {
+        const s = await client.request({ type: 'snapshot' });
+        setSnapshot(s.data);
+      }),
+    [client, whileSyncing],
+  );
+
+  /**
+   * The snapshot as it reads once `batch` has landed, or `null` when we can't
+   * work it out and the set has to be re-read instead.
+   *
+   * Every write used to be followed by a full walk, because a snapshot was the
+   * only thing that ever set this state. That's a lot of Live to re-read in
+   * order to learn that four scenes are now called what we just named them.
+   *
+   * `null` for the cases where the arithmetic would be guessing:
+   *
+   * - **Nothing to update yet.** No snapshot means no local copy to patch.
+   * - **A color slot we have no RGB for.** A clip's color goes to Live as an
+   *   index but is drawn from RGB, so an unresolvable slot would leave the grid
+   *   showing the old color against the new index. The palette is derived
+   *   before the first walk, so this is close to unreachable.
+   *
+   * The caller adds the one that matters most: Live has to have taken *every*
+   * op. It answers with counts and not with which ops it skipped, so a partial
+   * write can't be reproduced here and doesn't try to be.
+   */
+  const reconcile = useCallback((batch: Batch): BSV.Snapshot | null => {
+    const s = snapshotRef.current;
+    if (!s) return null;
+    const rgb = paletteRef.current;
+    for (const op of batch.ops) {
+      if (op.colorIndex !== undefined && rgb[op.colorIndex] === undefined) return null;
+    }
+    return {
+      ...s,
+      clips: applyOps(s.clips, batch.ops, (i) => rgb[i]),
+      scenes: applySceneOps(s.scenes, batch.sceneOps),
+    };
+  }, []);
+
   const write = useCallback(
     (batch: Batch, label: string, reverse: { batch: Batch; label: string } | null) =>
       guard(label, async () => {
@@ -342,12 +397,15 @@ export function useBridge(watchMeters = false): BridgeState {
             ` in ${e.lomMs}ms`,
           short ? 'error' : 'ok',
         );
-        await whileSyncing(async () => {
-          const s = await client.request({ type: 'snapshot' });
-          setSnapshot(s.data);
-        });
+        // Everything landed, so we already know what the set says — patch the
+        // copy in hand rather than walking Live to be told what we just wrote.
+        // Anything less than everything and we don't know *which* op missed, so
+        // the walk is the only way to find out.
+        const next = e.applied === sent ? reconcile(batch) : null;
+        if (next) setSnapshot(next);
+        else await resync();
       }),
-    [client, guard, say, whileSyncing],
+    [client, guard, reconcile, resync, say],
   );
 
   const apply = useCallback(
@@ -440,12 +498,12 @@ export function useBridge(watchMeters = false): BridgeState {
           e.undoStep ? 'info' : 'error',
         );
 
-        await whileSyncing(async () => {
-          const s = await client.request({ type: 'snapshot' });
-          setSnapshot(s.data);
-        });
+        // The one write that always re-reads. Creating and deleting scenes
+        // renumbers everything below them, so it isn't a patch to the set we
+        // hold — it's a different set with different indexes.
+        await resync();
       }),
-    [client, guard, say, whileSyncing],
+    [client, guard, resync, say],
   );
 
   /**
@@ -493,12 +551,19 @@ export function useBridge(watchMeters = false): BridgeState {
           e.undoStep ? 'info' : 'error',
         );
 
-        await whileSyncing(async () => {
-          const s = await client.request({ type: 'snapshot' });
-          setSnapshot(s.data);
-        });
+        // Unlike a scene move this renumbers nothing — every index still means
+        // what it meant, so the plan alone says where every clip ended up. A
+        // failure doesn't: `lom.ts` skips the whole delete pass, and what that
+        // leaves behind is a set we'd be describing from a plan it didn't run.
+        const s = snapshotRef.current;
+        if (e.failed === 0 && s) {
+          const clips = applyClipMove(s.clips, plan);
+          setSnapshot({ ...s, clips, clipCount: clips.length });
+        } else {
+          await resync();
+        }
       }),
-    [client, guard, say, whileSyncing],
+    [client, guard, resync, say],
   );
 
   const undo = useCallback(() => {

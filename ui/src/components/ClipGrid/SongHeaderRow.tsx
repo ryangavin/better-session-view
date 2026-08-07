@@ -137,8 +137,8 @@ export const SongHeaderRow = memo(function SongHeaderRow({
     <div className="song-line">
       <span className="fold">{header.collapsed ? '▸' : '▾'}</span>
       {/* The facts lead, so the key lands immediately left of the name it
-          describes — and bpm before key is the order the naming convention
-          itself writes, `@128-Bm`. Both right-aligned: the values differ in
+          describes. BPM stays outside it as the numeric tempo column. Both
+          are right-aligned: the values differ in
           width ("94" / "128", "Bm" / "F#m") and their right edges are what a
           column of them should line up on.
 

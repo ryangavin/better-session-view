@@ -221,6 +221,34 @@ It fires once per *session*, guarded by a ref, and that guard is the point: a wa
 **fails** leaves `snapshot` null with `lomReady` still true, so without it the effect
 would re-run and retry forever — hammering the LOM with the walk that just broke.
 
+## A write patches the snapshot; it doesn't re-read the set
+
+Every write used to end in a full walk, because a snapshot was the only thing that ever
+set that state. Tagging four scenes with a role meant re-reading every clip in the set to
+be told what we had just written, and on a real set that's the difference between a chip
+that changes instantly and one that changes after a visible pause.
+
+So `write` and `moveClips` patch the copy in hand instead. The arithmetic is in `core/` —
+`applyOps`, `applySceneOps`, `applyClipMove` — because a merge that's subtly wrong shows a
+grid disagreeing with Live and gives no hint which of the two is lying, and that deserves
+tests rather than a hook.
+
+**`resync()` is still there and three things still reach for it**, which is what makes
+being optimistic safe:
+
+- **A write Live didn't take in full.** `apply` answers with counts, never with *which*
+  ops it skipped, so `applied === sent` is the only claim strong enough to patch from.
+  Anything less and the walk is the only way to find out what actually happened.
+- **A clip move that reported a failure.** `lom.ts` skips the entire delete pass if any
+  copy failed, so the set holds both copies — a state the plan doesn't describe.
+- **`moveScenes`, always.** It creates and deletes scenes, so every index below the edit
+  means something different. That isn't a patch to the set we hold, it's a different set.
+
+What this gives up is the free ride: a re-walk after every write also picked up changes
+*you* made in Live, so the grid quietly caught up on a track you renamed there. It no
+longer does, and **Snapshot** is how you ask for that. Worth knowing when the grid and
+Live disagree — the button is the answer, and it's the same button it always was.
+
 ## Working on a whole song
 
 Clicking a **song title** in a header selects every scene of that song, across all its
@@ -301,9 +329,11 @@ of contents.
 
 Three things about it are load-bearing:
 
-- **Folding is keyed by song, not by scene index**, so it survives a re-snapshot. Every
-  write re-walks the set, and a fold state that reset each time would make the grid
-  useless during a mapping pass. Like collapsing a track group, it never writes to Live.
+- **Folding is keyed by song, not by scene index**, so it survives a re-snapshot. Writes
+  patch the snapshot now rather than re-walking, but a re-snapshot still happens — every
+  scene move, and every write Live didn't take in full — and a fold state that reset then
+  would make the grid useless during a mapping pass. Like collapsing a track group, it
+  never writes to Live.
 - **`rows` replaces `sceneCount` everywhere movement or selection happens.**
   `useSongLayout` computes it from `songRows`, and `App` threads it into
   `moveActive` and `cellsInBlock` exactly as it threads `trackColumns`. Without that, `⌘↓` walks into folded scenes and fires
@@ -335,10 +365,10 @@ called, what it's built from, and what's in it:
   slot reads as a rendering fault, where a dash says the set never named one — which is a
   thing to go and fix. Dimmer than any real value, and it stays dim under a clash, because
   nothing said is not the same as two scenes disagreeing.
-- **The facts lead**, so the key sits immediately left of the name it describes. bpm
-  before key is the order the naming convention itself writes — `@128-Bm`. Both are
-  right-aligned: `94` and `128` are the same fact at different widths and it's their
-  right edges that should line up.
+- **The facts lead**, so the key sits immediately left of the name it describes. BPM
+  comes before key in the song header to keep the numeric tempo column on the outside.
+  Both are right-aligned: `94` and `128` are the same fact at different widths and it's
+  their right edges that should line up.
 - **Every slot is sized to its values, not to its words.** Matching the name slot to
   `--scene-col-w` was the tidier rule and the wrong one: at `l` it spends 290px on names
   rarely half that. Same for the facts — a bpm is three digits and a key is at most
@@ -573,9 +603,10 @@ found in **more than one block** gets a flag rather than an error, because a son
 label rather than a range: two blocks is a reprise, or it's two different songs sharing a
 name, and only you know which.
 
-`SCENE_PATTERN` is compiled once at module scope in `useSongLayout` from `DEFAULT_SCENE_PATTERN`.
-The `!` is safe there and nowhere else — there's a test in `namePattern.test.ts` holding
-that exact constant down. It becomes editable when the scheme file lands.
+The current and two prior scene patterns are compiled once at module scope in
+`useSongLayout`. The `!` is safe there and nowhere else — tests in
+`namePattern.test.ts` hold those constants down. They become editable when the scheme
+file lands.
 
 ## Nothing is selectable text
 
@@ -593,15 +624,16 @@ because naming a song and tagging its roles is the pass you make before touching
 individual clips, and the swatch grid below is the fallback for everything a role
 doesn't cover.
 
-A scene name is `[ROLE] @{bpm}-{key} {SONG}` — `[CHORUS] @128-Bm NIGHTFALL`. The panel
-edits both halves and they **commit differently, on purpose**: a role writes on click, a
-title edit needs the button. See below for why.
+A scene name is `[ROLE] @{key} {SONG}` — `[CHORUS] @Bm NIGHTFALL`. BPM lives on the
+scene's own `Scene.tempo` property instead. The panel edits all three pieces and they
+**commit differently, on purpose**: a role writes on click, a title edit and a tempo
+edit each have their own button. See below for why.
 
-**Role first, facts second, name last**, so a column of scene names reads as structure
+**Role first, key second, name last**, so a column of scene names reads as structure
 rather than as a list of titles. Live's own scene column is narrow, so the trade is that
 *there* the song name truncates before the metadata does; here it doesn't, because the
-grid lifts the role into a chip. Why the facts need only `@` and `-` while the role keeps
-its brackets is in [`core/README.md`](../core/README.md).
+grid lifts the role into a chip. Why the key needs only `@` while the role keeps its
+brackets is in [`core/README.md`](../core/README.md).
 
 **The chip leads the row, ahead of the name.** Everything to the left of the title is then
 a fixed width — fire button, scene number, chip — so a column of scene names starts on one
@@ -637,10 +669,9 @@ blank means "these scenes disagree" on arrival and "delete this part" once you'v
 deleted it — so `useSceneTitles` holds a `TitlePatch` of which fields have been
 *touched*, reset whenever the selection changes. The preview line is what makes the rule legible; keep it.
 
-Fields prefill from `commonTitle`, which returns `null` where the selection disagrees, so
-a mixed field shows a `mixed` placeholder rather than one scene's answer. `bpm` and `key`
-are validated inline and block the button, because a bad key is a rename you'd have to
-undo across a whole song.
+Song and key prefill from `commonTitle`; BPM comes from `Scene.tempo`, with older names
+used only as a migration fallback. A mixed field shows a `mixed` placeholder rather than
+one scene's answer. BPM and key are validated inline against their respective actions.
 
 ### Roles
 
@@ -648,7 +679,7 @@ The gesture is **click a scene name, click a role, click Color clips.** The role
 written to the front of the scene's own name as `[ROLE]` (see
 [`core/README.md`](../core/README.md) for why the set is the storage), and the grid shows
 the title with the tag lifted out into a colored chip — so Live holds
-`[CHORUS] @128-Bm NIGHTFALL` and we render `@128-Bm NIGHTFALL · CHORUS`.
+`[CHORUS] @Bm NIGHTFALL` and we render `@Bm NIGHTFALL · CHORUS`.
 
 **Clicking a role writes immediately, which only looks like it breaks the rule above.**
 That rule exists because a rename overwrites a name you can no longer see. A role tag is
@@ -715,10 +746,12 @@ this is the only way back that exists. `useBridge` captures the reverse batch fr
 snapshot before every write (see [`core/src/ops.ts`](../core/README.md)), which costs
 nothing because the snapshot already holds every clip's name and color.
 
-One level rather than a stack, on purpose: every write re-snapshots, so a stack would have
-to stay valid across that, and a stale entry that quietly restores the wrong thing is worse
-than having no stack. The entry is consumed whether or not the undo succeeds, so a failed
-undo can't be replayed into a half-reverted state by pressing ⌘Z twice.
+One level rather than a stack, on purpose: the snapshot an entry was captured against
+moves under it — patched after most writes, re-walked after the rest — so a stack would
+have to stay valid across all of that, and a stale entry that quietly restores the wrong
+thing is worse than having no stack. The entry is consumed whether or not the undo
+succeeds, so a failed undo can't be replayed into a half-reverted state by pressing ⌘Z
+twice.
 
 `⌘Z` doesn't conflict with the ⌘-makes-a-sound rule below — it isn't a grid gesture, and
 it's guarded by `isTypingInto` so the rename field keeps its own undo.

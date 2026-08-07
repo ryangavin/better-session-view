@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { colorOps } from '../../../core/src/ops.js';
-import { render } from '../../../core/src/pattern.js';
+import { DEFAULT_CLIP_PATTERN, render } from '../../../core/src/pattern.js';
 import { roleIn } from '../../../core/src/roles.js';
+import { titleOf } from '../../../core/src/sceneTitle.js';
 import { clipKey, parseClipKey } from '../lib/selection.js';
 import type { BridgeState } from './useBridge.js';
 
@@ -32,20 +33,27 @@ export function useClipInspector({
   apply,
 }: Args) {
   const [chosenIndex, setChosenIndex] = useState<number | null>(null);
-  const [pattern, setPattern] = useState('');
+  const [pattern, setPattern] = useState(DEFAULT_CLIP_PATTERN);
 
   // Token values for one clip. `{role}` comes from the clip's own scene, so the
   // rename pattern picks it up for free once the scene is tagged. `{song}`
   // lands with segmentation; until then it resolves to nothing, which render()
   // drops cleanly.
   const valuesFor = useCallback(
-    (t: number, s: number, n: number) => ({
-      track: trackNames.get(t),
-      scene: sceneNames.get(s),
-      role: roleIn(sceneNames.get(s) ?? '') ?? undefined,
-      name: clips.get(clipKey(t, s))?.name,
-      n,
-    }),
+    (t: number, s: number, n: number) => {
+      const scene = sceneNames.get(s) ?? '';
+      const title = titleOf(scene);
+      return {
+        track: trackNames.get(t),
+        scene,
+        role: roleIn(scene) ?? undefined,
+        song: title.song || undefined,
+        bpm: title.bpm || undefined,
+        key: title.key || undefined,
+        name: clips.get(clipKey(t, s))?.name,
+        n,
+      };
+    },
     [clips, sceneNames, trackNames],
   );
 

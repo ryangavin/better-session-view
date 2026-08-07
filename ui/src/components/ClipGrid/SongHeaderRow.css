@@ -100,8 +100,8 @@ tr.song-row .part {
   color: var(--dim);
 }
 /* The facts lead the row so the key sits immediately left of the name it
-   describes, and bpm before key is the order the convention itself writes:
-   `@128-Bm`. Both right-aligned — "94" and "128" are the same fact at
+   describes, with bpm outside it as the numeric tempo column. Both are
+   right-aligned — "94" and "128" are the same fact at
    different widths, and it's their right edges that should line up.
 
    Slots are sized to the values, not to the words: a bpm is three digits and a

@@ -1,5 +1,5 @@
 import { hex } from '../../../core/src/color.js';
-import { TOKENS, unknownTokens } from '../../../core/src/pattern.js';
+import { DEFAULT_CLIP_PATTERN, TOKENS, unknownTokens } from '../../../core/src/pattern.js';
 import { SwatchGrid } from './SwatchGrid.js';
 
 interface Props {
@@ -75,7 +75,7 @@ export function Inspector({
       <input
         type="text"
         value={pattern}
-        placeholder="{track} {scene}"
+        placeholder={DEFAULT_CLIP_PATTERN}
         onChange={(e) => onPattern(e.target.value)}
         spellCheck={false}
       />

@@ -59,7 +59,7 @@ interface Props {
 
 /**
  * Everything that acts on the scenes picked in the scene-name column: the
- * title — `@{bpm}-{key} {SONG}` — and the role tag that leads it.
+ * name — `@{key} {SONG}` — its Scene.tempo, and the role tag that leads it.
  *
  * The two commit differently, on purpose. **Assigning a role writes on click,
  * the way a swatch does**, which only looks like it breaks the Inspector's rule
@@ -145,7 +145,7 @@ export function ScenePanel({
         ) : none ? (
           'Shift-click a second scene name to take a whole song.'
         ) : (
-          'A field you leave alone stays as it is on each scene. Clear one to remove that part.'
+          'Song and key rename scenes. BPM writes Scene.tempo with the button below.'
         )}
       </div>
       {titlePreview !== null && (
@@ -158,7 +158,7 @@ export function ScenePanel({
           instantly-legible action rather than the destructive one. */}
       <button
         type="button"
-        disabled={titleCount === 0 || busy || badBpm || badKey}
+        disabled={titleCount === 0 || busy || badKey}
         onClick={onRenameScenes}
       >
         Rename {titleCount} scene{titleCount === 1 ? '' : 's'}

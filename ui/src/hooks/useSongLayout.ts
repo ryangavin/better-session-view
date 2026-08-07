@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { derive } from '../../../core/src/derive.js';
 import {
+  BPM_SCENE_PATTERN,
   compilePattern,
   DEFAULT_SCENE_PATTERN,
   LEGACY_SCENE_PATTERN,
@@ -10,18 +11,19 @@ import { allSongKeys, blockTrackRoles, songRows } from '../../../core/src/songRo
 /**
  * The scene patterns, until the scheme file lands and makes them editable.
  *
- * Two, in order: the convention we write, then the one this app wrote before
- * it. Derivation takes the first that matches, so **a set named the old way
+ * Three, in order: the convention we write, then the two this app wrote before
+ * it. Derivation chooses the richest match, so **a set named the old way
  * still shows its songs** and converts scene by scene as it's renamed. Without
  * the second entry every scene would read as unmapped the moment the convention
  * changed, and there would be nothing left to select in order to fix it.
  *
  * Compiled once at module scope: they never change yet, and each compile runs a
  * round-trip probe. `!` is safe here and nowhere else — both patterns have a
- * test asserting they compile.
+ * test asserting it compiles.
  */
 const SCENE_PATTERNS = [
   compilePattern(DEFAULT_SCENE_PATTERN)!,
+  compilePattern(BPM_SCENE_PATTERN)!,
   compilePattern(LEGACY_SCENE_PATTERN)!,
 ];
 
