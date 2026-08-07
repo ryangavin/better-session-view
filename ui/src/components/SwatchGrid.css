@@ -1,6 +1,8 @@
 .swatches {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  /* Live's palette is ordered row-major as a continuous hue sweep. Fourteen
+     columns preserve those intended row breaks; ten made each new row jump. */
+  grid-template-columns: repeat(14, 1fr);
   gap: 4px;
 }
 .sw {
@@ -15,9 +17,4 @@
 }
 .sw.on {
   border: 2px solid var(--amber);
-}
-
-/* The manager is wide enough for Live's full 14-column picker. */
-.swatches.wide {
-  grid-template-columns: repeat(14, 1fr);
 }

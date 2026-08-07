@@ -3,7 +3,7 @@ import './ScenePanel.css';
 import { roleKey, type Role } from '../../../core/src/roles.js';
 import { isBpm, isKey, isTag, type TitlePatch } from '../../../core/src/sceneTitle.js';
 import { SUGGESTED_SONG_TAGS } from '../../../core/src/songTags.js';
-import { SwatchGrid } from './SwatchGrid.js';
+import { ColorSelect } from './ColorSelect.js';
 
 interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */
@@ -49,11 +49,8 @@ interface Props {
   currentRole: string | null;
   /** True when the selection spans more than one role. */
   mixed: boolean;
-  /** Clips "Color clips" would actually write — already filtered to changes. */
-  clipCount: number;
   busy: boolean;
   onAssign: (role: string | null) => void;
-  onColorClips: () => void;
   /** Opens the vocabulary editor, which `App` owns — see RolesManager. */
   onManageRoles: () => void;
 }
@@ -88,14 +85,17 @@ export function ScenePanel({
   onSongColor,
   currentRole,
   mixed,
-  clipCount,
   busy,
   onAssign,
-  onColorClips,
   onManageRoles,
 }: Props) {
   const none = sceneCount === 0;
   const currentKey = currentRole === null ? null : roleKey(currentRole);
+  const selectedRole = vocabulary.find((r) => roleKey(r.name) === currentKey);
+  const selectedRoleSwatch =
+    selectedRole && selectedRole.colorIndex >= 0
+      ? palette[selectedRole.colorIndex]
+      : undefined;
 
   const shown = (f: keyof TitlePatch) => patch[f] ?? common[f] ?? '';
   const badTag = shown('tag').trim() !== '' && !isTag(shown('tag'));
@@ -125,16 +125,35 @@ export function ScenePanel({
 
   return (
     <>
-      <div className="lbl">
-        Scene{' '}
-        {none ? (
-          <span className="dim">— click a scene name</span>
-        ) : (
-          `${sceneCount} selected`
-        )}
+      <div className="lbl facet-title">
+        <span>Song</span>
+        <span className="facet-summary">
+          {none
+            ? 'click a scene name'
+            : `${sceneCount} scene${sceneCount === 1 ? '' : 's'} selected`}
+        </span>
       </div>
 
-      {field('song', 'song', 'Nightfall')}
+      <div className="song-field-row">
+        {field('song', 'song', 'Nightfall')}
+        <div className="field song-color-field">
+          <span>color</span>
+          <ColorSelect
+            palette={palette}
+            current={songColorIndex}
+            disabled={none || busy}
+            label="Song color"
+            showLabel={false}
+            titleFor={(i) =>
+              none
+                ? `index ${i}`
+                : `index ${i} — paints all ${songColorCount} scene` +
+                  `${songColorCount === 1 ? '' : 's'} of ${songColorLabel}`
+            }
+            onPick={onSongColor}
+          />
+        </div>
+      </div>
       <div className="field-row">
         {field('tag', 'tag', 'COVER', badTag, (value) => value.toUpperCase())}
         {field('bpm', 'bpm', '128', badBpm)}
@@ -157,7 +176,10 @@ export function ScenePanel({
         ) : none ? (
           'Shift-click a second scene name to take a whole song.'
         ) : (
-          'Song, tag and key rename scenes. BPM writes Scene.tempo with the button below.'
+          <>
+            Song, tag and key rename scenes. Color paints all {songColorCount} scene
+            {songColorCount === 1 ? '' : 's'} of {songColorLabel}. BPM writes Scene.tempo.
+          </>
         )}
       </div>
       {titlePreview !== null && (
@@ -194,111 +216,67 @@ export function ScenePanel({
         scene{tempoCount === 1 ? '' : 's'}
       </button>
 
-      <div className="lbl">Song color</div>
-      {palette.length === 0 ? (
-        <div className="hint">Built-in palette unavailable — rebuild the app.</div>
-      ) : (
-        <>
-          <SwatchGrid
-            palette={palette}
-            current={songColorIndex}
-            disabled={none || busy}
-            titleFor={(i) =>
-              none
-                ? `index ${i}`
-                : `index ${i} — paints all ${songColorCount} scene` +
-                  `${songColorCount === 1 ? '' : 's'} of ${songColorLabel}`
-            }
-            onPick={onSongColor}
-          />
-          {/* Says the *song* scope out loud, every time. The selection is what
-              you clicked; what gets painted is every scene those songs have,
-              which can be a reprise sixty rows further down. */}
-          <div className="hint">
-            {none ? (
-              'One color per song, so a set reads as bands in Live. Pick a song header.'
-            ) : (
-              <>
-                Writes on click — all{' '}
-                <b>
-                  {songColorCount} scene{songColorCount === 1 ? '' : 's'}
-                </b>{' '}
-                of {songColorLabel}.
-              </>
-            )}
-          </div>
-        </>
-      )}
-
-      <div className="rule" />
-
       <div className="lbl">Role</div>
 
-      {vocabulary.length === 0 ? (
-        <div className="hint">
-          No roles yet — <b>Manage roles</b> to add intro, verse, chorus…
-        </div>
-      ) : (
-        <div className="chips">
-          {vocabulary.map((r) => {
-            const on = !mixed && currentKey === roleKey(r.name);
-            const swatch = r.colorIndex >= 0 ? palette[r.colorIndex] : undefined;
-            return (
-              <button
-                key={roleKey(r.name)}
-                type="button"
-                className={`chip${on ? ' on' : ''}`}
-                disabled={none || busy}
-                title={
-                  swatch === undefined
-                    ? `${r.name} — no color yet`
-                    : `${r.name} — clips color to index ${r.colorIndex}`
+      <div className="role-select-row">
+        {vocabulary.length === 0 ? (
+          <select disabled aria-label="Role">
+            <option>No roles yet</option>
+          </select>
+        ) : (
+          <div className="role-select-control">
+            <span
+              className={`color-dot${selectedRoleSwatch === undefined ? ' empty' : ''}`}
+              style={
+                selectedRoleSwatch === undefined
+                  ? undefined
+                  : { background: hex(selectedRoleSwatch) }
+              }
+            />
+            <select
+              aria-label="Role"
+              value={
+                mixed
+                  ? 'mixed'
+                  : currentRole === null
+                    ? 'none'
+                    : String(vocabulary.findIndex((r) => roleKey(r.name) === currentKey))
+              }
+              disabled={none || busy}
+              onChange={(e) => {
+                if (e.target.value === 'none') onAssign(null);
+                else if (e.target.value !== 'mixed') {
+                  const role = vocabulary[Number(e.target.value)];
+                  if (role) onAssign(role.name);
                 }
-                onClick={() => onAssign(on ? null : r.name)}
-              >
-                <span
-                  className={`color-dot${swatch === undefined ? ' empty' : ''}`}
-                  style={swatch === undefined ? undefined : { background: hex(swatch) }}
-                />
-                {r.name}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            className={`chip clear${!mixed && currentRole === null && !none ? ' on' : ''}`}
-            disabled={none || busy || (currentRole === null && !mixed)}
-            title="Take the role tag off these scenes"
-            onClick={() => onAssign(null)}
-          >
-            none
-          </button>
-        </div>
-      )}
+              }}
+            >
+              {mixed && (
+                <option value="mixed" disabled>
+                  Mixed roles
+                </option>
+              )}
+              <option value="none">No role</option>
+              {vocabulary.map((r, i) => (
+                <option key={roleKey(r.name)} value={i}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <button type="button" className="manage-roles" disabled={busy} onClick={onManageRoles}>
+          Manage…
+        </button>
+      </div>
 
       <div className="hint">
         {none
           ? 'Roles are stored in the scene name as [role], so they travel with the set.'
           : mixed
             ? 'These scenes have different roles — pick one to set them all.'
-            : 'Clicking a role writes it into the scene name straight away.'}
+            : 'Choosing a role writes it into the scene name straight away.'}
       </div>
-
-      {/* A role colors clips and nothing else. Scene rows carry the song's
-          color, and painting them per role would break the one song / one band
-          rule the grid is navigated by. */}
-      <button
-        type="button"
-        className="primary"
-        disabled={clipCount === 0 || busy}
-        title="Color every clip in the selected scenes with its own scene's role color"
-        onClick={onColorClips}
-      >
-        Color {clipCount} clip{clipCount === 1 ? '' : 's'}
-      </button>
-      <button type="button" disabled={busy} onClick={onManageRoles}>
-        Manage roles
-      </button>
     </>
   );
 }

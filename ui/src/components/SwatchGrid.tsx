@@ -15,8 +15,6 @@ interface Props {
   disabled?: boolean;
   /** Tooltip per swatch. Defaults to `index N`. */
   titleFor?: (index: number, rgb: number) => string;
-  /** The modal's wider grid — `.swatches.wide`. */
-  wide?: boolean;
 }
 
 /**
@@ -30,10 +28,9 @@ export function SwatchGrid({
   onPick,
   disabled,
   titleFor,
-  wide,
 }: Props) {
   return (
-    <div className={`swatches${wide ? ' wide' : ''}`}>
+    <div className="swatches">
       {palette.map((rgb, i) => (
         <button
           key={i}
@@ -43,6 +40,7 @@ export function SwatchGrid({
           }`}
           style={{ background: hex(rgb) }}
           title={titleFor ? titleFor(i, rgb) : `index ${i}`}
+          aria-label={titleFor ? titleFor(i, rgb) : `index ${i}`}
           disabled={disabled}
           onClick={() => onPick(i)}
         />

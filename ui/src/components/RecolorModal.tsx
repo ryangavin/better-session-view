@@ -200,7 +200,6 @@ export function RecolorModal({
         ) : (
           <SwatchGrid
             palette={palette}
-            wide
             current={null}
             chosen={allowedSet}
             onPick={toggleColor}

@@ -136,6 +136,26 @@ button.toggle.on {
   margin-top: 4px;
 }
 
+/* The rail edits two related scopes. Their headings keep the scope on the
+   left and the live selection on the right without spending a second row. */
+.facet-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--fg2);
+}
+.facet-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dim2);
+  font-size: 9px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .hint {
   font-size: 10px;
   color: var(--dim2);

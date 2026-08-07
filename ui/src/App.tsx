@@ -364,10 +364,9 @@ export function App() {
           )}
         </div>
 
-        {/* Scenes above clips: naming a song and tagging its roles is the pass
-            you make first, and pressing the role's color is the two-click path
-            that panel exists for. The swatch grid and clip rename below are the
-            manual fallback for everything a role doesn't cover. */}
+        {/* Song and scene metadata first, then every action that writes clips.
+            That keeps the rail's two facets readable even when both selections
+            are live at once. */}
         {showRail && (
           <Rail onClose={closeRail}>
             <ScenePanel
@@ -388,10 +387,8 @@ export function App() {
               onSongColor={onSongColor}
               currentRole={currentRole}
               mixed={mixed}
-              clipCount={clipCount}
               busy={bridge.busy}
               onAssign={onAssignRole}
-              onColorClips={onColorClips}
               onManageRoles={() => setManagingRoles(true)}
             />
 
@@ -404,12 +401,14 @@ export function App() {
               pattern={pattern}
               onPattern={setPattern}
               selectedCount={selected.size}
+              roleColorCount={clipCount}
               renameCount={renameCount}
               preview={preview}
               busy={bridge.busy}
               progress={bridge.progress}
               undoDepth={bridge.undoDepth}
               onRename={onRename}
+              onColorClips={onColorClips}
               onUndo={() => void bridge.undo()}
               onClear={clearSelection}
             />

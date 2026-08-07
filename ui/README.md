@@ -21,9 +21,10 @@ src/components/       one component per file
   StatsBar.tsx        the bottom status strip — stat tiles + the key-hint line
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it
-  ScenePanel.tsx      song/bpm/key fields, role chips, role→color
-  Inspector.tsx       rename pattern, swatches, apply
-  SwatchGrid.tsx      the palette as clickable swatches, shared by all three pickers
+  ScenePanel.tsx      song/tag/bpm/key fields, the role picker, song color
+  Inspector.tsx       rename pattern, clip color, role→color, apply
+  ColorSelect.tsx     current color closed, the palette in a popover open
+  SwatchGrid.tsx      the palette as clickable swatches, shared by every picker
   RoleMenu.tsx        the picker that hangs off a scene's role chip
   RolesManager.tsx    the vocabulary editor — modal, owned by App
   SongsModal.tsx      what the app read back out of the set — read-only

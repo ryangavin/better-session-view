@@ -104,7 +104,6 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
             ) : (
               <SwatchGrid
                 palette={palette}
-                wide
                 current={draft[picking]?.colorIndex ?? null}
                 onPick={(ci) => {
                   edit(picking, { colorIndex: ci });

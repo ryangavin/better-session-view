@@ -1,6 +1,6 @@
 import { hex } from '../../../core/src/color.js';
 import { DEFAULT_CLIP_PATTERN, TOKENS, unknownTokens } from '../../../core/src/pattern.js';
-import { SwatchGrid } from './SwatchGrid.js';
+import { ColorSelect } from './ColorSelect.js';
 
 interface Props {
   palette: number[];
@@ -10,6 +10,8 @@ interface Props {
   pattern: string;
   onPattern: (s: string) => void;
   selectedCount: number;
+  /** Clips the role-color action would actually write. */
+  roleColorCount: number;
   /** Clips the pattern would actually change — excludes ones already named that. */
   renameCount: number;
   preview: string | null;
@@ -17,6 +19,7 @@ interface Props {
   progress: { done: number; total: number } | null;
   undoDepth: number;
   onRename: () => void;
+  onColorClips: () => void;
   onUndo: () => void;
   onClear: () => void;
 }
@@ -28,12 +31,14 @@ export function Inspector({
   pattern,
   onPattern,
   selectedCount,
+  roleColorCount,
   renameCount,
   preview,
   busy,
   progress,
   undoDepth,
   onRename,
+  onColorClips,
   onUndo,
   onClear,
 }: Props) {
@@ -44,18 +49,25 @@ export function Inspector({
   // in the same scrolling column above this one.
   return (
     <>
-      {/* Color first: it's the one that writes on click, and the common case. */}
-      <div className="lbl">
-        Color {none ? <span className="dim">— select clips</span> : `${selectedCount} clips`}
+      <div className="lbl facet-title">
+        <span>Clips</span>
+        <span className="facet-summary">
+          {none
+            ? 'select clips'
+            : `${selectedCount} clip${selectedCount === 1 ? '' : 's'} selected`}
+        </span>
       </div>
+
+      {/* Direct color first: it writes on click and is the common case. */}
       {palette.length === 0 ? (
         <div className="hint">Built-in palette unavailable — rebuild the app.</div>
       ) : (
         <>
-          <SwatchGrid
+          <ColorSelect
             palette={palette}
             current={chosenIndex}
             disabled={none || busy}
+            label="Color"
             titleFor={(i, rgb) =>
               `index ${i} — ${hex(rgb)}${none ? '' : ` — apply to ${selectedCount} clips`}`
             }
@@ -68,6 +80,18 @@ export function Inspector({
           </div>
         </>
       )}
+
+      {/* A role colors clips and nothing else. Scene rows keep the song color,
+          while every clip in a selected scene takes that scene's role color. */}
+      <button
+        type="button"
+        className="primary"
+        disabled={roleColorCount === 0 || busy}
+        title="Color every clip in the selected scenes with its own scene's role color"
+        onClick={onColorClips}
+      >
+        Color {roleColorCount} clip{roleColorCount === 1 ? '' : 's'} by role
+      </button>
 
       <div className="lbl">Rename selected</div>
       <input
