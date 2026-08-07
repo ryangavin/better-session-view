@@ -8,6 +8,7 @@ import {
   type SongHeader,
   type TrackShape,
 } from '../../../../core/src/songRows.js';
+import { TagChip } from '../TagChip.js';
 import { BAND_CONTRAST, isShape, RAIL, UNTAGGED } from './constants.js';
 
 /** `CHORUS ×4, JAM1` — what a track plays, for the cell's tooltip. */
@@ -167,18 +168,16 @@ export const SongHeaderRow = memo(function SongHeaderRow({
         >
           {header.song}
         </button>
-        {header.tag !== '' && (
-          <span
-            className={`song-tag${header.tagClash ? ' clash' : ''}`}
-            title={
-              header.tagClash
-                ? `This song's scenes disagree: ${header.tag}`
-                : `song tag: ${header.tag}`
-            }
-          >
-            {header.tag}
-          </span>
-        )}
+        <TagChip
+          tag={header.tag}
+          color="var(--song-rgb, var(--dim2))"
+          clash={header.tagClash}
+          title={
+            header.tagClash
+              ? `This song's scenes disagree: ${header.tag}`
+              : undefined
+          }
+        />
       </span>
       {/* Only worth saying when there is more than one — a song in two runs is
           a reprise, or it's two different songs sharing a name. Folded, it

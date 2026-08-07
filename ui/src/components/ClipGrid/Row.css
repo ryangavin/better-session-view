@@ -146,23 +146,6 @@ td.scene .song-tag-slot {
   min-width: 0;
   vertical-align: 1px;
 }
-/* It follows the song's scene color, but inverts the role treatment:
-   transparent fill, colored outline and matching text. */
-td.scene .song-tag-chip {
-  display: inline-block;
-  padding: 0 6px;
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--dim2);
-  font-family: var(--mono);
-  font-size: 9px;
-  line-height: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  vertical-align: 1px;
-}
-
 /* Scenes picked *as scenes* — what a role assignment would write to. Distinct
    from clip selection, which paints the cells to the right. */
 td.scene.picked {

@@ -9,6 +9,7 @@ import type { SongHeader } from '../../../../core/src/songRows.js';
 import { clipKey } from '../../lib/selection.js';
 import { LAUNCH_KEY, mods } from '../../lib/keys.js';
 import { has, type RowMarks } from '../../lib/rowMarks.js';
+import { TagChip } from '../TagChip.js';
 import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA, PANEL } from './constants.js';
 import type { Props } from './ClipGrid.js';
 
@@ -236,15 +237,7 @@ export const Row = memo(function Row({
             hugs that edge, so COVER and ORIGINAL line up with each other and
             with the song header regardless of their different widths. */}
           <span className="song-tag-slot">
-            {tag !== '' && (
-              <span
-                className="song-tag-chip"
-                style={named ? { borderColor: named, color: named } : undefined}
-                title={`song tag: ${tag}`}
-              >
-                {tag}
-              </span>
-            )}
+            <TagChip tag={tag} color={named || undefined} />
           </span>
         </span>
       </td>

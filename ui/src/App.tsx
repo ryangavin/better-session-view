@@ -479,6 +479,7 @@ export function App() {
         <ReorderModal
           derivation={derivation}
           snapshot={snapshot}
+          palette={bridge.palette}
           busy={bridge.busy}
           // Closes on apply: every scene index is about to mean a different
           // row, so a list still showing the old ones is worse than no list.

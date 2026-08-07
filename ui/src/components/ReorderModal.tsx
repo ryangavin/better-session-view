@@ -1,19 +1,28 @@
 import { useMemo, useState, type DragEvent } from 'react';
 import './BulkWorkflow.css';
 import './ReorderModal.css';
+import { hex } from '../../../core/src/color.js';
 import { songKey, type Derivation, type DerivedSong } from '../../../core/src/derive.js';
 import { songFacts } from '../../../core/src/songRows.js';
-import { orderScenes } from '../../../core/src/songOrder.js';
+import {
+  orderScenes,
+  sortSongOrder,
+  type SongSortCriterion,
+  type SongSortField,
+  type SortableSong,
+} from '../../../core/src/songOrder.js';
 import {
   describeMove,
   planSceneReorder,
   type SceneMovePlan,
 } from '../../../core/src/sceneMove.js';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
+import { TagChip } from './TagChip.js';
 
 interface Props {
   derivation: Derivation;
   snapshot: BSV.Snapshot;
+  palette: number[];
   busy: boolean;
   /** Write the new order to Live. The one call in the app with no undo. */
   onApply: (plan: SceneMovePlan) => void;
@@ -31,12 +40,24 @@ function moveTo(list: readonly string[], key: string, gap: number): string[] {
 }
 
 /** Swap the song at `i` with its neighbour, or return the list unchanged. */
-function nudge(list: readonly string[], i: number, by: -1 | 1): string[] {
+function nudge<T>(list: readonly T[], i: number, by: -1 | 1): T[] {
   const j = i + by;
   if (j < 0 || j >= list.length) return [...list];
   const out = [...list];
   [out[i], out[j]] = [out[j]!, out[i]!];
   return out;
+}
+
+const SORT_FIELDS: Array<{ field: SongSortField; label: string }> = [
+  { field: 'name', label: 'Name' },
+  { field: 'tag', label: 'Tag' },
+  { field: 'key', label: 'Key' },
+  { field: 'bpm', label: 'BPM' },
+];
+
+function sortLabel(criterion: SongSortCriterion): string {
+  const field = SORT_FIELDS.find((candidate) => candidate.field === criterion.field)?.label;
+  return `${field ?? criterion.field} ${criterion.direction === 'asc' ? '↑' : '↓'}`;
 }
 
 /**
@@ -57,11 +78,12 @@ function nudge(list: readonly string[], i: number, by: -1 | 1): string[] {
  * it: this is the one write no undo of ours can reverse, so what it will do has
  * to be readable before it runs rather than in the log afterwards.
  */
-export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: Props) {
+export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onClose }: Props) {
   useCloseOnEscape(onClose);
 
   const setOrder = useMemo(() => derivation.songs.map((s) => songKey(s.name)), [derivation]);
   const [draft, setDraft] = useState<string[]>(setOrder);
+  const [criteria, setCriteria] = useState<SongSortCriterion[]>([]);
   const [dragKey, setDragKey] = useState<string | null>(null);
   /** The gap the drop would land in, as an index into the rendered list. */
   const [dropAt, setDropAt] = useState<number | null>(null);
@@ -71,6 +93,21 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
     for (const song of derivation.songs) at.set(songKey(song.name), song);
     return at;
   }, [derivation]);
+
+  const sortableSongs = useMemo<SortableSong[]>(
+    () =>
+      derivation.songs.map((song) => {
+        const facts = songFacts(song);
+        return {
+          songKey: songKey(song.name),
+          name: song.name,
+          tag: facts.tag,
+          key: facts.key,
+          bpm: facts.bpm,
+        };
+      }),
+    [derivation],
+  );
 
   /**
    * The scenes, with the song each one carries. Rebuilt from the derivation
@@ -89,7 +126,14 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
   // `orderScenes` reconciles the draft against the set — a song the draft has
   // never heard of lands at the end rather than going missing — so what it
   // returns, not the draft, is what the list renders and what a drag moves.
-  const ordering = useMemo(() => orderScenes(scenes, draft), [scenes, draft]);
+  const requestedOrder = useMemo(
+    () => (criteria.length === 0 ? draft : sortSongOrder(sortableSongs, criteria)),
+    [criteria, draft, sortableSongs],
+  );
+  const ordering = useMemo(
+    () => orderScenes(scenes, requestedOrder),
+    [requestedOrder, scenes],
+  );
   const shown = ordering.placements;
 
   /**
@@ -121,9 +165,34 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
   const dirty = shown.some((p, i) => p.songKey !== setOrder[i]);
 
   const drop = (gap: number) => {
-    if (dragKey !== null) setDraft(moveTo(shown.map((p) => p.songKey), dragKey, gap));
+    if (dragKey !== null) {
+      setDraft(moveTo(shown.map((p) => p.songKey), dragKey, gap));
+      setCriteria([]);
+    }
     setDragKey(null);
     setDropAt(null);
+  };
+
+  const addCriterion = () => {
+    const used = new Set(criteria.map((criterion) => criterion.field));
+    const field = SORT_FIELDS.find((candidate) => !used.has(candidate.field))?.field;
+    if (field) setCriteria([...criteria, { field, direction: 'asc' }]);
+  };
+
+  const updateCriterion = (index: number, next: Partial<SongSortCriterion>) => {
+    setCriteria(criteria.map((criterion, i) => (i === index ? { ...criterion, ...next } : criterion)));
+  };
+
+  const removeCriterion = (index: number) => {
+    // Removing the last rule turns its result into a manual draft instead of
+    // snapping the preview back to the order from when the dialog opened.
+    if (criteria.length === 1) setDraft(shown.map((placement) => placement.songKey));
+    setCriteria(criteria.filter((_, i) => i !== index));
+  };
+
+  const nudgeSong = (index: number, by: -1 | 1) => {
+    setDraft(nudge(shown.map((song) => song.songKey), index, by));
+    setCriteria([]);
   };
 
   return (
@@ -131,8 +200,91 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-h">Reorder songs — {shown.length}</div>
         <div className="hint">
-          Drag to set the running order, then <b>Apply</b> to write it. Nothing
-          reaches Live until you do, so an order costs nothing to try.
+          Build a sort hierarchy or drag to tune the running order, then <b>Apply</b> to
+          write it. Nothing reaches Live until you do, so an order costs nothing to try.
+        </div>
+
+        <div className="sort-builder">
+          <div className="sort-heading">
+            <span className="lbl">Sort hierarchy</span>
+            <span className="hint">
+              {criteria.length === 0
+                ? 'Current / manual order'
+                : criteria.map(sortLabel).join(' → ')}
+            </span>
+            <div className="spacer" />
+            <button
+              type="button"
+              className="add-sort"
+              disabled={criteria.length === SORT_FIELDS.length}
+              onClick={addCriterion}
+            >
+              + level
+            </button>
+          </div>
+          {criteria.map((criterion, i) => {
+            const usedElsewhere = new Set(
+              criteria.filter((_, at) => at !== i).map((entry) => entry.field),
+            );
+            return (
+              <div className="sort-level" key={`${criterion.field}-${i}`}>
+                <span className="sort-depth">{i === 0 ? 'sort by' : 'then by'}</span>
+                <select
+                  aria-label={`Sort level ${i + 1} field`}
+                  value={criterion.field}
+                  onChange={(e) =>
+                    updateCriterion(i, { field: e.currentTarget.value as SongSortField })
+                  }
+                >
+                  {SORT_FIELDS.filter((candidate) => !usedElsewhere.has(candidate.field)).map(
+                    (candidate) => (
+                      <option key={candidate.field} value={candidate.field}>
+                        {candidate.label}
+                      </option>
+                    ),
+                  )}
+                </select>
+                <select
+                  aria-label={`Sort level ${i + 1} direction`}
+                  value={criterion.direction}
+                  onChange={(e) =>
+                    updateCriterion(i, {
+                      direction: e.currentTarget.value as SongSortCriterion['direction'],
+                    })
+                  }
+                >
+                  <option value="asc">Ascending ↑</option>
+                  <option value="desc">Descending ↓</option>
+                </select>
+                <button
+                  type="button"
+                  className="sort-icon"
+                  title="Move this criterion up"
+                  disabled={i === 0}
+                  onClick={() => setCriteria(nudge(criteria, i, -1))}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="sort-icon"
+                  title="Move this criterion down"
+                  disabled={i === criteria.length - 1}
+                  onClick={() => setCriteria(nudge(criteria, i, 1))}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className="sort-icon remove"
+                  title="Remove this criterion"
+                  onClick={() => removeCriterion(i)}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {shown.length === 0 ? (
@@ -143,6 +295,9 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
               const song = songs.get(p.songKey);
               const facts = song ? songFacts(song) : { bpm: '', key: '', tag: '' };
               const runs = song?.blocks.length ?? 1;
+              const colorIndex =
+                song?.observed.colorIndex.length === 1 ? song.observed.colorIndex[0]! : -1;
+              const tagColor = colorIndex >= 0 ? palette[colorIndex] : undefined;
               return (
                 <div
                   key={p.songKey}
@@ -196,7 +351,11 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
                     </span>
                   </span>
                   <span className="song">{song?.name ?? p.songKey}</span>
-                  {facts.tag !== '' && <span className="song-tag">{`{${facts.tag}}`}</span>}
+                  <TagChip
+                    tag={facts.tag}
+                    color={tagColor === undefined ? undefined : hex(tagColor)}
+                    clash={(song?.observed.tag.length ?? 0) > 1}
+                  />
                   <span className="count">
                     {p.scenes.length} scene{p.scenes.length === 1 ? '' : 's'}
                   </span>
@@ -221,7 +380,7 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
                     className="x"
                     title="Move up"
                     disabled={i === 0}
-                    onClick={() => setDraft(nudge(shown.map((s) => s.songKey), i, -1))}
+                    onClick={() => nudgeSong(i, -1)}
                   >
                     ↑
                   </button>
@@ -230,7 +389,7 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
                     className="x"
                     title="Move down"
                     disabled={i === shown.length - 1}
-                    onClick={() => setDraft(nudge(shown.map((s) => s.songKey), i, 1))}
+                    onClick={() => nudgeSong(i, 1)}
                   >
                     ↓
                   </button>
@@ -280,7 +439,10 @@ export function ReorderModal({ derivation, snapshot, busy, onApply, onClose }: P
             type="button"
             disabled={!dirty}
             title="Put the list back the way the set has it"
-            onClick={() => setDraft(setOrder)}
+            onClick={() => {
+              setCriteria([]);
+              setDraft(setOrder);
+            }}
           >
             Reset
           </button>

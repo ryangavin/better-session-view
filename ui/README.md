@@ -28,6 +28,7 @@ src/components/       one component per file
   RolesManager.tsx    the vocabulary editor — modal, owned by App
   SongsModal.tsx      what the app read back out of the set — read-only
   ReorderModal.tsx    the running order — drag songs, apply once
+  TagChip.tsx         one outlined song-tag pill for every view
   RecolorModal.tsx    coloring every song from a rule
 src/hooks/            one hook per file
   useBridge.ts        React face of the client; composes the two below
@@ -563,9 +564,16 @@ re-snapshot, and the waiting is what stops anyone *trying* an arrangement.
 
 ### The running order
 
-**Drag songs into the order you want, then Apply.** One row per song, however many runs it
-has, because a running order is written in songs — and that has two consequences the modal
-has to say out loud rather than spring on you:
+**Build a sort hierarchy or drag songs into the order you want, then Apply.** A hierarchy
+can use Name, Tag, Key and BPM once each, in any priority order and ascending or descending:
+`Tag ↑ → Key ↑ → BPM ↓ → Name ↑`. Each level only breaks ties in the level above it;
+missing metadata stays at the end, and songs still tied after the last level retain their
+current set order. Dragging or nudging a sorted result turns it into a manual draft and
+clears the rules, so the controls never claim a hand-tuned order still came from them.
+
+There is one row per song, however many runs it has, because a running order is written in
+songs — and that has two consequences the modal has to say out loud rather than spring on
+you:
 
 - **Applying gathers a song found in more than one run.** The row says `2 runs → 1` and a
   line under the list names the songs it will collect. A reprise stops being a reprise,

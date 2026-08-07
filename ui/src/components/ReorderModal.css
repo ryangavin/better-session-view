@@ -35,11 +35,73 @@
 .order-row .x:hover:not(:disabled) {
   color: var(--fg);
 }
-.order-row .song-tag {
+
+/* A hierarchy is a sequence, not a bag of toggles: each row only breaks ties
+   left by the row above it. The repeated label makes that relationship legible
+   without nesting controls into an increasingly narrow staircase. */
+.sort-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid var(--bd);
+  border-radius: var(--radius-md);
+  background: var(--surface-control);
+}
+.sort-heading,
+.sort-level {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sort-heading .lbl {
+  margin: 0;
+}
+.sort-heading .hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sort-builder .add-sort,
+.sort-builder .sort-icon {
+  flex: none;
+  padding: 2px 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.sort-level {
+  padding-left: 8px;
+}
+.sort-level + .sort-level {
+  border-top: 1px solid var(--bd2);
+  padding-top: 5px;
+}
+.sort-depth {
+  width: 50px;
+  flex: none;
   color: var(--dim2);
   font-family: var(--mono);
-  font-size: 9.5px;
-  flex: none;
+  font-size: 9px;
+  text-align: right;
+  text-transform: uppercase;
+}
+.sort-level select {
+  height: 24px;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--fg2);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.sort-level select:first-of-type {
+  width: 112px;
+}
+.sort-level select:nth-of-type(2) {
+  width: 128px;
+}
+.sort-builder .sort-icon.remove {
+  color: var(--dim2);
 }
 
 /* Something the write will do that nobody asked it to — a reprise gathered
