@@ -25,11 +25,13 @@ interface Args {
   launch: BridgeState['launch'];
   stop: BridgeState['stop'];
   undo: BridgeState['undo'];
+  selectAllScenes: () => void;
 }
 
 /**
  * The window-level keyboard handling: arrows move the active cell, ⌘ makes a
- * sound, Space is transport, Esc stops clips, ⌘Z undoes.
+ * sound, Space is transport, Esc stops clips, ⌘A selects every scene, and ⌘Z
+ * undoes.
  */
 export function useGridKeyboard({
   rows,
@@ -40,6 +42,7 @@ export function useGridKeyboard({
   launch,
   stop,
   undo,
+  selectAllScenes,
 }: Args): void {
   // Space reads play state through a ref for the same reason the active cell
   // has one: it changes several times a second, and putting it in the effect's
@@ -56,10 +59,20 @@ export function useGridKeyboard({
   );
 
   useEffect(() => {
-    if (rows.length === 0) return;
-
     function onKey(e: KeyboardEvent) {
       if (isTypingInto(e.target)) return;
+
+      // This must remain available when every song is collapsed and there are
+      // no visible rows; selecting all unfolds them before making the pick.
+      if ((e.key === 'a' || e.key === 'A') && isLaunchModified(e)) {
+        e.preventDefault();
+        selectAllScenes();
+        return;
+      }
+
+      // Preserve the existing grid-shortcut behavior when there is no row to
+      // act on. Select-all above is the exception because it creates rows.
+      if (rows.length === 0) return;
 
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -109,5 +122,5 @@ export function useGridKeyboard({
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activeRef, fireActive, goActive, launch, rows, stop, trackColumns, undo]);
+  }, [activeRef, fireActive, goActive, launch, rows, selectAllScenes, stop, trackColumns, undo]);
 }

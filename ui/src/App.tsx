@@ -89,6 +89,11 @@ export function App() {
     pickScenes,
   } = useGridSelection({ trackColumns, rows, isOccupied, launch, stop, openRail });
 
+  const selectAllScenes = useCallback(() => {
+    onCollapseAll(false);
+    pickScenes(snapshot?.scenes.map((scene) => scene.i) ?? []);
+  }, [onCollapseAll, pickScenes, snapshot]);
+
   useGridKeyboard({
     rows,
     trackColumns,
@@ -98,6 +103,7 @@ export function App() {
     launch,
     stop,
     undo,
+    selectAllScenes,
   });
 
   /**

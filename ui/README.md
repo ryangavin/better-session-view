@@ -852,7 +852,7 @@ someone reached for a right-click. `keys.ts` owns that decision.
 | song header | click folds · title selects · **drag reorders** | — |
 | track header | click a group to collapse | ⌘-click **stops that track** |
 | keys | `↑↓←→` move the active cell | `⌘↑ ⌘↓` **move and fire** · `⌘⏎` fire |
-| | `⌘Z` undo the last write | `esc` stop all clips · `space` transport |
+| | `⌘A` select all scenes · `⌘Z` undo the last write | `esc` stop all clips · `space` transport |
 
 `⌘↓` is the sweep — one keystroke for "next scene, and let me hear it". That deliberately
 replaces an audition *mode*: a sticky toggle you can forget you're in is worse than a
