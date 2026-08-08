@@ -38,6 +38,13 @@ it that way — architecture and rules go in `CONTRIBUTING.md`, planned work goe
    in the same change.** The wiki is the user manual, so documentation is part of the
    feature being done rather than follow-up work. It lives in the separate
    `better-session-view.wiki.git` repository and requires its own commit and push.
+9. **Every commit made by an agent must include a GitHub-compatible Codex co-author
+   trailer.** Leave a blank line between the commit message and the trailer, and add it
+   exactly as follows:
+
+   ```text
+   Co-authored-by: Codex <199175422+chatgpt-codex-connector[bot]@users.noreply.github.com>
+   ```
 
 ## Before you claim something works
 
