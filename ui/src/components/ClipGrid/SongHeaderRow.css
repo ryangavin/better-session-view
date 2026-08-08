@@ -50,6 +50,9 @@ tr.song-row .song-line {
 tr.song-row:hover td {
   background: var(--surface-song-hover);
 }
+tr.song-row:hover td:first-child {
+  --song-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--surface-song-hover);
+}
 tr.song-row .fold {
   flex: 0 0 14px;
   height: 14px;
@@ -203,8 +206,11 @@ tr.song-row td:first-child {
   position: sticky;
   left: var(--gutter);
   /* Keep the pinned identity above the scrolling half of its own row,
-     including the separator's drop shadow. */
+     including the separator's drop shadow. Its own flat shadow plugs the
+     table's transparent left gutter with the same opaque surface. */
   z-index: 10;
+  --song-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--rail);
+  box-shadow: var(--song-gutter-plug);
 }
 tr.song-row.collapsed td:first-child::before,
 tr.song-row.colored td:first-child::before {
@@ -235,6 +241,9 @@ tr.song-row.colored td {
   background-image: linear-gradient(var(--song-wash-dim), var(--song-wash-dim));
 }
 tr.song-row.colored td:first-child {
+  --song-gutter-plug:
+    calc(-1 * var(--gutter)) 0 0 var(--song-wash),
+    calc(-1 * var(--gutter)) 0 0 var(--rail);
   background-image: linear-gradient(var(--song-wash), var(--song-wash));
 }
 /* Hover adds a white film without replacing either the wash or its opaque
@@ -246,6 +255,10 @@ tr.song-row.colored:hover td {
     linear-gradient(var(--song-wash-dim), var(--song-wash-dim));
 }
 tr.song-row.colored:hover td:first-child {
+  --song-gutter-plug:
+    calc(-1 * var(--gutter)) 0 0 rgba(255, 255, 255, 0.045),
+    calc(-1 * var(--gutter)) 0 0 var(--song-wash),
+    calc(-1 * var(--gutter)) 0 0 var(--rail);
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045)),
     linear-gradient(var(--song-wash), var(--song-wash));
@@ -347,14 +360,19 @@ tr.song-row.dragging td:first-child {
    metrics staying put, and a 2px border appearing mid-drag would shift every row
    below it.
 
-   `box-shadow` is now this and nothing else. The folded and colored left edges
-   used to take turns with it and had to be re-stated here to survive; they live
-   on `::before` instead, so these two rules stand alone. */
+   The pinned first cell also keeps its gutter plug alongside the indicator;
+   other cells need only the inset line. */
 tr.song-row.drop-above td {
   box-shadow: inset 0 2px 0 var(--amber);
 }
 tr.song-row.drop-below td {
   box-shadow: inset 0 -2px 0 var(--amber);
+}
+tr.song-row.drop-above td:first-child {
+  box-shadow: inset 0 2px 0 var(--amber), var(--song-gutter-plug);
+}
+tr.song-row.drop-below td:first-child {
+  box-shadow: inset 0 -2px 0 var(--amber), var(--song-gutter-plug);
 }
 
 /* What the drop is about to do, on the line itself. There's no undo for this in

@@ -7,8 +7,12 @@ td.scene {
      scene header and meter panel occupy higher, separate layers. */
   z-index: 10;
   /* Sticky cells overlap the scrolling track cells, so transparency here
-     would turn every clip passing underneath into noise behind the title. */
+     would turn every clip passing underneath into noise behind the title.
+     The flat shadow extends that same opaque surface across the table's left
+     border-spacing gutter. */
+  --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--bg);
   background: var(--bg);
+  box-shadow: var(--scene-gutter-plug);
   font-family: var(--mono);
   font-size: 10px;
   color: var(--dim);
@@ -64,6 +68,12 @@ tr.scene-row.drop-above td {
 }
 tr.scene-row.drop-below td {
   box-shadow: inset 0 -2px 0 var(--amber);
+}
+tr.scene-row.drop-above td.scene {
+  box-shadow: inset 0 2px 0 var(--amber), var(--scene-gutter-plug);
+}
+tr.scene-row.drop-below td.scene {
+  box-shadow: inset 0 -2px 0 var(--amber), var(--scene-gutter-plug);
 }
 /* The first piece of scene metadata, matching the key slot in song headers.
    Fixed width and right alignment make Bm / F#m share an edge down the grid;
@@ -162,8 +172,9 @@ td.scene .song-tag-slot {
 /* Scenes picked *as scenes* — what a role assignment would write to. Distinct
    from clip selection, which paints the cells to the right. */
 td.scene.picked {
+  --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--sel);
   background: var(--sel);
-  box-shadow: inset 2px 0 0 var(--amber);
+  box-shadow: inset 2px 0 0 var(--amber), var(--scene-gutter-plug);
 }
 
 /* Scene launch. The only plain-click control in the app that makes a sound —
