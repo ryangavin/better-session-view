@@ -235,6 +235,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
     <tr
       className={cls}
       style={paint}
+      data-song-start={header.from}
       // Folding is the row's job, not the lead cell's — a folded header is
       // several cells wide and a click on any of them means the same thing.
       onClick={() => onToggle(header.songKey)}

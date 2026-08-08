@@ -56,8 +56,10 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `observe` `{ on }` | structural change notifications |
 | `launch` `{ target }` | fire a clip, a scene, or the song |
 | `stop` `{ target }` | stop a track, every clip, or the song |
+| `setTransport` `{ patch }` | update any related subset of Live's control-bar settings |
 | `watchPlay` `{ on }` | install the per-track play-state observers |
 | `watchMeters` `{ on }` | install the track and master output-meter observers |
+| `watchTransport` `{ on }` | observe tempo, metronome, launch quantization and current scale |
 | `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
 | `ping` | |
 
@@ -78,6 +80,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `playState` | — a play-state observer fired |
 | `meterLevels` | — complete current track and master output-level frame |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
+| `transportState` | — Live's complete observed control-bar state changed |
 | `deviceState` | — restored or changed set-owned configuration |
 | `reload` | — dev live-reload |
 | `error` | — terminates any pending request, or is broadcast |
@@ -149,12 +152,14 @@ it as 0 is a bug waiting to look like data.
 an object id; the bridge resolves it against the track list so the wire stays in the
 same `i`-indexed space as everything else. It's the *immediate* parent — groups nest.
 
-**Some requests have no reply, deliberately.** `launch`, `stop`, `watchPlay` and
-`watchMeters` are not in `TERMINAL`. What you want back from firing a clip isn't an
+**Some requests have no reply, deliberately.** `launch`, `stop`, `setTransport` and the
+watch requests are not in `TERMINAL`. What you want back from firing a clip isn't an
 acknowledgement, it's the play state changing, and that arrives on its own as
 `playState`. Meter watching likewise answers with the first `meterLevels` push. Awaiting
-an ack would only add a round trip to streams that report their own readiness. The cost
-of that choice is that a failure has no request to attach to, so `bridge.ts`
+an ack would only add a round trip to streams that report their own readiness. A
+transport write is acknowledged by the next `transportState` readback for the same reason:
+the value Live accepted matters more than the fact that `set` returned. The cost of that
+choice is that a failure has no request to attach to, so `bridge.ts`
 **broadcasts** an `error` with no `id` when nothing is pending — dropping it is how a
 silent bug hides.
 

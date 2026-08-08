@@ -16,11 +16,12 @@ src/components/       one component per file
     Row.tsx           one scene's row, memoized
     SongHeaderRow.tsx a song block's header row, memoized
     constants.ts      surfaces, contrast ratios, shared empties
-  Header.tsx          header bar — Arrangement position, playback, view controls
+  Header.tsx          Live control bar, Arrangement position, playback, view controls
   Icon.tsx            compact-control glyphs, as inline SVG
   StatsBar.tsx        the bottom status strip — readiness, stat tiles + key hints
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it
+  SongIndex.tsx       browser-style left pane; song facts + jump navigation
   ScenePanel.tsx      song/tag/bpm/key fields, the role picker, song color
   Inspector.tsx       rename pattern, clip color, role→color, apply
   ColorSelect.tsx     current color closed, the palette in a popover open
@@ -136,8 +137,14 @@ as unhandled rejections.
 
 ## The grid is the app; everything else opens
 
-Two panes start **closed**, because neither is what you came for. On a 40-track set every
-pixel the rail isn't using is a track column you can see.
+Three optional surfaces start **closed**, because none is what you came for. On a 40-track
+set every pixel the side panes aren't using is a track column you can see.
+
+- **The song index** opens from the left side of the header and lists each song once in
+  set order with its key, BPM and type. Clicking only the name jumps immediately to the
+  first block of that song; it does not select it, open the edit rail, or change its fold
+  state. The target is the song header rather than its first scene, so a folded song is
+  just as navigable as an open one.
 
 - **The rail** — scene fields, roles, swatches, rename — opens the moment you pick
   something to work on: a clip, a scene name, or a song. Its `×` closes it and gives the
@@ -174,16 +181,26 @@ pair is for: the strip is one line of the same near-black as everything else, an
 border alone doesn't read as an edge with clip cells scrolling under it. Putting the
 shadow on both unconditionally paints the strip's across the bottom of the log.
 
-## The header is glyphs
+## The header is Live state plus glyphs
 
-Every button in the header is an icon: sync for Snapshot, a hamburger for fold, a bug for
-the log, play / stop / struck-through-slot for playback. Live's bars, beats and sixteenths
-sit immediately left of playback while the buttons remain at the header's exact center.
-The three equal flex regions make that centering independent of the controls on either
-side. **S M L stay as letters** — they're a scale, and a scale is what letters are for.
-**Auto** is a behavior rather than another point on that scale, so it is spelled out;
-**8 / 16** are the number of track columns in one or two hardware-style banks. That takes the bar to
-`--ctl-h + 12px`, one height for every control in it and 6px of air either side.
+The left side mirrors the Live Control Bar state this app needs while performing: Set BPM,
+metronome, global clip-trigger quantization, and the complete Current Scale trio (Scale
+Mode, root note and scale name). `useBridge` holds one `TransportState`; six fixed LOM
+observers push it as a unit, and the UI sends one partial `TransportPatch` for any gesture.
+The next observed readback is the acknowledgement, so a Live write that silently fails
+cannot leave the header claiming the attempted value.
+
+Live's Current Scale controls are not a bulk edit of every clip. They reflect the current
+or selected clips and apply to that selection, which is why the controls and tooltips say
+“current scale” rather than “Set key.” The built-in scale list comes from Live 12.4.3's own
+`Song.scale_name` docstring; an observed name that a newer Live adds is retained as an
+extra option instead of disappearing.
+
+The center keeps Live's bars, beats and sixteenths immediately left of play / stop /
+struck-through-slot. The right side carries fold, the compact width select, meters, log and
+Snapshot. The flexible left region yields first on a narrow window so those two action
+groups remain available. Every control shares `--ctl-h`; the bar is `--ctl-h + 12px`, with
+6px of air above and below.
 
 - **`Icon.tsx` is inline SVG**, not an icon font and not a Unicode character. A font is out
   because nothing loads from a CDN. A character is out because ▶, ⏹ and 🐛 render at
@@ -197,9 +214,8 @@ side. **S M L stay as letters** — they're a scale, and a scale is what letters
 - **The scene workflow buttons reuse the same primitive and glyph set**, scaled together
   to the table header's 13px line box so add, order and color do not make the grid header
   taller. Their titles say what each workflow can actually do.
-- **Fold keeps one glyph and lights instead of swapping.** A folded set already *is* a list
-  of lines, so that's the state the icon draws; a second icon for unfold would mean reading
-  the button to find out which way it goes. Same lit-when-on treatment as the width presets.
+- **Fold, metronome and Scale Mode keep one glyph and light instead of swapping.** Their
+  glyph identifies the control; amber says the observed Live state is on.
 - **The empty state shows the glyph, not the word.** It used to say *hit **Snapshot***, and
   pointing at a label that no longer exists is worse than no instruction.
 

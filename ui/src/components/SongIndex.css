@@ -1,0 +1,123 @@
+/* --- song index --------------------------------------------------- */
+
+/* A navigation pane rather than an editing rail: it owns the left edge and
+   gives every pixel back to the grid when closed. The list scrolls on its own
+   so jumping around never changes which songs remain reachable. */
+.song-index {
+  width: 300px;
+  flex: none;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--bd);
+  background: var(--rail);
+}
+
+.song-index-head {
+  height: 39px;
+  padding: 0 10px 0 12px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bd);
+}
+.song-index-head .lbl {
+  margin: 0;
+}
+.song-index-close {
+  padding: 0 4px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--dim2);
+  font-size: 14px;
+  line-height: 16px;
+}
+.song-index-close:hover:not(:disabled) {
+  color: var(--fg);
+  background: var(--sel);
+}
+
+/* Four real columns, like Live's content lists. Facts keep their narrow fixed
+   slots while the song name takes whatever width is available. */
+.song-index-columns,
+.song-index-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px 34px 56px;
+  gap: 6px;
+  align-items: center;
+}
+.song-index-columns {
+  padding: 6px 10px 5px 12px;
+  flex: none;
+  border-bottom: 1px solid var(--bd2);
+  color: var(--dim2);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.song-index-columns span:not(:first-child) {
+  text-align: right;
+}
+
+.song-index-list {
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 0 10px;
+}
+.song-index-row {
+  min-height: 27px;
+  padding: 2px 10px 2px 12px;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.song-index-row:hover {
+  background: var(--surface-song-hover);
+}
+.song-index-row > span {
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.song-index-row > span.none {
+  color: var(--dim2);
+}
+
+.song-index-name {
+  min-width: 0;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--fg2);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.song-index-name:hover:not(:disabled),
+.song-index-name:focus-visible {
+  color: var(--amber);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  outline: none;
+}
+
+.song-index-empty {
+  padding: 18px 12px;
+  color: var(--dim2);
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .song-index {
+    width: clamp(210px, 42vw, 300px);
+  }
+}

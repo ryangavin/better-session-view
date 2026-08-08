@@ -68,6 +68,8 @@ export interface BridgeState {
   roles: BSV.Role[];
   allowedColors: number[] | null;
   play: PlayState;
+  /** Live's observed control-bar settings. Null until the watch reports. */
+  transport: BSV.TransportState | null;
   /** Live's arrangement position, or null until its observer has reported. */
   songPosition: SongPosition | null;
   progress: { done: number; total: number } | null;
@@ -101,6 +103,8 @@ export interface BridgeState {
   /** Fire something. No await: the answer you want is `play` changing. */
   launch: (target: BSV.LaunchTarget) => void;
   stop: (target: BSV.StopTarget) => void;
+  /** Write a related subset of Live's control-bar state in one operation. */
+  setTransport: (patch: BSV.TransportPatch) => void;
   /**
    * Fold or unfold a group track in Live. No await, and no reply — the grid
    * has already moved its own columns. See `setFold` in the protocol.
@@ -128,6 +132,7 @@ export function useBridge(watchMeters = false): BridgeState {
   const [lomReady, setLomReady] = useState(false);
   const [snapshot, setSnapshot] = useState<BSV.Snapshot | null>(null);
   const [play, setPlay] = useState<PlayState>(NOT_PLAYING);
+  const [transport, setTransportState] = useState<BSV.TransportState | null>(null);
   const [songPosition, setSongPosition] = useState<SongPosition | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -211,6 +216,7 @@ export function useBridge(watchMeters = false): BridgeState {
           if (!event.lomReady) {
             setPlay(NOT_PLAYING);
             setSongPosition(null);
+            setTransportState(null);
           }
           break;
         case 'playState':
@@ -226,6 +232,9 @@ export function useBridge(watchMeters = false): BridgeState {
             beat: event.beat,
             sixteenth: event.sixteenth,
           });
+          break;
+        case 'transportState':
+          setTransportState(event.state);
           break;
         case 'progress':
           setProgress({ done: event.done, total: event.total });
@@ -320,7 +329,9 @@ export function useBridge(watchMeters = false): BridgeState {
     if (!lomReady) return;
     client.send({ type: 'observe', on: true });
     client.send({ type: 'watchSelection', on: true });
+    client.send({ type: 'watchTransport', on: true });
     return () => {
+      client.send({ type: 'watchTransport', on: false });
       client.send({ type: 'watchSelection', on: false });
       client.send({ type: 'observe', on: false });
     };
@@ -384,6 +395,11 @@ export function useBridge(watchMeters = false): BridgeState {
 
   const stop = useCallback(
     (target: BSV.StopTarget) => client.send({ type: 'stop', target }),
+    [client],
+  );
+
+  const setTransport = useCallback(
+    (patch: BSV.TransportPatch) => client.send({ type: 'setTransport', patch }),
     [client],
   );
 
@@ -783,6 +799,7 @@ export function useBridge(watchMeters = false): BridgeState {
     roles,
     allowedColors,
     play,
+    transport,
     songPosition,
     progress,
     log,
@@ -800,6 +817,7 @@ export function useBridge(watchMeters = false): BridgeState {
     undo,
     launch,
     stop,
+    setTransport,
     setFold,
     subscribeMeters,
   };

@@ -128,9 +128,8 @@ button.primary:hover:not(:disabled) {
   background: var(--amber-hover);
   border-color: var(--amber-hover);
 }
-/* A button that shows what it opened rather than doing something once. Same
-   lit-when-on treatment the width presets use, so "this is a view control"
-   looks the same wherever it appears. */
+/* A button that shows an observed or open state rather than doing something
+   once. Fold, meters, metronome and Scale Mode all use the same amber-on fill. */
 button.toggle.on {
   background: var(--sel);
   color: var(--amber);

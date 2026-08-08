@@ -23,10 +23,18 @@ header {
 .header-right {
   gap: 10px;
 }
+.header-left {
+  flex: 1 1 auto;
+  gap: 8px;
+  overflow: hidden;
+}
 .header-center {
+  flex: none;
   justify-content: center;
 }
 .header-right {
+  gap: 6px;
+  flex: none;
   justify-content: flex-end;
 }
 
@@ -41,6 +49,70 @@ header {
   height: var(--ctl-h);
   width: auto;
   flex: none;
+}
+
+/* --- Live control bar --------------------------------------------- */
+
+.live-controls,
+.scale-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+.live-controls {
+  overflow: hidden;
+}
+.scale-controls {
+  margin-left: 4px;
+  padding-left: 7px;
+  border-left: 1px solid var(--bd3);
+}
+.tempo-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 62px;
+  height: var(--ctl-h);
+  flex: none;
+}
+.tempo-control input {
+  width: 100%;
+  height: 100%;
+  padding: 0 25px 0 6px;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  background: var(--sel);
+  color: var(--fg2);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+/* Browser steppers cost most of this compact field and Live's own control is
+   committed as a typed number, so keep the input numeric without drawing them. */
+.tempo-control input::-webkit-inner-spin-button,
+.tempo-control input::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+.tempo-control input:focus-visible {
+  border-color: var(--amber-muted);
+  box-shadow: 0 0 0 1px var(--amber-muted);
+}
+.tempo-control > span {
+  position: absolute;
+  right: 6px;
+  color: var(--dim2);
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+.tempo-control input:disabled,
+.header-select select:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* --- icon buttons ------------------------------------------------- */
@@ -107,14 +179,13 @@ header button {
   color: var(--green);
 }
 
-/* --- column width ------------------------------------------------- */
-.width-picker {
+/* --- compact selects ---------------------------------------------- */
+.header-select {
   position: relative;
-  width: 84px;
   height: var(--ctl-h);
   flex: none;
 }
-.width-picker select {
+.header-select select {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -130,15 +201,15 @@ header button {
   cursor: pointer;
   outline: none;
 }
-.width-picker select:hover {
+.header-select select:hover:not(:disabled) {
   color: var(--fg2);
   border-color: var(--focus);
 }
-.width-picker select:focus-visible {
+.header-select select:focus-visible {
   border-color: var(--amber-muted);
   box-shadow: 0 0 0 1px var(--amber-muted);
 }
-.width-caret {
+.select-caret {
   position: absolute;
   right: 8px;
   top: 50%;
@@ -148,4 +219,19 @@ header button {
   border-bottom: 1px solid var(--dim);
   transform: translateY(-70%) rotate(45deg);
   pointer-events: none;
+}
+
+.quantization-picker {
+  width: 60px;
+}
+.root-picker {
+  width: 42px;
+}
+.scale-picker {
+  width: 110px;
+}
+
+/* --- column width ------------------------------------------------- */
+.width-picker {
+  width: 84px;
 }

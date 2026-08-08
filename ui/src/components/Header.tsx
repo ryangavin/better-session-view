@@ -1,14 +1,18 @@
+import { useEffect, useRef, useState } from 'react';
 import { COLUMN_WIDTHS, type ColumnWidth } from '../lib/columnWidth.js';
 import type { BridgeState } from '../hooks/useBridge.js';
 import './Header.css';
 import {
   IconBug,
+  IconIndex,
   IconMeter,
+  IconMetronome,
   IconMenu,
   IconPlay,
   IconStop,
   IconStopClips,
   IconSync,
+  IconScale,
 } from './Icon.js';
 
 interface Props {
@@ -16,6 +20,10 @@ interface Props {
   busy: boolean;
   isPlaying: boolean;
   songPosition: BridgeState['songPosition'];
+  transport: BSV.TransportState | null;
+  onTransport: (patch: BSV.TransportPatch) => void;
+  showIndex: boolean;
+  onToggleIndex: () => void;
   launch: BridgeState['launch'];
   stop: BridgeState['stop'];
   songCount: number;
@@ -53,6 +61,128 @@ const columnWidthTitle = (width: ColumnWidth): string | undefined => {
   return undefined;
 };
 
+const QUANTIZATION = [
+  'None',
+  '8 Bars',
+  '4 Bars',
+  '2 Bars',
+  '1 Bar',
+  '1/2',
+  '1/2T',
+  '1/4',
+  '1/4T',
+  '1/8',
+  '1/8T',
+  '1/16',
+  '1/16T',
+  '1/32',
+] as const;
+
+const ROOT_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+/* Live 12.4.3's own Song.scale_name docstring list. Keep the observed value as
+   an extra option below: a newer Live can add a scale without making the
+   current setting disappear from this control. */
+const SCALE_NAMES = [
+  'Major',
+  'Minor',
+  'Dorian',
+  'Mixolydian',
+  'Lydian',
+  'Phrygian',
+  'Locrian',
+  'Whole Tone',
+  'Half-whole Dim.',
+  'Whole-half Dim.',
+  'Minor Blues',
+  'Minor Pentatonic',
+  'Major Pentatonic',
+  'Harmonic Minor',
+  'Harmonic Major',
+  'Dorian #4',
+  'Phrygian Dominant',
+  'Melodic Minor',
+  'Lydian Augmented',
+  'Lydian Dominant',
+  'Super Locrian',
+  'Bhairav',
+  'Hungarian Minor',
+  '8-Tone Spanish',
+  'Hirajoshi',
+  'In-Sen',
+  'Iwato',
+  'Kumoi',
+  'Pelog Selisir',
+  'Pelog Tembung',
+  'Messiaen 3',
+  'Messiaen 4',
+  'Messiaen 5',
+  'Messiaen 6',
+  'Messiaen 7',
+] as const;
+
+function tempoText(tempo: number | undefined): string {
+  if (tempo === undefined) return '';
+  return String(Number(tempo.toFixed(2)));
+}
+
+function TempoControl({
+  tempo,
+  disabled,
+  onCommit,
+}: {
+  tempo: number | undefined;
+  disabled: boolean;
+  onCommit: (tempo: number) => void;
+}) {
+  const editing = useRef(false);
+  const [draft, setDraft] = useState(() => tempoText(tempo));
+
+  useEffect(() => {
+    if (!editing.current) setDraft(tempoText(tempo));
+  }, [tempo]);
+
+  const reset = () => setDraft(tempoText(tempo));
+  const commit = () => {
+    editing.current = false;
+    const value = Number(draft);
+    if (!Number.isFinite(value) || value < 20 || value > 999) {
+      reset();
+      return;
+    }
+    setDraft(tempoText(value));
+    if (value !== tempo) onCommit(value);
+  };
+
+  return (
+    <label className="tempo-control" title="Live Set tempo — 20–999 BPM">
+      <input
+        type="number"
+        min="20"
+        max="999"
+        step="0.01"
+        inputMode="decimal"
+        value={draft}
+        disabled={disabled}
+        aria-label="Live Set tempo in BPM"
+        onFocus={() => {
+          editing.current = true;
+        }}
+        onChange={(e) => setDraft(e.currentTarget.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            reset();
+          }
+        }}
+      />
+      <span>BPM</span>
+    </label>
+  );
+}
+
 /**
  * The header bar: playback, view controls, meters, log and Snapshot.
  *
@@ -68,6 +198,10 @@ export function Header({
   busy,
   isPlaying,
   songPosition,
+  transport,
+  onTransport,
+  showIndex,
+  onToggleIndex,
   launch,
   stop,
   songCount,
@@ -97,6 +231,111 @@ export function Header({
     <header>
       <div className="header-section header-left">
         <img className="brand-logo" src="/logo-white.png" alt="Better Session View" />
+        <button
+          type="button"
+          className={`icon-btn toggle${showIndex ? ' on' : ''}`}
+          aria-pressed={showIndex}
+          aria-controls="song-index"
+          aria-label="Song index"
+          title={`${showIndex ? 'Hide' : 'Show'} song index`}
+          onClick={onToggleIndex}
+        >
+          <IconIndex />
+        </button>
+        <div className="live-controls" role="group" aria-label="Live control bar">
+          <TempoControl
+            tempo={transport?.tempo}
+            disabled={!lomReady || transport === null}
+            onCommit={(tempo) => onTransport({ tempo })}
+          />
+          <button
+            type="button"
+            className={`icon-btn toggle${transport?.metronome ? ' on' : ''}`}
+            aria-pressed={transport?.metronome ?? false}
+            aria-label="Metronome"
+            title={`${transport?.metronome ? 'Disable' : 'Enable'} Live's metronome`}
+            disabled={!lomReady || transport === null}
+            onClick={() => onTransport({ metronome: !transport?.metronome })}
+          >
+            <IconMetronome />
+          </button>
+          <div className="header-select quantization-picker">
+            <select
+              value={transport?.clipTriggerQuantization ?? ''}
+              disabled={!lomReady || transport === null}
+              aria-label="Global clip launch quantization"
+              title="Live's global clip launch quantization"
+              onChange={(e) =>
+                onTransport({ clipTriggerQuantization: Number(e.currentTarget.value) })
+              }
+            >
+              {transport === null && <option value="">–</option>}
+              {QUANTIZATION.map((label, value) => (
+                <option key={label} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <span className="select-caret" aria-hidden="true" />
+          </div>
+          <div className="scale-controls" role="group" aria-label="Current scale">
+            <button
+              type="button"
+              className={`icon-btn toggle${transport?.scaleMode ? ' on' : ''}`}
+              aria-pressed={transport?.scaleMode ?? false}
+              aria-label="Scale mode"
+              title="Toggle Scale Mode for Live's current or selected clips"
+              disabled={!lomReady || transport === null}
+              onClick={() => onTransport({ scaleMode: !transport?.scaleMode })}
+            >
+              <IconScale />
+            </button>
+            <div className="header-select root-picker">
+              <select
+                value={transport?.rootNote ?? ''}
+                disabled={!lomReady || transport === null}
+                aria-label="Current scale root note"
+                title="Root note for Live's current or selected clips"
+                onChange={(e) => onTransport({ rootNote: Number(e.currentTarget.value) })}
+              >
+                {transport === null && <option value="">–</option>}
+                {ROOT_NOTES.map((note, value) => (
+                  <option key={note} value={value}>
+                    {note}
+                  </option>
+                ))}
+              </select>
+              <span className="select-caret" aria-hidden="true" />
+            </div>
+            <div className="header-select scale-picker">
+              <select
+                value={transport?.scaleName ?? ''}
+                disabled={!lomReady || transport === null}
+                aria-label="Current scale name"
+                title={
+                  transport?.scaleName
+                    ? `${transport.scaleName} — Live's current or selected clips`
+                    : 'Scale name for Live\'s current or selected clips'
+                }
+                onChange={(e) => onTransport({ scaleName: e.currentTarget.value })}
+              >
+                {(transport === null || transport.scaleName === '') && (
+                  <option value="">–</option>
+                )}
+                {transport?.scaleName &&
+                  !SCALE_NAMES.includes(transport.scaleName as (typeof SCALE_NAMES)[number]) && (
+                    <option value={transport.scaleName}>{transport.scaleName}</option>
+                  )}
+                {SCALE_NAMES.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <span className="select-caret" aria-hidden="true" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="header-section header-center">
@@ -168,7 +407,7 @@ export function Header({
         >
           <IconMenu />
         </button>
-        <div className="width-picker">
+        <div className="header-select width-picker">
           <select
             value={columnWidth}
             aria-label="Track column display mode"
@@ -181,7 +420,7 @@ export function Header({
               </option>
             ))}
           </select>
-          <span className="width-caret" aria-hidden="true" />
+          <span className="select-caret" aria-hidden="true" />
         </div>
         <button
           type="button"

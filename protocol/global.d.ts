@@ -218,6 +218,32 @@ declare namespace BSV {
     tracks: TrackMeterLevel[];
   }
 
+  /** Live's set-wide control-bar state, observed and pushed as one unit. */
+  interface TransportState {
+    /** Song.tempo, 20–999 BPM. May move under Arrangement automation. */
+    tempo: number;
+    metronome: boolean;
+    /** Song.clip_trigger_quantization, using Live's documented 0–13 enum. */
+    clipTriggerQuantization: number;
+    /** Current Scale controls from Live's control bar. */
+    rootNote: number;
+    scaleName: string;
+    scaleMode: boolean;
+  }
+
+  /**
+   * One control-bar gesture. Optional fields keep root, scale and mode able to
+   * travel together without inventing one wire message per Live property.
+   */
+  interface TransportPatch {
+    tempo?: number;
+    metronome?: boolean;
+    clipTriggerQuantization?: number;
+    rootNote?: number;
+    scaleName?: string;
+    scaleMode?: boolean;
+  }
+
   // --- mutation --------------------------------------------------------
 
   interface ApplyOp {
@@ -405,7 +431,7 @@ declare namespace BSV {
 
   // --- client -> server ------------------------------------------------
 
-  // `launch`, `stop`, `setFold`, `watchPlay` and `watchMeters` deliberately have
+  // `launch`, `stop`, `setFold`, `setTransport`, and the watches deliberately have
   // no terminal reply. What you want back from firing a clip is not an
   // acknowledgement, it's the play state changing — which arrives as an
   // unsolicited `playState`. A failure still surfaces: the bridge broadcasts
@@ -476,8 +502,11 @@ declare namespace BSV {
     | { id?: number; type: 'setFold'; t: number; folded: boolean }
     | { id?: number; type: 'launch'; target: LaunchTarget }
     | { id?: number; type: 'stop'; target: StopTarget }
+    /** Write any related subset of Live's control-bar settings in one operation. */
+    | { id?: number; type: 'setTransport'; patch: TransportPatch }
     | { id?: number; type: 'watchPlay'; on: boolean }
     | { id?: number; type: 'watchMeters'; on: boolean }
+    | { id?: number; type: 'watchTransport'; on: boolean }
     /**
      * Follow changes the user makes in Live, by watching the Session cursor
      * and re-reading the tracks it touches. Two observers, not one per slot —
@@ -572,6 +601,7 @@ declare namespace BSV {
         beat: number;
         sixteenth: number;
       }
+    | { type: 'transportState'; state: TransportState }
     | { type: 'changed'; kind: string }
     /**
      * Someone changed the set in Live and we re-read the affected tracks.

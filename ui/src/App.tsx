@@ -11,6 +11,7 @@ import { ReorderModal } from './components/ReorderModal.js';
 import { RoleMenu } from './components/RoleMenu.js';
 import { RolesManager } from './components/RolesManager.js';
 import { ScenePanel } from './components/ScenePanel.js';
+import { SongIndex } from './components/SongIndex.js';
 import { SongsModal } from './components/SongsModal.js';
 import { StatsBar } from './components/StatsBar.js';
 import { SyncModal } from './components/SyncModal.js';
@@ -48,6 +49,8 @@ import { describeMove } from '../../core/src/sceneMove.js';
  */
 export function App() {
   const [showMeters, setShowMeters] = useState(false);
+  const [showIndex, setShowIndex] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
   const bridge = useBridge(showMeters);
   const { snapshot, play, launch, stop, setFold, apply, applyScenes, undo } = bridge;
 
@@ -123,6 +126,23 @@ export function App() {
     },
     [derivation, pickScenes, unfoldSong],
   );
+
+  /** Navigate without changing the song's fold state or the current selection. */
+  const jumpToSong = useCallback((firstScene: number) => {
+    const grid = gridRef.current;
+    const target = grid?.querySelector<HTMLElement>(`[data-song-start="${firstScene}"]`);
+    if (!grid || !target) return;
+
+    // Move only this scroll box, and only vertically. `scrollIntoView` may also
+    // move an ancestor or the horizontal track viewport; an index jump should
+    // leave the columns exactly where the performer had them.
+    const stickyHeight = grid.querySelector('thead')?.getBoundingClientRect().height ?? 0;
+    const top = grid.scrollTop + target.getBoundingClientRect().top;
+    grid.scrollTo({
+      top: Math.max(0, top - grid.getBoundingClientRect().top - stickyHeight - 4),
+      behavior: 'auto',
+    });
+  }, []);
 
   /**
    * Closing the rail drops the selection with it.
@@ -284,6 +304,10 @@ export function App() {
         busy={bridge.busy}
         isPlaying={play.isPlaying}
         songPosition={bridge.songPosition}
+        transport={bridge.transport}
+        onTransport={bridge.setTransport}
+        showIndex={showIndex}
+        onToggleIndex={() => setShowIndex((shown) => !shown)}
         launch={launch}
         stop={stop}
         songCount={derivation.songs.length}
@@ -299,7 +323,14 @@ export function App() {
       />
 
       <main>
-        <div className={`grid-wrap${showMeters ? ' meters-open' : ''}`}>
+        {showIndex && (
+          <SongIndex
+            derivation={derivation}
+            onJump={jumpToSong}
+            onClose={() => setShowIndex(false)}
+          />
+        )}
+        <div ref={gridRef} className={`grid-wrap${showMeters ? ' meters-open' : ''}`}>
           {snapshot ? (
             <ClipGrid
               snapshot={snapshot}

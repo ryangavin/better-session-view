@@ -49,6 +49,17 @@ export const IconMenu = () => (
   </svg>
 );
 
+/** Song index pane — a browser-style list beside the set. */
+export const IconIndex = () => (
+  <svg {...BASE}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" />
+    <line x1="9" y1="3.5" x2="9" y2="20.5" />
+    <line x1="5.5" y1="7" x2="7" y2="7" />
+    <line x1="5.5" y1="11" x2="7" y2="11" />
+    <line x1="5.5" y1="15" x2="7" y2="15" />
+  </svg>
+);
+
 /** Log — diagnostics. */
 export const IconBug = () => (
   <svg {...BASE}>
@@ -66,6 +77,25 @@ export const IconMeter = () => (
     <line x1="5" y1="18.5" x2="5" y2="13" />
     <line x1="12" y1="18.5" x2="12" y2="8" />
     <line x1="19" y1="18.5" x2="19" y2="4.5" />
+  </svg>
+);
+
+/** Live's metronome toggle. */
+export const IconMetronome = () => (
+  <svg {...BASE}>
+    <path d="M7 20h10l-2.2-16H9.2Z" />
+    <line x1="12" y1="16.5" x2="16.5" y2="7" />
+    <circle cx="16.8" cy="6.4" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/** Scale awareness — the current root and scale in Live's control bar. */
+export const IconScale = () => (
+  <svg {...BASE}>
+    <circle cx="5" cy="17" r="2.2" />
+    <circle cx="12" cy="13" r="2.2" />
+    <circle cx="19" cy="7" r="2.2" />
+    <path d="M6.8 15.8 10.2 14M13.8 11.6 17.2 8.5" />
   </svg>
 );
 
