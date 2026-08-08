@@ -186,20 +186,25 @@ export const SongHeaderRow = memo(function SongHeaderRow({
           a reprise, or it's two different songs sharing a name. Folded, it
           shortens to `2/2`: it has to share the scene column with the shape,
           and the tooltip still spells it out. */}
-      {header.blocks > 1 &&
-        (header.collapsed ? (
-          <span className="part" title={`part ${header.block} of ${header.blocks}`}>
-            {header.block}/{header.blocks}
-          </span>
-        ) : (
-          <span className="part">
-            part {header.block} of {header.blocks}
-          </span>
-        ))}
-      {/* Open, there's a whole row spare, so the exceptions say their piece in
-          full right here. Folded, they move out to the tile region — see
-          `notice`. */}
-      {!header.collapsed && header.colorClash && (
+      {header.blocks > 1 && header.collapsed && (
+        <span className="part" title={`part ${header.block} of ${header.blocks}`}>
+          {header.block}/{header.blocks}
+        </span>
+      )}
+    </div>
+  );
+
+  /* Expanded rows have a real scene-column cell now, so they can pin at the
+     same edge as scene names. Details that used to follow the title inside one
+     table-spanning cell belong in the remaining track-region cell. */
+  const openDetails = (
+    <span className="song-details">
+      {header.blocks > 1 && (
+        <span className="part">
+          part {header.block} of {header.blocks}
+        </span>
+      )}
+      {header.colorClash && (
         <span
           className="mixed-color"
           title="This song's scenes hold more than one color — pick a swatch to make it one"
@@ -207,14 +212,12 @@ export const SongHeaderRow = memo(function SongHeaderRow({
           mixed color
         </span>
       )}
-      {!header.collapsed && dropNote !== '' && (
-        <span className="drop-note">{dropNote}</span>
-      )}
-    </div>
+      {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
+    </span>
   );
 
-  // The lead cell is the drag handle whichever shape the row is in: folded it's
-  // the scene column, open it spans the grid.
+  // The scene-column lead is the drag handle in both shapes. Keeping it as its
+  // own cell is also what lets the song identity stay pinned horizontally.
   const lead = {
     draggable: true,
     onDragStart: (e: DragEvent<HTMLTableCellElement>) => {
@@ -252,9 +255,16 @@ export const SongHeaderRow = memo(function SongHeaderRow({
       }}
     >
       {!folded ? (
-        <td colSpan={columns.length + 1} {...lead}>
-          {title}
-        </td>
+        <>
+          <td className="song-lead" {...lead}>
+            {title}
+          </td>
+          {columns.length > 0 && (
+            <td className="song-detail" colSpan={columns.length}>
+              {openDetails}
+            </td>
+          )}
+        </>
       ) : (
         <>
           <td className="song-lead" {...lead}>

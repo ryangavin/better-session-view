@@ -202,7 +202,9 @@ tr.song-row.collapsed .song {
 tr.song-row td:first-child {
   position: sticky;
   left: var(--gutter);
-  z-index: 2;
+  /* Keep the pinned identity above the scrolling half of its own row,
+     including the separator's drop shadow. */
+  z-index: 10;
 }
 tr.song-row.collapsed td:first-child::before,
 tr.song-row.colored td:first-child::before {
@@ -226,46 +228,43 @@ tr.song-row.colored td:first-child::before {
    cell, which also stops the marks competing with a field of color behind
    them. */
 tr.song-row.colored td {
-  background-color: var(--song-wash-dim);
+  /* The wash is intentionally translucent to keep Live's saturated palette
+     quiet in a dense set. It must sit on an opaque surface, though: this cell
+     can overlap scrolling tracks when the song column is pinned. */
+  background-color: var(--rail);
+  background-image: linear-gradient(var(--song-wash-dim), var(--song-wash-dim));
 }
 tr.song-row.colored td:first-child {
-  background-color: var(--song-wash);
+  background-image: linear-gradient(var(--song-wash), var(--song-wash));
 }
-/* Open, the header is one uninterrupted cell again. Keep the stronger wash
-   behind the song identity, then continue the same band at half strength over
-   the track region without dividing it back into track-sized cells. */
-tr.song-row.colored:not(.collapsed) td:first-child {
-  background-color: transparent;
-  background-image: linear-gradient(
-    90deg,
-    var(--song-wash) 0 var(--scene-col-w),
-    var(--song-wash-dim) var(--scene-col-w)
-  );
-}
-/* Hover, without disturbing the wash: a white film over it. `color-mix` would
-   be tidier, but the wash arrives from the component as 8-digit hex. */
+/* Hover adds a white film without replacing either the wash or its opaque
+   foundation. `color-mix` would be tidier, but the wash arrives from the
+   component as 8-digit hex. */
 tr.song-row.colored:hover td {
-  background-image: linear-gradient(
-    rgba(255, 255, 255, 0.045),
-    rgba(255, 255, 255, 0.045)
-  );
-}
-tr.song-row.colored:not(.collapsed):hover td:first-child {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045)),
-    linear-gradient(
-      90deg,
-      var(--song-wash) 0 var(--scene-col-w),
-      var(--song-wash-dim) var(--scene-col-w)
-    );
+    linear-gradient(var(--song-wash-dim), var(--song-wash-dim));
+}
+tr.song-row.colored:hover td:first-child {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.045)),
+    linear-gradient(var(--song-wash), var(--song-wash));
 }
 
-/* Folded, the header is several cells: the scene column carries the text and
-   the shape, the rest carry one tile per track column. That's what lets it be
-   one row — the tiles land under the columns they describe, and the track-name
-   row is sticky, so a fully-folded set still has every tile named above it. */
+/* The scene column is always its own cell so song identity pins beside scene
+   identity during horizontal scrolling. Folded, the rest of the row carries
+   one tile per track column; expanded, one spanning detail cell preserves the
+   continuous separator surface without making the pinned cell table-wide. */
 tr.song-row td.song-lead {
   overflow: hidden;
+}
+tr.song-row td.song-detail {
+  position: relative;
+}
+tr.song-row .song-details {
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 tr.song-row td.fill {
   position: relative;
