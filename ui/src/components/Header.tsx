@@ -12,7 +12,6 @@ import {
 } from './Icon.js';
 
 interface Props {
-  connection: BridgeState['connection'];
   lomReady: boolean;
   busy: boolean;
   isPlaying: boolean;
@@ -32,12 +31,8 @@ interface Props {
   onSnapshot: () => void;
 }
 
-const statusPill = (label: string, ok: boolean) => (
-  <div className={`pill ${ok ? 'on' : 'off'}`}>{label}</div>
-);
-
 /**
- * The header bar: status pills, playback, view controls, meters, log and Snapshot.
+ * The header bar: playback, view controls, meters, log and Snapshot.
  *
  * Every button here is a glyph, and every one carries an `aria-label` as well
  * as a `title`. An icon-only control with no accessible name is a button that
@@ -46,7 +41,6 @@ const statusPill = (label: string, ok: boolean) => (
  * can still be said in words.
  */
 export function Header({
-  connection,
   lomReady,
   busy,
   isPlaying,
@@ -80,8 +74,6 @@ export function Header({
     <header>
       <div className="header-section header-left">
         <img className="brand-logo" src="/logo-white.png" alt="Better Session View" />
-        {statusPill(connection, connection === 'open')}
-        {statusPill(lomReady ? 'lom ready' : 'lom waiting', lomReady)}
       </div>
 
       <div className="header-section header-center">

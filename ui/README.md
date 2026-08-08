@@ -16,9 +16,9 @@ src/components/       one component per file
     Row.tsx           one scene's row, memoized
     SongHeaderRow.tsx a song block's header row, memoized
     constants.ts      surfaces, contrast ratios, shared empties
-  Header.tsx          header bar — pills, Arrangement position, playback, view controls
-  Icon.tsx            the header's glyphs, as inline SVG
-  StatsBar.tsx        the bottom status strip — stat tiles + the key-hint line
+  Header.tsx          header bar — Arrangement position, playback, view controls
+  Icon.tsx            compact-control glyphs, as inline SVG
+  StatsBar.tsx        the bottom status strip — readiness, stat tiles + key hints
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it
   ScenePanel.tsx      song/tag/bpm/key fields, the role picker, song color
@@ -154,13 +154,14 @@ pixel the rail isn't using is a track column you can see.
   looking at `log[0]`, because `say` prepends and a burst can put an info line in front of
   the error that arrived with it.
 
-The counts don't open, so they pay for their pixels differently: `StatsBar` is a **status
-strip along the bottom edge**, one line high. It was a band under the header — two lines
+Readiness and counts don't open, so they pay for their pixels differently: `StatsBar` is a
+**status strip along the bottom edge**, one line high. Its single readiness pill names the
+first unmet dependency — device, then LOM — or says `ready`; the remaining numbers are
+glanced at after a snapshot or before an apply. It was a band under the header — two lines
 per tile, a 9px label over a 15px number — which is ~52px of chrome across the full width
-on a set where the same pixels are two scene rows. Nothing in it is read *while* you work;
-it's glanced at after a snapshot or before an apply, and a number you check rather than
-read can be small. So a tile is now label and value on one baseline at 8.5/10.5px, and the
-whole strip is ~21px.
+on a set where the same pixels are two scene rows. A number you check rather than read can
+be small, so a tile is label and value on one baseline at 8.5/10.5px, and the whole strip
+is ~21px.
 
 It renders **after** the log, so the log opens as a panel above it rather than pushing it
 off the bottom, and it's a `div`, not a second `<footer>` — the `footer` selector carries
@@ -191,6 +192,9 @@ they're a scale, and a scale is what letters are for. That takes the bar to
   with no accessible name is a button for sighted mouse users and nobody else, and the
   `title` is now the only place the longer meanings — what "stop clips" spares, that
   Snapshot re-walks the whole set — can still be said in words.
+- **The scene workflow buttons reuse the same primitive and glyph set**, scaled together
+  to the table header's 13px line box so add, order and color do not make the grid header
+  taller. Their titles say what each workflow can actually do.
 - **Fold keeps one glyph and lights instead of swapping.** A folded set already *is* a list
   of lines, so that's the state the icon draws; a second icon for unfold would mean reading
   the button to find out which way it goes. Same lit-when-on treatment as the width presets.
@@ -557,9 +561,10 @@ against a real set.**
 
 ## Two workflows over the whole set
 
-The scene column's header carries **order…** and **color…**. They're at the head of the
-column the songs are read down, because both act on every song at once rather than on a
-selection — which is also why neither is in the rail, and the rail can be shut anyway.
+The scene column's header carries icon buttons for adding a song, setting the running
+order and coloring every song from a rule. They're at the head of the column the songs
+are read down, because they act on set structure or every song at once rather than on a
+selection — which is also why none is in the rail, and the rail can be shut anyway.
 
 Both work the same way: a draft you can push around for free, a preview of exactly what
 will be written, and one button that writes it. That shape is the point of them. Doing
@@ -1121,8 +1126,8 @@ it.** `.grid-wrap` carries no `padding-top`: the header pins 2px below it and th
 covers exactly that, so padding there is a band where scrolled clip cells show through.
 
 The whole block is **32px** — 13 + 2 + 15, one `line-height` and 2px of padding per row.
-`button.bulk` is sized to the row rather than the row to it: 11px plus its 1px borders
-is the track-name row's 13px, so *order…* and *color…* cost the header no height.
+The scene workflow icon buttons are sized to the row rather than the row to them: 13px
+including their borders, so they cost the header no height.
 
 **Rows are `memo`ized.** `ClipGrid` renders `sceneCount` rows × non-group tracks —
 around 6,800 cells at full size. Memoizing the row is what keeps toggling one cell

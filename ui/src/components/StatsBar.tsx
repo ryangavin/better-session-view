@@ -1,4 +1,5 @@
 import { LAUNCH_KEY } from '../lib/keys.js';
+import type { BridgeState } from '../hooks/useBridge.js';
 import { IconGitHub } from './Icon.js';
 import { Stat } from './Stat.js';
 import './StatsBar.css';
@@ -6,6 +7,8 @@ import './StatsBar.css';
 const REPOSITORY_URL = 'https://github.com/ryangavin/better-session-view';
 
 interface Props {
+  connection: BridgeState['connection'];
+  lomReady: boolean;
   snapshot: BSV.Snapshot | null;
   songCount: number;
   unmappedCount: number;
@@ -14,16 +17,36 @@ interface Props {
   onOpenSongs: () => void;
 }
 
-/** The status strip along the bottom: the stat tiles, and the key-hint line. */
+/** The status strip along the bottom: readiness, stat tiles, and the key-hint line. */
 export function StatsBar({
+  connection,
+  lomReady,
   snapshot,
   songCount,
   unmappedCount,
   selectedCount,
   onOpenSongs,
 }: Props) {
+  // Report only the first unmet dependency. The bridge device must be reachable
+  // before the LOM can become ready, so the strip names the current blocker
+  // rather than making the user combine two independent statuses.
+  const deviceOpen = connection === 'open';
+  const ready = deviceOpen && lomReady;
+  const status = !deviceOpen
+    ? 'waiting for device'
+    : !lomReady
+      ? 'waiting for lom'
+      : 'ready';
+
   return (
     <div className="stats">
+      <div
+        className={`connection-status ${ready ? 'ready' : 'waiting'}`}
+        role="status"
+        aria-live="polite"
+      >
+        {status}
+      </div>
       <Stat k="Tracks" v={snapshot?.trackCount} />
       <Stat k="Scenes" v={snapshot?.sceneCount} />
       <Stat k="Clips" v={snapshot?.clipCount} />

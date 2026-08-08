@@ -109,6 +109,15 @@ button:disabled {
   opacity: 0.4;
   cursor: default;
 }
+/* Icon-only controls share one square, centered primitive. Header.css owns the
+   main toolbar's height; compact contexts can size the box and SVG together. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  padding: 0;
+}
 button.primary {
   background: var(--amber);
   color: var(--bg);

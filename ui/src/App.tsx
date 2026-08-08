@@ -280,7 +280,6 @@ export function App() {
   return (
     <>
       <Header
-        connection={bridge.connection}
         lomReady={bridge.lomReady}
         busy={bridge.busy}
         isPlaying={play.isPlaying}
@@ -539,10 +538,11 @@ export function App() {
 
       {/* Last, so the counts are the strip along the bottom edge and the log
           opens as a panel above them rather than shunting them off-screen.
-          They were a band under the header; nothing in here is read while you
-          work — it's glanced at afterwards — and a band across the top costs a
-          scene row on every set. */}
+          The readiness state and counts are glanceable here without making a
+          band across the top cost a scene row on every set. */}
       <StatsBar
+        connection={bridge.connection}
+        lomReady={bridge.lomReady}
         snapshot={snapshot}
         songCount={derivation.songs.length}
         unmappedCount={derivation.unmapped.length}

@@ -1,5 +1,5 @@
 /**
- * The header's glyph set.
+ * The app's compact-control glyph set.
  *
  * Inline SVG rather than an icon font or a Unicode character. A font is out
  * because nothing loads from a CDN — this runs on stage. A character is out
@@ -8,7 +8,9 @@
  * nothing here asked for. These inherit `currentColor`, so a button's hover,
  * disabled and `.on` states reach the glyph without the icon knowing about them.
  *
- * All drawn on a 24-unit grid at 14px, so the stroke lands near 1 device pixel.
+ * All drawn on a 24-unit grid at 14px by default, so the stroke lands near 1
+ * device pixel. The scene-header workflow controls scale them down together in
+ * CSS to fit that table row without giving the icons a second coordinate system.
  * Anything with more detail than these turns to mush at that size — the bug in
  * particular is already at the limit.
  */
@@ -64,6 +66,36 @@ export const IconMeter = () => (
     <line x1="5" y1="18.5" x2="5" y2="13" />
     <line x1="12" y1="18.5" x2="12" y2="8" />
     <line x1="19" y1="18.5" x2="19" y2="4.5" />
+  </svg>
+);
+
+/** Add a song scaffold. */
+export const IconAddSong = () => (
+  <svg {...BASE}>
+    <line x1="12" y1="4.5" x2="12" y2="19.5" />
+    <line x1="4.5" y1="12" x2="19.5" y2="12" />
+  </svg>
+);
+
+/** Set the running order — a list beside a two-way ordering arrow. */
+export const IconOrderSongs = () => (
+  <svg {...BASE}>
+    <line x1="9.5" y1="6" x2="20" y2="6" />
+    <line x1="9.5" y1="12" x2="20" y2="12" />
+    <line x1="9.5" y1="18" x2="20" y2="18" />
+    <line x1="5" y1="5" x2="5" y2="19" />
+    <polyline points="2.5 7.5 5 5 7.5 7.5" />
+    <polyline points="2.5 16.5 5 19 7.5 16.5" />
+  </svg>
+);
+
+/** Color every song from a rule. */
+export const IconColorSongs = () => (
+  <svg {...BASE}>
+    <path d="M12 3.2a8.8 8.8 0 1 0 0 17.6h1.2a1.8 1.8 0 0 0 0-3.6h-.7a1.8 1.8 0 0 1 0-3.6h5.4a3 3 0 0 0 3-3A8.8 8.8 0 0 0 12 3.2Z" />
+    <circle cx="7.5" cy="9" r="0.8" fill="currentColor" stroke="none" />
+    <circle cx="11.5" cy="6.8" r="0.8" fill="currentColor" stroke="none" />
+    <circle cx="16" cy="8.2" r="0.8" fill="currentColor" stroke="none" />
   </svg>
 );
 

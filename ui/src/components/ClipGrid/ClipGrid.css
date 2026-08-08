@@ -121,7 +121,7 @@ table.grid th .th-line {
   align-items: center;
   justify-content: flex-start;
 }
-/* Track and group names carry weight; the `Scene` header and its two bulk
+/* Track and group names carry weight; the `Scene` header and its workflow
    buttons don't, which is why this sits on the label rather than on `th`. A
    name now sits on a saturated fill instead of on the near-black background,
    and 9px regular gets thin against a light one — `inkOn` picks a color that
@@ -136,27 +136,36 @@ table.grid th.scene-h {
   text-align: left;
   padding-left: var(--gutter);
 }
-/* The two bulk workflows sit at the head of the column their songs are read
+/* The set-wide workflows sit at the head of the column their songs are read
    down. Flex on a wrapper, never on the `th` — see the note above `table.grid`:
    `display: flex` on a table cell stops it being one.
 
-   Sized to the row rather than the row to them: 11px line-height plus the 1px
-   border either side is exactly the `th`'s 13px, so the two workflows cost the
-   header no height at all. They carry the grid's own 9px mono, not the app's
-   12px sans, for the same reason. */
+   Sized to the row rather than the row to them: 13px including the border is
+   exactly the `th`'s line box, so the controls cost the header no height. */
 table.grid th.scene-h .scene-h-line {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-button.bulk {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  padding: 0 5px;
-  line-height: 11px;
+table.grid th.scene-h .scene-actions {
+  display: flex;
+  gap: 3px;
+}
+button.scene-action {
+  width: 20px;
+  height: 13px;
+  flex: none;
   border-radius: var(--radius-sm);
-  color: var(--dim2);
+  border-color: var(--focus);
+  background: var(--surface-control);
+  color: var(--dim);
+}
+button.scene-action svg {
+  width: 12px;
+  height: 12px;
+}
+button.scene-action:hover:not(:disabled) {
+  background: var(--sel);
 }
 
 /* --- groups ---------------------------------------------------------- */

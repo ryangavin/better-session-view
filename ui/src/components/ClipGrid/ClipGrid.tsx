@@ -17,7 +17,12 @@ import { useMeters } from '../../hooks/useMeters.js';
 import { marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../../hooks/useAnchoredPosition.js';
 import { NO_SHAPES, STOP_FIRED } from './constants.js';
-import { IconGroupFold } from '../Icon.js';
+import {
+  IconAddSong,
+  IconColorSongs,
+  IconGroupFold,
+  IconOrderSongs,
+} from '../Icon.js';
 import { Row, sceneDropEdge } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
 import { MeterResizeHandle } from './MeterResizeHandle.js';
@@ -193,32 +198,37 @@ export function ClipGrid({
             <div className="scene-h-line">
               <span>Scene</span>
               <div className="spacer" />
-              <button
-                type="button"
-                className="bulk"
-                title="Insert eight empty scenes for a new song"
-                onClick={onAddSong}
-              >
-                new…
-              </button>
-              <button
-                type="button"
-                className="bulk"
-                disabled={songCount === 0}
-                title="Set the running order for every song, then write it in one pass"
-                onClick={onReorder}
-              >
-                order…
-              </button>
-              <button
-                type="button"
-                className="bulk"
-                disabled={songCount === 0}
-                title="Color every song from a rule — by key, by bpm, rainbow or random"
-                onClick={onRecolor}
-              >
-                color…
-              </button>
+              <div className="scene-actions" role="group" aria-label="Song workflows">
+                <button
+                  type="button"
+                  className="icon-btn scene-action"
+                  aria-label="Add a song"
+                  title="Add a new song with eight scenes"
+                  onClick={onAddSong}
+                >
+                  <IconAddSong />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn scene-action"
+                  aria-label="Reorder songs"
+                  disabled={songCount === 0}
+                  title="Reorder songs by name, tag, key, BPM, or drag"
+                  onClick={onReorder}
+                >
+                  <IconOrderSongs />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn scene-action"
+                  aria-label="Color songs"
+                  disabled={songCount === 0}
+                  title="Color songs by key, BPM, rainbow, or random"
+                  onClick={onRecolor}
+                >
+                  <IconColorSongs />
+                </button>
+              </div>
             </div>
           </th>
           {columns.map((c, i) => {

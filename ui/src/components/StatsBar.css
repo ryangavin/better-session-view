@@ -19,12 +19,33 @@
   color: var(--fg);
 }
 
+.connection-status {
+  align-self: center;
+  flex: none;
+  padding: 1px 5px;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.connection-status.ready {
+  color: var(--green);
+  border-color: rgba(95, 191, 168, 0.4);
+}
+.connection-status.waiting {
+  color: var(--red);
+  border-color: rgba(212, 84, 79, 0.4);
+}
+
 /* --- stats -------------------------------------------------------- */
 
 /* A status strip along the bottom, not a band across the top. Every pixel it
-   doesn't use is a scene row, so a tile is one line — label then value on a
-   shared baseline — rather than the stacked pair it started as. Nothing here
-   is read while you work; it's checked, and a checked number can be small. */
+   doesn't use is a scene row, so readiness and each tile stay on one line — a
+   checked state or number can be small. */
 .stats {
   display: flex;
   align-items: baseline;

@@ -43,38 +43,10 @@ header {
   flex: none;
 }
 
-.pill {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--bd3);
-  color: var(--dim);
-}
-.pill.on {
-  color: var(--green);
-  border-color: rgba(95, 191, 168, 0.4);
-}
-.pill.off {
-  color: var(--red);
-  border-color: rgba(212, 84, 79, 0.4);
-}
-
 /* --- icon buttons ------------------------------------------------- */
 
-/* Every header button. The glyph is a 14px SVG drawing in `currentColor`, so
-   it picks up hover, `:disabled` and `.on` from the button without either
-   knowing about the other. Square-ish rather than text-width: a row of even
-   boxes is what makes an icon bar read as a toolbar instead of as debris. */
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  padding: 0;
-}
+/* The shared `.icon-btn` primitive supplies the square, centered glyph box.
+   The toolbar owns only its control height. */
 header button {
   height: var(--ctl-h);
 }
