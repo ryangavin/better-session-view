@@ -114,6 +114,22 @@ from the code.
 Planned work and the questions only a run against a real set can answer live in
 [Issues](../../issues).
 
+## How this project was built
+
+I've been a professional software engineer for nearly two decades. I've also used Ableton
+since Live 7, and I regularly use it on stage with my band,
+[Funkadelic Astronaut](https://www.youtube.com/@FunkadelicAstronaut). This project comes
+from both of those parts of my life.
+
+Nearly all of the code in Better Session View was written with Claude and Codex. It was
+not vibe coded. I directed the work closely, made the architecture decisions, and
+thoroughly reviewed the final code myself.
+
+For this project, AI was effectively a very fast autocomplete for code I could have
+written by hand. It made the implementation fast enough for Better Session View to exist,
+but the product decisions, engineering judgment, and responsibility for the result are
+mine.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
