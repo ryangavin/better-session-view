@@ -5,12 +5,13 @@ React 19 + Vite. Builds to `bridge/public/`, which the device serves.
 ```
 index.html            vite entry
 vite.config.ts        build target + dev proxy
-src/main.tsx          root
+src/main.tsx          root — wraps App in the bridge provider
 src/App.tsx           the composition root — hooks in dependency order, wiring
 src/shared.css        design tokens, global reset, shared controls and primitives
 src/App.css           app shell, empty state and log
 src/components/       one component per file
   *.css               component styles, imported by the component that owns them
+  BridgeProvider.tsx  owns the connection, above App — see Dev below
   ClipGrid/
     ClipGrid.tsx      scenes × tracks — colgroup, sticky header, group bands, the tbody
     Row.tsx           one scene's row, memoized
@@ -34,6 +35,7 @@ src/components/       one component per file
   RecolorModal.tsx    coloring every song from a rule
 src/hooks/            one hook per file
   useBridge.ts        React face of the client; composes the two below
+  useBridgeSession.ts the context App reads it back out of
   useLog.ts           the shared say sink
   useDeviceState.ts   roles + allowed colors stored in the Live device
   useSnapshotLookups.ts  the lookup Maps every other hook reads
@@ -83,8 +85,51 @@ npm run dev:ui         # this alone, against a device someone else is running
 ```
 
 Use **<http://localhost:5173>**, not :17800. Vite proxies `/ws` through to the device,
-so you get HMR with React Fast Refresh — a loaded snapshot and
-your current selection survive edits, which matters when a snapshot takes seconds.
+so you get HMR with React Fast Refresh — and, more to the point, a loaded snapshot
+that survives your edits. A walk is ~950ms of Live's main thread; an edit to a CSS
+variable must not spend it.
+
+### What a hot update costs
+
+`BridgeProvider` is what makes that true, and it earns its place by being the parent
+of `App` rather than something inside it. Fast Refresh does one of two things to a
+component whose module updated, and with the connection inside `App` both of them
+were re-reading the whole set:
+
+- **Re-render with fresh dependencies.** React ignores the previous deps of every
+  `useMemo`, `useCallback` and `useEffect` in a component it just hot-updated, so
+  `useMemo(() => new BridgeClient(), [])` built a new client — dropping the socket,
+  reconnecting, and re-arming every watch. Re-arming `observe` re-attaches the
+  `tracks` and `scenes` observers, and an observer that calls back on attach is
+  broadcast as `changed structure`, which sends **every** connected client for a
+  full walk.
+- **Remount.** Fast Refresh compares a signature built from the hooks a component
+  calls, *including the hooks nested inside every custom hook it uses* — `App`'s is
+  computed over fifteen of them. Change any one and the signatures differ, React
+  can't assume the state still means the same thing, and it remounts. That drops
+  the snapshot, and the once-per-session walk fires again on the next `lomReady`.
+
+Vite hands an update to the importers of the changed file until one accepts it.
+Nothing under `hooks/`, `lib/` or `core/` is a Fast Refresh boundary — only files
+whose every export is a component are — so all of them land on `App`. Splitting the
+provider out puts that whole blast radius *below* the socket: edit a hook and `App`
+remounts against the snapshot the provider is still holding, with no wire traffic
+at all.
+
+So the bill for an edit is now the honest one:
+
+| edited | costs |
+|---|---|
+| a `.css` file | a style swap, nothing else |
+| a component under `components/` | that subtree re-renders |
+| a hook, `lib/`, `core/`, `App.tsx` | `App` re-renders or remounts; the connection and snapshot survive |
+| `useBridge.ts`, `useBridgeSession.ts`, `client.ts` | a reconnect and a walk — you edited the bridge |
+| `main.tsx`, `vite.config.ts` | a full page reload |
+
+One thing that still walks and isn't HMR: the staleness backstop re-reads the set
+when you come back to the window and what you're holding is over `STALE_MS` old.
+Editing for five minutes and clicking back into the browser is exactly that case —
+see `core/src/backstop.ts`, which is where to change your mind about it.
 
 Two env vars, both optional:
 
@@ -127,7 +172,10 @@ keep it that way.
   reply. Read it synchronously right after the `await`. This is safe because UI
   requests are serialized behind `busy`; it would need per-id storage if that changed.
 
-`hooks/useBridge.ts` wraps it in React state. The separable pieces — the log
+`hooks/useBridge.ts` wraps it in React state, and `components/BridgeProvider.tsx` is
+the only thing that calls it — once, above `App`, for the reasons under **Dev**.
+Everything else reads the same object back through `useBridgeSession()`. The
+separable pieces — the log
 (`useLog`) and the set-owned configuration (`useDeviceState`) — are their own hooks
 that it composes; the connection, the
 snapshot walk and the apply/undo/moveScenes write path stay together in
@@ -140,11 +188,13 @@ as unhandled rejections.
 Three optional surfaces start **closed**, because none is what you came for. On a 40-track
 set every pixel the side panes aren't using is a track column you can see.
 
-- **The song index** opens from the left side of the header and lists each song once in
-  set order with its key, BPM and type. Clicking only the name jumps immediately to the
-  first block of that song; it does not select it, open the edit rail, or change its fold
-  state. The target is the song header rather than its first scene, so a folded song is
-  just as navigable as an open one.
+- **The song index** opens from the left side of the header and lists each song once with
+  its key, BPM and type. It starts in set order; its search covers all four displayed
+  fields, and each column heading toggles a local ascending/descending sort. That filter
+  and order belong only to the pane — they never reorder scenes or write to Live.
+  Clicking only the name jumps immediately to the first block of that song; it does not
+  select it, open the edit rail, or change its fold state. The target is the song header
+  rather than its first scene, so a folded song is just as navigable as an open one.
 
 - **The rail** — scene fields, roles, swatches, rename — opens the moment you pick
   something to work on: a clip, a scene name, or a song. Its `×` closes it and gives the
@@ -190,6 +240,12 @@ observers push it as a unit, and the UI sends one partial `TransportPatch` for a
 The next observed readback is the acknowledgement, so a Live write that silently fails
 cannot leave the header claiming the attempted value.
 
+Tempo and metronome share one segmented control because they are the two pulse controls.
+Scale Mode, root note and scale name form a second three-segment control. Global
+clip-trigger quantization stays adjacent but separate because it changes when clips take
+the pulse rather than the pulse or its musical key. Button groups provide the logical
+separation; the header uses no standalone divider between them.
+
 Live's Current Scale controls are not a bulk edit of every clip. They reflect the current
 or selected clips and apply to that selection, which is why the controls and tooltips say
 “current scale” rather than “Set key.” The built-in scale list comes from Live 12.4.3's own
@@ -198,9 +254,10 @@ extra option instead of disappearing.
 
 The center keeps Live's bars, beats and sixteenths immediately left of play / stop /
 struck-through-slot. The right side carries fold, the compact width select, meters, log and
-Snapshot. The flexible left region yields first on a narrow window so those two action
-groups remain available. Every control shares `--ctl-h`; the bar is `--ctl-h + 12px`, with
-6px of air above and below.
+Snapshot. Three equal flex regions keep that middle group at the header's true center,
+independent of how much chrome the left and right sides contain. The left region clips
+first on a narrow window. Every control shares `--ctl-h`; the bar is `--ctl-h + 12px`,
+with 6px of air above and below.
 
 - **`Icon.tsx` is inline SVG**, not an icon font and not a Unicode character. A font is out
   because nothing loads from a CDN. A character is out because ▶, ⏹ and 🐛 render at

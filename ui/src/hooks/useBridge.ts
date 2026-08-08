@@ -123,6 +123,12 @@ export interface BridgeState {
  * that are one cohesive unit: the connection, the snapshot walk, and the
  * apply/undo/moveScenes write path, which all share `guard`, the snapshot ref
  * and the undo entry.
+ *
+ * **Called once, from `BridgeProvider`, and nowhere else.** It opens a socket
+ * and installs observers in Live, so a second caller is a second connection;
+ * and the component that calls it is the component a hot update reconnects.
+ * Read it through `useBridgeSession()` instead — see BridgeProvider for what
+ * calling it from `App` used to cost.
  */
 export function useBridge(watchMeters = false): BridgeState {
   const client = useMemo(() => new BridgeClient(), []);

@@ -15,7 +15,7 @@ import { SongIndex } from './components/SongIndex.js';
 import { SongsModal } from './components/SongsModal.js';
 import { StatsBar } from './components/StatsBar.js';
 import { SyncModal } from './components/SyncModal.js';
-import { useBridge } from './hooks/useBridge.js';
+import { useBridgeSession } from './hooks/useBridgeSession.js';
 import { useSnapshotLookups } from './hooks/useSnapshotLookups.js';
 import { useTrackColumns } from './hooks/useTrackColumns.js';
 import { useSongLayout } from './hooks/useSongLayout.js';
@@ -48,11 +48,15 @@ import { describeMove } from '../../core/src/sceneMove.js';
  * compositions that genuinely span two hooks.
  */
 export function App() {
-  const [showMeters, setShowMeters] = useState(false);
   const [showIndex, setShowIndex] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
-  const bridge = useBridge(showMeters);
+  // Everything the bridge holds comes from above this component — see
+  // BridgeProvider for why the connection can't live inside the composition
+  // root. `showMeters` is up there with it because it decides whether Live is
+  // streaming meter frames at all.
+  const bridge = useBridgeSession();
   const { snapshot, play, launch, stop, setFold, apply, applyScenes, undo } = bridge;
+  const { showMeters, toggleMeters } = bridge;
 
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
   const chooseColumnWidth = useCallback((w: ColumnWidth) => {
@@ -318,7 +322,7 @@ export function App() {
         showLog={showLog}
         onToggleLog={toggleLog}
         showMeters={showMeters}
-        onToggleMeters={() => setShowMeters((shown) => !shown)}
+        onToggleMeters={toggleMeters}
         onSnapshot={bridge.refresh}
       />
 
