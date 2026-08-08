@@ -43,7 +43,7 @@ it that way — architecture and rules go in `CONTRIBUTING.md`, planned work goe
    exactly as follows:
 
    ```text
-   Co-authored-by: Codex <199175422+chatgpt-codex-connector[bot]@users.noreply.github.com>
+   Co-authored-by: Codex <noreply@openai.com>
    ```
 
 ## Before you claim something works
