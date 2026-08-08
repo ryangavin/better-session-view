@@ -229,8 +229,8 @@ stays as the manual override now that the grid mostly keeps up on its own.
 | | catches | costs |
 |---|---|---|
 | `observe` → `changed structure` | a track or scene added, removed, reordered | a full re-walk, and it has to be — every index changed meaning |
-| `watchSelection` → `delta` | **a clip moved, copied or deleted in Live** | ~11ms a track |
-| staleness | everything else | a full walk, at most one per `STALE_MS` |
+| `watchSelection` → `delta` | **a clip moved, copied or deleted in Live**, and now one renamed, recolored or deleted *in place* | ~11ms a track |
+| staleness | what has no `observe` at all — `Clip.length`, `Track.fold_state`, another device | a full walk, at most one per `STALE_MS` |
 
 The middle one is the interesting one, and how it works is in
 [`bridge/README.md`](../bridge/README.md) under *Following Live*: the bridge watches
@@ -246,6 +246,11 @@ scope from one, everything else from another — and the result would look plaus
 `canApplyDelta` and `mergeTrackDelta` are both in `core/` with tests, for the reason
 everything else that merges is: a grid disagreeing with Live gives no hint which of the
 two is lying.
+
+The middle row grew: the bridge also watches the properties of whatever the cursor is
+sitting on, which is how an in-place rename now arrives as a delta instead of waiting for
+a walk. You have to select something in Live to edit it, so the cursor is always already
+on the thing being changed — three more observers, and they move with it.
 
 **The backstop exists for what nothing can report.** Some of what a snapshot carries has
 no `observe` in the LOM at all — `Clip.length`, `Track.fold_state` — and another M4L
