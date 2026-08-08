@@ -261,14 +261,26 @@ input[type='text']:focus {
   border: 1px solid var(--dim2);
 }
 
+/* Compact, stage-legible scrollbars everywhere the app scrolls. Firefox only
+   exposes `thin`; Chromium/WebKit lets us hold the exact 5px footprint. The
+   thumb is deliberately brighter than a panel border so it stays findable on
+   every dark surface without giving the transparent track its own stripe. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--dim) transparent;
+}
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--bd3);
+  background: var(--dim);
   border-radius: var(--radius-pill);
 }
-::-webkit-scrollbar-track {
+::-webkit-scrollbar-thumb:hover {
+  background: var(--amber-muted);
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
   background: transparent;
 }
