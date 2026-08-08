@@ -58,7 +58,7 @@ export const IconBug = () => (
   </svg>
 );
 
-/** Track output meters — three live level bars. */
+/** Output meters — three live level bars. */
 export const IconMeter = () => (
   <svg {...BASE}>
     <line x1="5" y1="18.5" x2="5" y2="13" />

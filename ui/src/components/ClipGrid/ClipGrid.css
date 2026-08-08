@@ -17,6 +17,8 @@ table.grid {
      stays true. `border-spacing` produces it between cells; the header's plug
      shadows paint into it; the band's gutter below draws it by hand. */
   --gutter: 2px;
+  --meter-panel-h: 112px;
+  --meter-handle-h: 10px;
   /* Track names sit inside saturated header cells rather than in the gutter.
      Enough inset to clear the 3px play-state bar, without starving S columns. */
   --track-pad-x: 5px;
@@ -353,30 +355,64 @@ table.grid th.track-h.stopping {
 /* The mixer section is part of the same table as the clips. Its cells inherit
    the exact colgroup widths and horizontal scroll position, while sticky keeps
    the row at the bottom of the grid viewport. The body can therefore move
-   behind it without the meter columns ever drifting away from their tracks. */
-table.grid tfoot td {
+   behind it without the meters ever drifting away from their columns. */
+table.grid tfoot tr.meter-row td {
   position: sticky;
   bottom: 0;
   z-index: 2;
-  height: 112px;
+  height: var(--meter-panel-h);
   padding: 8px 4px;
   background: var(--rail);
   box-shadow:
     calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
-    0 var(--gutter) 0 var(--rail), 0 -8px 14px -4px var(--shadow-edge);
+    0 var(--gutter) 0 var(--rail);
   vertical-align: middle;
 }
 
-table.grid tfoot td.meter-spacer {
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
+/* A real spanning footer row, so the resize affordance belongs to the same
+   table and horizontal scroll position as the panel it controls. Its sticky
+   offset rides directly above the meter row; nothing floats over the grid. */
+table.grid tfoot td.meter-resize-cell {
+  position: sticky;
+  bottom: calc(var(--meter-panel-h) + var(--gutter));
+  z-index: 3;
+  height: var(--meter-handle-h);
+  padding: 0;
+  background: var(--rail);
+  box-shadow:
+    calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
+    0 var(--gutter) 0 var(--rail), 0 -8px 14px -4px var(--shadow-edge);
+}
+
+.meter-resize-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--dim2);
+  cursor: ns-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.meter-resize-handle::before {
+  content: '';
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+}
+
+.meter-resize-handle:hover,
+.meter-resize-handle:focus-visible,
+.meter-resize-handle.dragging {
+  color: var(--fg2);
 }
 
 .vertical-meter {
   display: flex;
   justify-content: center;
-  height: 94px;
+  height: calc(var(--meter-panel-h) - 18px);
   gap: 3px;
 }
 

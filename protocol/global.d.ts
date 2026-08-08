@@ -187,6 +187,14 @@ declare namespace BSV {
     level: number;
   }
 
+  /** One coherent output-meter frame from Live. */
+  interface MeterFrame {
+    /** Master-track output peak, clamped to Live's documented 0–1 range. */
+    master: number;
+    /** Every ordinary track's latest level, in track order. */
+    tracks: TrackMeterLevel[];
+  }
+
   // --- mutation --------------------------------------------------------
 
   interface ApplyOp {
@@ -532,8 +540,7 @@ declare namespace BSV {
       }
     | {
         type: 'meterLevels';
-        /** Every track's latest level, in track order. */
-        meters: TrackMeterLevel[];
+        frame: MeterFrame;
       }
     | {
         type: 'songPosition';

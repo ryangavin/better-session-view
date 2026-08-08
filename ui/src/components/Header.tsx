@@ -170,8 +170,8 @@ export function Header({
           type="button"
           className={`icon-btn toggle${showMeters ? ' on' : ''}`}
           aria-pressed={showMeters}
-          aria-label="Track meters"
-          title={`${showMeters ? 'Hide' : 'Show'} track output meters`}
+          aria-label="Output meters"
+          title={`${showMeters ? 'Hide' : 'Show'} track and master output meters`}
           onClick={onToggleMeters}
           disabled={!lomReady && !showMeters}
         >

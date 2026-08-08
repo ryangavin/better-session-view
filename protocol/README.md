@@ -57,7 +57,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `launch` `{ target }` | fire a clip, a scene, or the song |
 | `stop` `{ target }` | stop a track, every clip, or the song |
 | `watchPlay` `{ on }` | install the per-track play-state observers |
-| `watchMeters` `{ on }` | install the per-track output-meter observers |
+| `watchMeters` `{ on }` | install the track and master output-meter observers |
 | `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
 | `ping` | |
 
@@ -76,7 +76,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `changed` | — an observer fired |
 | `delta` | — a partial re-read after a change made in Live |
 | `playState` | — a play-state observer fired |
-| `meterLevels` | — complete current track/output-level frame |
+| `meterLevels` | — complete current track and master output-level frame |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
 | `deviceState` | — restored or changed set-owned configuration |
 | `reload` | — dev live-reload |

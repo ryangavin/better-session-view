@@ -51,7 +51,7 @@ permanent. **Keep the three files together** — the device loads `bridge.js` an
 by name from beside itself.
 
 Drag `SessionBridge.amxd` onto any track (it's an inert audio passthrough; the Master
-track is fine), wait for the status line to read **connected to Live**, then click **Open
+track is fine), wait for the device to read **No connections**, then click **Open
 Session Manager**.
 
 Needs Ableton Live 12 with Max for Live — built against 12.4.3 Suite. Nothing is

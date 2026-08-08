@@ -49,7 +49,7 @@ export interface SongPosition {
   sixteenth: number;
 }
 
-export type MeterListener = (meters: readonly BSV.TrackMeterLevel[]) => void;
+export type MeterListener = (frame: BSV.MeterFrame) => void;
 
 /** One write, of either kind or both. Empty arrays rather than optionals so
  *  every count in here is `ops.length + sceneOps.length` with no branching. */
@@ -200,7 +200,7 @@ export function useBridge(watchMeters = false): BridgeState {
         case 'playState':
           setPlay({ isPlaying: event.isPlaying, tracks: event.tracks });
           break;
-        // The track meters subscribe to this stream directly. Putting 30 Hz
+        // The output meters subscribe to this stream directly. Putting 30 Hz
         // frames in this hook's state would re-render App and the whole grid.
         case 'meterLevels':
           break;
@@ -321,9 +321,11 @@ export function useBridge(watchMeters = false): BridgeState {
   const subscribeMeters = useCallback(
     (listener: MeterListener) =>
       client.subscribe((event) => {
-        if (event.type === 'meterLevels') listener(event.meters);
+        if (event.type === 'meterLevels') listener(event.frame);
         // A frozen level looks live. Clear it as soon as the source disappears.
-        if (event.type === 'status' && !event.lomReady) listener([]);
+        if (event.type === 'status' && !event.lomReady) {
+          listener({ master: 0, tracks: [] });
+        }
       }),
     [client],
   );

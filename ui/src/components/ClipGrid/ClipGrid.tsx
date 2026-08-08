@@ -20,6 +20,7 @@ import { NO_SHAPES, STOP_FIRED } from './constants.js';
 import { IconGroupFold } from '../Icon.js';
 import { Row, sceneDropEdge } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
+import { MeterResizeHandle } from './MeterResizeHandle.js';
 import { TrackMeter } from './TrackMeter.js';
 
 export interface Props {
@@ -401,14 +402,26 @@ export function ClipGrid({
       </tbody>
       {showMeters && (
         <tfoot>
+          <tr className="meter-resize-row">
+            <td className="meter-resize-cell" colSpan={columns.length + 1}>
+              <MeterResizeHandle />
+            </td>
+          </tr>
           <tr className="meter-row">
-            {/* Structural only: it holds the scene column's place so the first
-                meter lands under the first track, but paints no mixer panel
-                over scene names. */}
-            <td className="meter-spacer" aria-hidden="true" />
+            {/* The scene overview is the grid's master column, so its meter is
+                structurally owned by this cell just as each track owns the
+                meter cell below its own column. */}
+            <TrackMeter meterKey="master" label="Master" meters={meters} />
             {columns.map((column) => {
               const track = column.kind === 'track' ? column.track : column.group;
-              return <TrackMeter key={track.i} track={track} meters={meters} />;
+              return (
+                <TrackMeter
+                  key={track.i}
+                  meterKey={track.i}
+                  label={track.name}
+                  meters={meters}
+                />
+              );
             })}
           </tr>
         </tfoot>

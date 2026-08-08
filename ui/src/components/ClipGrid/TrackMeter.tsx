@@ -1,7 +1,12 @@
-import { useTrackMeter, type MeterStore } from '../../hooks/useMeters.js';
+import {
+  useOutputMeter,
+  type MeterKey,
+  type MeterStore,
+} from '../../hooks/useMeters.js';
 
 interface Props {
-  track: BSV.Track;
+  meterKey: MeterKey;
+  label: string;
   meters: MeterStore;
 }
 
@@ -20,9 +25,9 @@ function meterFraction(db: number): number {
   return Number.isFinite(fraction) ? Math.max(0, Math.min(1, fraction)) : 0;
 }
 
-/** A track-owned meter cell, mounted only while that track has a visible column. */
-export function TrackMeter({ track, meters }: Props) {
-  const level = useTrackMeter(meters, track.i);
+/** A column-owned meter cell, mounted only while that output column is visible. */
+export function TrackMeter({ meterKey, label, meters }: Props) {
+  const level = useOutputMeter(meters, meterKey);
   const db = decibels(level);
   const fraction = level <= 0 ? 0 : meterFraction(db);
 
@@ -32,7 +37,7 @@ export function TrackMeter({ track, meters }: Props) {
         <div
           className="meter-well"
           role="meter"
-          aria-label={`${track.name} output level`}
+          aria-label={`${label} output level`}
           aria-valuemin={MIN_DB}
           aria-valuemax={MAX_DB}
           aria-valuenow={Math.round(db)}
