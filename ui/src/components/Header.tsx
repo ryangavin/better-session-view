@@ -243,22 +243,24 @@ export function Header({
           <IconIndex />
         </button>
         <div className="live-controls" role="group" aria-label="Live control bar">
-          <TempoControl
-            tempo={transport?.tempo}
-            disabled={!lomReady || transport === null}
-            onCommit={(tempo) => onTransport({ tempo })}
-          />
-          <button
-            type="button"
-            className={`icon-btn toggle${transport?.metronome ? ' on' : ''}`}
-            aria-pressed={transport?.metronome ?? false}
-            aria-label="Metronome"
-            title={`${transport?.metronome ? 'Disable' : 'Enable'} Live's metronome`}
-            disabled={!lomReady || transport === null}
-            onClick={() => onTransport({ metronome: !transport?.metronome })}
-          >
-            <IconMetronome />
-          </button>
+          <div className="tempo-group" role="group" aria-label="Tempo and metronome">
+            <TempoControl
+              tempo={transport?.tempo}
+              disabled={!lomReady || transport === null}
+              onCommit={(tempo) => onTransport({ tempo })}
+            />
+            <button
+              type="button"
+              className={`icon-btn toggle${transport?.metronome ? ' on' : ''}`}
+              aria-pressed={transport?.metronome ?? false}
+              aria-label="Metronome"
+              title={`${transport?.metronome ? 'Disable' : 'Enable'} Live's metronome`}
+              disabled={!lomReady || transport === null}
+              onClick={() => onTransport({ metronome: !transport?.metronome })}
+            >
+              <IconMetronome />
+            </button>
+          </div>
           <div className="header-select quantization-picker">
             <select
               value={transport?.clipTriggerQuantization ?? ''}
@@ -278,7 +280,7 @@ export function Header({
             </select>
             <span className="select-caret" aria-hidden="true" />
           </div>
-          <div className="scale-controls" role="group" aria-label="Current scale">
+          <div className="scale-group" role="group" aria-label="Current scale">
             <button
               type="button"
               className={`icon-btn toggle${transport?.scaleMode ? ' on' : ''}`}

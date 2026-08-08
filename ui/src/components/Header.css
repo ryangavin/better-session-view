@@ -24,17 +24,14 @@ header {
   gap: 10px;
 }
 .header-left {
-  flex: 1 1 auto;
   gap: 8px;
   overflow: hidden;
 }
 .header-center {
-  flex: none;
   justify-content: center;
 }
 .header-right {
   gap: 6px;
-  flex: none;
   justify-content: flex-end;
 }
 
@@ -53,36 +50,37 @@ header {
 
 /* --- Live control bar --------------------------------------------- */
 
-.live-controls,
-.scale-controls {
+.live-controls {
   display: flex;
   align-items: center;
   gap: 3px;
   min-width: 0;
-}
-.live-controls {
   overflow: hidden;
 }
-.scale-controls {
-  margin-left: 4px;
-  padding-left: 7px;
-  border-left: 1px solid var(--bd3);
+.tempo-group {
+  height: var(--ctl-h);
+  flex: none;
+  display: flex;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  background: var(--sel);
+  overflow: hidden;
 }
 .tempo-control {
   position: relative;
   display: flex;
   align-items: center;
   width: 62px;
-  height: var(--ctl-h);
+  height: calc(var(--ctl-h) - 2px);
   flex: none;
 }
 .tempo-control input {
   width: 100%;
   height: 100%;
   padding: 0 25px 0 6px;
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-md);
-  background: var(--sel);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--fg2);
   font-family: var(--mono);
   font-size: 10px;
@@ -97,8 +95,7 @@ header {
   -webkit-appearance: none;
 }
 .tempo-control input:focus-visible {
-  border-color: var(--amber-muted);
-  box-shadow: 0 0 0 1px var(--amber-muted);
+  box-shadow: inset 0 0 0 1px var(--amber-muted);
 }
 .tempo-control > span {
   position: absolute;
@@ -113,6 +110,18 @@ header {
 .header-select select:disabled {
   opacity: 0.4;
   cursor: default;
+}
+.tempo-group button {
+  width: 28px;
+  height: calc(var(--ctl-h) - 2px);
+  padding: 0;
+  border: none;
+  border-left: 1px solid var(--bd3);
+  border-radius: 0;
+  color: var(--dim);
+}
+.tempo-group button:hover:not(:disabled) {
+  border-color: var(--bd3);
 }
 
 /* --- icon buttons ------------------------------------------------- */
@@ -197,7 +206,7 @@ header button {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.04em;
-  color: var(--amber);
+  color: var(--fg2);
   cursor: pointer;
   outline: none;
 }
@@ -229,6 +238,35 @@ header button {
 }
 .scale-picker {
   width: 110px;
+}
+.scale-group {
+  height: var(--ctl-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  background: var(--sel);
+  overflow: hidden;
+}
+.scale-group > * {
+  height: calc(var(--ctl-h) - 2px);
+}
+.scale-group > * + * {
+  border-left: 1px solid var(--bd3);
+}
+.scale-group > button,
+.scale-group .header-select select {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.scale-group > button {
+  padding: 0;
+  color: var(--dim);
+}
+.scale-group .header-select select:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--amber-muted);
 }
 
 /* --- column width ------------------------------------------------- */
