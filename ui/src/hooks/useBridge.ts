@@ -679,12 +679,17 @@ export function useBridge(watchMeters = false): BridgeState {
           e.undoStep ? 'info' : 'error',
         );
 
-        // The one write that always re-reads. Creating and deleting scenes
-        // renumbers everything below them, so it isn't a patch to the set we
-        // hold — it's a different set with different indexes.
-        await resync();
+        // Creating and deleting scenes renumbers everything below them, so this
+        // isn't a patch to the set we hold — it's a different set with different
+        // indexes, and only a walk can describe it.
+        //
+        // The walk is no longer requested here. The bridge broadcasts one
+        // structural change once the whole move has landed, and that drives the
+        // re-read for this client and every other one — the same arrangement
+        // `addScenes` uses. Asking here as well would walk twice: once now, and
+        // once more when the broadcast arrived a moment later.
       }),
-    [client, guard, resync, say],
+    [client, guard, say],
   );
 
   /**
