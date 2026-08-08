@@ -2,42 +2,32 @@
 
 [![ci](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml/badge.svg)](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml)
 
-**Ableton has no idea what a song is.**
+If you keep a whole show in one Ableton set, Session View gets hard to manage pretty
+quickly. Live knows about clips and scenes, but it doesn't know that a group of scenes
+makes up a song. It also doesn't know what your scene names or colors are meant to say.
 
-Session View gives you clips and scenes and stops there. If your set is one song, that's
-fine. If your set is a hundred songs — a covers band's whole book, a wedding repertoire,
-a night that has to run in a particular order — then *you* are the one holding the
-structure in your head. Which scenes belong to which song. Which one is the intro and
-which one is the last chorus. What the colors are supposed to mean. Live will happily let
-you name scene 412 anything at all; it will never mention that it doesn't match the other
-847.
+That leaves you to maintain that structure yourself. You have to remember where each song
+starts and ends, keep the names and colors consistent, and move every scene individually
+when the running order changes. For a large set, a small edit can turn into a lot of
+clicking and scrolling.
 
-So it gets done by hand. Click a scene, type a name, click a clip, pick a color, scroll,
-repeat. Change your mind about how names should be spelled and there goes the afternoon.
-Want a song to happen earlier in the night and you're dragging scenes one at a time,
-hoping you didn't leave one behind.
+Better Session View is a Max for Live device with a local browser interface for doing
+that work across the whole set. It reads the open set from Live and lets you name, color,
+and arrange related clips and scenes together.
 
-This is the layer Live is missing. A real app with a real grid that reads your set out of
-Live and writes back into it — so naming, coloring, and running order are things you
-decide once and apply to everything, instead of conventions that live in your head and get
-re-typed per selection.
-
-Live stays the audio engine and the source of truth. Nothing here parses `.als` files,
-ever.
+Live is still the source of truth. Better Session View talks to the set you have open; it
+doesn't read or rewrite the `.als` file.
 
 ## What it does
 
-- **Names in bulk.** Select a block of clips or a run of scenes and write them all from
-  one pattern, rather than one at a time.
-- **Colors from a rule.** Color every song in the set at once — by key, by bpm, rainbow or
-  random — with a preview of the exact write before anything happens.
-- **Reads the songs back out.** The names *are* the record, so the app re-derives which
-  scene belongs to which song every time it looks at your set. Nothing to keep in sync,
-  nothing to lose, and the `.als` on your gig laptop still describes itself.
-- **Moves a whole song.** Drag a song in the running order and every scene it owns follows
-  — as one entry in Live's undo history, not eighty.
-- **Plays what you're looking at.** Fire a clip or a scene from the grid so you can hear
-  the thing you're labelling.
+- Select a block of clips or a run of scenes and name them together using a pattern.
+- Apply color rules across the set, including colors based on key or bpm, and preview the
+  changes before writing them to Live.
+- Work out which scenes belong to each song from the scene names already in the set. There
+  isn't a second copy of that information to keep in sync.
+- Move a song in the running order with all of its scenes as a single Live undo step.
+- Fire clips and scenes from the grid while you're working, so you can hear what you're
+  labelling.
 
 > ### 📖 [**User manual →**](https://github.com/ryangavin/better-session-view/wiki)
 >
