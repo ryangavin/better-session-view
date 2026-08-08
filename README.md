@@ -20,28 +20,36 @@ repetitive set-management parts without treating every clip and scene as a separ
 
 ## What it does
 
-Right now, you can:
+- **Name clips and scenes together.** Select a block in the grid and name the whole
+  selection using a pattern.
+- **Apply colors consistently.** Set up rules based on things like key or bpm, preview
+  the result, and then write it across the set.
+- **Work with songs, not just scenes.** Better Session View groups related scenes from
+  their names, so you can manage the song as a whole.
+- **Change the running order.** Drag a song to a new position and all of its scenes move
+  with it as a single Live undo step.
+- **Listen while you work.** Fire clips and scenes from the browser grid without jumping
+  back and forth to Live.
 
-- Select a block of clips or a run of scenes and name them together using a pattern.
-- Apply color rules across the set, including colors based on key or bpm, and preview the
-  changes before writing them to Live.
-- Group scenes into songs using the names already in the set.
-- Move a song in the running order with all of its scenes as a single Live undo step.
-- Fire clips and scenes from the grid while you're working, so you can hear what you're
-  labelling.
+## How it works
 
-## A few things worth knowing
+`SessionBridge.amxd` sits in the open set and talks to Live through Live's own API. It
+reads the set, starts a small local server, and opens the browser interface. The browser
+sends your changes back through the device, which writes them into Live.
 
-- Live is still the source of truth. Better Session View works through Live's own API; it
-  doesn't parse or rewrite the `.als` file.
-- The scene names are how it works out which scenes belong to which song. There isn't a
-  second copy of that mapping to keep in sync or accidentally leave behind.
-- Everything runs on your computer. Nothing is downloaded at runtime, and the local
-  server only listens on `127.0.0.1`.
-- Reordering is the one operation to treat with some care. Live doesn't provide a way to
-  move scenes, so Better Session View has to copy them to their new positions and remove
-  the originals. It does that as one Live undo step, but saving first is still a good
-  habit.
+Scene names do two jobs: they're the labels you see in Live, and they're how Better
+Session View knows which scenes belong to which song. It derives that structure again
+whenever it reads the set, so there isn't a second copy of the mapping to keep in sync or
+accidentally leave behind.
+
+Live remains the source of truth. Better Session View doesn't parse or rewrite the
+`.als` file. Everything runs on your computer, nothing is downloaded at runtime, and the
+local server only listens on `127.0.0.1`.
+
+Reordering is the one slightly unusual operation. Live doesn't provide a way to move
+scenes, so Better Session View copies them to their new positions and removes the
+originals. It groups that work into one Live undo step, but saving first is still a good
+habit.
 
 ## Getting started
 
