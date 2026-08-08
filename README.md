@@ -33,23 +33,24 @@ repetitive set-management parts without treating every clip and scene as a separ
 
 ## How it works
 
-`SessionBridge.amxd` sits in the open set and talks to Live through Live's own API. It
-reads the set, starts a small local server, and opens the browser interface. The browser
-sends your changes back through the device, which writes them into Live.
+Better Session View doesn't create another project file or database to describe your
+set. The relationship between songs and scenes lives in the set itself, using things Live
+already understands: names, colors, and device data. Your `.als` remains the complete
+record of the show.
 
-Scene names do two jobs: they're the labels you see in Live, and they're how Better
-Session View knows which scenes belong to which song. It derives that structure again
-whenever it reads the set, so there isn't a second copy of the mapping to keep in sync or
-accidentally leave behind.
+That also means scene names carry more meaning than they normally would. They're the
+labels you see in Live, but they're also how Better Session View works out which scenes
+belong to which song. If a scene name changes in a way that no longer follows your naming
+pattern, Better Session View may understand it differently the next time it reads the
+set.
 
-Live remains the source of truth. Better Session View doesn't parse or rewrite the
-`.als` file. Everything runs on your computer, nothing is downloaded at runtime, and the
-local server only listens on `127.0.0.1`.
+If you're using Better Session View to manage a set, it's best to use it as the main place
+to relabel songs and change their structure. You can still edit anything you want in Live,
+and moving clips around is fine. Just be aware that changing the names or structure that
+describe a song can affect how Better Session View groups it.
 
-Reordering is the one slightly unusual operation. Live doesn't provide a way to move
-scenes, so Better Session View copies them to their new positions and removes the
-originals. It groups that work into one Live undo step, but saving first is still a good
-habit.
+The device talks directly to the set you have open in Live; it doesn't parse or rewrite
+the `.als` file. Everything runs on your computer, and nothing is downloaded at runtime.
 
 ## Getting started
 
