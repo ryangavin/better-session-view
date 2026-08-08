@@ -988,6 +988,10 @@ never parses. So the widths are ours to pick.
 per-column dragging because the point of `s` is fitting a wide set on screen at once —
 something per-column widths actively work against.
 
+The header exposes them through one compact native select rather than six persistent
+buttons. The selected option is the stored mode, and changing it still applies
+immediately.
+
 | | track column | fits in ~1100px |
 |---|---|---|
 | `s` | 40px | ~26 tracks |

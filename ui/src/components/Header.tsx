@@ -31,8 +31,13 @@ interface Props {
   onSnapshot: () => void;
 }
 
-const columnWidthText = (width: ColumnWidth): string =>
-  width === 'auto' ? 'AUTO' : width.toUpperCase();
+const columnWidthText = (width: ColumnWidth): string => {
+  if (width === 's') return 'Small';
+  if (width === 'm') return 'Medium';
+  if (width === 'l') return 'Large';
+  if (width === 'auto') return 'Auto';
+  return `${width} tracks`;
+};
 
 const columnWidthLabel = (width: ColumnWidth): string => {
   if (width === 'auto') return 'Auto-fit all track columns';
@@ -51,11 +56,12 @@ const columnWidthTitle = (width: ColumnWidth): string | undefined => {
 /**
  * The header bar: playback, view controls, meters, log and Snapshot.
  *
- * Every button here is a glyph, and every one carries an `aria-label` as well
- * as a `title`. An icon-only control with no accessible name is a button that
- * exists for sighted mouse users and nobody else — and the `title` is also the
- * only place the longer ones (what "stop clips" spares, what Snapshot re-reads)
- * can still be said in words.
+ * Every icon button here carries an `aria-label` as well as a `title`. An
+ * icon-only control with no accessible name is a button that exists for
+ * sighted mouse users and nobody else — and the `title` is also the only place
+ * the longer ones (what "stop clips" spares, what Snapshot re-reads) can still
+ * be said in words. Column width is the exception: a native single-select is
+ * both more compact and already has the right keyboard semantics.
  */
 export function Header({
   lomReady,
@@ -162,20 +168,20 @@ export function Header({
         >
           <IconMenu />
         </button>
-        <div className="widths" role="group" aria-label="Column width">
-          {COLUMN_WIDTHS.map((w) => (
-            <button
-              key={w}
-              type="button"
-              className={`toggle${w === columnWidth ? ' on' : ''}`}
-              aria-pressed={w === columnWidth}
-              aria-label={columnWidthLabel(w)}
-              title={columnWidthTitle(w)}
-              onClick={() => onColumnWidth(w)}
-            >
-              {columnWidthText(w)}
-            </button>
-          ))}
+        <div className="width-picker">
+          <select
+            value={columnWidth}
+            aria-label="Track column display mode"
+            title={columnWidthTitle(columnWidth) ?? columnWidthLabel(columnWidth)}
+            onChange={(e) => onColumnWidth(e.currentTarget.value as ColumnWidth)}
+          >
+            {COLUMN_WIDTHS.map((w) => (
+              <option key={w} value={w}>
+                {columnWidthText(w)}
+              </option>
+            ))}
+          </select>
+          <span className="width-caret" aria-hidden="true" />
         </div>
         <button
           type="button"
