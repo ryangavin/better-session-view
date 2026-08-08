@@ -37,6 +37,7 @@ src/hooks/            one hook per file
   useDeviceState.ts   roles + allowed colors stored in the Live device
   useSnapshotLookups.ts  the lookup Maps every other hook reads
   useTrackColumns.ts  rendered column order + group collapsing
+  useViewportColumnWidth.ts  Auto and 8/16-bank widths from the grid viewport
   useSongLayout.ts    derivation, song folding, folded-header shapes
   useGridSelection.ts both selections + the active cell (and its ref)
   useGridKeyboard.ts  the window keydown effect
@@ -55,7 +56,7 @@ src/lib/
   client.ts           typed WebSocket client, framework-free
   selection.ts        clip addressing + selection set
   keys.ts             the launch modifier, and who owns a keystroke
-  columnWidth.ts      S/M/L grid width presets + persistence
+  columnWidth.ts      fixed + viewport grid widths, arithmetic and persistence
   allowedColors.ts    one-time migration from the old localStorage setting
   rowMarks.ts         play state flattened to memo-safe strings
   snapshotTiming.ts   the console phase breakdown + error text
@@ -179,8 +180,9 @@ Every button in the header is an icon: sync for Snapshot, a hamburger for fold, 
 the log, play / stop / struck-through-slot for playback. Live's bars, beats and sixteenths
 sit immediately left of playback while the buttons remain at the header's exact center.
 The three equal flex regions make that centering independent of the controls on either
-side. **S M L stay as letters** —
-they're a scale, and a scale is what letters are for. That takes the bar to
+side. **S M L stay as letters** — they're a scale, and a scale is what letters are for.
+**Auto** is a behavior rather than another point on that scale, so it is spelled out;
+**8 / 16** are the number of track columns in one or two hardware-style banks. That takes the bar to
 `--ctl-h + 12px`, one height for every control in it and 6px of air either side.
 
 - **`Icon.tsx` is inline SVG**, not an icon font and not a Unicode character. A font is out
@@ -744,7 +746,7 @@ through the whole expanded song.
 - **The width is a grid metric**, in `columnWidth.ts` beside the column widths, rather
   than a constant in the stylesheet. It's sized to its content — nine characters covers
   nearly every role and a wider chip is only more whitespace — and it doesn't move with
-  the S/M/L setting; see *Column widths*.
+  any column-width mode; see *Column widths*.
 - **A scene with no role draws a pill saying so** — same box as a real chip, a shade
   quieter, its text dimmer still. Filled rather than dashed: a dashed chip already means
   something else here, a role that exists and has no color.
@@ -982,15 +984,31 @@ is `selected_device` / `device_insert_mode` / `is_collapsed`, and that last one 
 *arranger*, not the session. Real widths live only in the `.als`, which this project
 never parses. So the widths are ours to pick.
 
-`columnWidth.ts` holds three presets, chosen over per-column dragging because the point
-of `s` is fitting a wide set on screen at once — something per-column widths actively
-work against.
+`columnWidth.ts` holds three pixel presets and three viewport layouts, chosen over
+per-column dragging because the point of `s` is fitting a wide set on screen at once —
+something per-column widths actively work against.
 
 | | track column | fits in ~1100px |
 |---|---|---|
 | `s` | 40px | ~26 tracks |
 | `m` | 74px | ~14 tracks |
 | `l` | 116px | ~9 tracks |
+| `auto` | at least 40px | all rendered tracks, when they fit readably |
+| `8` | viewport-derived | exactly one 8-track bank |
+| `16` | viewport-derived | exactly two 8-track banks |
+
+**Auto divides the width left after the fixed scene column among every rendered track.**
+Small's 40px is its floor: a large set keeps horizontal scrolling rather than turning
+clip names into unusable slivers.
+
+**8 and 16 divide that same space by a bank size instead.** The full table still contains
+every rendered track, so the ninth or seventeenth column begins the horizontal overflow.
+These modes deliberately do not inherit Small's floor: their job is to preview the exact
+one- or two-device layout, even in a narrow browser.
+
+All three viewport layouts respond to the browser resizing, the rail opening or closing,
+and group columns folding or unfolding. `useViewportColumnWidth` observes the grid's own
+content box, not `window.innerWidth`, because the rail is part of the space calculation.
 
 **The setting sizes the track columns and nothing else.** The scene name column is a
 constant 290px — `SCENE_COL_W`, what `l` used to be — and the role chip a constant 62px.
@@ -1001,6 +1019,14 @@ at `s` truncated the label you navigate the rows by to buy one more column of cl
 The choice persists to `localStorage` under `bsv.columnWidth`, and `saveColumnWidth`
 swallows storage failures — a width that doesn't persist isn't worth failing a render
 over.
+
+**The scene/song column is sticky on the left.** The header, every scene cell, folded and
+open song headers, and the Master meter all pin at the table's existing 2px outer gutter.
+The top-left and bottom-left intersections sit above their independently sticky rows.
+Scene cells carry an opaque background because a sticky transparent cell would show clips
+moving underneath it. Track cells also reserve the pinned width in `scroll-margin-left`,
+so keyboard `scrollIntoView({ inline: 'nearest' })` cannot park the active clip behind the
+scene column.
 
 Two things in here are load-bearing:
 
@@ -1015,7 +1041,8 @@ including the `border-spacing` gaps (n + 1 columns means n + 2 gaps).
 **Widths ride down as CSS custom properties on the `<table>`, not as props on `Row`.**
 `Row` is memoized; a new prop would re-render all 848 scenes on every width change. As
 custom properties the browser just recalculates layout and `Row` never re-renders. Don't
-"simplify" this by threading the width through as a prop.
+"simplify" this by threading the width through as a prop. The viewport observer writes
+those same properties directly so a browser resize does not turn into 848 React renders.
 
 ## Track groups
 
@@ -1220,5 +1247,6 @@ new values.
 
 `--col-w`, `--scene-col-w` and `--role-chip-w` are the exception: `:root` carries
 fallbacks, but `ClipGrid` sets all three on the table element from `columnWidth.ts`, which
-stays the one place the grid states a width. Only `--col-w` moves with the S/M/L setting.
+stays the one place the grid states a width. Only `--col-w` moves with the
+S/M/L/Auto/8/16 setting.
 See *Column widths*.

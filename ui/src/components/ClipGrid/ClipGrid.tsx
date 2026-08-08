@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react';
+import { useMemo, useRef, type CSSProperties } from 'react';
 import './ClipGrid.css';
 import { hex, inkOn } from '../../../../core/src/color.js';
 import { startsBand, type Column } from '../../../../core/src/trackColumns.js';
@@ -7,6 +7,7 @@ import type { ActiveCell } from '../../../../core/src/gridRange.js';
 import { isLaunchModified, LAUNCH_KEY, type CellClick } from '../../lib/keys.js';
 import {
   metricsFor,
+  isViewportColumnWidth,
   tableWidth,
   ROLE_CHIP_W,
   SCENE_COL_W,
@@ -14,6 +15,7 @@ import {
 } from '../../lib/columnWidth.js';
 import type { BridgeState, PlayState } from '../../hooks/useBridge.js';
 import { useMeters } from '../../hooks/useMeters.js';
+import { useViewportColumnWidth } from '../../hooks/useViewportColumnWidth.js';
 import { marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../../hooks/useAnchoredPosition.js';
 import { NO_SHAPES, STOP_FIRED } from './constants.js';
@@ -156,25 +158,32 @@ export function ClipGrid({
 }: Props) {
   const marks = useMemo(() => marksByScene(play), [play]);
   const meters = useMeters(subscribeMeters, showMeters);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const viewportWidth = isViewportColumnWidth(columnWidth) ? columnWidth : null;
+  useViewportColumnWidth(tableRef, viewportWidth, columns.length);
 
   // Widths ride down as custom properties on the table rather than as props on
   // Row. Row is memoized, and a new prop on it would re-render all 848 scenes
   // on every width change; this way the browser just recalculates layout.
   const style = useMemo<CSSProperties>(() => {
-    const m = metricsFor(columnWidth);
-    // Only `--col-w` moves with the setting. The other two are constants, but
-    // still ride down from here so columnWidth.ts stays the one place the grid
-    // states a width — the shared.css values are fallbacks, not the source.
-    return {
-      '--col-w': `${m.col}px`,
+    // The constants still ride down from here so columnWidth.ts stays the one
+    // place the grid states a width — shared.css values are fallbacks, not the
+    // source. Viewport modes write their two moving values through the resize
+    // observer so resizing never has to re-render the scene rows.
+    const common = {
       '--scene-col-w': `${SCENE_COL_W}px`,
       '--role-chip-w': `${ROLE_CHIP_W}px`,
+    } as CSSProperties;
+    if (isViewportColumnWidth(columnWidth)) return common;
+    return {
+      ...common,
+      '--col-w': `${metricsFor(columnWidth).col}px`,
       width: `${tableWidth(columnWidth, columns.length)}px`,
     } as CSSProperties;
   }, [columnWidth, columns.length]);
 
   return (
-    <table className="grid" style={style}>
+    <table ref={tableRef} className="grid" style={style}>
       {/* Column widths come from here rather than the header row: the song
           header's notice cell spans the whole grid, and a colSpan would
           otherwise have to distribute its width across the columns it covers,

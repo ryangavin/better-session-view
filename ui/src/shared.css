@@ -38,7 +38,7 @@
   /* Fallbacks only — ClipGrid sets all three on the table from
      lib/columnWidth.ts. Kept here so the grid still lays out if it ever renders
      without them. `--col-w` matches the `m` preset; the other two are constants
-     there, and the S/M/L setting moves the track columns alone. */
+     there, and every width mode moves the track columns alone. */
   --col-w: 74px;
   --scene-col-w: 290px;
   --role-chip-w: 62px;

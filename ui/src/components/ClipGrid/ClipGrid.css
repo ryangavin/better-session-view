@@ -133,6 +133,10 @@ table.grid th .th-label {
   font-weight: 600;
 }
 table.grid th.scene-h {
+  left: var(--gutter);
+  /* Above both ordinary sticky track headers and the horizontally scrolling
+     body: this cell is the top-left intersection of two pinned axes. */
+  z-index: 4;
   text-align: left;
   padding-left: var(--gutter);
 }
@@ -376,6 +380,13 @@ table.grid tfoot tr.meter-row td {
     calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
     0 var(--gutter) 0 var(--rail);
   vertical-align: middle;
+}
+
+/* The Master meter is the bottom-left intersection: pinned with its panel
+   vertically and with the scene/song column horizontally. */
+table.grid tfoot tr.meter-row td:first-child {
+  left: var(--gutter);
+  z-index: 4;
 }
 
 /* A real spanning footer row, so the resize affordance belongs to the same

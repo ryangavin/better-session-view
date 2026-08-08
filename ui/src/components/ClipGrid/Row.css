@@ -1,6 +1,12 @@
 /* --- scene rows --------------------------------------------------- */
 
 td.scene {
+  position: sticky;
+  left: var(--gutter);
+  z-index: 2;
+  /* Sticky cells overlap the scrolling track cells, so transparency here
+     would turn every clip passing underneath into noise behind the title. */
+  background: var(--bg);
   font-family: var(--mono);
   font-size: 10px;
   color: var(--dim);
@@ -208,6 +214,10 @@ td.scene {
 }
 
 td.cell {
+  /* `scrollIntoView({ inline: 'nearest' })` knows the viewport edge but not the
+     scene column painted over it. Reserve that pinned width so keyboard
+     movement always lands on a visible track cell. */
+  scroll-margin-left: calc(var(--scene-col-w) + 2 * var(--gutter));
   width: var(--col-w);
   max-width: var(--col-w);
   height: 20px;

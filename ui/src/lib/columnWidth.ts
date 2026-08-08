@@ -5,16 +5,26 @@
 // and the real widths live in the .als, which this project never parses. So
 // they're ours to choose.
 //
-// One setting drives every track column rather than per-column dragging: the
-// point of `s` is fitting a wide set on screen at once, which per-column widths
-// actively work against. It moves the track columns only — the scene name is
-// the row's label, and a setting about how many tracks fit shouldn't cost you
-// the thing you read the rows by.
+// One setting drives every track column rather than per-column dragging. The
+// pixel presets are predictable; the viewport layouts divide the available
+// grid width among either all rendered tracks, one 8-track hardware bank, or
+// two banks. It moves the track columns only — the scene name is the row's
+// label, and a setting about how many tracks fit shouldn't cost you the thing
+// you read the rows by.
 
-export type ColumnWidth = 's' | 'm' | 'l';
+export type ColumnWidthPreset = 's' | 'm' | 'l';
+export type ViewportColumnWidth = 'auto' | '8' | '16';
+export type ColumnWidth = ColumnWidthPreset | ViewportColumnWidth;
 
 /** In presentation order — the header control renders straight from this. */
-export const COLUMN_WIDTHS: readonly ColumnWidth[] = ['s', 'm', 'l'] as const;
+export const COLUMN_WIDTHS: readonly ColumnWidth[] = [
+  's',
+  'm',
+  'l',
+  'auto',
+  '8',
+  '16',
+] as const;
 
 export const DEFAULT_COLUMN_WIDTH: ColumnWidth = 'm';
 
@@ -45,13 +55,13 @@ export interface ColumnMetrics {
 // `m` is the width the grid shipped with. `s` is sized so ~26 tracks fit in a
 // 1100px viewport; below about 36px a clip name is unreadable and the cell may
 // as well be a color chip.
-const METRICS: Record<ColumnWidth, ColumnMetrics> = {
+const METRICS: Record<ColumnWidthPreset, ColumnMetrics> = {
   s: { col: 40 },
   m: { col: 74 },
   l: { col: 116 },
 };
 
-export function metricsFor(w: ColumnWidth): ColumnMetrics {
+export function metricsFor(w: ColumnWidthPreset): ColumnMetrics {
   return METRICS[w];
 }
 
@@ -62,9 +72,51 @@ export function metricsFor(w: ColumnWidth): ColumnMetrics {
  * border-spacing sits between every column *and* at both table edges, so n + 1
  * track columns (the scene column is the +1) means n + 2 gaps.
  */
-export function tableWidth(w: ColumnWidth, trackCount: number, spacing = 2): number {
+export function tableWidth(
+  w: ColumnWidthPreset,
+  trackCount: number,
+  spacing = 2,
+): number {
   const m = metricsFor(w);
   return SCENE_COL_W + trackCount * m.col + (trackCount + 2) * spacing;
+}
+
+export interface ViewportColumnLayout {
+  /** Width shared by every rendered track column. */
+  col: number;
+  /** Exact width of the full table, including columns beyond the viewport bank. */
+  table: number;
+}
+
+export function isViewportColumnWidth(w: ColumnWidth): w is ViewportColumnWidth {
+  return w === 'auto' || w === '8' || w === '16';
+}
+
+/**
+ * Lay track columns out against the available grid viewport.
+ *
+ * Auto shares the width among the rendered tracks and stops at Small's 40px
+ * readability floor. The 8/16 modes instead size one or two hardware banks
+ * exactly; any tracks beyond that bank make the full table scroll.
+ */
+export function viewportColumnLayout(
+  mode: ViewportColumnWidth,
+  trackCount: number,
+  availableWidth: number,
+  spacing = 2,
+): ViewportColumnLayout {
+  const count = Math.max(0, Math.floor(trackCount));
+  if (count === 0) return { col: METRICS.s.col, table: tableWidth('s', 0, spacing) };
+
+  const target = mode === 'auto' ? count : Number(mode);
+  const targetGutters = (target + 2) * spacing;
+  const trackSpace = Math.max(0, availableWidth - SCENE_COL_W - targetGutters);
+  const fitted = trackSpace / target;
+  const col = mode === 'auto' ? Math.max(METRICS.s.col, fitted) : Math.max(1, fitted);
+  return {
+    col,
+    table: SCENE_COL_W + count * col + (count + 2) * spacing,
+  };
 }
 
 const KEY = 'bsv.columnWidth';
@@ -88,5 +140,7 @@ export function saveColumnWidth(w: ColumnWidth): void {
 }
 
 function isColumnWidth(v: unknown): v is ColumnWidth {
-  return v === 's' || v === 'm' || v === 'l';
+  return (
+    v === 's' || v === 'm' || v === 'l' || v === 'auto' || v === '8' || v === '16'
+  );
 }

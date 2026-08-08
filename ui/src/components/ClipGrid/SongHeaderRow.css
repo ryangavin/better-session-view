@@ -200,7 +200,9 @@ tr.song-row.collapsed .song {
    rows. Now the bar owns `::before`, the wash owns `background`, and the drop
    indicators own `box-shadow`. Three jobs, three properties, no ordering. */
 tr.song-row td:first-child {
-  position: relative;
+  position: sticky;
+  left: var(--gutter);
+  z-index: 2;
 }
 tr.song-row.collapsed td:first-child::before,
 tr.song-row.colored td:first-child::before {

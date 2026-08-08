@@ -31,6 +31,23 @@ interface Props {
   onSnapshot: () => void;
 }
 
+const columnWidthText = (width: ColumnWidth): string =>
+  width === 'auto' ? 'AUTO' : width.toUpperCase();
+
+const columnWidthLabel = (width: ColumnWidth): string => {
+  if (width === 'auto') return 'Auto-fit all track columns';
+  if (width === '8') return 'Fit 8 track columns';
+  if (width === '16') return 'Fit 16 track columns';
+  return `${width.toUpperCase()} track columns`;
+};
+
+const columnWidthTitle = (width: ColumnWidth): string | undefined => {
+  if (width === 'auto') return 'Fit all visible track columns to the grid width';
+  if (width === '8') return 'Preview one 8-track clip-launcher bank';
+  if (width === '16') return 'Preview two 8-track clip-launcher banks';
+  return undefined;
+};
+
 /**
  * The header bar: playback, view controls, meters, log and Snapshot.
  *
@@ -152,9 +169,11 @@ export function Header({
               type="button"
               className={`toggle${w === columnWidth ? ' on' : ''}`}
               aria-pressed={w === columnWidth}
+              aria-label={columnWidthLabel(w)}
+              title={columnWidthTitle(w)}
               onClick={() => onColumnWidth(w)}
             >
-              {w.toUpperCase()}
+              {columnWidthText(w)}
             </button>
           ))}
         </div>
