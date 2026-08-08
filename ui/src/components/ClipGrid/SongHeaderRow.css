@@ -58,6 +58,11 @@ tr.song-row .fold {
   justify-content: center;
   color: var(--dim2);
 }
+tr.song-row .fold svg {
+  /* Leave a little air between the glyph and the colored drag handle without
+     widening its slot or shifting the fact and song-name columns. */
+  transform: translateX(2px);
+}
 /* Name and outlined tag are one identity slot. The row spans all columns when
    open, but this slot stays within the scene column so song metadata cannot
    drift over the first track.
@@ -202,13 +207,10 @@ tr.song-row.colored td:first-child::before {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--dim2);
-}
-/* Folded: wider, because once everything is folded a hundred songs are a
-   hundred bands and finding one by color is most of what the header is for. */
-tr.song-row.collapsed td:first-child::before {
+  /* Keep the wider folded-state handle while open too, so toggling a song
+     changes only its contents rather than the weight of its color marker. */
   width: 7px;
+  background: var(--dim2);
 }
 tr.song-row.colored td:first-child::before {
   background: var(--song-rgb);
