@@ -191,7 +191,9 @@ set every pixel the side panes aren't using is a track column you can see.
 - **The song index** opens from the left side of the header and lists each song once with
   its key, BPM and type. It starts in set order; its search covers all four displayed
   fields, and each column heading toggles a local ascending/descending sort. That filter
-  and order belong only to the pane — they never reorder scenes or write to Live.
+  and order belong only to the pane — they never reorder scenes or write to Live. A song
+  whose scenes agree on one canonical color shows its name in that color; mixed and
+  uncolored songs remain neutral.
   Clicking only the name jumps immediately to the first block of that song; it does not
   select it, open the edit rail, or change its fold state. The target is the song header
   rather than its first scene, so a folded song is just as navigable as an open one.

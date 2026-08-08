@@ -39,6 +39,31 @@
   background: var(--sel);
 }
 
+.song-index-search {
+  padding: 7px 10px 7px 12px;
+  flex: none;
+  border-bottom: 1px solid var(--bd2);
+}
+.song-index-search input {
+  width: 100%;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  background: var(--surface-control);
+  color: var(--fg2);
+  font-family: var(--sans);
+  font-size: 10px;
+  outline: none;
+}
+.song-index-search input::placeholder {
+  color: var(--dim2);
+}
+.song-index-search input:focus-visible {
+  border-color: var(--amber-muted);
+  box-shadow: 0 0 0 1px var(--amber-muted);
+}
+
 /* Four real columns, like Live's content lists. Facts keep their narrow fixed
    slots while the song name takes whatever width is available. */
 .song-index-columns,
@@ -58,8 +83,31 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.song-index-columns span:not(:first-child) {
-  text-align: right;
+.song-index-columns button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+  white-space: nowrap;
+}
+.song-index-columns button:hover:not(:disabled) {
+  color: var(--fg2);
+}
+.song-index-columns button.active {
+  color: var(--amber);
+}
+.song-index-columns .sort-direction {
+  font-size: 9px;
+  line-height: 1;
 }
 
 .song-index-list {
@@ -80,7 +128,7 @@
 }
 .song-index-row > span {
   overflow: hidden;
-  text-align: right;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -108,6 +156,13 @@
   text-decoration: underline;
   text-underline-offset: 3px;
   outline: none;
+}
+.song-index-row.colored .song-index-name {
+  color: var(--index-song-rgb);
+}
+.song-index-row.colored .song-index-name:hover:not(:disabled),
+.song-index-row.colored .song-index-name:focus-visible {
+  color: var(--amber);
 }
 
 .song-index-empty {

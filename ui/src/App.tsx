@@ -330,6 +330,7 @@ export function App() {
         {showIndex && (
           <SongIndex
             derivation={derivation}
+            palette={bridge.palette}
             onJump={jumpToSong}
             onClose={() => setShowIndex(false)}
           />
