@@ -23,6 +23,7 @@ import {
   IconAddSong,
   IconColorSongs,
   IconGroupFold,
+  IconMenu,
   IconOrderSongs,
 } from '../Icon.js';
 import { Row, sceneDropEdge } from './Row.js';
@@ -56,6 +57,10 @@ export interface Props {
   onPickSong: (songKey: string) => void;
   /** Songs derivation found — order and rule-based color have nothing to do at 0. */
   songCount: number;
+  /** How many songs are folded, for the Fold/Unfold label. */
+  collapsedCount: number;
+  /** Fold or unfold every song without writing to Live. */
+  onCollapseAll: (all: boolean) => void;
   /** Open the additive eight-scene song scaffold. */
   onAddSong: () => void;
   /** Open the running-order modal. */
@@ -127,6 +132,8 @@ export function ClipGrid({
   onToggleSong,
   onPickSong,
   songCount,
+  collapsedCount,
+  onCollapseAll,
   onAddSong,
   onReorder,
   onRecolor,
@@ -156,6 +163,8 @@ export function ClipGrid({
   onStopTrack,
   onToggleGroup,
 }: Props) {
+  // An empty set is "nothing folded", not "all of nothing folded".
+  const allFolded = songCount > 0 && collapsedCount >= songCount;
   const marks = useMemo(() => marksByScene(play), [play]);
   const meters = useMeters(subscribeMeters, showMeters);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -196,18 +205,17 @@ export function ClipGrid({
       </colgroup>
       <thead>
         <tr>
-          {/* Set-wide song workflows live at the top of the column the songs
-              are read down. They do not belong to a selection, so neither do
-              they belong in the rail — and the rail can be shut.
+          {/* Set-wide song controls live at the top of the column the songs are
+              read down. Add follows the heading; the display-only fold toggle
+              stays in its own right-aligned group, apart from reorder and color.
 
               Flex on a wrapper div, never on the `th`: `display: flex` on a
               table cell stops it being a table cell and takes the grid's fixed
               layout with it. */}
           <th className="scene-h">
             <div className="scene-h-line">
-              <span>Scene</span>
-              <div className="spacer" />
-              <div className="scene-actions" role="group" aria-label="Song workflows">
+              <span>Songs</span>
+              <div className="scene-action-group" role="group" aria-label="Add song">
                 <button
                   type="button"
                   className="icon-btn scene-action"
@@ -217,26 +225,52 @@ export function ClipGrid({
                 >
                   <IconAddSong />
                 </button>
-                <button
-                  type="button"
-                  className="icon-btn scene-action"
-                  aria-label="Reorder songs"
-                  disabled={songCount === 0}
-                  title="Reorder songs by name, tag, key, BPM, or drag"
-                  onClick={onReorder}
+              </div>
+              <div className="spacer" />
+              <div className="scene-action-groups">
+                <div className="scene-action-group" role="group" aria-label="Song display">
+                  <button
+                    type="button"
+                    className={`icon-btn scene-action toggle${allFolded ? ' on' : ''}`}
+                    aria-pressed={allFolded}
+                    disabled={songCount === 0}
+                    aria-label={allFolded ? 'Unfold songs' : 'Fold songs'}
+                    title={
+                      allFolded
+                        ? 'Unfold every song'
+                        : 'Fold every song down to its header row'
+                    }
+                    onClick={() => onCollapseAll(collapsedCount < songCount)}
+                  >
+                    <IconMenu />
+                  </button>
+                </div>
+                <div
+                  className="scene-action-group"
+                  role="group"
+                  aria-label="Live Set actions"
                 >
-                  <IconOrderSongs />
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn scene-action"
-                  aria-label="Color songs"
-                  disabled={songCount === 0}
-                  title="Color songs by key, BPM, rainbow, or random"
-                  onClick={onRecolor}
-                >
-                  <IconColorSongs />
-                </button>
+                  <button
+                    type="button"
+                    className="icon-btn scene-action"
+                    aria-label="Reorder songs"
+                    disabled={songCount === 0}
+                    title="Reorder songs by name, tag, key, BPM, or drag"
+                    onClick={onReorder}
+                  >
+                    <IconOrderSongs />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn scene-action"
+                    aria-label="Color songs"
+                    disabled={songCount === 0}
+                    title="Color songs by key, BPM, rainbow, or random"
+                    onClick={onRecolor}
+                  >
+                    <IconColorSongs />
+                  </button>
+                </div>
               </div>
             </div>
           </th>

@@ -19,7 +19,7 @@ src/components/       one component per file
     constants.ts      surfaces, contrast ratios, shared empties
   Header.tsx          Live control bar, Arrangement position, playback, view controls
   Icon.tsx            compact-control glyphs, as inline SVG
-  StatsBar.tsx        the bottom status strip — readiness, stat tiles + key hints
+  StatsBar.tsx        bottom status — readiness, stat tiles, key hints + log toggle
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it
   SongIndex.tsx       browser-style left pane; song facts + jump navigation
@@ -194,9 +194,11 @@ set every pixel the side panes aren't using is a track column you can see.
   and order belong only to the pane — they never reorder scenes or write to Live. A song
   whose scenes agree on one canonical color shows its name in that color; mixed and
   uncolored songs remain neutral.
-  Clicking only the name jumps immediately to the first block of that song; it does not
-  select it, open the edit rail, or change its fold state. The target is the song header
-  rather than its first scene, so a folded song is just as navigable as an open one.
+  Clicking only the name jumps immediately to the first block of that song and selects
+  its first scene in Live, which centers it in Live's Session View. It does not select
+  anything in this app, open the edit rail, or change the song's fold state. The local
+  target is the song header rather than its first scene, so a folded song is just as
+  navigable as an open one.
 
 - **The rail** — scene fields, roles, swatches, rename — opens the moment you pick
   something to work on: a clip, a scene name, or a song. Its `×` closes it and gives the
@@ -207,12 +209,13 @@ set every pixel the side panes aren't using is a track column you can see.
   difference matters: an effect would also fire when a selection is *cleared*, so the
   click that empties the grid would reopen the rail you just closed.
 
-- **The log** is diagnostics, so it's behind the header's bug toggle — and it
-  **opens itself on an error**. Every write in this app goes through `guard()` and lands
-  in the log rather than throwing, so a hidden log is the difference between a failed
-  write and a silent one. The effect watches for ids above the highest seen rather than
-  looking at `log[0]`, because `say` prepends and a burst can put an info line in front of
-  the error that arrived with it.
+- **The log** is diagnostics, so its bug toggle lives in the bottom status strip. It
+  always starts closed, including when the bridge already has log history, and **opens
+  itself on a new error**. Every write in this app goes through `guard()` and lands in the
+  log rather than throwing, so a hidden log is the difference between a failed write and
+  a silent one. The effect watches for ids above the highest seen rather than looking at
+  `log[0]`, because `say` prepends and a burst can put an info line in front of the error
+  that arrived with it.
 
 Readiness and counts don't open, so they pay for their pixels differently: `StatsBar` is a
 **status strip along the bottom edge**, one line high. Its single readiness pill names the
@@ -255,8 +258,8 @@ or selected clips and apply to that selection, which is why the controls and too
 extra option instead of disappearing.
 
 The center keeps Live's bars, beats and sixteenths immediately left of play / stop /
-struck-through-slot. The right side carries fold, the compact width select, meters, log and
-Snapshot. Three equal flex regions keep that middle group at the header's true center,
+struck-through-slot. The right side carries the compact width select, meters and Snapshot.
+Three equal flex regions keep that middle group at the header's true center,
 independent of how much chrome the left and right sides contain. The left region clips
 first on a narrow window. Every control shares `--ctl-h`; the bar is `--ctl-h + 12px`,
 with 6px of air above and below.
@@ -270,9 +273,11 @@ with 6px of air above and below.
   with no accessible name is a button for sighted mouse users and nobody else, and the
   `title` is now the only place the longer meanings — what "stop clips" spares, that
   Snapshot re-walks the whole set — can still be said in words.
-- **The scene workflow buttons reuse the same primitive and glyph set**, scaled together
-  to the table header's 13px line box so add, order and color do not make the grid header
-  taller. Their titles say what each workflow can actually do.
+- **The scene-column controls reuse the same primitive and glyph set**, scaled together
+  to the table header's 13px line box so fold, add, order and color do not make the grid
+  header taller. Add follows the **Songs** heading; fold stays right-aligned in its own
+  display-only group beside the right-aligned order and color actions. Their titles say
+  what each control does.
 - **Fold, metronome and Scale Mode keep one glyph and light instead of swapping.** Their
   glyph identifies the control; amber says the observed Live state is on.
 - **The empty state shows the glyph, not the word.** It used to say *hit **Snapshot***, and
@@ -426,8 +431,9 @@ From there the rail does the three things at song scale:
 - **Song color** — a swatch grid that paints the scene rows themselves, so a song becomes
   a band of color in Live's own session view. Writes on click, like the clip swatches.
 
-The header's **hamburger** folds or unfolds every song at once — a view control, so it
-sits with the width presets rather than only inside the songs modal.
+The **hamburger at the top of the Songs column** folds or unfolds every song at once. It
+has its own button group because folding changes only this app's display; the adjacent
+group contains actions that change the Live Set.
 
 ## A song is one color
 
@@ -482,8 +488,8 @@ axis spaced differently from the other is its own kind of depth cue. So the sepa
 What sets a header apart is its own surface — `--rail` against the clip cells' lighter
 fill, the song's wash, and the bar down its left edge. **Surfaces, not edges.**
 Clicking one folds the song to just that header. A hundred songs fold to a hundred rows,
-which is the point: **Collapse all** in the songs modal turns the whole set into a table
-of contents.
+which is the point: the hamburger at the top of the Songs column turns the whole set into
+a table of contents. The songs modal exposes the same operation as **Collapse all**.
 
 Three things about it are load-bearing:
 
@@ -679,17 +685,18 @@ What it costs in Live, and the four passes it runs, is in
 [`bridge/README.md`](../bridge/README.md) under *Reordering scenes*. **It is unverified
 against a real set.**
 
-## Two workflows over the whole set
+## Set-wide song controls
 
-The scene column's header carries icon buttons for adding a song, setting the running
-order and coloring every song from a rule. They're at the head of the column the songs
-are read down, because they act on set structure or every song at once rather than on a
-selection — which is also why none is in the rail, and the rail can be shut anyway.
+The scene column is visibly headed **Songs**. Add sits immediately after that heading;
+fold stays right-aligned in its own display-only button group, beside a separate group for
+setting the running order and coloring every song from a rule. The gap between the right
+groups separates the local display control from actions that change the Live Set.
 
-Both work the same way: a draft you can push around for free, a preview of exactly what
-will be written, and one button that writes it. That shape is the point of them. Doing
-either through the grid is one write per song, each with its own round trip and
-re-snapshot, and the waiting is what stops anyone *trying* an arrangement.
+The running-order and coloring workflows work the same way: a draft you can push around
+for free, a preview of exactly what will be written, and one button that writes it. That
+shape is the point of them. Doing either through the grid is one write per song, each
+with its own round trip and re-snapshot, and the waiting is what stops anyone *trying* an
+arrangement.
 
 ### The running order
 
@@ -1275,7 +1282,7 @@ it.** `.grid-wrap` carries no `padding-top`: the header pins 2px below it and th
 covers exactly that, so padding there is a band where scrolled clip cells show through.
 
 The whole block is **32px** — 13 + 2 + 15, one `line-height` and 2px of padding per row.
-The scene workflow icon buttons are sized to the row rather than the row to them: 13px
+The scene-column button groups are sized to the row rather than the row to them: 13px
 including their borders, so they cost the header no height.
 
 **Rows are `memo`ized.** `ClipGrid` renders `sceneCount` rows × non-group tracks —

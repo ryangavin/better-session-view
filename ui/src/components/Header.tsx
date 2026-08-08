@@ -3,11 +3,9 @@ import { COLUMN_WIDTHS, type ColumnWidth } from '../lib/columnWidth.js';
 import type { BridgeState } from '../hooks/useBridge.js';
 import './Header.css';
 import {
-  IconBug,
   IconIndex,
   IconMeter,
   IconMetronome,
-  IconMenu,
   IconPlay,
   IconStop,
   IconStopClips,
@@ -26,14 +24,8 @@ interface Props {
   onToggleIndex: () => void;
   launch: BridgeState['launch'];
   stop: BridgeState['stop'];
-  songCount: number;
-  /** How many songs are folded, for the Fold/Unfold label. */
-  collapsedCount: number;
-  onCollapseAll: (all: boolean) => void;
   columnWidth: ColumnWidth;
   onColumnWidth: (w: ColumnWidth) => void;
-  showLog: boolean;
-  onToggleLog: () => void;
   showMeters: boolean;
   onToggleMeters: () => void;
   onSnapshot: () => void;
@@ -184,7 +176,7 @@ function TempoControl({
 }
 
 /**
- * The header bar: playback, view controls, meters, log and Snapshot.
+ * The header bar: playback, view controls, meters and Snapshot.
  *
  * Every icon button here carries an `aria-label` as well as a `title`. An
  * icon-only control with no accessible name is a button that exists for
@@ -204,21 +196,12 @@ export function Header({
   onToggleIndex,
   launch,
   stop,
-  songCount,
-  collapsedCount,
-  onCollapseAll,
   columnWidth,
   onColumnWidth,
-  showLog,
-  onToggleLog,
   showMeters,
   onToggleMeters,
   onSnapshot,
 }: Props) {
-  // Guarded on songCount so an empty set reads as "nothing folded" rather than
-  // as "all of nothing is folded", which would light the button before there's
-  // a song in the grid.
-  const allFolded = songCount > 0 && collapsedCount >= songCount;
   const positionParts = songPosition
     ? [songPosition.bar, songPosition.beat, songPosition.sixteenth]
     : ['–', '–', '–'];
@@ -388,27 +371,6 @@ export function Header({
       </div>
 
       <div className="header-section header-right">
-        {/* A view control, so it sits with the other one rather than only in
-            the songs modal. Folding everything is how a 100-song set becomes
-            navigable, and it shouldn't take two clicks to reach.
-
-            The glyph is the same either way and the button lights instead — a
-            folded set is already a list of lines, so it's the state the icon
-            draws, and swapping in a second icon would make you read the button to
-            find out which way it goes. Fold/unfold is in the label and tooltip. */}
-        <button
-          type="button"
-          className={`icon-btn toggle${allFolded ? ' on' : ''}`}
-          aria-pressed={allFolded}
-          disabled={songCount === 0}
-          aria-label={allFolded ? 'Unfold songs' : 'Fold songs'}
-          title={
-            allFolded ? 'Unfold every song' : 'Fold every song down to its header row'
-          }
-          onClick={() => onCollapseAll(collapsedCount < songCount)}
-        >
-          <IconMenu />
-        </button>
         <div className="header-select width-picker">
           <select
             value={columnWidth}
@@ -434,19 +396,6 @@ export function Header({
           disabled={!lomReady && !showMeters}
         >
           <IconMeter />
-        </button>
-        {/* The log is diagnostics, so it's off by default and reachable in one
-            click. It opens itself on an error — see useRailAndLog — because a
-            failure you can't see is a failure that didn't happen. */}
-        <button
-          type="button"
-          className={`icon-btn toggle${showLog ? ' on' : ''}`}
-          aria-pressed={showLog}
-          aria-label="Log"
-          title="Show what the bridge is saying"
-          onClick={onToggleLog}
-        >
-          <IconBug />
         </button>
         <button
           type="button"

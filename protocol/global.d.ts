@@ -431,10 +431,10 @@ declare namespace BSV {
 
   // --- client -> server ------------------------------------------------
 
-  // `launch`, `stop`, `setFold`, `setTransport`, and the watches deliberately have
-  // no terminal reply. What you want back from firing a clip is not an
-  // acknowledgement, it's the play state changing — which arrives as an
-  // unsolicited `playState`. A failure still surfaces: the bridge broadcasts
+  // `launch`, `stop`, `selectScene`, `setFold`, `setTransport`, and the watches
+  // deliberately have no terminal reply. What you want back from firing a clip
+  // is not an acknowledgement, it's the play state changing — which arrives as
+  // an unsolicited `playState`. A failure still surfaces: the bridge broadcasts
   // an `error` with no id.
   //
   // `setFold` is the same bargain for a different reason: the client already
@@ -469,12 +469,13 @@ declare namespace BSV {
     | { id?: number; type: 'palette' }
     /**
      * Developer diagnostics against a real set — id addressing, `ClipSlot`
-     * color semantics, what Live's selection reports, and what observers cost.
+     * color semantics, selection and view-navigation behavior, and what
+     * observers cost.
      *
      * **Answers go to the Max window, not back over the wire**, so there is no
      * reply event and nothing in `TERMINAL`. That isn't laziness: every
-     * question here is about what Live does *while you drag something in it*,
-     * and the readout has to be somewhere you can watch without leaving Live.
+     * question here is about behavior visible only with Live open, and the
+     * readout has to be somewhere you can watch without leaving Live.
      *
      * Nothing in `ui/` sends this — `tools/diag.ts` does.
      */
@@ -500,6 +501,8 @@ declare namespace BSV {
      * `is_foldable`, so the bridge checks rather than writing blind.
      */
     | { id?: number; type: 'setFold'; t: number; folded: boolean }
+    /** Select an exact Session scene so Live reveals it in its own view. */
+    | { id?: number; type: 'selectScene'; s: number }
     | { id?: number; type: 'launch'; target: LaunchTarget }
     | { id?: number; type: 'stop'; target: StopTarget }
     /** Write any related subset of Live's control-bar settings in one operation. */

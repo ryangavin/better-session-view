@@ -55,7 +55,8 @@ export function App() {
   // root. `showMeters` is up there with it because it decides whether Live is
   // streaming meter frames at all.
   const bridge = useBridgeSession();
-  const { snapshot, play, launch, stop, setFold, apply, applyScenes, undo } = bridge;
+  const { snapshot, play, launch, stop, setFold, selectScene, apply, applyScenes, undo } =
+    bridge;
   const { showMeters, toggleMeters } = bridge;
 
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
@@ -131,22 +132,30 @@ export function App() {
     [derivation, pickScenes, unfoldSong],
   );
 
-  /** Navigate without changing the song's fold state or the current selection. */
-  const jumpToSong = useCallback((firstScene: number) => {
-    const grid = gridRef.current;
-    const target = grid?.querySelector<HTMLElement>(`[data-song-start="${firstScene}"]`);
-    if (!grid || !target) return;
+  /** Navigate both grids without changing this app's fold state or selection. */
+  const jumpToSong = useCallback(
+    (firstScene: number) => {
+      // Live centers an assigned selected_scene in Session View. Send this even
+      // if our own DOM target is momentarily absent; the two views are useful
+      // independently and neither should make the other conditional.
+      selectScene(firstScene);
 
-    // Move only this scroll box, and only vertically. `scrollIntoView` may also
-    // move an ancestor or the horizontal track viewport; an index jump should
-    // leave the columns exactly where the performer had them.
-    const stickyHeight = grid.querySelector('thead')?.getBoundingClientRect().height ?? 0;
-    const top = grid.scrollTop + target.getBoundingClientRect().top;
-    grid.scrollTo({
-      top: Math.max(0, top - grid.getBoundingClientRect().top - stickyHeight - 4),
-      behavior: 'auto',
-    });
-  }, []);
+      const grid = gridRef.current;
+      const target = grid?.querySelector<HTMLElement>(`[data-song-start="${firstScene}"]`);
+      if (!grid || !target) return;
+
+      // Move only this scroll box, and only vertically. `scrollIntoView` may
+      // also move an ancestor or the horizontal track viewport; an index jump
+      // should leave the columns exactly where the performer had them.
+      const stickyHeight = grid.querySelector('thead')?.getBoundingClientRect().height ?? 0;
+      const top = grid.scrollTop + target.getBoundingClientRect().top;
+      grid.scrollTo({
+        top: Math.max(0, top - grid.getBoundingClientRect().top - stickyHeight - 4),
+        behavior: 'auto',
+      });
+    },
+    [selectScene],
+  );
 
   /**
    * Closing the rail drops the selection with it.
@@ -314,13 +323,8 @@ export function App() {
         onToggleIndex={() => setShowIndex((shown) => !shown)}
         launch={launch}
         stop={stop}
-        songCount={derivation.songs.length}
-        collapsedCount={collapsedSongs.size}
-        onCollapseAll={onCollapseAll}
         columnWidth={columnWidth}
         onColumnWidth={chooseColumnWidth}
-        showLog={showLog}
-        onToggleLog={toggleLog}
         showMeters={showMeters}
         onToggleMeters={toggleMeters}
         onSnapshot={bridge.refresh}
@@ -356,6 +360,8 @@ export function App() {
               onToggleSong={onToggleSong}
               onPickSong={onPickSong}
               songCount={derivation.songs.length}
+              collapsedCount={collapsedSongs.size}
+              onCollapseAll={onCollapseAll}
               onAddSong={() => setAddingSong(true)}
               onReorder={() => setReordering(true)}
               onRecolor={() => setRecoloring(true)}
@@ -583,6 +589,8 @@ export function App() {
         songCount={derivation.songs.length}
         unmappedCount={derivation.unmapped.length}
         selectedCount={selected.size}
+        showLog={showLog}
+        onToggleLog={toggleLog}
         onOpenSongs={() => setShowSongs(true)}
       />
 

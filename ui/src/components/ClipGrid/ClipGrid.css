@@ -141,8 +141,9 @@ table.grid th.scene-h {
   text-align: left;
   padding-left: var(--gutter);
 }
-/* The set-wide workflows sit at the head of the column their songs are read
-   down. Flex on a wrapper, never on the `th` — see the note above `table.grid`:
+/* Set-wide song controls sit at the head of the column their songs are read
+   down. Display-only folding and Live Set actions have separate button groups.
+   Flex on a wrapper, never on the `th` — see the note above `table.grid`:
    `display: flex` on a table cell stops it being one.
 
    Sized to the row rather than the row to them: 13px including the border is
@@ -152,25 +153,38 @@ table.grid th.scene-h .scene-h-line {
   align-items: center;
   gap: 4px;
 }
-table.grid th.scene-h .scene-actions {
+table.grid th.scene-h .scene-action-groups {
   display: flex;
-  gap: 3px;
+  align-items: center;
+  gap: 6px;
+}
+table.grid th.scene-h .scene-action-group {
+  height: 13px;
+  display: flex;
+  border: 1px solid var(--focus);
+  border-radius: var(--radius-sm);
+  background: var(--surface-control);
+  overflow: hidden;
 }
 button.scene-action {
   width: 20px;
-  height: 13px;
+  height: 11px;
   flex: none;
-  border-radius: var(--radius-sm);
-  border-color: var(--focus);
-  background: var(--surface-control);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--dim);
 }
+button.scene-action + button.scene-action {
+  border-left: 1px solid var(--focus);
+}
 button.scene-action svg {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
 }
 button.scene-action:hover:not(:disabled) {
   background: var(--sel);
+  border-color: var(--focus);
 }
 
 /* --- groups ---------------------------------------------------------- */

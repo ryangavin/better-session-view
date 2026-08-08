@@ -31,7 +31,7 @@ export function useRailAndLog(log: LogLine[]) {
   const hideRail = useCallback(() => setShowRail(false), []);
 
   /**
-   * An error opens the log, however it got closed.
+   * A new error opens the log, however it got closed.
    *
    * Hiding diagnostics is fine right up until something fails silently, and
    * every write in this app goes through `guard()` and lands here rather than
@@ -40,7 +40,10 @@ export function useRailAndLog(log: LogLine[]) {
    * Tracks the highest id seen rather than looking at `log[0]`: `say` prepends,
    * and a burst can put an info line in front of the error that arrived with it.
    */
-  const seenLogId = useRef(0);
+  // Existing history must not defeat the closed initial state if this hook is
+  // mounted after the bridge has already logged something. Only an error that
+  // arrives after mount opens the console automatically.
+  const seenLogId = useRef(log.reduce((highest, line) => Math.max(highest, line.id), 0));
   useEffect(() => {
     const fresh = log.filter((l) => l.id > seenLogId.current);
     if (fresh.length === 0) return;

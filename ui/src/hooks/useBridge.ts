@@ -110,6 +110,8 @@ export interface BridgeState {
    * has already moved its own columns. See `setFold` in the protocol.
    */
   setFold: (t: number, folded: boolean) => void;
+  /** Select and reveal one exact scene in Live's Session View. */
+  selectScene: (s: number) => void;
   /**
    * Listen to the high-frequency meter stream without putting it in the
    * composition root's state and re-rendering the entire grid every frame.
@@ -411,6 +413,11 @@ export function useBridge(watchMeters = false): BridgeState {
 
   const setFold = useCallback(
     (t: number, folded: boolean) => client.send({ type: 'setFold', t, folded }),
+    [client],
+  );
+
+  const selectScene = useCallback(
+    (s: number) => client.send({ type: 'selectScene', s }),
     [client],
   );
 
@@ -825,6 +832,7 @@ export function useBridge(watchMeters = false): BridgeState {
     stop,
     setTransport,
     setFold,
+    selectScene,
     subscribeMeters,
   };
 }

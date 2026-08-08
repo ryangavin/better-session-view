@@ -9,6 +9,18 @@
   color: var(--dim);
   font-weight: 400;
 }
+.stats-log-toggle {
+  width: 18px;
+  height: 16px;
+  align-self: center;
+  flex: none;
+  border-color: transparent;
+  color: var(--dim2);
+}
+.stats-log-toggle svg {
+  width: 12px;
+  height: 12px;
+}
 .repository-link {
   display: inline-flex;
   align-self: center;

@@ -1,6 +1,6 @@
 import { LAUNCH_KEY } from '../lib/keys.js';
 import type { BridgeState } from '../hooks/useBridge.js';
-import { IconGitHub } from './Icon.js';
+import { IconBug, IconGitHub } from './Icon.js';
 import { Stat } from './Stat.js';
 import './StatsBar.css';
 
@@ -13,11 +13,13 @@ interface Props {
   songCount: number;
   unmappedCount: number;
   selectedCount: number;
+  showLog: boolean;
+  onToggleLog: () => void;
   /** Opens the songs modal — the Songs and Unmapped tiles both lead there. */
   onOpenSongs: () => void;
 }
 
-/** The status strip along the bottom: readiness, stat tiles, and the key-hint line. */
+/** Bottom status: readiness, stat tiles, key hints, diagnostics and the source link. */
 export function StatsBar({
   connection,
   lomReady,
@@ -25,6 +27,8 @@ export function StatsBar({
   songCount,
   unmappedCount,
   selectedCount,
+  showLog,
+  onToggleLog,
   onOpenSongs,
 }: Props) {
   // Report only the first unmet dependency. The bridge device must be reachable
@@ -69,6 +73,18 @@ export function StatsBar({
         <b>{LAUNCH_KEY}</b>-click / <b>{LAUNCH_KEY}</b>-↑↓ fires · <b>⇧</b> extends ·{' '}
         <b>esc</b> stops clips · <b>{LAUNCH_KEY}Z</b> undoes
       </div>
+      {/* Diagnostics live with status rather than the performance controls in
+          the header. The console itself renders immediately above this strip. */}
+      <button
+        type="button"
+        className={`icon-btn stats-log-toggle toggle${showLog ? ' on' : ''}`}
+        aria-pressed={showLog}
+        aria-label="Debug console"
+        title={`${showLog ? 'Hide' : 'Show'} debug console`}
+        onClick={onToggleLog}
+      >
+        <IconBug />
+      </button>
       <a
         className="repository-link"
         href={REPOSITORY_URL}

@@ -61,6 +61,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `watchMeters` `{ on }` | install the track and master output-meter observers |
 | `watchTransport` `{ on }` | observe tempo, metronome, launch quantization and current scale |
 | `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
+| `selectScene` `{ s }` | select and reveal one exact scene in Live's Session View |
 | `ping` | |
 
 | server → client | terminal for |
@@ -152,16 +153,17 @@ it as 0 is a bug waiting to look like data.
 an object id; the bridge resolves it against the track list so the wire stays in the
 same `i`-indexed space as everything else. It's the *immediate* parent — groups nest.
 
-**Some requests have no reply, deliberately.** `launch`, `stop`, `setTransport` and the
-watch requests are not in `TERMINAL`. What you want back from firing a clip isn't an
-acknowledgement, it's the play state changing, and that arrives on its own as
-`playState`. Meter watching likewise answers with the first `meterLevels` push. Awaiting
-an ack would only add a round trip to streams that report their own readiness. A
-transport write is acknowledged by the next `transportState` readback for the same reason:
-the value Live accepted matters more than the fact that `set` returned. The cost of that
-choice is that a failure has no request to attach to, so `bridge.ts`
-**broadcasts** an `error` with no `id` when nothing is pending — dropping it is how a
-silent bug hides.
+**Some requests have no reply, deliberately.** `launch`, `stop`, `selectScene`,
+`setTransport` and the watch requests are not in `TERMINAL`. What you want back from
+firing a clip isn't an acknowledgement, it's the play state changing, and that arrives
+on its own as `playState`. Selecting a scene likewise reports through the existing
+Session-cursor observers; the client has already navigated its own grid. Meter watching
+answers with the first `meterLevels` push. Awaiting an ack would only add a round trip to
+streams that report their own readiness. A transport write is acknowledged by the next
+`transportState` readback for the same reason: the value Live accepted matters more than
+the fact that `set` returned. The cost of that choice is that a failure has no request to
+attach to, so `bridge.ts` **broadcasts** an `error` with no `id` when nothing is pending —
+dropping it is how a silent bug hides.
 
 **Play state is per track, never per clip.** `TrackPlayState` carries
 `playing_slot_index` and `fired_slot_index`, which between them describe the whole grid
