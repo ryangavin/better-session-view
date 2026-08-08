@@ -8,6 +8,7 @@ import {
   sceneFields,
 } from '../../../core/src/roles.js';
 import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
+import { MIN_INTERVAL_MS, shouldWalk, STALE_MS } from '../../../core/src/backstop.js';
 import { canApplyDelta, mergeTrackDelta } from '../../../core/src/snapshotDelta.js';
 import { applyClipMove, type ClipMovePlan } from '../../../core/src/clipMove.js';
 import { LIVE_PALETTE } from '../../../core/src/livePalette.js';
@@ -138,20 +139,35 @@ export function useBridge(watchMeters = false): BridgeState {
   // time a snapshot arrived, which is exactly when it must not.
   const snapshotRef = useRef<BSV.Snapshot | null>(null);
   const resyncRef = useRef<(() => Promise<void>) | null>(null);
-  // Read by the focus backstop, which must not walk the set on top of a write.
+  /**
+   * Read by the backstop, which must not walk the set on top of a write.
+   *
+   * Set **synchronously inside `guard`**, not assigned from `busy` during
+   * render. Rendering happens a tick later than the call, so a render-assigned
+   * ref still reads false for anything that fires in the same tick as the write
+   * that set it — which is the whole class of bug this guard exists to prevent.
+   */
   const busyRef = useRef(false);
-  const syncingRef = useRef(false);
-  busyRef.current = busy;
-  syncingRef.current = syncing;
+  /**
+   * When a walk last succeeded, and when one was last attempted. Both feed
+   * `shouldWalk`; see `core/src/backstop.ts` for why only a snapshot may stamp
+   * the first of them and a delta may not.
+   */
+  const lastSnapshotAtRef = useRef<number | null>(null);
+  const lastAttemptAtRef = useRef<number | null>(null);
+  /** The walk in flight, if there is one. Null between walks. */
+  const walkRef = useRef<Promise<void> | null>(null);
 
   const guard: Guard = useCallback(
     async (label, fn) => {
+      busyRef.current = true;
       setBusy(true);
       try {
         await fn();
       } catch (e) {
         say(`${label}: ${errText(e)}`, 'error');
       } finally {
+        busyRef.current = false;
         setBusy(false);
         setProgress(null);
       }
@@ -297,19 +313,37 @@ export function useBridge(watchMeters = false): BridgeState {
     };
   }, [client, lomReady]);
 
-  // The backstop, and it covers the one thing watching the cursor cannot.
-  // Deleting, renaming or recoloring a clip in place moves nothing, so no
-  // selection change fires and no delta is sent. Coming back to this window is
-  // the moment that costs nothing to spend a full walk on — and it's the moment
-  // you're about to look at the grid and trust it.
+  // The backstop, for what no observer can report: properties Live exposes with
+  // no `observe` at all — `Clip.length`, `Track.fold_state` — plus another M4L
+  // device or a remote script. Nothing announces those, so the only way to find
+  // out is to look.
+  //
+  // **Coming back to the window is the moment to ask, not the reason.** This
+  // walked on every focus, which spent ~950ms of Live's main thread per alt-tab
+  // to answer a question that is almost always "nothing changed". `shouldWalk`
+  // asks the question that actually matches the job — how old is what I hold —
+  // and it lives in core/ with tests rather than as two constants in a hook.
   useEffect(() => {
     if (!lomReady) return;
     const onFocus = () => {
       if (document.visibilityState !== 'visible') return;
-      // Never interrupt a write in flight; it re-reads or reconciles on its own.
-      if (busyRef.current || syncingRef.current) return;
+      // Never walk on top of a write. It reconciles or re-reads on its own, and
+      // a snapshot taken mid-`apply` would read a half-written set.
+      if (busyRef.current) return;
+      const stale = shouldWalk({
+        now: Date.now(),
+        lastSnapshotAt: lastSnapshotAtRef.current,
+        lastAttemptAt: lastAttemptAtRef.current,
+        staleMs: STALE_MS,
+        minIntervalMs: MIN_INTERVAL_MS,
+      });
+      if (!stale) return;
       void resyncRef.current?.();
     };
+    // Both, because they catch different things — `visibilitychange` covers a
+    // minimised or hidden tab, `focus` covers switching windows on the same
+    // desktop. They also both fire on one alt-tab, which used to mean two
+    // walks; now the first stamps `lastAttemptAt` and the second is refused.
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
     return () => {
@@ -348,11 +382,13 @@ export function useBridge(watchMeters = false): BridgeState {
   const refresh = useCallback(
     () =>
       guard('snapshot', async () => {
+        lastAttemptAtRef.current = Date.now();
         await whileSyncing(async () => {
           const e = await client.request({ type: 'snapshot' });
           const wire = client.lastWireTiming;
           const commitStart = performance.now();
           setSnapshot(e.data);
+          lastSnapshotAtRef.current = Date.now();
           // Queued after React's commit, so it captures render cost too.
           requestAnimationFrame(() => {
             reportSnapshotTiming(e, wire, performance.now() - commitStart);
@@ -411,14 +447,37 @@ export function useBridge(watchMeters = false): BridgeState {
    * one — a full walk is tens of thousands of LOM reads, so it's the fallback
    * rather than the routine.
    */
-  const resync = useCallback(
-    () =>
-      whileSyncing(async () => {
-        const s = await client.request({ type: 'snapshot' });
-        setSnapshot(s.data);
-      }),
-    [client, whileSyncing],
-  );
+  const resync = useCallback((): Promise<void> => {
+    // **Join, don't drop.** Three of the callers are fire-and-forget and would
+    // be happy either way, but `write` and the move paths *await* this because
+    // they need state they can trust afterwards — dropping the call would hand
+    // them back a stale snapshot with no indication anything was skipped.
+    if (walkRef.current) return walkRef.current;
+    const run = async () => {
+      lastAttemptAtRef.current = Date.now();
+      try {
+        await whileSyncing(async () => {
+          const s = await client.request({ type: 'snapshot' });
+          setSnapshot(s.data);
+          lastSnapshotAtRef.current = Date.now();
+        });
+      } catch (e) {
+        // Reported here rather than thrown. Three callers reach this as a bare
+        // `void resyncRef.current?.()` — outside `guard`, outside any `catch` —
+        // so a throw was an unhandled rejection and a walk that failed silently.
+        // Labelled `snapshot` rather than borrowing the caller's label, because
+        // "apply failed" would be a lie about which half broke.
+        say(`snapshot: ${errText(e)}`, 'error');
+      }
+    };
+    // `.finally` always defers, so the assignment below wins the race even if
+    // `run()` were to settle without ever suspending.
+    const p = run().finally(() => {
+      walkRef.current = null;
+    });
+    walkRef.current = p;
+    return p;
+  }, [client, say, whileSyncing]);
   resyncRef.current = resync;
 
   /**

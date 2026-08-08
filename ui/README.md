@@ -230,7 +230,7 @@ stays as the manual override now that the grid mostly keeps up on its own.
 |---|---|---|
 | `observe` → `changed structure` | a track or scene added, removed, reordered | a full re-walk, and it has to be — every index changed meaning |
 | `watchSelection` → `delta` | **a clip moved, copied or deleted in Live** | ~11ms a track |
-| window focus | everything else | a full walk, at the moment you were about to trust the grid anyway |
+| staleness | everything else | a full walk, at most one per `STALE_MS` |
 
 The middle one is the interesting one, and how it works is in
 [`bridge/README.md`](../bridge/README.md) under *Following Live*: the bridge watches
@@ -247,14 +247,45 @@ scope from one, everything else from another — and the result would look plaus
 everything else that merges is: a grid disagreeing with Live gives no hint which of the
 two is lying.
 
-**Focus-resync exists for what the cursor cannot see.** Deleting, renaming or recoloring
-a clip *in place* moves nothing, so no selection change fires and no delta is sent. A
-rename is the one that stings, because in this project the scene name is the mapping. It
-skips while a write is in flight, since those reconcile on their own.
+**The backstop exists for what nothing can report.** Some of what a snapshot carries has
+no `observe` in the LOM at all — `Clip.length`, `Track.fold_state` — and another M4L
+device or a remote script announces nothing either. There is no cheap way to check: any
+honest fingerprint of the set needs clip content, which needs the slot scan, which is 80%
+of the walk. So the only way to find out is to look, and the only question is when.
 
-It fires once per *session*, guarded by a ref, and that guard is the point: a walk that
-**fails** leaves `snapshot` null with `lomReady` still true, so without it the effect
-would re-run and retry forever — hammering the LOM with the walk that just broke.
+**It used to look on every window focus**, which spent ~950ms of Live's main thread per
+alt-tab to answer a question that is almost always "nothing changed". Focus is a
+convenient moment to ask, not a reason in itself; the trigger that matches the job is
+**age**. `shouldWalk` is in [`core/`](../core/README.md) with tests rather than as two
+constants in a hook, and it answers three things at once:
+
+- **only a snapshot resets the clock, never a delta.** A delta proves the bridge is alive
+  and following; only a walk proves *everything* is current. Were deltas to stamp it, a
+  set under active editing would never re-walk — and that's the set most likely to have
+  drifted somewhere no observer is watching.
+- **`MIN_INTERVAL_MS` absorbs the burst.** `focus` and `visibilitychange` both fire on one
+  alt-tab. They're both still listened to, because they catch different things — a hidden
+  tab versus another window on the same desktop — so the floor is what makes them one walk
+  instead of two.
+- **holding nothing is not staleness.** With no snapshot there's nothing to distrust, and
+  the first walk belongs to the once-per-session effect below.
+
+Two guards around the walk itself, and both were bugs before:
+
+- **`busyRef` is set synchronously inside `guard`**, not assigned from `busy` during
+  render. Render happens a tick after the call, so a render-assigned ref still read
+  `false` for anything firing in the same tick as the write that set it — and a snapshot
+  taken mid-`apply` reads a half-written set.
+- **`resync` is single-flight, and it joins rather than drops.** Three callers are
+  fire-and-forget, but `write` and the move paths *await* it because they need state they
+  can trust afterwards; dropping the call would hand them a stale snapshot with nothing to
+  say so. It also reports its own failures instead of throwing — the fire-and-forget
+  callers sit outside `guard`, so a throw was an unhandled rejection and a walk that
+  failed in silence.
+
+The first walk fires once per *session*, guarded by a ref, and that guard is the point: a
+walk that **fails** leaves `snapshot` null with `lomReady` still true, so without it the
+effect would re-run and retry forever — hammering the LOM with the walk that just broke.
 
 ## A write patches the snapshot; it doesn't re-read the set
 
