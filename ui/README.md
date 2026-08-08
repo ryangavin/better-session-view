@@ -229,7 +229,7 @@ stays as the manual override now that the grid mostly keeps up on its own.
 | | catches | costs |
 |---|---|---|
 | `observe` → `changed structure` | a track or scene added, removed, reordered | a full re-walk, and it has to be — every index changed meaning |
-| `watchSelection` → `delta` | **a clip moved, copied or deleted in Live**, and now one renamed, recolored or deleted *in place* | ~11ms a track |
+| `watchSelection` → `delta` | **a clip moved, copied or deleted in Live**, one renamed, recolored or deleted *in place*, and a scene or track renamed, recolored or retempoed | ~11ms a track |
 | staleness | what has no `observe` at all — `Clip.length`, `Track.fold_state`, another device | a full walk, at most one per `STALE_MS` |
 
 The middle one is the interesting one, and how it works is in
@@ -248,9 +248,16 @@ everything else that merges is: a grid disagreeing with Live gives no hint which
 two is lying.
 
 The middle row grew: the bridge also watches the properties of whatever the cursor is
-sitting on, which is how an in-place rename now arrives as a delta instead of waiting for
-a walk. You have to select something in Live to edit it, so the cursor is always already
-on the thing being changed — three more observers, and they move with it.
+sitting on — the clip, the scene and the track — which is how an in-place rename now
+arrives as a delta instead of waiting for a walk. You have to select something in Live to
+edit it, so the cursor is always already on the thing being changed. A **scene** rename is
+the one that matters most, because in this project the scene name *is* the mapping.
+
+The client's half of that is one line in the `delta` case, and it uses **two** merges on
+purpose. `mergeTrackDelta` replaces clips by scope; `mergeRows` upserts scene and track
+rows by index. They differ because a clip can vanish from a track and a scene cannot —
+the reasoning is on `mergeRows` in `core/`, and it's worth reading before anyone
+"simplifies" them into one.
 
 **The backstop exists for what nothing can report.** Some of what a snapshot carries has
 no `observe` in the LOM at all — `Clip.length`, `Track.fold_state` — and another M4L

@@ -96,12 +96,35 @@ declare namespace BSV {
      */
     prevRev: number;
     /**
-     * Track indexes re-read in full. Authoritative in both directions: a track
-     * listed here with no clips in `clips` is empty, not unreported.
+     * Track indexes whose clips were re-read in full. Authoritative in both
+     * directions: a track listed here with no clips in `clips` is empty, not
+     * unreported.
+     *
+     * Named `clipScope` and not `tracks` because `trackRows` below is also
+     * "tracks" and means something else entirely — one is which columns were
+     * re-read, the other is what the columns themselves are called. Rule 7 in
+     * `CONTRIBUTING.md` is about DAW words, but the same trap is the reason.
      */
-    tracks: number[];
-    /** Every clip now in those tracks. */
+    clipScope: number[];
+    /** Every clip now in the tracks named by `clipScope`. */
     clips: Clip[];
+    /**
+     * Scene and track rows that were re-read, if any.
+     *
+     * **Upserts by `i`, with no scope array**, which is the opposite of how
+     * clips merge and deliberately so. `mergeTrackDelta` cannot upsert because a
+     * clip can *vanish* from a track — a clip moved out of a slot is a deletion
+     * at the source, and an upsert has no entry to represent one. A scene at
+     * index 5 cannot vanish that way: either it exists, or the set restructured,
+     * and a restructure sends every client for a full walk regardless.
+     *
+     * Absent rather than empty when nothing was re-read, so a delta that is only
+     * about clips stays exactly the message it was.
+     */
+    sceneRows?: Scene[];
+    trackRows?: Track[];
+    /** The set's tempo, when the re-read covered it. */
+    tempo?: number;
     /** LOM time for the re-read, ms. */
     ms: number;
   }

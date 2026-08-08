@@ -9,7 +9,7 @@ import {
 } from '../../../core/src/roles.js';
 import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
 import { MIN_INTERVAL_MS, shouldWalk, STALE_MS } from '../../../core/src/backstop.js';
-import { canApplyDelta, mergeTrackDelta } from '../../../core/src/snapshotDelta.js';
+import { canApplyDelta, mergeRows, mergeTrackDelta } from '../../../core/src/snapshotDelta.js';
 import { applyClipMove, type ClipMovePlan } from '../../../core/src/clipMove.js';
 import { LIVE_PALETTE } from '../../../core/src/livePalette.js';
 import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.js';
@@ -252,8 +252,21 @@ export function useBridge(watchMeters = false): BridgeState {
             void resyncRef.current?.();
             break;
           }
-          const clips = mergeTrackDelta(held.clips, event.data.tracks, event.data.clips);
-          setSnapshot({ ...held, rev: event.data.rev, clips, clipCount: clips.length });
+          const d = event.data;
+          const clips = mergeTrackDelta(held.clips, d.clipScope, d.clips);
+          // Rows upsert by index; clips replace by scope. The two merges differ
+          // because a clip can vanish from a track and a scene cannot — see
+          // `mergeRows` in core/ for the argument, which is worth reading before
+          // "simplifying" them into one.
+          setSnapshot({
+            ...held,
+            rev: d.rev,
+            clips,
+            clipCount: clips.length,
+            scenes: mergeRows(held.scenes, d.sceneRows ?? []),
+            tracks: mergeRows(held.tracks, d.trackRows ?? []),
+            tempo: d.tempo ?? held.tempo,
+          });
           break;
         }
         case 'deviceState':
