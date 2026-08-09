@@ -9,6 +9,7 @@ import {
   type TrackShape,
 } from '../../../../core/src/songRows.js';
 import { IconGroupFold } from '../Icon.js';
+import { ControlButton } from '../Control.js';
 import { TagChip } from '../TagChip.js';
 import { BAND_CONTRAST, isShape, RAIL, UNTAGGED } from './constants.js';
 
@@ -160,7 +161,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
           inside it matters when the song is open: the header spans the whole
           table, but its identity still belongs entirely to the scene column. */}
       <span className="song-identity">
-        <button
+        <ControlButton
           type="button"
           className="song"
           title={`Work on ${header.song} — selects every scene of it`}
@@ -170,7 +171,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
           }}
         >
           {header.song}
-        </button>
+        </ControlButton>
         <TagChip
           tag={header.tag}
           color="var(--song-rgb, var(--dim2))"

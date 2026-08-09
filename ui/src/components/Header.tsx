@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { COLUMN_WIDTHS, type ColumnWidth } from '../lib/columnWidth.js';
 import type { BridgeState } from '../hooks/useBridge.js';
 import './Header.css';
+import { ControlButton, ControlField, ControlGroup, ControlSelect } from './Control.js';
 import {
   IconIndex,
   IconMeter,
   IconMetronome,
+  IconNote,
   IconMenu,
   IconPlay,
   IconStop,
@@ -119,7 +121,7 @@ const SCALE_NAMES = [
 
 function tempoText(tempo: number | undefined): string {
   if (tempo === undefined) return '';
-  return String(Number(tempo.toFixed(2)));
+  return tempo.toFixed(2);
 }
 
 function TempoControl({
@@ -151,7 +153,7 @@ function TempoControl({
   };
 
   return (
-    <label className="tempo-control" title="Live Set tempo — 20–999 BPM">
+    <ControlField className="tempo-control" title="Live Set tempo — 20–999 BPM">
       <input
         type="number"
         min="20"
@@ -174,8 +176,10 @@ function TempoControl({
           }
         }}
       />
-      <span>BPM</span>
-    </label>
+      <span className="tempo-unit" aria-hidden="true">
+        <IconNote />
+      </span>
+    </ControlField>
   );
 }
 
@@ -222,22 +226,20 @@ export function Header({
     <header>
       <div className="header-section header-left">
         <img className="brand-logo" src="/logo-white.png" alt="Better Session View" />
-        <div className="view-controls" role="group" aria-label="Song display">
-          <button
-            type="button"
-            className={`icon-btn toggle${showIndex ? ' on' : ''}`}
-            aria-pressed={showIndex}
+        <ControlGroup className="view-controls" label="Song display" surface="filled">
+          <ControlButton
+            icon
+            pressed={showIndex}
             aria-controls="song-index"
             aria-label="Song index"
             title={`${showIndex ? 'Hide' : 'Show'} song index`}
             onClick={onToggleIndex}
           >
             <IconIndex />
-          </button>
-          <button
-            type="button"
-            className={`icon-btn toggle${allFolded ? ' on' : ''}`}
-            aria-pressed={allFolded}
+          </ControlButton>
+          <ControlButton
+            icon
+            pressed={allFolded}
             disabled={songCount === 0}
             aria-label={allFolded ? 'Unfold songs' : 'Fold songs'}
             title={
@@ -246,29 +248,31 @@ export function Header({
             onClick={() => onCollapseAll(collapsedCount < songCount)}
           >
             <IconMenu />
-          </button>
-        </div>
-        <div className="live-controls" role="group" aria-label="Live control bar">
-          <div className="tempo-group" role="group" aria-label="Tempo and metronome">
+          </ControlButton>
+        </ControlGroup>
+        <ControlGroup className="live-controls" label="Live control bar" appearance="bare">
+          <ControlGroup
+            className="tempo-group"
+            label="Tempo, metronome, and clip launch quantization"
+            surface="filled"
+          >
             <TempoControl
               tempo={transport?.tempo}
               disabled={!lomReady || transport === null}
               onCommit={(tempo) => onTransport({ tempo })}
             />
-            <button
-              type="button"
-              className={`icon-btn toggle${transport?.metronome ? ' on' : ''}`}
-              aria-pressed={transport?.metronome ?? false}
+            <ControlButton
+              icon
+              pressed={transport?.metronome ?? false}
               aria-label="Metronome"
               title={`${transport?.metronome ? 'Disable' : 'Enable'} Live's metronome`}
               disabled={!lomReady || transport === null}
               onClick={() => onTransport({ metronome: !transport?.metronome })}
             >
               <IconMetronome />
-            </button>
-          </div>
-          <div className="header-select quantization-picker">
-            <select
+            </ControlButton>
+            <ControlSelect
+              containerClassName="quantization-picker"
               value={transport?.clipTriggerQuantization ?? ''}
               disabled={!lomReady || transport === null}
               aria-label="Global clip launch quantization"
@@ -283,67 +287,59 @@ export function Header({
                   {label}
                 </option>
               ))}
-            </select>
-            <span className="select-caret" aria-hidden="true" />
-          </div>
-          <div className="scale-group" role="group" aria-label="Current scale">
-            <button
-              type="button"
-              className={`icon-btn toggle${transport?.scaleMode ? ' on' : ''}`}
-              aria-pressed={transport?.scaleMode ?? false}
+            </ControlSelect>
+          </ControlGroup>
+          <ControlGroup className="scale-group" label="Current scale" surface="filled">
+            <ControlButton
+              icon
+              pressed={transport?.scaleMode ?? false}
               aria-label="Scale mode"
               title="Toggle Scale Mode for Live's current or selected clips"
               disabled={!lomReady || transport === null}
               onClick={() => onTransport({ scaleMode: !transport?.scaleMode })}
             >
               <IconScale />
-            </button>
-            <div className="header-select root-picker">
-              <select
-                value={transport?.rootNote ?? ''}
-                disabled={!lomReady || transport === null}
-                aria-label="Current scale root note"
-                title="Root note for Live's current or selected clips"
-                onChange={(e) => onTransport({ rootNote: Number(e.currentTarget.value) })}
-              >
-                {transport === null && <option value="">–</option>}
-                {ROOT_NOTES.map((note, value) => (
-                  <option key={note} value={value}>
-                    {note}
-                  </option>
-                ))}
-              </select>
-              <span className="select-caret" aria-hidden="true" />
-            </div>
-            <div className="header-select scale-picker">
-              <select
-                value={transport?.scaleName ?? ''}
-                disabled={!lomReady || transport === null}
-                aria-label="Current scale name"
-                title={
-                  transport?.scaleName
-                    ? `${transport.scaleName} — Live's current or selected clips`
-                    : 'Scale name for Live\'s current or selected clips'
-                }
-                onChange={(e) => onTransport({ scaleName: e.currentTarget.value })}
-              >
-                {(transport === null || transport.scaleName === '') && (
-                  <option value="">–</option>
+            </ControlButton>
+            <ControlSelect
+              containerClassName="root-picker"
+              value={transport?.rootNote ?? ''}
+              disabled={!lomReady || transport === null}
+              aria-label="Current scale root note"
+              title="Root note for Live's current or selected clips"
+              onChange={(e) => onTransport({ rootNote: Number(e.currentTarget.value) })}
+            >
+              {transport === null && <option value="">–</option>}
+              {ROOT_NOTES.map((note, value) => (
+                <option key={note} value={value}>
+                  {note}
+                </option>
+              ))}
+            </ControlSelect>
+            <ControlSelect
+              containerClassName="scale-picker"
+              value={transport?.scaleName ?? ''}
+              disabled={!lomReady || transport === null}
+              aria-label="Current scale name"
+              title={
+                transport?.scaleName
+                  ? `${transport.scaleName} — Live's current or selected clips`
+                  : 'Scale name for Live\'s current or selected clips'
+              }
+              onChange={(e) => onTransport({ scaleName: e.currentTarget.value })}
+            >
+              {(transport === null || transport.scaleName === '') && <option value="">–</option>}
+              {transport?.scaleName &&
+                !SCALE_NAMES.includes(transport.scaleName as (typeof SCALE_NAMES)[number]) && (
+                  <option value={transport.scaleName}>{transport.scaleName}</option>
                 )}
-                {transport?.scaleName &&
-                  !SCALE_NAMES.includes(transport.scaleName as (typeof SCALE_NAMES)[number]) && (
-                    <option value={transport.scaleName}>{transport.scaleName}</option>
-                  )}
-                {SCALE_NAMES.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-              <span className="select-caret" aria-hidden="true" />
-            </div>
-          </div>
-        </div>
+              {SCALE_NAMES.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </ControlSelect>
+          </ControlGroup>
+        </ControlGroup>
       </div>
 
       <div className="header-section header-center">
@@ -358,44 +354,43 @@ export function Header({
               ))}
             </span>
           </div>
-          <div className="playback" role="group" aria-label="Playback">
-            <button
-              type="button"
-              className={`icon-btn${isPlaying ? ' rolling' : ''}`}
+          <ControlGroup className="playback" label="Playback" surface="filled">
+            <ControlButton
+              icon
+              className={isPlaying ? 'rolling' : undefined}
               title="Start the song (Space)"
               aria-label="Start the song"
               disabled={!lomReady}
               onClick={() => launch({ kind: 'song' })}
             >
               <IconPlay />
-            </button>
-            <button
-              type="button"
-              className="icon-btn"
+            </ControlButton>
+            <ControlButton
+              icon
               title="Stop the song (Space)"
               aria-label="Stop the song"
               disabled={!lomReady}
               onClick={() => stop({ kind: 'song' })}
             >
               <IconStop />
-            </button>
-            <button
-              type="button"
-              className="icon-btn"
+            </ControlButton>
+            <ControlButton
+              icon
               title="Stop all clips, keep the song rolling (Esc)"
               aria-label="Stop all clips"
               disabled={!lomReady}
               onClick={() => stop({ kind: 'clips' })}
             >
               <IconStopClips />
-            </button>
-          </div>
+            </ControlButton>
+          </ControlGroup>
         </div>
       </div>
 
       <div className="header-section header-right">
-        <div className="header-select width-picker">
-          <select
+        <ControlGroup label="Track view" surface="filled">
+          <ControlSelect
+            containerClassName="width-picker"
             value={columnWidth}
             aria-label="Track column display mode"
             title={columnWidthTitle(columnWidth) ?? columnWidthLabel(columnWidth)}
@@ -406,30 +401,28 @@ export function Header({
                 {columnWidthText(w)}
               </option>
             ))}
-          </select>
-          <span className="select-caret" aria-hidden="true" />
-        </div>
-        <button
-          type="button"
-          className={`icon-btn toggle${showMeters ? ' on' : ''}`}
-          aria-pressed={showMeters}
-          aria-label="Mixer"
-          title={`${showMeters ? 'Hide' : 'Show'} track mixer and output meters`}
-          onClick={onToggleMeters}
-          disabled={!lomReady && !showMeters}
-        >
-          <IconMeter />
-        </button>
-        <button
-          type="button"
-          className="icon-btn primary"
+          </ControlSelect>
+          <ControlButton
+            icon
+            pressed={showMeters}
+            aria-label="Mixer"
+            title={`${showMeters ? 'Hide' : 'Show'} track mixer and output meters`}
+            onClick={onToggleMeters}
+            disabled={!lomReady && !showMeters}
+          >
+            <IconMeter />
+          </ControlButton>
+        </ControlGroup>
+        <ControlButton
+          icon
+          intent="primary"
           aria-label="Snapshot"
           title="Snapshot — re-walk the set"
           onClick={onSnapshot}
           disabled={!lomReady || busy}
         >
           <IconSync />
-        </button>
+        </ControlButton>
       </div>
     </header>
   );

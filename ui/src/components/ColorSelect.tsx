@@ -5,6 +5,7 @@ import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.j
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
 import { useDismissOnScroll } from '../hooks/useDismissOnScroll.js';
 import { SwatchGrid } from './SwatchGrid.js';
+import { ControlButton } from './Control.js';
 import './ColorSelect.css';
 
 interface Props {
@@ -65,7 +66,7 @@ function ColorPopover({
           }}
         />
         {onClear && (
-          <button
+          <ControlButton
             type="button"
             className="color-select-none"
             onClick={() => {
@@ -74,7 +75,7 @@ function ColorPopover({
             }}
           >
             No color
-          </button>
+          </ControlButton>
         )}
       </div>
     </div>,
@@ -103,7 +104,7 @@ export function ColorSelect({
   const rgb = current !== null && current >= 0 ? palette[current] : undefined;
 
   const trigger = (
-    <button
+    <ControlButton
       type="button"
       className={`color-select${rgb === undefined ? ' empty' : ''}`}
       style={rgb === undefined ? undefined : { background: hex(rgb) }}

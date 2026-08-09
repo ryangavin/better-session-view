@@ -9,6 +9,7 @@ import {
 } from '../../../core/src/newSong.js';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
 import { ColorSelect } from './ColorSelect.js';
+import { ControlButton, ControlSelect } from './Control.js';
 import './NewSongModal.css';
 
 interface Props {
@@ -148,13 +149,17 @@ export function NewSongModal({
 
         <label className={`new-song-field${bad.has('at') ? ' bad' : ''}`}>
           <span>Insert</span>
-          <select value={draft.at} onChange={(e) => edit({ at: Number(e.target.value) })}>
+          <ControlSelect
+            appearance="native"
+            value={draft.at}
+            onChange={(e) => edit({ at: Number(e.target.value) })}
+          >
             {placements.map((placement) => (
               <option key={placement.at} value={placement.at}>
                 {placement.label}
               </option>
             ))}
-          </select>
+          </ControlSelect>
         </label>
 
         {problems.length > 0 && draft.name.trim() !== '' && (
@@ -163,12 +168,12 @@ export function NewSongModal({
 
         <div className="modal-actions">
           <div className="spacer" />
-          <button type="button" onClick={onClose}>
+          <ControlButton onClick={onClose}>
             Cancel
-          </button>
-          <button type="submit" className="primary" disabled={busy || problems.length > 0}>
+          </ControlButton>
+          <ControlButton type="submit" intent="primary" disabled={busy || problems.length > 0}>
             Add {NEW_SONG_SCENES} scenes
-          </button>
+          </ControlButton>
         </div>
       </form>
     </div>

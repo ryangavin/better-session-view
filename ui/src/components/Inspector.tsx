@@ -1,6 +1,7 @@
 import { hex } from '../../../core/src/color.js';
 import { DEFAULT_CLIP_PATTERN, TOKENS, unknownTokens } from '../../../core/src/pattern.js';
 import { ColorSelect } from './ColorSelect.js';
+import { ControlButton } from './Control.js';
 
 interface Props {
   palette: number[];
@@ -83,15 +84,14 @@ export function Inspector({
 
       {/* A role colors clips and nothing else. Scene rows keep the song color,
           while every clip in a selected scene takes that scene's role color. */}
-      <button
-        type="button"
-        className="primary"
+      <ControlButton
+        intent="primary"
         disabled={roleColorCount === 0 || busy}
         title="Color every clip in the selected scenes with its own scene's role color"
         onClick={onColorClips}
       >
         Color {roleColorCount} clip{roleColorCount === 1 ? '' : 's'} by role
-      </button>
+      </ControlButton>
 
       <div className="lbl">Rename selected</div>
       <input
@@ -115,23 +115,22 @@ export function Inspector({
           Preview <span className="preview">{preview || '(empty)'}</span>
         </div>
       )}
-      <button
-        type="button"
-        className="primary"
+      <ControlButton
+        intent="primary"
         onClick={onRename}
         disabled={renameCount === 0 || busy}
       >
         {progress ? `${progress.done} / ${progress.total}` : `Rename ${renameCount}`}
-      </button>
+      </ControlButton>
 
       <div className="spacer" />
 
-      <button type="button" onClick={onUndo} disabled={undoDepth === 0 || busy}>
+      <ControlButton onClick={onUndo} disabled={undoDepth === 0 || busy}>
         Undo last write
-      </button>
-      <button type="button" onClick={onClear} disabled={none}>
+      </ControlButton>
+      <ControlButton onClick={onClear} disabled={none}>
         Clear selection
-      </button>
+      </ControlButton>
     </>
   );
 }

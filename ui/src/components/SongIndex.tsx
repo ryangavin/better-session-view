@@ -3,6 +3,7 @@ import { hex, legibleOn } from '../../../core/src/color.js';
 import type { Derivation } from '../../../core/src/derive.js';
 import { songFacts } from '../../../core/src/songRows.js';
 import { BAND_CONTRAST, RAIL } from './ClipGrid/constants.js';
+import { ControlButton } from './Control.js';
 import './SongIndex.css';
 
 interface Props {
@@ -51,10 +52,10 @@ function SortHeading({
   const next = direction === 'ascending' ? 'descending' : 'ascending';
 
   return (
-    <button
+    <ControlButton
       type="button"
       className={active ? 'active' : ''}
-      aria-pressed={active}
+      pressed={active}
       aria-label={`Sort by ${label} ${next}`}
       title={`Sort by ${label} ${next}`}
       onClick={() => onSort(field)}
@@ -65,7 +66,7 @@ function SortHeading({
           {direction === 'ascending' ? '↑' : '↓'}
         </span>
       )}
-    </button>
+    </ControlButton>
   );
 }
 
@@ -149,7 +150,7 @@ export function SongIndex({ derivation, palette, onJump, onClose }: Props) {
     <nav id="song-index" className="song-index" aria-label="Song index">
       <div className="song-index-head">
         <span className="lbl">Song index</span>
-        <button
+        <ControlButton
           type="button"
           className="song-index-close"
           aria-label="Close song index"
@@ -157,7 +158,7 @@ export function SongIndex({ derivation, palette, onJump, onClose }: Props) {
           onClick={onClose}
         >
           ×
-        </button>
+        </ControlButton>
       </div>
 
       <div className="song-index-search">
@@ -198,7 +199,7 @@ export function SongIndex({ derivation, palette, onJump, onClose }: Props) {
                       } as CSSProperties)
                 }
               >
-                <button
+                <ControlButton
                   type="button"
                   className="song-index-name"
                   title={`Jump to ${song.name}`}
@@ -208,7 +209,7 @@ export function SongIndex({ derivation, palette, onJump, onClose }: Props) {
                   }}
                 >
                   {song.name}
-                </button>
+                </ControlButton>
                 <span className={song.key === '' ? 'none' : ''} title={song.key}>
                   {song.key || '—'}
                 </span>

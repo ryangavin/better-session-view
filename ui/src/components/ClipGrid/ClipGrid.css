@@ -166,7 +166,7 @@ table.grid th.scene-h .scene-action-group {
   display: flex;
   background: transparent;
 }
-button.scene-action {
+.control-button.scene-action {
   width: 26px;
   height: var(--ctl-h);
   flex: none;
@@ -175,11 +175,11 @@ button.scene-action {
   background: transparent;
   color: var(--scene-action-ink, var(--dim));
 }
-button.scene-action svg {
+.control-button.scene-action svg {
   width: 14px;
   height: 14px;
 }
-button.scene-action:hover:not(:disabled) {
+.control-button.scene-action:hover:not(:disabled) {
   background: transparent;
   color: inherit;
 }
@@ -562,12 +562,13 @@ table.grid tfoot td.meter-resize-cell {
   outline-offset: 1px;
 }
 
-.mixer-controls {
+.control-group.mixer-controls {
   position: absolute;
   z-index: 4;
   bottom: 0;
   left: 0;
   display: grid;
+  align-items: normal;
   gap: 2px;
 }
 
@@ -598,13 +599,13 @@ button.mixer-button:hover:not(:disabled) {
   border-color: var(--focus);
 }
 
-button.mixer-activator.on {
+button.mixer-activator.control-button-on {
   border-color: var(--amber);
   background: var(--amber);
   color: var(--bg);
 }
 
-button.mixer-button.toggle.on {
+button.mixer-button.mixer-solo.control-button-on {
   border-color: var(--blue);
   background: var(--blue);
   color: var(--bg);
@@ -618,7 +619,7 @@ button.mixer-arm span {
   background: currentColor;
 }
 
-button.mixer-arm.on {
+button.mixer-arm.control-button-on {
   border-color: rgba(212, 84, 79, 0.65);
   background: var(--sel);
   color: var(--red);

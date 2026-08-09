@@ -10,6 +10,7 @@ import { clipKey } from '../../lib/selection.js';
 import { LAUNCH_KEY, mods } from '../../lib/keys.js';
 import { has, type RowMarks } from '../../lib/rowMarks.js';
 import { TagChip } from '../TagChip.js';
+import { ControlButton } from '../Control.js';
 import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA, PANEL } from './constants.js';
 import type { Props } from './ClipGrid.js';
 
@@ -149,7 +150,7 @@ export const Row = memo(function Row({
         onClick={(e) => onScene(scene.i, mods(e))}
       >
         <span className="scene-line">
-          <button
+          <ControlButton
             type="button"
             className={`fire${sceneLive ? ' live' : ''}${sceneFired ? ' fired' : ''}`}
             title={`Fire scene ${scene.i + 1}`}
@@ -161,7 +162,7 @@ export const Row = memo(function Row({
             }}
           >
             ▶
-          </button>
+          </ControlButton>
         {/* The number is the grip. The cell around it already means "select",
             and ⇧ already means "extend", so the row itself can't be the handle
             without one gesture stealing from the other — where the number is
@@ -205,7 +206,7 @@ export const Row = memo(function Row({
             click from a role too. `stopPropagation` for the same reason the
             fire button has it — the cell's own click selects, and pressing the
             chip is not a selection. */}
-          <button
+          <ControlButton
             type="button"
             aria-haspopup="menu"
             className={
@@ -232,7 +233,7 @@ export const Row = memo(function Row({
             }}
           >
             {role === null ? 'no role' : role}
-          </button>
+          </ControlButton>
         {/* A fixed slot through the scene column's right edge. The pill itself
             hugs that edge, so COVER and ORIGINAL line up with each other and
             with the song header regardless of their different widths. */}
@@ -275,7 +276,7 @@ export const Row = memo(function Row({
                   empty group slot either. */}
               {slot.count > 0 && (
                 <>
-                  <button
+                  <ControlButton
                     type="button"
                     className="fire"
                     title={`Fire ${c.group.name} in scene ${scene.i + 1}`}
@@ -285,7 +286,7 @@ export const Row = memo(function Row({
                     }}
                   >
                     ▶
-                  </button>
+                  </ControlButton>
                   <span className="group-n">{slot.count}</span>
                 </>
               )}

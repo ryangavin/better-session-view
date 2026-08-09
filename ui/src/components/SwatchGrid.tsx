@@ -1,4 +1,5 @@
 import { hex } from '../../../core/src/color.js';
+import { ControlButton } from './Control.js';
 import './SwatchGrid.css';
 
 interface Props {
@@ -32,7 +33,7 @@ export function SwatchGrid({
   return (
     <div className="swatches">
       {palette.map((rgb, i) => (
-        <button
+        <ControlButton
           key={i}
           type="button"
           className={`sw${(chosen ? chosen.has(i) : current === i) ? ' on' : ''}${

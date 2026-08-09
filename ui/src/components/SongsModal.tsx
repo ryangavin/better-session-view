@@ -1,6 +1,7 @@
 import type { Derivation, DerivedSong } from '../../../core/src/derive.js';
 import './SongsModal.css';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
+import { ControlButton } from './Control.js';
 
 interface Props {
   derivation: Derivation;
@@ -116,24 +117,24 @@ export function SongsModal({
         <div className="modal-actions">
           {/* Folding everything is how a 100-song set becomes navigable, so it
               belongs next to the list rather than buried in the grid. */}
-          <button
+          <ControlButton
             type="button"
             disabled={songs.length === 0}
             onClick={() => onCollapseAll(collapsedCount < songs.length)}
           >
             {collapsedCount < songs.length ? 'Collapse all' : 'Expand all'}
-          </button>
+          </ControlButton>
           {unmapped.length > 0 ? (
-            <button type="button" onClick={onPickUnmapped}>
+            <ControlButton onClick={onPickUnmapped}>
               Select {unmapped.length} unmapped scene{unmapped.length === 1 ? '' : 's'}
-            </button>
+            </ControlButton>
           ) : (
             <div className="hint">Every scene matched.</div>
           )}
           <div className="spacer" />
-          <button type="button" className="primary" onClick={onClose}>
+          <ControlButton intent="primary" onClick={onClose}>
             Close
-          </button>
+          </ControlButton>
         </div>
       </div>
     </div>

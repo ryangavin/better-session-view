@@ -89,6 +89,13 @@ export const IconMetronome = () => (
   </svg>
 );
 
+/** Tempo unit — a compact musical note in place of the wider “BPM” text. */
+export const IconNote = () => (
+  <svg {...BASE} fill="currentColor" stroke="none">
+    <path d="M10 5.4v10.8a3.8 3.8 0 1 0 1.8 3.2V9l7-1.6V4Z" />
+  </svg>
+);
+
 /** Scale awareness — the current root and scale in Live's control bar. */
 export const IconScale = () => (
   <svg {...BASE}>

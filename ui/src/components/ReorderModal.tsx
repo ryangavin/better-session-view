@@ -1,4 +1,5 @@
 import { useMemo, useState, type DragEvent } from 'react';
+import { ControlButton, ControlSelect } from './Control.js';
 import './BulkWorkflow.css';
 import './ReorderModal.css';
 import { hex } from '../../../core/src/color.js';
@@ -213,14 +214,14 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                 : criteria.map(sortLabel).join(' → ')}
             </span>
             <div className="spacer" />
-            <button
+            <ControlButton
               type="button"
               className="add-sort"
               disabled={criteria.length === SORT_FIELDS.length}
               onClick={addCriterion}
             >
               + level
-            </button>
+            </ControlButton>
           </div>
           {criteria.map((criterion, i) => {
             const usedElsewhere = new Set(
@@ -229,7 +230,8 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
             return (
               <div className="sort-level" key={`${criterion.field}-${i}`}>
                 <span className="sort-depth">{i === 0 ? 'sort by' : 'then by'}</span>
-                <select
+                <ControlSelect
+                  appearance="native"
                   aria-label={`Sort level ${i + 1} field`}
                   value={criterion.field}
                   onChange={(e) =>
@@ -243,8 +245,9 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                       </option>
                     ),
                   )}
-                </select>
-                <select
+                </ControlSelect>
+                <ControlSelect
+                  appearance="native"
                   aria-label={`Sort level ${i + 1} direction`}
                   value={criterion.direction}
                   onChange={(e) =>
@@ -255,8 +258,8 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                 >
                   <option value="asc">Ascending ↑</option>
                   <option value="desc">Descending ↓</option>
-                </select>
-                <button
+                </ControlSelect>
+                <ControlButton
                   type="button"
                   className="sort-icon"
                   title="Move this criterion up"
@@ -264,8 +267,8 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                   onClick={() => setCriteria(nudge(criteria, i, -1))}
                 >
                   ↑
-                </button>
-                <button
+                </ControlButton>
+                <ControlButton
                   type="button"
                   className="sort-icon"
                   title="Move this criterion down"
@@ -273,15 +276,15 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                   onClick={() => setCriteria(nudge(criteria, i, 1))}
                 >
                   ↓
-                </button>
-                <button
+                </ControlButton>
+                <ControlButton
                   type="button"
                   className="sort-icon remove"
                   title="Remove this criterion"
                   onClick={() => removeCriterion(i)}
                 >
                   ×
-                </button>
+                </ControlButton>
               </div>
             );
           })}
@@ -375,7 +378,7 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                       +{p.trailing.length} unmapped
                     </span>
                   )}
-                  <button
+                  <ControlButton
                     type="button"
                     className="x"
                     title="Move up"
@@ -383,8 +386,8 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                     onClick={() => nudgeSong(i, -1)}
                   >
                     ↑
-                  </button>
-                  <button
+                  </ControlButton>
+                  <ControlButton
                     type="button"
                     className="x"
                     title="Move down"
@@ -392,7 +395,7 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                     onClick={() => nudgeSong(i, 1)}
                   >
                     ↓
-                  </button>
+                  </ControlButton>
                 </div>
               );
             })}
@@ -435,7 +438,7 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
         </div>
 
         <div className="modal-actions">
-          <button
+          <ControlButton
             type="button"
             disabled={!dirty}
             title="Put the list back the way the set has it"
@@ -445,15 +448,14 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
             }}
           >
             Reset
-          </button>
+          </ControlButton>
           <div className="hint">{plan ? describeMove(plan) : 'nothing to move'}</div>
           <div className="spacer" />
-          <button type="button" onClick={onClose}>
+          <ControlButton onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="primary"
+          </ControlButton>
+          <ControlButton
+            intent="primary"
             disabled={busy || plan === null}
             title={
               plan === null
@@ -463,7 +465,7 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
             onClick={() => plan && onApply(plan)}
           >
             Apply
-          </button>
+          </ControlButton>
         </div>
       </div>
     </div>

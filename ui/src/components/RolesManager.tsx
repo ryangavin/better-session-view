@@ -4,6 +4,7 @@ import { hex } from '../../../core/src/color.js';
 import { findRoleProblems, MAX_ROLE_LEN, roleKey, type Role } from '../../../core/src/roles.js';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
 import { SwatchGrid } from './SwatchGrid.js';
+import { ControlButton } from './Control.js';
 
 interface Props {
   vocabulary: Role[];
@@ -53,7 +54,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
             const used = inUse.has(roleKey(r.name));
             return (
               <div key={i} className={`role-row${problems.has(i) ? ' bad' : ''}`}>
-                <button
+                <ControlButton
                   type="button"
                   className={`sw role-sw${r.colorIndex < 0 ? ' empty' : ''}`}
                   style={
@@ -75,7 +76,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
                 <span className={`used${used ? '' : ' off'}`} title="Tagged on a scene in this set">
                   {used ? 'in set' : ''}
                 </span>
-                <button
+                <ControlButton
                   type="button"
                   className="x"
                   title={
@@ -90,7 +91,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
                   }}
                 >
                   ×
-                </button>
+                </ControlButton>
               </div>
             );
           })}
@@ -115,7 +116,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
         )}
 
         <div className="modal-actions">
-          <button
+          <ControlButton
             type="button"
             onClick={() => {
               setDraft((prev) => [...prev, { name: '', colorIndex: -1 }]);
@@ -123,14 +124,13 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
             }}
           >
             Add role
-          </button>
+          </ControlButton>
           <div className="spacer" />
-          <button type="button" onClick={onClose}>
+          <ControlButton onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="primary"
+          </ControlButton>
+          <ControlButton
+            intent="primary"
             disabled={busy || problems.size > 0}
             title={
               problems.size > 0
@@ -140,7 +140,7 @@ export function RolesManager({ vocabulary, palette, inUse, busy, onSave, onClose
             onClick={() => onSave(draft.map((r) => ({ ...r, name: r.name.trim() })))}
           >
             Save
-          </button>
+          </ControlButton>
         </div>
         <div className="hint">
           Deleting a role only forgets its color. Scenes keep their tag, so a role

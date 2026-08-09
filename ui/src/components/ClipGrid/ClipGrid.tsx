@@ -26,6 +26,7 @@ import {
   IconGroupFold,
   IconOrderSongs,
 } from '../Icon.js';
+import { ControlButton, ControlGroup } from '../Control.js';
 import { Row, sceneDropEdge } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
 import { MeterResizeHandle } from './MeterResizeHandle.js';
@@ -230,41 +231,41 @@ export function ClipGrid({
               <span className="scene-h-title">Songs</span>
               <div className="spacer" />
               <div className="scene-action-groups">
-                <div
+                <ControlGroup
                   className="scene-action-group"
-                  role="group"
-                  aria-label="Live Set actions"
+                  label="Live Set actions"
+                  appearance="bare"
                 >
-                  <button
-                    type="button"
-                    className="icon-btn scene-action"
+                  <ControlButton
+                    icon
+                    className="scene-action"
                     aria-label="Reorder songs"
                     disabled={songCount === 0}
                     title="Reorder songs by name, tag, key, BPM, or drag"
                     onClick={onReorder}
                   >
                     <IconOrderSongs />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-btn scene-action"
+                  </ControlButton>
+                  <ControlButton
+                    icon
+                    className="scene-action"
                     aria-label="Color songs"
                     disabled={songCount === 0}
                     title="Color songs by key, BPM, rainbow, or random"
                     onClick={onRecolor}
                   >
                     <IconColorSongs />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-btn scene-action"
+                  </ControlButton>
+                  <ControlButton
+                    icon
+                    className="scene-action"
                     aria-label="Add a song"
                     title="Add a new song with eight scenes"
                     onClick={onAddSong}
                   >
                     <IconAddSong />
-                  </button>
-                </div>
+                  </ControlButton>
+                </ControlGroup>
               </div>
             </div>
           </th>

@@ -1,6 +1,7 @@
 import { LAUNCH_KEY } from '../lib/keys.js';
 import type { BridgeState } from '../hooks/useBridge.js';
 import { IconBug, IconGitHub } from './Icon.js';
+import { ControlButton } from './Control.js';
 import { Stat } from './Stat.js';
 import './StatsBar.css';
 
@@ -75,16 +76,16 @@ export function StatsBar({
       </div>
       {/* Diagnostics live with status rather than the performance controls in
           the header. The console itself renders immediately above this strip. */}
-      <button
-        type="button"
-        className={`icon-btn stats-log-toggle toggle${showLog ? ' on' : ''}`}
-        aria-pressed={showLog}
+      <ControlButton
+        icon
+        pressed={showLog}
+        className="stats-log-toggle"
         aria-label="Debug console"
         title={`${showLog ? 'Hide' : 'Show'} debug console`}
         onClick={onToggleLog}
       >
         <IconBug />
-      </button>
+      </ControlButton>
       <a
         className="repository-link"
         href={REPOSITORY_URL}

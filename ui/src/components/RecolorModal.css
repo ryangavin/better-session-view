@@ -41,7 +41,7 @@
 /* One row of choices where only one can be on — the coloring rule. Same
    lit-when-on treatment as the width presets, unsegmented because `roll again`
    sits beside them and isn't one of the choices. */
-.choices {
+.control-group.choices {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;

@@ -4,6 +4,7 @@ import { roleKey, type Role } from '../../../core/src/roles.js';
 import { isBpm, isKey, isTag, type TitlePatch } from '../../../core/src/sceneTitle.js';
 import { SUGGESTED_SONG_TAGS } from '../../../core/src/songTags.js';
 import { ColorSelect } from './ColorSelect.js';
+import { ControlButton, ControlSelect } from './Control.js';
 
 interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */
@@ -190,19 +191,19 @@ export function ScenePanel({
       {/* Not `primary`, unlike the role color below it: this one overwrites
           names, and the loud button in the rail should be the reversible,
           instantly-legible action rather than the destructive one. */}
-      <button
+      <ControlButton
         type="button"
         disabled={titleCount === 0 || busy || badTag || badKey}
         onClick={onRenameScenes}
       >
         Rename {titleCount} scene{titleCount === 1 ? '' : 's'}
-      </button>
+      </ControlButton>
 
       {/* Separate from the rename on purpose. Everything else in this panel
           changes what a scene is *called*; this changes what the set *does* —
           Live uses a scene's own tempo the moment that scene fires. Folding it
           into Rename would make a naming pass quietly alter playback. */}
-      <button
+      <ControlButton
         type="button"
         disabled={tempoCount === 0 || busy || badBpm}
         title={
@@ -214,15 +215,15 @@ export function ScenePanel({
       >
         {shown('bpm').trim() === '' ? 'Clear tempo on' : 'Set tempo on'} {tempoCount}{' '}
         scene{tempoCount === 1 ? '' : 's'}
-      </button>
+      </ControlButton>
 
       <div className="lbl">Role</div>
 
       <div className="role-select-row">
         {vocabulary.length === 0 ? (
-          <select disabled aria-label="Role">
+          <ControlSelect appearance="native" disabled aria-label="Role">
             <option>No roles yet</option>
-          </select>
+          </ControlSelect>
         ) : (
           <div className="role-select-control">
             <span
@@ -233,7 +234,8 @@ export function ScenePanel({
                   : { background: hex(selectedRoleSwatch) }
               }
             />
-            <select
+            <ControlSelect
+              appearance="native"
               aria-label="Role"
               value={
                 mixed
@@ -262,12 +264,12 @@ export function ScenePanel({
                   {r.name}
                 </option>
               ))}
-            </select>
+            </ControlSelect>
           </div>
         )}
-        <button type="button" className="manage-roles" disabled={busy} onClick={onManageRoles}>
+        <ControlButton className="manage-roles" disabled={busy} onClick={onManageRoles}>
           Manage…
-        </button>
+        </ControlButton>
       </div>
 
       <div className="hint">

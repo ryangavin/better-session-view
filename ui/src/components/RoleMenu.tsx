@@ -5,6 +5,7 @@ import { roleKey, type Role } from '../../../core/src/roles.js';
 import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.js';
 import { useDismissOnScroll } from '../hooks/useDismissOnScroll.js';
 import { useMenuKeyboard } from '../hooks/useMenuKeyboard.js';
+import { ControlButton } from './Control.js';
 
 interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */
@@ -96,7 +97,7 @@ export function RoleMenu({
               const on = !mixed && currentKey === roleKey(r.name);
               const swatch = r.colorIndex >= 0 ? palette[r.colorIndex] : undefined;
               return (
-                <button
+                <ControlButton
                   key={roleKey(r.name)}
                   type="button"
                   className={`menu-item${on ? ' on' : ''}${cursor === i ? ' cursor' : ''}`}
@@ -115,10 +116,10 @@ export function RoleMenu({
                   />
                   <span className="menu-label">{r.name}</span>
                   {on && <span className="menu-tick">✓</span>}
-                </button>
+                </ControlButton>
               );
             })}
-            <button
+            <ControlButton
               type="button"
               className={
                 `menu-item clear${!mixed && current === null ? ' on' : ''}` +
@@ -131,16 +132,16 @@ export function RoleMenu({
             >
               <span className="color-dot empty" />
               <span className="menu-label">no role</span>
-            </button>
+            </ControlButton>
           </div>
         )}
 
         {mixed && <div className="hint">These scenes have different roles.</div>}
 
         <div className="menu-rule" />
-        <button type="button" className="menu-manage" onClick={onManage}>
+        <ControlButton className="menu-manage" onClick={onManage}>
           Manage roles…
-        </button>
+        </ControlButton>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import {
 } from '../../../core/src/colorRules.js';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
 import { SwatchGrid } from './SwatchGrid.js';
+import { ControlButton, ControlGroup } from './Control.js';
 
 interface Props {
   derivation: Derivation;
@@ -151,25 +152,23 @@ export function RecolorModal({
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-h">Recolor songs — {derivation.songs.length}</div>
 
-        <div className="choices" role="group" aria-label="Coloring rule">
+        <ControlGroup className="choices" label="Coloring rule" appearance="bare">
           {RULES.map((r) => (
-            <button
+            <ControlButton
               key={r.rule}
-              type="button"
-              className={`toggle${r.rule === rule ? ' on' : ''}`}
-              aria-pressed={r.rule === rule}
+              pressed={r.rule === rule}
               title={r.says}
               onClick={() => setRule(r.rule)}
             >
               {r.label}
-            </button>
+            </ControlButton>
           ))}
           {rule === 'random' && (
-            <button type="button" title="Deal again" onClick={() => setSeed((s) => s + 1)}>
+            <ControlButton title="Deal again" onClick={() => setSeed((s) => s + 1)}>
               roll again
-            </button>
+            </ControlButton>
           )}
-        </div>
+        </ControlGroup>
         <div className="hint">{said}</div>
 
         {/* Which of Live's 70 this set's rules may hand out. Eight chosen colors read
@@ -178,22 +177,22 @@ export function RecolorModal({
             tell apart aren't doing the job the color is there for. */}
         <div className="lbl">
           Allowed colors — {allowed.length} of {palette.length}
-          <button
+          <ControlButton
             type="button"
             className="link"
             title="Let a rule use the whole palette"
             onClick={() => onAllowed(null)}
           >
             all
-          </button>
-          <button
+          </ControlButton>
+          <ControlButton
             type="button"
             className="link"
             title="Start from nothing and pick the few you want"
             onClick={() => onAllowed([])}
           >
             none
-          </button>
+          </ControlButton>
         </div>
         {palette.length === 0 ? (
           <div className="hint">Built-in palette unavailable — rebuild the app.</div>
@@ -275,17 +274,16 @@ export function RecolorModal({
                 `${counts.songsChanged} song${counts.songsChanged === 1 ? '' : 's'}`}
           </div>
           <div className="spacer" />
-          <button type="button" onClick={onClose}>
+          <ControlButton onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="primary"
+          </ControlButton>
+          <ControlButton
+            intent="primary"
             disabled={busy || counts.scenes === 0}
             onClick={() => onApply(plan.colors)}
           >
             Recolor
-          </button>
+          </ControlButton>
         </div>
       </div>
     </div>

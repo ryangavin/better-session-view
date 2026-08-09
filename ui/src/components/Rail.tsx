@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ControlButton } from './Control.js';
 import './Rail.css';
 
 interface Props {
@@ -18,14 +19,14 @@ export function Rail({ onClose, children }: Props) {
     <aside>
       <div className="rail-head">
         <span className="lbl">Edit</span>
-        <button
+        <ControlButton
           type="button"
           className="icon"
           title="Close and deselect — clicking a clip, a scene or a song reopens it"
           onClick={onClose}
         >
           ×
-        </button>
+        </ControlButton>
       </div>
       {children}
     </aside>

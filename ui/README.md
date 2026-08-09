@@ -7,11 +7,12 @@ index.html            vite entry
 vite.config.ts        build target + dev proxy
 src/main.tsx          root — wraps App in the bridge provider
 src/App.tsx           the composition root — hooks in dependency order, wiring
-src/shared.css        design tokens, global reset, shared controls and primitives
+src/shared.css        design tokens, global reset, shared fields and primitives
 src/App.css           app shell, empty state and log
 src/components/       one component per file
   *.css               component styles, imported by the component that owns them
   BridgeProvider.tsx  owns the connection, above App — see Dev below
+  Control.tsx         shared button, group, select and grouped-field primitives
   ClipGrid/
     ClipGrid.tsx      scenes × tracks — colgroup, sticky header, group bands, the tbody
     Row.tsx           one scene's row, memoized
@@ -69,8 +70,11 @@ src/lib/
 
 `shared.css` is the single source of truth for color, typography, control-height and
 radius tokens, plus the small set of primitives genuinely shared across components:
-buttons, text fields, labels, modal shells and scrollbars. Component-specific rules live
-beside their `.tsx` owner and are imported from there. The two bulk workflows share
+text fields, labels, modal shells and scrollbars. `Control.tsx` and `Control.css` own every
+button and select, segmented-group chrome, pressed and primary states, and the compact
+select caret; a bare group or native select keeps component-specific layout and field
+styling while retaining the same rendering API. Component-specific rules live beside
+their `.tsx` owner and are imported from there. The two bulk workflows share
 `BulkWorkflow.css`; the grid's table, scene rows and song rows each own separate files.
 
 Keep a value in a component file when it describes that component's layout. Promote it to
@@ -251,11 +255,10 @@ observers push it as a unit, and the UI sends one partial `TransportPatch` for a
 The next observed readback is the acknowledgement, so a Live write that silently fails
 cannot leave the header claiming the attempted value.
 
-Tempo and metronome share one segmented control because they are the two pulse controls.
-Scale Mode, root note and scale name form a second three-segment control. Global
-clip-trigger quantization stays adjacent but separate because it changes when clips take
-the pulse rather than the pulse or its musical key. Button groups provide the logical
-separation; the header uses no standalone divider between them.
+Tempo, metronome and global clip-trigger quantization share one segmented pulse control;
+the quantization segment changes when clips take that pulse. Scale Mode, root note and
+scale name form a second three-segment control for its musical key. Button groups provide
+the logical separation; the header uses no standalone divider between them.
 
 Live's Current Scale controls are not a bulk edit of every clip. They reflect the current
 or selected clips and apply to that selection, which is why the controls and tooltips say

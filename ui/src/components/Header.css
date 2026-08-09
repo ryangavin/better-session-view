@@ -48,29 +48,11 @@ header {
   flex: none;
 }
 
-/* App-only song display controls are the first segmented group after the logo.
-   Same dimensions and border language as the other main-header groups. */
-.view-controls {
-  height: var(--ctl-h);
-  flex: none;
-  display: flex;
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-.view-controls button {
-  width: 26px;
-  height: calc(var(--ctl-h) - 2px);
-  padding: 0;
-  border: none;
-  border-radius: 0;
+/* App-only song display controls are the first shared group after the logo. */
+.view-controls .control-button {
   color: var(--dim);
 }
-.view-controls button + button {
-  border-left: 1px solid var(--bd3);
-}
-.view-controls button:hover:not(:disabled) {
-  border-color: var(--bd3);
+.view-controls .control-button:hover:not(:disabled) {
   color: var(--fg);
 }
 
@@ -84,13 +66,7 @@ header {
   overflow: hidden;
 }
 .tempo-group {
-  height: var(--ctl-h);
   flex: none;
-  display: flex;
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-md);
-  background: var(--sel);
-  overflow: hidden;
 }
 .tempo-control {
   position: relative;
@@ -101,9 +77,13 @@ header {
   flex: none;
 }
 .tempo-control input {
-  width: 100%;
+  min-width: 0;
+  /* Six monospace characters hold the full `999.00` shape. Shorter values
+     stay right-aligned, so every decimal point lands in the same column. */
+  width: calc(6ch + 9px);
   height: 100%;
-  padding: 0 25px 0 6px;
+  flex: none;
+  padding: 0 3px 0 6px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -111,6 +91,7 @@ header {
   font-family: var(--mono);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
+  text-align: right;
   outline: none;
 }
 /* Browser steppers cost most of this compact field and Live's own control is
@@ -123,43 +104,35 @@ header {
 .tempo-control input:focus-visible {
   box-shadow: inset 0 0 0 1px var(--amber-muted);
 }
-.tempo-control > span {
-  position: absolute;
-  right: 6px;
+.tempo-control > .tempo-unit {
+  width: 13px;
+  margin-right: 4px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--dim2);
-  font-family: var(--mono);
-  font-size: 7px;
-  letter-spacing: 0.05em;
   pointer-events: none;
 }
-.tempo-control input:disabled,
-.header-select select:disabled {
+.tempo-unit svg {
+  width: 10px;
+  height: 10px;
+}
+.tempo-control input:disabled {
   opacity: 0.4;
   cursor: default;
 }
-.tempo-group button {
+.tempo-group .control-button {
   width: 28px;
-  height: calc(var(--ctl-h) - 2px);
-  padding: 0;
-  border: none;
-  border-left: 1px solid var(--bd3);
-  border-radius: 0;
   color: var(--dim);
-}
-.tempo-group button:hover:not(:disabled) {
-  border-color: var(--bd3);
 }
 
 /* --- icon buttons ------------------------------------------------- */
 
-/* The shared `.icon-btn` primitive supplies the square, centered glyph box.
-   The toolbar owns only its control height. */
-header button {
+/* Standalone controls in the right section use the same toolbar height as the
+   grouped controls. Group children already fill their group's inner height. */
+.header-right > .control-button {
   height: var(--ctl-h);
-}
-/* The playback group draws the border once around all three buttons. */
-.playback button {
-  height: calc(var(--ctl-h) - 2px);
 }
 
 /* --- playback ----------------------------------------------------- */
@@ -190,70 +163,15 @@ header button {
   color: var(--dim2);
 }
 
-.playback {
-  display: flex;
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-.playback button {
+.playback .control-button {
   width: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 0;
   color: var(--dim);
 }
-.playback button + button {
-  border-left: 1px solid var(--bd3);
-}
-.playback button:hover:not(:disabled) {
+.playback .control-button:hover:not(:disabled) {
   color: var(--fg);
-  border-color: var(--bd3);
 }
-.playback button.rolling {
+.playback .control-button.rolling {
   color: var(--green);
-}
-
-/* --- compact selects ---------------------------------------------- */
-.header-select {
-  position: relative;
-  height: var(--ctl-h);
-  flex: none;
-}
-.header-select select {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 100%;
-  padding: 0 20px 0 8px;
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-md);
-  background: var(--sel);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--fg2);
-  cursor: pointer;
-  outline: none;
-}
-.header-select select:hover:not(:disabled) {
-  color: var(--fg2);
-  border-color: var(--focus);
-}
-.header-select select:focus-visible {
-  border-color: var(--amber-muted);
-  box-shadow: 0 0 0 1px var(--amber-muted);
-}
-.select-caret {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  width: 6px;
-  height: 6px;
-  border-right: 1px solid var(--dim);
-  border-bottom: 1px solid var(--dim);
-  transform: translateY(-70%) rotate(45deg);
-  pointer-events: none;
 }
 
 .quantization-picker {
@@ -266,33 +184,10 @@ header button {
   width: 110px;
 }
 .scale-group {
-  height: var(--ctl-h);
   flex: none;
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-md);
-  background: var(--sel);
-  overflow: hidden;
 }
-.scale-group > * {
-  height: calc(var(--ctl-h) - 2px);
-}
-.scale-group > * + * {
-  border-left: 1px solid var(--bd3);
-}
-.scale-group > button,
-.scale-group .header-select select {
-  border: none;
-  border-radius: 0;
-  background: transparent;
-}
-.scale-group > button {
-  padding: 0;
+.scale-group > .control-button {
   color: var(--dim);
-}
-.scale-group .header-select select:focus-visible {
-  box-shadow: inset 0 0 0 1px var(--amber-muted);
 }
 
 /* --- column width ------------------------------------------------- */
