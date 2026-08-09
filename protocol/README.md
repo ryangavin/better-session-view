@@ -57,8 +57,9 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `launch` `{ target }` | fire a clip, a scene, or the song |
 | `stop` `{ target }` | stop a track, every clip, or the song |
 | `setTransport` `{ patch }` | update any related subset of Live's control-bar settings |
+| `setMixer` `{ target, patch }` | update one track or Master mixer strip |
 | `watchPlay` `{ on }` | install the per-track play-state observers |
-| `watchMeters` `{ on }` | install the track and master output-meter observers |
+| `watchMeters` `{ on }` | install the track/Master level and mixer-control observers |
 | `watchTransport` `{ on }` | observe tempo, metronome, launch quantization and current scale |
 | `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
 | `selectScene` `{ s }` | select and reveal one exact scene in Live's Session View |
@@ -80,6 +81,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `delta` | — a partial re-read after a change made in Live |
 | `playState` | — a play-state observer fired |
 | `meterLevels` | — complete current track and master output-level frame |
+| `mixerState` | — complete current activator, Solo, Arm and volume state |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
 | `transportState` | — Live's complete observed control-bar state changed |
 | `deviceState` | — restored or changed set-owned configuration |
@@ -160,16 +162,23 @@ an object id; the bridge resolves it against the track list so the wire stays in
 same `i`-indexed space as everything else. It's the *immediate* parent — groups nest.
 
 **Some requests have no reply, deliberately.** `launch`, `stop`, `selectScene`,
-`setTransport` and the watch requests are not in `TERMINAL`. What you want back from
+`setTransport`, `setMixer` and the watch requests are not in `TERMINAL`. What you want back from
 firing a clip isn't an acknowledgement, it's the play state changing, and that arrives
 on its own as `playState`. Selecting a scene likewise reports through the existing
 Session-cursor observers; the client has already navigated its own grid. Meter watching
 answers with the first `meterLevels` push. Awaiting an ack would only add a round trip to
-streams that report their own readiness. A transport write is acknowledged by the next
-`transportState` readback for the same reason: the value Live accepted matters more than
-the fact that `set` returned. The cost of that choice is that a failure has no request to
+streams that report their own readiness. Transport and mixer writes are acknowledged by
+their next observed state readback for the same reason: the value Live accepted matters
+more than the fact that `set` returned. The cost of that choice is that a failure has no request to
 attach to, so `bridge.ts` **broadcasts** an `error` with no `id` when nothing is pending —
 dropping it is how a silent bug hides.
+
+**Mixer controls are coarse-grained separately from level frames.** `MixerState` carries
+every track's activator, Solo, Arm capability/state and volume parameter, plus Master
+volume. One property callback produces one coherent cached state; it does not re-read
+every strip. `MeterFrame` remains numbers-only at 30 Hz, so moving a fader or running
+volume automation never puts the entire grid through React state. `setMixer` is one patch
+for one strip, even when a future gesture changes several related fields together.
 
 **Play state is per track, never per clip.** `TrackPlayState` carries
 `playing_slot_index` and `fired_slot_index`, which between them describe the whole grid

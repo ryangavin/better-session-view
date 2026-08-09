@@ -209,13 +209,11 @@ set every pixel the side panes aren't using is a track column you can see.
   difference matters: an effect would also fire when a selection is *cleared*, so the
   click that empties the grid would reopen the rail you just closed.
 
-- **The log** is diagnostics, so its bug toggle lives in the bottom status strip. It
-  always starts closed, including when the bridge already has log history, and **opens
-  itself on a new error**. Every write in this app goes through `guard()` and lands in the
-  log rather than throwing, so a hidden log is the difference between a failed write and
-  a silent one. The effect watches for ids above the highest seen rather than looking at
-  `log[0]`, because `say` prepends and a burst can put an info line in front of the error
-  that arrived with it.
+- **The log** is diagnostics, so its bug toggle lives in the bottom status strip. It is
+  ephemeral UI state: every refresh closes it, nothing is persisted, and neither bridge
+  activity nor new errors can open it. The bug toggle is its only opener. Every write in
+  this app still goes through `guard()` and lands in the log rather than throwing; the
+  user chooses when to reveal that history.
 
 Readiness and counts don't open, so they pay for their pixels differently: `StatsBar` is a
 **status strip along the bottom edge**, one line high. Its single readiness pill names the
@@ -261,8 +259,8 @@ The center keeps Live's bars, beats and sixteenths immediately left of play / st
 struck-through-slot. The right side carries the compact width select, meters and Snapshot.
 Three equal flex regions keep that middle group at the header's true center,
 independent of how much chrome the left and right sides contain. The left region clips
-first on a narrow window. Every control shares `--ctl-h`; the bar is `--ctl-h + 12px`,
-with 6px of air above and below.
+first on a narrow window. Every control shares `--ctl-h`; the bar is `--ctl-h + 13px`,
+with 6px of air above and below plus its 1px bottom border.
 
 - **`Icon.tsx` is inline SVG**, not an icon font and not a Unicode character. A font is out
   because nothing loads from a CDN. A character is out because ▶, ⏹ and 🐛 render at
@@ -275,7 +273,9 @@ with 6px of air above and below.
   Snapshot re-walks the whole set — can still be said in words.
 - **The scene-column controls reuse the same primitive, size and glyph set as the main
   header**: 26×22px buttons with 14px icons. The grid header's calculated height grows
-  around them. The **Songs** heading is 16px while ordinary track headings remain 9px.
+  around them with equal space above and below, keeping the Songs controls and every
+  track heading on the same vertical center. The **Songs** heading is 16px while ordinary
+  track headings remain 9px.
   Order, color and Add share one right-aligned group in that order. Their titles say what
   each control does.
 - **Fold, metronome and Scale Mode keep one glyph and light instead of swapping.** Their
@@ -693,9 +693,11 @@ in the main header's first button group after the logo.
 That header cell uses **Live's Master track color**, because the scene/song overview is
 the grid's Master column (the meter beneath it is Master too). Master lives outside
 `Song.tracks`, so the snapshot carries its RGB separately and `inkOn()` chooses black or
-white text exactly as it does for ordinary track headers. If Master color cannot be read,
-the cell keeps the neutral app surface. A fixed Master color observer updates it after a
-recolor in Live without requiring a full snapshot.
+white text exactly as it does for ordinary track headers. The action group stays
+transparent and uses that same ink choice for its icons, outline and dividers, rather than
+placing another surface on the Master color. If Master color cannot be read, the cell keeps
+the neutral app surface. A fixed Master color observer updates it after a recolor in Live
+without requiring a full snapshot.
 
 The running-order and coloring workflows work the same way: a draft you can push around
 for free, a preview of exactly what will be written, and one button that writes it. That
@@ -1134,6 +1136,31 @@ including the `border-spacing` gaps (n + 1 columns means n + 2 gaps).
 custom properties the browser just recalculates layout and `Row` never re-renders. Don't
 "simplify" this by threading the width through as a prop. The viewport observer writes
 those same properties directly so a browser resize does not turn into 848 React renders.
+
+## Mixer panel
+
+The header's meter icon opens a column-aligned mixer below the grid. Every visible track
+gets its output meter, a vertical volume fader, Track Activator, Solo and Arm; Master gets
+its output meter and volume fader in the pinned Songs column. A group track is a real
+track, so it gets the same controls, with Arm disabled when Live reports
+`can_be_armed = 0`. The activator is the inverse of `Track.mute`, matching Live's enabled
+button rather than presenting a backwards Mute state.
+
+The panel is part of the grid table, so it inherits the exact column widths and horizontal
+scroll position. Its top handle changes the shared height from a 140px minimum; the 220px
+default leaves room for a useful fader and the three stacked controls even at Small's 40px
+column width.
+
+Mixer observation exists only while the panel is open. Output peaks remain in the 30 Hz
+`MeterStore`; control readback uses a separate `MixerStore`, and both are external stores
+so one changing strip does not render `App` or every scene. The LOM seeds a complete
+`MixerState`, then updates a cached strip from each property callback and coalesces pushes
+to one per display frame. It does not re-read every track under volume automation.
+
+Fader input is limited to one `setMixer` patch per animation frame and stays optimistic
+until Live's observed value catches up. `DeviceParameter.is_enabled = 0` disables the
+fader rather than pretending a mapped, automated or otherwise unavailable parameter can
+be written. Mixer writes do not participate in this app's clip/scene undo.
 
 ## Track groups
 

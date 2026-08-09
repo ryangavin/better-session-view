@@ -17,7 +17,7 @@ table.grid {
      stays true. `border-spacing` produces it between cells; the header's plug
      shadows paint into it; the band's gutter below draws it by hand. */
   --gutter: 2px;
-  --meter-panel-h: 112px;
+  --meter-panel-h: 220px;
   --meter-handle-h: 10px;
   /* Track names sit inside saturated header cells rather than in the gutter.
      Enough inset to clear the 3px play-state bar, without starving S columns. */
@@ -34,17 +34,14 @@ table.grid {
      than as one bar over all of them. Live puts it on top and only on top.
 
      The header grows around the main toolbar's control height so the song
-     actions remain legible. Stated as its parts so `--header-h` can't drift
-     from the padding that produces it — both are written from these. */
+     actions remain legible. Its vertical inset clears the band and gutter,
+     then repeats below the label so every heading is geometrically centered.
+     Stated as its parts so `--header-h` can't drift from the padding that
+     produces it — both are written from these. */
   --band-w: 5px;
-  /* Clearance between the label and whatever sits above it. */
-  --label-gap: 2px;
+  --header-pad-y: calc(var(--band-w) + var(--gutter));
   --label-h: var(--ctl-h);
-  --header-pad-b: 5px;
-  --header-h: calc(
-    var(--band-w) + var(--gutter) + var(--label-gap) + var(--label-h) +
-      var(--header-pad-b)
-  );
+  --header-h: calc(var(--header-pad-y) + var(--label-h) + var(--header-pad-y));
 }
 /* Widths live on the columns, not the header cells: the song header's notice
    cell uses colSpan, and a spanning cell would otherwise have to distribute its
@@ -83,8 +80,7 @@ table.grid th {
   text-transform: uppercase;
   font-weight: 400;
   text-align: center;
-  padding: calc(var(--band-w) + var(--gutter) + var(--label-gap)) var(--gutter)
-    var(--header-pad-b);
+  padding: var(--header-pad-y) var(--gutter);
   position: sticky;
   top: var(--gutter);
   background: var(--bg);
@@ -139,7 +135,10 @@ table.grid th.scene-h {
      stays above the pinned scene cells as they scroll vertically underneath. */
   z-index: 20;
   text-align: left;
-  padding-left: var(--gutter);
+  /* The grid gutter is only 2px: useful between cells, but too tight as the
+     inset around a large title and full-size controls. Override only the
+     horizontal axis so the established header height stays unchanged. */
+  padding-inline: 8px;
 }
 /* Set-wide Live Set actions sit at the head of the column their songs are read
    down; app-only navigation and folding live in the main header. Flex on a
@@ -165,9 +164,9 @@ table.grid th.scene-h .scene-action-groups {
 table.grid th.scene-h .scene-action-group {
   height: var(--ctl-h);
   display: flex;
-  border: 1px solid var(--focus);
+  border: 1px solid var(--scene-action-border, var(--focus));
   border-radius: var(--radius-md);
-  background: var(--surface-control);
+  background: transparent;
   overflow: hidden;
 }
 button.scene-action {
@@ -177,18 +176,19 @@ button.scene-action {
   border: none;
   border-radius: 0;
   background: transparent;
-  color: var(--dim);
+  color: var(--scene-action-ink, var(--dim));
 }
 button.scene-action + button.scene-action {
-  border-left: 1px solid var(--focus);
+  border-left: 1px solid var(--scene-action-border, var(--focus));
 }
 button.scene-action svg {
   width: 14px;
   height: 14px;
 }
 button.scene-action:hover:not(:disabled) {
-  background: var(--sel);
-  border-color: var(--focus);
+  background: transparent;
+  border-color: var(--scene-action-border, var(--focus));
+  color: inherit;
 }
 
 /* --- groups ---------------------------------------------------------- */
@@ -382,7 +382,7 @@ table.grid th.track-h.stopping {
   }
 }
 
-/* --- output meters -------------------------------------------------- */
+/* --- mixer --------------------------------------------------------- */
 
 /* The mixer section is part of the same table as the clips. Its cells inherit
    the exact colgroup widths and horizontal scroll position, while sticky keeps
@@ -450,18 +450,37 @@ table.grid tfoot td.meter-resize-cell {
   color: var(--fg2);
 }
 
+.mixer-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: calc(var(--meter-panel-h) - 16px);
+  min-height: 0;
+  gap: 5px;
+}
+
+.mixer-body {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  gap: 5px;
+}
+
 .vertical-meter {
   display: flex;
   justify-content: center;
-  height: calc(var(--meter-panel-h) - 18px);
-  gap: 3px;
+  height: 100%;
+  min-height: 0;
 }
 
 /* No signal is literally black. Tick rules are painted over the well rather
    than interrupting the green fill, so the bar stays one continuous reading. */
 .meter-well {
   position: relative;
-  width: 12px;
+  width: 10px;
   height: 100%;
   overflow: hidden;
   flex: none;
@@ -494,24 +513,112 @@ table.grid tfoot td.meter-resize-cell {
   transition: transform 24ms linear;
 }
 
-.meter-db-scale {
-  position: relative;
-  width: 15px;
+.volume-fader {
+  width: 14px;
   height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
   flex: none;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: ns-resize;
+}
+
+.volume-fader::-webkit-slider-runnable-track {
+  width: 4px;
+  height: 100%;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-xs);
+  background: #000;
+}
+
+.volume-fader::-webkit-slider-thumb {
+  width: 14px;
+  height: 7px;
+  margin-left: -6px;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid var(--fg2);
+  border-radius: var(--radius-xs);
+  background: var(--dim);
+  box-shadow: 0 0 0 1px #000;
+}
+
+.volume-fader:hover::-webkit-slider-thumb,
+.volume-fader:focus-visible::-webkit-slider-thumb {
+  border-color: var(--fg);
+  background: var(--fg2);
+}
+
+.volume-fader:focus-visible {
+  outline: none;
+}
+
+.volume-fader:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.mixer-controls {
+  display: grid;
+  width: 100%;
+  flex: none;
+  gap: 3px;
+}
+
+button.mixer-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 18px;
+  padding: 0;
+  border-color: var(--bd3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-control);
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+button.mixer-button:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--focus);
+}
+
+button.mixer-activator.on {
+  border-color: var(--amber);
+  background: var(--amber);
+  color: var(--bg);
+}
+
+button.mixer-arm span {
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+}
+
+button.mixer-arm.on {
+  border-color: rgba(212, 84, 79, 0.65);
+  background: var(--sel);
+  color: var(--red);
+}
+
+.mixer-master-label {
+  flex: none;
+  height: 18px;
   color: var(--dim2);
   font-family: var(--mono);
-  font-size: 7px;
-  line-height: 8px;
-  font-variant-numeric: tabular-nums;
-}
-
-.meter-db-tick {
-  position: absolute;
-  left: 0;
-  transform: translateY(50%);
-}
-
-.meter-db-tick.top {
-  transform: translateY(100%);
+  font-size: 9px;
+  line-height: 18px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }

@@ -15,6 +15,7 @@ import {
 } from '../../lib/columnWidth.js';
 import type { BridgeState, PlayState } from '../../hooks/useBridge.js';
 import { useMeters } from '../../hooks/useMeters.js';
+import { useMixer } from '../../hooks/useMixer.js';
 import { useViewportColumnWidth } from '../../hooks/useViewportColumnWidth.js';
 import { marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../../hooks/useAnchoredPosition.js';
@@ -39,6 +40,8 @@ export interface Props {
   play: PlayState;
   showMeters: boolean;
   subscribeMeters: BridgeState['subscribeMeters'];
+  subscribeMixer: BridgeState['subscribeMixer'];
+  setMixer: BridgeState['setMixer'];
   columnWidth: ColumnWidth;
   /** Live's palette, for resolving a song header's color index to an RGB. */
   palette: number[];
@@ -117,6 +120,8 @@ export function ClipGrid({
   play,
   showMeters,
   subscribeMeters,
+  subscribeMixer,
+  setMixer,
   columnWidth,
   palette,
   roleColors,
@@ -158,6 +163,7 @@ export function ClipGrid({
 }: Props) {
   const marks = useMemo(() => marksByScene(play), [play]);
   const meters = useMeters(subscribeMeters, showMeters);
+  const mixer = useMixer(subscribeMixer, showMeters);
   const tableRef = useRef<HTMLTableElement>(null);
   const viewportWidth = isViewportColumnWidth(columnWidth) ? columnWidth : null;
   useViewportColumnWidth(tableRef, viewportWidth, columns.length);
@@ -166,10 +172,17 @@ export function ClipGrid({
     // the documented Master Track.color atom. Undefined also tolerates a UI
     // briefly paired with an older bridge during development.
     if (snapshot.masterColor == null) return undefined;
+    const ink = inkOn(snapshot.masterColor);
     return {
       background: hex(snapshot.masterColor),
-      color: inkOn(snapshot.masterColor),
-    };
+      color: ink,
+      // The controls sit directly on the Master fill. Derive their edge and
+      // ink from the same black-or-white contrast choice as the title instead
+      // of putting a second surface on top of the header color. Eight-digit
+      // hex is already used throughout this grid.
+      '--scene-action-ink': `${ink}d9`,
+      '--scene-action-border': `${ink}52`,
+    } as CSSProperties;
   }, [snapshot.masterColor]);
 
   // Widths ride down as custom properties on the table rather than as props on
@@ -445,7 +458,13 @@ export function ClipGrid({
             {/* The scene overview is the grid's master column, so its meter is
                 structurally owned by this cell just as each track owns the
                 meter cell below its own column. */}
-            <TrackMeter meterKey="master" label="Master" meters={meters} />
+            <TrackMeter
+              meterKey="master"
+              label="Master"
+              meters={meters}
+              mixer={mixer}
+              setMixer={setMixer}
+            />
             {columns.map((column) => {
               const track = column.kind === 'track' ? column.track : column.group;
               return (
@@ -454,6 +473,8 @@ export function ClipGrid({
                   meterKey={track.i}
                   label={track.name}
                   meters={meters}
+                  mixer={mixer}
+                  setMixer={setMixer}
                 />
               );
             })}

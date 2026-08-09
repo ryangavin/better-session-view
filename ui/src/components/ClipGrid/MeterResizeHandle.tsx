@@ -7,8 +7,8 @@ import {
   type PointerEvent,
 } from 'react';
 
-const DEFAULT_HEIGHT = 112;
-const MIN_HEIGHT = 72;
+const DEFAULT_HEIGHT = 220;
+const MIN_HEIGHT = 140;
 const GRID_RESERVE = 64;
 const KEY_STEP = 8;
 
@@ -119,14 +119,14 @@ export function MeterResizeHandle() {
       ref={handleRef}
       className={`meter-resize-handle${dragging ? ' dragging' : ''}`}
       role="separator"
-      aria-label="Resize output meters"
+      aria-label="Resize mixer"
       aria-orientation="horizontal"
       aria-valuemin={MIN_HEIGHT}
       aria-valuemax={Math.round(maxHeight)}
       aria-valuenow={height}
       aria-valuetext={`${height} pixels high`}
       tabIndex={0}
-      title="Drag to resize output meters"
+      title="Drag to resize mixer"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={finishDrag}

@@ -222,6 +222,44 @@ declare namespace BSV {
     tracks: TrackMeterLevel[];
   }
 
+  /** One writable Live mixer parameter, in its native DeviceParameter range. */
+  interface MixerVolumeState {
+    value: number;
+    min: number;
+    max: number;
+    /** False when automation, mapping, or Live itself prevents direct edits. */
+    enabled: boolean;
+  }
+
+  /** The controls beneath one ordinary track column in the mixer panel. */
+  interface MixerTrackState {
+    t: number;
+    /** Live's Track Activator, represented as the inverse of Track.mute. */
+    active: boolean;
+    solo: boolean;
+    armed: boolean;
+    canArm: boolean;
+    /** Null only when the documented MixerDevice volume path did not resolve. */
+    volume: MixerVolumeState | null;
+  }
+
+  /** One coherent mixer-control readback. Levels remain in MeterFrame. */
+  interface MixerState {
+    /** Master has volume but no activator, Solo, or Arm controls. */
+    masterVolume: MixerVolumeState | null;
+    tracks: MixerTrackState[];
+  }
+
+  type MixerTarget = { kind: 'track'; t: number } | { kind: 'master' };
+
+  /** Any related subset of one mixer strip, written as one operation. */
+  interface MixerPatch {
+    active?: boolean;
+    solo?: boolean;
+    armed?: boolean;
+    volume?: number;
+  }
+
   /** Live's set-wide control-bar state, observed and pushed as one unit. */
   interface TransportState {
     /** Song.tempo, 20–999 BPM. May move under Arrangement automation. */
@@ -435,7 +473,7 @@ declare namespace BSV {
 
   // --- client -> server ------------------------------------------------
 
-  // `launch`, `stop`, `selectScene`, `setFold`, `setTransport`, and the watches
+  // `launch`, `stop`, `selectScene`, `setFold`, `setTransport`, `setMixer`, and the watches
   // deliberately have no terminal reply. What you want back from firing a clip
   // is not an acknowledgement, it's the play state changing — which arrives as
   // an unsolicited `playState`. A failure still surfaces: the bridge broadcasts
@@ -511,6 +549,8 @@ declare namespace BSV {
     | { id?: number; type: 'stop'; target: StopTarget }
     /** Write any related subset of Live's control-bar settings in one operation. */
     | { id?: number; type: 'setTransport'; patch: TransportPatch }
+    /** Write one track or Master mixer strip; observed state is the acknowledgement. */
+    | { id?: number; type: 'setMixer'; target: MixerTarget; patch: MixerPatch }
     | { id?: number; type: 'watchPlay'; on: boolean }
     | { id?: number; type: 'watchMeters'; on: boolean }
     | { id?: number; type: 'watchTransport'; on: boolean }
@@ -601,6 +641,7 @@ declare namespace BSV {
         type: 'meterLevels';
         frame: MeterFrame;
       }
+    | { type: 'mixerState'; state: MixerState }
     | {
         type: 'songPosition';
         /** First three fields of Live's bars.beats.sixteenths.ticks value. */

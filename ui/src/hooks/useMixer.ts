@@ -1,0 +1,95 @@
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import type { BridgeState } from './useBridge.js';
+import type { MeterKey } from './useMeters.js';
+
+export type MixerStripState =
+  | ({ kind: 'track' } & BSV.MixerTrackState)
+  | { kind: 'master'; volume: BSV.MixerVolumeState | null };
+
+function sameVolume(
+  a: BSV.MixerVolumeState | null,
+  b: BSV.MixerVolumeState | null,
+): boolean {
+  return (
+    a === b ||
+    (!!a &&
+      !!b &&
+      a.value === b.value &&
+      a.min === b.min &&
+      a.max === b.max &&
+      a.enabled === b.enabled)
+  );
+}
+
+function sameStrip(a: MixerStripState | null, b: MixerStripState): boolean {
+  if (!a || a.kind !== b.kind || !sameVolume(a.volume, b.volume)) return false;
+  if (a.kind === 'master' || b.kind === 'master') return true;
+  return (
+    a.t === b.t &&
+    a.active === b.active &&
+    a.solo === b.solo &&
+    a.armed === b.armed &&
+    a.canArm === b.canArm
+  );
+}
+
+/** Per-strip external store: one automated fader never re-renders the grid. */
+export class MixerStore {
+  private readonly strips = new Map<MeterKey, MixerStripState>();
+  private readonly listeners = new Map<MeterKey, Set<() => void>>();
+
+  update = (state: BSV.MixerState | null): void => {
+    const incoming = new Map<MeterKey, MixerStripState>();
+    if (state) {
+      incoming.set('master', { kind: 'master', volume: state.masterVolume });
+      for (const track of state.tracks) {
+        incoming.set(track.t, { kind: 'track', ...track });
+      }
+    }
+    const keys = new Set<MeterKey>([...this.strips.keys(), ...incoming.keys()]);
+    for (const key of keys) {
+      const next = incoming.get(key) ?? null;
+      const current = this.strip(key);
+      if (next ? sameStrip(current, next) : current === null) continue;
+      if (next) this.strips.set(key, next);
+      else this.strips.delete(key);
+      for (const listener of this.listeners.get(key) ?? []) listener();
+    }
+  };
+
+  strip = (key: MeterKey): MixerStripState | null => this.strips.get(key) ?? null;
+
+  subscribe = (key: MeterKey, listener: () => void): (() => void) => {
+    const listeners = this.listeners.get(key) ?? new Set();
+    listeners.add(listener);
+    this.listeners.set(key, listeners);
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size > 0) return;
+      this.listeners.delete(key);
+    };
+  };
+}
+
+export function useMixer(
+  subscribeMixer: BridgeState['subscribeMixer'],
+  active: boolean,
+): MixerStore {
+  const store = useMemo(() => new MixerStore(), []);
+  useEffect(() => subscribeMixer(store.update), [store, subscribeMixer]);
+  useEffect(() => {
+    if (!active) store.update(null);
+  }, [active, store]);
+  return store;
+}
+
+const empty = () => null;
+
+export function useMixerStrip(store: MixerStore, key: MeterKey): MixerStripState | null {
+  const subscribe = useCallback(
+    (listener: () => void) => store.subscribe(key, listener),
+    [store, key],
+  );
+  const snapshot = useCallback(() => store.strip(key), [store, key]);
+  return useSyncExternalStore(subscribe, snapshot, empty);
+}

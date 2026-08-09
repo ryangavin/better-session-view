@@ -80,7 +80,7 @@ export function App() {
     unfoldSong,
   } = useSongLayout(snapshot);
 
-  const { showRail, openRail, hideRail, showLog, toggleLog } = useRailAndLog(bridge.log);
+  const { showRail, openRail, hideRail, showLog, toggleLog } = useRailAndLog();
 
   const {
     selected,
@@ -353,6 +353,8 @@ export function App() {
               play={play}
               showMeters={showMeters}
               subscribeMeters={bridge.subscribeMeters}
+              subscribeMixer={bridge.subscribeMixer}
+              setMixer={bridge.setMixer}
               columnWidth={columnWidth}
               palette={bridge.palette}
               roleColors={roleColors}

@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { LogLine } from './useLog.js';
+import { useCallback, useState } from 'react';
 
 /**
  * The rail, and the log, both start closed.
@@ -9,8 +8,10 @@ import type { LogLine } from './useLog.js';
  * moment you pick something to work on, which is the only time it has anything
  * to say — see `openRail`.
  */
-export function useRailAndLog(log: LogLine[]) {
+export function useRailAndLog() {
   const [showRail, setShowRail] = useState(false);
+  // Deliberately ephemeral: a refresh always closes diagnostics, and no bridge
+  // event or log line may open them. The footer toggle below is the only writer.
   const [showLog, setShowLog] = useState(false);
 
   /**
@@ -29,27 +30,6 @@ export function useRailAndLog(log: LogLine[]) {
    * into `closeRail`.
    */
   const hideRail = useCallback(() => setShowRail(false), []);
-
-  /**
-   * A new error opens the log, however it got closed.
-   *
-   * Hiding diagnostics is fine right up until something fails silently, and
-   * every write in this app goes through `guard()` and lands here rather than
-   * throwing. So the one kind of line that can't be missed shows itself.
-   *
-   * Tracks the highest id seen rather than looking at `log[0]`: `say` prepends,
-   * and a burst can put an info line in front of the error that arrived with it.
-   */
-  // Existing history must not defeat the closed initial state if this hook is
-  // mounted after the bridge has already logged something. Only an error that
-  // arrives after mount opens the console automatically.
-  const seenLogId = useRef(log.reduce((highest, line) => Math.max(highest, line.id), 0));
-  useEffect(() => {
-    const fresh = log.filter((l) => l.id > seenLogId.current);
-    if (fresh.length === 0) return;
-    seenLogId.current = fresh[0]!.id;
-    if (fresh.some((l) => l.kind === 'error')) setShowLog(true);
-  }, [log]);
 
   const toggleLog = useCallback(() => setShowLog((v) => !v), []);
 

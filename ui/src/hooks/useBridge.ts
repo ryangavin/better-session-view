@@ -51,6 +51,7 @@ export interface SongPosition {
 }
 
 export type MeterListener = (frame: BSV.MeterFrame) => void;
+export type MixerListener = (state: BSV.MixerState | null) => void;
 
 /** One write, of either kind or both. Empty arrays rather than optionals so
  *  every count in here is `ops.length + sceneOps.length` with no branching. */
@@ -105,6 +106,8 @@ export interface BridgeState {
   stop: (target: BSV.StopTarget) => void;
   /** Write a related subset of Live's control-bar state in one operation. */
   setTransport: (patch: BSV.TransportPatch) => void;
+  /** Write one mixer strip. Its observed readback updates the panel. */
+  setMixer: (target: BSV.MixerTarget, patch: BSV.MixerPatch) => void;
   /**
    * Fold or unfold a group track in Live. No await, and no reply — the grid
    * has already moved its own columns. See `setFold` in the protocol.
@@ -117,6 +120,8 @@ export interface BridgeState {
    * composition root's state and re-rendering the entire grid every frame.
    */
   subscribeMeters: (listener: MeterListener) => () => void;
+  /** Mixer state bypasses App state so automated faders redraw one strip. */
+  subscribeMixer: (listener: MixerListener) => () => void;
 }
 
 /**
@@ -233,6 +238,7 @@ export function useBridge(watchMeters = false): BridgeState {
         // The output meters subscribe to this stream directly. Putting 30 Hz
         // frames in this hook's state would re-render App and the whole grid.
         case 'meterLevels':
+        case 'mixerState':
           break;
         case 'songPosition':
           setSongPosition({
@@ -317,9 +323,10 @@ export function useBridge(watchMeters = false): BridgeState {
     return () => client.send({ type: 'watchPlay', on: false });
   }, [client, lomReady, trackCount]);
 
-  // Meters are more expensive and only useful while their footer is visible.
-  // Like play state, their observer list is track-addressed and must be rebuilt
-  // when a snapshot discovers a different track count.
+  // Meter levels and mixer controls are more expensive and only useful while
+  // their footer is visible. Like play state, their observer lists are
+  // track-addressed and must be rebuilt when a snapshot discovers a different
+  // track count.
   useEffect(() => {
     if (!lomReady || trackCount === undefined || !watchMeters) return;
     client.send({ type: 'watchMeters', on: true });
@@ -398,6 +405,15 @@ export function useBridge(watchMeters = false): BridgeState {
     [client],
   );
 
+  const subscribeMixer = useCallback(
+    (listener: MixerListener) =>
+      client.subscribe((event) => {
+        if (event.type === 'mixerState') listener(event.state);
+        if (event.type === 'status' && !event.lomReady) listener(null);
+      }),
+    [client],
+  );
+
   const launch = useCallback(
     (target: BSV.LaunchTarget) => client.send({ type: 'launch', target }),
     [client],
@@ -410,6 +426,12 @@ export function useBridge(watchMeters = false): BridgeState {
 
   const setTransport = useCallback(
     (patch: BSV.TransportPatch) => client.send({ type: 'setTransport', patch }),
+    [client],
+  );
+
+  const setMixer = useCallback(
+    (target: BSV.MixerTarget, patch: BSV.MixerPatch) =>
+      client.send({ type: 'setMixer', target, patch }),
     [client],
   );
 
@@ -833,8 +855,10 @@ export function useBridge(watchMeters = false): BridgeState {
     launch,
     stop,
     setTransport,
+    setMixer,
     setFold,
     selectScene,
     subscribeMeters,
+    subscribeMixer,
   };
 }

@@ -1,13 +1,13 @@
 /* --- header ------------------------------------------------------- */
 
-/* Sized to its controls and nothing else: --ctl-h plus 6px of air either side.
-   Every control fits that shared height, so the row is as short as its tallest
-   thing and the pixels go to the grid. */
+/* Sized to its controls and nothing else: --ctl-h plus 6px of air either side,
+   then the 1px bottom border. Keeping the border outside that content height
+   gives flex centering an even 12px to divide instead of a half-pixel result. */
 header {
   display: flex;
   align-items: center;
   padding: 0 12px;
-  height: calc(var(--ctl-h) + 12px);
+  height: calc(var(--ctl-h) + 13px);
   background: var(--surface-control);
   border-bottom: 1px solid var(--bd);
   flex: none;
