@@ -6,6 +6,7 @@ import {
   IconIndex,
   IconMeter,
   IconMetronome,
+  IconMenu,
   IconPlay,
   IconStop,
   IconStopClips,
@@ -22,6 +23,9 @@ interface Props {
   onTransport: (patch: BSV.TransportPatch) => void;
   showIndex: boolean;
   onToggleIndex: () => void;
+  songCount: number;
+  collapsedCount: number;
+  onCollapseAll: (all: boolean) => void;
   launch: BridgeState['launch'];
   stop: BridgeState['stop'];
   columnWidth: ColumnWidth;
@@ -194,6 +198,9 @@ export function Header({
   onTransport,
   showIndex,
   onToggleIndex,
+  songCount,
+  collapsedCount,
+  onCollapseAll,
   launch,
   stop,
   columnWidth,
@@ -202,6 +209,7 @@ export function Header({
   onToggleMeters,
   onSnapshot,
 }: Props) {
+  const allFolded = songCount > 0 && collapsedCount >= songCount;
   const positionParts = songPosition
     ? [songPosition.bar, songPosition.beat, songPosition.sixteenth]
     : ['–', '–', '–'];
@@ -214,17 +222,32 @@ export function Header({
     <header>
       <div className="header-section header-left">
         <img className="brand-logo" src="/logo-white.png" alt="Better Session View" />
-        <button
-          type="button"
-          className={`icon-btn toggle${showIndex ? ' on' : ''}`}
-          aria-pressed={showIndex}
-          aria-controls="song-index"
-          aria-label="Song index"
-          title={`${showIndex ? 'Hide' : 'Show'} song index`}
-          onClick={onToggleIndex}
-        >
-          <IconIndex />
-        </button>
+        <div className="view-controls" role="group" aria-label="Song display">
+          <button
+            type="button"
+            className={`icon-btn toggle${showIndex ? ' on' : ''}`}
+            aria-pressed={showIndex}
+            aria-controls="song-index"
+            aria-label="Song index"
+            title={`${showIndex ? 'Hide' : 'Show'} song index`}
+            onClick={onToggleIndex}
+          >
+            <IconIndex />
+          </button>
+          <button
+            type="button"
+            className={`icon-btn toggle${allFolded ? ' on' : ''}`}
+            aria-pressed={allFolded}
+            disabled={songCount === 0}
+            aria-label={allFolded ? 'Unfold songs' : 'Fold songs'}
+            title={
+              allFolded ? 'Unfold every song' : 'Fold every song down to its header row'
+            }
+            onClick={() => onCollapseAll(collapsedCount < songCount)}
+          >
+            <IconMenu />
+          </button>
+        </div>
         <div className="live-controls" role="group" aria-label="Live control bar">
           <div className="tempo-group" role="group" aria-label="Tempo and metronome">
             <TempoControl

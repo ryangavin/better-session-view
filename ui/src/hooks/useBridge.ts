@@ -283,6 +283,8 @@ export function useBridge(watchMeters = false): BridgeState {
             scenes: mergeRows(held.scenes, d.sceneRows ?? []),
             tracks: mergeRows(held.tracks, d.trackRows ?? []),
             tempo: d.tempo ?? held.tempo,
+            masterColor:
+              d.masterColor === undefined ? held.masterColor : d.masterColor,
           });
           break;
         }

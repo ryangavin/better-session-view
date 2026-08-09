@@ -188,12 +188,12 @@ as unhandled rejections.
 Three optional surfaces start **closed**, because none is what you came for. On a 40-track
 set every pixel the side panes aren't using is a track column you can see.
 
-- **The song index** opens from the left side of the header and lists each song once with
-  its key, BPM and type. It starts in set order; its search covers all four displayed
-  fields, and each column heading toggles a local ascending/descending sort. That filter
-  and order belong only to the pane — they never reorder scenes or write to Live. A song
-  whose scenes agree on one canonical color shows its name in that color; mixed and
-  uncolored songs remain neutral.
+- **The song index** opens from the first button group after the logo and lists each
+  song once with its key, BPM and type. It starts in set order; its search covers all four
+  displayed fields, and each column heading toggles a local ascending/descending sort.
+  That filter and order belong only to the pane — they never reorder scenes or write to
+  Live. A song whose scenes agree on one canonical color shows its name in that color;
+  mixed and uncolored songs remain neutral.
   Clicking only the name jumps immediately to the first block of that song and selects
   its first scene in Live, which centers it in Live's Session View. It does not select
   anything in this app, open the edit rail, or change the song's fold state. The local
@@ -275,9 +275,9 @@ with 6px of air above and below.
   Snapshot re-walks the whole set — can still be said in words.
 - **The scene-column controls reuse the same primitive, size and glyph set as the main
   header**: 26×22px buttons with 14px icons. The grid header's calculated height grows
-  around them. Add follows the **Songs** heading; fold stays right-aligned in its own
-  display-only group beside the right-aligned order and color actions. Their titles say
-  what each control does.
+  around them. The **Songs** heading is 16px while ordinary track headings remain 9px.
+  Order, color and Add share one right-aligned group in that order. Their titles say what
+  each control does.
 - **Fold, metronome and Scale Mode keep one glyph and light instead of swapping.** Their
   glyph identifies the control; amber says the observed Live state is on.
 - **The empty state shows the glyph, not the word.** It used to say *hit **Snapshot***, and
@@ -431,9 +431,8 @@ From there the rail does the three things at song scale:
 - **Song color** — a swatch grid that paints the scene rows themselves, so a song becomes
   a band of color in Live's own session view. Writes on click, like the clip swatches.
 
-The **hamburger at the top of the Songs column** folds or unfolds every song at once. It
-has its own button group because folding changes only this app's display; the adjacent
-group contains actions that change the Live Set.
+The **hamburger in the first button group after the logo** folds or unfolds every song at
+once. It shares that app-only display group with the song-index toggle.
 
 ## A song is one color
 
@@ -488,7 +487,7 @@ axis spaced differently from the other is its own kind of depth cue. So the sepa
 What sets a header apart is its own surface — `--rail` against the clip cells' lighter
 fill, the song's wash, and the bar down its left edge. **Surfaces, not edges.**
 Clicking one folds the song to just that header. A hundred songs fold to a hundred rows,
-which is the point: the hamburger at the top of the Songs column turns the whole set into
+which is the point: the hamburger beside the logo turns the whole set into
 a table of contents. The songs modal exposes the same operation as **Collapse all**.
 
 Three things about it are load-bearing:
@@ -687,10 +686,16 @@ against a real set.**
 
 ## Set-wide song controls
 
-The scene column is visibly headed **Songs**. Add sits immediately after that heading;
-fold stays right-aligned in its own display-only button group, beside a separate group for
-setting the running order and coloring every song from a rule. The gap between the right
-groups separates the local display control from actions that change the Live Set.
+The scene column is headed **Songs** on the left. On the right, order, color and Add share
+one Live Set group in that order. The app-only song-index and fold toggles live together
+in the main header's first button group after the logo.
+
+That header cell uses **Live's Master track color**, because the scene/song overview is
+the grid's Master column (the meter beneath it is Master too). Master lives outside
+`Song.tracks`, so the snapshot carries its RGB separately and `inkOn()` chooses black or
+white text exactly as it does for ordinary track headers. If Master color cannot be read,
+the cell keeps the neutral app surface. A fixed Master color observer updates it after a
+recolor in Live without requiring a full snapshot.
 
 The running-order and coloring workflows work the same way: a draft you can push around
 for free, a preview of exactly what will be written, and one button that writes it. That

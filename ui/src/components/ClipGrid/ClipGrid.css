@@ -141,10 +141,10 @@ table.grid th.scene-h {
   text-align: left;
   padding-left: var(--gutter);
 }
-/* Set-wide song controls sit at the head of the column their songs are read
-   down. Display-only folding and Live Set actions have separate button groups.
-   Flex on a wrapper, never on the `th` — see the note above `table.grid`:
-   `display: flex` on a table cell stops it being one.
+/* Set-wide Live Set actions sit at the head of the column their songs are read
+   down; app-only navigation and folding live in the main header. Flex on a
+   wrapper, never on the `th` — see the note above `table.grid`: `display: flex`
+   on a table cell stops it being one.
 
    The groups use the main header's 22px control height and 26px icon-button
    width. `--label-h` carries that height into `--header-h`, so the sticky row
@@ -153,6 +153,9 @@ table.grid th.scene-h .scene-h-line {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+table.grid th.scene-h .scene-h-title {
+  font-size: 16px;
 }
 table.grid th.scene-h .scene-action-groups {
   display: flex;

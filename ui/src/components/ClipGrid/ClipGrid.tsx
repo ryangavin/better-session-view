@@ -23,7 +23,6 @@ import {
   IconAddSong,
   IconColorSongs,
   IconGroupFold,
-  IconMenu,
   IconOrderSongs,
 } from '../Icon.js';
 import { Row, sceneDropEdge } from './Row.js';
@@ -57,10 +56,6 @@ export interface Props {
   onPickSong: (songKey: string) => void;
   /** Songs derivation found — order and rule-based color have nothing to do at 0. */
   songCount: number;
-  /** How many songs are folded, for the Fold/Unfold label. */
-  collapsedCount: number;
-  /** Fold or unfold every song without writing to Live. */
-  onCollapseAll: (all: boolean) => void;
   /** Open the additive eight-scene song scaffold. */
   onAddSong: () => void;
   /** Open the running-order modal. */
@@ -132,8 +127,6 @@ export function ClipGrid({
   onToggleSong,
   onPickSong,
   songCount,
-  collapsedCount,
-  onCollapseAll,
   onAddSong,
   onReorder,
   onRecolor,
@@ -163,13 +156,21 @@ export function ClipGrid({
   onStopTrack,
   onToggleGroup,
 }: Props) {
-  // An empty set is "nothing folded", not "all of nothing folded".
-  const allFolded = songCount > 0 && collapsedCount >= songCount;
   const marks = useMemo(() => marksByScene(play), [play]);
   const meters = useMeters(subscribeMeters, showMeters);
   const tableRef = useRef<HTMLTableElement>(null);
   const viewportWidth = isViewportColumnWidth(columnWidth) ? columnWidth : null;
   useViewportColumnWidth(tableRef, viewportWidth, columns.length);
+  const masterFill = useMemo<CSSProperties | undefined>(() => {
+    // Null is the explicit fallback when the embedded Live runtime cannot read
+    // the documented Master Track.color atom. Undefined also tolerates a UI
+    // briefly paired with an older bridge during development.
+    if (snapshot.masterColor == null) return undefined;
+    return {
+      background: hex(snapshot.masterColor),
+      color: inkOn(snapshot.masterColor),
+    };
+  }, [snapshot.masterColor]);
 
   // Widths ride down as custom properties on the table rather than as props on
   // Row. Row is memoized, and a new prop on it would re-render all 848 scenes
@@ -205,46 +206,17 @@ export function ClipGrid({
       </colgroup>
       <thead>
         <tr>
-          {/* Set-wide song controls live at the top of the column the songs are
-              read down. Add follows the heading; the display-only fold toggle
-              stays in its own right-aligned group, apart from reorder and color.
+          {/* The heading leads from the left. Reorder, color and add follow the
+              spacer from the right; app-only display controls live up top.
 
               Flex on a wrapper div, never on the `th`: `display: flex` on a
               table cell stops it being a table cell and takes the grid's fixed
               layout with it. */}
-          <th className="scene-h">
+          <th className="scene-h" style={masterFill}>
             <div className="scene-h-line">
-              <span>Songs</span>
-              <div className="scene-action-group" role="group" aria-label="Add song">
-                <button
-                  type="button"
-                  className="icon-btn scene-action"
-                  aria-label="Add a song"
-                  title="Add a new song with eight scenes"
-                  onClick={onAddSong}
-                >
-                  <IconAddSong />
-                </button>
-              </div>
+              <span className="scene-h-title">Songs</span>
               <div className="spacer" />
               <div className="scene-action-groups">
-                <div className="scene-action-group" role="group" aria-label="Song display">
-                  <button
-                    type="button"
-                    className={`icon-btn scene-action toggle${allFolded ? ' on' : ''}`}
-                    aria-pressed={allFolded}
-                    disabled={songCount === 0}
-                    aria-label={allFolded ? 'Unfold songs' : 'Fold songs'}
-                    title={
-                      allFolded
-                        ? 'Unfold every song'
-                        : 'Fold every song down to its header row'
-                    }
-                    onClick={() => onCollapseAll(collapsedCount < songCount)}
-                  >
-                    <IconMenu />
-                  </button>
-                </div>
                 <div
                   className="scene-action-group"
                   role="group"
@@ -269,6 +241,15 @@ export function ClipGrid({
                     onClick={onRecolor}
                   >
                     <IconColorSongs />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn scene-action"
+                    aria-label="Add a song"
+                    title="Add a new song with eight scenes"
+                    onClick={onAddSong}
+                  >
+                    <IconAddSong />
                   </button>
                 </div>
               </div>

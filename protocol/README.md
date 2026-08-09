@@ -100,6 +100,12 @@ yourself adding a `getClipName` message, stop.
 phases, and the `snapshot` event carries `dictMs` and `hostMs`. These aren't
 debug-only — they're how we know whether the design scales. Don't drop them.
 
+**Master is not an ordinary track.** Live exposes it at `Song.master_track`, outside
+`Song.tracks`, so `Snapshot.masterColor` carries its RGB separately for the Songs-column
+header. It is nullable: a rejected Master atom falls back to the neutral app surface
+rather than failing the snapshot. A Master color observer sends the same field on a
+delta, so recoloring it in Live updates the held snapshot without a full walk.
+
 **Colors are indexes.** `ApplyOp.colorIndex` is a slot in Live's palette. `Clip`
 carries both `colorIndex` (what we write) and `color` (the RGB Live renders, so the UI
 needs no lookup). Never write raw RGB.

@@ -125,6 +125,8 @@ declare namespace BSV {
     trackRows?: Track[];
     /** The set's tempo, when the re-read covered it. */
     tempo?: number;
+    /** Master track RGB after a Master color change; null when unreadable. */
+    masterColor?: number | null;
     /** LOM time for the re-read, ms. */
     ms: number;
   }
@@ -143,6 +145,8 @@ declare namespace BSV {
     ms: number;
     timings: SnapshotTimings;
     tempo: number;
+    /** Live's Master track RGB. Master is not included in `Song.tracks`. */
+    masterColor: number | null;
     trackCount: number;
     sceneCount: number;
     clipCount: number;

@@ -48,6 +48,32 @@ header {
   flex: none;
 }
 
+/* App-only song display controls are the first segmented group after the logo.
+   Same dimensions and border language as the other main-header groups. */
+.view-controls {
+  height: var(--ctl-h);
+  flex: none;
+  display: flex;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.view-controls button {
+  width: 26px;
+  height: calc(var(--ctl-h) - 2px);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  color: var(--dim);
+}
+.view-controls button + button {
+  border-left: 1px solid var(--bd3);
+}
+.view-controls button:hover:not(:disabled) {
+  border-color: var(--bd3);
+  color: var(--fg);
+}
+
 /* --- Live control bar --------------------------------------------- */
 
 .live-controls {

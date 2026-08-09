@@ -14,6 +14,7 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height.
 - The grid uses a 2px gutter. Its scene column is 290px and its role chip is 62px; track
   width modes are defined in [`ui/src/lib/columnWidth.ts`](ui/src/lib/columnWidth.ts).
+- Grid headings use 9px mono text; the Songs heading uses 16px.
 
 ## Controls
 
@@ -23,15 +24,17 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   default. The Songs-column controls use the main header's 26×22px icon-button size.
 - Related controls share a bordered button group with dividers between segments.
   Controls with different consequences use separate groups: scene folding changes only
-  this app's display; the neighboring song actions change the Live Set.
-- In the Songs column header, Add follows the label while fold, order and color remain
-  right-aligned; fold and the Live Set actions use separate groups.
+  this app's display; the song actions in the Songs header change the Live Set.
+- The first button group after the logo holds the app-only song-index and fold toggles.
+- In the Songs column header, the label is left-aligned. Order, color and Add share one
+  right-aligned button group.
 - Toggles keep one glyph and use the amber-on state. Primary actions use an amber fill.
 - The debug console starts closed and its toggle lives with status in the bottom strip.
 
 ## Grid
 
 - Scenes run down; tracks run across. The header row and scene column are sticky.
+- The Songs header uses Live's Master track color, with the neutral surface as its fallback.
 - Song headers are separated with surfaces and the grid gutter rather than borders.
 - Live colors are rendered from Live's palette. Text laid over a Live color chooses dark
   or light ink with the helpers in [`core/src/color.ts`](core/src/color.ts).

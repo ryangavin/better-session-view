@@ -321,6 +321,9 @@ export function App() {
         onTransport={bridge.setTransport}
         showIndex={showIndex}
         onToggleIndex={() => setShowIndex((shown) => !shown)}
+        songCount={derivation.songs.length}
+        collapsedCount={collapsedSongs.size}
+        onCollapseAll={onCollapseAll}
         launch={launch}
         stop={stop}
         columnWidth={columnWidth}
@@ -360,8 +363,6 @@ export function App() {
               onToggleSong={onToggleSong}
               onPickSong={onPickSong}
               songCount={derivation.songs.length}
-              collapsedCount={collapsedSongs.size}
-              onCollapseAll={onCollapseAll}
               onAddSong={() => setAddingSong(true)}
               onReorder={() => setReordering(true)}
               onRecolor={() => setRecoloring(true)}
