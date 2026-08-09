@@ -25,7 +25,7 @@
     "build:lom": "node --disable-warning=ExperimentalWarning tools/lom-reference.ts",
     "dev:check-palette": "node --disable-warning=ExperimentalWarning tools/check-palette.ts",
     "dev:diag": "node --disable-warning=ExperimentalWarning tools/diag.ts",
-    "dev": "concurrently -k -n bridge,lom,ui -c cyan,magenta,green \"tsc -p bridge/tsconfig.node.json --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config ui/vite.config.ts\"",
+    "dev": "concurrently -k -n bridge,types,lom,ui -c cyan,blue,magenta,green \"node --disable-warning=ExperimentalWarning tools/dev-bridge.ts\" \"tsc -p bridge/tsconfig.node.json --noEmit --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config ui/vite.config.ts\"",
     "dev:ui": "vite --config ui/vite.config.ts",
     "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p ui/tsconfig.json && tsc -p tools/tsconfig.json",
     "test": "vitest run",
