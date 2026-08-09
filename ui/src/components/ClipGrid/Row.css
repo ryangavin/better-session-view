@@ -17,10 +17,10 @@ td.scene {
   font-size: 10px;
   color: var(--dim);
   white-space: nowrap;
-  /* The header reaches its key after an 8px cell inset, a 14px fold badge and
-     the 26px BPM slot. Scene rows reach theirs after a 12px launcher and the
-     same 26px number slot, so this 10px inset puts both key columns on the
-     exact same x coordinate. It also lines the launcher up under the badge. */
+  /* The 10px inset plus 12px launcher lands the scene number under the song
+     header's 8px inset plus 14px fold badge. From there both row types use the
+     same 26px number, 26px BPM and 28px key slots, so every fact and identity
+     column shares an x coordinate. */
   padding-left: 10px;
   padding-right: 8px;
   width: var(--scene-col-w);
@@ -75,13 +75,11 @@ tr.scene-row.drop-above td.scene {
 tr.scene-row.drop-below td.scene {
   box-shadow: inset 0 -2px 0 var(--amber), var(--scene-gutter-plug);
 }
-/* The first piece of scene metadata, matching the key slot in song headers.
-   Fixed width and right alignment make Bm / F#m share an edge down the grid;
-   the storage-only `@` stays out of the rendered value. */
+/* The scene's own tempo and musical key, in the same slots as song headers.
+   Fixed widths and right alignment make 94 / 128 and Bm / F#m share their
+   respective edges down the grid. The storage-only `@` stays out of the key. */
+td.scene .scene-bpm,
 td.scene .scene-key {
-  flex: 0 0 28px;
-  margin-right: 8px;
-  color: var(--dim2);
   font-family: var(--mono);
   font-size: 9.5px;
   text-align: right;
@@ -89,6 +87,16 @@ td.scene .scene-key {
   text-overflow: ellipsis;
   vertical-align: 1px;
 }
+td.scene .scene-bpm {
+  flex: 0 0 26px;
+  color: var(--dim);
+}
+td.scene .scene-key {
+  flex: 0 0 28px;
+  margin-right: 8px;
+  color: var(--dim2);
+}
+td.scene .scene-bpm.none,
 td.scene .scene-key.none {
   color: var(--dim2);
 }

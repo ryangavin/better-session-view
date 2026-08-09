@@ -138,6 +138,9 @@ export const SongHeaderRow = memo(function SongHeaderRow({
        an empty slot is what keeps the next song's name on the same vertical
        line. */
     <div className="song-line">
+      {/* One lead slot matches the launcher + scene-number span below it. The
+          icon itself begins after the launcher width, directly over the scene
+          numbers, while BPM still begins at the same fixed guide. */}
       <span className="fold">
         <IconGroupFold folded={header.collapsed} />
       </span>

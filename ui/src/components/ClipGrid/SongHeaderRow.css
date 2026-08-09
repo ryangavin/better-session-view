@@ -54,27 +54,26 @@ tr.song-row:hover td:first-child {
   --song-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--surface-song-hover);
 }
 tr.song-row .fold {
-  flex: 0 0 14px;
+  /* The full lead matches a scene row's launcher + number. Padding by the
+     launcher's corresponding 14px puts the glyph's left edge exactly over
+     the number text, without moving the BPM, key, identity or tag columns. */
+  flex: 0 0 40px;
   height: 14px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: 14px;
   color: var(--dim2);
-}
-tr.song-row .fold svg {
-  /* Leave a little air between the glyph and the colored drag handle without
-     widening its slot or shifting the fact and song-name columns. */
-  transform: translateX(2px);
 }
 /* Name and outlined tag are one identity slot. The row spans all columns when
    open, but this slot stays within the scene column so song metadata cannot
    drift over the first track.
 
-   Its width is the rest of the scene column after cell padding (16px), fold
-   (14px), and facts (62px). The tag therefore ends at the column's right edge,
+   Its width is the rest of the scene column after cell padding (16px), lead
+   (40px), and facts (62px). The tag therefore ends at the column's right edge,
    exactly where the fixed tag slot in every child scene ends. */
 tr.song-row .song-identity {
-  flex: 0 0 calc(var(--scene-col-w) - 92px);
+  flex: 0 0 calc(var(--scene-col-w) - 118px);
   display: flex;
   align-items: center;
   gap: 6px;

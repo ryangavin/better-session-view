@@ -1,6 +1,7 @@
 import { memo, type DragEvent } from 'react';
 import './Row.css';
 import { hex, inkOn, legibleOn } from '../../../../core/src/color.js';
+import { MIN_TEMPO } from '../../../../core/src/derive.js';
 import { groupSlot } from '../../../../core/src/groupSlot.js';
 import { roleIn, roleKey } from '../../../../core/src/roles.js';
 import { titleOf } from '../../../../core/src/sceneTitle.js';
@@ -112,6 +113,10 @@ export const Row = memo(function Row({
   // differs from row to row while Live keeps the complete literal name.
   const role = roleIn(scene.name);
   const metadata = titleOf(scene.name);
+  // Scene.tempo is the current convention's source of truth. A BPM parsed
+  // from the name exists only for sets still carrying the legacy spelling,
+  // and matches the editor's migration fallback in useSceneTitles.
+  const bpm = scene.tempo >= MIN_TEMPO ? String(scene.tempo) : metadata.bpm;
   const { key, tag } = metadata;
   const roleRgb = role === null ? undefined : roleColors.get(roleKey(role));
 
@@ -183,18 +188,26 @@ export const Row = memo(function Row({
           >
             {scene.i + 1}
           </span>
-        {/* The musical key leads the scene metadata, matching the fixed key
-            slot in song headers. The `@` belongs to the storage syntax, not
-            the value, so the grid shows the clean `Bm` / `F#m` reading. */}
+        {/* BPM and key occupy the same fixed fact slots as the song header.
+            Keeping the scene-number slot in the header too means every value,
+            role/song identity, and tag shares one vertical line. */}
+          <span
+            className={`scene-bpm${bpm === '' ? ' none' : ''}`}
+            title={bpm === '' ? 'No BPM set for this scene' : `BPM: ${bpm}`}
+          >
+            {bpm || '---'}
+          </span>
+        {/* The `@` belongs to the storage syntax, not the key value, so the
+            grid shows the clean `Bm` / `F#m` reading. */}
           <span
             className={`scene-key${key === '' ? ' none' : ''}`}
             title={key === '' ? 'No key set for this scene' : `key: ${key}`}
           >
             {key || '--'}
           </span>
-        {/* The role follows the key. Fire button, scene number, key and chip
-            are fixed-width columns; the optional song tag takes the remaining
-            space at the right edge.
+        {/* The role follows the key. Fire button, scene number, BPM, key and
+            chip are fixed-width columns; the optional song tag takes the
+            remaining space at the right edge.
 
             A scene with no role gets a pill reading "no role" — same box as a
             real chip, a shade quieter, its text dimmer still. Filled rather

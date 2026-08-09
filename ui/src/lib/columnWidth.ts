@@ -29,14 +29,15 @@ export const COLUMN_WIDTHS: readonly ColumnWidth[] = [
 export const DEFAULT_COLUMN_WIDTH: ColumnWidth = 'm';
 
 /**
- * The scene name column, px. Fixed, not a preset.
+ * The scene metadata and name column, px. Fixed, not a preset.
  *
  * The setting is about how many *tracks* fit on screen. A scene name is the
  * same length whatever that answer is, and shrinking the column to match `s`
  * only truncated names that were already the row's label — you lose the thing
- * you navigate by to gain one more track column.
+ * you navigate by to gain one more track column. Its fixed width also keeps
+ * the scene-number, BPM, key, identity and tag slots aligned in every mode.
  */
-export const SCENE_COL_W = 290;
+export const SCENE_COL_W = 316;
 
 /**
  * The role chip that leads a scene name, px.

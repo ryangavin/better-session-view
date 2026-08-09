@@ -526,10 +526,10 @@ columns rather than as a sentence. Folded, it's the whole song on one row — wh
 called, what it's built from, and what's in it:
 
 ```
-▾  128  Bm  NIGHTFALL··················   mixed color · part 2 of 2
-   └bpm┘└key┘└──────── 170px ─────────┘   └── exceptions, unaligned ──┘
+    ▾   128  Bm  NIGHTFALL··················   mixed color · part 2 of 2
+  └number┘└bpm┘└key┘└──── identity ────┘   └── exceptions, unaligned ──┘
 
-▸  124  F#m GLASS TUNNEL··············· │  ■■  │      │ ■■■■ │  ■   ← folded
+    ▸   124  F#m GLASS TUNNEL··············· │  ■■  │      │ ■■■■ │  ■   ← folded
    └────────── the scene column ───────┘ └ the sections each track plays ┘
 ```
 
@@ -539,12 +539,12 @@ called, what it's built from, and what's in it:
   slot reads as a rendering fault, where a dash says the set never named one — which is a
   thing to go and fix. Dimmer than any real value, and it stays dim under a clash, because
   nothing said is not the same as two scenes disagreeing.
-- **The facts lead**, so the key sits immediately left of the name it describes. BPM
-  comes before key in the song header to keep the numeric tempo column on the outside.
-  Both are right-aligned: `94` and `128` are the same fact at different widths and it's
-  their right edges that should line up.
+- **The lead slot matches the launcher and scene number below it.** The collapse icon
+  sits on the scene-number guide, then each song BPM and key sits directly above the same
+  fact on every child scene. BPM comes before key to keep the numeric tempo column on the
+  outside. Both are right-aligned: `94` and `128` are the same fact at different widths.
 - **Every slot is sized to its values, not to its words.** Matching the name slot to
-  `--scene-col-w` was the tidier rule and the wrong one: at `l` it spends 290px on names
+  `--scene-col-w` was the tidier rule and the wrong one: it spends 316px on names
   rarely half that. Same for the facts — a bpm is three digits and a key is at most
   three characters, so any extra is dead space on every song carrying neither, which in
   most sets is a lot of them.
@@ -827,11 +827,12 @@ the performance metadata stays visible while the app-only tag truncates first; h
 doesn't, because the grid lifts every field into its own presentation. Why the facts have distinct delimiters is in
 [`core/README.md`](../core/README.md).
 
-**The key leads the rendered metadata**, without the storage-only `@`, in the same
-fixed-width, right-aligned slot used by song headers. Fire button, scene number, key and
-role chip keep fixed widths, so the metadata reads as columns. The song name is not
-repeated on each scene: the header already owns it, and every child scene necessarily
-belongs to that same song.
+**BPM and key lead the rendered metadata**, with BPM read from the scene's own
+`Scene.tempo` and key shown without the storage-only `@`. Both use the same fixed-width,
+right-aligned slots as song headers. Fire button, scene number, BPM, key and role chip
+keep fixed widths, so every kind of metadata reads as one vertical column. The song name
+is not repeated on each scene: the header already owns it, and every child scene
+necessarily belongs to that same song.
 
 When present, the song tag follows the role as an inverted pill: its fill is transparent,
 while its outline and text use the scene's song color. The role remains the solid
@@ -1115,7 +1116,7 @@ and group columns folding or unfolding. `useViewportColumnWidth` observes the gr
 content box, not `window.innerWidth`, because the rail is part of the space calculation.
 
 **The setting sizes the track columns and nothing else.** The scene name column is a
-constant 290px — `SCENE_COL_W`, what `l` used to be — and the role chip a constant 62px.
+constant 316px — `SCENE_COL_W` — and the role chip a constant 62px.
 They scaled with the presets once; the question the setting answers is *how many tracks
 fit on screen*, and a scene name is the same length whatever the answer is. Shrinking it
 at `s` truncated the label you navigate the rows by to buy one more column of clips.

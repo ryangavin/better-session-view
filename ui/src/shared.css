@@ -54,7 +54,7 @@
      without them. `--col-w` matches the `m` preset; the other two are constants
      there, and every width mode moves the track columns alone. */
   --col-w: 74px;
-  --scene-col-w: 290px;
+  --scene-col-w: 316px;
   --role-chip-w: 62px;
   /* One height for every control in the header, so a row of them has one top
      and one bottom edge rather than five. Segmented groups carry the border on
