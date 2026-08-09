@@ -33,8 +33,9 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
 - Toggles keep one glyph and use the amber-on state. Primary actions use an amber fill.
 - The debug console starts closed after every refresh, never opens automatically, and its
   toggle lives with status in the bottom strip.
-- Mixer strips stack Track Activator, Solo and Arm below a vertical volume fader and
-  output meter. The activator uses amber when enabled and Arm uses red when armed.
+- Mixer strips stack fixed 18×18px Track Activator, Solo and Arm buttons below a vertical
+  volume fader and output meter. The activator uses amber when enabled and Arm uses red
+  when armed.
 
 ## Grid
 

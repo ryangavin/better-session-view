@@ -567,6 +567,7 @@ table.grid tfoot td.meter-resize-cell {
   display: grid;
   width: 100%;
   flex: none;
+  justify-items: center;
   gap: 3px;
 }
 
@@ -574,7 +575,7 @@ button.mixer-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 18px;
   height: 18px;
   padding: 0;
   border-color: var(--bd3);
