@@ -92,7 +92,7 @@ export function App() {
     onClip,
     onScene,
     onFireScene,
-    onFireGroup,
+    onFireClip,
     onStopTrack,
     clearSelection,
     pickScenes,
@@ -391,7 +391,7 @@ export function App() {
               onClip={onClip}
               onScene={onScene}
               onFireScene={onFireScene}
-              onFireGroup={onFireGroup}
+              onFireClip={onFireClip}
               onRoleMenu={onRoleMenu}
               onStopTrack={onStopTrack}
               onToggleGroup={onToggleGroup}

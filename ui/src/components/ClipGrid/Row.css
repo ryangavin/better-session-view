@@ -247,6 +247,13 @@ td.cell {
   cursor: pointer;
   font-family: var(--mono);
   font-size: 8.5px;
+  /* The cell's content box — its 20px less the 1px borders — so the name's line
+     box fills the cell rather than sitting at the top of it. `overflow: hidden`
+     makes this cell a block formatting context, which means the launcher's
+     float counts toward the cell's height; without a line-height to match, an
+     8.5px name centers itself in its own ~10px line box and rides high in the
+     18px the float established. */
+  line-height: 18px;
   padding: 0 5px;
   white-space: nowrap;
   overflow: hidden;
@@ -257,6 +264,74 @@ td.cell {
 td.cell.sel {
   border-color: var(--amber);
   box-shadow: 0 0 0 1px rgba(240, 178, 60, 0.5);
+}
+
+/* Clip launch, the shape Live uses: a launcher occupying the slot's left end,
+   with the clip name filling what's left of the cell.
+
+   A surface rather than a rule between the two. The launcher is a button and
+   the name is a label, and a 1px divider on a 20px cell reads as a hairline
+   rather than as an edge you can press. Giving the button its own recessed
+   ground states the same boundary at the size the cell actually is.
+
+   Floated rather than laid out as a flex line, matching the group cell: only a
+   block container gets `text-overflow`, and turning the cell into a flex box to
+   hold two children would cost the clip name the ellipsis it already has. */
+td.cell.has {
+  /* The launcher owns this edge, so the cell stops reserving it. The button's
+     own right margin becomes the name's inset, and the cell keeps its 5px on
+     the right where the name still ends. */
+  padding-left: 0;
+}
+td.cell.has > .fire {
+  float: left;
+  width: 14px;
+  /* The cell's whole content box — its 20px less the 1px borders — so the
+     button meets the clip's top and bottom edges rather than floating inside
+     them, which is what makes it read as part of the cell's shape. */
+  height: 18px;
+  line-height: 18px;
+  margin-right: 4px;
+  padding: 0;
+  border: none;
+  /* Rounded on the left to continue the clip's own corners, square on the
+     right where it meets the name. The cell clips to its border radius, so the
+     button can carry the full `--radius-xs` and still land on the clip's
+     curve. */
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  /* Darkened rather than tinted, because the ground underneath is the clip's
+     own Live color and no fixed color reads on all of them. Black at low alpha
+     recedes against every one, which is the whole message: the button sits
+     under the clip's surface, the name sits on it. */
+  background: rgba(0, 0, 0, 0.25);
+  /* Full-strength ink now that the glyph has its own ground to sit on — it no
+     longer competes with the clip color, so it doesn't need to be quiet. */
+  color: inherit;
+  font-size: 7px;
+}
+td.cell.has > .fire:hover {
+  background: rgba(0, 0, 0, 0.45);
+  color: inherit;
+}
+
+/* Play state, on the launcher rather than the cell. `td.cell.playing` paints a
+   3px bar down the cell's left edge — which is now underneath this button, so
+   the button has to carry the state or a playing clip would report nothing.
+   That also puts this launcher back with the scene and group ones, which have
+   always turned green while they sound.
+
+   The fill carries it rather than the glyph: green ink on a green clip is
+   nothing, but a green ground with the app's own background as ink reads on
+   every color in Live's palette. Same idea as the mixer's lit buttons. Ordered
+   after `:hover` because both selectors weigh the same and state outranks the
+   pointer. */
+td.cell.has.playing > .fire {
+  background: var(--green);
+  color: var(--bg);
+}
+td.cell.has.fired > .fire {
+  background: var(--amber);
+  color: var(--bg);
 }
 
 /* --- dragging clips ----------------------------------------------- */

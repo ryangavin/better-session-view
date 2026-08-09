@@ -50,6 +50,12 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
 - Song headers are separated with surfaces and the grid gutter rather than borders.
 - Live colors are rendered from Live's palette. Text laid over a Live color chooses dark
   or light ink with the helpers in [`core/src/color.ts`](core/src/color.ts).
+- One ▶ launcher means "fire this" everywhere it appears: the scene gutter, a group's slot
+  and a clip cell. All three turn green while they sound and amber while they wait.
+- A clip cell's launcher is a button-shaped surface at the slot's left end, rounded on the
+  left to continue the clip's own corners and square where it meets the name. It darkens
+  the clip's color rather than taking a fixed one, since the ground under it is whatever
+  Live colored that clip; its lit states fill instead, with the app background as ink.
 - The mixer is a resizable sticky footer in the same table, so every strip remains aligned
   with its track column and Master remains pinned under Songs.
 

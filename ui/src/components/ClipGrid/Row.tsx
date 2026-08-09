@@ -59,7 +59,7 @@ interface RowProps {
   onClip: Props['onClip'];
   onScene: Props['onScene'];
   onFireScene: Props['onFireScene'];
-  onFireGroup: Props['onFireGroup'];
+  onFireClip: Props['onFireClip'];
   onRoleMenu: Props['onRoleMenu'];
   onSceneDragStart: Props['onSceneDragStart'];
   onSceneDragOver: Props['onSceneDragOver'];
@@ -89,7 +89,7 @@ export const Row = memo(function Row({
   onClip,
   onScene,
   onFireScene,
-  onFireGroup,
+  onFireClip,
   onRoleMenu,
   onSceneDragStart,
   onSceneDragOver,
@@ -295,7 +295,7 @@ export const Row = memo(function Row({
                     title={`Fire ${c.group.name} in scene ${scene.i + 1}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onFireGroup(t, scene.i);
+                      onFireClip(t, scene.i);
                     }}
                   >
                     ▶
@@ -356,11 +356,32 @@ export const Row = memo(function Row({
             }
             title={
               clip
-                ? `${clip.name}  ·  index ${clip.colorIndex}  ·  ${LAUNCH_KEY}-click to fire`
+                ? `${clip.name}  ·  index ${clip.colorIndex}` +
+                  `  ·  ▶ or ${LAUNCH_KEY}-click fires it`
                 : `empty — ${LAUNCH_KEY}-click stops this track`
             }
             onClick={(e) => onClip(t, scene.i, mods(e))}
           >
+            {/* Live's own launcher, on the slots that have something to launch.
+                Plain click fires, like the scene and group buttons: the
+                modifier rule keeps firing away from *selection*, and a button
+                that only ever fires has no selection to take. The rest of the
+                cell is unchanged, so an unmodified click there still selects
+                and opens the editor. Empty slots get nothing — Live draws no
+                launcher on one either, and ⌘-click still stops the track. */}
+            {clip && (
+              <ControlButton
+                type="button"
+                className="fire"
+                title={`Fire ${clip.name || `track ${t + 1}`} in scene ${scene.i + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFireClip(t, scene.i);
+                }}
+              >
+                ▶
+              </ControlButton>
+            )}
             {clip?.name}
           </td>
         );

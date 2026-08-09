@@ -100,8 +100,11 @@ export interface Props {
   onClip: (t: number, s: number, mods: CellClick) => void;
   onScene: (s: number, mods: CellClick) => void;
   onFireScene: (s: number) => void;
-  /** Fire a group track's slot — every clip the group holds in that scene. */
-  onFireGroup: (t: number, s: number) => void;
+  /**
+   * Fire the slot at this position — the clip on a track column, or every clip
+   * the group holds in that scene on a group column.
+   */
+  onFireClip: (t: number, s: number) => void;
   /**
    * Open the role picker on a scene's chip. The anchor comes from here because
    * the chip is the only thing that knows where it ended up; the menu itself is
@@ -157,7 +160,7 @@ export function ClipGrid({
   onClip,
   onScene,
   onFireScene,
-  onFireGroup,
+  onFireClip,
   onRoleMenu,
   onStopTrack,
   onToggleGroup,
@@ -430,7 +433,7 @@ export function ClipGrid({
                 onClip={onClip}
                 onScene={onScene}
                 onFireScene={onFireScene}
-                onFireGroup={onFireGroup}
+                onFireClip={onFireClip}
                 onRoleMenu={onRoleMenu}
                 onSceneDragStart={onSceneDragStart}
                 onSceneDragOver={onSceneDragOver}

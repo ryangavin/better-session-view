@@ -1010,7 +1010,7 @@ someone reached for a right-click. `keys.ts` owns that decision.
 
 | | organization (silent) | ⌘ |
 |---|---|---|
-| clip cell | click selects · ⇧ extends a block | ⌘-click **fires the clip** |
+| clip cell | click selects · ⇧ extends a block · **▶ fires the clip** | ⌘-click **fires the clip** |
 | scene name | click selects the row · ⇧ extends over scenes · **number drags** | ⌘-click **fires the scene** |
 | song header | click folds · title selects · **drag reorders** | — |
 | track header | click a group to collapse | ⌘-click **stops that track** |
@@ -1021,10 +1021,25 @@ someone reached for a right-click. `keys.ts` owns that decision.
 replaces an audition *mode*: a sticky toggle you can forget you're in is worse than a
 modifier you're holding.
 
-Two plain-click exceptions, both for the same principled reason: firing is the button's
-only job. The **▶ in the scene gutter** fires the scene, and the **▶ in a group's slot**
-fires the group — scene launching is the primary gesture and has to be visible rather
-than a modifier away, and a group slot has no selection for a modifier to protect.
+The ▶ launchers are the plain-click exceptions, all for the same principled reason:
+firing is the button's only job, and the rule exists to keep firing away from
+*selection*, which a button that can't select has nothing to take from. The one in the
+**scene gutter** fires the scene — the primary gesture, so it has to be visible rather
+than a modifier away. The one in a **group's slot** fires the group, which has no
+selection to protect. The one in a **clip cell** fires that clip, which is Live's own
+launcher in Live's own place; the rest of the cell around it is untouched, so an
+unmodified click there still selects and opens the editor. A launcher never moves the
+active cell or changes the selection, so ⌘-click and ▶ are not the same gesture even
+though they fire the same slot.
+
+A clip cell's launcher is a recessed button at the slot's left end, rounded on the left
+to continue the clip's corners and square where it meets the name. It **darkens** the
+clip's color rather than taking one of its own, because the ground under it is whatever
+Live colored that clip and no fixed color reads on all of them. That surface sits over
+the 3px play bar `td.cell.playing` paints down the same edge, so the launcher carries
+play state instead — green while sounding, amber while queued, with the app background
+as ink. Filling rather than tinting the glyph is what makes that legible: green ink on a
+green clip is nothing.
 
 **⌥ means nothing on a click.** It used to add to the selection, which is what ⇧ already
 does — extending a selection *is* adding to it, and a second key for the same idea only

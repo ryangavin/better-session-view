@@ -116,10 +116,15 @@ export function useGridSelection({
   );
 
   const onFireScene = useCallback((s: number) => launch({ kind: 'scene', s }), [launch]);
-  // A group track's slot, fired by position like any other. It holds no clip
-  // of its own — Live fires everything the group has in that scene. Nothing is
-  // selected on the way: a group slot is not a cell you can name or color.
-  const onFireGroup = useCallback(
+  // A slot fired where it sits, by the launcher drawn in it. One callback for
+  // both kinds because Live's gesture is the same: on a track column it fires
+  // that clip, and on a group column — which holds no clip of its own — Live
+  // fires everything the group has in that scene.
+  //
+  // Nothing is selected on the way. The launcher is a button whose only job is
+  // firing, so it doesn't move the active cell, change the selection or open
+  // the rail; the rest of the cell around it still does all three.
+  const onFireClip = useCallback(
     (t: number, s: number) => launch({ kind: 'clip', t, s }),
     [launch],
   );
@@ -172,7 +177,7 @@ export function useGridSelection({
     onClip,
     onScene,
     onFireScene,
-    onFireGroup,
+    onFireClip,
     onStopTrack,
     clearSelection,
     pickScenes,
