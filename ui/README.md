@@ -273,9 +273,9 @@ with 6px of air above and below.
   with no accessible name is a button for sighted mouse users and nobody else, and the
   `title` is now the only place the longer meanings — what "stop clips" spares, that
   Snapshot re-walks the whole set — can still be said in words.
-- **The scene-column controls reuse the same primitive and glyph set**, scaled together
-  to the table header's 13px line box so fold, add, order and color do not make the grid
-  header taller. Add follows the **Songs** heading; fold stays right-aligned in its own
+- **The scene-column controls reuse the same primitive, size and glyph set as the main
+  header**: 26×22px buttons with 14px icons. The grid header's calculated height grows
+  around them. Add follows the **Songs** heading; fold stays right-aligned in its own
   display-only group beside the right-aligned order and color actions. Their titles say
   what each control does.
 - **Fold, metronome and Scale Mode keep one glyph and light instead of swapping.** Their
@@ -1281,9 +1281,10 @@ padding, no inner element, and `line-height` plus the 1px rule fill the box. It 
 it.** `.grid-wrap` carries no `padding-top`: the header pins 2px below it and the ring
 covers exactly that, so padding there is a band where scrolled clip cells show through.
 
-The whole block is **32px** — 13 + 2 + 15, one `line-height` and 2px of padding per row.
-The scene-column button groups are sized to the row rather than the row to them: 13px
-including their borders, so they cost the header no height.
+The sticky header row's calculated height is **36px** — 5px group band + 2px gutter + 2px
+label clearance + the main toolbar's 22px control height + 5px bottom padding. The
+scene-column groups and label share that 22px term, so `--header-h` and the row's actual
+height stay together.
 
 **Rows are `memo`ized.** `ClipGrid` renders `sceneCount` rows × non-group tracks —
 around 6,800 cells at full size. Memoizing the row is what keeps toggling one cell

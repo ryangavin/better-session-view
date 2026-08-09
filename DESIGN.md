@@ -20,7 +20,7 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
 - Icon-only buttons use the centered `.icon-btn` primitive and carry both an `aria-label`
   and a `title`.
 - Icons are inline SVG on a 24-unit grid, draw with `currentColor`, and render at 14px by
-  default. Compact scene-column controls scale the same glyphs down together.
+  default. The Songs-column controls use the main header's 26×22px icon-button size.
 - Related controls share a bordered button group with dividers between segments.
   Controls with different consequences use separate groups: scene folding changes only
   this app's display; the neighboring song actions change the Live Set.

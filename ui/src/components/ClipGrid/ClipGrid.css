@@ -33,13 +33,13 @@ table.grid {
      reads as the group's color leaking down the sides of every track rather
      than as one bar over all of them. Live puts it on top and only on top.
 
-     The header grew to fit rather than the label shrinking: 9px uppercase mono
-     is already the floor. Stated as its parts so `--header-h` can't drift from
-     the padding that produces it — both are written from these. */
+     The header grows around the main toolbar's control height so the song
+     actions remain legible. Stated as its parts so `--header-h` can't drift
+     from the padding that produces it — both are written from these. */
   --band-w: 5px;
   /* Clearance between the label and whatever sits above it. */
   --label-gap: 2px;
-  --label-h: 13px;
+  --label-h: var(--ctl-h);
   --header-pad-b: 5px;
   --header-h: calc(
     var(--band-w) + var(--gutter) + var(--label-gap) + var(--label-h) +
@@ -69,7 +69,7 @@ table.grid col.scene-col {
  *
  * Height is `--header-h` — see `table.grid` above. The padding here is what
  * actually produces it, so the two are written from the same variables. The
- * bulk buttons are sized to the label, not the row.
+ * label line and bulk buttons share the main toolbar's control height.
  *
  * No `overflow: hidden` here, deliberately: the band bridges the gutter with a
  * pseudo-element that has to escape the cell by 2px. Clipping moved onto
@@ -146,8 +146,9 @@ table.grid th.scene-h {
    Flex on a wrapper, never on the `th` — see the note above `table.grid`:
    `display: flex` on a table cell stops it being one.
 
-   Sized to the row rather than the row to them: 13px including the border is
-   exactly the `th`'s line box, so the controls cost the header no height. */
+   The groups use the main header's 22px control height and 26px icon-button
+   width. `--label-h` carries that height into `--header-h`, so the sticky row
+   and its scroll margin grow with the controls rather than clipping them. */
 table.grid th.scene-h .scene-h-line {
   display: flex;
   align-items: center;
@@ -159,16 +160,16 @@ table.grid th.scene-h .scene-action-groups {
   gap: 6px;
 }
 table.grid th.scene-h .scene-action-group {
-  height: 13px;
+  height: var(--ctl-h);
   display: flex;
   border: 1px solid var(--focus);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--surface-control);
   overflow: hidden;
 }
 button.scene-action {
-  width: 20px;
-  height: 11px;
+  width: 26px;
+  height: calc(var(--ctl-h) - 2px);
   flex: none;
   border: none;
   border-radius: 0;
@@ -179,8 +180,8 @@ button.scene-action + button.scene-action {
   border-left: 1px solid var(--focus);
 }
 button.scene-action svg {
-  width: 11px;
-  height: 11px;
+  width: 14px;
+  height: 14px;
 }
 button.scene-action:hover:not(:disabled) {
   background: var(--sel);
