@@ -18,6 +18,7 @@ interface Props {
   meters: MeterStore;
   mixer: MixerStore;
   setMixer: BridgeState['setMixer'];
+  isGroup?: boolean;
 }
 
 const MIN_DB = -60;
@@ -36,7 +37,7 @@ function meterFraction(db: number): number {
 }
 
 /** A column-owned Live mixer strip, mounted only while that output is visible. */
-export function TrackMeter({ meterKey, label, meters, mixer, setMixer }: Props) {
+export function TrackMeter({ meterKey, label, meters, mixer, setMixer, isGroup = false }: Props) {
   const level = useOutputMeter(meters, meterKey);
   const strip = useMixerStrip(mixer, meterKey);
   const volume = strip?.volume ?? null;
@@ -89,18 +90,24 @@ export function TrackMeter({ meterKey, label, meters, mixer, setMixer }: Props) 
 
   const shownVolume = localVolume ?? volume?.value ?? 0;
   const volumeStep = volume ? Math.max((volume.max - volume.min) / 1000, 0.0001) : 0.001;
-  const volumePercent = volume
-    ? Math.round(
-        ((shownVolume - volume.min) / Math.max(volume.max - volume.min, Number.EPSILON)) *
-          100,
+  const volumeFraction = volume
+    ? Math.max(
+        0,
+        Math.min(
+          1,
+          (shownVolume - volume.min) /
+            Math.max(volume.max - volume.min, Number.EPSILON),
+        ),
       )
     : 0;
+  const volumePercent = Math.round(volumeFraction * 100);
   const track = strip?.kind === 'track' ? strip : null;
+  const isMaster = meterKey === 'master';
 
   return (
     <td className="meter-cell">
-      <div className="mixer-strip">
-        <div className="mixer-body">
+      <div className={`mixer-strip${isMaster ? ' master' : ''}`}>
+        <div className="mixer-meter-control">
           <input
             className="volume-fader"
             type="range"
@@ -113,6 +120,11 @@ export function TrackMeter({ meterKey, label, meters, mixer, setMixer }: Props) 
             aria-orientation="vertical"
             title={`${label} volume · ${volumePercent}%`}
             onChange={changeVolume}
+          />
+          <span
+            className={`volume-indicator${volume?.enabled ? '' : ' disabled'}`}
+            style={{ bottom: `${volumeFraction * 100}%` }}
+            aria-hidden="true"
           />
           <div className="vertical-meter">
             <div
@@ -138,7 +150,7 @@ export function TrackMeter({ meterKey, label, meters, mixer, setMixer }: Props) 
           </div>
         </div>
 
-        {meterKey !== 'master' ? (
+        {!isMaster ? (
           <div className="mixer-controls" role="group" aria-label={`${label} mixer controls`}>
             <button
               type="button"
@@ -162,7 +174,10 @@ export function TrackMeter({ meterKey, label, meters, mixer, setMixer }: Props) 
             </button>
             <button
               type="button"
-              className={`mixer-button mixer-arm${track?.armed ? ' on' : ''}`}
+              className={
+                `mixer-button mixer-arm${track?.armed ? ' on' : ''}` +
+                `${isGroup ? ' group-hidden' : ''}`
+              }
               aria-pressed={track?.armed ?? false}
               aria-label={`${track?.armed ? 'Disarm' : 'Arm'} ${label}`}
               title={

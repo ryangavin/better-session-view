@@ -5,9 +5,6 @@
    before anything underneath can act on it, so dismissing it can't also fire a
    scene or move the selection. Transparent — the grid behind is what you're
    reading while you tag, and dimming it would be a modal, which this isn't. */
-.menu-back {
-  z-index: 20;
-}
 .menu {
   position: fixed;
   width: 190px;

@@ -9,9 +9,10 @@ main {
 .grid-wrap {
   flex: 1;
   overflow: auto;
-  /* No padding-top: the sticky header pins below it, so any padding here is a
-     band where scrolled clip cells show through above the header. */
-  padding: 0 16px 12px;
+  /* No horizontal padding: the song column owns the left edge and the final
+     track owns the right. No padding-top either: the sticky header pins below
+     it, so any padding there is a band where scrolled cells show through. */
+  padding: 0 0 12px;
 }
 
 /* The sticky mixer row is the grid's bottom edge while it is visible. Its own
@@ -32,7 +33,7 @@ main {
 main + footer,
 main + .stats {
   position: relative;
-  z-index: 3;
+  z-index: var(--layer-footer);
   box-shadow: 0 -8px 14px -4px var(--shadow-edge);
 }
 

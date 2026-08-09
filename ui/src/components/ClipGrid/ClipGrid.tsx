@@ -475,6 +475,7 @@ export function ClipGrid({
                   meters={meters}
                   mixer={mixer}
                   setMixer={setMixer}
+                  isGroup={track.isGroup}
                 />
               );
             })}

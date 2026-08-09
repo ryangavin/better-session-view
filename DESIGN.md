@@ -7,8 +7,8 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
 
 - The interface uses dark surfaces. Semantic color tokens live in
   [`ui/src/shared.css`](ui/src/shared.css): neutral foregrounds and borders, amber for
-  selection, active toggles and primary actions, green for playback and success, red for
-  errors, and purple for previews.
+  selection, active toggles and primary actions, green for playback and success, blue for
+  Solo, red for errors, and purple for previews.
 - The sans stack starts with IBM Plex Sans. The mono stack starts with IBM Plex Mono and
   is used for compact labels, facts and grid headings.
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
@@ -24,18 +24,21 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   and a `title`.
 - Icons are inline SVG on a 24-unit grid, draw with `currentColor`, and render at 14px by
   default. The Songs-column controls use the main header's 26×22px icon-button size.
-- Related controls share a bordered button group with dividers between segments.
+- Related controls generally share a bordered button group with dividers between segments.
   Controls with different consequences use separate groups: scene folding changes only
-  this app's display; the song actions in the Songs header change the Live Set.
+  this app's display; the song actions in the Songs header change the Live Set. The Songs
+  header keeps its action buttons borderless while grouping them by adjacency.
 - The first button group after the logo holds the app-only song-index and fold toggles.
 - In the Songs column header, the label is left-aligned. Order, color and Add share one
   right-aligned button group.
 - Toggles keep one glyph and use the amber-on state. Primary actions use an amber fill.
 - The debug console starts closed after every refresh, never opens automatically, and its
   toggle lives with status in the bottom strip.
-- Mixer strips stack fixed 18×18px Track Activator, Solo and Arm buttons below a vertical
-  volume fader and output meter. The activator uses amber when enabled and Arm uses red
-  when armed.
+- Mixer strips place a 22×22px Track Activator above 22×11px Solo and Arm buttons down
+  the lower left side of a full-height output meter. Volume is a draggable triangular
+  indicator beside that meter instead of a second vertical rail. The activator uses
+  amber when enabled, Solo uses blue when selected and Arm uses red when armed. Group
+  tracks retain the Arm button's layout slot but make the button itself invisible.
 
 ## Grid
 
@@ -49,3 +52,10 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   or light ink with the helpers in [`core/src/color.ts`](core/src/color.ts).
 - The mixer is a resizable sticky footer in the same table, so every strip remains aligned
   with its track column and Master remains pinned under Songs.
+
+## Stacking
+
+- Root-level layers are centralized as CSS tokens: ordinary grid chrome stays below 100,
+  the mixer occupies 100–102, viewport overlays use 200, and modal content uses 300.
+- Component-internal paint order may use small local values, but must not introduce a new
+  root-level stacking tier.

@@ -77,6 +77,14 @@ Keep a value in a component file when it describes that component's layout. Prom
 `shared.css` only when changing it should intentionally change the same concept everywhere.
 In particular, components use `--radius-*` rather than choosing literal corner radii.
 
+### Stacking layers
+
+Root-level stacking values are tokens in `shared.css`. Grid chrome occupies the low tiers,
+the mixer owns 100–102, every viewport-sized interaction backdrop owns 200, and modal
+content owns 300. That separation is structural: a sticky table cell must never be able to
+paint over a dialog. Small literal `z-index` values are reserved for local paint order
+inside a component, such as a meter's rules, marker, invisible input and buttons.
+
 ## Dev
 
 ```sh
@@ -1140,16 +1148,20 @@ those same properties directly so a browser resize does not turn into 848 React 
 ## Mixer panel
 
 The header's meter icon opens a column-aligned mixer below the grid. Every visible track
-gets its output meter, a vertical volume fader, Track Activator, Solo and Arm; Master gets
-its output meter and volume fader in the pinned Songs column. A group track is a real
-track, so it gets the same controls, with Arm disabled when Live reports
+gets a full-height output meter, a draggable volume indicator beside it, Track Activator,
+Solo and Arm; Master gets its output meter and volume indicator in the pinned Songs
+column. A group track is a real
+track, so it gets the same strip, but its Arm control is invisible while retaining its
+layout slot. On other tracks Arm remains visible but disabled when Live reports
 `can_be_armed = 0`. The activator is the inverse of `Track.mute`, matching Live's enabled
 button rather than presenting a backwards Mute state.
+Selected Solo uses Live's blue visual language; activator and Arm remain amber and red.
 
 The panel is part of the grid table, so it inherits the exact column widths and horizontal
 scroll position. Its top handle changes the shared height from a 140px minimum; the 220px
-default leaves room for a useful fader and the three stacked controls even at Small's 40px
-column width.
+default leaves room for a useful volume range and the three offset controls even at
+Small's 40px column width. The controls occupy the meter's lower-left side instead of
+shortening it, matching Live's compact mixer-strip geometry.
 
 Mixer observation exists only while the panel is open. Output peaks remain in the 30 Hz
 `MeterStore`; control readback uses a separate `MixerStore`, and both are external stores
@@ -1157,10 +1169,10 @@ so one changing strip does not render `App` or every scene. The LOM seeds a comp
 `MixerState`, then updates a cached strip from each property callback and coalesces pushes
 to one per display frame. It does not re-read every track under volume automation.
 
-Fader input is limited to one `setMixer` patch per animation frame and stays optimistic
+Volume input is limited to one `setMixer` patch per animation frame and stays optimistic
 until Live's observed value catches up. `DeviceParameter.is_enabled = 0` disables the
-fader rather than pretending a mapped, automated or otherwise unavailable parameter can
-be written. Mixer writes do not participate in this app's clip/scene undo.
+indicator rather than pretending a mapped, automated or otherwise unavailable parameter
+can be written. Mixer writes do not participate in this app's clip/scene undo.
 
 ## Track groups
 

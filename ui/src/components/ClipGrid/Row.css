@@ -5,7 +5,7 @@ td.scene {
   left: var(--gutter);
   /* Above every horizontally scrolling track cell and its paint effects. The
      scene header and meter panel occupy higher, separate layers. */
-  z-index: 10;
+  z-index: var(--layer-pinned);
   /* Sticky cells overlap the scrolling track cells, so transparency here
      would turn every clip passing underneath into noise behind the title.
      The flat shadow extends that same opaque surface across the table's left

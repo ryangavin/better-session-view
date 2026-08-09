@@ -208,7 +208,7 @@ tr.song-row td:first-child {
   /* Keep the pinned identity above the scrolling half of its own row,
      including the separator's drop shadow. Its own flat shadow plugs the
      table's transparent left gutter with the same opaque surface. */
-  z-index: 10;
+  z-index: var(--layer-pinned);
   --song-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--rail);
   box-shadow: var(--song-gutter-plug);
 }

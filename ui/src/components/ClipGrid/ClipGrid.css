@@ -84,7 +84,7 @@ table.grid th {
   position: sticky;
   top: var(--gutter);
   background: var(--bg);
-  z-index: 1;
+  z-index: var(--layer-grid-header);
   /* Three jobs, and the order is what keeps them apart — the first shadow in
      the list paints on top. Named `--header-plugs` because the banded rules
      below restate the whole `box-shadow` to add their insets, and this is the
@@ -133,7 +133,7 @@ table.grid th.scene-h {
   /* Above both ordinary sticky track headers and the horizontally scrolling
      body: this cell is the top-left intersection of two pinned axes. It also
      stays above the pinned scene cells as they scroll vertically underneath. */
-  z-index: 20;
+  z-index: var(--layer-pinned-corner);
   text-align: left;
   /* The grid gutter is only 2px: useful between cells, but too tight as the
      inset around a large title and full-size controls. Override only the
@@ -164,22 +164,16 @@ table.grid th.scene-h .scene-action-groups {
 table.grid th.scene-h .scene-action-group {
   height: var(--ctl-h);
   display: flex;
-  border: 1px solid var(--scene-action-border, var(--focus));
-  border-radius: var(--radius-md);
   background: transparent;
-  overflow: hidden;
 }
 button.scene-action {
   width: 26px;
-  height: calc(var(--ctl-h) - 2px);
+  height: var(--ctl-h);
   flex: none;
   border: none;
   border-radius: 0;
   background: transparent;
   color: var(--scene-action-ink, var(--dim));
-}
-button.scene-action + button.scene-action {
-  border-left: 1px solid var(--scene-action-border, var(--focus));
 }
 button.scene-action svg {
   width: 14px;
@@ -187,7 +181,6 @@ button.scene-action svg {
 }
 button.scene-action:hover:not(:disabled) {
   background: transparent;
-  border-color: var(--scene-action-border, var(--focus));
   color: inherit;
 }
 
@@ -393,7 +386,7 @@ table.grid tfoot tr.meter-row td {
   bottom: 0;
   /* The complete mixer panel is the topmost grid layer. Track and song cells
      can scroll behind it on both axes without leaking through its chrome. */
-  z-index: 100;
+  z-index: var(--layer-mixer);
   height: var(--meter-panel-h);
   padding: 8px 4px;
   background: var(--rail);
@@ -407,7 +400,7 @@ table.grid tfoot tr.meter-row td {
    vertically and with the scene/song column horizontally. */
 table.grid tfoot tr.meter-row td:first-child {
   left: var(--gutter);
-  z-index: 102;
+  z-index: var(--layer-mixer-corner);
 }
 
 /* A real spanning footer row, so the resize affordance belongs to the same
@@ -416,7 +409,7 @@ table.grid tfoot tr.meter-row td:first-child {
 table.grid tfoot td.meter-resize-cell {
   position: sticky;
   bottom: calc(var(--meter-panel-h) + var(--gutter));
-  z-index: 101;
+  z-index: var(--layer-mixer-resize);
   height: var(--meter-handle-h);
   padding: 0;
   background: var(--rail);
@@ -451,36 +444,39 @@ table.grid tfoot td.meter-resize-cell {
 }
 
 .mixer-strip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative;
+  width: 32px;
+  max-width: 100%;
   height: calc(var(--meter-panel-h) - 16px);
   min-height: 0;
-  gap: 5px;
+  margin: 0 auto;
 }
 
-.mixer-body {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  width: 100%;
-  min-height: 0;
-  flex: 1;
-  gap: 5px;
+.mixer-strip.master {
+  width: 88px;
+}
+
+.mixer-meter-control {
+  position: absolute;
+  inset: 0 0 0 12px;
+}
+
+.mixer-strip.master .mixer-meter-control {
+  left: auto;
+  width: 20px;
 }
 
 .vertical-meter {
-  display: flex;
-  justify-content: center;
-  height: 100%;
-  min-height: 0;
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 8px;
 }
 
 /* No signal is literally black. Tick rules are painted over the well rather
    than interrupting the green fill, so the bar stays one continuous reading. */
 .meter-well {
   position: relative;
-  width: 10px;
+  width: 8px;
   height: 100%;
   overflow: hidden;
   flex: none;
@@ -514,44 +510,20 @@ table.grid tfoot td.meter-resize-cell {
 }
 
 .volume-fader {
-  width: 14px;
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  min-height: 0;
   margin: 0;
   padding: 0;
-  flex: none;
   writing-mode: vertical-lr;
   direction: rtl;
   -webkit-appearance: none;
   appearance: none;
+  opacity: 0;
   background: transparent;
   cursor: ns-resize;
-}
-
-.volume-fader::-webkit-slider-runnable-track {
-  width: 4px;
-  height: 100%;
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-xs);
-  background: #000;
-}
-
-.volume-fader::-webkit-slider-thumb {
-  width: 14px;
-  height: 7px;
-  margin-left: -6px;
-  -webkit-appearance: none;
-  appearance: none;
-  border: 1px solid var(--fg2);
-  border-radius: var(--radius-xs);
-  background: var(--dim);
-  box-shadow: 0 0 0 1px #000;
-}
-
-.volume-fader:hover::-webkit-slider-thumb,
-.volume-fader:focus-visible::-webkit-slider-thumb {
-  border-color: var(--fg);
-  background: var(--fg2);
 }
 
 .volume-fader:focus-visible {
@@ -559,24 +531,52 @@ table.grid tfoot td.meter-resize-cell {
 }
 
 .volume-fader:disabled {
-  opacity: 0.35;
   cursor: default;
 }
 
+.volume-indicator {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  width: 0;
+  height: 0;
+  transform: translateY(50%);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid var(--fg2);
+  filter: drop-shadow(0 0 1px #000);
+  pointer-events: none;
+}
+
+.volume-indicator.disabled {
+  opacity: 0.35;
+}
+
+.volume-fader:hover ~ .volume-indicator,
+.volume-fader:focus-visible ~ .volume-indicator {
+  border-left-color: var(--fg);
+}
+
+.volume-fader:focus-visible ~ .vertical-meter .meter-well {
+  outline: 1px solid var(--focus);
+  outline-offset: 1px;
+}
+
 .mixer-controls {
+  position: absolute;
+  z-index: 4;
+  bottom: 0;
+  left: 0;
   display: grid;
-  width: 100%;
-  flex: none;
-  justify-items: center;
-  gap: 3px;
+  gap: 2px;
 }
 
 button.mixer-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 11px;
   padding: 0;
   border-color: var(--bd3);
   border-radius: var(--radius-xs);
@@ -586,6 +586,11 @@ button.mixer-button {
   font-size: 10px;
   line-height: 1;
   font-weight: 600;
+}
+
+button.mixer-activator {
+  height: 22px;
+  font-size: 12px;
 }
 
 button.mixer-button:hover:not(:disabled) {
@@ -599,9 +604,15 @@ button.mixer-activator.on {
   color: var(--bg);
 }
 
+button.mixer-button.toggle.on {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: var(--bg);
+}
+
 button.mixer-arm span {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border: 1px solid currentColor;
   border-radius: var(--radius-pill);
   background: currentColor;
@@ -613,8 +624,14 @@ button.mixer-arm.on {
   color: var(--red);
 }
 
+button.mixer-arm.group-hidden {
+  visibility: hidden;
+}
+
 .mixer-master-label {
-  flex: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
   height: 18px;
   color: var(--dim2);
   font-family: var(--mono);

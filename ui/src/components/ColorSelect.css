@@ -27,9 +27,6 @@
 }
 /* Wider than the rail on purpose: fourteen swatches keep Live's row-major hue
    progression intact without making the individual colors harder to hit. */
-.color-select-back {
-  z-index: 20;
-}
 .color-select-popover {
   position: fixed;
   width: 320px;
