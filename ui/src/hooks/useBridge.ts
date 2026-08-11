@@ -435,8 +435,32 @@ export function useBridge(watchMeters = false): BridgeState {
     [client],
   );
 
+  /**
+   * Told, not asked — so nothing comes back to correct the row we hold, and
+   * `Track.fold_state` has no `observe` in the LOM for anything else to report
+   * it either. Patch it here or it keeps whatever the last walk read.
+   *
+   * That staleness is not cosmetic: `reconcile` rebuilds the snapshot around
+   * the tracks it already has, and the grid's columns are read out of those.
+   * Left unpatched, the next write of any kind — tagging a scene from the role
+   * menu, say — hands the grid a snapshot that still says "unfolded" and
+   * silently reopens a group Live is holding shut.
+   */
   const setFold = useCallback(
-    (t: number, folded: boolean) => client.send({ type: 'setFold', t, folded }),
+    (t: number, folded: boolean) => {
+      client.send({ type: 'setFold', t, folded });
+      const s = snapshotRef.current;
+      if (!s) return;
+      const next = {
+        ...s,
+        tracks: s.tracks.map((tr) => (tr.i === t ? { ...tr, isFolded: folded } : tr)),
+      };
+      // The ref as well as the state: `write` reconciles against the ref, and a
+      // write in the same tick as the fold would otherwise reconcile away from
+      // the copy React has not committed yet.
+      snapshotRef.current = next;
+      setSnapshot(next);
+    },
     [client],
   );
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { buildColumns } from '../../../core/src/trackColumns.js';
 import type { BridgeState } from './useBridge.js';
 
@@ -11,18 +11,22 @@ import type { BridgeState } from './useBridge.js';
  * the eye.
  */
 export function useTrackColumns(snapshot: BSV.Snapshot | null, setFold: BridgeState['setFold']) {
-  const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(() => new Set());
-
-  // Seed the folded groups from Live's own fold state on every snapshot; a
-  // snapshot is a resync with Live, so it wins over local toggles made since
-  // the last one. That's only safe because toggling writes back — before it
-  // did, every write silently undid whatever you had folded.
-  useEffect(() => {
-    if (!snapshot) return;
-    setCollapsed(
-      new Set(snapshot.tracks.filter((t) => t.isGroup && t.isFolded).map((t) => t.i)),
-    );
-  }, [snapshot]);
+  /**
+   * Read out of the snapshot, never mirrored into state beside it.
+   *
+   * **Live owns this, unlike a folded song** — that one is ours, keyed by song
+   * name, and never leaves the browser. A group's fold state is `fold_state`
+   * on a real track, so a copy here is a second answer to a question the
+   * snapshot already answers, and it was the answer that lost: the copy was
+   * re-seeded on every snapshot, and a write reconciles into a *new* snapshot
+   * object, so tagging one scene discarded every fold made since the last walk
+   * while Live went on holding those groups shut.
+   */
+  const collapsed = useMemo<ReadonlySet<number>>(
+    () =>
+      new Set((snapshot?.tracks ?? []).filter((t) => t.isGroup && t.isFolded).map((t) => t.i)),
+    [snapshot],
+  );
 
   const columns = useMemo(
     () => (snapshot ? buildColumns(snapshot.tracks, collapsed) : []),
@@ -40,24 +44,12 @@ export function useTrackColumns(snapshot: BSV.Snapshot | null, setFold: BridgeSt
     [columns],
   );
 
-  // Local state moves first and Live is told after: this redraws columns, and
-  // waiting a round trip to redraw a fold you just clicked is the one place
-  // that would feel slow. If Live rejects it, the next snapshot puts it back.
-  //
-  // The message is sent out here rather than from inside the updater, which
-  // has to stay pure — StrictMode runs updaters twice, and a send in there
-  // would fold Live, unfold it, and leave the grid disagreeing with the set.
+  // One call, and it does both halves: `setFold` tells Live and patches the
+  // track row we hold, which is what redraws these columns. Still no round
+  // trip — waiting one to redraw a fold you just clicked is the one place that
+  // would feel slow — and if Live rejects it the next walk puts it back.
   const onToggleGroup = useCallback(
-    (trackIndex: number) => {
-      const folded = !collapsed.has(trackIndex);
-      setCollapsed((prev) => {
-        const next = new Set(prev);
-        if (folded) next.add(trackIndex);
-        else next.delete(trackIndex);
-        return next;
-      });
-      setFold(trackIndex, folded);
-    },
+    (trackIndex: number) => setFold(trackIndex, !collapsed.has(trackIndex)),
     [collapsed, setFold],
   );
 

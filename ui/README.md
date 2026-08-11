@@ -506,8 +506,10 @@ Three things about it are load-bearing:
 - **Folding is keyed by song, not by scene index**, so it survives a re-snapshot. Writes
   patch the snapshot now rather than re-walking, but a re-snapshot still happens — every
   scene move, and every write Live didn't take in full — and a fold state that reset then
-  would make the grid useless during a mapping pass. Like collapsing a track group, it
-  never writes to Live.
+  would make the grid useless during a mapping pass. **Unlike collapsing a track group,
+  this never writes to Live** — a song is ours and Live has no idea what one is, where a
+  group's fold state is `fold_state` on a real track. That's why this one is state and
+  the other is read straight off the snapshot; see `useTrackColumns`.
 - **`rows` replaces `sceneCount` everywhere movement or selection happens.**
   `useSongLayout` computes it from `songRows`, and `App` threads it into
   `moveActive` and `cellsInBlock` exactly as it threads `trackColumns`. Without that, `⌘↓` walks into folded scenes and fires
@@ -1291,11 +1293,19 @@ one thing that goes to Live, and it needs no new message: `launch` addresses a *
 not a clip, so a group slot fires over the path that was already there.
 
 **Folding writes back to Live** (`setFold` → `fold_state`), so the grid and the Session
-view agree and a fold survives the next snapshot. The folded set is still seeded from
-Live's `fold_state` on every snapshot; that's only safe *because* it writes back —
-before it did, every write silently unfolded whatever you had folded. The write is
-fire-and-forget: the columns move before Live is told, because waiting a round trip to
-redraw a fold you just clicked is the one thing that would feel slow.
+view agree and a fold survives the next snapshot. The write is fire-and-forget: the
+columns move before Live is told, because waiting a round trip to redraw a fold you just
+clicked is the one thing that would feel slow.
+
+**Which group is folded is read off the snapshot, and `setFold` patches the track row it
+writes.** Writing back is not on its own enough to make that safe, and believing it was
+is what left the grid disagreeing with Live: `fold_state` has no `observe`, so nothing
+ever told the row we hold that it had moved, and the folded set used to be *mirrored*
+into its own state and re-seeded on every snapshot. A write reconciles into a new
+snapshot object, so any write at all — tagging a scene from the role menu is the one
+that found it — re-seeded from track rows last read before the fold and quietly reopened
+the group while Live kept it shut. Patching the row at the point of the write leaves one
+copy of the answer, and the grid derives from it.
 
 Selection is deliberately left alone when a group collapses: hidden clips stay
 selected and still apply. Collapsing is about what you're looking at, not what you've
