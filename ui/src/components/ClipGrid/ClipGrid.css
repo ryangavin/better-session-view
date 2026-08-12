@@ -468,17 +468,22 @@ table.grid tfoot td.meter-resize-cell {
   width: 88px;
 }
 
-.mixer-meter-control {
+.mixer-fader {
   --mixer-meter-w: clamp(8px, calc(100% - 40px), 16px);
 
   position: relative;
+  display: flex;
   flex: 1 0 146px;
+  width: 56px;
+  max-width: 100%;
   min-height: 0;
+  margin: 0 auto;
 }
 
-.mixer-strip.master .mixer-meter-control {
-  width: 44px;
-  margin: 0 auto;
+.mixer-meter-control {
+  position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .mixer-sends {
@@ -810,7 +815,6 @@ table.grid tfoot td.meter-resize-cell {
 }
 
 .mixer-strip.master .mixer-pan {
-  left: 22px;
   bottom: 22px;
 }
 
@@ -894,4 +898,6 @@ button.mixer-arm.group-hidden {
   letter-spacing: 0.1em;
   text-align: center;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: visible;
 }

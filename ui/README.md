@@ -1241,8 +1241,10 @@ control gutter, and the brighter 2px 0 dB rule anchors the scale. The peak field
 the highest position until clicked. Volume and pan
 labels come from `DeviceParameter.str_for_value`, so their compact text is Live's own
 rather than a second conversion maintained by the client. Double-clicking either draggable
-control restores its reported `default_value`. Master centers the same 44px control strip
-inside its wider pinned cell, keeping its readouts, pan, label and rail on one axis.
+control restores its reported `default_value`. Master and ordinary tracks render the same
+56px fader subtree, so the rail, peak/volume fields and pan cannot acquire separate sizing.
+Master merely centers that shared subtree in its wider pinned cell and replaces the track
+switches with a no-wrap label.
 
 The panel is part of the grid table, so it inherits the exact column widths and horizontal
 scroll position. A subtle full-height rule at each ordinary track boundary restores the

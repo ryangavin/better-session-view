@@ -56,6 +56,8 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   faders; Master has no sends, so its meter keeps the full panel height. The activator
   uses amber when enabled, Solo uses blue when selected and Arm uses red when armed.
   Group tracks retain the Arm button's layout slot but make the button itself invisible.
+  Ordinary tracks and Master render the same 56px fader subtree; only sends, switches and
+  Master's non-clipping label differ around it.
 
 ## Grid
 
