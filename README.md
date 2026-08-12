@@ -100,7 +100,7 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run dev` | three watchers in parallel; UI dev server on :5173 |
 | `npm run dev:ui` | the UI dev server alone, against a device someone else is running |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
-| `npm test` | `core/` unit tests |
+| `npm test` | pure `core/` and `ui/lib` unit tests |
 | `npm run typecheck` | all five projects |
 
 A fresh clone needs `npm install && npm run build` before the device exists.

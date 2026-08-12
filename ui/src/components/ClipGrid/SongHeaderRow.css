@@ -15,14 +15,30 @@
    table, both axes, is the same 2px. What sets a header apart is its own
    surface — `--rail` against the clip cells' lighter fill, the song's wash,
    and the bar down its left edge. Surfaces, not edges. */
+/* The row's height, and the budget the identity lives inside.
+   ------------------------------------------------------------------------
+   **Every header is the same height, artist or none.** A collapsed set is a
+   list of nothing else, so a row that grows a line for some songs costs both
+   density and a straight edge to read down.
+
+   36px is a floor, not a preference — it's what a folded row needs for its
+   miniature scene sequence — so the artist is free as long as it fits inside
+   it. The line heights sit here beside the padding because their sum has to
+   equal the cell's content box, 14 + 10 = 36 − 2×6, and a sum spread over four
+   rules is one nobody checks. */
 tr.song-row {
+  --song-row-h: 36px;
+  --song-row-pad: 6px;
+  --song-text-h: calc(var(--song-row-h) - 2 * var(--song-row-pad));
+  --song-name-line: 14px;
+  --song-artist-line: 10px;
   /* The tinted empty cells make the grid below read as one continuous field.
      A soft shadow under the whole row separates the song header from that
      field without drawing the chopped-up bevel a border on every td creates. */
   filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.55));
 }
 tr.song-row td {
-  padding: 6px 8px;
+  padding: var(--song-row-pad) 8px;
   background: var(--rail);
   cursor: pointer;
   white-space: nowrap;
@@ -95,6 +111,10 @@ tr.song-row .song-identity {
 tr.song-row .song-identity-text {
   flex: 1 1 auto;
   min-width: 0;
+  /* The cap, so the invariant is enforced rather than merely arithmetic that
+     currently works out. A font that renders taller than its line box, or a
+     third line added here later, clips instead of reopening every row. */
+  max-height: var(--song-text-h);
   overflow: hidden;
 }
 tr.song-row .song-identity-text > * {
@@ -107,6 +127,9 @@ tr.song-row button.song {
   min-width: 0;
   font-family: var(--sans);
   font-size: 12px;
+  /* Stated rather than left to `normal`, which is a font's own business and
+     therefore not something the row's height budget can be written against. */
+  line-height: var(--song-name-line);
   font-weight: 600;
   color: var(--fg);
   letter-spacing: -0.01em;
@@ -141,8 +164,11 @@ tr.song-row .song-artist {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--mono);
-  font-size: 9.5px;
-  line-height: 13px;
+  /* 9px against the facts' 9.5px, and the tightest line in the row. The second
+     line is the one that has to be paid for out of a fixed height, so it takes
+     the smallest size the rest of the grid already uses — the tag chip's. */
+  font-size: 9px;
+  line-height: var(--song-artist-line);
   color: var(--dim);
 }
 tr.song-row .song-artist.clash {
@@ -321,11 +347,13 @@ tr.song-row td.fill {
   padding: 0;
   vertical-align: middle;
 }
-/* One height in both states. Folded rows need this room for their miniature
-   scene sequence, and keeping it while expanded prevents the song list from
-   jumping vertically whenever a header is toggled. */
+/* One height in every state: folded or open, artist or none. Folded rows need
+   this room for their miniature scene sequence, and keeping it everywhere else
+   stops the list jumping vertically when a header is toggled or a song is
+   given an artist. It is a floor, not a preference — see the token block at
+   the top of this file for what has to fit inside it. */
 tr.song-row td {
-  height: 36px;
+  height: var(--song-row-h);
 }
 /* What the tiles give up their space for: a fault to fix, or a move about to
    happen. Both are things you act on, and both outrank a summary of what the

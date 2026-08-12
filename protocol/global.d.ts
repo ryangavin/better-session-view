@@ -223,13 +223,18 @@ declare namespace BSV {
   }
 
   /** One writable Live mixer parameter, in its native DeviceParameter range. */
-  interface MixerVolumeState {
+  interface MixerParameterState {
     value: number;
     min: number;
     max: number;
+    defaultValue: number;
+    /** Live's own user-facing representation, e.g. `-3.8 dB` or `C`. */
+    display: string;
     /** False when automation, mapping, or Live itself prevents direct edits. */
     enabled: boolean;
   }
+
+  type MixerVolumeState = MixerParameterState;
 
   /** The controls beneath one ordinary track column in the mixer panel. */
   interface MixerTrackState {
@@ -240,13 +245,16 @@ declare namespace BSV {
     armed: boolean;
     canArm: boolean;
     /** Null only when the documented MixerDevice volume path did not resolve. */
-    volume: MixerVolumeState | null;
+    volume: MixerParameterState | null;
+    /** Null only when the documented MixerDevice panning path did not resolve. */
+    pan: MixerParameterState | null;
   }
 
   /** One coherent mixer-control readback. Levels remain in MeterFrame. */
   interface MixerState {
     /** Master has volume but no activator, Solo, or Arm controls. */
-    masterVolume: MixerVolumeState | null;
+    masterVolume: MixerParameterState | null;
+    masterPan: MixerParameterState | null;
     tracks: MixerTrackState[];
   }
 
@@ -258,6 +266,7 @@ declare namespace BSV {
     solo?: boolean;
     armed?: boolean;
     volume?: number;
+    pan?: number;
   }
 
   /** Live's set-wide control-bar state, observed and pushed as one unit. */

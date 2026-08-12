@@ -45,9 +45,11 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   toggle lives with status in the bottom strip.
 - Mixer strips place a 22×22px Track Activator above 22×11px Solo and Arm buttons down
   the lower left side of a full-height output meter. Volume is a draggable triangular
-  indicator beside that meter instead of a second vertical rail. The activator uses
-  amber when enabled, Solo uses blue when selected and Arm uses red when armed. Group
-  tracks retain the Arm button's layout slot but make the button itself invisible.
+  indicator beside that meter instead of a second vertical rail. Resettable peak and
+  exact volume readouts occupy the top-left; a 22×16px pan field sits above the switch
+  stack. The activator uses amber when enabled, Solo uses blue when selected and Arm uses
+  red when armed. Group tracks retain the Arm button's layout slot but make the button
+  itself invisible.
 
 ## Grid
 
@@ -61,6 +63,11 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   names one. The name and artist are the only part that stacks: the fold glyph, bpm, key,
   tag chip and part marker stay single items centered on the row, so a two-line header
   reads as one taller block rather than as a row whose annotations rode up to the top.
+- **Every song header is 36px, artist or none** — a collapsed set is a list of nothing
+  else. The height is a floor set by the folded shape strip, and the two text lines are
+  sized to fit inside it, so naming an artist costs no vertical space at all. The line
+  heights and the padding are tokens on `tr.song-row` because their sum has to equal the
+  cell's content box.
 - Live colors are rendered from Live's palette. Text laid over a Live color chooses dark
   or light ink with the helpers in [`core/src/color.ts`](core/src/color.ts).
 - One ▶ launcher means "fire this" everywhere it appears: the scene gutter, a group's slot

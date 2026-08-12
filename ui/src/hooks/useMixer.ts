@@ -4,11 +4,15 @@ import type { MeterKey } from './useMeters.js';
 
 export type MixerStripState =
   | ({ kind: 'track' } & BSV.MixerTrackState)
-  | { kind: 'master'; volume: BSV.MixerVolumeState | null };
+  | {
+      kind: 'master';
+      volume: BSV.MixerParameterState | null;
+      pan: BSV.MixerParameterState | null;
+    };
 
-function sameVolume(
-  a: BSV.MixerVolumeState | null,
-  b: BSV.MixerVolumeState | null,
+function sameParameter(
+  a: BSV.MixerParameterState | null,
+  b: BSV.MixerParameterState | null,
 ): boolean {
   return (
     a === b ||
@@ -17,12 +21,18 @@ function sameVolume(
       a.value === b.value &&
       a.min === b.min &&
       a.max === b.max &&
+      a.defaultValue === b.defaultValue &&
+      a.display === b.display &&
       a.enabled === b.enabled)
   );
 }
 
 function sameStrip(a: MixerStripState | null, b: MixerStripState): boolean {
-  if (!a || a.kind !== b.kind || !sameVolume(a.volume, b.volume)) return false;
+  if (
+    !a || a.kind !== b.kind ||
+    !sameParameter(a.volume, b.volume) ||
+    !sameParameter(a.pan, b.pan)
+  ) return false;
   if (a.kind === 'master' || b.kind === 'master') return true;
   return (
     a.t === b.t &&
@@ -41,7 +51,11 @@ export class MixerStore {
   update = (state: BSV.MixerState | null): void => {
     const incoming = new Map<MeterKey, MixerStripState>();
     if (state) {
-      incoming.set('master', { kind: 'master', volume: state.masterVolume });
+      incoming.set('master', {
+        kind: 'master',
+        volume: state.masterVolume,
+        pan: state.masterPan,
+      });
       for (const track of state.tracks) {
         incoming.set(track.t, { kind: 'track', ...track });
       }

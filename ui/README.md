@@ -67,6 +67,9 @@ src/lib/
   snapshotTiming.ts   the console phase breakdown + error text
 ```
 
+Pure helpers under `src/lib/` can have colocated Vitest coverage. `npm test` runs those
+alongside the core suite without requiring a browser or Live.
+
 ## CSS ownership
 
 `shared.css` is the single source of truth for color, typography, control-height and
@@ -1190,18 +1193,29 @@ those same properties directly so a browser resize does not turn into 848 React 
 ## Mixer panel
 
 The header's meter icon opens a column-aligned mixer below the grid. Every visible track
-gets a full-height output meter, a draggable volume indicator beside it, Track Activator,
-Solo and Arm; Master gets its output meter and volume indicator in the pinned Songs
-column. A group track is a real
+gets a full-height output meter, a draggable volume indicator beside it, resettable peak
+and exact volume readouts, compact pan, Track Activator, Solo and Arm; Master gets the
+same meter, volume and pan treatment in the pinned Songs column. A group track is a real
 track, so it gets the same strip, but its Arm control is invisible while retaining its
 layout slot. On other tracks Arm remains visible but disabled when Live reports
 `can_be_armed = 0`. The activator is the inverse of `Track.mute`, matching Live's enabled
 button rather than presenting a backwards Mute state.
 Selected Solo uses Live's blue visual language; activator and Arm remain amber and red.
 
+Live's `output_meter_*` values already represent positions on its normalized logarithmic
+meter. The fill uses that position directly; applying `log10` again makes a half-height
+reading appear nearly full. The rail runs from -60 to +6 dB, with 6 dB rules and fixed
+green/amber/red zones. Rules are clipped to the meter well; they never paint into the
+control gutter, and the brighter 2px 0 dB rule anchors the scale. The peak field holds
+the highest position until clicked. Volume and pan
+labels come from `DeviceParameter.str_for_value`, so their compact text is Live's own
+rather than a second conversion maintained by the client. Double-clicking either draggable
+control restores its reported `default_value`. Master centers the same 44px control strip
+inside its wider pinned cell, keeping its readouts, pan, label and rail on one axis.
+
 The panel is part of the grid table, so it inherits the exact column widths and horizontal
 scroll position. Its top handle changes the shared height from a 140px minimum; the 220px
-default leaves room for a useful volume range and the three offset controls even at
+default leaves room for a useful volume range and the four offset controls even at
 Small's 40px column width. The controls occupy the meter's lower-left side instead of
 shortening it, matching Live's compact mixer-strip geometry.
 
@@ -1209,12 +1223,13 @@ Mixer observation exists only while the panel is open. Output peaks remain in th
 `MeterStore`; control readback uses a separate `MixerStore`, and both are external stores
 so one changing strip does not render `App` or every scene. The LOM seeds a complete
 `MixerState`, then updates a cached strip from each property callback and coalesces pushes
-to one per display frame. It does not re-read every track under volume automation.
+to one per display frame. It does not re-read every track under parameter automation.
 
-Volume input is limited to one `setMixer` patch per animation frame and stays optimistic
-until Live's observed value catches up. `DeviceParameter.is_enabled = 0` disables the
-indicator rather than pretending a mapped, automated or otherwise unavailable parameter
-can be written. Mixer writes do not participate in this app's clip/scene undo.
+Volume and pan input are limited to one `setMixer` patch per animation frame and stay
+optimistic until Live's observed value catches up. `DeviceParameter.is_enabled = 0`
+disables the indicator rather than pretending a mapped, automated or otherwise
+unavailable parameter can be written. Mixer writes do not participate in this app's
+clip/scene undo.
 
 ## Track groups
 

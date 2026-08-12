@@ -81,7 +81,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `delta` | — a partial re-read after a change made in Live |
 | `playState` | — a play-state observer fired |
 | `meterLevels` | — complete current track and master output-level frame |
-| `mixerState` | — complete current activator, Solo, Arm and volume state |
+| `mixerState` | — complete current activator, Solo, Arm, volume and pan state |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
 | `transportState` | — Live's complete observed control-bar state changed |
 | `deviceState` | — restored or changed set-owned configuration |
@@ -174,10 +174,11 @@ attach to, so `bridge.ts` **broadcasts** an `error` with no `id` when nothing is
 dropping it is how a silent bug hides.
 
 **Mixer controls are coarse-grained separately from level frames.** `MixerState` carries
-every track's activator, Solo, Arm capability/state and volume parameter, plus Master
-volume. One property callback produces one coherent cached state; it does not re-read
-every strip. `MeterFrame` remains numbers-only at 30 Hz, so moving a fader or running
-volume automation never puts the entire grid through React state. `setMixer` is one patch
+every track's activator, Solo, Arm capability/state, volume and pan parameters, plus Master
+volume and pan. Parameters include Live's formatted display and reset values. One property
+callback produces one coherent cached state; it does not re-read every strip. `MeterFrame`
+remains numbers-only at 30 Hz, so moving a control or running parameter automation never
+puts the entire grid through React state. `setMixer` is one patch
 for one strip, even when a future gesture changes several related fields together.
 
 **Play state is per track, never per clip.** `TrackPlayState` carries

@@ -445,7 +445,7 @@ table.grid tfoot td.meter-resize-cell {
 
 .mixer-strip {
   position: relative;
-  width: 32px;
+  width: 44px;
   max-width: 100%;
   height: calc(var(--meter-panel-h) - 16px);
   min-height: 0;
@@ -458,12 +458,13 @@ table.grid tfoot td.meter-resize-cell {
 
 .mixer-meter-control {
   position: absolute;
-  inset: 0 0 0 12px;
+  inset: 0;
 }
 
 .mixer-strip.master .mixer-meter-control {
-  left: auto;
-  width: 20px;
+  right: auto;
+  left: 22px;
+  width: 44px;
 }
 
 .vertical-meter {
@@ -497,7 +498,14 @@ table.grid tfoot td.meter-resize-cell {
   right: 0;
   left: 0;
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.meter-rule.zero {
+  z-index: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.32);
 }
 
 .meter-level {
@@ -505,8 +513,32 @@ table.grid tfoot td.meter-resize-cell {
   inset: 0;
   transform: scaleY(0);
   transform-origin: center bottom;
-  background: var(--green);
+  border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+  /* Live's meter scale has 0 dB at 60/66 of the rail. Keep the warning zones
+     fixed to that scale while the element itself reveals the current level. */
+  background: linear-gradient(
+    to top,
+    var(--green) 0 90.91%,
+    var(--amber) 90.91% 95.45%,
+    var(--red) 95.45% 100%
+  );
   transition: transform 24ms linear;
+}
+
+.meter-peak {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--fg);
+  box-shadow: 0 0 1px #000;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.meter-peak.visible {
+  opacity: 1;
 }
 
 .volume-fader {
@@ -552,6 +584,54 @@ table.grid tfoot td.meter-resize-cell {
   opacity: 0.35;
 }
 
+.mixer-readouts {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 22px;
+  gap: 5px;
+  pointer-events: none;
+}
+
+.meter-peak-readout,
+.mixer-volume-readout,
+.mixer-pan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-control);
+  color: var(--fg2);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.meter-peak-readout {
+  color: var(--dim);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.meter-peak-readout:hover,
+.meter-peak-readout:focus-visible {
+  border-color: var(--focus);
+  color: var(--fg);
+  outline: none;
+}
+
+.mixer-volume-readout {
+  color: var(--fg);
+}
+
 .volume-fader:hover ~ .volume-indicator,
 .volume-fader:focus-visible ~ .volume-indicator {
   border-left-color: var(--fg);
@@ -562,6 +642,66 @@ table.grid tfoot td.meter-resize-cell {
   outline-offset: 1px;
 }
 
+.mixer-pan {
+  position: absolute;
+  z-index: 5;
+  bottom: 66px;
+  left: 0;
+  cursor: ew-resize;
+  overflow: hidden;
+}
+
+.mixer-pan.disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pan-fader {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.pan-fader:disabled {
+  cursor: default;
+}
+
+.mixer-pan > span {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.mixer-pan > span::after {
+  content: '';
+  position: absolute;
+  left: var(--pan-position);
+  bottom: -5px;
+  width: 2px;
+  height: 1px;
+  background: var(--dim2);
+  transform: translateX(-50%);
+}
+
+.mixer-pan:focus-within {
+  border-color: var(--focus);
+  color: var(--fg);
+}
+
+.mixer-strip.master .mixer-pan {
+  left: 22px;
+  bottom: 22px;
+}
+
 .control-group.mixer-controls {
   position: absolute;
   z-index: 4;
@@ -569,7 +709,7 @@ table.grid tfoot td.meter-resize-cell {
   left: 0;
   display: grid;
   align-items: normal;
-  gap: 2px;
+  gap: 5px;
 }
 
 button.mixer-button {
@@ -633,11 +773,13 @@ button.mixer-arm.group-hidden {
   position: absolute;
   bottom: 0;
   left: 0;
+  width: 100%;
   height: 18px;
   color: var(--dim2);
   font-family: var(--mono);
   font-size: 9px;
   line-height: 18px;
   letter-spacing: 0.1em;
+  text-align: center;
   text-transform: uppercase;
 }

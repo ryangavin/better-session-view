@@ -69,7 +69,7 @@ write.**
 
 ```sh
 npm run typecheck    # all five projects
-npm test             # core/ unit tests
+npm test             # pure core/ and ui/lib unit tests
 npm run build        # must succeed from a clean tree
 ```
 
