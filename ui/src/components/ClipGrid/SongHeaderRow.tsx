@@ -99,8 +99,8 @@ export const SongHeaderRow = memo(function SongHeaderRow({
       : ({
           '--song-rgb': hex(band),
           '--song-wash': `${hex(band)}24`,
-          // Half strength, for the cells right of the title — see the note on
-          // `.song-row.colored td` in SongHeaderRow.css.
+          // Half strength, for a folded row's track cells: the cell holding the
+          // title is the song, those are what's inside it. See color.md.
           '--song-wash-dim': `${hex(band)}12`,
         } as CSSProperties);
 
@@ -114,128 +114,80 @@ export const SongHeaderRow = memo(function SongHeaderRow({
   // name; a reprise is exactly where the tiles are worth most.
   const notice = header.colorClash || dropNote !== '';
 
-  const title = (
-    /* Fixed-width slots rather than a run of inline spans, so a hundred headers
-       read as columns. Each holds its width whether or not the song fills it —
-       an empty slot is what keeps the next song's name on the same vertical
-       line. */
-    <div className="song-line">
-      {/* One lead slot matches the launcher + scene-number span below it. The
-          icon itself begins after the launcher width, directly over the scene
-          numbers, while BPM still begins at the same fixed guide. */}
-      <span className="fold">
-        <IconGroupFold folded={header.collapsed} />
-      </span>
-      {/* The facts lead, so the key lands immediately left of the name it
-          describes. BPM stays outside it as the numeric tempo column. Both
-          are right-aligned: the values differ in
-          width ("94" / "128", "Bm" / "F#m") and their right edges are what a
-          column of them should line up on.
-
-          A song that states neither still shows both slots, as dashes as wide
-          as the value that's missing — three for a bpm, two for a key. An empty
-          slot reads as a rendering gap; a dash says the set never named one,
-          which is a thing to go and fix. Dimmer than any real value, and it
-          stays dim under `clash` — nothing said is not the same as two scenes
-          disagreeing. */}
-      <span className={`facts${header.clash ? ' clash' : ''}`}>
-        <span className={`bpm${header.bpm === '' ? ' none' : ''}`}>{header.bpm || '---'}</span>
-        <span className={`key${header.key === '' ? ' none' : ''}`}>{header.key || '--'}</span>
-      </span>
-      {/* Name and tag share one constrained identity slot. Keeping the pill
-          inside it matters when the song is open: the header spans the whole
-          table, but its identity still belongs entirely to the scene column.
-
-          Two lines, with the artist under the name rather than beside it. The
-          scene column is 316px and most of it is already spent before the name
-          starts, so an artist sharing that line could only take width off the
-          one thing a column of these is read by. Underneath, it gets the whole
-          slot and truncates only when it is itself too long. */}
-      <span className="song-identity">
-        {/* Name over artist. Only this stacks — everything else in the row,
-            the tag chip included, stays a single item centered against the
-            pair, so a two-line song reads as one taller block rather than as
-            a row whose annotations moved up. */}
-        <span className="song-identity-text">
-          <ControlButton
-            type="button"
-            className="song"
-            title={
-              `Work on ${header.song}` +
-              (header.artist === '' ? '' : ` by ${header.artist}`) +
-              ' — selects every scene of it'
-            }
-            onClick={(e) => {
-              e.stopPropagation();
-              onPickSong(header.songKey);
-            }}
-          >
-            {header.song}
-          </ControlButton>
-          {/* Only when the set says so. Reserving the line on every header
-              would spend a second row of height across a whole set to say
-              nothing on most of it — the opposite trade to the fixed *width*
-              slots, which cost nothing when empty. */}
-          {header.artist !== '' && (
-            <span
-              className={`song-artist${header.artistClash ? ' clash' : ''}`}
-              title={
-                header.artistClash
-                  ? `This song's scenes disagree: ${header.artist}`
-                  : header.artist
-              }
-            >
-              {header.artist}
-            </span>
-          )}
-        </span>
-        <TagChip
-          tag={header.tag}
-          color="var(--song-rgb, var(--caption))"
-          clash={header.tagClash}
-          title={
-            header.tagClash
-              ? `This song's scenes disagree: ${header.tag}`
-              : undefined
-          }
-        />
-      </span>
-      {/* Only worth saying when there is more than one — a song in two runs is
-          a reprise, or it's two different songs sharing a name. Folded, it
-          shortens to `2/2`: it has to share the scene column with the shape,
-          and the tooltip still spells it out. */}
-      {header.blocks > 1 && header.collapsed && (
-        <span className="part" title={`part ${header.block} of ${header.blocks}`}>
-          {header.block}/{header.blocks}
-        </span>
-      )}
-    </div>
+  /* The two shapes are laid out differently but they are the same facts about
+     the same song, so the pieces are built once here and placed twice below. A
+     tooltip that only got fixed in one of them would be the obvious bug. */
+  const foldGlyph = (
+    <span className="fold">
+      <IconGroupFold folded={folded} />
+    </span>
   );
-
-  /* Expanded rows have a real scene-column cell now, so they can pin at the
-     same edge as scene names. Details that used to follow the title inside one
-     table-spanning cell belong in the remaining track-region cell. */
-  const openDetails = (
-    <span className="song-details">
-      {header.blocks > 1 && (
-        <span className="part">
-          part {header.block} of {header.blocks}
-        </span>
-      )}
-      {header.colorClash && (
-        <span
-          className="mixed-color"
-          title="This song's scenes hold more than one color — pick a swatch to make it one"
-        >
-          mixed color
-        </span>
-      )}
-      {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
+  const songButton = (
+    <ControlButton
+      type="button"
+      className="song"
+      title={
+        `Work on ${header.song}` +
+        (header.artist === '' ? '' : ` by ${header.artist}`) +
+        ' — selects every scene of it'
+      }
+      onClick={(e) => {
+        e.stopPropagation();
+        onPickSong(header.songKey);
+      }}
+    >
+      {header.song}
+    </ControlButton>
+  );
+  // Only when the set says so. Reserving the line on every header would spend a
+  // second row of height across a whole set to say nothing on most of it — the
+  // opposite trade to the fixed *width* slots, which cost nothing when empty.
+  const artistText =
+    header.artist === '' ? null : (
+      <span
+        className={`song-artist${header.artistClash ? ' clash' : ''}`}
+        title={
+          header.artistClash
+            ? `This song's scenes disagree: ${header.artist}`
+            : header.artist
+        }
+      >
+        {header.artist}
+      </span>
+    );
+  // A song that states neither fact still shows both slots, as dashes as wide as
+  // the value that's missing — three for a bpm, two for a key. An empty slot
+  // reads as a rendering gap; a dash says the set never named one, which is a
+  // thing to go and fix. Dimmer than any real value, and it stays dim under
+  // `clash` — nothing said is not the same as two scenes disagreeing.
+  const facts = (
+    <span className={`facts${header.clash ? ' clash' : ''}`}>
+      <span className={`bpm${header.bpm === '' ? ' none' : ''}`}>{header.bpm || '---'}</span>
+      <span className={`key${header.key === '' ? ' none' : ''}`}>{header.key || '--'}</span>
+    </span>
+  );
+  const tagChip = (
+    <TagChip
+      tag={header.tag}
+      color="var(--song-rgb, var(--caption))"
+      clash={header.tagClash}
+      title={
+        header.tagClash ? `This song's scenes disagree: ${header.tag}` : undefined
+      }
+    />
+  );
+  const mixedColor = header.colorClash && (
+    <span
+      className="mixed-color"
+      title="This song's scenes hold more than one color — pick a swatch to make it one"
+    >
+      mixed color
     </span>
   );
 
-  // The scene-column lead is the drag handle in both shapes. Keeping it as its
-  // own cell is also what lets the song identity stay pinned horizontally.
+  // The drag handle: the pinned lead cell when folded, where the rest of the
+  // row is tiles, and the whole bar when open, where there is nothing else in
+  // it to grab by mistake.
   const lead = {
     draggable: true,
     onDragStart: (e: DragEvent<HTMLTableCellElement>) => {
@@ -274,36 +226,79 @@ export const SongHeaderRow = memo(function SongHeaderRow({
       }}
     >
       {!folded ? (
-        <>
-          <td className="song-lead" {...lead}>
-            {title}
-          </td>
-          {columns.length > 0 && (
-            <td className="song-detail" colSpan={columns.length}>
-              {openDetails}
-            </td>
-          )}
-        </>
+        /* One cell across every column. The header segments the grid, so
+           nothing sits beside it — and with no column to line up against,
+           nothing inside it holds a fixed width either. The name leads, because
+           the slots that used to lead exist to make a hundred *folded* headers
+           read as a table of contents, which is the other shape's job.
+
+           Its contents pin to the left edge rather than scrolling away with the
+           row, so scrolling out to track 30 still says which song those clips
+           belong to. That's `position: sticky` on the line inside the cell —
+           which is also why this cell, alone in the table, may not have
+           `overflow: hidden`: an ancestor that clips becomes the sticky
+           element's scrollport, and a scrollport that never scrolls never
+           sticks. */
+        <td className="song-span" colSpan={columns.length + 1} {...lead}>
+          <div className="song-line">
+            {foldGlyph}
+            {songButton}
+            {artistText}
+            {facts}
+            {tagChip}
+            {header.blocks > 1 && (
+              <span className="part">
+                part {header.block} of {header.blocks}
+              </span>
+            )}
+            {mixedColor}
+            {/* The cost, on the indicator itself. This move can't be undone
+                from here, so what it's about to do belongs in front of you
+                while your finger is still on the mouse — not in the log
+                afterwards. */}
+            {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
+          </div>
+        </td>
       ) : (
         <>
+          {/* Folded, the same facts are a line in a table of contents: fixed
+              slots so a hundred of them read as columns, each holding its width
+              whether or not the song fills it. The lead slot matches the
+              launcher and scene number below it, the facts lead so the key
+              lands beside the name it describes, and the whole identity stays
+              inside the pinned column so it can't drift over the first track. */}
           <td className="song-lead" {...lead}>
-            {title}
+            <div className="song-line">
+              {foldGlyph}
+              {facts}
+              <span className="song-identity">
+                {/* Name over artist. Only this stacks — everything else in the
+                    row, the tag chip included, stays a single item centered
+                    against the pair, so a two-line song reads as one taller
+                    block rather than as a row whose annotations moved up. */}
+                <span className="song-identity-text">
+                  {songButton}
+                  {artistText}
+                </span>
+                {tagChip}
+              </span>
+              {/* Worth saying only when there is more than one — a song in two
+                  runs is a reprise, or two different songs sharing a name. It
+                  shortens to `2/2` here because it shares the scene column with
+                  the shape, and the tooltip still spells it out. */}
+              {header.blocks > 1 && (
+                <span className="part" title={`part ${header.block} of ${header.blocks}`}>
+                  {header.block}/{header.blocks}
+                </span>
+              )}
+            </div>
           </td>
           {notice ? (
             <td className="song-notice" colSpan={columns.length}>
-              {header.colorClash && (
-                <span
-                  className="mixed-color"
-                  title="This song's scenes hold more than one color — pick a swatch to make it one"
-                >
-                  mixed color
-                </span>
-              )}
-              {/* The cost, on the indicator itself. This move can't be undone
-                  from here, so what it's about to do belongs in front of you
-                  while your finger is still on the mouse — not in the log
-                  afterwards. Worth the whole tile region for the two seconds a
-                  drag lasts. */}
+              {mixedColor}
+              {/* Worth the whole tile region for the two seconds a drag lasts:
+                  both of these are things you have to act on, and both outrank
+                  a summary of what the song contains. */}
               {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
             </td>
           ) : (

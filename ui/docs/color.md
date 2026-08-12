@@ -42,10 +42,14 @@ so a fully folded set is a column of bands. The wash **halves outside the first 
 the cell holding the title is the song, the track cells are what's inside it, and a folded
 row reads faster when the two are told apart by weight than by a border. It also stops the
 section marks competing with a field of color behind them. Three separate things want that row's edges,
-so they get one property each and never negotiate: the **bar** is a `::before` on the
-first cell, the **wash** is `background`, and the **collapsed and drop-target indicators**
-are `box-shadow`. A border is out because it would change the row's height, which the
-sticky header arithmetic depends on.
+so they get one property each and never negotiate: the **bar** is a `::before`, the
+**wash** is `background`, and the **collapsed and drop-target indicators** are
+`box-shadow`. A border is out because it would change the row's height, which the sticky
+header arithmetic depends on.
+
+The bar hangs off whichever element carries the song's identity — the pinned lead cell of
+a folded header, or the pinned line inside an open header's single spanning cell. Beside
+the name in both cases, rather than at an edge the name may have scrolled away from.
 
 That split is newer than it looks. The bar and the indicators used to share `box-shadow`
 and `background-image` by turns, at equal specificity, resolved by source order — folded

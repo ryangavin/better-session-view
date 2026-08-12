@@ -145,21 +145,25 @@ tr.song-row.collapsed .song {
 }
 
 tr.song-row td:first-child {
-  position: sticky;
-  left: var(--gutter);
-  z-index: var(--layer-pinned);
   --song-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--rail);
   box-shadow: var(--song-gutter-plug);
 }
-tr.song-row.collapsed td:first-child::before,
-tr.song-row.colored td:first-child::before {
+tr.song-row td.song-lead {
+  position: sticky;
+  left: var(--gutter);
+  z-index: var(--layer-pinned);
+}
+tr.song-row.collapsed td.song-lead::before,
+tr.song-row.colored td.song-lead::before,
+tr.song-row.colored td.song-span .song-line::before {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
   width: 7px;
   background: var(--caption);
 }
-tr.song-row.colored td:first-child::before {
+tr.song-row.colored td.song-lead::before,
+tr.song-row.colored td.song-span .song-line::before {
   background: var(--song-rgb);
 }
 
@@ -191,14 +195,47 @@ tr.song-row.colored:hover td:first-child {
 tr.song-row td.song-lead {
   overflow: hidden;
 }
-tr.song-row td.song-detail {
-  position: relative;
+
+/* --- the open header, one cell across the grid --------------------- */
+
+tr.song-row td.song-span {
+  padding: 0 8px 0 0;
+  overflow: visible;
 }
-tr.song-row .song-details {
-  display: flex;
-  align-items: center;
-  min-width: 0;
+tr.song-row td.song-span .song-line {
+  position: sticky;
+  left: var(--gutter);
+  width: max-content;
+  max-width: 100%;
+  height: var(--song-row-h);
+  padding-left: 15px;
+  gap: 8px;
 }
+tr.song-row td.song-span .fold {
+  flex: none;
+  padding-left: 0;
+}
+tr.song-row td.song-span button.song {
+  flex: 0 1 auto;
+}
+tr.song-row td.song-span .song-artist {
+  flex: 0 1 auto;
+}
+tr.song-row td.song-span .song-artist::before {
+  content: '·';
+  margin-right: 8px;
+  color: var(--idle);
+}
+tr.song-row td.song-span .facts {
+  padding-right: 0;
+  gap: 6px;
+}
+tr.song-row td.song-span .facts .bpm,
+tr.song-row td.song-span .facts .key {
+  width: auto;
+  text-align: left;
+}
+
 tr.song-row td.fill {
   position: relative;
   padding: 0;

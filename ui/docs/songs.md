@@ -60,19 +60,41 @@ A song in more than one block says `part 2 of 2` rather than being silently merg
 a song whose scenes disagree about a fact shows the clash in amber. Both are the grid
 telling you something the library will later have to arbitrate.
 
-### The header is a table, not a line
+### Two shapes, and why they aren't laid out alike
 
-A hundred headers stacked up **are** a table of contents, so the row is laid out as
-columns rather than as a sentence. Folded, it's the whole song on one row — what it's
-called, what it's built from, and what's in it:
+The same facts, arranged for two different jobs:
 
 ```
-    ▾   128  Bm  NIGHTFALL··················   mixed color · part 2 of 2
-  └number┘└bpm┘└key┘└──── identity ────┘   └── exceptions, unaligned ──┘
+  ▾ NIGHTFALL · THE AVIATORS  128 Bm  {COVER}   part 2 of 2 · mixed color   ← open
+  └──────────────── one cell, spanning every column ────────────────┘
 
-    ▸   124  F#m GLASS TUNNEL··············· │  ■■  │      │ ■■■■ │  ■   ← folded
+    ▸   124  F#m GLASS TUNNEL··············· │  ■■  │      │ ■■■■ │  ■     ← folded
    └────────── the scene column ───────┘ └ the sections each track plays ┘
 ```
+
+**Open, the header is one cell across the whole table.** It is what segments the grid, so
+nothing sits beside it — and with no column to line up against, nothing inside it holds a
+fixed width either. The name leads, because the fixed slots exist to serve the folded
+shape and there is no reason to pay for them here.
+
+Its contents are `position: sticky` and pin to the left edge rather than scrolling away
+with the row, so scrolling out to track 30 still says which song those clips belong to.
+Two mechanics that costs:
+
+- **The spanning cell alone in this table may not have `overflow: hidden`.** An ancestor
+  that clips becomes the sticky element's scrollport, and a scrollport that never scrolls
+  never sticks — the line scrolls straight out of view instead of pinning. Measured, not
+  assumed: with the clip on, the pinned line sat 587px off the left of the viewport.
+- **The song's color bar rides the pinned line**, not the cell, so it stays beside the
+  name it belongs to. Folded, it stays a `::before` on the lead cell.
+
+The `filter: drop-shadow` on the row is fine over the top of that, which is worth knowing
+because it looks like exactly the kind of thing that would break sticky positioning. It
+doesn't: a filter creates a containing block for fixed descendants, not a scrollport.
+
+**Folded, a hundred headers stacked up are a table of contents — so that shape is a
+table.** Laid out as columns rather than as a sentence, it's the whole song on one row:
+what it's called, what it's built from, and what's in it.
 
 - **Every slot keeps its width whether or not the song fills it.** That's the whole
   mechanism: the fixed facts strip is what keeps the next song's name where your eye
@@ -84,20 +106,23 @@ called, what it's built from, and what's in it:
   sits on the scene-number guide, then each song BPM and key sits directly above the same
   fact on every child scene. BPM comes before key to keep the numeric tempo column on the
   outside. Both are right-aligned: `94` and `128` are the same fact at different widths.
-- **Every slot is sized to its values, not to its words.** Matching the name slot to
-  `--scene-col-w` was the tidier rule and the wrong one: it spends 316px on names
-  rarely half that. Same for the facts — a bpm is three digits and a key is at most
+- **Every slot is sized to its values, not to its words.** Matching the name slot to the
+  whole scene column was the tidier rule and the wrong one: it spends the column on names
+  rarely half that long. Same for the facts — a bpm is three digits and a key is at most
   three characters, so any extra is dead space on every song carrying neither, which in
   most sets is a lot of them.
 - **No scene count.** A set built to a house length says the same number a hundred times,
   and the block's size is legible from the rows it spans anyway. It survives as the fill
   tiles' denominator and in their tooltips.
-- **Flex lives on a wrapper `div`, not the `td`.** `display: flex` on a table cell stops
-  it being a table cell and takes the grid's fixed layout down with it.
-- **Open, the row is one spanning cell**; folded, it's the scene column plus one cell per
-  track column. Both shapes come out of the same component and share the same title
-  block. Only the folded shape can carry tiles, because only real cells land under the
-  columns they describe.
+- **Only this shape can carry tiles**, because only real cells land under the columns they
+  describe.
+
+**Flex lives on a wrapper `div` in both, never on the `td`.** `display: flex` on a table
+cell stops it being a table cell and takes the grid's fixed layout down with it.
+
+The pieces themselves — the name button, the artist, the facts, the tag chip — are built
+once in the component and placed twice. The shapes differ; the facts, and the tooltips
+that explain them, must not.
 
 ### One row, not two
 
@@ -114,19 +139,19 @@ What that cost, and what paid for it:
 - **`part 2 of 2` shortens to `2/2`** when folded — it shares the scene column now, and
   the tooltip still spells it out. It stays beside the name rather than moving out with
   the other exceptions, because a reprise is exactly where the tiles are worth most.
-- **`mixed color` and the drop note take the tile region**, as one cell spanning the
-  track columns. Both are things you have to *act* on — a fault to fix, a move about to
-  happen — and both outrank a summary of what the song contains. The drop note in
-  particular is far too long for the scene column and can't be abbreviated: it's the only
-  warning before the one write no undo of ours can reverse.
-- **The left edge moved to `::before` on the first cell.** A folded header is several
-  cells wide now, so a background gradient would repeat the bar at the left of every
-  tile and a `box-shadow` would draw it down the whole row. That turned out to be a
-  simplification: the bar used to be a background layer and a box-shadow taking turns,
-  with a comment warning that source order was load-bearing and a stray `:not()` would
-  silently take the drop line off folded rows. Now the bar owns `::before`, the wash owns
-  `background`, and the drop indicators own `box-shadow` — three jobs, three properties,
-  no ordering.
+- **`mixed color` and the drop note take the tile region** of a folded header, as one cell
+  spanning the track columns. Both are things you have to *act* on — a fault to fix, a
+  move about to happen — and both outrank a summary of what the song contains. The drop
+  note in particular is far too long for the scene column and can't be abbreviated: it's
+  the only warning before the one write no undo of ours can reverse. Open, there is no
+  tile region to take and no column to be too long for, so both simply follow the name.
+- **The left edge moved to `::before`.** A folded header is several cells wide, so a
+  background gradient would repeat the bar at the left of every tile and a `box-shadow`
+  would draw it down the whole row. That turned out to be a simplification: the bar used
+  to be a background layer and a box-shadow taking turns, with a comment warning that
+  source order was load-bearing and a stray `:not()` would silently take the drop line off
+  folded rows. Now the bar owns `::before`, the wash owns `background`, and the drop
+  indicators own `box-shadow` — three jobs, three properties, no ordering.
 
 ### The height budget, and two rules that need their order
 
