@@ -61,6 +61,7 @@ src/lib/
   selection.ts        clip addressing + selection set
   keys.ts             the launch modifier, and who owns a keystroke
   columnWidth.ts      fixed + viewport grid widths, arithmetic and persistence
+  songIndexColumns.ts which index columns are shown, and how wide that makes it
   allowedColors.ts    one-time migration from the old localStorage setting
   rowMarks.ts         play state flattened to memo-safe strings
   snapshotTiming.ts   the console phase breakdown + error text
@@ -201,8 +202,8 @@ Three optional surfaces start **closed**, because none is what you came for. On 
 set every pixel the side panes aren't using is a track column you can see.
 
 - **The song index** opens from the first button group after the logo and lists each
-  song once with its key, BPM and type. It starts in set order; its search covers all four
-  displayed fields, and each column heading toggles a local ascending/descending sort.
+  song once with its artist, key, BPM and type. It starts in set order; its search covers
+  every displayed field, and each column heading toggles a local ascending/descending sort.
   That filter and order belong only to the pane — they never reorder scenes or write to
   Live. A song whose scenes agree on one canonical color shows its name in that color;
   mixed and uncolored songs remain neutral.
@@ -211,6 +212,26 @@ set every pixel the side panes aren't using is a track column you can see.
   anything in this app, open the edit rail, or change the song's fold state. The local
   target is the song header rather than its first scene, so a folded song is just as
   navigable as an open one.
+
+  **Its columns come off individually, and the pane narrows by exactly the column.** That
+  is the whole point of the switch: this is a pane whose cost is measured in track columns
+  you can no longer see, so the answer to "it's too wide" has to be less pane, not a
+  wider name. `songIndexColumns.ts` derives both the pane width and the grid track list
+  from one visible-column list, so the header row, every song row and the pane itself
+  cannot disagree about how many columns there are. Name and artist are `fr` tracks
+  sharing the free space in proportion — both are free text, and giving the artist a fixed
+  slot would clip long ones while the three fact slots sat half empty.
+
+  Hiding a column **clears a sort keyed on it**, because the list would otherwise sit in
+  an order with nothing on screen to explain it. Search deliberately does *not* narrow to
+  the visible columns: a column turned off to save width is still a thing you might be
+  looking for.
+
+  The choice is a **browser preference in `localStorage`**, next to track width rather
+  than in the device. The line is what the setting is *about*: role vocabulary and allowed
+  colors describe the set and travel in the `.als`, while how much of this screen you want
+  spent on a contents pane follows the screen. The name column has no switch — a list of
+  songs with the song names turned off is a state nobody wants to find themselves in.
 
 - **The rail** — scene fields, roles, swatches, rename — opens the moment you pick
   something to work on: a clip, a scene name, or a song. Its `×` closes it and gives the

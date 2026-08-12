@@ -41,7 +41,15 @@ tr.song-row td {
 
    Every slot holds its width whether or not the song fills it. That's the
    whole mechanism — the fixed facts strip is what keeps the next song's name
-   where the eye already is, whether that song states a bpm or shows `---`. */
+   where the eye already is, whether that song states a bpm or shows `---`.
+
+   Everything centers, including on a header run to two lines by an artist.
+   Pinning the strip to the first line instead was tried and is worse: the fold
+   glyph, bpm, key and tag all sat high in a taller row, and an annotation
+   riding the top edge beside a centered block reads as a mistake — the eye
+   takes the row's middle for the line, not its first baseline. The name moving
+   half a line between a song with an artist and one without costs less than
+   that. */
 tr.song-row .song-line {
   display: flex;
   align-items: center;
@@ -80,6 +88,19 @@ tr.song-row .song-identity {
   min-width: 0;
   overflow: hidden;
 }
+/* The stacked half: name over artist, and the only thing in the row that is
+   ever two lines. A plain block rather than a column flex box, so the name
+   button keeps the `flex: 1 1 auto` it needs nowhere else and can't be
+   stretched down the cross axis by it. */
+tr.song-row .song-identity-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+tr.song-row .song-identity-text > * {
+  display: block;
+  width: 100%;
+}
 /* A button, not a label: the row folds, the title selects the whole song. */
 tr.song-row button.song {
   flex: 1 1 auto;
@@ -110,18 +131,18 @@ tr.song-row button.song:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-/* Who plays it, sharing the identity slot with the name. It shrinks four times
-   as fast as the title does, so a narrow scene column takes the artist away
-   before it takes the song — the name is what a column of these is read by, and
-   it has to stay whole. Mono and dim like the other annotations. */
+/* Who plays it, on its own line under the name and on the name's own left
+   edge — the second line of one identity block rather than a new column, so
+   nothing beside it has to make room. Mono and dim like the other annotations:
+   it must never compete with the title. */
 tr.song-row .song-artist {
-  flex: 0 4 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--mono);
   font-size: 9.5px;
+  line-height: 13px;
   color: var(--dim);
 }
 tr.song-row .song-artist.clash {

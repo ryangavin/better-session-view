@@ -4,7 +4,10 @@
    gives every pixel back to the grid when closed. The list scrolls on its own
    so jumping around never changes which songs remain reachable. */
 .song-index {
-  width: 300px;
+  /* Set inline from the visible columns — see lib/songIndexColumns.ts. The
+     fallback is the all-columns width, so the pane is never unstyled-wide if
+     the property is missing. */
+  width: var(--song-index-w, 384px);
   flex: none;
   min-height: 0;
   display: flex;
@@ -25,6 +28,23 @@
 .song-index-head .lbl {
   margin: 0;
 }
+/* Adjacency groups them without a border, the way the Songs header does it. */
+.song-index-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.song-index-cols-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  color: var(--dim2);
+}
+.song-index-cols-btn:hover:not(:disabled) {
+  color: var(--fg);
+  background: var(--sel);
+}
 .song-index-close {
   padding: 0 4px;
   border: none;
@@ -37,6 +57,26 @@
 .song-index-close:hover:not(:disabled) {
   color: var(--fg);
   background: var(--sel);
+}
+
+/* The column switches, disclosed by the head's columns button. Above the
+   search rather than below it so the list never moves down the pane while
+   you're reading it — this row opens between two things that are already
+   chrome. Wrapping, because the pane can be narrow once columns come off. */
+.song-index-fields {
+  padding: 7px 10px 7px 12px;
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--bd2);
+}
+.song-index-fields .control-button {
+  padding: 2px 7px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .song-index-search {
@@ -64,12 +104,19 @@
   box-shadow: 0 0 0 1px var(--amber-muted);
 }
 
-/* Four real columns, like Live's content lists. Facts keep their narrow fixed
-   slots while the song name takes whatever width is available. */
+/* Real columns, like Live's content lists. The fixed facts keep their narrow
+   slots; name and artist are both free text and share the rest in proportion.
+
+   The track list is set inline on the pane from whichever columns are on, so
+   the header row and every song row read one property and can't disagree about
+   how many columns there are. The fallback is all five. */
 .song-index-columns,
 .song-index-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 32px 34px 56px;
+  grid-template-columns: var(
+    --song-index-cols,
+    minmax(0, 124fr) minmax(0, 92fr) 32px 34px 56px
+  );
   gap: 6px;
   align-items: center;
 }
@@ -173,6 +220,12 @@
 
 @media (max-width: 760px) {
   .song-index {
-    width: clamp(210px, 42vw, 300px);
+    /* Never wider than its columns need, and never past what the grid can
+       spare. `max()` inside is the floor: 42vw on a phone-width window would
+       otherwise squeeze the pane to nothing. Written as min-of-max rather than
+       `clamp` because the preferred value is the *upper* bound here — a clamp
+       whose max falls below its min silently returns the min, which is how a
+       narrow one-column pane would come back wider than it asked for. */
+    width: min(var(--song-index-w, 384px), max(180px, 42vw));
   }
 }

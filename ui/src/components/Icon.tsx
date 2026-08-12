@@ -60,6 +60,15 @@ export const IconIndex = () => (
   </svg>
 );
 
+/** Which columns a list shows — the same frame as the index, divided twice. */
+export const IconColumns = () => (
+  <svg {...BASE}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="1.5" />
+    <line x1="9.2" y1="4.5" x2="9.2" y2="19.5" />
+    <line x1="14.8" y1="4.5" x2="14.8" y2="19.5" />
+  </svg>
+);
+
 /** Log — diagnostics. */
 export const IconBug = () => (
   <svg {...BASE}>

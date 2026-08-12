@@ -15,6 +15,12 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   and are vertically centered with equal space above and below.
 - The grid uses a 2px gutter. Its scene column is 290px and its role chip is 62px; track
   width modes are defined in [`ui/src/lib/columnWidth.ts`](ui/src/lib/columnWidth.ts).
+- The song index is as wide as the columns it shows and no wider: both its width and its
+  grid track list are computed from the same visible-column list in
+  [`ui/src/lib/songIndexColumns.ts`](ui/src/lib/songIndexColumns.ts), so turning a column
+  off narrows the pane instead of widening the name. Name and artist are `fr` tracks;
+  key, BPM and type are fixed. Which columns are on is a browser preference in
+  `localStorage`, alongside track width — set-owned configuration goes to the device.
 - Grid headings use 9px mono text; the Songs heading uses 16px.
 - The Songs header uses an 8px horizontal inset around its title and action group.
 
@@ -32,6 +38,9 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
 - In the Songs column header, the label is left-aligned. Order, color and Add share one
   right-aligned button group.
 - Toggles keep one glyph and use the amber-on state. Primary actions use an amber fill.
+- A small set of same-kind switches is disclosed as a row of labelled toggles rather than
+  a popover menu — the song index's column pickers are the case. Which ones are on is most
+  of what the control is for, and a menu hides that behind a press.
 - The debug console starts closed after every refresh, never opens automatically, and its
   toggle lives with status in the bottom strip.
 - Mixer strips place a 22×22px Track Activator above 22×11px Solo and Arm buttons down
@@ -48,9 +57,10 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   contrast choice as the title, so it remains coherent on light and dark Master colors
   without covering the header color.
 - Song headers are separated with surfaces and the grid gutter rather than borders.
-- A song header's identity slot holds the name, then the artist in dim mono, then the tag
-  chip. The artist shrinks four times as fast as the name, so a narrow scene column
-  truncates the artist and leaves the column of song names whole.
+- A song header stacks the artist in dim mono under the song name, and only when the set
+  names one. The name and artist are the only part that stacks: the fold glyph, bpm, key,
+  tag chip and part marker stay single items centered on the row, so a two-line header
+  reads as one taller block rather than as a row whose annotations rode up to the top.
 - Live colors are rendered from Live's palette. Text laid over a Live color chooses dark
   or light ink with the helpers in [`core/src/color.ts`](core/src/color.ts).
 - One ▶ launcher means "fire this" everywhere it appears: the scene gutter, a group's slot

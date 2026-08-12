@@ -162,39 +162,51 @@ export const SongHeaderRow = memo(function SongHeaderRow({
       </span>
       {/* Name and tag share one constrained identity slot. Keeping the pill
           inside it matters when the song is open: the header spans the whole
-          table, but its identity still belongs entirely to the scene column. */}
+          table, but its identity still belongs entirely to the scene column.
+
+          Two lines, with the artist under the name rather than beside it. The
+          scene column is 316px and most of it is already spent before the name
+          starts, so an artist sharing that line could only take width off the
+          one thing a column of these is read by. Underneath, it gets the whole
+          slot and truncates only when it is itself too long. */}
       <span className="song-identity">
-        <ControlButton
-          type="button"
-          className="song"
-          title={
-            `Work on ${header.song}` +
-            (header.artist === '' ? '' : ` by ${header.artist}`) +
-            ' — selects every scene of it'
-          }
-          onClick={(e) => {
-            e.stopPropagation();
-            onPickSong(header.songKey);
-          }}
-        >
-          {header.song}
-        </ControlButton>
-        {/* Inside the identity slot and dimmer than the name: who plays a song
-            is part of what it is, but it must never compete with the title a
-            column of these is scanned by. It gives up width first, so a narrow
-            scene column truncates the artist rather than the song. */}
-        {header.artist !== '' && (
-          <span
-            className={`song-artist${header.artistClash ? ' clash' : ''}`}
+        {/* Name over artist. Only this stacks — everything else in the row,
+            the tag chip included, stays a single item centered against the
+            pair, so a two-line song reads as one taller block rather than as
+            a row whose annotations moved up. */}
+        <span className="song-identity-text">
+          <ControlButton
+            type="button"
+            className="song"
             title={
-              header.artistClash
-                ? `This song's scenes disagree: ${header.artist}`
-                : header.artist
+              `Work on ${header.song}` +
+              (header.artist === '' ? '' : ` by ${header.artist}`) +
+              ' — selects every scene of it'
             }
+            onClick={(e) => {
+              e.stopPropagation();
+              onPickSong(header.songKey);
+            }}
           >
-            {header.artist}
-          </span>
-        )}
+            {header.song}
+          </ControlButton>
+          {/* Only when the set says so. Reserving the line on every header
+              would spend a second row of height across a whole set to say
+              nothing on most of it — the opposite trade to the fixed *width*
+              slots, which cost nothing when empty. */}
+          {header.artist !== '' && (
+            <span
+              className={`song-artist${header.artistClash ? ' clash' : ''}`}
+              title={
+                header.artistClash
+                  ? `This song's scenes disagree: ${header.artist}`
+                  : header.artist
+              }
+            >
+              {header.artist}
+            </span>
+          )}
+        </span>
         <TagChip
           tag={header.tag}
           color="var(--song-rgb, var(--dim2))"
