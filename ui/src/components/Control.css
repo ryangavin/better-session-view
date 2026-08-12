@@ -7,7 +7,7 @@
   border: 1px solid var(--bd3);
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--fg2);
+  color: var(--ui);
   cursor: pointer;
   text-align: center;
 }
@@ -104,7 +104,7 @@
   border: 1px solid var(--bd3);
   border-radius: var(--radius-md);
   background: var(--sel);
-  color: var(--fg2);
+  color: var(--ui);
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -113,7 +113,7 @@
 }
 .control-select select:hover:not(:disabled) {
   border-color: var(--focus);
-  color: var(--fg2);
+  color: var(--ui);
 }
 .control-select select:focus-visible {
   border-color: var(--amber-muted);
@@ -129,8 +129,8 @@
   right: 8px;
   width: 6px;
   height: 6px;
-  border-right: 1px solid var(--dim);
-  border-bottom: 1px solid var(--dim);
+  border-right: 1px solid var(--detail);
+  border-bottom: 1px solid var(--detail);
   transform: translateY(-70%) rotate(45deg);
   pointer-events: none;
 }

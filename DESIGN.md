@@ -9,6 +9,7 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   [`ui/src/shared.css`](ui/src/shared.css): neutral foregrounds and borders, amber for
   selection, active toggles and primary actions, green for playback and success, blue for
   Solo, red for errors, and purple for previews.
+- Neutral text comes from one five-step ramp, described under *Text* below.
 - The sans stack starts with IBM Plex Sans. The mono stack starts with IBM Plex Mono and
   is used for compact labels, facts and grid headings.
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
@@ -23,6 +24,27 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   `localStorage`, alongside track width — set-owned configuration goes to the device.
 - Grid headings use 9px mono text; the Songs heading uses 16px.
 - The Songs header uses an 8px horizontal inset around its title and action group.
+
+## Text
+
+Neutral text comes from one five-step ramp. The steps are named for the job the text is
+doing rather than for how bright they are, so picking one is a question about the content:
+
+| Token       | For                                                             |
+| ----------- | --------------------------------------------------------------- |
+| `--fg`      | the thing being read: names, current values, the active control |
+| `--ui`      | ordinary interface text: control faces, headings, row text      |
+| `--detail`  | supporting facts: stats, units, flags, annotations              |
+| `--caption` | micro-labels, hints, placeholders, empty states                 |
+| `--idle`    | a control at rest that shouldn't call attention to itself       |
+
+No rule defines its own neutral ink: every `color` either names a step or derives from a
+Live color. Text recedes by taking the next step down, and `opacity` is left to mean that
+a whole control is disabled.
+
+`--fg` is the top of the ramp rather than its default. A screen where several things claim
+it is one where nothing reads as primary, so hover, focus and selection are most of what
+earns it.
 
 ## Controls
 
@@ -59,6 +81,16 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   Ordinary tracks and Master render the same 56px fader subtree. Master retains the track
   switch stack invisibly so pan stays aligned and leaves that unused area unlabelled; only
   sends differ outside the shared fader.
+- Because the readout width is fixed, what fits is settled by shortening the reading
+  rather than the type. Every decibel field in the mixer shows whole decibels, so Live's
+  `-12.75 dB` reads `-12` and the exact value stays one hover away in the field's title.
+  Peak, volume, pan and sends all trim through the same helpers in
+  [`ui/src/lib/meterScale.ts`](ui/src/lib/meterScale.ts), and they trim rather than round,
+  so no two of them can disagree about the same signal. With the reading that short, the
+  8px mono size those fields share is a choice about weight rather than about room: they
+  annotate the meter, and the reading taken at a glance is the bar's own height. Volume
+  takes `--ui` and peak `--detail`, separating the level you set from the one the meter
+  observed on its own; both go to `--fg` under hover or focus.
 
 ## Grid
 

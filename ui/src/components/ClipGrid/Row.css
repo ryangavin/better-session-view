@@ -15,7 +15,7 @@ td.scene {
   box-shadow: var(--scene-gutter-plug);
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--dim);
+  color: var(--detail);
   white-space: nowrap;
   /* The 10px inset plus 12px launcher lands the scene number under the song
      header's 8px inset plus 14px fold badge. From there both row types use the
@@ -44,7 +44,7 @@ td.scene .scene-line {
    that says so — there's no room for a dedicated handle in a column already
    carrying a fire button, a role chip and a name. */
 td.scene .scene-n {
-  color: var(--dim2);
+  color: var(--caption);
   flex: 0 0 26px;
   cursor: grab;
 }
@@ -89,16 +89,16 @@ td.scene .scene-key {
 }
 td.scene .scene-bpm {
   flex: 0 0 26px;
-  color: var(--dim);
+  color: var(--detail);
 }
 td.scene .scene-key {
   flex: 0 0 28px;
   margin-right: 8px;
-  color: var(--dim2);
+  color: var(--caption);
 }
 td.scene .scene-bpm.none,
 td.scene .scene-key.none {
-  color: var(--dim2);
+  color: var(--caption);
 }
 
 /* The role, lifted out of the scene name. Live holds "Nightfall [chorus]"; we
@@ -138,7 +138,7 @@ td.scene .role-chip {
   text-transform: uppercase;
   vertical-align: 1px;
   background: var(--bd3);
-  color: var(--fg2);
+  color: var(--ui);
 }
 /* Hover says it's pressable without moving anything: the chip sits in a column
    of chips, and a border or a size change on hover would shift the name beside
@@ -157,14 +157,14 @@ td.scene .role-chip:hover {
    role rather than a trip to the rail. */
 td.scene .role-chip.none {
   background: var(--bd2);
-  color: var(--dim2);
+  color: var(--caption);
 }
 /* A role tagged in the set that nobody has given a color. Outlined rather than
    hidden: the tag is really there, and it colors nothing until it's configured. */
 td.scene .role-chip.uncolored {
   background: transparent;
   border: 1px dashed var(--bd3);
-  color: var(--dim2);
+  color: var(--caption);
   line-height: 12px;
 }
 
@@ -194,7 +194,7 @@ td.scene .fire {
   width: 12px;
   border: none;
   background: none;
-  color: var(--fg-faint);
+  color: var(--idle);
   font-size: 7px;
   line-height: 1;
   vertical-align: middle;
@@ -365,7 +365,7 @@ td.cell.empty > .slot-btn {
      the eye to the four thousand cells with nothing in them. Bare ink and an
      ink change on hover, the same as the scene and group launchers. */
   background: none;
-  color: var(--fg-faint);
+  color: var(--idle);
   font-size: 7px;
 }
 td.cell.empty > .slot-btn:hover {

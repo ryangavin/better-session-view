@@ -33,9 +33,19 @@ whole footer, so toggling it never consumes the meter's resizable height.
 
 Live's `output_meter_*` values already represent positions on its normalized logarithmic
 meter. The fill uses that position directly; applying `log10` again makes a half-height
-reading appear nearly full. The rail runs from -60 to +6 dB, with 6 dB rules and fixed
+reading appear nearly full. The rail runs from -60 to +6 dB, with 6 dB rules and
 green/amber/red zones. Rules are clipped to the meter well; they never paint into the
-control gutter, and the brighter 2px 0 dB rule anchors the scale. The peak field holds
+control gutter, and the brighter 2px 0 dB rule anchors the scale.
+
+That scale hinges at unity rather than running straight from -60 to +6. Live puts unity
+at 0.85 of the volume parameter's range and the volume indicator is drawn at that
+parameter's own fraction, so a straight run — whose 0 dB falls at 60/66 — left the
+pointer about 6% of the rail's height above the line it points at. `meterScale.ts` takes
+the hinge as an argument and `TrackMeter` passes the fraction Live reports for that
+strip's `default_value`, so the 0 dB rule, the green/amber boundary and the pointer are
+three drawings of one number instead of three constants that have to agree. Both ends of
+the rail survive the hinge; a single run could hold the -60 floor or the 0 dB anchor but
+not both, and anchoring 0 dB on one run ending at +6 would lift the floor to -34 dB. The peak field holds
 the highest position until clicked. Volume and pan
 labels come from `DeviceParameter.str_for_value`, so their compact text is Live's own
 rather than a second conversion maintained by the client. Double-clicking either draggable

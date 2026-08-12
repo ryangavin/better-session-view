@@ -209,7 +209,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
         </span>
         <TagChip
           tag={header.tag}
-          color="var(--song-rgb, var(--dim2))"
+          color="var(--song-rgb, var(--caption))"
           clash={header.tagClash}
           title={
             header.tagClash

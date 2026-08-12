@@ -372,7 +372,7 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
                   )}
                   {p.trailing.length > 0 && (
                     <span
-                      className="dim"
+                      className="caption"
                       title="Scenes the pattern couldn't read a song out of. They sit after this song and move with it."
                     >
                       +{p.trailing.length} unmapped

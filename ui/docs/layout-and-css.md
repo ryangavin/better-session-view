@@ -28,9 +28,16 @@ inside a component, such as a meter's rules, marker, invisible input and buttons
 ## Styling
 
 Plain CSS with custom properties in `:root` — dark, IBM Plex where available with
-system fallbacks. No CSS framework, no CSS-in-JS. The tokens (`--amber`, `--dim`,
+system fallbacks. No CSS framework, no CSS-in-JS. The tokens (`--amber`, `--detail`,
 `--bd`, …) come from the original design mocks; reuse them rather than introducing
 new values.
+
+Neutral text is the one family with a rule rather than a habit. Five tokens — `--fg`,
+`--ui`, `--detail`, `--caption`, `--idle` — are named for the job the text is doing, so
+choosing one is a question about the content and not about the shade; `shared.css`
+carries the definition of each. No rule invents its own gray, and text recedes by taking
+the next step down rather than by growing an `opacity`, which is reserved for a whole
+control being disabled.
 
 `--col-w`, `--scene-col-w` and `--role-chip-w` are the exception: `:root` carries
 fallbacks, but `ClipGrid` sets all three on the table element from `columnWidth.ts`, which

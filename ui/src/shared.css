@@ -6,10 +6,17 @@
   --bd: #262629;
   --bd2: #232327;
   --bd3: #2c2c31;
-  --fg: #ececed;
-  --fg2: #b7b7be;
-  --dim: #8b8b93;
-  --dim2: #5e5e66;
+  /* Text ramp. Five steps, named for the job the text is doing rather than for
+     how bright it is, so picking one is a question about the content and not
+     about the shade. Nothing in the app defines its own neutral ink: every
+     `color` either names one of these or derives from a Live color. Going one
+     step down is how text recedes — reach for opacity only when a whole
+     control is disabled. */
+  --fg: #ececed; /* the thing being read: names, current values, the active control */
+  --ui: #b7b7be; /* ordinary interface text: control faces, headings, row text */
+  --detail: #8b8b93; /* supporting facts: stats, units, flags, annotations */
+  --caption: #5e5e66; /* micro-labels, hints, placeholders, empty states */
+  --idle: #3a3a41; /* a control at rest that shouldn't call attention to itself */
   --amber: #f0b23c;
   --amber-muted: #927b51;
   --red: #d4544f;
@@ -23,7 +30,6 @@
   --surface-cell: #18181b;
   --surface-cell-muted: #131316;
   --surface-song-hover: #141418;
-  --fg-faint: #3a3a41;
   --shadow-edge: rgba(0, 0, 0, 0.6);
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
@@ -105,7 +111,7 @@ footer {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: var(--dim2);
+  color: var(--caption);
   text-transform: uppercase;
   margin-top: 4px;
 }
@@ -117,14 +123,14 @@ footer {
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  color: var(--fg2);
+  color: var(--ui);
 }
 .facet-summary {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--dim2);
+  color: var(--caption);
   font-size: 9px;
   letter-spacing: 0;
   text-transform: none;
@@ -132,7 +138,7 @@ footer {
 
 .hint {
   font-size: 10px;
-  color: var(--dim2);
+  color: var(--caption);
   line-height: 1.5;
 }
 .hint .bad {
@@ -142,8 +148,8 @@ footer {
   font-family: var(--mono);
   color: var(--preview);
 }
-.dim {
-  color: var(--dim2);
+.caption {
+  color: var(--caption);
 }
 
 input[type='text'] {
@@ -198,7 +204,7 @@ input[type='text']:focus {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--fg2);
+  color: var(--ui);
 }
 .modal-actions {
   display: flex;
@@ -214,7 +220,7 @@ input[type='text']:focus {
   padding: 1px 5px;
   border: 1px solid var(--bd3);
   border-radius: var(--radius-pill);
-  color: var(--dim);
+  color: var(--detail);
 }
 
 .color-dot {
@@ -226,7 +232,7 @@ input[type='text']:focus {
 }
 .color-dot.empty {
   background: transparent;
-  border: 1px solid var(--dim2);
+  border: 1px solid var(--caption);
 }
 
 /* Compact, stage-legible scrollbars everywhere the app scrolls. Firefox only
@@ -235,14 +241,14 @@ input[type='text']:focus {
    every dark surface without giving the transparent track its own stripe. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--dim) transparent;
+  scrollbar-color: var(--detail) transparent;
 }
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--dim);
+  background: var(--detail);
   border-radius: var(--radius-pill);
 }
 ::-webkit-scrollbar-thumb:hover {

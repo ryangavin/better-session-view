@@ -10,7 +10,7 @@
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.1em;
-  color: var(--dim2);
+  color: var(--caption);
   text-transform: uppercase;
 }
 .field.bad input[type='text'] {
@@ -58,7 +58,7 @@
 /* "mixed" is a statement about the selection, not a value — it must not read
    as text sitting in the field waiting to be written. */
 .field input::placeholder {
-  color: var(--dim2);
+  color: var(--caption);
   font-style: italic;
 }
 
@@ -80,7 +80,7 @@
   border: 1px solid var(--bd3);
   border-radius: var(--radius-md);
   background: var(--surface-control);
-  color: var(--fg2);
+  color: var(--ui);
   font-family: var(--mono);
   font-size: 10px;
 }

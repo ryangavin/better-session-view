@@ -24,7 +24,7 @@
   padding: 4px 8px;
   font-family: var(--mono);
   font-size: 11px;
-  color: var(--fg2);
+  color: var(--ui);
   border-bottom: 1px solid var(--bd2);
 }
 .order-row:last-child,
@@ -42,7 +42,7 @@
 }
 .order-row .count,
 .color-row .count {
-  color: var(--dim2);
+  color: var(--caption);
   flex: none;
 }
 /* The same slots the song header uses, at the same widths, so bpm and key line
@@ -61,12 +61,12 @@
 .color-row .facts .key {
   width: 30px;
   text-align: right;
-  color: var(--dim);
+  color: var(--detail);
 }
 /* Last, so it wins the tie with `.key` above — a song that states nothing is
    not a song whose scenes disagree. */
 .order-row .facts .none,
 .color-row .facts .none {
-  color: var(--dim2);
+  color: var(--caption);
 }
 

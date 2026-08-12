@@ -16,7 +16,7 @@ button.icon {
   border: none;
   background: none;
   border-radius: var(--radius-sm);
-  color: var(--dim2);
+  color: var(--caption);
   font-size: 14px;
   line-height: 16px;
 }

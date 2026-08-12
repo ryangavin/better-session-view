@@ -19,7 +19,7 @@ table.songs th {
   top: 0;
   background: var(--panel);
   border-bottom: 1px solid var(--bd);
-  color: var(--dim2);
+  color: var(--caption);
   font-weight: 400;
   text-align: left;
   padding: 6px 10px;
@@ -30,7 +30,7 @@ table.songs th {
 table.songs td {
   padding: 5px 10px;
   border-bottom: 1px solid var(--bd2);
-  color: var(--fg2);
+  color: var(--ui);
   white-space: nowrap;
 }
 table.songs tbody tr {

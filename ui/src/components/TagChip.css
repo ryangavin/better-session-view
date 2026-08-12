@@ -12,7 +12,7 @@
   border: 1px solid currentColor;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--tag-chip-color, var(--dim2));
+  color: var(--tag-chip-color, var(--caption));
   font-family: var(--mono);
   font-size: 9px;
   line-height: 12px;

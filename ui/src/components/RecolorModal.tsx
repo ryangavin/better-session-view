@@ -236,7 +236,7 @@ export function RecolorModal({
                   <span className="count">
                     {song.scenes.length} scene{song.scenes.length === 1 ? '' : 's'}
                   </span>
-                  {next === undefined && <span className="dim">left alone — {why}</span>}
+                  {next === undefined && <span className="caption">left alone — {why}</span>}
                 </div>
               );
             })}

@@ -16,6 +16,7 @@ import {
   METER_DB_TICKS,
   METER_MAX_DB,
   METER_MIN_DB,
+  METER_UNITY_FRACTION,
   compactParameterDisplay,
   meterDecibels,
   meterFraction,
@@ -50,7 +51,14 @@ export function TrackMeter({
   const pan = strip?.pan ?? null;
   const target: BSV.MixerTarget =
     meterKey === 'master' ? { kind: 'master' } : { kind: 'track', t: meterKey };
-  const db = meterDecibels(level);
+  // Where 0 dB sits on this strip's rail. Live reports unity as the volume
+  // parameter's default, and the indicator is positioned by that same
+  // parameter's fraction, so taking the rail's hinge from here is what puts the
+  // pointer on the 0 dB rule instead of a few percent under it.
+  const unity = volume
+    ? mixerParameterFraction(volume, volume.defaultValue)
+    : METER_UNITY_FRACTION;
+  const db = meterDecibels(level, unity);
   // `level` already is the meter's displayed 0–1 position. Treating it as
   // amplitude and applying log10 again made ordinary signals look full-scale.
   const fraction = Math.max(0, Math.min(1, level));
@@ -176,11 +184,19 @@ export function TrackMeter({
                 aria-valuemax={METER_MAX_DB}
                 aria-valuenow={Math.round(db)}
                 aria-valuetext={level <= 0 ? 'silence' : `${db.toFixed(1)} decibels`}
+                // The fill's warning zones are the rail's own scale, not a
+                // second copy of it: green up to unity, red from +3 dB.
+                style={
+                  {
+                    '--meter-unity': `${unity * 100}%`,
+                    '--meter-hot': `${meterFraction(3, unity) * 100}%`,
+                  } as CSSProperties
+                }
               >
                 <span className="meter-level" style={{ transform: `scaleY(${fraction})` }} />
                 <span
                   className={`meter-peak${peak > 0 ? ' visible' : ''}`}
-                  style={{ bottom: `${meterFraction(meterDecibels(peak)) * 100}%` }}
+                  style={{ bottom: `${peak * 100}%` }}
                   aria-hidden="true"
                 />
                 <span className="meter-rules" aria-hidden="true">
@@ -188,7 +204,7 @@ export function TrackMeter({
                     <span
                       key={tick}
                       className={`meter-rule${tick === 0 ? ' zero' : ''}`}
-                      style={{ bottom: `${meterFraction(tick) * 100}%` }}
+                      style={{ bottom: `${meterFraction(tick, unity) * 100}%` }}
                     />
                   ))}
                 </span>
@@ -199,10 +215,10 @@ export function TrackMeter({
                 type="button"
                 className="meter-peak-readout"
                 title={`Reset ${label} peak level`}
-                aria-label={`Peak ${peakDisplay(peak)} decibels. Reset ${label} peak level`}
+                aria-label={`Peak ${peakDisplay(peak, unity)} decibels. Reset ${label} peak level`}
                 onClick={() => setPeak(level)}
               >
-                {peakDisplay(peak)}
+                {peakDisplay(peak, unity)}
               </button>
               <output className="mixer-volume-readout" aria-label={`${label} volume value`}>
                 {compactParameterDisplay(volume?.display)}

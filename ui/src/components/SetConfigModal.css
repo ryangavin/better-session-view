@@ -17,7 +17,7 @@
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.1em;
-  color: var(--dim2);
+  color: var(--caption);
   text-transform: uppercase;
 }
 .set-config-fill-summary {
@@ -53,19 +53,19 @@
 }
 .sw.role-sw.empty {
   background: transparent;
-  border: 1px dashed var(--dim2);
+  border: 1px dashed var(--caption);
 }
 .role-row .used {
   width: 34px;
   flex: none;
   font-family: var(--mono);
   font-size: 9px;
-  color: var(--dim2);
+  color: var(--caption);
 }
 .role-row .x {
   padding: 4px 8px;
   border-color: transparent;
-  color: var(--dim2);
+  color: var(--caption);
 }
 .role-row .x:hover {
   color: var(--red);

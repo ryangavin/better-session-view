@@ -38,7 +38,7 @@ main + .stats {
 .empty-state {
   padding: 60px 20px;
   text-align: center;
-  color: var(--dim);
+  color: var(--detail);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -67,7 +67,7 @@ footer {
   line-height: 1.7;
 }
 .log-line {
-  color: var(--dim);
+  color: var(--detail);
 }
 .log-line.ok {
   color: var(--green);

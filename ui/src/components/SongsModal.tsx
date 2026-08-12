@@ -18,7 +18,7 @@ interface Props {
 
 /** One value, or the disagreement — never one of several presented as the answer. */
 function Observed({ values }: { values: readonly (string | number)[] }) {
-  if (values.length === 0) return <span className="dim">—</span>;
+  if (values.length === 0) return <span className="caption">—</span>;
   if (values.length === 1) return <>{values[0]}</>;
   return (
     <span className="clash" title="The scenes of this song disagree">

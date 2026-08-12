@@ -11,13 +11,35 @@ table.grid {
   border-spacing: var(--gutter);
   table-layout: fixed;
 
+  /* The grid's right edge — the same line the mixer ends with, carried the
+     table's full height.
+
+     The footer draws its own outer edge by filling the table's border-spacing,
+     so that rule lives in the last 2px strip *inside* the table box. The body
+     above had nothing there, which left the mixer reading as a bordered block
+     bolted onto an unbordered grid. Painting the strip as the table's own
+     background is what continues it: no cell reaches into border-spacing, so
+     nothing in the body covers it, and a `border-right` would sit outside the
+     strip rather than in it — 2px alongside the grid and 4px alongside the
+     footer, which is the doubled edge this is meant to avoid.
+
+     The one thing that does reach it is the last header cell's right-hand plug,
+     which fills the same gutter to stop rows showing through as they scroll
+     under. That plug takes this color instead of the background — see
+     `--header-plug-right` — or the line would break across the header row. */
+  background: linear-gradient(var(--grid-rule), var(--grid-rule)) right top /
+    var(--gutter) 100% no-repeat;
+
   /* The 2px of background between every cell and the next. It's the grid's one
      separator — no cell in the body has a border — so anything that needs to
      divide two things here is this gap at this width, and it's named so that
      stays true. `border-spacing` produces it between cells; the header's plug
      shadows paint into it; the band's gutter below draws it by hand. */
   --gutter: 2px;
-  --footer-border: var(--bd2);
+  /* Every rule drawn in that gutter: the mixer's internal grid, its outer edge,
+     and the grid's right edge above it. One name because they are one line —
+     naming it for the footer is what let the footer look bolted on. */
+  --grid-rule: var(--bd2);
   --meter-panel-h: 220px;
   /* The stop row is a row of the grid, not a toolbar under it, so it stands as
      tall as the clip cells in `Row.css` and no taller. */
@@ -79,7 +101,7 @@ table.grid th {
   font-size: 9px;
   line-height: var(--label-h);
   letter-spacing: 0.1em;
-  color: var(--dim2);
+  color: var(--caption);
   text-transform: uppercase;
   font-weight: 400;
   text-align: center;
@@ -105,12 +127,22 @@ table.grid th {
         this blur two neighbours' falloff sums to slightly *less* than one
         cell's centre, which is invisible at 2px — where a hard-edged shadow
         would have striped the grid once per column. */
+  --header-plug-right: var(--bg);
   --header-plugs:
-    calc(-1 * var(--gutter)) 0 0 var(--bg), var(--gutter) 0 0 var(--bg),
+    calc(-1 * var(--gutter)) 0 0 var(--bg),
+    var(--gutter) 0 0 var(--header-plug-right),
     0 calc(-1 * var(--gutter)) 0 var(--bg),
     0 8px 14px -4px var(--shadow-edge);
   box-shadow: var(--header-plugs);
   white-space: nowrap;
+}
+/* The last heading's right-hand gutter is the grid's own edge rather than a gap
+   between two columns, so its plug is that rule and not the background. Set as
+   the custom property rather than as a `box-shadow`: the banded rules restate
+   the whole shadow list around `--header-plugs`, and a rule here would lose to
+   theirs on the last column whenever it happens to be banded. */
+table.grid th:last-child {
+  --header-plug-right: var(--grid-rule);
 }
 /* Flex on a wrapper, never on the `th` itself — `display: flex` on a table cell
    stops it being a table cell and takes the fixed layout with it. `min-width: 0`
@@ -176,7 +208,7 @@ table.grid th.scene-h .scene-action-group {
   border: none;
   border-radius: 0;
   background: transparent;
-  color: var(--scene-action-ink, var(--dim));
+  color: var(--scene-action-ink, var(--detail));
 }
 .control-button.scene-action svg {
   width: 14px;
@@ -301,7 +333,7 @@ table.grid th.group-h .fold {
    affordance on the cell itself, only on the button inside it. */
 td.cell.group {
   background: var(--surface-cell-muted);
-  color: var(--dim2);
+  color: var(--caption);
   cursor: default;
   text-align: center;
   padding: 0 2px;
@@ -319,7 +351,7 @@ td.cell.group > .fire {
   width: 12px;
   border: none;
   background: none;
-  color: var(--fg-faint);
+  color: var(--idle);
   font-size: 7px;
   line-height: 18px;
   vertical-align: middle;
@@ -340,7 +372,7 @@ td.cell.group > .group-n {
   font-family: var(--mono);
   font-size: 9px;
   line-height: 18px;
-  color: var(--dim2);
+  color: var(--caption);
 }
 td.cell.group.playing > .group-n {
   color: var(--green);
@@ -388,7 +420,7 @@ table.grid tfoot {
   position: sticky;
   bottom: 0;
   z-index: var(--layer-mixer);
-  background: var(--footer-border);
+  background: var(--grid-rule);
 }
 
 /* One shared outward shadow fills the table's 2px border-spacing on every side
@@ -398,7 +430,7 @@ table.grid
   tfoot
   tr:is(.stop-row, .sends-row, .meter-row)
   td {
-  --footer-gutter-fill: 0 0 0 var(--gutter) var(--footer-border);
+  --footer-gutter-fill: 0 0 0 var(--gutter) var(--grid-rule);
   box-shadow: var(--footer-gutter-fill);
 }
 
@@ -427,7 +459,13 @@ table.grid tfoot tr.stop-row td:first-child {
 /* Full-bleed, and the thing that states the row's height — the cell around it
    carries no padding, so the row is exactly as tall as this button. Its edge is
    transparent rather than absent so hover and focus have somewhere to land
-   without the cell changing size. */
+   without the cell changing size.
+
+   No background of its own either, so the cell's rail shows through. The button
+   fills its cell, so any surface here is the row's surface, and giving it the
+   control face lit the whole stop row a shade above the sends and meters under
+   it — one mixer section reading as two. The glyph, the hover edge and the lit
+   state are what say this is a control; the ground says which section it's in. */
 button.stop-clips-button {
   display: flex;
   align-items: center;
@@ -437,8 +475,8 @@ button.stop-clips-button {
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-xs);
-  background: var(--surface-control);
-  color: var(--dim2);
+  background: transparent;
+  color: var(--caption);
 }
 
 button.stop-clips-button:hover:not(:disabled),
@@ -561,7 +599,7 @@ table.grid tfoot tr.meter-row td:first-child {
 
 .mixer-send {
   align-items: center;
-  color: var(--fg2);
+  color: var(--ui);
 }
 
 .mixer-send.disabled {
@@ -618,10 +656,13 @@ table.grid tfoot tr.meter-row td:first-child {
   cursor: default;
 }
 
+/* Same reading as the volume readout — a level you set — so it takes the same
+   step. It is the one place in the ramp that lands on a colored ground rather
+   than a surface, since the fill runs under it. */
 .mixer-send-value output {
   position: relative;
   z-index: 1;
-  color: var(--fg);
+  color: var(--ui);
   pointer-events: none;
 }
 
@@ -677,13 +718,16 @@ table.grid tfoot tr.meter-row td:first-child {
   transform: scaleY(0);
   transform-origin: center bottom;
   border-radius: 0 0 var(--radius-xs) var(--radius-xs);
-  /* Live's meter scale has 0 dB at 60/66 of the rail. Keep the warning zones
-     fixed to that scale while the element itself reveals the current level. */
+  /* The zones are fixed to the rail's scale while the element itself reveals
+     the current level, so they have to hinge where the scale does. `TrackMeter`
+     writes both stops from the unity fraction Live reports for this strip —
+     green to 0 dB, red from +3 — rather than this file keeping its own copy of
+     where 0 dB fell, which is how the fill and the 0 dB rule came apart. */
   background: linear-gradient(
     to top,
-    var(--green) 0 90.91%,
-    var(--amber) 90.91% 95.45%,
-    var(--red) 95.45% 100%
+    var(--green) 0 var(--meter-unity),
+    var(--amber) var(--meter-unity) var(--meter-hot),
+    var(--red) var(--meter-hot) 100%
   );
   transition: transform 24ms linear;
 }
@@ -738,7 +782,7 @@ table.grid tfoot tr.meter-row td:first-child {
   transform: translateY(50%);
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
-  border-left: 8px solid var(--fg2);
+  border-left: 8px solid var(--ui);
   filter: drop-shadow(0 0 1px #000);
   pointer-events: none;
 }
@@ -770,16 +814,25 @@ table.grid tfoot tr.meter-row td:first-child {
   border: 1px solid var(--bd3);
   border-radius: var(--radius-xs);
   background: var(--surface-control);
-  color: var(--fg2);
+  color: var(--ui);
   font-family: var(--mono);
-  font-size: 9px;
+  /* Whole decibels from `meterScale.ts` cap a strip at four mono characters, so
+     fit no longer picks this size — 8px is a choice about weight rather than
+     about room. These fields annotate the meter instead of competing with it,
+     and the reading anyone takes at a glance is the bar's own height. Every
+     field in the family stays one size, so a strip reads as a column of like
+     things and not as three unrelated ones. */
+  font-size: 8px;
   line-height: 1;
   letter-spacing: -0.04em;
   white-space: nowrap;
 }
 
+/* Within the strip the ramp separates a value you set from one you only watch.
+   Volume is the ordinary interface reading; peak is an observation the meter
+   made on its own, so it sits a step further back until you go to reset it. */
 .meter-peak-readout {
-  color: var(--dim);
+  color: var(--detail);
   cursor: pointer;
   pointer-events: auto;
 }
@@ -789,10 +842,6 @@ table.grid tfoot tr.meter-row td:first-child {
   border-color: var(--focus);
   color: var(--fg);
   outline: none;
-}
-
-.mixer-volume-readout {
-  color: var(--fg);
 }
 
 .volume-fader:hover ~ .volume-indicator,
@@ -851,7 +900,7 @@ table.grid tfoot tr.meter-row td:first-child {
   bottom: -5px;
   width: 2px;
   height: 1px;
-  background: var(--dim2);
+  background: var(--caption);
   transform: translateX(-50%);
 }
 
@@ -884,7 +933,7 @@ button.mixer-button {
   border-color: var(--bd3);
   border-radius: var(--radius-xs);
   background: var(--surface-control);
-  color: var(--dim);
+  color: var(--detail);
   font-family: var(--mono);
   font-size: 10px;
   line-height: 1;

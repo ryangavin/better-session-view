@@ -1,8 +1,8 @@
 .color-row.skipped .song {
-  color: var(--dim);
+  color: var(--detail);
 }
 .color-row .arrow {
-  color: var(--dim2);
+  color: var(--caption);
   flex: none;
 }
 /* Beside a name rather than in a picker, so it's a reading of the row and not
@@ -19,7 +19,7 @@
    as a dark color somebody chose. */
 .sw.small.empty {
   background: transparent;
-  border: 1px dashed var(--dim2);
+  border: 1px dashed var(--caption);
 }
 .sw.small.clash {
   background: transparent;
@@ -52,7 +52,7 @@
   font-size: 10px;
   letter-spacing: 0.08em;
   padding: 5px 10px;
-  color: var(--dim2);
+  color: var(--caption);
 }
 .legend {
   display: flex;
@@ -60,7 +60,7 @@
   gap: 4px 14px;
   font-family: var(--mono);
   font-size: 10px;
-  color: var(--dim);
+  color: var(--detail);
 }
 .legend-item {
   display: flex;

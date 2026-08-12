@@ -50,7 +50,7 @@ header {
 
 /* App-only song display controls are the first shared group after the logo. */
 .view-controls .control-button {
-  color: var(--dim);
+  color: var(--detail);
 }
 .view-controls .control-button:hover:not(:disabled) {
   color: var(--fg);
@@ -87,7 +87,7 @@ header {
   border: none;
   border-radius: 0;
   background: transparent;
-  color: var(--fg2);
+  color: var(--ui);
   font-family: var(--mono);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
@@ -111,7 +111,7 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--dim2);
+  color: var(--caption);
   pointer-events: none;
 }
 .tempo-unit svg {
@@ -124,7 +124,7 @@ header {
 }
 .tempo-group .control-button {
   width: 28px;
-  color: var(--dim);
+  color: var(--detail);
 }
 
 /* --- icon buttons ------------------------------------------------- */
@@ -147,7 +147,7 @@ header {
   border: 1px solid var(--bd3);
   border-radius: var(--radius-md);
   background: var(--sel);
-  color: var(--fg2);
+  color: var(--ui);
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 600;
@@ -160,12 +160,12 @@ header {
 }
 .position-separator {
   padding: 0 4px;
-  color: var(--dim2);
+  color: var(--caption);
 }
 
 .playback .control-button {
   width: 28px;
-  color: var(--dim);
+  color: var(--detail);
 }
 .playback .control-button:hover:not(:disabled) {
   color: var(--fg);
@@ -196,7 +196,7 @@ header {
   flex: none;
 }
 .scale-group > .control-button {
-  color: var(--dim);
+  color: var(--detail);
 }
 
 /* --- column width ------------------------------------------------- */

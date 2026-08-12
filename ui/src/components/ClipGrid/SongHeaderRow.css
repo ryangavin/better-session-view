@@ -87,7 +87,7 @@ tr.song-row .fold {
   align-items: center;
   justify-content: flex-start;
   padding-left: 14px;
-  color: var(--dim2);
+  color: var(--caption);
 }
 /* Name and outlined tag are one identity slot. The row spans all columns when
    open, but this slot stays within the scene column so song metadata cannot
@@ -169,7 +169,7 @@ tr.song-row .song-artist {
      the smallest size the rest of the grid already uses — the tag chip's. */
   font-size: 9px;
   line-height: var(--song-artist-line);
-  color: var(--dim);
+  color: var(--detail);
 }
 tr.song-row .song-artist.clash {
   color: var(--amber);
@@ -180,7 +180,7 @@ tr.song-row .facts,
 tr.song-row .part {
   font-family: var(--mono);
   font-size: 9.5px;
-  color: var(--dim);
+  color: var(--detail);
 }
 /* The facts lead the row so the key sits immediately left of the name it
    describes, with bpm outside it as the numeric tempo column. Both are
@@ -200,7 +200,7 @@ tr.song-row .facts .bpm {
 }
 tr.song-row .facts .key {
   width: 28px;
-  color: var(--dim2);
+  color: var(--caption);
 }
 tr.song-row .facts .bpm,
 tr.song-row .facts .key {
@@ -225,10 +225,10 @@ tr.song-row .facts.clash .key {
    disagreeing bpm isn't painted as a disagreement of its own. */
 tr.song-row .facts .bpm.none,
 tr.song-row .facts .key.none {
-  color: var(--dim2);
+  color: var(--caption);
 }
 tr.song-row .part {
-  color: var(--dim2);
+  color: var(--caption);
 }
 
 /* The one annotation that isn't a fact about the song but a fault in it: this
@@ -250,7 +250,7 @@ tr.song-row .drop-note {
 }
 
 tr.song-row.collapsed .song {
-  color: var(--fg2);
+  color: var(--ui);
 }
 
 /* The left edge: grey while folded, the song's own color when it has one.
@@ -283,7 +283,7 @@ tr.song-row.colored td:first-child::before {
   /* Keep the wider folded-state handle while open too, so toggling a song
      changes only its contents rather than the weight of its color marker. */
   width: 7px;
-  background: var(--dim2);
+  background: var(--caption);
 }
 tr.song-row.colored td:first-child::before {
   background: var(--song-rgb);

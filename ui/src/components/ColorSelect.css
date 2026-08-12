@@ -23,7 +23,7 @@
 }
 .color-select.empty {
   background: transparent;
-  border: 1px dashed var(--dim2);
+  border: 1px dashed var(--caption);
 }
 /* Wider than the rail on purpose: fourteen swatches keep Live's row-major hue
    progression intact without making the individual colors harder to hit. */
@@ -42,7 +42,7 @@
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--dim2);
+  color: var(--caption);
   padding: 0 0 6px;
 }
 .color-select-none {
@@ -50,7 +50,7 @@
   margin-top: 6px;
   padding: 4px 6px;
   border-color: transparent;
-  color: var(--dim2);
+  color: var(--caption);
   font-family: var(--mono);
   font-size: 9px;
   text-align: left;
