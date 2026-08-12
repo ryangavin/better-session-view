@@ -150,9 +150,9 @@ song-workflow buttons need 158px between them and the cell's padding. The consta
 that measured floor plus a few pixels of air — a column whose own header doesn't fit is a
 column lying about its width, and the first version of this one was 148px and clipped.
 
-**The role chip has no width of its own any more.** It fills the Master column's cell,
-so it moves with the setting exactly as a clip does — which is the point of it being a
-column rather than a chip parked at the end of a metadata strip.
+**The role has no width of its own any more.** It paints the Master column's cell edge to
+edge, so it moves with the setting exactly as a clip does — which is the point of it being
+a column rather than a chip parked at the end of a metadata strip.
 
 The choice persists to `localStorage` under `bsv.columnWidth`, and `saveColumnWidth`
 swallows storage failures — a width that doesn't persist isn't worth failing a render

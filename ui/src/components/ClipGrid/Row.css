@@ -76,6 +76,13 @@ td.scene-role {
   overflow: hidden;
   cursor: pointer;
 }
+td.scene-role.uncolored {
+  border-color: var(--bd3);
+  border-style: dashed;
+}
+td.scene-role:is(.none, .uncolored) .role-chip {
+  color: var(--caption);
+}
 td.scene-role.picked {
   --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--sel);
   background: var(--sel);
@@ -88,19 +95,31 @@ td.scene-role > .fire {
   margin: 2px 4px 2px 2px;
   padding: 0;
   border: none;
-  background: none;
-  color: var(--idle);
+  border-radius: var(--radius-xs);
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
   font-size: 7px;
   line-height: 14px;
 }
 td.scene-role > .fire:hover {
-  color: var(--amber);
+  background: rgba(0, 0, 0, 0.45);
+  color: inherit;
+}
+td.scene-role:is(.none, .uncolored) > .fire {
+  background: none;
+  color: var(--idle);
+}
+td.scene-role:is(.none, .uncolored) > .fire:hover {
+  background: none;
+  color: var(--fg);
 }
 td.scene-role > .fire.live {
-  color: var(--green);
+  background: var(--green);
+  color: var(--bg);
 }
 td.scene-role > .fire.fired {
-  color: var(--amber);
+  background: var(--amber);
+  color: var(--bg);
   animation: bsv-blink 0.5s infinite;
 }
 
@@ -109,32 +128,23 @@ td.scene-role .role-chip {
   overflow: hidden;
   height: 14px;
   margin: 2px 0;
-  padding: 0 5px;
+  padding: 0;
   border: none;
-  border-radius: var(--radius-xs);
-  background: var(--bd3);
-  color: var(--ui);
+  border-radius: 0;
+  background: none;
+  color: inherit;
   font-family: var(--mono);
   font-size: 9px;
   line-height: 14px;
   letter-spacing: 0.06em;
-  text-align: center;
+  text-align: left;
   text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 td.scene-role .role-chip:hover {
-  filter: brightness(1.25);
-  color: var(--fg);
-}
-td.scene-role .role-chip.none {
-  background: var(--bd2);
-  color: var(--caption);
-}
-td.scene-role .role-chip.uncolored {
-  background: transparent;
-  border: 1px dashed var(--bd3);
-  color: var(--caption);
-  line-height: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* --- moving scenes ------------------------------------------------- */

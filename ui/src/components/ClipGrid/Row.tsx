@@ -179,8 +179,24 @@ export const Row = memo(function Row({
           it in the Master track — firing a scene is Live's, not ours. */}
       <td
         className={
-          `scene-role${active === 'scene' ? ' active' : ''}` +
-          `${sceneSelected ? ' picked' : ''}`
+          `scene-role${role === null ? ' none' : ''}` +
+          `${role !== null && roleRgb === undefined ? ' uncolored' : ''}` +
+          `${active === 'scene' ? ' active' : ''}${sceneSelected ? ' picked' : ''}`
+        }
+        // The role paints the cell, exactly as a clip's color paints its own —
+        // edge to edge, with the launcher recessed on top of it rather than
+        // beside it. An inset pill on a dark cell was the same information in a
+        // shape that read as an annotation; this reads as a slot with something
+        // in it, which is what a tagged scene is.
+        //
+        // `picked` sets `--sel` from the stylesheet and is simply outranked
+        // here, so a selected row shows its band on the cells that have no
+        // color of their own and leaves the colored ones alone — the same way
+        // a selected clip keeps its color and takes a border instead.
+        style={
+          role === null || roleRgb === undefined
+            ? undefined
+            : { background: hex(roleRgb), color: inkOn(roleRgb) }
         }
         data-active={active === 'scene' ? '1' : undefined}
         title={
@@ -202,30 +218,21 @@ export const Row = memo(function Row({
         >
           ▶
         </ControlButton>
-        {/* A scene with no role gets a pill reading "no role" — same box as a
-            real chip, a shade quieter, its text dimmer still. Filled rather
-            than dashed: a dashed chip already means something else here, a role
-            that exists and has no color. The label is lowercase in the source
-            and uppercased in CSS, like every other chip.
+        {/* The label reads like a clip's name and is a button, because the
+            label is where the role gets changed. An untagged scene says `NONE`
+            through the same button, so it is one click from a role rather than
+            a trip to the rail. Lowercase in the source and uppercased in CSS,
+            like every other label in this grid.
 
-            A button, not a label: the chip is where the role gets changed, and
-            the placeholder is the same button so an untagged scene is one click
-            from a role too. `stopPropagation` for the same reason the fire
-            button has it — the cell's own click selects, and pressing the chip
-            is not a selection. */}
+            `stopPropagation` for the same reason the fire button has it — the
+            cell's own click selects, and pressing this is not a selection. The
+            launcher strip left of it stays cell, so there is somewhere on a
+            colored scene to click that still means "select", exactly as there
+            is on a clip. */}
         <ControlButton
           type="button"
           aria-haspopup="menu"
-          className={
-            role === null
-              ? 'role-chip none'
-              : `role-chip${roleRgb === undefined ? ' uncolored' : ''}`
-          }
-          style={
-            role === null || roleRgb === undefined
-              ? undefined
-              : { background: hex(roleRgb), color: inkOn(roleRgb) }
-          }
+          className="role-chip"
           title={
             role === null
               ? 'No role — click to tag this scene'
@@ -239,7 +246,7 @@ export const Row = memo(function Row({
             onRoleMenu(scene.i, { left: r.left, top: r.top, bottom: r.bottom });
           }}
         >
-          {role === null ? 'no role' : role}
+          {role === null ? 'none' : role}
         </ControlButton>
       </td>
       {columns.map((c) => {

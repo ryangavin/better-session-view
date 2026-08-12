@@ -29,11 +29,14 @@ repeated on each scene: the header already owns it, and every child scene necess
 belongs to that same song.
 
 **The role is not in that column at all.** It has one of its own — the Master column,
-where Live keeps the scene launchers — and its cell is built like a clip cell: the ▶ at
-the left end in the same 14px strip a clip launcher uses, and the chip filling the rest
-the way a clip's name fills its slot. A role *is* what that scene is, in the same sense a
-clip is what a track plays there, so it reads as a column of clips rather than as an
-annotation hanging off a strip of numbers.
+where Live keeps the scene launchers — and its cell *is* the role: the color paints the
+cell edge to edge exactly as a clip's color paints its own, with the ▶ recessed on top of
+it in the same 14px strip a clip launcher uses. A role is what that scene is, in the same
+sense a clip is what a track plays there, so it reads as a column of slots with something
+in them rather than as an annotation hanging off a strip of numbers.
+
+An inset pill on a dark cell was the same information in the wrong shape. It read as a
+label about the row; the cell reads as a thing the row contains.
 
 **The song tag is on the header and nowhere else.** It classifies the *song*, so every
 scene of a song carries the same one by construction — a column of identical pills spends
@@ -54,18 +57,21 @@ disagrees with the song it belongs to.
   a clip does. It had a constant of its own once, sized to nine characters, which is what
   a chip parked at the end of a metadata strip needs; a column asks a different question,
   and the answer has to be the same one the clips beside it are giving.
-- **A scene with no role draws a pill saying so** — same box as a real chip, a shade
-  quieter, its text dimmer still. Filled rather than dashed: a dashed chip already means
-  something else here, a role that exists and has no color.
-- **The chip is a `<button>`**, real one and placeholder alike — it opens the role menu
+- **A scene with no role says `NONE`** on the app's ordinary cell surface — the same
+  ground an empty clip slot takes, which is what an untagged scene is. Its launcher goes
+  bare and dim with it, like an empty slot's button, because there is no color under it to
+  recess into. Not dashed: a dashed cell already means something else here, a role that
+  exists and has no color.
+- **The label is a `<button>`**, real role and `NONE` alike — it opens the role menu
   below. That means undoing the global button rule in `td.scene-role .role-chip`, and it
-  means an untagged scene is one click from a role rather than a trip to the rail.
-- **Clicking around it still selects the row**, the same as clicking the metadata cell,
-  and `stopPropagation` on the chip is what keeps opening the menu from also being a
-  selection. The chip fills nearly the whole cell, so the metadata column is the roomy
-  half of that target — which is the right way round: selecting is the frequent gesture
-  and it gets the whole metadata column, while changing a role is deliberate and gets the
-  thing it names.
+  means an untagged scene is one click from a role rather than a trip to the rail. The
+  menu's own clear-this item still reads `no role`, because there it is an action rather
+  than a state.
+- **The launcher strip stays cell, not button**, so there is somewhere on a colored scene
+  to click that still means "select" — exactly as there is on a clip. `stopPropagation` on
+  the label is what keeps opening the menu from also being a selection, and the metadata
+  column is the roomy half of the select target, which is the right way round: selecting
+  is the frequent gesture, changing a role is the deliberate one.
 
 An existing set named the old way (`Nightfall 128 Bm [chorus]`) still shows its songs —
 derivation reads both conventions, and any rename converts a scene. See *Reading more
