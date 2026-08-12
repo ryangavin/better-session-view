@@ -17,7 +17,7 @@ import type { BridgeState, PlayState } from '../../hooks/useBridge.js';
 import { useMeters } from '../../hooks/useMeters.js';
 import { useMixer } from '../../hooks/useMixer.js';
 import { useViewportColumnWidth } from '../../hooks/useViewportColumnWidth.js';
-import { marksByScene } from '../../lib/rowMarks.js';
+import { armedTracks, marksByScene } from '../../lib/rowMarks.js';
 import type { Anchor } from '../../hooks/useAnchoredPosition.js';
 import { NO_SHAPES, STOP_FIRED } from './constants.js';
 import {
@@ -203,6 +203,10 @@ export function ClipGrid({
   onToggleGroup,
 }: Props) {
   const marks = useMemo(() => marksByScene(play), [play]);
+  // One string for the whole grid rather than a token per row: arm is a track
+  // property and every row's answer is the same. Recomputing it on each play
+  // push costs nothing, and an unchanged string is memo-equal — see rowMarks.
+  const armed = useMemo(() => armedTracks(play), [play]);
   const stoppingAll =
     play.tracks.some((state) => state.playing >= 0) &&
     play.tracks.every((state) => state.playing < 0 || state.fired === STOP_FIRED);
@@ -455,6 +459,7 @@ export function ClipGrid({
                 clips={clips}
                 selected={selected}
                 marks={marks.get(scene.i)}
+                armed={armed}
                 active={
                   active === null || active.s !== scene.i
                     ? undefined

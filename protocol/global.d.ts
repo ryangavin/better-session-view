@@ -189,8 +189,8 @@ declare namespace BSV {
    * What one track is doing right now.
    *
    * Read from Live's per-*track* properties, not per-clip: the whole grid's
-   * play state costs two reads per track instead of two per slot, which at
-   * full size is the difference between ~80 observers and ~68,000. Nothing
+   * play state costs three reads per track instead of two per slot, which at
+   * full size is the difference between ~120 observers and ~68,000. Nothing
    * here is clip-addressed, and that's the point.
    */
   interface TrackPlayState {
@@ -204,6 +204,17 @@ declare namespace BSV {
      * blinks for it.
      */
     fired: number;
+    /**
+     * Live's `Track.arm`. False for tracks that can't be armed at all.
+     *
+     * Here rather than only in `MixerTrackState` because arming changes what
+     * the *grid* does: `ClipSlot.fire()` on an empty slot triggers that slot's
+     * stop button on an unarmed track and starts recording on an armed one, so
+     * every empty cell draws a different button depending on this. The mixer's
+     * copy is observed only while its footer is open, and the grid is never
+     * closed — this is the always-on watcher, so arm rides with it.
+     */
+    armed: boolean;
   }
 
   /** One track from a complete output-meter frame. */

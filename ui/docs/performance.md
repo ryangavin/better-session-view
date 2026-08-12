@@ -59,6 +59,13 @@ match inside `p10`. That map is also built by walking the **tracks**, not the sc
 track contributes to at most two rows, so it's `O(trackCount)` rather than
 `848 × trackCount` per change.
 
+**Arm rides the same push and crosses the same way.** `armedTracks` flattens it to one
+`|3|7|` string for the whole grid rather than a per-row token, because arm is a track
+property and every row's answer is identical. It's rebuilt on every play push and that
+costs nothing: a string with unchanged contents is `Object.is`-equal to the last one, so
+`Row`'s memo passes. When somebody *does* arm a track, all 848 rows re-render — correctly,
+since every empty cell in that column swaps its stop button for a record button.
+
 **The active cell lives in a ref as well as in state**, and this is not a micro-optimisation.
 `onClip` is a prop on the memoized `Row`; if it closed over `active` it would get a new
 identity on every arrow press and re-render the entire grid. `goActive` writes the ref and
