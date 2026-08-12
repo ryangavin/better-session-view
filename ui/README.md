@@ -1259,9 +1259,9 @@ stays in the shared layout but is invisible, so its pan remains aligned with eve
 strip; a no-wrap Master label is painted over the unused switch area.
 
 The stop row, resize handle and panel are one sticky `<tfoot>`, so table layout stacks them
-without independently calculated offsets. Each row retains one cell per visible column;
-their shared 2px gutter treatment closes every join and carries the track boundaries
-through the segmented handle. That handle changes the shared height from a 164px minimum;
+without independently calculated offsets. The stop and meter rows retain one cell per
+visible column and share the grid's 2px gutters. Between them, a solid 4px divider changes
+the shared height from a 164px minimum without resembling another row of track controls;
 the 220px
 default leaves room for a useful volume range and the four offset controls even at
 Small's 44px column width. The output rail stays 8px there and grows smoothly to 16px as

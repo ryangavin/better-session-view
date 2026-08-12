@@ -18,7 +18,7 @@ table.grid {
      shadows paint into it; the band's gutter below draws it by hand. */
   --gutter: 2px;
   --meter-panel-h: 220px;
-  --meter-handle-h: 10px;
+  --meter-handle-h: 4px;
   --stop-row-h: 26px;
   /* Track names sit inside saturated header cells rather than in the gutter.
      Enough inset to clear the 3px play-state bar, without starving S columns. */
@@ -464,42 +464,26 @@ table.grid tfoot tr.meter-row td:first-child {
   z-index: var(--layer-mixer-corner);
 }
 
-/* The handle is one interactive row but retains one cell per table column.
-   That lets the same gutter separators run through it instead of disappearing
-   across a spanning cell, while every segment still drags the shared height. */
+/* A single quiet strip separates the stop slots from the meter panel. It spans
+   the footer instead of repeating once per track, so it reads as a divider and
+   spends only four vertical pixels on the resize affordance. */
 table.grid tfoot tr.meter-resize-row td {
   position: relative;
   height: var(--meter-handle-h);
-  padding: 4px 0;
-  background: var(--rail);
-}
-
-table.grid tfoot tr.meter-resize-row td:first-child {
-  position: sticky;
-  left: var(--gutter);
-  z-index: var(--layer-mixer-corner);
+  padding: 0;
+  background: var(--bd3);
 }
 
 .meter-resize-row {
-  color: var(--bd2);
   cursor: ns-resize;
   touch-action: none;
   outline: none;
 }
 
-.meter-resize-row td::before {
-  content: '';
-  display: block;
-  width: 100%;
-  height: var(--gutter);
-  background: currentColor;
-  pointer-events: none;
-}
-
-.meter-resize-row:hover,
-.meter-resize-row:focus-visible,
-.meter-resize-row.dragging {
-  color: var(--fg2);
+.meter-resize-row:hover td,
+.meter-resize-row:focus-visible td,
+.meter-resize-row.dragging td {
+  background: var(--dim2);
 }
 
 .mixer-strip {

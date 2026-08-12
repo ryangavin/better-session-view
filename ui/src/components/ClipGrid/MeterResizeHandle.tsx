@@ -36,7 +36,7 @@ function maximumHeight(table: HTMLTableElement): number {
   );
 }
 
-/** A column-aligned row above the meters that resizes their shared table-owned height. */
+/** A thin divider above the meters that resizes their shared table-owned height. */
 export function MeterResizeHandle({ cellCount }: { cellCount: number }) {
   const handleRef = useRef<HTMLTableRowElement>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -137,9 +137,7 @@ export function MeterResizeHandle({ cellCount }: { cellCount: number }) {
       }}
       onKeyDown={onKeyDown}
     >
-      {Array.from({ length: cellCount }, (_, index) => (
-        <td key={index} aria-hidden="true" />
-      ))}
+      <td colSpan={cellCount} aria-hidden="true" />
     </tr>
   );
 }

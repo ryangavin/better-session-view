@@ -87,9 +87,9 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   Live colored that clip; its lit states fill instead, with the app background as ink.
 - The mixer and stop slots are one resizable sticky table footer, so every strip remains
   aligned with its track column and Master remains pinned under Songs. Its rows share the
-  grid's 2px gutters, including the segmented resize handle, rather than floating at
-  separately calculated offsets. The output rail grows from 8px to 16px when the column
-  has room, then stops so whitespace remains.
+  grid's 2px gutters rather than floating at separately calculated offsets; one thin,
+  solid divider resizes the panel without resembling another track row. The output rail
+  grows from 8px to 16px when the column has room, then stops so whitespace remains.
 - A permanent stop-clips row is sticky under Session content and moves above the mixer
   when it opens. Each visible track owns its stop slot; Stop All occupies the same slot in
   the pinned Master column instead of living in the global transport controls.
