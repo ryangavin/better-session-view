@@ -1245,7 +1245,9 @@ control restores its reported `default_value`. Master centers the same 44px cont
 inside its wider pinned cell, keeping its readouts, pan, label and rail on one axis.
 
 The panel is part of the grid table, so it inherits the exact column widths and horizontal
-scroll position. Its top handle changes the shared height from a 140px minimum; the 220px
+scroll position. A subtle full-height rule at each ordinary track boundary restores the
+separation that the sticky mixer surface paints over. Its top handle changes the shared
+height from a 140px minimum; the 220px
 default leaves room for a useful volume range and the four offset controls even at
 Small's 40px column width. The controls occupy the meter's lower-left side instead of
 shortening it, matching Live's compact mixer-strip geometry.

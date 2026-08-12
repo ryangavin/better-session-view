@@ -81,7 +81,8 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   the clip's color rather than taking a fixed one, since the ground under it is whatever
   Live colored that clip; its lit states fill instead, with the app background as ink.
 - The mixer is a resizable sticky footer in the same table, so every strip remains aligned
-  with its track column and Master remains pinned under Songs.
+  with its track column and Master remains pinned under Songs. A quiet full-height divider
+  marks each ordinary track boundary without boxing the strips on every side.
 
 ## Stacking
 
