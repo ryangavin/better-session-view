@@ -1,6 +1,6 @@
 import { memo, type DragEvent } from 'react';
 import './Row.css';
-import { hex, inkOn, legibleOn } from '../../../../core/src/color.js';
+import { hex, inkOn } from '../../../../core/src/color.js';
 import { MIN_TEMPO } from '../../../../core/src/derive.js';
 import { groupSlot } from '../../../../core/src/groupSlot.js';
 import { roleIn, roleKey } from '../../../../core/src/roles.js';
@@ -9,9 +9,8 @@ import type { Column } from '../../../../core/src/trackColumns.js';
 import { clipKey } from '../../lib/selection.js';
 import { LAUNCH_KEY, mods } from '../../lib/keys.js';
 import { has, type RowMarks } from '../../lib/rowMarks.js';
-import { TagChip } from '../TagChip.js';
 import { ControlButton } from '../Control.js';
-import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA, PANEL } from './constants.js';
+import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA } from './constants.js';
 import type { DropEdge } from './dropEdge.js';
 import type { Props } from './ClipGrid.js';
 
@@ -84,24 +83,22 @@ export const Row = memo(function Row({
   onClipDrop,
   onClipDragEnd,
 }: RowProps) {
-  // Live allows a scene to have no color at all, which is not the same as
-  // palette slot 0 — see Scene.colorIndex in the protocol.
-  const named = scene.colorIndex >= 0 ? hex(legibleOn(scene.color, PANEL)) : undefined;
   // There is no "scene is playing" property in the LOM, so derive it: a scene
   // is sounding if any track is playing a clip in this row.
   const sceneLive = marks !== undefined && marks.indexOf('|p') >= 0;
   const sceneFired = marks !== undefined && marks.indexOf('|f') >= 0;
 
-  // The role is parsed out of the name and shown as a chip. The song header
-  // owns the shared title; child scenes only repeat the metadata that actually
-  // differs from row to row while Live keeps the complete literal name.
+  // The role is parsed out of the name and shown as a chip. The header owns
+  // everything a scene shares with the rest of its song — the name, the artist,
+  // the tag — and a row repeats only what can differ from the row above it.
+  // Live keeps the complete literal name either way.
   const role = roleIn(scene.name);
   const metadata = titleOf(scene.name);
   // Scene.tempo is the current convention's source of truth. A BPM parsed
   // from the name exists only for sets still carrying the legacy spelling,
   // and matches the editor's migration fallback in useSceneTitles.
   const bpm = scene.tempo >= MIN_TEMPO ? String(scene.tempo) : metadata.bpm;
-  const { key, tag } = metadata;
+  const { key } = metadata;
   const roleRgb = role === null ? undefined : roleColors.get(roleKey(role));
 
   return (
@@ -173,8 +170,8 @@ export const Row = memo(function Row({
             {scene.i + 1}
           </span>
         {/* BPM and key occupy the same fixed fact slots as the song header.
-            Keeping the scene-number slot in the header too means every value,
-            role/song identity, and tag shares one vertical line. */}
+            Keeping the scene-number slot in the header too means every value
+            shares one vertical line with the song's own. */}
           <span
             className={`scene-bpm${bpm === '' ? ' none' : ''}`}
             title={bpm === '' ? 'No BPM set for this scene' : `BPM: ${bpm}`}
@@ -190,8 +187,8 @@ export const Row = memo(function Row({
             {key || '--'}
           </span>
         {/* The role follows the key. Fire button, scene number, BPM, key and
-            chip are fixed-width columns; the optional song tag takes the
-            remaining space at the right edge.
+            chip are all fixed-width columns, so each kind of fact reads as one
+            vertical line down the whole grid.
 
             A scene with no role gets a pill reading "no role" — same box as a
             real chip, a shade quieter, its text dimmer still. Filled rather
@@ -231,12 +228,6 @@ export const Row = memo(function Row({
           >
             {role === null ? 'no role' : role}
           </ControlButton>
-        {/* A fixed slot through the scene column's right edge. The pill itself
-            hugs that edge, so COVER and ORIGINAL line up with each other and
-            with the song header regardless of their different widths. */}
-          <span className="song-tag-slot">
-            <TagChip tag={tag} color={named || undefined} />
-          </span>
         </span>
       </td>
       {columns.map((c) => {

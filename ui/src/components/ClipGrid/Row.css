@@ -109,13 +109,6 @@ td.scene .role-chip.uncolored {
   line-height: 12px;
 }
 
-td.scene .song-tag-slot {
-  display: flex;
-  flex: 1 1 0;
-  justify-content: flex-end;
-  min-width: 0;
-  vertical-align: 1px;
-}
 td.scene.picked {
   --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--sel);
   background: var(--sel);

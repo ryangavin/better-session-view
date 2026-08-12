@@ -28,13 +28,18 @@ keep fixed widths, so every kind of metadata reads as one vertical column. The s
 is not repeated on each scene: the header already owns it, and every child scene
 necessarily belongs to that same song.
 
-When present, the song tag follows the role as an inverted pill: its fill is transparent,
-while its outline and text use the scene's song color. The role remains the solid
-structural marker; `COVER` / `ORIGINAL` reads as separate song metadata rather than a
-second role. The header uses the same pill, constrained together with the song name inside
-the scene column even while the song is expanded. Both header and scene pills are
-right-aligned to that column's content edge, so their right edges form one vertical line
-through the whole expanded song.
+**The song tag is on the header and nowhere else.** It classifies the *song*, so every
+scene of a song carries the same one by construction — a column of identical pills spends
+grid width restating what the header already says once, and a fact repeated on every row
+stops being read at all. The header keeps the inverted pill: transparent fill, outline and
+text in the song's own color, so `COVER` / `ORIGINAL` reads as song metadata rather than
+as a second role. The role chip stays the solid structural marker, and it stays on the
+row, because that one really does differ from scene to scene.
+
+The scene's own color left with it. That color reached the grid only as the pill's ink,
+and the song's color is on the header already — as the wash and the bar down its left
+edge — with `mixed color` there for the one case worth seeing, which is a scene that
+disagrees with the song it belongs to.
 
 - **One width for every role.** `[JAM1]` weighs the same as `[PRACTICE]`, which it does.
   Longer names ellipsis and the tooltip spells them out.

@@ -34,7 +34,7 @@ export const DEFAULT_COLUMN_WIDTH: ColumnWidth = 'm';
  * same length whatever that answer is, and shrinking the column to match `s`
  * only truncated names that were already the row's label — you lose the thing
  * you navigate by to gain one more track column. Its fixed width also keeps
- * the scene-number, BPM, key, identity and tag slots aligned in every mode.
+ * the scene-number, BPM, key and role slots aligned in every mode.
  */
 export const SCENE_COL_W = 316;
 
