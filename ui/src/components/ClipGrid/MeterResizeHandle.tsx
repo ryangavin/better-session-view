@@ -8,7 +8,7 @@ import {
 } from 'react';
 
 const DEFAULT_HEIGHT = 220;
-const MIN_HEIGHT = 140;
+const MIN_HEIGHT = 164;
 const GRID_RESERVE = 64;
 const KEY_STEP = 8;
 

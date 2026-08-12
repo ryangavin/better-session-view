@@ -46,10 +46,12 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   of what the control is for, and a menu hides that behind a press.
 - The debug console starts closed after every refresh, never opens automatically, and its
   toggle lives with status in the bottom strip.
-- Mixer strips place a 22×22px Track Activator above 22×11px Solo and Arm buttons down
+- Mixer strips place a 26×26px Track Activator above 26×13px Solo and Arm buttons down
   the lower left side of a full-height output meter. Volume is a draggable triangular
   indicator beside that meter instead of a second vertical rail. Resettable peak and
-  exact volume readouts occupy the top-left; a 22×16px pan field sits above the switch
+  exact volume readouts occupy the top-left; each readout and the pan field is 26×19px
+  so the entire control column grows without changing any control's aspect ratio. Pan
+  sits above the switch
   stack. Optional sends follow Live's A/B-labelled value rows above ordinary-track
   faders; Master has no sends, so its meter keeps the full panel height. The activator
   uses amber when enabled, Solo uses blue when selected and Arm uses red when armed.

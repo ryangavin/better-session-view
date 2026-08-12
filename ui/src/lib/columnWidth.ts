@@ -53,11 +53,12 @@ export interface ColumnMetrics {
   col: number;
 }
 
-// `m` is the width the grid shipped with. `s` is sized so ~26 tracks fit in a
-// 1100px viewport; below about 36px a clip name is unreadable and the cell may
+// `m` is the width the grid shipped with. `s` is sized so ~24 tracks fit in a
+// 1100px track viewport; below about 40px of cell content the enlarged mixer
+// controls crowd their meter and a clip name is unreadable, so the cell may
 // as well be a color chip.
 const METRICS: Record<ColumnWidthPreset, ColumnMetrics> = {
-  s: { col: 40 },
+  s: { col: 44 },
   m: { col: 74 },
   l: { col: 116 },
 };
@@ -96,7 +97,7 @@ export function isViewportColumnWidth(w: ColumnWidth): w is ViewportColumnWidth 
 /**
  * Lay track columns out against the available grid viewport.
  *
- * Auto shares the width among the rendered tracks and stops at Small's 40px
+ * Auto shares the width among the rendered tracks and stops at Small's 44px
  * readability floor. The 8/16 modes instead size one or two hardware banks
  * exactly; any tracks beyond that bank make the full table scroll.
  */

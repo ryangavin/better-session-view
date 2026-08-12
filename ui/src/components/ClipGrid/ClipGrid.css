@@ -388,7 +388,7 @@ table.grid tfoot tr.meter-row td {
      can scroll behind it on both axes without leaking through its chrome. */
   z-index: var(--layer-mixer);
   height: var(--meter-panel-h);
-  padding: 8px 4px;
+  padding: 8px 2px;
   background: var(--rail);
   box-shadow:
     calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
@@ -455,9 +455,9 @@ table.grid tfoot td.meter-resize-cell {
   display: flex;
   flex-direction: column;
   /* Keep Small's established 8px rail, then spend only the first bit of
-     available column space on legibility. At 52px the rail reaches 16px;
+     available column space on legibility. At 56px the rail reaches 16px;
      wider viewport-fit columns retain breathing room around the strip. */
-  width: 52px;
+  width: 56px;
   max-width: 100%;
   height: calc(var(--meter-panel-h) - 16px);
   min-height: 0;
@@ -469,10 +469,10 @@ table.grid tfoot td.meter-resize-cell {
 }
 
 .mixer-meter-control {
-  --mixer-meter-w: clamp(8px, calc(100% - 36px), 16px);
+  --mixer-meter-w: clamp(8px, calc(100% - 40px), 16px);
 
   position: relative;
-  flex: 1 0 92px;
+  flex: 1 0 146px;
   min-height: 0;
 }
 
@@ -486,7 +486,7 @@ table.grid tfoot td.meter-resize-cell {
   flex: 0 1 auto;
   gap: 3px;
   width: 44px;
-  max-height: calc(100% - 92px);
+  max-height: calc(100% - 146px);
   min-height: 0;
   margin: 0 auto 7px;
   padding-bottom: 7px;
@@ -702,8 +702,8 @@ table.grid tfoot td.meter-resize-cell {
   top: 0;
   left: 0;
   display: grid;
-  width: 22px;
-  gap: 5px;
+  width: 26px;
+  gap: 6px;
   pointer-events: none;
 }
 
@@ -713,8 +713,8 @@ table.grid tfoot td.meter-resize-cell {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 16px;
+  width: 26px;
+  height: 19px;
   padding: 0;
   border: 1px solid var(--bd3);
   border-radius: var(--radius-xs);
@@ -757,7 +757,7 @@ table.grid tfoot td.meter-resize-cell {
 .mixer-pan {
   position: absolute;
   z-index: 5;
-  bottom: 66px;
+  bottom: 78px;
   left: 0;
   cursor: ew-resize;
   overflow: hidden;
@@ -821,15 +821,15 @@ table.grid tfoot td.meter-resize-cell {
   left: 0;
   display: grid;
   align-items: normal;
-  gap: 5px;
+  gap: 6px;
 }
 
 button.mixer-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 11px;
+  width: 26px;
+  height: 13px;
   padding: 0;
   border-color: var(--bd3);
   border-radius: var(--radius-xs);
@@ -842,7 +842,7 @@ button.mixer-button {
 }
 
 button.mixer-activator {
-  height: 22px;
+  height: 26px;
   font-size: 12px;
 }
 
@@ -864,8 +864,8 @@ button.mixer-button.mixer-solo.control-button-on {
 }
 
 button.mixer-arm span {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border: 1px solid currentColor;
   border-radius: var(--radius-pill);
   background: currentColor;

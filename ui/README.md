@@ -1160,15 +1160,15 @@ immediately.
 
 | | track column | fits in ~1100px |
 |---|---|---|
-| `s` | 40px | ~26 tracks |
+| `s` | 44px | ~24 tracks |
 | `m` | 74px | ~14 tracks |
 | `l` | 116px | ~9 tracks |
-| `auto` | at least 40px | all rendered tracks, when they fit readably |
+| `auto` | at least 44px | all rendered tracks, when they fit readably |
 | `8` | viewport-derived | exactly one 8-track bank |
 | `16` | viewport-derived | exactly two 8-track banks |
 
 **Auto divides the width left after the fixed scene column among every rendered track.**
-Small's 40px is its floor: a large set keeps horizontal scrolling rather than turning
+Small's 44px is its floor: a large set keeps horizontal scrolling rather than turning
 clip names into unusable slivers.
 
 **8 and 16 divide that same space by a bank size instead.** The full table still contains
@@ -1247,11 +1247,13 @@ inside its wider pinned cell, keeping its readouts, pan, label and rail on one a
 The panel is part of the grid table, so it inherits the exact column widths and horizontal
 scroll position. A subtle full-height rule at each ordinary track boundary restores the
 separation that the sticky mixer surface paints over. Its top handle changes the shared
-height from a 140px minimum; the 220px
+height from a 164px minimum; the 220px
 default leaves room for a useful volume range and the four offset controls even at
-Small's 40px column width. The output rail stays 8px there and grows smoothly to 16px as
-a roomier column admits a 52px strip; it stops at that width instead of consuming all the
-air in an 8-track view. The controls occupy the meter's lower-left side instead of
+Small's 44px column width. The output rail stays 8px there and grows smoothly to 16px as
+a roomier column admits a 56px strip; it stops at that width instead of consuming all the
+air in an 8-track view. The Activator, Solo, Arm, peak, volume and pan controls use a
+26px-wide column at every track width; their heights grow by the same proportion as their
+widths. The controls occupy the meter's lower-left side instead of
 shortening it, matching Live's compact mixer-strip geometry.
 
 Mixer observation exists only while the panel is open, and the one-observer-per-track-per-
