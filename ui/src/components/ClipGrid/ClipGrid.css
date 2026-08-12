@@ -388,9 +388,8 @@ table.grid tfoot tr.stop-row td {
   height: var(--stop-row-h);
   padding: 3px 2px;
   background: var(--rail);
-  background-image: linear-gradient(to right, var(--bd2) 0 1px, transparent 1px);
   box-shadow:
-    calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
+    var(--footer-track-separators),
     0 var(--gutter) 0 var(--rail), 0 -8px 14px -4px var(--shadow-edge);
   vertical-align: middle;
 }
@@ -403,8 +402,8 @@ table.grid tfoot tr.stop-row td::before {
   top: 0;
   right: calc(-1 * var(--gutter));
   left: calc(-1 * var(--gutter));
-  height: 1px;
-  background: var(--bd);
+  height: var(--gutter);
+  background: var(--bd2);
   pointer-events: none;
 }
 
@@ -417,7 +416,6 @@ table.grid tfoot tr.stop-row td::before {
 table.grid tfoot tr.stop-row td:first-child {
   left: var(--gutter);
   z-index: var(--layer-mixer-corner);
-  background-image: none;
 }
 
 button.stop-clips-button {
@@ -461,16 +459,18 @@ table.grid tfoot tr.meter-row td {
   padding: 8px 2px;
   background: var(--rail);
   box-shadow:
-    calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
-    0 var(--gutter) 0 var(--rail);
+    var(--footer-track-separators), 0 var(--gutter) 0 var(--rail);
   vertical-align: middle;
 }
 
-/* The grid gutter is intentionally painted over by the sticky mixer surface.
-   Put back one quiet edge at each track boundary so tall, narrow strips remain
-   legible without turning the footer into a boxed table. */
-table.grid tfoot tr.meter-row td:not(:first-child) {
-  background-image: linear-gradient(to right, var(--bd2) 0 1px, transparent 1px);
+/* Both footer sections paint over the table's transparent column gutters to
+   keep scrolling content from showing through. Repaint those exact 2px strips
+   as the separators instead of drawing a line inside either neighbouring cell.
+   The two outward shadows also give the final track its right-hand edge. */
+table.grid tfoot tr:is(.stop-row, .meter-row) td {
+  --footer-track-separators:
+    calc(-1 * var(--gutter)) 0 0 var(--bd2),
+    var(--gutter) 0 0 var(--bd2);
 }
 
 /* The Master meter is the bottom-left intersection: pinned with its panel
