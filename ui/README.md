@@ -1249,7 +1249,9 @@ scroll position. A subtle full-height rule at each ordinary track boundary resto
 separation that the sticky mixer surface paints over. Its top handle changes the shared
 height from a 140px minimum; the 220px
 default leaves room for a useful volume range and the four offset controls even at
-Small's 40px column width. The controls occupy the meter's lower-left side instead of
+Small's 40px column width. The output rail stays 8px there and grows smoothly to 16px as
+a roomier column admits a 52px strip; it stops at that width instead of consuming all the
+air in an 8-track view. The controls occupy the meter's lower-left side instead of
 shortening it, matching Live's compact mixer-strip geometry.
 
 Mixer observation exists only while the panel is open, and the one-observer-per-track-per-
