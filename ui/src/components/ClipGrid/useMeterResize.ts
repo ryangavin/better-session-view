@@ -5,22 +5,20 @@ import {
   useState,
   type KeyboardEvent,
   type PointerEvent,
+  type RefObject,
 } from 'react';
 
 const DEFAULT_HEIGHT = 220;
 const MIN_HEIGHT = 164;
 const GRID_RESERVE = 64;
 const KEY_STEP = 8;
+const EDGE_HIT_DEPTH = 4;
 
 interface Drag {
   pointerId: number;
   startY: number;
   startHeight: number;
   table: HTMLTableElement;
-}
-
-function meterTable(node: HTMLElement): HTMLTableElement | null {
-  return node.closest<HTMLTableElement>('table.grid');
 }
 
 function currentHeight(table: HTMLTableElement): number {
@@ -32,13 +30,18 @@ function currentHeight(table: HTMLTableElement): number {
 function maximumHeight(table: HTMLTableElement): number {
   const viewport = table.closest<HTMLElement>('.grid-wrap');
   return Math.floor(
-    Math.max(MIN_HEIGHT, (viewport?.clientHeight ?? DEFAULT_HEIGHT) - GRID_RESERVE),
+    Math.max(
+      MIN_HEIGHT,
+      (viewport?.clientHeight ?? DEFAULT_HEIGHT) - GRID_RESERVE,
+    ),
   );
 }
 
-/** A thin divider above the meters that resizes their shared table-owned height. */
-export function MeterResizeHandle({ cellCount }: { cellCount: number }) {
-  const handleRef = useRef<HTMLTableRowElement>(null);
+/** Makes the meter row's existing top border resize its table-owned height. */
+export function useMeterResize(
+  tableRef: RefObject<HTMLTableElement | null>,
+  active: boolean,
+) {
   const dragRef = useRef<Drag | null>(null);
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
   const [maxHeight, setMaxHeight] = useState(DEFAULT_HEIGHT);
@@ -52,27 +55,27 @@ export function MeterResizeHandle({ cellCount }: { cellCount: number }) {
     setMaxHeight(max);
   }, []);
 
-  // Keep a resized panel inside the viewport if the browser itself changes
-  // size. Reading the table's variable also restores this handle's aria value
-  // when the meter footer is hidden and shown again.
+  // Optional rows add to the footer without changing the meter's height or
+  // resize ceiling. Only viewport changes can clamp the resizable section.
   useEffect(() => {
-    const sync = () => {
-      const handle = handleRef.current;
-      if (!handle) return;
-      const table = meterTable(handle);
-      if (table) applyHeight(table, currentHeight(table));
-    };
+    const table = tableRef.current;
+    if (!active || !table) return;
+    const sync = () => applyHeight(table, currentHeight(table));
     sync();
-    window.addEventListener('resize', sync);
-    return () => window.removeEventListener('resize', sync);
-  }, [applyHeight]);
+    const observer = new ResizeObserver(sync);
+    const viewport = table.closest<HTMLElement>('.grid-wrap');
+    if (viewport) observer.observe(viewport);
+    return () => observer.disconnect();
+  }, [active, applyHeight, tableRef]);
 
   const onPointerDown = (event: PointerEvent<HTMLTableRowElement>) => {
     if (event.button !== 0) return;
-    const table = meterTable(event.currentTarget);
+    const row = event.currentTarget;
+    if (event.clientY - row.getBoundingClientRect().top > EDGE_HIT_DEPTH) return;
+    const table = tableRef.current;
     if (!table) return;
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
+    row.setPointerCapture(event.pointerId);
     dragRef.current = {
       pointerId: event.pointerId,
       startY: event.clientY,
@@ -99,7 +102,7 @@ export function MeterResizeHandle({ cellCount }: { cellCount: number }) {
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
-    const table = meterTable(event.currentTarget);
+    const table = tableRef.current;
     if (!table) return;
     const current = currentHeight(table);
     let next: number | null = null;
@@ -114,30 +117,27 @@ export function MeterResizeHandle({ cellCount }: { cellCount: number }) {
     applyHeight(table, next);
   };
 
-  return (
-    <tr
-      ref={handleRef}
-      className={`meter-resize-row${dragging ? ' dragging' : ''}`}
-      role="separator"
-      aria-label="Resize mixer"
-      aria-orientation="horizontal"
-      aria-valuemin={MIN_HEIGHT}
-      aria-valuemax={Math.round(maxHeight)}
-      aria-valuenow={height}
-      aria-valuetext={`${height} pixels high`}
-      tabIndex={0}
-      title="Drag to resize mixer"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={finishDrag}
-      onPointerCancel={finishDrag}
-      onLostPointerCapture={() => {
+  return {
+    dragging,
+    rowProps: {
+      role: 'separator',
+      'aria-label': 'Resize mixer',
+      'aria-orientation': 'horizontal' as const,
+      'aria-valuemin': MIN_HEIGHT,
+      'aria-valuemax': Math.round(maxHeight),
+      'aria-valuenow': height,
+      'aria-valuetext': `${height} pixels high`,
+      tabIndex: 0,
+      title: 'Drag the top border to resize mixer',
+      onPointerDown,
+      onPointerMove,
+      onPointerUp: finishDrag,
+      onPointerCancel: finishDrag,
+      onLostPointerCapture: () => {
         dragRef.current = null;
         setDragging(false);
-      }}
-      onKeyDown={onKeyDown}
-    >
-      <td colSpan={cellCount} aria-hidden="true" />
-    </tr>
-  );
+      },
+      onKeyDown,
+    },
+  };
 }

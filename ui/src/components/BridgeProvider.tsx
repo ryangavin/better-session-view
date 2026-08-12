@@ -42,6 +42,7 @@ import { BridgeContext, type BridgeSession } from '../hooks/useBridgeSession.js'
  * this file's own dependencies. That's the right bill for that edit.
  */
 export function BridgeProvider({ children }: { children: ReactNode }) {
+  const [showStopClips, setShowStopClips] = useState(true);
   const [showMeters, setShowMeters] = useState(false);
   const [showSends, setShowSends] = useState(false);
   const toggleMeters = useCallback(() => {
@@ -52,6 +53,9 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     setShowMeters(true);
     setShowSends((shown) => !shown);
   }, []);
+  const toggleStopClips = useCallback(() => {
+    setShowStopClips((shown) => !shown);
+  }, []);
   const bridge = useBridge(showMeters, showSends);
 
   // `bridge` is a fresh object every render, so this memo doesn't stop anything
@@ -59,8 +63,24 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   // when it called `useBridge` itself. It's here to keep the context value one
   // expression rather than an object literal in the JSX.
   const session = useMemo<BridgeSession>(
-    () => ({ ...bridge, showMeters, showSends, toggleMeters, toggleSends }),
-    [bridge, showMeters, showSends, toggleMeters, toggleSends],
+    () => ({
+      ...bridge,
+      showStopClips,
+      showMeters,
+      showSends,
+      toggleStopClips,
+      toggleMeters,
+      toggleSends,
+    }),
+    [
+      bridge,
+      showStopClips,
+      showMeters,
+      showSends,
+      toggleStopClips,
+      toggleMeters,
+      toggleSends,
+    ],
   );
 
   return <BridgeContext.Provider value={session}>{children}</BridgeContext.Provider>;

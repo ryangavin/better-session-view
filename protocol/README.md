@@ -61,7 +61,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `watchPlay` `{ on }` | install the per-track play-state observers |
 | `watchMeters` `{ on }` | install the track/Master level and mixer-control observers |
 | `watchSends` `{ on }` | add/remove per-track send observers while the mixer is open |
-| `watchTransport` `{ on }` | observe tempo, metronome, launch quantization and current scale |
+| `watchTransport` `{ on }` | observe tempo, metronome, launch quantization, Arrangement Record and current scale |
 | `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
 | `selectScene` `{ s }` | select and reveal one exact scene in Live's Session View |
 | `ping` | |

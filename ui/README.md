@@ -17,7 +17,7 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 | [moving scenes and clips](docs/moving.md) | either drag grip, the move plan, the drop indicator | `hooks/useSceneDrag.ts`, `useClipDrag.ts` |
 | [bulk workflows](docs/bulk-workflows.md) | the running order or coloring by rule | `components/ReorderModal.tsx`, `RecolorModal.tsx`, `BulkWorkflow.css` |
 | [the header](docs/header.md) | the Live control bar, transport state, glyphs | `components/Header.tsx`, `Icon.tsx`, `Control.tsx` |
-| [mixer panel](docs/mixer.md) | meters, faders, the mixer strips | `components/ClipGrid/TrackMeter.tsx`, `MeterResizeHandle.tsx`, `hooks/useMixer.ts`, `useMeters.ts`, `lib/mixerStore.ts`, `meterScale.ts` |
+| [mixer panel](docs/mixer.md) | meters, faders, sends, the stop row | `components/ClipGrid/TrackMeter.tsx`, `TrackSends.tsx`, `useMeterResize.ts`, `hooks/useMixer.ts`, `useMeters.ts`, `lib/mixerStore.ts`, `meterScale.ts` |
 | [track groups](docs/track-groups.md) | group columns and collapsing | `hooks/useTrackColumns.ts` |
 | [undo](docs/undo.md) | the undo entry, or any new write path | `hooks/useBridge.ts` |
 | [performance notes](docs/performance.md) | **anything that reaches a memoized row** — props on `Row`, `SongHeaderRow`, or callbacks from `App` | `components/ClipGrid/Row.tsx`, `SongHeaderRow.tsx`, `App.tsx` |
@@ -48,7 +48,8 @@ src/components/       one component per file
     SongHeaderRow.tsx a song block's header row, memoized
     constants.ts      surfaces, contrast ratios, shared empties
     TrackMeter.tsx    a track's meter column — level, fader and its controls
-    MeterResizeHandle.tsx  drag handle for the meter area's height
+    TrackSends.tsx    one track column in the naturally sized sends section
+    useMeterResize.ts makes the meter row's top border resize its height
   Header.tsx          Live control bar, Arrangement position, playback, view controls
   Icon.tsx            compact-control glyphs, as inline SVG
   StatsBar.tsx        bottom status — readiness, stat tiles, key hints + log toggle

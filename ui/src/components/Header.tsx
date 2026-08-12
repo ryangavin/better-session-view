@@ -10,6 +10,7 @@ import {
   IconNote,
   IconMenu,
   IconPlay,
+  IconRecord,
   IconStop,
   IconSync,
   IconScale,
@@ -33,6 +34,8 @@ interface Props {
   stop: BridgeState['stop'];
   columnWidth: ColumnWidth;
   onColumnWidth: (w: ColumnWidth) => void;
+  showStopClips: boolean;
+  onToggleStopClips: () => void;
   showMeters: boolean;
   onToggleMeters: () => void;
   showSends: boolean;
@@ -42,18 +45,19 @@ interface Props {
 }
 
 const columnWidthText = (width: ColumnWidth): string => {
-  if (width === 's') return 'Small';
-  if (width === 'm') return 'Medium';
-  if (width === 'l') return 'Large';
+  if (width === 'm') return 'Narrow';
+  if (width === 'l') return 'Wide';
   if (width === 'auto') return 'Auto';
   return `${width} tracks`;
 };
 
 const columnWidthLabel = (width: ColumnWidth): string => {
+  if (width === 'm') return 'Narrow track columns';
+  if (width === 'l') return 'Wide track columns';
   if (width === 'auto') return 'Auto-fit all track columns';
   if (width === '8') return 'Fit 8 track columns';
   if (width === '16') return 'Fit 16 track columns';
-  return `${width.toUpperCase()} track columns`;
+  return `${width} track columns`;
 };
 
 const columnWidthTitle = (width: ColumnWidth): string | undefined => {
@@ -213,6 +217,8 @@ export function Header({
   stop,
   columnWidth,
   onColumnWidth,
+  showStopClips,
+  onToggleStopClips,
   showMeters,
   onToggleMeters,
   showSends,
@@ -361,7 +367,7 @@ export function Header({
               ))}
             </span>
           </div>
-          <ControlGroup className="playback" label="Playback" surface="filled">
+          <ControlGroup className="playback" label="Transport" surface="filled">
             <ControlButton
               icon
               className={isPlaying ? 'rolling' : undefined}
@@ -380,6 +386,16 @@ export function Header({
               onClick={() => stop({ kind: 'song' })}
             >
               <IconStop />
+            </ControlButton>
+            <ControlButton
+              icon
+              pressed={transport?.recordMode ?? false}
+              aria-label="Arrangement Record"
+              title={`${transport?.recordMode ? 'Disarm' : 'Arm'} Live's Arrangement Record`}
+              disabled={!lomReady || transport === null}
+              onClick={() => onTransport({ recordMode: !transport?.recordMode })}
+            >
+              <IconRecord />
             </ControlButton>
           </ControlGroup>
         </div>
@@ -419,6 +435,15 @@ export function Header({
             disabled={!lomReady && !showSends}
           >
             <IconSends />
+          </ControlButton>
+          <ControlButton
+            icon
+            pressed={showStopClips}
+            aria-label="Stop clips row"
+            title={`${showStopClips ? 'Hide' : 'Show'} track stop-clips row`}
+            onClick={onToggleStopClips}
+          >
+            <IconStop />
           </ControlButton>
         </ControlGroup>
         <ControlButton

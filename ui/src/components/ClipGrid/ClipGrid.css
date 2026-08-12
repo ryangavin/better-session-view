@@ -17,9 +17,11 @@ table.grid {
      stays true. `border-spacing` produces it between cells; the header's plug
      shadows paint into it; the band's gutter below draws it by hand. */
   --gutter: 2px;
+  --footer-border: var(--bd2);
   --meter-panel-h: 220px;
-  --meter-handle-h: 4px;
-  --stop-row-h: 26px;
+  /* The stop row is a row of the grid, not a toolbar under it, so it stands as
+     tall as the clip cells in `Row.css` and no taller. */
+  --stop-row-h: 20px;
   /* Track names sit inside saturated header cells rather than in the gutter.
      Enough inset to clear the 3px play-state bar, without starving S columns. */
   --track-pad-x: 5px;
@@ -386,7 +388,7 @@ table.grid tfoot {
   position: sticky;
   bottom: 0;
   z-index: var(--layer-mixer);
-  background: var(--bd2);
+  background: var(--footer-border);
 }
 
 /* One shared outward shadow fills the table's 2px border-spacing on every side
@@ -394,18 +396,22 @@ table.grid tfoot {
    both row and column gaps without positioning decorative rules by hand. */
 table.grid
   tfoot
-  tr:is(.stop-row, .meter-resize-row, .meter-row)
+  tr:is(.stop-row, .sends-row, .meter-row)
   td {
-  --footer-gutter-fill: 0 0 0 var(--gutter) var(--bd2);
+  --footer-gutter-fill: 0 0 0 var(--gutter) var(--footer-border);
   box-shadow: var(--footer-gutter-fill);
 }
 
 /* Ableton's stop slots are the first row of the sticky footer. The table cells
-   keep every action under its exact track column. */
+   keep every action under its exact track column.
+
+   No padding: the button *is* the cell. A slot inset inside a cell reads as two
+   things — a container and a control sitting in it — when there's only ever one
+   thing to press here, and the 2px gutter already separates one track's stop
+   from the next exactly as it separates their clips. */
 table.grid tfoot tr.stop-row td {
   position: relative;
-  height: var(--stop-row-h);
-  padding: 3px 2px;
+  padding: 0;
   background: var(--rail);
   box-shadow:
     var(--footer-gutter-fill), 0 -8px 14px -4px var(--shadow-edge);
@@ -418,15 +424,18 @@ table.grid tfoot tr.stop-row td:first-child {
   z-index: var(--layer-mixer-corner);
 }
 
+/* Full-bleed, and the thing that states the row's height — the cell around it
+   carries no padding, so the row is exactly as tall as this button. Its edge is
+   transparent rather than absent so hover and focus have somewhere to land
+   without the cell changing size. */
 button.stop-clips-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(56px, 100%);
-  height: 20px;
-  margin: 0 auto;
+  width: 100%;
+  height: var(--stop-row-h);
   padding: 0;
-  border-color: var(--bd3);
+  border: 1px solid transparent;
   border-radius: var(--radius-xs);
   background: var(--surface-control);
   color: var(--dim2);
@@ -456,6 +465,40 @@ table.grid tfoot tr.meter-row td {
   vertical-align: middle;
 }
 
+/* The table's existing 2px row gutter is the resize handle—no extra layout
+   row and therefore no doubled border. This transparent hit area reaches a few
+   pixels into the meter cell while leaving the border's appearance untouched. */
+table.grid tfoot tr.meter-row td::before {
+  content: '';
+  position: absolute;
+  z-index: 10;
+  top: -2px;
+  right: 0;
+  left: 0;
+  height: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+table.grid tfoot tr.meter-row {
+  outline: none;
+}
+
+/* Sends are their own naturally-sized footer section. Adding return rows grows
+   the footer; it never shortens the resizable meter section below. */
+table.grid tfoot tr.sends-row td {
+  position: relative;
+  padding: 7px 2px;
+  background: var(--rail);
+  vertical-align: top;
+}
+
+table.grid tfoot tr.sends-row td:first-child {
+  position: sticky;
+  left: var(--gutter);
+  z-index: var(--layer-mixer-corner);
+}
+
 /* The Master meter is the bottom-left intersection: pinned with its panel
    vertically and with the scene/song column horizontally. */
 table.grid tfoot tr.meter-row td:first-child {
@@ -464,35 +507,13 @@ table.grid tfoot tr.meter-row td:first-child {
   z-index: var(--layer-mixer-corner);
 }
 
-/* A single quiet strip separates the stop slots from the meter panel. It spans
-   the footer instead of repeating once per track, so it reads as a divider and
-   spends only four vertical pixels on the resize affordance. */
-table.grid tfoot tr.meter-resize-row td {
-  position: relative;
-  height: var(--meter-handle-h);
-  padding: 0;
-  background: var(--bd3);
-}
-
-.meter-resize-row {
-  cursor: ns-resize;
-  touch-action: none;
-  outline: none;
-}
-
-.meter-resize-row:hover td,
-.meter-resize-row:focus-visible td,
-.meter-resize-row.dragging td {
-  background: var(--dim2);
-}
-
 .mixer-strip {
   position: relative;
   display: flex;
   flex-direction: column;
-  /* Keep Small's established 8px rail, then spend only the first bit of
-     available column space on legibility. At 56px the rail reaches 16px;
-     wider viewport-fit columns retain breathing room around the strip. */
+  /* Keep an 8px rail in very tight viewport-fit columns, then spend only the
+     first bit of available space on legibility. At 56px the rail reaches
+     16px; wider columns retain breathing room around the strip. */
   width: 56px;
   max-width: 100%;
   height: calc(var(--meter-panel-h) - 16px);
@@ -524,27 +545,16 @@ table.grid tfoot tr.meter-resize-row td {
 
 .mixer-sends {
   display: grid;
-  flex: 0 1 auto;
   gap: 3px;
-  width: 44px;
-  max-height: calc(100% - 146px);
-  min-height: 0;
-  margin: 0 auto 7px;
-  padding-bottom: 7px;
-  overflow-y: auto;
-  border-bottom: 1px solid var(--bd2);
-  scrollbar-width: none;
-}
-
-.mixer-sends::-webkit-scrollbar {
-  display: none;
+  width: min(56px, 100%);
+  margin: 0 auto;
 }
 
 .mixer-send {
   display: grid;
-  grid-template-columns: 9px 32px;
+  grid-template-columns: 9px minmax(0, 1fr);
   gap: 3px;
-  width: 44px;
+  width: 100%;
   height: 17px;
   min-height: 17px;
 }
@@ -570,7 +580,7 @@ table.grid tfoot tr.meter-resize-row td {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
+  width: 100%;
   height: 17px;
   overflow: hidden;
   border: 1px solid var(--bd3);
@@ -919,21 +929,4 @@ button.mixer-arm.control-button-on {
 
 button.mixer-arm.group-hidden {
   visibility: hidden;
-}
-
-.mixer-master-label {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 18px;
-  color: var(--dim2);
-  font-family: var(--mono);
-  font-size: 9px;
-  line-height: 18px;
-  letter-spacing: 0.1em;
-  text-align: center;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: visible;
 }

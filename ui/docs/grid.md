@@ -100,30 +100,29 @@ is `selected_device` / `device_insert_mode` / `is_collapsed`, and that last one 
 *arranger*, not the session. Real widths live only in the `.als`, which this project
 never parses. So the widths are ours to pick.
 
-`columnWidth.ts` holds three pixel presets and three viewport layouts, chosen over
-per-column dragging because the point of `s` is fitting a wide set on screen at once —
-something per-column widths actively work against.
+`columnWidth.ts` holds two pixel presets and three viewport layouts. The fixed presets
+start at the narrowest size where clip names and mixer controls remain useful; fitting a
+wider set is the job of the viewport layouts rather than an unusably small fixed column.
 
-The header exposes them through one compact native select rather than six persistent
+The header exposes them through one compact native select rather than five persistent
 buttons. The selected option is the stored mode, and changing it still applies
 immediately.
 
 | | track column | fits in ~1100px |
 |---|---|---|
-| `s` | 44px | ~24 tracks |
-| `m` | 74px | ~14 tracks |
-| `l` | 116px | ~9 tracks |
-| `auto` | at least 44px | all rendered tracks, when they fit readably |
+| Narrow (`m`) | 74px | ~14 tracks |
+| Wide (`l`) | 116px | ~9 tracks |
+| `auto` | at least 74px | all rendered tracks, when they fit readably |
 | `8` | viewport-derived | exactly one 8-track bank |
 | `16` | viewport-derived | exactly two 8-track banks |
 
 **Auto divides the width left after the fixed scene column among every rendered track.**
-Small's 44px is its floor: a large set keeps horizontal scrolling rather than turning
+Narrow's 74px is its floor: a large set keeps horizontal scrolling rather than turning
 clip names into unusable slivers.
 
 **8 and 16 divide that same space by a bank size instead.** The full table still contains
 every rendered track, so the ninth or seventeenth column begins the horizontal overflow.
-These modes deliberately do not inherit Small's floor: their job is to preview the exact
+These modes deliberately do not inherit Narrow's floor: their job is to preview the exact
 one- or two-device layout, even in a narrow browser.
 
 All three viewport layouts respond to the browser resizing, the rail opening or closing,

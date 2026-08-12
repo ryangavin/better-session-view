@@ -4,7 +4,8 @@ The mixer strips and meters.
 
 ## Mixer panel
 
-An Ableton-style stop row is always pinned beneath the visible Session columns. Each
+An Ableton-style stop row starts pinned beneath the visible Session columns and has its
+own filled-square header toggle. Each
 ordinary or group track has a stop-clips button in its own column; the pinned Songs/Master
 cell holds Stop All Clips. The row reads `fired_slot_index = -2` back from Live, so a
 pending stop lights the corresponding button rather than relying on optimistic state.
@@ -24,12 +25,11 @@ layout slot. On other tracks Arm remains visible but disabled when Live reports
 button rather than presenting a backwards Mute state.
 Selected Solo uses Live's blue visual language; activator and Arm remain amber and red.
 
-The adjacent sends icon opens Live-style A/B/C rows above each track fader and opens the
-mixer too if it was closed. Each row is a horizontal draggable value field backed by the
+The adjacent sends icon opens a separate Live-style A/B/C section above the meters and
+opens the mixer too if it was closed. Each row is a horizontal draggable value field backed by the
 corresponding `MixerDevice.sends` parameter; double-click restores Live's reported
-default. Master has no sends, so its meter and fader keep the full panel height. Many
-return tracks share the available upper area and scroll there rather than consuming the
-volume, pan and switch controls below.
+default. Master has no sends. The sends section takes its natural height and grows the
+whole footer, so toggling it never consumes the meter's resizable height.
 
 Live's `output_meter_*` values already represent positions on its normalized logarithmic
 meter. The fill uses that position directly; applying `log10` again makes a half-height
@@ -43,16 +43,16 @@ control restores its reported `default_value`. Master and ordinary tracks render
 56px fader subtree, so the rail, peak/volume fields and pan cannot acquire separate sizing.
 Master merely centers that shared subtree in its wider pinned cell. Its track-switch stack
 stays in the shared layout but is invisible, so its pan remains aligned with every other
-strip; a no-wrap Master label is painted over the unused switch area.
+strip. The unused area has no label that could overlap the meter rail.
 
-The stop row, resize handle and panel are one sticky `<tfoot>`, so table layout stacks them
-without independently calculated offsets. The stop and meter rows retain one cell per
-visible column and share the grid's 2px gutters. Between them, a solid 4px divider changes
-the shared height from a 164px minimum without resembling another row of track controls;
-the 220px
-default leaves room for a useful volume range and the four offset controls even at
-Small's 44px column width. The output rail stays 8px there and grows smoothly to 16px as
-a roomier column admits a 56px strip; it stops at that width instead of consuming all the
+The optional stop, sends and meter sections are one sticky `<tfoot>`, so table layout
+stacks them without independently calculated offsets. Every join uses the grid's same 2px
+border; the border immediately above the meters is also their resize handle, with the
+cursor providing its hover affordance. Only the meter section changes height, from a
+164px minimum; the 220px
+default leaves room for a useful volume range and the four offset controls. The output
+rail stays 8px in exceptionally tight viewport-fit modes and grows smoothly to 16px as a
+roomier column admits a 56px strip; it stops at that width instead of consuming all the
 air in an 8-track view. The Activator, Solo, Arm, peak, volume and pan controls use a
 26px-wide column at every track width; their heights grow by the same proportion as their
 widths. The controls occupy the meter's lower-left side instead of
