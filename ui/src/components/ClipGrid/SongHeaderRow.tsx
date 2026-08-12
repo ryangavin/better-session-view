@@ -135,9 +135,8 @@ export const SongHeaderRow = memo(function SongHeaderRow({
       {header.song}
     </ControlButton>
   );
-  // Only when the set says so. Reserving the line on every header would spend a
-  // second row of height across a whole set to say nothing on most of it — the
-  // opposite trade to the fixed *width* slots, which cost nothing when empty.
+  // Nothing when the set never named one. A song with no artist gives the line
+  // over to whatever else is on it rather than holding an empty slot open.
   const artistText =
     header.artist === '' ? null : (
       <span
@@ -165,6 +164,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
   const tagChip = (
     <TagChip
       tag={header.tag}
+      className="song-tag"
       color="var(--song-rgb, var(--caption))"
       clash={header.tagClash}
       title={
@@ -187,14 +187,12 @@ export const SongHeaderRow = memo(function SongHeaderRow({
      header rows paper over.
 
      **Two lines, because the segment is narrower than a song name.** They split
-     by what the fields are, not by importance: the two pieces of free text
-     share the top line, where they can take space off each other and the artist
-     gives way first, and everything of fixed width sits underneath — the facts
-     in the same slots the scene rows use, so a bpm sits directly above a bpm.
-     Putting the artist below with them left it about 26px between the key and
-     the tag, which is enough to render `THE …` and nothing else. Both lines fit
-     the row's existing height — 14 and 14 inside 36 — so a folded set is no
-     taller for it.
+     by side rather than by kind: what the song *is* runs down the left — its
+     name, then who wrote it — and what it's filed under runs down the right,
+     the tag over the two facts. So each edge reads as a column of its own down
+     a set, and the free text can take the space the fixed fields don't use.
+     Both lines fit the row's existing height — 14 and 14 inside 36 — so a
+     folded set is no taller for it.
 
      Folded, the Master column has no roles to show and its width is the name's;
      open, the same block sits above scenes that have roles in it. One layout
@@ -205,11 +203,10 @@ export const SongHeaderRow = memo(function SongHeaderRow({
       <span className="song-identity">
         <span className="song-name-line">
           {songButton}
-          {artistText}
+          {tagChip}
         </span>
         <span className="song-meta-line">
-          {facts}
-          {tagChip}
+          {artistText}
           {/* Worth saying only when there is more than one — a song in two runs
               is a reprise, or two different songs sharing a name. Short here
               because it shares a line; the tooltip spells it out. */}
@@ -218,6 +215,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
               {header.block}/{header.blocks}
             </span>
           )}
+          {facts}
         </span>
       </span>
     </div>

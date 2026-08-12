@@ -154,8 +154,10 @@ export const Row = memo(function Row({
           >
             {scene.i + 1}
           </span>
-        {/* BPM and key occupy the same fixed fact slots as the song header, so
-            a song's own values sit directly above the scenes'. */}
+        {/* Fixed slots, so a bpm reads as a column down the set rather than as
+            a number that moves with the scene number's width. The song header
+            states the same two facts in the same widths, but against the right
+            edge of its segment — one column per side, not one shared one. */}
           <span
             className={`scene-bpm${bpm === '' ? ' none' : ''}`}
             title={bpm === '' ? 'No BPM set for this scene' : `BPM: ${bpm}`}
