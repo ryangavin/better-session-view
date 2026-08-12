@@ -19,7 +19,9 @@ table.grid {
   --gutter: 2px;
   --footer-border: var(--bd2);
   --meter-panel-h: 220px;
-  --stop-row-h: 26px;
+  /* The stop row is a row of the grid, not a toolbar under it, so it stands as
+     tall as the clip cells in `Row.css` and no taller. */
+  --stop-row-h: 20px;
   /* Track names sit inside saturated header cells rather than in the gutter.
      Enough inset to clear the 3px play-state bar, without starving S columns. */
   --track-pad-x: 5px;
@@ -401,11 +403,15 @@ table.grid
 }
 
 /* Ableton's stop slots are the first row of the sticky footer. The table cells
-   keep every action under its exact track column. */
+   keep every action under its exact track column.
+
+   No padding: the button *is* the cell. A slot inset inside a cell reads as two
+   things — a container and a control sitting in it — when there's only ever one
+   thing to press here, and the 2px gutter already separates one track's stop
+   from the next exactly as it separates their clips. */
 table.grid tfoot tr.stop-row td {
   position: relative;
-  height: var(--stop-row-h);
-  padding: 3px 2px;
+  padding: 0;
   background: var(--rail);
   box-shadow:
     var(--footer-gutter-fill), 0 -8px 14px -4px var(--shadow-edge);
@@ -418,15 +424,18 @@ table.grid tfoot tr.stop-row td:first-child {
   z-index: var(--layer-mixer-corner);
 }
 
+/* Full-bleed, and the thing that states the row's height — the cell around it
+   carries no padding, so the row is exactly as tall as this button. Its edge is
+   transparent rather than absent so hover and focus have somewhere to land
+   without the cell changing size. */
 button.stop-clips-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(56px, 100%);
-  height: 20px;
-  margin: 0 auto;
+  width: 100%;
+  height: var(--stop-row-h);
   padding: 0;
-  border-color: var(--bd3);
+  border: 1px solid transparent;
   border-radius: var(--radius-xs);
   background: var(--surface-control);
   color: var(--dim2);
