@@ -445,6 +445,8 @@ table.grid tfoot td.meter-resize-cell {
 
 .mixer-strip {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 44px;
   max-width: 100%;
   height: calc(var(--meter-panel-h) - 16px);
@@ -457,14 +459,112 @@ table.grid tfoot td.meter-resize-cell {
 }
 
 .mixer-meter-control {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1 0 92px;
+  min-height: 0;
 }
 
 .mixer-strip.master .mixer-meter-control {
-  right: auto;
-  left: 22px;
   width: 44px;
+  margin: 0 auto;
+}
+
+.mixer-sends {
+  display: grid;
+  flex: 0 1 auto;
+  gap: 3px;
+  width: 44px;
+  max-height: calc(100% - 92px);
+  min-height: 0;
+  margin: 0 auto 7px;
+  padding-bottom: 7px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--bd2);
+  scrollbar-width: none;
+}
+
+.mixer-sends::-webkit-scrollbar {
+  display: none;
+}
+
+.mixer-send {
+  display: grid;
+  grid-template-columns: 9px 32px;
+  gap: 3px;
+  width: 44px;
+  height: 17px;
+  min-height: 17px;
+}
+
+.mixer-send {
+  align-items: center;
+  color: var(--fg2);
+}
+
+.mixer-send.disabled {
+  opacity: 0.4;
+}
+
+.mixer-send-label {
+  font-family: var(--sans);
+  font-size: 10px;
+  line-height: 1;
+  text-align: center;
+}
+
+.mixer-send-value {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 17px;
+  overflow: hidden;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-control);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  cursor: ew-resize;
+}
+
+.mixer-send-value::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--send-position);
+  background: var(--blue);
+  opacity: 0.62;
+  pointer-events: none;
+}
+
+.mixer-send-value input {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.mixer-send-value input:disabled {
+  cursor: default;
+}
+
+.mixer-send-value output {
+  position: relative;
+  z-index: 1;
+  color: var(--fg);
+  pointer-events: none;
+}
+
+.mixer-send-value:focus-within {
+  border-color: var(--focus);
+  outline: none;
 }
 
 .vertical-meter {

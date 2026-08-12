@@ -248,10 +248,14 @@ declare namespace BSV {
     volume: MixerParameterState | null;
     /** Null only when the documented MixerDevice panning path did not resolve. */
     pan: MixerParameterState | null;
+    /** One parameter per return track, in Live's A/B/C order. */
+    sends: (MixerParameterState | null)[];
   }
 
   /** One coherent mixer-control readback. Levels remain in MeterFrame. */
   interface MixerState {
+    /** Number of return tracks, and therefore send rows shown per track. */
+    sendCount: number;
     /** Master has volume but no activator, Solo, or Arm controls. */
     masterVolume: MixerParameterState | null;
     masterPan: MixerParameterState | null;
@@ -267,6 +271,8 @@ declare namespace BSV {
     armed?: boolean;
     volume?: number;
     pan?: number;
+    /** One track send, addressed by its zero-based return-track index. */
+    send?: { index: number; value: number };
   }
 
   /** Live's set-wide control-bar state, observed and pushed as one unit. */
@@ -561,6 +567,7 @@ declare namespace BSV {
     | { id?: number; type: 'setMixer'; target: MixerTarget; patch: MixerPatch }
     | { id?: number; type: 'watchPlay'; on: boolean }
     | { id?: number; type: 'watchMeters'; on: boolean }
+    | { id?: number; type: 'watchSends'; on: boolean }
     | { id?: number; type: 'watchTransport'; on: boolean }
     /**
      * Follow changes the user makes in Live, by watching the Session cursor

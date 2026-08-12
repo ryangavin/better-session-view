@@ -50,9 +50,10 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   the lower left side of a full-height output meter. Volume is a draggable triangular
   indicator beside that meter instead of a second vertical rail. Resettable peak and
   exact volume readouts occupy the top-left; a 22×16px pan field sits above the switch
-  stack. The activator uses amber when enabled, Solo uses blue when selected and Arm uses
-  red when armed. Group tracks retain the Arm button's layout slot but make the button
-  itself invisible.
+  stack. Optional sends follow Live's A/B-labelled value rows above ordinary-track
+  faders; Master has no sends, so its meter keeps the full panel height. The activator
+  uses amber when enabled, Solo uses blue when selected and Arm uses red when armed.
+  Group tracks retain the Arm button's layout slot but make the button itself invisible.
 
 ## Grid
 

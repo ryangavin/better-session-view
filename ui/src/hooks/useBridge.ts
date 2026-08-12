@@ -138,7 +138,7 @@ export interface BridgeState {
  * Read it through `useBridgeSession()` instead — see BridgeProvider for what
  * calling it from `App` used to cost.
  */
-export function useBridge(watchMeters = false): BridgeState {
+export function useBridge(watchMeters = false, watchSends = false): BridgeState {
   const client = useMemo(() => new BridgeClient(), []);
   const { log, say } = useLog();
 
@@ -334,6 +334,14 @@ export function useBridge(watchMeters = false): BridgeState {
     client.send({ type: 'watchMeters', on: true });
     return () => client.send({ type: 'watchMeters', on: false });
   }, [client, lomReady, trackCount, watchMeters]);
+
+  // Each displayed return adds one DeviceParameter observer per set track. Keep
+  // those out of Live entirely until the neighboring sends toggle is on.
+  useEffect(() => {
+    if (!lomReady || trackCount === undefined || !watchSends) return;
+    client.send({ type: 'watchSends', on: true });
+    return () => client.send({ type: 'watchSends', on: false });
+  }, [client, lomReady, trackCount, watchSends]);
 
   // Follow what the user does in Live. Two things, and they cover different
   // failures: `observe` reports structural changes (a track or scene added,

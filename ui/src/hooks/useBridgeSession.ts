@@ -3,17 +3,19 @@ import type { BridgeState } from './useBridge.js';
 
 /**
  * The bridge as the app consumes it: everything `useBridge` returns, plus the
- * one piece of view state the connection itself depends on.
+ * pieces of view state the connection itself depends on.
  *
- * Meters are that piece. Showing them starts a 30 Hz stream out of Live, so
- * the flag is what decides whether a watch is installed — which makes it part
- * of what the connection is doing rather than part of what App is drawing.
+ * Meters start a 30 Hz stream out of Live; sends add one observer per visible
+ * track and return. Those flags decide which watches are installed — which
+ * makes them part of what the connection is doing rather than only what App draws.
  * Keeping it up here also means the footer survives a hot update along with
  * everything else the socket holds.
  */
 export interface BridgeSession extends BridgeState {
   showMeters: boolean;
+  showSends: boolean;
   toggleMeters: () => void;
+  toggleSends: () => void;
 }
 
 /**

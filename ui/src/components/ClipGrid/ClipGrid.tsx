@@ -40,6 +40,7 @@ export interface Props {
   active: ActiveCell | null;
   play: PlayState;
   showMeters: boolean;
+  showSends: boolean;
   subscribeMeters: BridgeState['subscribeMeters'];
   subscribeMixer: BridgeState['subscribeMixer'];
   setMixer: BridgeState['setMixer'];
@@ -123,6 +124,7 @@ export function ClipGrid({
   active,
   play,
   showMeters,
+  showSends,
   subscribeMeters,
   subscribeMixer,
   setMixer,
@@ -468,6 +470,7 @@ export function ClipGrid({
               meters={meters}
               mixer={mixer}
               setMixer={setMixer}
+              showSends={showSends}
             />
             {columns.map((column) => {
               const track = column.kind === 'track' ? column.track : column.group;
@@ -479,6 +482,7 @@ export function ClipGrid({
                   meters={meters}
                   mixer={mixer}
                   setMixer={setMixer}
+                  showSends={showSends}
                   isGroup={track.isGroup}
                 />
               );

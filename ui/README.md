@@ -291,7 +291,8 @@ or selected clips and apply to that selection, which is why the controls and too
 extra option instead of disappearing.
 
 The center keeps Live's bars, beats and sixteenths immediately left of play / stop /
-struck-through-slot. The right side carries the compact width select, meters and Snapshot.
+struck-through-slot. The right side carries the compact width select, mixer and sends
+toggles, and Snapshot.
 Three equal flex regions keep that middle group at the header's true center,
 independent of how much chrome the left and right sides contain. The left region clips
 first on a narrow window. Every control shares `--ctl-h`; the bar is `--ctl-h + 13px`,
@@ -1225,6 +1226,13 @@ layout slot. On other tracks Arm remains visible but disabled when Live reports
 button rather than presenting a backwards Mute state.
 Selected Solo uses Live's blue visual language; activator and Arm remain amber and red.
 
+The adjacent sends icon opens Live-style A/B/C rows above each track fader and opens the
+mixer too if it was closed. Each row is a horizontal draggable value field backed by the
+corresponding `MixerDevice.sends` parameter; double-click restores Live's reported
+default. Master has no sends, so its meter and fader keep the full panel height. Many
+return tracks share the available upper area and scroll there rather than consuming the
+volume, pan and switch controls below.
+
 Live's `output_meter_*` values already represent positions on its normalized logarithmic
 meter. The fill uses that position directly; applying `log10` again makes a half-height
 reading appear nearly full. The rail runs from -60 to +6 dB, with 6 dB rules and fixed
@@ -1242,13 +1250,14 @@ default leaves room for a useful volume range and the four offset controls even 
 Small's 40px column width. The controls occupy the meter's lower-left side instead of
 shortening it, matching Live's compact mixer-strip geometry.
 
-Mixer observation exists only while the panel is open. Output peaks remain in the 30 Hz
+Mixer observation exists only while the panel is open, and the one-observer-per-track-per-
+return send layer exists only while its own toggle is on. Output peaks remain in the 30 Hz
 `MeterStore`; control readback uses a separate `MixerStore`, and both are external stores
 so one changing strip does not render `App` or every scene. The LOM seeds a complete
 `MixerState`, then updates a cached strip from each property callback and coalesces pushes
 to one per display frame. It does not re-read every track under parameter automation.
 
-Volume and pan input are limited to one `setMixer` patch per animation frame and stay
+Volume, pan and send input are limited to one `setMixer` patch per animation frame and stay
 optimistic until Live's observed value catches up. `DeviceParameter.is_enabled = 0`
 disables the indicator rather than pretending a mapped, automated or otherwise
 unavailable parameter can be written. Mixer writes do not participate in this app's

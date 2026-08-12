@@ -14,6 +14,7 @@ import {
   IconStopClips,
   IconSync,
   IconScale,
+  IconSends,
   IconSettings,
 } from './Icon.js';
 
@@ -35,6 +36,8 @@ interface Props {
   onColumnWidth: (w: ColumnWidth) => void;
   showMeters: boolean;
   onToggleMeters: () => void;
+  showSends: boolean;
+  onToggleSends: () => void;
   onSetConfig: () => void;
   onSnapshot: () => void;
 }
@@ -213,6 +216,8 @@ export function Header({
   onColumnWidth,
   showMeters,
   onToggleMeters,
+  showSends,
+  onToggleSends,
   onSetConfig,
   onSnapshot,
 }: Props) {
@@ -414,6 +419,16 @@ export function Header({
             disabled={!lomReady && !showMeters}
           >
             <IconMeter />
+          </ControlButton>
+          <ControlButton
+            icon
+            pressed={showSends}
+            aria-label="Sends"
+            title={`${showSends ? 'Hide' : 'Show'} track sends`}
+            onClick={onToggleSends}
+            disabled={!lomReady && !showSends}
+          >
+            <IconSends />
           </ControlButton>
         </ControlGroup>
         <ControlButton

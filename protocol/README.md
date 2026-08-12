@@ -57,9 +57,10 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `launch` `{ target }` | fire a clip, a scene, or the song |
 | `stop` `{ target }` | stop a track, every clip, or the song |
 | `setTransport` `{ patch }` | update any related subset of Live's control-bar settings |
-| `setMixer` `{ target, patch }` | update one track or Master mixer strip |
+| `setMixer` `{ target, patch }` | update one track or Master mixer strip, including one indexed send |
 | `watchPlay` `{ on }` | install the per-track play-state observers |
 | `watchMeters` `{ on }` | install the track/Master level and mixer-control observers |
+| `watchSends` `{ on }` | add/remove per-track send observers while the mixer is open |
 | `watchTransport` `{ on }` | observe tempo, metronome, launch quantization and current scale |
 | `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
 | `selectScene` `{ s }` | select and reveal one exact scene in Live's Session View |
@@ -81,7 +82,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `delta` | — a partial re-read after a change made in Live |
 | `playState` | — a play-state observer fired |
 | `meterLevels` | — complete current track and master output-level frame |
-| `mixerState` | — complete current activator, Solo, Arm, volume and pan state |
+| `mixerState` | — complete current activator, Solo, Arm, volume, pan and optional sends state |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
 | `transportState` | — Live's complete observed control-bar state changed |
 | `deviceState` | — restored or changed set-owned configuration |
@@ -174,8 +175,10 @@ attach to, so `bridge.ts` **broadcasts** an `error` with no `id` when nothing is
 dropping it is how a silent bug hides.
 
 **Mixer controls are coarse-grained separately from level frames.** `MixerState` carries
-every track's activator, Solo, Arm capability/state, volume and pan parameters, plus Master
-volume and pan. Parameters include Live's formatted display and reset values. One property
+every track's activator, Solo, Arm capability/state, volume, pan and indexed send
+parameters, plus Master volume and pan. Parameters include Live's formatted display and
+reset values. Send rows and their one-observer-per-track-per-return cost exist only while
+`watchSends` is on. One property
 callback produces one coherent cached state; it does not re-read every strip. `MeterFrame`
 remains numbers-only at 30 Hz, so moving a control or running parameter automation never
 puts the entire grid through React state. `setMixer` is one patch

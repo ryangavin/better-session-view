@@ -30,11 +30,102 @@ interface Props {
   meters: MeterStore;
   mixer: MixerStore;
   setMixer: BridgeState['setMixer'];
+  showSends: boolean;
   isGroup?: boolean;
 }
 
+function sendName(index: number): string {
+  let name = '';
+  for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26)) {
+    name = String.fromCharCode(65 + ((value - 1) % 26)) + name;
+  }
+  return name;
+}
+
+function SendControl({
+  parameter,
+  index,
+  trackLabel,
+  onChange,
+}: {
+  parameter: BSV.MixerParameterState | null;
+  index: number;
+  trackLabel: string;
+  onChange: (index: number, value: number) => void;
+}) {
+  const name = sendName(index);
+  const [localValue, setLocalValue] = useState<number | null>(null);
+  const fallback = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (
+      localValue !== null && parameter &&
+      Math.abs(parameter.value - localValue) <=
+        Math.max(0.0001, (parameter.max - parameter.min) / 2000)
+    ) {
+      setLocalValue(null);
+    }
+  }, [localValue, parameter]);
+
+  useEffect(
+    () => () => {
+      if (fallback.current !== null) window.clearTimeout(fallback.current);
+    },
+    [],
+  );
+
+  const shown = localValue ?? parameter?.value ?? 0;
+  const step = parameter ? Math.max((parameter.max - parameter.min) / 1000, 0.0001) : 0.001;
+  const fraction = mixerParameterFraction(parameter, shown);
+  const change = (next: number) => {
+    if (!Number.isFinite(next)) return;
+    setLocalValue(next);
+    onChange(index, next);
+    if (fallback.current !== null) window.clearTimeout(fallback.current);
+    fallback.current = window.setTimeout(() => setLocalValue(null), 750);
+  };
+
+  return (
+    <label
+      className={`mixer-send${parameter?.enabled ? '' : ' disabled'}`}
+      title={`${trackLabel} send ${name} · ${parameter?.display || 'unavailable'} · double-click to reset`}
+    >
+      <span className="mixer-send-label" aria-hidden="true">{name}</span>
+      <span
+        className="mixer-send-value"
+        style={{ '--send-position': `${fraction * 100}%` } as CSSProperties}
+      >
+        <input
+          type="range"
+          min={parameter?.min ?? 0}
+          max={parameter?.max ?? 1}
+          step={step}
+          value={shown}
+          disabled={!parameter?.enabled}
+          aria-label={`${trackLabel} send ${name}`}
+          onChange={(event) => change(Number(event.currentTarget.value))}
+          onDoubleClick={() => {
+            if (parameter?.enabled) change(parameter.defaultValue);
+          }}
+        />
+        <output aria-label={`${trackLabel} send ${name} value`}>
+          {compactParameterDisplay(parameter?.display)}
+        </output>
+      </span>
+    </label>
+  );
+}
+
 /** A column-owned Live mixer strip, mounted only while that output is visible. */
-export function TrackMeter({ meterKey, label, meters, mixer, setMixer, isGroup = false }: Props) {
+export function TrackMeter({
+  meterKey,
+  label,
+  meters,
+  mixer,
+  setMixer,
+  showSends,
+  isGroup = false,
+}: Props) {
   const level = useOutputMeter(meters, meterKey);
   const strip = useMixerStrip(mixer, meterKey);
   const volume = strip?.volume ?? null;
@@ -101,6 +192,17 @@ export function TrackMeter({ meterKey, label, meters, mixer, setMixer, isGroup =
     });
   };
 
+  const queueSend = (index: number, next: number) => {
+    pendingPatch.current.send = { index, value: next };
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      const patch = pendingPatch.current;
+      pendingPatch.current = {};
+      setMixer(target, patch);
+    });
+  };
+
   const changeVolume = (event: ChangeEvent<HTMLInputElement>) => {
     const next = Number(event.currentTarget.value);
     if (!Number.isFinite(next)) return;
@@ -127,10 +229,24 @@ export function TrackMeter({ meterKey, label, meters, mixer, setMixer, isGroup =
   const panFraction = mixerParameterFraction(pan, shownPan);
   const track = strip?.kind === 'track' ? strip : null;
   const isMaster = meterKey === 'master';
+  const sendCount = track?.sends.length ?? 0;
 
   return (
     <td className="meter-cell">
-      <div className={`mixer-strip${isMaster ? ' master' : ''}`}>
+      <div className={`mixer-strip${isMaster ? ' master' : ''}${showSends ? ' sends-open' : ''}`}>
+        {showSends && sendCount > 0 && (
+          <div className="mixer-sends">
+            {Array.from({ length: sendCount }, (_, index) => (
+              <SendControl
+                key={index}
+                parameter={track?.sends[index] ?? null}
+                index={index}
+                trackLabel={label}
+                onChange={queueSend}
+              />
+            ))}
+          </div>
+        )}
         <div className="mixer-meter-control">
           <input
             className="volume-fader"

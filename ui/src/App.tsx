@@ -52,12 +52,12 @@ export function App() {
   const gridRef = useRef<HTMLDivElement>(null);
   // Everything the bridge holds comes from above this component — see
   // BridgeProvider for why the connection can't live inside the composition
-  // root. `showMeters` is up there with it because it decides whether Live is
-  // streaming meter frames at all.
+  // root. The mixer visibility flags are up there too because they decide
+  // whether Live is streaming meter frames and observing sends at all.
   const bridge = useBridgeSession();
   const { snapshot, play, launch, stop, setFold, selectScene, apply, applyScenes, undo } =
     bridge;
-  const { showMeters, toggleMeters } = bridge;
+  const { showMeters, showSends, toggleMeters, toggleSends } = bridge;
 
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
   const chooseColumnWidth = useCallback((w: ColumnWidth) => {
@@ -336,6 +336,8 @@ export function App() {
         onColumnWidth={chooseColumnWidth}
         showMeters={showMeters}
         onToggleMeters={toggleMeters}
+        showSends={showSends}
+        onToggleSends={toggleSends}
         onSetConfig={() => setConfigOpen(true)}
         onSnapshot={bridge.refresh}
       />
@@ -359,6 +361,7 @@ export function App() {
               active={active}
               play={play}
               showMeters={showMeters}
+              showSends={showSends}
               subscribeMeters={bridge.subscribeMeters}
               subscribeMixer={bridge.subscribeMixer}
               setMixer={bridge.setMixer}

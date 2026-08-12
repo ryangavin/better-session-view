@@ -89,6 +89,16 @@ export const IconMeter = () => (
   </svg>
 );
 
+/** Mixer sends — two return-bound level rows, matching Live's A/B stack. */
+export const IconSends = () => (
+  <svg {...BASE}>
+    <line x1="4" y1="7" x2="18" y2="7" />
+    <polyline points="15 4 18 7 15 10" />
+    <line x1="4" y1="17" x2="18" y2="17" />
+    <polyline points="15 14 18 17 15 20" />
+  </svg>
+);
+
 /** Live's metronome toggle. */
 export const IconMetronome = () => (
   <svg {...BASE}>

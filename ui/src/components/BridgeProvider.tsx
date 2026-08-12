@@ -43,16 +43,24 @@ import { BridgeContext, type BridgeSession } from '../hooks/useBridgeSession.js'
  */
 export function BridgeProvider({ children }: { children: ReactNode }) {
   const [showMeters, setShowMeters] = useState(false);
-  const toggleMeters = useCallback(() => setShowMeters((shown) => !shown), []);
-  const bridge = useBridge(showMeters);
+  const [showSends, setShowSends] = useState(false);
+  const toggleMeters = useCallback(() => {
+    setShowMeters((shown) => !shown);
+    setShowSends(false);
+  }, []);
+  const toggleSends = useCallback(() => {
+    setShowMeters(true);
+    setShowSends((shown) => !shown);
+  }, []);
+  const bridge = useBridge(showMeters, showSends);
 
   // `bridge` is a fresh object every render, so this memo doesn't stop anything
   // re-rendering — App re-renders when bridge state changes, exactly as it did
   // when it called `useBridge` itself. It's here to keep the context value one
   // expression rather than an object literal in the JSX.
   const session = useMemo<BridgeSession>(
-    () => ({ ...bridge, showMeters, toggleMeters }),
-    [bridge, showMeters, toggleMeters],
+    () => ({ ...bridge, showMeters, showSends, toggleMeters, toggleSends }),
+    [bridge, showMeters, showSends, toggleMeters, toggleSends],
   );
 
   return <BridgeContext.Provider value={session}>{children}</BridgeContext.Provider>;
