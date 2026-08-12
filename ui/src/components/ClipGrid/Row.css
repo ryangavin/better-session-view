@@ -224,6 +224,22 @@ td.cell.fired {
   animation: bsv-blink 0.5s infinite;
 }
 
+/* Except where a button already carries it. Every clip and every empty slot now
+   holds one that lights with the state, and those buttons stand 2px clear of
+   the cell's left edge — so the bar, which used to run underneath them unseen,
+   would now run down beside them: two marks for one fact, in two shapes, and on
+   a recording slot in two colors (a green bar beside a red square). Only the
+   blink stays on the cell, so a fired clip still pulses whole.
+
+   Group slots keep their bar. Their launcher is bare ink with no fill to light,
+   so the cell edge is the only thing there to say it. */
+td.cell.has.playing,
+td.cell.has.fired,
+td.cell.empty.playing,
+td.cell.empty.fired {
+  background-image: none;
+}
+
 /* Keyboard movement scrolls the active cell into view with `block: 'nearest'`,
    which parks it at the very top of the scroll box — underneath the sticky
    header, which is painted over it. `scroll-margin-top` reserves the header's
@@ -278,47 +294,53 @@ td.cell.sel {
    block container gets `text-overflow`, and turning the cell into a flex box to
    hold two children would cost the clip name the ellipsis it already has. */
 td.cell.has {
-  /* The launcher owns this edge, so the cell stops reserving it. The button's
-     own right margin becomes the name's inset, and the cell keeps its 5px on
-     the right where the name still ends. */
+  /* The launcher owns this edge, so the cell stops reserving it — the button's
+     own left margin sets the inset instead, and the cell keeps its 5px on the
+     right where the name still ends. */
   padding-left: 0;
 }
 td.cell.has > .fire {
   float: left;
+  /* Square, and clear of the cell on all three outer sides. A full-height cap
+     took the clip's own top, bottom and left edges as its own, which made it
+     read as a slice taken out of the clip rather than as a button sitting on
+     it — and a shape 14 by 18 is a rectangle standing on end, which is not what
+     a launcher is. The 2px margin is what turns it into a square badge.
+
+     The margin box is still 18px tall, so the float continues to state the
+     cell's height and the clip name's line box is unmoved. */
   width: 14px;
-  /* The cell's whole content box — its 20px less the 1px borders — so the
-     button meets the clip's top and bottom edges rather than floating inside
-     them, which is what makes it read as part of the cell's shape. */
-  height: 18px;
-  line-height: 18px;
-  margin-right: 4px;
+  height: 14px;
+  line-height: 14px;
+  margin: 2px 4px 2px 2px;
   padding: 0;
   border: none;
-  /* Rounded on the left to continue the clip's own corners, square on the
-     right where it meets the name. The cell clips to its border radius, so the
-     button can carry the full `--radius-xs` and still land on the clip's
-     curve. */
-  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  /* All four corners now that the shape stands free inside the cell. Same
+     `--radius-xs` the cell itself carries, so the badge and the clip around it
+     curve alike at two different sizes. */
+  border-radius: var(--radius-xs);
   /* Darkened rather than tinted, because the ground underneath is the clip's
      own Live color and no fixed color reads on all of them. Black at low alpha
      recedes against every one, which is the whole message: the button sits
      under the clip's surface, the name sits on it. */
   background: rgba(0, 0, 0, 0.25);
   /* Full-strength ink now that the glyph has its own ground to sit on — it no
-     longer competes with the clip color, so it doesn't need to be quiet. */
+     longer competes with the clip color, so it doesn't need to be quiet.
+     Sized with the empty slot's ■ so one column of buttons down a track reads
+     at one weight whether its slots hold clips or not. */
   color: inherit;
-  font-size: 7px;
+  font-size: 9px;
 }
 td.cell.has > .fire:hover {
   background: rgba(0, 0, 0, 0.45);
   color: inherit;
 }
 
-/* Play state, on the launcher rather than the cell. `td.cell.playing` paints a
-   3px bar down the cell's left edge — which is now underneath this button, so
-   the button has to carry the state or a playing clip would report nothing.
-   That also puts this launcher back with the scene and group ones, which have
-   always turned green while they sound.
+/* Play state, on the launcher rather than the cell — this is the only mark a
+   playing clip gets, since the cell's own left bar is off wherever a button
+   carries the state (see `td.cell.has.playing` under play state above). That
+   also puts this launcher with the scene and group ones, which have always
+   turned green while they sound.
 
    The fill carries it rather than the glyph: green ink on a green clip is
    nothing, but a green ground with the app's own background as ink reads on
@@ -350,15 +372,17 @@ td.cell.empty {
 }
 td.cell.empty > .slot-btn {
   float: left;
+  /* The clip launcher's box exactly, down to the margins: these two alternate
+     down a track as its slots fill and empty, and a glyph that shifted by 2px
+     between one row and the next would break the column they make together.
+     What the shape is *for* is stated at the launcher. */
   width: 14px;
-  /* The cell's content box — 20px less the 1px borders — so the button meets
-     the slot's top and bottom edges, matching the clip launcher beside it. */
-  height: 18px;
-  line-height: 18px;
-  margin-right: 4px;
+  height: 14px;
+  line-height: 14px;
+  margin: 2px 4px 2px 2px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  border-radius: var(--radius-xs);
   /* No ground at rest, unlike the clip launcher. That one is recessed because
      it sits on the clip's own Live color and has to separate from it; this one
      sits on the grid's quietest surface, and a second surface on it would draw
@@ -366,7 +390,11 @@ td.cell.empty > .slot-btn {
      ink change on hover, the same as the scene and group launchers. */
   background: none;
   color: var(--idle);
-  font-size: 7px;
+  /* The launcher's size, since the two share a column. 7px was too small for
+     any of them: ■ and ● are solid shapes with no interior, so they read as
+     specks at a size the arrow still survives, and this one has no clip color
+     behind it doing half the work of being seen. */
+  font-size: 9px;
 }
 td.cell.empty > .slot-btn:hover {
   color: var(--fg);
