@@ -18,8 +18,8 @@ interface Args {
 }
 
 /**
- * Editing the selected scenes' names — `@{key} {SONG}`, everything after the
- * role tag — and their independent `Scene.tempo`.
+ * Editing the selected scenes' names — `@{key} {SONG} - {ARTIST}`, everything
+ * after the role tag — and their independent `Scene.tempo`.
  */
 export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScenes }: Args) {
   /** Which title fields have been edited — see TitlePatch in core. */
@@ -57,6 +57,7 @@ export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScene
     () =>
       titleOps(scenesForOps, sceneList, {
         song: titlePatch.song,
+        artist: titlePatch.artist,
         tag: titlePatch.tag,
         key: titlePatch.key,
       }),

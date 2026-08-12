@@ -169,11 +169,17 @@ scenes were attached.
 non-whitespace literal separates them. The rules, and why ambiguity splits into fatal and
 resolvable, are in [`core/README.md`](core/README.md).
 
-The convention this writes today is `[ROLE] @{bpm}-{key} {SONG}` — `[CHORUS] @128-Bm
-NIGHTFALL`. Role first so a column of scene names reads as structure; `@` and `-` are the
-only punctuation the facts need, because after an `@` a digit is a tempo and a letter is a
-key. **A convention change can't be a clean break**, since the mapping *is* the names — so
-derivation reads more than one pattern and a set converts scene by scene as it's renamed.
+The convention this writes today is `[ROLE] @{key} {SONG} - {ARTIST} {TAG}` — `[CHORUS] @Bm
+NIGHTFALL - THE AVIATORS {COVER}`. Role first so a column of scene names reads as
+structure; `@` opens the key because after it a letter can only be a key. **A convention
+change can't be a clean break**, since the mapping *is* the names — so derivation reads more
+than one pattern and a set converts scene by scene as it's renamed.
+
+**The artist is a fact, not identity.** `songKey` is still the song name alone, so one
+title with two artists is drift the songs list reports rather than two songs. It is also
+the only place two free-text fields meet in one name, which is why `" - "` is load-bearing
+and why the parsing convention is the next thing that should become configuration rather
+than a constant.
 
 **bpm is not like the other tokens.** It's the one fact with a home in Live —
 `Scene.tempo` — and writing it changes how the set plays. See

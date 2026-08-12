@@ -1,7 +1,13 @@
 import { hex } from '../../../core/src/color.js';
 import './ScenePanel.css';
 import { roleKey, type Role } from '../../../core/src/roles.js';
-import { isBpm, isKey, isTag, type TitlePatch } from '../../../core/src/sceneTitle.js';
+import {
+  isBpm,
+  isKey,
+  isTag,
+  splitsAsArtist,
+  type TitlePatch,
+} from '../../../core/src/sceneTitle.js';
 import { SUGGESTED_SONG_TAGS } from '../../../core/src/songTags.js';
 import { ColorSelect } from './ColorSelect.js';
 import { ControlButton, ControlSelect } from './Control.js';
@@ -16,7 +22,13 @@ interface Props {
    * What the selected scenes agree on, per field; `null` where they differ.
    * The title fields prefill from this.
    */
-  common: { song: string | null; tag: string | null; bpm: string | null; key: string | null };
+  common: {
+    song: string | null;
+    artist: string | null;
+    tag: string | null;
+    bpm: string | null;
+    key: string | null;
+  };
   /**
    * Which title fields have been edited.
    *
@@ -102,6 +114,10 @@ export function ScenePanel({
   const badTag = shown('tag').trim() !== '' && !isTag(shown('tag'));
   const badBpm = shown('bpm').trim() !== '' && !isBpm(shown('bpm'));
   const badKey = shown('key').trim() !== '' && !isKey(shown('key'));
+  // A song carrying the artist separator is read back as a song *and* an
+  // artist, so writing it would name one thing and map another. Blocked here
+  // because this is the last point where someone can still split it themselves.
+  const badSong = splitsAsArtist(shown('song'));
 
   const field = (
     key: keyof TitlePatch,
@@ -136,7 +152,7 @@ export function ScenePanel({
       </div>
 
       <div className="song-field-row">
-        {field('song', 'song', 'Nightfall')}
+        {field('song', 'song', 'Nightfall', badSong)}
         <div className="field song-color-field">
           <span>color</span>
           <ColorSelect
@@ -155,6 +171,9 @@ export function ScenePanel({
           />
         </div>
       </div>
+      {/* Its own row rather than beside the song: an artist name is as long as
+          a song name, and the two are written into the name as one run. */}
+      <div className="field-row">{field('artist', 'artist', 'The Aviators')}</div>
       <div className="field-row">
         {field('tag', 'tag', 'COVER', badTag, (value) => value.toUpperCase())}
         {field('bpm', 'bpm', '128', badBpm)}
@@ -166,7 +185,11 @@ export function ScenePanel({
         ))}
       </datalist>
       <div className="hint">
-        {badTag || badBpm || badKey ? (
+        {badSong ? (
+          <span className="bad">
+            " - " is the artist separator — put that half in the artist field
+          </span>
+        ) : badTag || badBpm || badKey ? (
           <span className="bad">
             {badTag ? "tag uses letters, numbers, spaces, &, ' or -" : ''}
             {badTag && (badBpm || badKey) ? ' · ' : ''}
@@ -178,7 +201,7 @@ export function ScenePanel({
           'Shift-click a second scene name to take a whole song.'
         ) : (
           <>
-            Song, tag and key rename scenes. Color paints all {songColorCount} scene
+            Song, artist, tag and key rename scenes. Color paints all {songColorCount} scene
             {songColorCount === 1 ? '' : 's'} of {songColorLabel}. BPM writes Scene.tempo.
           </>
         )}
@@ -193,7 +216,7 @@ export function ScenePanel({
           instantly-legible action rather than the destructive one. */}
       <ControlButton
         type="button"
-        disabled={titleCount === 0 || busy || badTag || badKey}
+        disabled={titleCount === 0 || busy || badSong || badTag || badKey}
         onClick={onRenameScenes}
       >
         Rename {titleCount} scene{titleCount === 1 ? '' : 's'}

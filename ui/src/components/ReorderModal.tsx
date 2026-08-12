@@ -296,7 +296,7 @@ export function ReorderModal({ derivation, snapshot, palette, busy, onApply, onC
           <div className="order-rows">
             {shown.map((p, i) => {
               const song = songs.get(p.songKey);
-              const facts = song ? songFacts(song) : { bpm: '', key: '', tag: '' };
+              const facts = song ? songFacts(song) : { bpm: '', key: '', artist: '', tag: '' };
               const runs = song?.blocks.length ?? 1;
               const colorIndex =
                 song?.observed.colorIndex.length === 1 ? song.observed.colorIndex[0]! : -1;

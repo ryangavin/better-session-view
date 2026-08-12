@@ -75,6 +75,7 @@ export function SongsModal({
               <thead>
                 <tr>
                   <th>song</th>
+                  <th>artist</th>
                   <th className="n">scenes</th>
                   <th>bpm</th>
                   <th>key</th>
@@ -87,6 +88,9 @@ export function SongsModal({
                 {songs.map((song) => (
                   <tr key={song.name} onClick={() => onPick(song.scenes)}>
                     <td className="song-name">{song.name}</td>
+                    <td>
+                      <Observed values={song.observed.artist} />
+                    </td>
                     <td className="n">{song.scenes.length}</td>
                     <td>
                       <Observed values={song.observed.bpm} />

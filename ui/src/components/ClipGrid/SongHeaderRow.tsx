@@ -167,7 +167,11 @@ export const SongHeaderRow = memo(function SongHeaderRow({
         <ControlButton
           type="button"
           className="song"
-          title={`Work on ${header.song} — selects every scene of it`}
+          title={
+            `Work on ${header.song}` +
+            (header.artist === '' ? '' : ` by ${header.artist}`) +
+            ' — selects every scene of it'
+          }
           onClick={(e) => {
             e.stopPropagation();
             onPickSong(header.songKey);
@@ -175,6 +179,22 @@ export const SongHeaderRow = memo(function SongHeaderRow({
         >
           {header.song}
         </ControlButton>
+        {/* Inside the identity slot and dimmer than the name: who plays a song
+            is part of what it is, but it must never compete with the title a
+            column of these is scanned by. It gives up width first, so a narrow
+            scene column truncates the artist rather than the song. */}
+        {header.artist !== '' && (
+          <span
+            className={`song-artist${header.artistClash ? ' clash' : ''}`}
+            title={
+              header.artistClash
+                ? `This song's scenes disagree: ${header.artist}`
+                : header.artist
+            }
+          >
+            {header.artist}
+          </span>
+        )}
         <TagChip
           tag={header.tag}
           color="var(--song-rgb, var(--dim2))"

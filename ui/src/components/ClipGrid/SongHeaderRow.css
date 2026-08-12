@@ -110,6 +110,23 @@ tr.song-row button.song:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+/* Who plays it, sharing the identity slot with the name. It shrinks four times
+   as fast as the title does, so a narrow scene column takes the artist away
+   before it takes the song — the name is what a column of these is read by, and
+   it has to stay whole. Mono and dim like the other annotations. */
+tr.song-row .song-artist {
+  flex: 0 4 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--dim);
+}
+tr.song-row .song-artist.clash {
+  color: var(--amber);
+}
 /* Facts, count and part all read as annotations on the name, never as the
    name — hence mono, small and dim against the sans-serif title. */
 tr.song-row .facts,

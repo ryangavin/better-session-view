@@ -48,6 +48,9 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   contrast choice as the title, so it remains coherent on light and dark Master colors
   without covering the header color.
 - Song headers are separated with surfaces and the grid gutter rather than borders.
+- A song header's identity slot holds the name, then the artist in dim mono, then the tag
+  chip. The artist shrinks four times as fast as the name, so a narrow scene column
+  truncates the artist and leaves the column of song names whole.
 - Live colors are rendered from Live's palette. Text laid over a Live color chooses dark
   or light ink with the helpers in [`core/src/color.ts`](core/src/color.ts).
 - One ▶ launcher means "fire this" everywhere it appears: the scene gutter, a group's slot

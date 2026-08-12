@@ -66,6 +66,7 @@ export function NewSongModal({
   const [draft, setDraft] = useState<NewSongDraft>({
     at: sceneCount,
     name: '',
+    artist: '',
     key: '',
     bpm: '',
     colorIndex: null,
@@ -96,8 +97,8 @@ export function NewSongModal({
       >
         <div className="modal-h">New song — {NEW_SONG_SCENES} scenes</div>
         <div className="hint">
-          Inserts eight empty scenes with one shared name. Key, BPM and color are optional;
-          roles can be assigned to the individual scenes afterwards.
+          Inserts eight empty scenes with one shared name. Artist, key, BPM and color are
+          optional; roles can be assigned to the individual scenes afterwards.
         </div>
 
         <label className={`new-song-field${bad.has('name') ? ' bad' : ''}`}>
@@ -109,6 +110,17 @@ export function NewSongModal({
             placeholder="Nightfall"
             spellCheck={false}
             onChange={(e) => edit({ name: e.target.value })}
+          />
+        </label>
+
+        <label className={`new-song-field${bad.has('artist') ? ' bad' : ''}`}>
+          <span>Artist</span>
+          <input
+            type="text"
+            value={draft.artist}
+            placeholder="The Aviators"
+            spellCheck={false}
+            onChange={(e) => edit({ artist: e.target.value })}
           />
         </label>
 
