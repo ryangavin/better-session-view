@@ -106,8 +106,8 @@ phases, and the `snapshot` event carries `dictMs` and `hostMs`. These aren't
 debug-only — they're how we know whether the design scales. Don't drop them.
 
 **Master is not an ordinary track.** Live exposes it at `Song.master_track`, outside
-`Song.tracks`, so `Snapshot.masterColor` carries its RGB separately for the Master
-column's own header, which fills from it exactly as a track header fills from
+`Song.tracks`, so `Snapshot.masterColor` carries its RGB separately for the heading over
+the Master section, which fills from it exactly as a track header fills from
 `Track.color`. It is nullable: a rejected Master atom falls back to the neutral app surface
 rather than failing the snapshot. A Master color observer sends the same field on a
 delta, so recoloring it in Live updates the held snapshot without a full walk.

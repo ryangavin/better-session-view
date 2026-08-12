@@ -8,14 +8,22 @@ The metadata column is headed **Songs** on the left. On the right, order, color 
 share one Live Set group in that order. The app-only song-index and fold toggles live
 together in the main header's first button group after the logo.
 
-**That header carries no Live color.** It heads the column of the app's own facts about a
-scene — its number, its BPM, its key — and a column with no Live output under it has
-nothing of Live's to wear, so the cell takes the app surface and the action group ordinary
-neutral ink. It was filled with Live's Master track color once, when one column did both
-jobs and carried Master's meter and Stop All in the footer beneath those facts. That was
-an honest reading of the arrangement, and it still made an app label look like the name of
-a Live track. Splitting the two jobs into two columns sent the color to the Master one,
-where a filled header means exactly what it means above every other track.
+**That heading spans the metadata and Master columns both**, and is filled with **Live's
+Master track color** the way every other column header is filled with its own track's.
+Master lives outside `Song.tracks`, so the snapshot carries its RGB separately and
+`inkOn()` chooses black or white text exactly as it does for ordinary track headers. The
+action group stays transparent and takes that same ink choice for its icons rather than
+laying a second surface over the Master color. If Master's color can't be read, the cell
+keeps the neutral app surface. A fixed Master color observer updates it after a recolor in
+Live without requiring a full snapshot.
+
+One heading rather than two is what makes the two columns read as a section — Live's
+Master track and the app's own facts about a scene, together at the set's left edge —
+and it is also what lets the metadata column be as narrow as its rows need. A heading of
+its own would have held it to the width of a label and three buttons.
+
+Nothing in it spells out that Master is in there. The strip at the foot of that column and
+the scene launchers down it say so already, and a word would only repeat them.
 
 The running-order and coloring workflows work the same way: a draft you can push around
 for free, a preview of exactly what will be written, and one button that writes it. That

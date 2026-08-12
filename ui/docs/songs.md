@@ -26,7 +26,7 @@ once. It shares that app-only display group with the song-index toggle.
 
 ## Song headers, and folding
 
-Each song block gets a **full-width header row** above its first scene, which is what
+Each song block gets a **header row of its own** above its first scene, which is what
 actually segments the grid. It carries **no border at all**. It began as a 1px light rule
 along the top, which is how you draw a bevel — and once a folded header became several
 cells the table's 2px `border-spacing` chopped that highlight into a segment over each one,
@@ -60,116 +60,104 @@ A song in more than one block says `part 2 of 2` rather than being silently merg
 a song whose scenes disagree about a fact shows the clash in amber. Both are the grid
 telling you something the library will later have to arbitrate.
 
-### Two shapes, and why they aren't laid out alike
-
-The same facts, arranged for two different jobs:
+### One shape, split where every other row is
 
 ```
-  ▾ NIGHTFALL · THE AVIATORS  128 Bm  {COVER}   part 2 of 2 · mixed color   ← open
-  └──────────────── one cell, spanning every column ────────────────┘
+  ▾ NIGHTFALL  THE AVIATORS   │                                            │
+    128  Bm  {COVER}             │          (the band, open)                  │
 
-    ▸   124  F#m GLASS TUNNEL··············· │  ■■  │      │ ■■■■ │  ■     ← folded
-   └─── metadata + Master columns ────┘ └ the sections each track plays ┘
+  ▸ GLASS TUNNEL  SUN & STEEL   │  ■■  │      │ ■■■■ │  ■                     │
+    124  F#m  {JAM}  2/2         └ the sections each track plays ───────────┘
+  └─ metadata + Master ───────┘
 ```
 
-**Open, the header is one cell across the whole table.** It is what segments the grid, so
-nothing sits beside it — and with no column to line up against, nothing inside it holds a
-fixed width either. The name leads, because the fixed slots exist to serve the folded
-shape and there is no reason to pay for them here.
+**The header splits at the Master section's edge, the same place every other row
+splits.** One cell over the metadata and Master columns holds the song's identity; the
+track region beside it is one band when the song is open and one tile per track column
+when it's folded. That boundary running unbroken from the heading down through the footer
+is what makes the two left columns read as a section rather than as two columns that
+happen to be adjacent.
 
-Its contents are `position: sticky` and pin to the left edge rather than scrolling away
-with the row, so scrolling out to track 30 still says which song those clips belong to.
-Two mechanics that costs:
+It spanned the entire table for a while, on the reasoning that a header segments the grid
+so nothing should sit beside it. What that actually did was erase the section's edge on
+every header row — the one row in the grid where you most want to see where the clips
+begin.
 
-- **The spanning cell alone in this table may not have `overflow: hidden`.** An ancestor
-  that clips becomes the sticky element's scrollport, and a scrollport that never scrolls
-  never sticks — the line scrolls straight out of view instead of pinning. Measured, not
-  assumed: with the clip on, the pinned line sat 587px off the left of the viewport.
-- **The song's color bar rides the pinned line**, not the cell, so it stays beside the
-  name it belongs to. Folded, it stays a `::before` on the lead cell.
+**Open and folded are laid out identically.** A header shouldn't move when a song folds,
+and there is no longer a reason for it to: folded, the Master column has no roles to show,
+so the identity has the same width either way.
 
-The `filter: drop-shadow` on the row is fine over the top of that, which is worth knowing
-because it looks like exactly the kind of thing that would break sticky positioning. It
-doesn't: a filter creates a containing block for fixed descendants, not a scrollport.
+**The identity is two lines**, because the segment is narrower than a song name. They
+split by what the fields *are* rather than by importance:
 
-**Folded, a hundred headers stacked up are a table of contents — so that shape is a
-table.** Laid out as columns rather than as a sentence, it's the whole song on one row:
-what it's called, what it's built from, and what's in it.
+- **The top line is the free text** — the song name, and the artist beside it when the set
+  names one. They can take space off each other, and the artist gives way three times as
+  fast, because the name is what a list of these is read by. Both ellipsis.
+- **The bottom line is everything of fixed width** — bpm and key in the same slots the
+  scene rows use, so a song's bpm sits directly above its scenes' and a column of headers
+  lines up; then the tag, then `2/2` where a song appears in more than one run.
+- **Both fit the row's existing height**, 14 and 14 inside 36, so a folded set is no
+  taller for having two lines.
 
-- **Every slot keeps its width whether or not the song fills it.** That's the whole
-  mechanism: the fixed facts strip is what keeps the next song's name where your eye
-  already is. A song that states neither shows `---` and `--` rather than a gap: an empty
-  slot reads as a rendering fault, where a dash says the set never named one — which is a
-  thing to go and fix. Dimmer than any real value, and it stays dim under a clash, because
-  nothing said is not the same as two scenes disagreeing.
+Putting the artist on the bottom line with the facts was the obvious arrangement and the
+wrong one: between the key and the tag it had about 26px, which renders `THE …` and
+nothing else. A field that can only show its first word is worse than one that isn't there.
+
+- **Every slot keeps its width whether or not the song fills it.** A song that states
+  neither fact shows `---` and `--` rather than a gap: an empty slot reads as a rendering
+  fault, where a dash says the set never named one — which is a thing to go and fix.
+  Dimmer than any real value, and it stays dim under a clash, because nothing said is not
+  the same as two scenes disagreeing.
 - **The lead slot matches the scene number below it.** The collapse icon sits on the
-  scene-number guide, then each song BPM and key sits directly above the same fact on
-  every child scene. BPM comes before key to keep the numeric tempo column on the
-  outside. Both are right-aligned: `94` and `128` are the same fact at different widths.
-- **Every slot is sized to its values, not to its words.** Matching the name slot to the
-  whole pinned width was the tidier rule and the wrong one: it spends the column on names
-  rarely half that long. Same for the facts — a bpm is three digits and a key is at most
-  three characters, so any extra is dead space on every song carrying neither, which in
-  most sets is a lot of them.
+  scene-number guide, so the caret, the numbers and the facts are three columns down the
+  whole grid. BPM comes before key to keep the numeric tempo column on the outside, and
+  both are right-aligned: `94` and `128` are the same fact at different widths.
 - **No scene count.** A set built to a house length says the same number a hundred times,
   and the block's size is legible from the rows it spans anyway. It survives as the fill
   tiles' denominator and in their tooltips.
-- **The lead cell spans the metadata and Master columns both.** Folded, the Master column
-  has no roles to show — its scenes aren't on screen — so its width goes to the name,
-  which is the one thing a table of contents is read by.
-- **Only this shape can carry tiles**, because only real cells land under the columns they
-  describe.
+- **`mixed color` and the drop note live in the track region**, not beside the name. Both
+  are things you have to *act* on rather than facts about the song, and the band has room
+  for the drop note, which is the only warning before the one write no undo of ours can
+  reverse. Folded, they take the tile region for as long as they're there.
+- **Only the folded shape can carry tiles**, because only real cells land under the
+  columns they describe.
 
-**Flex lives on a wrapper `div` in both, never on the `td`.** `display: flex` on a table
-cell stops it being a table cell and takes the grid's fixed layout down with it.
-
-The pieces themselves — the name button, the artist, the facts, the tag chip — are built
-once in the component and placed twice. The shapes differ; the facts, and the tooltips
-that explain them, must not.
+**Flex lives on a wrapper `div`, never on the `td`.** `display: flex` on a table cell
+stops it being a table cell and takes the grid's fixed layout down with it.
 
 ### One row, not two
 
-The content strip used to be a second row under the header. It isn't, because it never
-needed to be: a folded header's lead cell has room for the name *and* the shape, and the
-track columns to its right were empty. Merging them halves the height of a folded set
-and puts everything about a song on one line.
+The content strip used to be a **second table row** under the header. It isn't, because it
+never needed to be: a folded header's lead cell has room for the name *and* the shape, and
+the track columns to its right were empty. Merging them halved the height of a folded set.
+That is a different thing from the identity's two text lines, which live inside the one
+row and inside its existing height.
 
-What that cost, and what paid for it:
+What survived from that merge:
 
-- **The name flexes when folded** instead of taking a fixed 170px, because the scene
-  column is all the room there is. It gets nearly all of it: the shape lives out in the
-  track columns, not beside the name.
-- **`part 2 of 2` shortens to `2/2`** when folded — it shares the lead cell now, and the
-  tooltip still spells it out. It stays beside the name rather than moving out with
-  the other exceptions, because a reprise is exactly where the tiles are worth most.
-- **`mixed color` and the drop note take the tile region** of a folded header, as one cell
-  spanning the track columns. Both are things you have to *act* on — a fault to fix, a
-  move about to happen — and both outrank a summary of what the song contains. The drop
-  note in particular is far too long for the lead cell and can't be abbreviated: it's
-  the only warning before the one write no undo of ours can reverse. Open, there is no
-  tile region to take and no column to be too long for, so both simply follow the name.
-- **The left edge moved to `::before`.** A folded header is several cells wide, so a
-  background gradient would repeat the bar at the left of every tile and a `box-shadow`
-  would draw it down the whole row. That turned out to be a simplification: the bar used
-  to be a background layer and a box-shadow taking turns, with a comment warning that
-  source order was load-bearing and a stray `:not()` would silently take the drop line off
-  folded rows. Now the bar owns `::before`, the wash owns `background`, and the drop
-  indicators own `box-shadow` — three jobs, three properties, no ordering.
+- **The left edge is a `::before`.** A folded header is several cells wide, so a background
+  gradient would repeat the bar at the left of every tile and a `box-shadow` would draw it
+  down the whole row. That turned out to be a simplification: the bar used to be a
+  background layer and a box-shadow taking turns, with a comment warning that source order
+  was load-bearing and a stray `:not()` would silently take the drop line off folded rows.
+  Now the bar owns `::before`, the wash owns `background`, and the drop indicators own
+  `box-shadow` — three jobs, three properties, no ordering.
 
 ### The height budget, and two rules that need their order
 
 `SongHeaderRow.css` explains nothing about itself — none of the grid's stylesheets do —
 so the parts of it that aren't self-evident live here.
 
-**Every header is 36px, artist or none**, and that number is a floor rather than a
-preference: it's what a folded row needs for its miniature scene sequence. A collapsed set
-is a list of nothing else, so a row that grew a line for some songs would cost both
-density and a straight edge to read down. The artist is free as long as it fits inside
-that floor, which is why the line heights are *stated* instead of left to the font:
-`--song-name-line` at 14px over `--song-artist-line` at 10px is exactly the 36px row less
-its 6px of padding top and bottom. `--song-text-h` caps the stacked pair at that same sum,
-so a font that renders taller than its line box — or a third line added here later — clips
-rather than reopening every row in the set.
+**Every header is 36px**, and that number is a floor rather than a preference: it's what a
+folded row needs for its miniature scene sequence. A collapsed set is a list of nothing
+else, so a row that grew a line for some songs would cost both density and a straight edge
+to read down. Both text lines have to fit inside that floor, which is why their heights
+are *stated* instead of left to the font: `--song-name-line` at 14px over
+`--song-meta-line` at 14px is exactly the 36px row less its 4px of padding top and bottom.
+`--song-text-h` caps the pair at that same sum, so a font that renders taller than its line
+box — or a third line added here later — clips rather than reopening every row in the set.
+The tag chip is what sets the second line at 14 rather than 10: it is 12px of text inside a
+1px outline, and a line too short for it would push the row open.
 
 **Two of the facts rules tie on specificity and are resolved by source order.** `.facts
 .key` dims itself, so `.facts.clash .key` has to come after it or a disagreement would

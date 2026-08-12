@@ -229,9 +229,14 @@ export function ClipGrid({
     // the documented Master Track.color atom. Undefined also tolerates a UI
     // briefly paired with an older bridge during development.
     if (snapshot.masterColor == null) return undefined;
+    const ink = inkOn(snapshot.masterColor);
     return {
       background: hex(snapshot.masterColor),
-      color: inkOn(snapshot.masterColor),
+      color: ink,
+      // The song actions sit directly on the Master fill, so their ink comes
+      // from the same black-or-white contrast choice as the title rather than
+      // from a second surface laid over the header color.
+      '--song-action-ink': `${ink}d9`,
     } as CSSProperties;
   }, [snapshot.masterColor]);
 
@@ -273,15 +278,23 @@ export function ClipGrid({
       </colgroup>
       <thead>
         <tr>
-          {/* The metadata column's heading. It is the app's own column — scene
-              numbers and the facts a scene states — so it carries the app's own
-              actions and none of Live's identity. The heading leads from the
-              left; reorder, color and add follow the spacer from the right.
+          {/* One heading over the whole Master section — the metadata column
+              and Master together. They are two columns because they hold two
+              different kinds of thing, but they read as one region: the set's
+              own left edge, with Live's Master track inside it. A heading each
+              would have made that a boundary rather than a section, and it is
+              what forced the metadata column to be wide enough for a label and
+              three buttons when its rows need barely a hundred pixels.
+
+              Filled with Live's Master color, like every other column header in
+              the grid. Nothing spells out that Master is in here: the strip at
+              the foot of that column and the scene launchers down it say so
+              already, and a word would only repeat them.
 
               Flex on a wrapper div, never on the `th`: `display: flex` on a
               table cell stops it being a table cell and takes the grid's fixed
               layout with it. */}
-          <th className="meta-h">
+          <th className="meta-h" colSpan={2} style={masterFill}>
             <div className="meta-h-line">
               <span className="meta-h-title">Songs</span>
               <div className="spacer" />
@@ -323,15 +336,6 @@ export function ClipGrid({
                 </ControlGroup>
               </div>
             </div>
-          </th>
-          {/* Live's Master track, at the head of its own column — filled with
-              Live's Master color exactly as every track header is filled with
-              its track's. What sits under it is Live's too: the scene
-              launchers, the stop-all button and the Master strip. */}
-          <th className="master-h" style={masterFill} title="Live's Master track">
-            <span className="th-line">
-              <span className="th-label">Master</span>
-            </span>
           </th>
           {columns.map((c, i) => {
             // The band that replaced the group header row. A colored rule along

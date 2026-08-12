@@ -35,13 +35,16 @@ export const DEFAULT_COLUMN_WIDTH: ColumnWidth = 'm';
  * keeps the scene-number, BPM and key slots on one vertical line in every mode,
  * and what the song headers align their own facts against.
  *
- * Sized by the widest thing in the column, which is its **heading** rather than
- * a row: the number, BPM and key need about 100px, while the Songs label and the
- * three song-workflow buttons need 158px between them and the cell's padding.
- * This is that measured floor plus a few pixels of air, because a column whose
- * own header doesn't fit is a column lying about its width.
+ * **Sized by its rows and nothing else**: 10px of lead, a 26px number, a 26px
+ * bpm and a 28px key, plus 8px at the tail, is 98px. The rest is air before the
+ * Master column.
+ *
+ * It was half as wide again while it had its own heading to fit — a label and
+ * three buttons need 158px, and a column whose header doesn't fit is a column
+ * lying about its width. The heading spans this column and Master together now,
+ * which is what let this shrink to what a row actually needs.
  */
-export const META_COL_W = 164;
+export const META_COL_W = 108;
 
 export interface ColumnMetrics {
   /** One track column, px. */

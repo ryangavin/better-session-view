@@ -106,17 +106,13 @@ export const SongHeaderRow = memo(function SongHeaderRow({
 
   // Folded, the header stands in for the rows it hides, so each track column
   // says what that track plays in this song. Open, the clips speak for
-  // themselves and the header becomes one uninterrupted band.
+  // themselves and the track region is one uninterrupted band.
   const folded = header.collapsed;
   // What the tiles give up their space for. Both are things you have to act on
   // — a fault to fix, a move about to happen — and both outrank a summary of
-  // what the song contains. `part 2 of 2` is neither, so it stays beside the
-  // name; a reprise is exactly where the tiles are worth most.
+  // what the song contains.
   const notice = header.colorClash || dropNote !== '';
 
-  /* The two shapes are laid out differently but they are the same facts about
-     the same song, so the pieces are built once here and placed twice below. A
-     tooltip that only got fixed in one of them would be the obvious bug. */
   const foldGlyph = (
     <span className="fold">
       <IconGroupFold folded={folded} />
@@ -185,9 +181,51 @@ export const SongHeaderRow = memo(function SongHeaderRow({
     </span>
   );
 
-  // The drag handle: the pinned lead cell when folded, where the rest of the
-  // row is tiles, and the whole bar when open, where there is nothing else in
-  // it to grab by mistake.
+  /* The song's identity, over the metadata and Master columns both — the same
+     two columns every other row splits at, so the Master section reads as one
+     region running the whole height of the grid rather than as something the
+     header rows paper over.
+
+     **Two lines, because the segment is narrower than a song name.** They split
+     by what the fields are, not by importance: the two pieces of free text
+     share the top line, where they can take space off each other and the artist
+     gives way first, and everything of fixed width sits underneath — the facts
+     in the same slots the scene rows use, so a bpm sits directly above a bpm.
+     Putting the artist below with them left it about 26px between the key and
+     the tag, which is enough to render `THE …` and nothing else. Both lines fit
+     the row's existing height — 14 and 14 inside 36 — so a folded set is no
+     taller for it.
+
+     Folded, the Master column has no roles to show and its width is the name's;
+     open, the same block sits above scenes that have roles in it. One layout
+     either way: a header should not move when a song folds. */
+  const identity = (
+    <div className="song-line">
+      {foldGlyph}
+      <span className="song-identity">
+        <span className="song-name-line">
+          {songButton}
+          {artistText}
+        </span>
+        <span className="song-meta-line">
+          {facts}
+          {tagChip}
+          {/* Worth saying only when there is more than one — a song in two runs
+              is a reprise, or two different songs sharing a name. Short here
+              because it shares a line; the tooltip spells it out. */}
+          {header.blocks > 1 && (
+            <span className="part" title={`part ${header.block} of ${header.blocks}`}>
+              {header.block}/{header.blocks}
+            </span>
+          )}
+        </span>
+      </span>
+    </div>
+  );
+
+  // The drag handle is the identity cell in both shapes. Folded, the rest of
+  // the row is tiles; open, it's the band across the track region — and a grab
+  // cursor over either would promise a drag from somewhere it doesn't start.
   const lead = {
     draggable: true,
     onDragStart: (e: DragEvent<HTMLTableCellElement>) => {
@@ -225,86 +263,31 @@ export const SongHeaderRow = memo(function SongHeaderRow({
         onDrop();
       }}
     >
-      {!folded ? (
-        /* One cell across every column. The header segments the grid, so
-           nothing sits beside it — and with no column to line up against,
-           nothing inside it holds a fixed width either. The name leads, because
-           the slots that used to lead exist to make a hundred *folded* headers
-           read as a table of contents, which is the other shape's job.
-
-           Its contents pin to the left edge rather than scrolling away with the
-           row, so scrolling out to track 30 still says which song those clips
-           belong to. That's `position: sticky` on the line inside the cell —
-           which is also why this cell, alone in the table, may not have
-           `overflow: hidden`: an ancestor that clips becomes the sticky
-           element's scrollport, and a scrollport that never scrolls never
-           sticks. */
-        <td className="song-span" colSpan={columns.length + 2} {...lead}>
-          <div className="song-line">
-            {foldGlyph}
-            {songButton}
-            {artistText}
-            {facts}
-            {tagChip}
-            {header.blocks > 1 && (
-              <span className="part">
-                part {header.block} of {header.blocks}
-              </span>
-            )}
+      <td className="song-lead" colSpan={2} {...lead}>
+        {identity}
+      </td>
+      {!folded || notice ? (
+        columns.length > 0 && (
+          /* The track region, as one cell. Open, it is the band that separates
+             this song's scenes from the one above — and the flags live in it
+             rather than beside the name, because they are about a thing you
+             have to go and do rather than about what the song is called.
+             Folded, it takes the tile region for the same two, which outrank a
+             summary of what the song contains for as long as they are there —
+             and right-aligns there, where the tiles it replaced ended, rather
+             than sitting alone at the far edge of an open header's band. */
+          <td className={folded ? 'song-notice' : 'song-detail'} colSpan={columns.length}>
             {mixedColor}
             {/* The cost, on the indicator itself. This move can't be undone
                 from here, so what it's about to do belongs in front of you
                 while your finger is still on the mouse — not in the log
                 afterwards. */}
             {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
-          </div>
-        </td>
+          </td>
+        )
       ) : (
         <>
-          {/* Folded, the same facts are a line in a table of contents: fixed
-              slots so a hundred of them read as columns, each holding its width
-              whether or not the song fills it. The lead slot matches the
-              launcher and scene number below it, the facts lead so the key
-              lands beside the name it describes, and the whole identity stays
-              inside the pinned column so it can't drift over the first track. */}
-          {/* Over the metadata and Master columns both: folded, the Master
-              column has no roles to show, so its width goes to the name. */}
-          <td className="song-lead" colSpan={2} {...lead}>
-            <div className="song-line">
-              {foldGlyph}
-              {facts}
-              <span className="song-identity">
-                {/* Name over artist. Only this stacks — everything else in the
-                    row, the tag chip included, stays a single item centered
-                    against the pair, so a two-line song reads as one taller
-                    block rather than as a row whose annotations moved up. */}
-                <span className="song-identity-text">
-                  {songButton}
-                  {artistText}
-                </span>
-                {tagChip}
-              </span>
-              {/* Worth saying only when there is more than one — a song in two
-                  runs is a reprise, or two different songs sharing a name. It
-                  shortens to `2/2` here because it shares the scene column with
-                  the shape, and the tooltip still spells it out. */}
-              {header.blocks > 1 && (
-                <span className="part" title={`part ${header.block} of ${header.blocks}`}>
-                  {header.block}/{header.blocks}
-                </span>
-              )}
-            </div>
-          </td>
-          {notice ? (
-            <td className="song-notice" colSpan={columns.length}>
-              {mixedColor}
-              {/* Worth the whole tile region for the two seconds a drag lasts:
-                  both of these are things you have to act on, and both outrank
-                  a summary of what the song contains. */}
-              {dropNote !== '' && <span className="drop-note">{dropNote}</span>}
-            </td>
-          ) : (
-            columns.map((c) => {
+          {columns.map((c) => {
               // A group column stands for several tracks, so its cell shows
               // what any of them play — the union, same as the group's clip
               // slot stands in for the clips underneath it. Branching on
@@ -374,8 +357,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
                   )}
                 </td>
               );
-            })
-          )}
+          })}
         </>
       )}
     </tr>

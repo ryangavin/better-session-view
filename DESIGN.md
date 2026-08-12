@@ -14,8 +14,8 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   is used for compact labels, facts and grid headings.
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
   and are vertically centered with equal space above and below.
-- The grid uses a 2px gutter. Its metadata column is a constant 164px; Master is a track
-  column and takes the track width, so the role chip filling it moves with the setting.
+- The grid uses a 2px gutter. Its metadata column is a constant 108px; Master is a track
+  column and takes the track width, so the role painting it moves with the setting.
   Track width modes are defined in [`ui/src/lib/columnWidth.ts`](ui/src/lib/columnWidth.ts).
 - The song index is as wide as the columns it shows and no wider: both its width and its
   grid track list are computed from the same visible-column list in
@@ -97,10 +97,11 @@ earns it.
 
 - Scenes run down; tracks run across. The header row is sticky, as are both left-hand
   columns: the metadata one and Master.
-- The Master header is filled with Live's Master track color, the neutral surface as its
-  fallback, exactly as every track header is filled with its own track's color.
-- The Songs header carries no Live color. It heads the app's own column, so it takes the
-  app surface and its action buttons take ordinary neutral ink.
+- One heading spans the metadata and Master columns, filled with Live's Master track
+  color and falling back to the neutral surface, exactly as every track header is filled
+  with its own track's color. Its action buttons take their ink from the same
+  black-or-white contrast choice as the title. Nothing in it names Master: the strip at
+  the foot of that column and the launchers down it say so.
 - Song headers are separated with surfaces and the grid gutter rather than borders.
 - A song header stacks the artist in dim mono under the song name, and only when the set
   names one. The name and artist are the only part that stacks: the fold glyph, bpm, key,

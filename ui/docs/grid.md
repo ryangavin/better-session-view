@@ -138,17 +138,18 @@ and group columns folding or unfolding. `useViewportColumnWidth` observes the gr
 content box, not `window.innerWidth`, because the rail is part of the space calculation.
 
 **The setting sizes every column that holds a Live output, and nothing else.** That is
-the track columns and Master; the metadata column is a constant 164px — `META_COL_W`.
+the track columns and Master; the metadata column is a constant 108px — `META_COL_W`.
 The question the setting answers is *how many tracks fit on screen*, and a scene number
 is the same three digits whatever the answer is. The presets scaled it once, and
 shrinking it truncated the label you navigate the rows by to buy one more column of
 clips.
 
-Its 164px is set by the widest thing in the column, which is its **heading** rather than
-any row: the number, BPM and key need about 100px, while the Songs label and its three
-song-workflow buttons need 158px between them and the cell's padding. The constant is
-that measured floor plus a few pixels of air — a column whose own header doesn't fit is a
-column lying about its width, and the first version of this one was 148px and clipped.
+Its 108px is what its **rows** need and nothing more: 10px of lead, a 26px number, a 26px
+bpm and a 28px key, plus 8px at the tail, is 98px, and the rest is air before the Master
+column. It was half as wide again while it had a heading of its own to fit — a label and
+three buttons need 158px between them, and a column whose own header doesn't fit is a
+column lying about its width. The heading spans this column and Master together now, which
+is what let this shrink to the size of a row.
 
 **The role has no width of its own any more.** It paints the Master column's cell edge to
 edge, so it moves with the setting exactly as a clip does — which is the point of it being
@@ -160,8 +161,9 @@ over.
 
 **Both left-hand columns are sticky.** The metadata column pins at the table's existing
 2px outer gutter and Master pins at `--role-col-left`, which is that gutter plus the
-metadata column plus the gutter between them — header, scene cell, folded song header and
-footer alike, so each of the four corners sits above its independently sticky row. Every
+metadata column plus the gutter between them — scene cells and footer cells alike, so each
+corner sits above its independently sticky row. The heading and every song header span the
+two as one cell, so those rows pin once rather than twice. Every
 pinned cell carries an opaque background, and both plug the transparent 2px gutter to
 their left with a flat `box-shadow` of that same surface; a sticky cell that let the
 gutter through would show clips sliding past in a 2px slot. Track cells reserve the whole

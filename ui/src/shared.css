@@ -60,7 +60,7 @@
      `--meta-col-w` is a constant there. The Master column takes `--col-w` like
      any track. */
   --col-w: 74px;
-  --meta-col-w: 164px;
+  --meta-col-w: 108px;
   /* One height for every control in the header, so a row of them has one top
      and one bottom edge rather than five. Segmented groups carry the border on
      the group, so their buttons are 2px shorter and come out the same. */
