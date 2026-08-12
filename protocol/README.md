@@ -51,7 +51,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `addScenes` `{ addition }` | insert and configure a contiguous run of blank scenes |
 | `move` `{ plan }` | reorder scenes. **Structural, and not reversible** |
 | `palette` | developer-only sweep of Live's palette |
-| `saveRoles` `{ roles }` | store the role vocabulary in the device |
+| `saveSetConfig` `{ defaultArtist, roles }` | store naming defaults and role definitions in the device |
 | `saveAllowedColors` `{ colors }` | store the bulk-color subset in the device |
 | `observe` `{ on }` | structural change notifications |
 | `launch` `{ target }` | fire a clip, a scene, or the song |
@@ -72,7 +72,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `scenesAdded` | `addScenes` |
 | `moved` | `move` |
 | `palette` | `palette` |
-| `rolesSaved` | `saveRoles` |
+| `setConfigSaved` | `saveSetConfig` |
 | `allowedColorsSaved` | `saveAllowedColors` |
 | `pong` | `ping` |
 | `progress` | — streams during `apply` and `move` |

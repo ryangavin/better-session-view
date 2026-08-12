@@ -9,7 +9,7 @@ import { Rail } from './components/Rail.js';
 import { RecolorModal } from './components/RecolorModal.js';
 import { ReorderModal } from './components/ReorderModal.js';
 import { RoleMenu } from './components/RoleMenu.js';
-import { RolesManager } from './components/RolesManager.js';
+import { SetConfigModal } from './components/SetConfigModal.js';
 import { ScenePanel } from './components/ScenePanel.js';
 import { SongIndex } from './components/SongIndex.js';
 import { SongsModal } from './components/SongsModal.js';
@@ -241,7 +241,13 @@ export function App() {
     onRenameScenes,
     tempoWriteOps,
     onSetTempo,
-  } = useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScenes });
+  } = useSceneTitles({
+    sceneList,
+    scenesForOps,
+    sceneNames,
+    defaultArtist: bridge.defaultArtist,
+    applyScenes,
+  });
 
   const { songColorCount, songColorLabel, songColorIndex, onSongColor } = useSongColor({
     derivation,
@@ -300,9 +306,9 @@ export function App() {
   const { chosenIndex, pattern, setPattern, onColor, renameCount, onRename, preview } =
     useClipInspector({ selected, clips, trackNames, sceneNames, snapshot, apply });
 
-  // The vocabulary editor is owned here rather than by the rail: the grid's
-  // role menu opens it too, and the rail can be shut while it's up.
-  const [managingRoles, setManagingRoles] = useState(false);
+  // Set configuration is owned here rather than by any one opener: the header,
+  // rail and grid role menu all reach it, and the rail can be shut while it is up.
+  const [configOpen, setConfigOpen] = useState(false);
   const [showSongs, setShowSongs] = useState(false);
   // Song workflows opened from the scene column's header. Owned here with the
   // other modals: they act on set structure rather than only on a selection.
@@ -330,6 +336,7 @@ export function App() {
         onColumnWidth={chooseColumnWidth}
         showMeters={showMeters}
         onToggleMeters={toggleMeters}
+        onSetConfig={() => setConfigOpen(true)}
         onSnapshot={bridge.refresh}
       />
 
@@ -418,6 +425,7 @@ export function App() {
             <ScenePanel
               vocabulary={vocabulary}
               palette={bridge.palette}
+              defaultArtist={bridge.defaultArtist}
               sceneCount={selectedScenes.size}
               common={commonFields}
               patch={titlePatch}
@@ -435,7 +443,7 @@ export function App() {
               mixed={mixed}
               busy={bridge.busy}
               onAssign={onAssignRole}
-              onManageRoles={() => setManagingRoles(true)}
+              onManageRoles={() => setConfigOpen(true)}
             />
 
             <div className="rule" />
@@ -480,23 +488,29 @@ export function App() {
           }}
           onManage={() => {
             closeRoleMenu();
-            setManagingRoles(true);
+            setConfigOpen(true);
           }}
           onClose={closeRoleMenu}
         />
       )}
 
-      {managingRoles && (
-        <RolesManager
+      {configOpen && (
+        <SetConfigModal
+          defaultArtist={bridge.defaultArtist}
           vocabulary={vocabulary}
           palette={bridge.palette}
           inUse={inUseKeys}
+          derivation={derivation}
+          scenes={scenesForOps}
           busy={bridge.busy}
-          onSave={(next) => {
-            void bridge.saveRoles(next);
-            setManagingRoles(false);
+          onSave={(defaultArtist, roles, fill) => {
+            void (async () => {
+              await bridge.saveSetConfig(defaultArtist, roles);
+              if (fill.length > 0) await bridge.applyScenes(fill, 'fill missing artists');
+            })();
+            setConfigOpen(false);
           }}
-          onClose={() => setManagingRoles(false)}
+          onClose={() => setConfigOpen(false)}
         />
       )}
 
@@ -525,6 +539,7 @@ export function App() {
           derivation={derivation}
           sceneCount={snapshot.sceneCount}
           palette={bridge.palette}
+          defaultArtist={bridge.defaultArtist}
           busy={bridge.busy}
           onAdd={(addition) => {
             setAddingSong(false);

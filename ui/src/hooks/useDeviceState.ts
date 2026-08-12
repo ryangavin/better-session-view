@@ -12,15 +12,18 @@ import type { Say } from './useLog.js';
  * Set-owned UI configuration restored from the Session Bridge device itself.
  * The bridge persists one versioned blob in a Stored Only Max parameter; these
  * granular methods prevent a rapid color click from overwriting a simultaneous
- * role edit with a stale copy of the other field.
+ * default/role edit with a stale copy of the other field.
  */
 export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
+  const [defaultArtist, setDefaultArtist] = useState('');
   const [roles, setRoles] = useState<BSV.Role[]>([]);
   const [allowedColors, setAllowedColorsState] = useState<number[] | null>(null);
   const migratingAllowed = useRef(false);
 
   const adoptDeviceState = useCallback(
     (state: BSV.DeviceState) => {
+      // Older bridge builds can still be running while Vite serves this UI.
+      setDefaultArtist(state.defaultArtist ?? '');
       setRoles(state.roles);
       if (state.allowedColors !== undefined) {
         setAllowedColorsState(state.allowedColors);
@@ -48,12 +51,21 @@ export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
     [client, say],
   );
 
-  const saveRoles = useCallback(
-    (next: BSV.Role[]) =>
-      guard('roles', async () => {
-        const e = await client.request({ type: 'saveRoles', roles: next });
-        setRoles(next);
-        say(`roles — ${e.count} saved in this Live Set`, 'ok');
+  const saveSetConfig = useCallback(
+    (nextArtist: string, nextRoles: BSV.Role[]) =>
+      guard('set configuration', async () => {
+        const e = await client.request({
+          type: 'saveSetConfig',
+          defaultArtist: nextArtist,
+          roles: nextRoles,
+        });
+        setDefaultArtist(e.defaultArtist);
+        setRoles(nextRoles);
+        say(
+          `set configuration — ${e.roleCount} role(s), ` +
+            `${e.defaultArtist === '' ? 'no default artist' : `default artist ${e.defaultArtist}`}`,
+          'ok',
+        );
       }),
     [client, guard, say],
   );
@@ -71,10 +83,11 @@ export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
   );
 
   return {
+    defaultArtist,
     roles,
     allowedColors,
     adoptDeviceState,
-    saveRoles,
+    saveSetConfig,
     setAllowedColors,
   };
 }

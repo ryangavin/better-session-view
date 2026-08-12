@@ -66,6 +66,7 @@ export interface BridgeState {
   snapshot: BSV.Snapshot | null;
   palette: number[];
   /** Set-owned configuration restored from the device's Stored Only parameter. */
+  defaultArtist: string;
   roles: BSV.Role[];
   allowedColors: number[] | null;
   play: PlayState;
@@ -98,7 +99,7 @@ export interface BridgeState {
    * clip any more than it can a deleted scene. Clears the undo entry.
    */
   moveClips: (plan: ClipMovePlanFor, label: string) => Promise<void>;
-  saveRoles: (roles: BSV.Role[]) => Promise<void>;
+  saveSetConfig: (defaultArtist: string, roles: BSV.Role[]) => Promise<void>;
   setAllowedColors: (colors: number[] | null) => void;
   undo: () => Promise<void>;
   /** Fire something. No await: the answer you want is `play` changing. */
@@ -195,10 +196,11 @@ export function useBridge(watchMeters = false): BridgeState {
 
   const palette = useMemo<number[]>(() => Array.from(LIVE_PALETTE), []);
   const {
+    defaultArtist,
     roles,
     allowedColors,
     adoptDeviceState,
-    saveRoles,
+    saveSetConfig,
     setAllowedColors,
   } = useDeviceState(client, guard, say);
 
@@ -857,6 +859,7 @@ export function useBridge(watchMeters = false): BridgeState {
     lomReady,
     snapshot,
     palette,
+    defaultArtist,
     roles,
     allowedColors,
     play,
@@ -873,7 +876,7 @@ export function useBridge(watchMeters = false): BridgeState {
     addScenes,
     moveScenes,
     moveClips,
-    saveRoles,
+    saveSetConfig,
     setAllowedColors,
     undo,
     launch,

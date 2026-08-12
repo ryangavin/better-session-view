@@ -35,6 +35,9 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   this app's display; the song actions in the Songs header change the Live Set. The Songs
   header keeps its action buttons borderless while grouping them by adjacency.
 - The first button group after the logo holds the app-only song-index and fold toggles.
+- The gear at the right opens set configuration: naming defaults and role definitions.
+  It stays separate from Live's control-bar groups and from Snapshot because it writes the
+  device state saved in the `.als`, not Live transport or grid content.
 - In the Songs column header, the label is left-aligned. Order, color and Add share one
   right-aligned button group.
 - Toggles keep one glyph and use the amber-on state. Primary actions use an amber fill.

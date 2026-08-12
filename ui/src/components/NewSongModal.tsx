@@ -16,6 +16,7 @@ interface Props {
   derivation: Derivation;
   sceneCount: number;
   palette: number[];
+  defaultArtist: string;
   busy: boolean;
   onAdd: (addition: BSV.SceneAddition) => void;
   onClose: () => void;
@@ -59,6 +60,7 @@ export function NewSongModal({
   derivation,
   sceneCount,
   palette,
+  defaultArtist,
   busy,
   onAdd,
   onClose,
@@ -66,7 +68,7 @@ export function NewSongModal({
   const [draft, setDraft] = useState<NewSongDraft>({
     at: sceneCount,
     name: '',
-    artist: '',
+    artist: defaultArtist,
     key: '',
     bpm: '',
     colorIndex: null,

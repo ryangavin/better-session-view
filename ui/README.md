@@ -29,7 +29,7 @@ src/components/       one component per file
   ColorSelect.tsx     current color closed, the palette in a popover open
   SwatchGrid.tsx      the palette as clickable swatches, shared by every picker
   RoleMenu.tsx        the picker that hangs off a scene's role chip
-  RolesManager.tsx    the vocabulary editor — modal, owned by App
+  SetConfigModal.tsx  set-owned naming defaults + role definitions
   SongsModal.tsx      what the app read back out of the set — read-only
   ReorderModal.tsx    the running order — drag songs, apply once
   TagChip.tsx         one outlined song-tag pill for every view
@@ -38,7 +38,7 @@ src/hooks/            one hook per file
   useBridge.ts        React face of the client; composes the two below
   useBridgeSession.ts the context App reads it back out of
   useLog.ts           the shared say sink
-  useDeviceState.ts   roles + allowed colors stored in the Live device
+  useDeviceState.ts   default artist, roles + allowed colors stored in the Live device
   useSnapshotLookups.ts  the lookup Maps every other hook reads
   useTrackColumns.ts  rendered column order + group collapsing
   useViewportColumnWidth.ts  Auto and 8/16-bank widths from the grid viewport
@@ -231,8 +231,8 @@ set every pixel the side panes aren't using is a track column you can see.
   looking for.
 
   The choice is a **browser preference in `localStorage`**, next to track width rather
-  than in the device. The line is what the setting is *about*: role vocabulary and allowed
-  colors describe the set and travel in the `.als`, while how much of this screen you want
+  than in the device. The line is what the setting is *about*: naming defaults, role
+  definitions and allowed colors describe the set and travel in the `.als`, while how much of this screen you want
   spent on a contents pane follows the screen. The name column has no switch — a list of
   songs with the song names turned off is a state nobody wants to find themselves in.
 
@@ -841,10 +841,10 @@ because naming a song and tagging its roles is the pass you make before touching
 individual clips, and the swatch grid below is the fallback for everything a role
 doesn't cover.
 
-A scene name is `[ROLE] @{key} {SONG} {TAG}` —
-`[CHORUS] @Bm NIGHTFALL {COVER}`. The tag is optional and open-ended; `COVER`, `ORIGINAL`
-and `JAM` are suggestions rather than a fixed vocabulary. BPM lives on the scene's own
-`Scene.tempo` property instead. The panel edits all four pieces and they
+A scene name is `[ROLE] @{key} {SONG} - {ARTIST} {TAG}` —
+`[CHORUS] @Bm NIGHTFALL - THE AVIATORS {COVER}`. Artist and tag are optional; `COVER`,
+`ORIGINAL` and `JAM` are tag suggestions rather than a fixed vocabulary. BPM lives on the
+scene's own `Scene.tempo` property instead. The panel edits all five pieces and they
 **commit differently, on purpose**: a role writes on click, a title edit and a tempo
 edit each have their own button. See below for why.
 
@@ -939,8 +939,9 @@ press. It writes on click, like the rail's chips and for the same reason.
   eats the dismissing click, so closing the menu can't also fire a scene or move the
   selection. Esc and the arrows are swallowed in capture phase, ahead of `App`'s window
   listener — otherwise Esc would also stop every clip in Live.
-- **Manage roles… opens `RolesManager`**, which is why that modal is owned by `App`
-  rather than by the rail: two things reach it, and the rail can be shut.
+- **Manage roles… opens `SetConfigModal`**, which is why that modal is owned by `App`
+  rather than by the rail: the header and two contextual role controls reach it, and the
+  rail can be shut.
 
 **Scene selection is separate state from clip selection**, and can't be derived from it: a
 scene with no clips contributes no cells and still needs to be assignable a role. It's set
@@ -964,6 +965,28 @@ saying so rather than letting the undo button promise more than it delivers.
 `roleColors` is memoized in `useVocabulary` because it reaches the memoized `Row`; a
 fresh Map per render would re-render all 848 scenes. It changes only when the
 vocabulary or palette does, which is rare.
+
+### Set configuration and the default artist
+
+The gear in the header opens `SetConfigModal`: one set-owned form for the default artist
+and the role definitions with their clip colors. The existing **Manage…** role entry
+points open the same modal rather than maintaining a second vocabulary editor. Saving
+writes one `saveSetConfig` request, so the default and definitions shown together are the
+revision persisted together.
+
+The default artist is a **seed, not an authoritative song fact**. New Song starts with it;
+the rail offers it as a pending patch only when every selected scene has a blank artist.
+A real or mixed artist always wins, and deleting the pending seed is an explicit empty
+patch, so it does not spring back. **Use default** is the deliberate shortcut for a
+selection that already says something else. Every path still waits for Rename before it
+touches a scene name.
+
+**Save & fill N songs** is the set-wide counterpart. `planDefaultArtist` fills all scenes
+of an artistless song and blank scenes of a song already stating the default. A blank in a
+song that names a different or conflicting artist is reported and left alone; filling it
+would create a disagreement. Unmapped scenes are outside the plan because the naming
+convention cannot express an artist without a song. The resulting scene batch is one
+ordinary, undoable rename and preserves roles, keys and song tags through `titleOps`.
 
 ## Undo is ours to provide
 
@@ -1000,7 +1023,7 @@ part of the UI bundle, available before the first snapshot, and never mutates a 
 discover stable product data. The old LOM sweep remains a developer-only diagnostic for
 checking the table after an Ableton update; no user-facing path calls it.
 
-The role vocabulary and the allowed subset are different: they are authored state, so
+The default artist, role vocabulary and allowed subset are authored state, so
 `useDeviceState` receives them from the bridge device's hidden Stored Only parameter.
 Older `bsv.json`/`roles.json` values and any `bsv.allowedColors` list visible to the
 current browser origin are imported once when that parameter is empty.

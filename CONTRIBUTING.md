@@ -144,7 +144,7 @@ they read back on every later snapshot — no stable ids anywhere, nothing to lo
 |---|---|---|
 | **Library** | one global file, outlives any `.als` | what a song *is* — bpm, key |
 | **Scheme** | one global file | patterns and rules — how a name is spelled, what color a clip gets |
-| **Mapping** | **in the set**, in scene names + device state | which scene is which song and role, plus its color configuration |
+| **Mapping** | **in the set**, in scene names + device state | which scene is which song and role, plus naming defaults and color configuration |
 
 ### The decisions behind it
 
@@ -155,7 +155,8 @@ the scheme is a suggestion rather than a convention, and lint has nothing to say
 
 **The library is global and only grows.** It outlives any one `.als` — you have a library
 of songs and a given set contains some of them. Derivation unions into it. Role colors
-are different: they describe one set and live in that set's bridge-device state.
+are different: they describe one set and live in that set's bridge-device state, alongside
+the set's default artist.
 
 **A song is a label, not a range** — whatever scenes carry its name, wherever they sit. A
 reprise sixty scenes later is the same song for free. Boundaries are computed; a song in

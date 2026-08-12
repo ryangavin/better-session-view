@@ -1,3 +1,33 @@
+.set-config-modal {
+  width: 480px;
+}
+.set-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bd);
+}
+.set-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.set-config-field > span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--dim2);
+  text-transform: uppercase;
+}
+.set-config-fill-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.set-config-fill-summary .bad {
+  color: var(--amber);
+}
 .role-rows {
   display: flex;
   flex-direction: column;
@@ -26,11 +56,11 @@
   border: 1px dashed var(--dim2);
 }
 .role-row .used {
+  width: 34px;
+  flex: none;
   font-family: var(--mono);
   font-size: 9px;
   color: var(--dim2);
-  width: 34px;
-  flex: none;
 }
 .role-row .x {
   padding: 4px 8px;
@@ -40,4 +70,3 @@
 .role-row .x:hover {
   color: var(--red);
 }
-

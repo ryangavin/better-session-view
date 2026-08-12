@@ -14,6 +14,8 @@ interface Args {
   sceneList: number[];
   scenesForOps: SceneFields[];
   sceneNames: Map<number, string>;
+  /** Set-wide seed offered only when every selected scene has a blank artist. */
+  defaultArtist: string;
   applyScenes: BridgeState['applyScenes'];
 }
 
@@ -21,7 +23,13 @@ interface Args {
  * Editing the selected scenes' names — `@{key} {SONG} - {ARTIST}`, everything
  * after the role tag — and their independent `Scene.tempo`.
  */
-export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScenes }: Args) {
+export function useSceneTitles({
+  sceneList,
+  scenesForOps,
+  sceneNames,
+  defaultArtist,
+  applyScenes,
+}: Args) {
   /** Which title fields have been edited — see TitlePatch in core. */
   const [titlePatch, setTitlePatch] = useState<TitlePatch>({});
 
@@ -53,15 +61,25 @@ export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScene
     return { ...named, bpm };
   }, [sceneList, scenesForOps, selectedTitles]);
 
+  // A default is a pending suggestion, never an implicit write. It appears
+  // only for a uniformly blank artist; a real or mixed value always wins. An
+  // explicit empty patch also wins, so deleting the seed lets this song remain
+  // artistless without the default springing back into the field.
+  const pendingPatch = useMemo<TitlePatch>(() => {
+    if (titlePatch.artist !== undefined || commonFields.artist !== '') return titlePatch;
+    const artist = defaultArtist.trim();
+    return artist === '' ? titlePatch : { ...titlePatch, artist };
+  }, [commonFields.artist, defaultArtist, titlePatch]);
+
   const sceneNameOps = useMemo(
     () =>
       titleOps(scenesForOps, sceneList, {
-        song: titlePatch.song,
-        artist: titlePatch.artist,
-        tag: titlePatch.tag,
-        key: titlePatch.key,
+        song: pendingPatch.song,
+        artist: pendingPatch.artist,
+        tag: pendingPatch.tag,
+        key: pendingPatch.key,
       }),
-    [sceneList, scenesForOps, titlePatch],
+    [pendingPatch, sceneList, scenesForOps],
   );
 
   /** The first selected scene as it would read after the pending edit. */
@@ -82,10 +100,10 @@ export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScene
   // BPM belongs to Live's Scene.tempo, not to the name. A legacy name supplies
   // the initial field only when the scene has no tempo property yet.
   const wantedTempo = useMemo(() => {
-    const raw = (titlePatch.bpm ?? commonFields.bpm ?? '').trim();
+    const raw = (pendingPatch.bpm ?? commonFields.bpm ?? '').trim();
     const n = Number(raw);
     return raw !== '' && Number.isFinite(n) ? n : null;
-  }, [commonFields.bpm, titlePatch.bpm]);
+  }, [commonFields.bpm, pendingPatch.bpm]);
 
   const tempoWriteOps = useMemo(
     () => tempoOps(scenesForOps, sceneList, wantedTempo),
@@ -98,7 +116,7 @@ export function useSceneTitles({ sceneList, scenesForOps, sceneNames, applyScene
   );
 
   return {
-    titlePatch,
+    titlePatch: pendingPatch,
     setTitlePatch,
     commonFields,
     sceneNameOps,

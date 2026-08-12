@@ -14,6 +14,7 @@ import {
   IconStopClips,
   IconSync,
   IconScale,
+  IconSettings,
 } from './Icon.js';
 
 interface Props {
@@ -34,6 +35,7 @@ interface Props {
   onColumnWidth: (w: ColumnWidth) => void;
   showMeters: boolean;
   onToggleMeters: () => void;
+  onSetConfig: () => void;
   onSnapshot: () => void;
 }
 
@@ -184,7 +186,7 @@ function TempoControl({
 }
 
 /**
- * The header bar: playback, view controls, meters and Snapshot.
+ * The header bar: playback, view controls, set configuration, meters and Snapshot.
  *
  * Every icon button here carries an `aria-label` as well as a `title`. An
  * icon-only control with no accessible name is a button that exists for
@@ -211,6 +213,7 @@ export function Header({
   onColumnWidth,
   showMeters,
   onToggleMeters,
+  onSetConfig,
   onSnapshot,
 }: Props) {
   const allFolded = songCount > 0 && collapsedCount >= songCount;
@@ -413,6 +416,15 @@ export function Header({
             <IconMeter />
           </ControlButton>
         </ControlGroup>
+        <ControlButton
+          icon
+          aria-label="Set configuration"
+          title="Set configuration — naming defaults and roles"
+          onClick={onSetConfig}
+          disabled={busy}
+        >
+          <IconSettings />
+        </ControlButton>
         <ControlButton
           icon
           intent="primary"

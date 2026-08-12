@@ -16,6 +16,8 @@ interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */
   vocabulary: Role[];
   palette: number[];
+  /** Set-wide seed; offered explicitly when this selection names someone else. */
+  defaultArtist: string;
   /** How many scenes the scene-name column has selected. */
   sceneCount: number;
   /**
@@ -64,7 +66,7 @@ interface Props {
   mixed: boolean;
   busy: boolean;
   onAssign: (role: string | null) => void;
-  /** Opens the vocabulary editor, which `App` owns — see RolesManager. */
+  /** Opens the set configuration panel, which `App` owns. */
   onManageRoles: () => void;
 }
 
@@ -83,6 +85,7 @@ interface Props {
 export function ScenePanel({
   vocabulary,
   palette,
+  defaultArtist,
   sceneCount,
   common,
   patch,
@@ -173,7 +176,23 @@ export function ScenePanel({
       </div>
       {/* Its own row rather than beside the song: an artist name is as long as
           a song name, and the two are written into the name as one run. */}
-      <div className="field-row">{field('artist', 'artist', 'The Aviators')}</div>
+      <div className="artist-field-row">
+        {field('artist', 'artist', 'The Aviators')}
+        {defaultArtist.trim() !== '' && (
+          <ControlButton
+            type="button"
+            disabled={
+              none ||
+              busy ||
+              shown('artist').trim().toUpperCase() === defaultArtist.trim().toUpperCase()
+            }
+            title={`Use this Live Set's default artist: ${defaultArtist.trim()}`}
+            onClick={() => onPatch({ ...patch, artist: defaultArtist.trim() })}
+          >
+            Use default
+          </ControlButton>
+        )}
+      </div>
       <div className="field-row">
         {field('tag', 'tag', 'COVER', badTag, (value) => value.toUpperCase())}
         {field('bpm', 'bpm', '128', badBpm)}

@@ -470,6 +470,8 @@ declare namespace BSV {
    */
   interface DeviceState {
     version: 1;
+    /** Set-wide seed for naming songs. Empty means no default. */
+    defaultArtist: string;
     roles: Role[];
     allowedColors?: number[] | null;
   }
@@ -531,11 +533,8 @@ declare namespace BSV {
      * Nothing in `ui/` sends this — `tools/diag.ts` does.
      */
     | { id?: number; type: 'diag'; what: string; arg?: number }
-    /**
-     * Replace the whole role vocabulary. Coarse-grained like everything else:
-     * the list is a dozen entries, so there is no per-role message.
-     */
-    | { id?: number; type: 'saveRoles'; roles: Role[] }
+    /** Replace the set's naming defaults and role definitions as one form. */
+    | { id?: number; type: 'saveSetConfig'; defaultArtist: string; roles: Role[] }
     | { id?: number; type: 'saveAllowedColors'; colors: number[] | null }
     | { id?: number; type: 'observe'; on: boolean }
     /**
@@ -636,7 +635,7 @@ declare namespace BSV {
         undoStep: boolean;
       }
     | { type: 'palette'; id?: number; count: number; colors: number[] }
-    | { type: 'rolesSaved'; id?: number; count: number }
+    | { type: 'setConfigSaved'; id?: number; defaultArtist: string; roleCount: number }
     | { type: 'allowedColorsSaved'; id?: number; colors: number[] | null }
     /** The state restored from the device, and every later persisted revision. */
     | { type: 'deviceState'; state: DeviceState }

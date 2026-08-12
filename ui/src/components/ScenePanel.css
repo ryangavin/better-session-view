@@ -24,6 +24,20 @@
 .field-row .field {
   flex: 1;
 }
+.artist-field-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.artist-field-row .field {
+  flex: 1;
+}
+.artist-field-row .control-button {
+  height: 31px;
+  flex: none;
+  padding-inline: 8px;
+  font-size: 10px;
+}
 /* The song's name and color are two facts about the same song. The name gets
    the row; the color only needs one input-sized swatch beside it. */
 .song-field-row {

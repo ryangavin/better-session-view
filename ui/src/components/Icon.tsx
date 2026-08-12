@@ -145,6 +145,14 @@ export const IconColorSongs = () => (
   </svg>
 );
 
+/** Set configuration — naming defaults and role definitions. */
+export const IconSettings = () => (
+  <svg {...BASE}>
+    <circle cx="12" cy="12" r="3.2" />
+    <path d="M19.2 13.8a7.8 7.8 0 0 0 0-3.6l2-1.5-2-3.4-2.5 1a8 8 0 0 0-3.1-1.8L13.2 2h-4l-.4 2.5a8 8 0 0 0-3.1 1.8l-2.5-1-2 3.4 2 1.5a7.8 7.8 0 0 0 0 3.6l-2 1.5 2 3.4 2.5-1a8 8 0 0 0 3.1 1.8l.4 2.5h4l.4-2.5a8 8 0 0 0 3.1-1.8l2.5 1 2-3.4Z" />
+  </svg>
+);
+
 /** Start the song. */
 export const IconPlay = () => (
   <svg {...BASE} fill="currentColor" stroke="none">
