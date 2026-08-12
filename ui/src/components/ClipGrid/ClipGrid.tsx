@@ -26,7 +26,6 @@ import {
   IconGroupFold,
   IconOrderSongs,
   IconStop,
-  IconStopClips,
 } from '../Icon.js';
 import { ControlButton, ControlGroup } from '../Control.js';
 import { Row, sceneDropEdge } from './Row.js';
@@ -121,14 +120,12 @@ export interface Props {
 }
 
 function StopClipsButton({
-  scope,
   label,
   title = label,
   stopping,
   disabled,
   onClick,
 }: {
-  scope: 'all' | 'track';
   label: string;
   title?: string;
   stopping: boolean;
@@ -144,7 +141,7 @@ function StopClipsButton({
       disabled={disabled}
       onClick={onClick}
     >
-      {scope === 'all' ? <IconStop /> : <IconStopClips />}
+      <IconStop />
     </ControlButton>
   );
 }
@@ -495,7 +492,6 @@ export function ClipGrid({
         <tr className="stop-row">
           <td>
             <StopClipsButton
-              scope="all"
               label="Stop all clips"
               title="Stop all clips, keep the song rolling (Esc)"
               stopping={stoppingAll}
@@ -508,7 +504,6 @@ export function ClipGrid({
             return (
               <td key={track.i}>
                 <StopClipsButton
-                  scope="track"
                   label={`Stop clips on ${track.name}`}
                   stopping={play.tracks[track.i]?.fired === STOP_FIRED}
                   disabled={!canControlLive}

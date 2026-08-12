@@ -177,14 +177,6 @@ export const IconStop = () => (
   </svg>
 );
 
-/** Stop clips on one track — a clip slot struck through. */
-export const IconStopClips = () => (
-  <svg {...BASE}>
-    <rect x="4.5" y="4.5" width="15" height="15" rx="3" />
-    <line x1="6.8" y1="17.2" x2="17.2" y2="6.8" />
-  </svg>
-);
-
 /** GitHub's mark — links back to the project's source repository. */
 export const IconGitHub = () => (
   <svg {...BASE} fill="currentColor" stroke="none">
