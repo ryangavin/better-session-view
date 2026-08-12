@@ -515,11 +515,7 @@ export function ClipGrid({
         </tr>
         {showMeters && (
           <>
-            <tr className="meter-resize-row">
-              <td className="meter-resize-cell" colSpan={columns.length + 1}>
-                <MeterResizeHandle />
-              </td>
-            </tr>
+            <MeterResizeHandle cellCount={columns.length + 1} />
             <tr className="meter-row">
               {/* The scene overview is the grid's master column, so its meter is
                   structurally owned by this cell just as each track owns the
@@ -531,6 +527,7 @@ export function ClipGrid({
                 mixer={mixer}
                 setMixer={setMixer}
                 showSends={showSends}
+                hideTrackControls
               />
               {columns.map((column) => {
                 const track = column.kind === 'track' ? column.track : column.group;

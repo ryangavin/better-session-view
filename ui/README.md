@@ -1254,13 +1254,15 @@ labels come from `DeviceParameter.str_for_value`, so their compact text is Live'
 rather than a second conversion maintained by the client. Double-clicking either draggable
 control restores its reported `default_value`. Master and ordinary tracks render the same
 56px fader subtree, so the rail, peak/volume fields and pan cannot acquire separate sizing.
-Master merely centers that shared subtree in its wider pinned cell and replaces the track
-switches with a no-wrap label.
+Master merely centers that shared subtree in its wider pinned cell. Its track-switch stack
+stays in the shared layout but is invisible, so its pan remains aligned with every other
+strip; a no-wrap Master label is painted over the unused switch area.
 
-The panel is part of the grid table, so it inherits the exact column widths and horizontal
-scroll position. A subtle full-height rule at each ordinary track boundary restores the
-separation that the sticky mixer surface paints over. Its top handle changes the shared
-height from a 164px minimum; the 220px
+The stop row, resize handle and panel are one sticky `<tfoot>`, so table layout stacks them
+without independently calculated offsets. Each row retains one cell per visible column;
+their shared 2px gutter treatment closes every join and carries the track boundaries
+through the segmented handle. That handle changes the shared height from a 164px minimum;
+the 220px
 default leaves room for a useful volume range and the four offset controls even at
 Small's 44px column width. The output rail stays 8px there and grows smoothly to 16px as
 a roomier column admits a 56px strip; it stops at that width instead of consuming all the

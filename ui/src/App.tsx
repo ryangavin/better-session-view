@@ -352,7 +352,7 @@ export function App() {
             onClose={() => setShowIndex(false)}
           />
         )}
-        <div ref={gridRef} className={`grid-wrap${showMeters ? ' meters-open' : ''}`}>
+        <div ref={gridRef} className="grid-wrap">
           {snapshot ? (
             <ClipGrid
               snapshot={snapshot}

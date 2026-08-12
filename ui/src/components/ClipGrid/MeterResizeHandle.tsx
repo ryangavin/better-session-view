@@ -36,9 +36,9 @@ function maximumHeight(table: HTMLTableElement): number {
   );
 }
 
-/** A structural row above the meters that resizes their shared table-owned height. */
-export function MeterResizeHandle() {
-  const handleRef = useRef<HTMLDivElement>(null);
+/** A column-aligned row above the meters that resizes their shared table-owned height. */
+export function MeterResizeHandle({ cellCount }: { cellCount: number }) {
+  const handleRef = useRef<HTMLTableRowElement>(null);
   const dragRef = useRef<Drag | null>(null);
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
   const [maxHeight, setMaxHeight] = useState(DEFAULT_HEIGHT);
@@ -67,7 +67,7 @@ export function MeterResizeHandle() {
     return () => window.removeEventListener('resize', sync);
   }, [applyHeight]);
 
-  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+  const onPointerDown = (event: PointerEvent<HTMLTableRowElement>) => {
     if (event.button !== 0) return;
     const table = meterTable(event.currentTarget);
     if (!table) return;
@@ -82,13 +82,13 @@ export function MeterResizeHandle() {
     setDragging(true);
   };
 
-  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+  const onPointerMove = (event: PointerEvent<HTMLTableRowElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     applyHeight(drag.table, drag.startHeight + drag.startY - event.clientY);
   };
 
-  const finishDrag = (event: PointerEvent<HTMLDivElement>) => {
+  const finishDrag = (event: PointerEvent<HTMLTableRowElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
@@ -98,7 +98,7 @@ export function MeterResizeHandle() {
     }
   };
 
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
     const table = meterTable(event.currentTarget);
     if (!table) return;
     const current = currentHeight(table);
@@ -115,9 +115,9 @@ export function MeterResizeHandle() {
   };
 
   return (
-    <div
+    <tr
       ref={handleRef}
-      className={`meter-resize-handle${dragging ? ' dragging' : ''}`}
+      className={`meter-resize-row${dragging ? ' dragging' : ''}`}
       role="separator"
       aria-label="Resize mixer"
       aria-orientation="horizontal"
@@ -136,6 +136,10 @@ export function MeterResizeHandle() {
         setDragging(false);
       }}
       onKeyDown={onKeyDown}
-    />
+    >
+      {Array.from({ length: cellCount }, (_, index) => (
+        <td key={index} aria-hidden="true" />
+      ))}
+    </tr>
   );
 }

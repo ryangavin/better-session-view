@@ -378,42 +378,42 @@ table.grid th.track-h.stopping {
 
 /* --- mixer --------------------------------------------------------- */
 
-/* Ableton's stop slots are a permanent footer to Session content. They stay
-   at the viewport bottom on their own and move as one row above the mixer when
-   it opens; the table cells keep every action under its exact track column. */
-table.grid tfoot tr.stop-row td {
+/* The stop row, resize handle and meters are one sticky footer assembly. Let
+   table layout stack its rows instead of independently positioning each one;
+   the row-group background turns border-spacing into the same 2px rules used
+   between clip columns. */
+table.grid tfoot {
   position: sticky;
   bottom: 0;
-  z-index: var(--layer-mixer-resize);
+  z-index: var(--layer-mixer);
+  background: var(--bd2);
+}
+
+/* One shared outward shadow fills the table's 2px border-spacing on every side
+   of every footer cell. Adjacent copies meet exactly in the gutters, closing
+   both row and column gaps without positioning decorative rules by hand. */
+table.grid
+  tfoot
+  tr:is(.stop-row, .meter-resize-row, .meter-row)
+  td {
+  --footer-gutter-fill: 0 0 0 var(--gutter) var(--bd2);
+  box-shadow: var(--footer-gutter-fill);
+}
+
+/* Ableton's stop slots are the first row of the sticky footer. The table cells
+   keep every action under its exact track column. */
+table.grid tfoot tr.stop-row td {
+  position: relative;
   height: var(--stop-row-h);
   padding: 3px 2px;
   background: var(--rail);
   box-shadow:
-    var(--footer-track-separators),
-    0 var(--gutter) 0 var(--rail), 0 -8px 14px -4px var(--shadow-edge);
+    var(--footer-gutter-fill), 0 -8px 14px -4px var(--shadow-edge);
   vertical-align: middle;
 }
 
-/* The table's column gutters would break a border on each cell into dashes.
-   Overlap this rule into both neighbouring gutters so it reads as one edge. */
-table.grid tfoot tr.stop-row td::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: calc(-1 * var(--gutter));
-  left: calc(-1 * var(--gutter));
-  height: var(--gutter);
-  background: var(--bd2);
-  pointer-events: none;
-}
-
-.grid-wrap.meters-open table.grid tfoot tr.stop-row td {
-  bottom: calc(
-    var(--meter-panel-h) + var(--meter-handle-h) + var(--gutter) + var(--gutter)
-  );
-}
-
 table.grid tfoot tr.stop-row td:first-child {
+  position: sticky;
   left: var(--gutter);
   z-index: var(--layer-mixer-corner);
 }
@@ -446,77 +446,59 @@ button.stop-clips-button.control-button-on {
 }
 
 /* The mixer section is part of the same table as the clips. Its cells inherit
-   the exact colgroup widths and horizontal scroll position, while sticky keeps
-   the row at the bottom of the grid viewport. The body can therefore move
-   behind it without the meters ever drifting away from their columns. */
+   the exact colgroup widths and horizontal scroll position, while the sticky
+   footer keeps them at the viewport bottom as one unit. */
 table.grid tfoot tr.meter-row td {
-  position: sticky;
-  bottom: 0;
-  /* The complete mixer panel is the topmost grid layer. Track and song cells
-     can scroll behind it on both axes without leaking through its chrome. */
-  z-index: var(--layer-mixer);
+  position: relative;
   height: var(--meter-panel-h);
   padding: 8px 2px;
   background: var(--rail);
-  box-shadow:
-    var(--footer-track-separators), 0 var(--gutter) 0 var(--rail);
   vertical-align: middle;
-}
-
-/* Both footer sections paint over the table's transparent column gutters to
-   keep scrolling content from showing through. Repaint those exact 2px strips
-   as the separators instead of drawing a line inside either neighbouring cell.
-   The two outward shadows also give the final track its right-hand edge. */
-table.grid tfoot tr:is(.stop-row, .meter-row) td {
-  --footer-track-separators:
-    calc(-1 * var(--gutter)) 0 0 var(--bd2),
-    var(--gutter) 0 0 var(--bd2);
 }
 
 /* The Master meter is the bottom-left intersection: pinned with its panel
    vertically and with the scene/song column horizontally. */
 table.grid tfoot tr.meter-row td:first-child {
+  position: sticky;
   left: var(--gutter);
   z-index: var(--layer-mixer-corner);
 }
 
-/* A real spanning footer row, so the resize affordance belongs to the same
-   table and horizontal scroll position as the panel it controls. Its sticky
-   offset rides directly above the meter row; nothing floats over the grid. */
-table.grid tfoot td.meter-resize-cell {
-  position: sticky;
-  bottom: calc(var(--meter-panel-h) + var(--gutter));
-  z-index: var(--layer-mixer-resize);
+/* The handle is one interactive row but retains one cell per table column.
+   That lets the same gutter separators run through it instead of disappearing
+   across a spanning cell, while every segment still drags the shared height. */
+table.grid tfoot tr.meter-resize-row td {
+  position: relative;
   height: var(--meter-handle-h);
-  padding: 0;
+  padding: 4px 0;
   background: var(--rail);
-  box-shadow:
-    calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
-    0 var(--gutter) 0 var(--rail);
 }
 
-.meter-resize-handle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: var(--dim2);
+table.grid tfoot tr.meter-resize-row td:first-child {
+  position: sticky;
+  left: var(--gutter);
+  z-index: var(--layer-mixer-corner);
+}
+
+.meter-resize-row {
+  color: var(--bd2);
   cursor: ns-resize;
   touch-action: none;
   outline: none;
 }
 
-.meter-resize-handle::before {
+.meter-resize-row td::before {
   content: '';
+  display: block;
   width: 100%;
-  height: 2px;
+  height: var(--gutter);
   background: currentColor;
+  pointer-events: none;
 }
 
-.meter-resize-handle:hover,
-.meter-resize-handle:focus-visible,
-.meter-resize-handle.dragging {
+.meter-resize-row:hover,
+.meter-resize-row:focus-visible,
+.meter-resize-row.dragging {
   color: var(--fg2);
 }
 
@@ -884,10 +866,6 @@ table.grid tfoot td.meter-resize-cell {
   color: var(--fg);
 }
 
-.mixer-strip.master .mixer-pan {
-  bottom: 22px;
-}
-
 .control-group.mixer-controls {
   position: absolute;
   z-index: 4;
@@ -896,6 +874,10 @@ table.grid tfoot td.meter-resize-cell {
   display: grid;
   align-items: normal;
   gap: 6px;
+}
+
+.control-group.mixer-controls-hidden {
+  visibility: hidden;
 }
 
 button.mixer-button {

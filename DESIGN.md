@@ -56,8 +56,9 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   faders; Master has no sends, so its meter keeps the full panel height. The activator
   uses amber when enabled, Solo uses blue when selected and Arm uses red when armed.
   Group tracks retain the Arm button's layout slot but make the button itself invisible.
-  Ordinary tracks and Master render the same 56px fader subtree; only sends, switches and
-  Master's non-clipping label differ around it.
+  Ordinary tracks and Master render the same 56px fader subtree. Master retains the track
+  switch stack invisibly so pan stays aligned, with its non-clipping label painted over
+  that unused area; only sends differ outside the shared fader.
 
 ## Grid
 
@@ -84,10 +85,11 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   left to continue the clip's own corners and square where it meets the name. It darkens
   the clip's color rather than taking a fixed one, since the ground under it is whatever
   Live colored that clip; its lit states fill instead, with the app background as ink.
-- The mixer is a resizable sticky footer in the same table, so every strip remains aligned
-  with its track column and Master remains pinned under Songs. A quiet full-height divider
-  marks each ordinary track boundary without boxing the strips on every side. The output
-  rail grows from 8px to 16px when the column has room, then stops so whitespace remains.
+- The mixer and stop slots are one resizable sticky table footer, so every strip remains
+  aligned with its track column and Master remains pinned under Songs. Its rows share the
+  grid's 2px gutters, including the segmented resize handle, rather than floating at
+  separately calculated offsets. The output rail grows from 8px to 16px when the column
+  has room, then stops so whitespace remains.
 - A permanent stop-clips row is sticky under Session content and moves above the mixer
   when it opens. Each visible track owns its stop slot; Stop All occupies the same slot in
   the pinned Master column instead of living in the global transport controls.

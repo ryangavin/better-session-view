@@ -31,6 +31,7 @@ interface Props {
   mixer: MixerStore;
   setMixer: BridgeState['setMixer'];
   showSends: boolean;
+  hideTrackControls?: boolean;
   isGroup?: boolean;
 }
 
@@ -124,6 +125,7 @@ export function TrackMeter({
   mixer,
   setMixer,
   showSends,
+  hideTrackControls = false,
   isGroup = false,
 }: Props) {
   const level = useOutputMeter(meters, meterKey);
@@ -347,48 +349,46 @@ export function TrackMeter({
             </span>
           </label>
 
-          {!isMaster ? (
-            <ControlGroup
-              className="mixer-controls"
-              label={`${label} mixer controls`}
-              appearance="bare"
+          <ControlGroup
+            className={`mixer-controls${hideTrackControls ? ' mixer-controls-hidden' : ''}`}
+            label={`${label} mixer controls`}
+            appearance="bare"
+            aria-hidden={hideTrackControls || undefined}
+          >
+            <ControlButton
+              pressed={track?.active ?? false}
+              className="mixer-button mixer-activator"
+              title={`${track?.active ? 'Disable' : 'Enable'} ${label}`}
+              disabled={!track}
+              onClick={() => track && setMixer(target, { active: !track.active })}
             >
-              <ControlButton
-                pressed={track?.active ?? false}
-                className="mixer-button mixer-activator"
-                title={`${track?.active ? 'Disable' : 'Enable'} ${label}`}
-                disabled={!track}
-                onClick={() => track && setMixer(target, { active: !track.active })}
-              >
-                {meterKey + 1}
-              </ControlButton>
-              <ControlButton
-                pressed={track?.solo ?? false}
-                className="mixer-button mixer-solo"
-                title={`${track?.solo ? 'Unsolo' : 'Solo'} ${label}`}
-                disabled={!track}
-                onClick={() => track && setMixer(target, { solo: !track.solo })}
-              >
-                S
-              </ControlButton>
-              <ControlButton
-                pressed={track?.armed ?? false}
-                className={`mixer-button mixer-arm${isGroup ? ' group-hidden' : ''}`}
-                aria-label={`${track?.armed ? 'Disarm' : 'Arm'} ${label}`}
-                title={
-                  track?.canArm
-                    ? `${track.armed ? 'Disarm' : 'Arm'} ${label}`
-                    : `${label} cannot be armed`
-                }
-                disabled={!track?.canArm}
-                onClick={() => track && setMixer(target, { armed: !track.armed })}
-              >
-                <span aria-hidden="true" />
-              </ControlButton>
-            </ControlGroup>
-          ) : (
-            <div className="mixer-master-label">Master</div>
-          )}
+              {typeof meterKey === 'number' ? meterKey + 1 : ''}
+            </ControlButton>
+            <ControlButton
+              pressed={track?.solo ?? false}
+              className="mixer-button mixer-solo"
+              title={`${track?.solo ? 'Unsolo' : 'Solo'} ${label}`}
+              disabled={!track}
+              onClick={() => track && setMixer(target, { solo: !track.solo })}
+            >
+              S
+            </ControlButton>
+            <ControlButton
+              pressed={track?.armed ?? false}
+              className={`mixer-button mixer-arm${isGroup ? ' group-hidden' : ''}`}
+              aria-label={`${track?.armed ? 'Disarm' : 'Arm'} ${label}`}
+              title={
+                track?.canArm
+                  ? `${track.armed ? 'Disarm' : 'Arm'} ${label}`
+                  : `${label} cannot be armed`
+              }
+              disabled={!track?.canArm}
+              onClick={() => track && setMixer(target, { armed: !track.armed })}
+            >
+              <span aria-hidden="true" />
+            </ControlButton>
+          </ControlGroup>
+          {isMaster && <div className="mixer-master-label">Master</div>}
         </div>
       </div>
     </td>
