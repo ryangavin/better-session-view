@@ -185,12 +185,18 @@ puts the entire grid through React state. `setMixer` is one patch
 for one strip, even when a future gesture changes several related fields together.
 
 **Play state is per track, never per clip.** `TrackPlayState` carries
-`playing_slot_index` and `fired_slot_index`, which between them describe the whole grid
-in two properties per track. The clip-addressed version of this would need two observers
-per *slot* — tens of thousands on a real set, and exactly the chatty design the
+`playing_slot_index`, `fired_slot_index` and `arm`, which between them describe the whole
+grid in three properties per track. The clip-addressed version of this would need two
+observers per *slot* — tens of thousands on a real set, and exactly the chatty design the
 coarse-grained rule exists to prevent. `fired` keeps Live's own **`-2` for "the track's
 stop button is fired"** rather than folding it into `-1`: a track about to stop is a
 different state from a track with nothing pending, and the UI blinks for it.
+
+`armed` rides here as well as in `MixerTrackState`, and the duplication is deliberate.
+Arm decides what an *empty* slot does — `ClipSlot.fire()` triggers that slot's stop
+button on an unarmed track and starts recording on an armed one — so every empty cell in
+the grid draws a different button depending on it. The mixer's copy is observed only
+while its footer is open; this watcher is never off, because the grid never closes.
 
 ## `moveClips`
 

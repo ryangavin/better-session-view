@@ -334,6 +334,73 @@ td.cell.has.fired > .fire {
   color: var(--bg);
 }
 
+/* --- empty slots -------------------------------------------------- */
+
+/* Live draws a button in an empty slot too, in the same place as the clip
+   launcher, and the same 14px strip here is what keeps one column of buttons
+   down a track whether its slots hold clips or not.
+
+   It is the *same* `ClipSlot.fire()` as the launcher. Live decides what that
+   means from the track: a stop button while the track is unarmed, a record
+   button once it's armed. So the glyph carries the whole distinction — ■ or ●,
+   readable before the press rather than discovered after it. */
+td.cell.empty {
+  /* The button owns this edge, exactly as the launcher does on a clip cell. */
+  padding-left: 0;
+}
+td.cell.empty > .slot-btn {
+  float: left;
+  width: 14px;
+  /* The cell's content box — 20px less the 1px borders — so the button meets
+     the slot's top and bottom edges, matching the clip launcher beside it. */
+  height: 18px;
+  line-height: 18px;
+  margin-right: 4px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  /* No ground at rest, unlike the clip launcher. That one is recessed because
+     it sits on the clip's own Live color and has to separate from it; this one
+     sits on the grid's quietest surface, and a second surface on it would draw
+     the eye to the four thousand cells with nothing in them. Bare ink and an
+     ink change on hover, the same as the scene and group launchers. */
+  background: none;
+  color: var(--fg-faint);
+  font-size: 7px;
+}
+td.cell.empty > .slot-btn:hover {
+  color: var(--fg);
+}
+
+/* Armed. Red is what Arm already means on the mixer strip, so a column of
+   record buttons reads as the state that Arm button is in rather than as a new
+   one — and it stays the only lit thing in an otherwise empty cell, which is
+   the point: which tracks are armed has to be answerable from the grid. */
+td.cell.empty > .slot-btn.rec {
+  color: var(--red);
+}
+td.cell.empty > .slot-btn.rec:hover {
+  filter: brightness(1.25);
+}
+
+/* Queued, then recording. The lit states fill rather than tint, for the reason
+   the clip launcher's do — see `td.cell.has.playing > .fire`.
+
+   `.fired` is Live blinking the slot until the quantization point. `.playing`
+   on a slot we still believe is empty means Live has started recording into it
+   and our copy of the set hasn't caught up: the button is the recording
+   indicator until the next delta brings the new clip in. */
+td.cell.empty.fired > .slot-btn {
+  background: var(--amber);
+  color: var(--bg);
+}
+td.cell.empty.playing > .slot-btn.rec,
+td.cell.empty.playing > .slot-btn.rec:hover {
+  background: var(--red);
+  color: var(--bg);
+  filter: none;
+}
+
 /* --- dragging clips ----------------------------------------------- */
 
 /* The clips you picked up. Dimmed rather than hidden: a drag is a move, and

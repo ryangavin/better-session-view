@@ -35,6 +35,26 @@ export function marksByScene(play: PlayState): Map<number, string> {
   return m;
 }
 
+/**
+ * Every armed track, as one string — `|3|7|`, or `''` when none is armed.
+ *
+ * Arm is the same answer for all 848 rows, so it rides as one prop rather than
+ * being folded into `marksByScene`'s per-scene strings. It's still flattened
+ * for the same reason those are: `Row` is memoized, this is recomputed on every
+ * play push, and a string with unchanged contents is `Object.is`-equal to the
+ * last one — so a set where nobody touched an arm button re-renders nothing.
+ *
+ * Arming genuinely does change every row, since every empty cell in that column
+ * swaps its stop button for a record button. That re-render is the point.
+ */
+export function armedTracks(play: PlayState): string {
+  let out = '';
+  play.tracks.forEach((st, t) => {
+    if (st.armed) out += `|${t}`;
+  });
+  return out === '' ? '' : `${out}|`;
+}
+
 export function has(marks: RowMarks, token: string): boolean {
   return marks !== undefined && marks.indexOf(`|${token}|`) >= 0;
 }

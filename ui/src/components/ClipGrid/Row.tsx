@@ -44,6 +44,12 @@ interface RowProps {
   clips: Map<string, BSV.Clip>;
   selected: ReadonlySet<string>;
   marks: RowMarks;
+  /**
+   * Every armed track, as `|t|t|`. One string for the whole grid rather than a
+   * per-row token — arm is a track property, so every row's answer is the same.
+   * See RowMarks for why it crosses this boundary flattened.
+   */
+  armed: string;
   /** Track index when the active cell is a clip in this row, `'scene'` when it's the name. */
   active: number | 'scene' | undefined;
   roleColors: Map<string, number>;
@@ -79,6 +85,7 @@ export const Row = memo(function Row({
   clips,
   selected,
   marks,
+  armed,
   active,
   roleColors,
   sceneSelected,
@@ -315,11 +322,19 @@ export const Row = memo(function Row({
         const fired = has(marks, `f${t}`);
         const isLifting = has(lifting, String(t));
         const isLanding = has(landing, String(t));
+        // What an empty slot's button will do, which is Live's rule rather than
+        // ours: one ClipSlot.fire() triggers the slot's stop button on an
+        // unarmed track and starts recording on an armed one. The glyph says
+        // which, so the button never has to be pressed to find out.
+        const willRecord = clip === undefined && has(armed, String(t));
+        const slotAction = willRecord
+          ? `Record into ${c.track.name} in scene ${scene.i + 1}`
+          : `Stop ${c.track.name}`;
         return (
           <td
             key={key}
             className={
-              `cell${clip ? ' has' : ''}${isSel ? ' sel' : ''}` +
+              `cell${clip ? ' has' : ' empty'}${isSel ? ' sel' : ''}` +
               `${active === t ? ' active' : ''}${playing ? ' playing' : ''}` +
               `${fired ? ' fired' : ''}${isLifting ? ' lifting' : ''}` +
               `${isLanding ? ' landing' : ''}`
@@ -358,7 +373,10 @@ export const Row = memo(function Row({
               clip
                 ? `${clip.name}  ·  index ${clip.colorIndex}` +
                   `  ·  ▶ or ${LAUNCH_KEY}-click fires it`
-                : `empty — ${LAUNCH_KEY}-click stops this track`
+                : willRecord
+                  ? `empty · ${c.track.name} is armed — ● or ${LAUNCH_KEY}-click` +
+                    ' records into this slot'
+                  : `empty — ■ or ${LAUNCH_KEY}-click stops this track`
             }
             onClick={(e) => onClip(t, scene.i, mods(e))}
           >
@@ -367,8 +385,7 @@ export const Row = memo(function Row({
                 modifier rule keeps firing away from *selection*, and a button
                 that only ever fires has no selection to take. The rest of the
                 cell is unchanged, so an unmodified click there still selects
-                and opens the editor. Empty slots get nothing — Live draws no
-                launcher on one either, and ⌘-click still stops the track. */}
+                and opens the editor. */}
             {clip && (
               <ControlButton
                 type="button"
@@ -380,6 +397,26 @@ export const Row = memo(function Row({
                 }}
               >
                 ▶
+              </ControlButton>
+            )}
+            {/* An empty slot's button, in the launcher's own place — Live draws
+                one there too. It is the *same* LOM call as the launcher, so
+                there is no second callback: `ClipSlot.fire()` triggers the
+                slot's stop button when the track is unarmed and starts
+                recording when it's armed, and the glyph is how you can tell in
+                advance which of the two you're about to get. */}
+            {clip === undefined && (
+              <ControlButton
+                type="button"
+                className={`slot-btn${willRecord ? ' rec' : ''}`}
+                aria-label={slotAction}
+                title={slotAction}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFireClip(t, scene.i);
+                }}
+              >
+                {willRecord ? '●' : '■'}
               </ControlButton>
             )}
             {clip?.name}

@@ -174,6 +174,7 @@ someone reached for a right-click. `keys.ts` owns that decision.
 | | organization (silent) | ⌘ |
 |---|---|---|
 | clip cell | click selects · ⇧ extends a block · **▶ fires the clip** | ⌘-click **fires the clip** |
+| empty slot | click selects · **■ stops the track**, **● records when armed** | ⌘-click does the same |
 | scene name | click selects the row · ⇧ extends over scenes · **number drags** | ⌘-click **fires the scene** |
 | song header | click folds · title selects · **drag reorders** | — |
 | track header | click a group to collapse | ⌘-click **stops that track** |
@@ -195,6 +196,10 @@ unmodified click there still selects and opens the editor. A launcher never move
 active cell or changes the selection, so ⌘-click and ▶ are not the same gesture even
 though they fire the same slot.
 
+The **■ / ● in an empty slot** is the fourth, and the same reasoning covers it: it fires
+one slot and can do nothing else, so it has nothing to take from selection. It is
+literally the same call as a ▶ — see below.
+
 A clip cell's launcher is a recessed button at the slot's left end, rounded on the left
 to continue the clip's corners and square where it meets the name. It **darkens** the
 clip's color rather than taking one of its own, because the ground under it is whatever
@@ -203,6 +208,41 @@ the 3px play bar `td.cell.playing` paints down the same edge, so the launcher ca
 play state instead — green while sounding, amber while queued, with the app background
 as ink. Filling rather than tinting the glyph is what makes that legible: green ink on a
 green clip is nothing.
+
+## An empty slot has a button too
+
+Every empty slot carries a button in that same 14px strip, so one column of buttons runs
+down a track whether its slots hold clips or not. **It is the same `ClipSlot.fire()` as
+the launcher** — Live decides what the call means from the track, and the glyph is how
+you can tell in advance which you'll get:
+
+- **■ stops the track**, which is what firing an empty slot does in Live. That's the
+  same gesture ⌘-clicking an empty cell has always been; the button is now the visible
+  form of it.
+- **● records into the slot**, once the track is armed. Nothing else changes — no second
+  callback, no `record` message. `Track.arm` reaches the grid on the play-state push
+  (see [`protocol/README.md`](../../protocol/README.md)) precisely so that every empty
+  cell can answer this without the mixer footer being open.
+
+Red is what Arm already means on the mixer strip, so a column of ● reads as the state
+that Arm button is in. It stays the only lit thing in an otherwise empty cell, which is
+the point: which tracks are armed has to be answerable from the grid alone. Unarmed, the
+■ takes the quietest ink in the app and brightens on hover — bare, like the scene and
+group launchers, rather than recessed like the clip one, which needs a ground only
+because it sits on a Live color.
+
+The lit states fill, matching the clip launcher. `.fired` is amber while Live blinks the
+slot until the quantization point. `.playing` on a slot we still believe is empty means
+recording has *started* and our copy of the set hasn't caught up, so the ● fills red and
+serves as the recording indicator until the next delta brings the new clip in.
+
+**A pending track stop is deliberately not drawn here.** Live reports it as
+`fired_slot_index = -2`, which names no scene, so the app cannot know which of a track's
+slots you pressed — lighting all of them would blink an entire column for one stop. The
+track header and the footer's stop row already show it, and both are always in view.
+
+Group columns are unchanged: an empty group slot still draws nothing, because Live draws
+nothing on one either.
 
 **⌥ means nothing on a click.** It used to add to the selection, which is what ⇧ already
 does — extending a selection *is* adding to it, and a second key for the same idea only

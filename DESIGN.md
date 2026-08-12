@@ -85,6 +85,13 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   left to continue the clip's own corners and square where it meets the name. It darkens
   the clip's color rather than taking a fixed one, since the ground under it is whatever
   Live colored that clip; its lit states fill instead, with the app background as ink.
+- An empty slot carries a button in that same strip, so one column of buttons runs down a
+  track whether its slots hold clips or not. It is ■ while the track is unarmed and ●
+  once it is armed — one Live call whose meaning the glyph states in advance. The ● takes
+  the same red Arm does on the mixer strip, so which tracks are armed is answerable from
+  the grid; the ■ takes the quietest ink and brightens on hover. Both are bare rather than
+  recessed: only the clip launcher needs a ground, because only it sits on a Live color.
+  Their lit states fill, like the launcher's.
 - The mixer and stop slots are one resizable sticky table footer, so every strip remains
   aligned with its track column and Master remains pinned under Songs. Optional stop,
   sends and meter sections stack as table rows and use one 2px border for every join; that
