@@ -123,12 +123,10 @@ export const Row = memo(function Row({
         onSceneDrop();
       }}
     >
+      {/* The app's own column: what this scene is numbered, and the two facts
+          it states. No Live identity, nothing to fire. */}
       <td
-        className={
-          `scene${active === 'scene' ? ' active' : ''}` +
-          `${sceneSelected ? ' picked' : ''}`
-        }
-        data-active={active === 'scene' ? '1' : undefined}
+        className={`scene-meta${sceneSelected ? ' picked' : ''}`}
         title={
           `${scene.name || `Scene ${scene.i + 1}`} — click selects every clip in it` +
           ` · ⇧ extends over scenes · ${LAUNCH_KEY}-click fires it`
@@ -136,19 +134,6 @@ export const Row = memo(function Row({
         onClick={(e) => onScene(scene.i, mods(e))}
       >
         <span className="scene-line">
-          <ControlButton
-            type="button"
-            className={`fire${sceneLive ? ' live' : ''}${sceneFired ? ' fired' : ''}`}
-            title={`Fire scene ${scene.i + 1}`}
-            // The row's own click selects; this button only ever fires, so let it
-            // do that on a plain click without breaking the modifier rule.
-            onClick={(e) => {
-              e.stopPropagation();
-              onFireScene(scene.i);
-            }}
-          >
-            ▶
-          </ControlButton>
         {/* The number is the grip. The cell around it already means "select",
             and ⇧ already means "extend", so the row itself can't be the handle
             without one gesture stealing from the other — where the number is
@@ -169,9 +154,8 @@ export const Row = memo(function Row({
           >
             {scene.i + 1}
           </span>
-        {/* BPM and key occupy the same fixed fact slots as the song header.
-            Keeping the scene-number slot in the header too means every value
-            shares one vertical line with the song's own. */}
+        {/* BPM and key occupy the same fixed fact slots as the song header, so
+            a song's own values sit directly above the scenes'. */}
           <span
             className={`scene-bpm${bpm === '' ? ' none' : ''}`}
             title={bpm === '' ? 'No BPM set for this scene' : `BPM: ${bpm}`}
@@ -186,49 +170,77 @@ export const Row = memo(function Row({
           >
             {key || '--'}
           </span>
-        {/* The role follows the key. Fire button, scene number, BPM, key and
-            chip are all fixed-width columns, so each kind of fact reads as one
-            vertical line down the whole grid.
-
-            A scene with no role gets a pill reading "no role" — same box as a
+        </span>
+      </td>
+      {/* The Master column's cell, built like a clip cell because that is what
+          it is: Live's own scene launcher at the left end, and the scene's role
+          filling the rest the way a clip's name fills its slot. The launcher is
+          here rather than in the metadata column for the same reason Live puts
+          it in the Master track — firing a scene is Live's, not ours. */}
+      <td
+        className={
+          `scene-role${active === 'scene' ? ' active' : ''}` +
+          `${sceneSelected ? ' picked' : ''}`
+        }
+        data-active={active === 'scene' ? '1' : undefined}
+        title={
+          `${scene.name || `Scene ${scene.i + 1}`} — click selects every clip in it` +
+          ` · ⇧ extends over scenes · ${LAUNCH_KEY}-click fires it`
+        }
+        onClick={(e) => onScene(scene.i, mods(e))}
+      >
+        <ControlButton
+          type="button"
+          className={`fire${sceneLive ? ' live' : ''}${sceneFired ? ' fired' : ''}`}
+          title={`Fire scene ${scene.i + 1}`}
+          // The row's own click selects; this button only ever fires, so let it
+          // do that on a plain click without breaking the modifier rule.
+          onClick={(e) => {
+            e.stopPropagation();
+            onFireScene(scene.i);
+          }}
+        >
+          ▶
+        </ControlButton>
+        {/* A scene with no role gets a pill reading "no role" — same box as a
             real chip, a shade quieter, its text dimmer still. Filled rather
             than dashed: a dashed chip already means something else here, a role
             that exists and has no color. The label is lowercase in the source
-            and uppercased in CSS, like every other chip. */}
-        {/* A button, not a label: the chip is where the role gets changed, and
-            the placeholder is the same button so an untagged scene is one
-            click from a role too. `stopPropagation` for the same reason the
-            fire button has it — the cell's own click selects, and pressing the
-            chip is not a selection. */}
-          <ControlButton
-            type="button"
-            aria-haspopup="menu"
-            className={
-              role === null
-                ? 'role-chip none'
-                : `role-chip${roleRgb === undefined ? ' uncolored' : ''}`
-            }
-            style={
-              role === null || roleRgb === undefined
-                ? undefined
-                : { background: hex(roleRgb), color: inkOn(roleRgb) }
-            }
-            title={
-              role === null
-                ? 'No role — click to tag this scene'
-                : roleRgb === undefined
-                  ? `${role} — no color set for this role · click to change`
-                  : `role: ${role} · click to change`
-            }
-            onClick={(e) => {
-              e.stopPropagation();
-              const r = e.currentTarget.getBoundingClientRect();
-              onRoleMenu(scene.i, { left: r.left, top: r.top, bottom: r.bottom });
-            }}
-          >
-            {role === null ? 'no role' : role}
-          </ControlButton>
-        </span>
+            and uppercased in CSS, like every other chip.
+
+            A button, not a label: the chip is where the role gets changed, and
+            the placeholder is the same button so an untagged scene is one click
+            from a role too. `stopPropagation` for the same reason the fire
+            button has it — the cell's own click selects, and pressing the chip
+            is not a selection. */}
+        <ControlButton
+          type="button"
+          aria-haspopup="menu"
+          className={
+            role === null
+              ? 'role-chip none'
+              : `role-chip${roleRgb === undefined ? ' uncolored' : ''}`
+          }
+          style={
+            role === null || roleRgb === undefined
+              ? undefined
+              : { background: hex(roleRgb), color: inkOn(roleRgb) }
+          }
+          title={
+            role === null
+              ? 'No role — click to tag this scene'
+              : roleRgb === undefined
+                ? `${role} — no color set for this role · click to change`
+                : `role: ${role} · click to change`
+          }
+          onClick={(e) => {
+            e.stopPropagation();
+            const r = e.currentTarget.getBoundingClientRect();
+            onRoleMenu(scene.i, { left: r.left, top: r.top, bottom: r.bottom });
+          }}
+        >
+          {role === null ? 'no role' : role}
+        </ControlButton>
       </td>
       {columns.map((c) => {
         if (c.kind === 'group') {

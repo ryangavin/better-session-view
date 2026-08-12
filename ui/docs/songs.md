@@ -69,7 +69,7 @@ The same facts, arranged for two different jobs:
   └──────────────── one cell, spanning every column ────────────────┘
 
     ▸   124  F#m GLASS TUNNEL··············· │  ■■  │      │ ■■■■ │  ■     ← folded
-   └────────── the scene column ───────┘ └ the sections each track plays ┘
+   └─── metadata + Master columns ────┘ └ the sections each track plays ┘
 ```
 
 **Open, the header is one cell across the whole table.** It is what segments the grid, so
@@ -102,18 +102,21 @@ what it's called, what it's built from, and what's in it.
   slot reads as a rendering fault, where a dash says the set never named one — which is a
   thing to go and fix. Dimmer than any real value, and it stays dim under a clash, because
   nothing said is not the same as two scenes disagreeing.
-- **The lead slot matches the launcher and scene number below it.** The collapse icon
-  sits on the scene-number guide, then each song BPM and key sits directly above the same
-  fact on every child scene. BPM comes before key to keep the numeric tempo column on the
+- **The lead slot matches the scene number below it.** The collapse icon sits on the
+  scene-number guide, then each song BPM and key sits directly above the same fact on
+  every child scene. BPM comes before key to keep the numeric tempo column on the
   outside. Both are right-aligned: `94` and `128` are the same fact at different widths.
 - **Every slot is sized to its values, not to its words.** Matching the name slot to the
-  whole scene column was the tidier rule and the wrong one: it spends the column on names
+  whole pinned width was the tidier rule and the wrong one: it spends the column on names
   rarely half that long. Same for the facts — a bpm is three digits and a key is at most
   three characters, so any extra is dead space on every song carrying neither, which in
   most sets is a lot of them.
 - **No scene count.** A set built to a house length says the same number a hundred times,
   and the block's size is legible from the rows it spans anyway. It survives as the fill
   tiles' denominator and in their tooltips.
+- **The lead cell spans the metadata and Master columns both.** Folded, the Master column
+  has no roles to show — its scenes aren't on screen — so its width goes to the name,
+  which is the one thing a table of contents is read by.
 - **Only this shape can carry tiles**, because only real cells land under the columns they
   describe.
 
@@ -127,8 +130,8 @@ that explain them, must not.
 ### One row, not two
 
 The content strip used to be a second row under the header. It isn't, because it never
-needed to be: a folded header's scene column has room for the name *and* the shape, and
-the track columns to its right were empty. Merging them halves the height of a folded set
+needed to be: a folded header's lead cell has room for the name *and* the shape, and the
+track columns to its right were empty. Merging them halves the height of a folded set
 and puts everything about a song on one line.
 
 What that cost, and what paid for it:
@@ -136,13 +139,13 @@ What that cost, and what paid for it:
 - **The name flexes when folded** instead of taking a fixed 170px, because the scene
   column is all the room there is. It gets nearly all of it: the shape lives out in the
   track columns, not beside the name.
-- **`part 2 of 2` shortens to `2/2`** when folded — it shares the scene column now, and
-  the tooltip still spells it out. It stays beside the name rather than moving out with
+- **`part 2 of 2` shortens to `2/2`** when folded — it shares the lead cell now, and the
+  tooltip still spells it out. It stays beside the name rather than moving out with
   the other exceptions, because a reprise is exactly where the tiles are worth most.
 - **`mixed color` and the drop note take the tile region** of a folded header, as one cell
   spanning the track columns. Both are things you have to *act* on — a fault to fix, a
   move about to happen — and both outrank a summary of what the song contains. The drop
-  note in particular is far too long for the scene column and can't be abbreviated: it's
+  note in particular is far too long for the lead cell and can't be abbreviated: it's
   the only warning before the one write no undo of ours can reverse. Open, there is no
   tile region to take and no column to be too long for, so both simply follow the name.
 - **The left edge moved to `::before`.** A folded header is several cells wide, so a
@@ -219,7 +222,7 @@ song doesn't rebuild the map and hand all hundred headers a new prop.
 
 There is no aggregate run of marks beside the song title. Once each track says which
 sections it plays, a second copy of the same vocabulary next to the name is the crowding
-without the information — and dropping it gives the name the rest of the scene column.
+without the information — and dropping it gives the name the rest of the lead cell.
 
 ## Songs, and the mapping read back
 

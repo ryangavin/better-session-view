@@ -9,6 +9,9 @@ table.grid {
     var(--gutter) 100% no-repeat;
 
   --gutter: 2px;
+  /* Where the second pinned column starts. Declared here because it is written
+     against --gutter, which is. */
+  --role-col-left: calc(var(--meta-col-w) + 2 * var(--gutter));
   --grid-rule: var(--bd2);
   --meter-panel-h: 220px;
   --stop-row-h: 20px;
@@ -22,8 +25,8 @@ table.grid {
 table.grid col {
   width: var(--col-w);
 }
-table.grid col.scene-col {
-  width: var(--scene-col-w);
+table.grid col.meta-col {
+  width: var(--meta-col-w);
 }
 table.grid th {
   font-family: var(--mono);
@@ -62,46 +65,52 @@ table.grid th .th-label {
   text-overflow: ellipsis;
   font-weight: 600;
 }
-table.grid th.scene-h {
+table.grid th.meta-h {
   left: var(--gutter);
   z-index: var(--layer-pinned-corner);
   text-align: left;
   padding-inline: 8px;
 }
-table.grid th.scene-h .scene-h-line {
+table.grid th.master-h {
+  left: var(--role-col-left);
+  z-index: var(--layer-pinned-corner);
+  padding-right: var(--track-pad-x);
+  padding-left: var(--track-pad-x);
+}
+table.grid th.meta-h .meta-h-line {
   display: flex;
   align-items: center;
   gap: 4px;
 }
-table.grid th.scene-h .scene-h-title {
+table.grid th.meta-h .meta-h-title {
   font-size: 16px;
 }
-table.grid th.scene-h .scene-action-groups {
+table.grid th.meta-h .song-action-groups {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-table.grid th.scene-h .scene-action-group {
+table.grid th.meta-h .song-action-group {
   height: var(--ctl-h);
   display: flex;
   background: transparent;
 }
-.control-button.scene-action {
+.control-button.song-action {
   width: 26px;
   height: var(--ctl-h);
   flex: none;
   border: none;
   border-radius: 0;
   background: transparent;
-  color: var(--scene-action-ink, var(--detail));
+  color: var(--detail);
 }
-.control-button.scene-action svg {
+.control-button.song-action svg {
   width: 14px;
   height: 14px;
 }
-.control-button.scene-action:hover:not(:disabled) {
+.control-button.song-action:hover:not(:disabled) {
   background: transparent;
-  color: inherit;
+  color: var(--fg);
 }
 
 /* --- groups ---------------------------------------------------------- */
@@ -234,9 +243,17 @@ table.grid tfoot tr.stop-row td {
   vertical-align: middle;
 }
 
-table.grid tfoot tr.stop-row td:first-child {
+/* Both pinned columns, in all three footer rows. `:is()` carries a class's
+   specificity, which is what these need to beat the `position: relative` the
+   rows set on every cell. */
+table.grid tfoot tr:is(.stop-row, .sends-row, .meter-row) td.meta-cell {
   position: sticky;
   left: var(--gutter);
+  z-index: var(--layer-mixer-corner);
+}
+table.grid tfoot tr:is(.stop-row, .sends-row, .meter-row) td.master-cell {
+  position: sticky;
+  left: var(--role-col-left);
   z-index: var(--layer-mixer-corner);
 }
 
@@ -340,18 +357,6 @@ table.grid tfoot tr.sends-row td {
   vertical-align: top;
 }
 
-table.grid tfoot tr.sends-row td:first-child {
-  position: sticky;
-  left: var(--gutter);
-  z-index: var(--layer-mixer-corner);
-}
-
-table.grid tfoot tr.meter-row td:first-child {
-  position: sticky;
-  left: var(--gutter);
-  z-index: var(--layer-mixer-corner);
-}
-
 .mixer-strip {
   position: relative;
   display: flex;
@@ -361,10 +366,6 @@ table.grid tfoot tr.meter-row td:first-child {
   height: calc(var(--meter-panel-h) - 16px);
   min-height: 0;
   margin: 0 auto;
-}
-
-.mixer-strip.master {
-  width: 88px;
 }
 
 .mixer-fader {

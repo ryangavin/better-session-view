@@ -239,7 +239,7 @@ export const SongHeaderRow = memo(function SongHeaderRow({
            `overflow: hidden`: an ancestor that clips becomes the sticky
            element's scrollport, and a scrollport that never scrolls never
            sticks. */
-        <td className="song-span" colSpan={columns.length + 1} {...lead}>
+        <td className="song-span" colSpan={columns.length + 2} {...lead}>
           <div className="song-line">
             {foldGlyph}
             {songButton}
@@ -267,7 +267,9 @@ export const SongHeaderRow = memo(function SongHeaderRow({
               launcher and scene number below it, the facts lead so the key
               lands beside the name it describes, and the whole identity stays
               inside the pinned column so it can't drift over the first track. */}
-          <td className="song-lead" {...lead}>
+          {/* Over the metadata and Master columns both: folded, the Master
+              column has no roles to show, so its width goes to the name. */}
+          <td className="song-lead" colSpan={2} {...lead}>
             <div className="song-line">
               {foldGlyph}
               {facts}

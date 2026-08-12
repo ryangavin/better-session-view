@@ -6,8 +6,10 @@ The mixer strips and meters.
 
 An Ableton-style stop row starts pinned beneath the visible Session columns and has its
 own filled-square header toggle. Each
-ordinary or group track has a stop-clips button in its own column; the pinned Songs/Master
-cell holds Stop All Clips. The row reads `fired_slot_index = -2` back from Live, so a
+ordinary or group track has a stop-clips button in its own column; the pinned Master
+column holds Stop All Clips, which is the same slot in the same place — Master is a column
+like any other down here, and the metadata column beside it holds nothing at all, because
+everything in this footer belongs to a Live output and it isn't one. The row reads `fired_slot_index = -2` back from Live, so a
 pending stop lights the corresponding button rather than relying on optimistic state.
 It sits at the grid bottom when the mixer is closed and moves directly above the mixer
 and its resize handle when opened. The row replaces the grid's former bottom padding, so
@@ -50,7 +52,7 @@ device does with it, and why that one is polled where everything else here is ob
 The header's meter icon opens a column-aligned mixer below the grid. Every visible track
 gets a full-height output meter, a draggable volume indicator beside it, resettable peak
 and exact volume readouts, compact pan, Track Activator, Solo and Arm; Master gets the
-same meter, volume and pan treatment in the pinned Songs column. A group track is a real
+same meter, volume and pan treatment in its own pinned column. A group track is a real
 track, so it gets the same strip, but its Arm control is invisible while retaining its
 layout slot. On other tracks Arm remains visible but disabled when Live reports
 `can_be_armed = 0`. The activator is the inverse of `Track.mute`, matching Live's enabled
@@ -83,9 +85,11 @@ labels come from `DeviceParameter.str_for_value`, so their compact text is Live'
 rather than a second conversion maintained by the client. Double-clicking either draggable
 control restores its reported `default_value`. Master and ordinary tracks render the same
 56px fader subtree, so the rail, peak/volume fields and pan cannot acquire separate sizing.
-Master merely centers that shared subtree in its wider pinned cell. Its track-switch stack
-stays in the shared layout but is invisible, so its pan remains aligned with every other
-strip. The unused area has no label that could overlap the meter rail.
+Master's cell is the same width as theirs too, now that it owns a track-width column
+rather than sitting in a metadata column three times too wide for it — a strip centered in
+all that space read as a different kind of thing from the row of strips beside it, which
+it isn't. Its track-switch stack stays in the shared layout but is invisible, so its pan
+remains aligned with every other strip. The unused area has no label that could overlap the meter rail.
 
 The optional stop, sends and meter sections are one sticky `<tfoot>`, so table layout
 stacks them without independently calculated offsets. Every join uses the grid's same 2px

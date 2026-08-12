@@ -39,8 +39,11 @@ carries the definition of each. No rule invents its own gray, and text recedes b
 the next step down rather than by growing an `opacity`, which is reserved for a whole
 control being disabled.
 
-`--col-w`, `--scene-col-w` and `--role-chip-w` are the exception: `:root` carries
-fallbacks, but `ClipGrid` sets all three on the table element from `columnWidth.ts`, which
-stays the one place the grid states a width. Only `--col-w` moves with the
-S/M/L/Auto/8/16 setting.
+`--col-w` and `--meta-col-w` are the exception: `:root` carries fallbacks, but `ClipGrid`
+sets both on the table element from `columnWidth.ts`, which stays the one place the grid
+states a width. Only `--col-w` moves with the S/M/L/Auto/8/16 setting, and it sizes the
+Master column along with the tracks. `--role-col-left` is derived from the pair and lives
+on `table.grid` rather than `:root`, because it is written against `--gutter`, which does
+too — a `calc()` referring to a custom property its own element doesn't define resolves to
+nothing at all.
 See *Column widths*.

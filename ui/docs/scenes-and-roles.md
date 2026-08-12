@@ -23,10 +23,17 @@ doesn't, because the grid lifts every field into its own presentation. Why the f
 
 **BPM and key lead the rendered metadata**, with BPM read from the scene's own
 `Scene.tempo` and key shown without the storage-only `@`. Both use the same fixed-width,
-right-aligned slots as song headers. Fire button, scene number, BPM, key and role chip
-keep fixed widths, so every kind of metadata reads as one vertical column. The song name
-is not repeated on each scene: the header already owns it, and every child scene
-necessarily belongs to that same song.
+right-aligned slots as song headers, and the scene number keeps a fixed width beside them,
+so every kind of fact reads as one vertical column down the grid. The song name is not
+repeated on each scene: the header already owns it, and every child scene necessarily
+belongs to that same song.
+
+**The role is not in that column at all.** It has one of its own — the Master column,
+where Live keeps the scene launchers — and its cell is built like a clip cell: the ▶ at
+the left end in the same 14px strip a clip launcher uses, and the chip filling the rest
+the way a clip's name fills its slot. A role *is* what that scene is, in the same sense a
+clip is what a track plays there, so it reads as a column of clips rather than as an
+annotation hanging off a strip of numbers.
 
 **The song tag is on the header and nowhere else.** It classifies the *song*, so every
 scene of a song carries the same one by construction — a column of identical pills spends
@@ -43,19 +50,22 @@ disagrees with the song it belongs to.
 
 - **One width for every role.** `[JAM1]` weighs the same as `[PRACTICE]`, which it does.
   Longer names ellipsis and the tooltip spells them out.
-- **The width is a grid metric**, in `columnWidth.ts` beside the column widths, rather
-  than a constant in the stylesheet. It's sized to its content — nine characters covers
-  nearly every role and a wider chip is only more whitespace — and it doesn't move with
-  any column-width mode; see *Column widths*.
+- **That width is its column's**, so it moves with the S/M/L/Auto/8/16 setting exactly as
+  a clip does. It had a constant of its own once, sized to nine characters, which is what
+  a chip parked at the end of a metadata strip needs; a column asks a different question,
+  and the answer has to be the same one the clips beside it are giving.
 - **A scene with no role draws a pill saying so** — same box as a real chip, a shade
   quieter, its text dimmer still. Filled rather than dashed: a dashed chip already means
   something else here, a role that exists and has no color.
 - **The chip is a `<button>`**, real one and placeholder alike — it opens the role menu
-  below. That means undoing the global button rule in `td.scene .role-chip`, and it means
-  an untagged scene is one click from a role rather than a trip to the rail.
-- **The gutter is on the chip's right**, between it and the title, and tight to the scene
-  number on the left, which it belongs with. Live's own text on one side of that gap, our
-  reading of it on the other.
+  below. That means undoing the global button rule in `td.scene-role .role-chip`, and it
+  means an untagged scene is one click from a role rather than a trip to the rail.
+- **Clicking around it still selects the row**, the same as clicking the metadata cell,
+  and `stopPropagation` on the chip is what keeps opening the menu from also being a
+  selection. The chip fills nearly the whole cell, so the metadata column is the roomy
+  half of that target — which is the right way round: selecting is the frequent gesture
+  and it gets the whole metadata column, while changing a role is deliberate and gets the
+  thing it names.
 
 An existing set named the old way (`Nightfall 128 Bm [chorus]`) still shows its songs —
 derivation reads both conventions, and any rename converts a scene. See *Reading more

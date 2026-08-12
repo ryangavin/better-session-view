@@ -54,13 +54,13 @@
   --radius-lg: 6px;
   --radius-pill: 999px;
 
-  /* Fallbacks only — ClipGrid sets all three on the table from
-     lib/columnWidth.ts. Kept here so the grid still lays out if it ever renders
-     without them. `--col-w` matches the `m` preset; the other two are constants
-     there, and every width mode moves the track columns alone. */
+  /* Fallbacks only — ClipGrid sets both on the table from lib/columnWidth.ts.
+     Kept here so the grid still lays out if it ever renders without them.
+     `--col-w` matches the `m` preset and is the only one a width mode moves;
+     `--meta-col-w` is a constant there. The Master column takes `--col-w` like
+     any track. */
   --col-w: 74px;
-  --scene-col-w: 316px;
-  --role-chip-w: 62px;
+  --meta-col-w: 164px;
   /* One height for every control in the header, so a row of them has one top
      and one bottom edge rather than five. Segmented groups carry the border on
      the group, so their buttons are 2px shorter and come out the same. */

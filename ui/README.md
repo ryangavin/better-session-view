@@ -68,7 +68,7 @@ src/components/       one component per file
   ReorderModal.tsx    the running order — drag songs, apply once
   NewSongModal.tsx    plan and create a new song's scenes
   SyncModal.tsx       blocking feedback while the snapshot behind the grid is replaced
-  TagChip.tsx         one outlined song-tag pill for every view
+  TagChip.tsx         the outlined song-tag pill — song headers and the reorder modal
   RecolorModal.tsx    coloring every song from a rule
 src/hooks/            one hook per file
   useBridge.ts        React face of the client; composes the two below

@@ -27,16 +27,16 @@ tr.song-row:hover td:first-child {
   --song-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--surface-song-hover);
 }
 tr.song-row .fold {
-  flex: 0 0 40px;
+  flex: 0 0 28px;
   height: 14px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding-left: 14px;
+  padding-left: 2px;
   color: var(--caption);
 }
 tr.song-row .song-identity {
-  flex: 0 0 calc(var(--scene-col-w) - 118px);
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -69,10 +69,6 @@ tr.song-row button.song {
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-tr.song-row.collapsed .song-identity {
-  flex: 1 1 auto;
-  min-width: 0;
 }
 tr.song-row button.song:hover {
   color: var(--amber);

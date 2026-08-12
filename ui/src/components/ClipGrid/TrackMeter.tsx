@@ -145,7 +145,7 @@ export function TrackMeter({
   const track = strip?.kind === 'track' ? strip : null;
   const isMaster = meterKey === 'master';
   return (
-    <td className="meter-cell">
+    <td className={`meter-cell${isMaster ? ' master-cell' : ''}`}>
       <div className={`mixer-strip${isMaster ? ' master' : ''}`}>
         {/* Tracks and Master share this entire fader subtree. The outer strip
             owns only Master-specific presentation. */}

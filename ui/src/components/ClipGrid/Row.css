@@ -1,6 +1,6 @@
-/* --- scene rows --------------------------------------------------- */
+/* --- the metadata column ------------------------------------------ */
 
-td.scene {
+td.scene-meta {
   position: sticky;
   left: var(--gutter);
   z-index: var(--layer-pinned);
@@ -13,26 +13,131 @@ td.scene {
   white-space: nowrap;
   padding-left: 10px;
   padding-right: 8px;
-  width: var(--scene-col-w);
-  max-width: var(--scene-col-w);
+  width: var(--meta-col-w);
+  max-width: var(--meta-col-w);
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
 }
-td.scene .scene-line {
+td.scene-meta .scene-line {
   display: flex;
   align-items: center;
   width: 100%;
   min-width: 0;
 }
-td.scene .scene-n {
+td.scene-meta .scene-n {
   color: var(--caption);
   flex: 0 0 26px;
   cursor: grab;
 }
-td.scene .scene-n:active {
+td.scene-meta .scene-n:active {
   cursor: grabbing;
 }
+td.scene-meta .scene-bpm,
+td.scene-meta .scene-key {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: 1px;
+}
+td.scene-meta .scene-bpm {
+  flex: 0 0 26px;
+  color: var(--detail);
+}
+td.scene-meta .scene-key {
+  flex: 0 0 28px;
+  color: var(--caption);
+}
+td.scene-meta .scene-bpm.none,
+td.scene-meta .scene-key.none {
+  color: var(--caption);
+}
+td.scene-meta.picked {
+  --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--sel);
+  background: var(--sel);
+  box-shadow: inset 2px 0 0 var(--amber), var(--scene-gutter-plug);
+}
+
+/* --- the Master column's scene cell -------------------------------- */
+
+td.scene-role {
+  position: sticky;
+  left: var(--role-col-left);
+  z-index: var(--layer-pinned);
+  --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--bg);
+  box-shadow: var(--scene-gutter-plug);
+  height: 20px;
+  padding: 0 5px 0 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: var(--surface-cell);
+  overflow: hidden;
+  cursor: pointer;
+}
+td.scene-role.picked {
+  --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--sel);
+  background: var(--sel);
+}
+
+td.scene-role > .fire {
+  float: left;
+  width: 14px;
+  height: 14px;
+  margin: 2px 4px 2px 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--idle);
+  font-size: 7px;
+  line-height: 14px;
+}
+td.scene-role > .fire:hover {
+  color: var(--amber);
+}
+td.scene-role > .fire.live {
+  color: var(--green);
+}
+td.scene-role > .fire.fired {
+  color: var(--amber);
+  animation: bsv-blink 0.5s infinite;
+}
+
+td.scene-role .role-chip {
+  display: block;
+  overflow: hidden;
+  height: 14px;
+  margin: 2px 0;
+  padding: 0 5px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: var(--bd3);
+  color: var(--ui);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+td.scene-role .role-chip:hover {
+  filter: brightness(1.25);
+  color: var(--fg);
+}
+td.scene-role .role-chip.none {
+  background: var(--bd2);
+  color: var(--caption);
+}
+td.scene-role .role-chip.uncolored {
+  background: transparent;
+  border: 1px dashed var(--bd3);
+  color: var(--caption);
+  line-height: 12px;
+}
+
+/* --- moving scenes ------------------------------------------------- */
 
 tr.scene-row.dragging td {
   opacity: 0.4;
@@ -44,96 +149,11 @@ tr.scene-row.drop-above td {
 tr.scene-row.drop-below td {
   box-shadow: inset 0 -2px 0 var(--amber);
 }
-tr.scene-row.drop-above td.scene {
+tr.scene-row.drop-above :is(td.scene-meta, td.scene-role) {
   box-shadow: inset 0 2px 0 var(--amber), var(--scene-gutter-plug);
 }
-tr.scene-row.drop-below td.scene {
+tr.scene-row.drop-below :is(td.scene-meta, td.scene-role) {
   box-shadow: inset 0 -2px 0 var(--amber), var(--scene-gutter-plug);
-}
-td.scene .scene-bpm,
-td.scene .scene-key {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: 1px;
-}
-td.scene .scene-bpm {
-  flex: 0 0 26px;
-  color: var(--detail);
-}
-td.scene .scene-key {
-  flex: 0 0 28px;
-  margin-right: 8px;
-  color: var(--caption);
-}
-td.scene .scene-bpm.none,
-td.scene .scene-key.none {
-  color: var(--caption);
-}
-
-td.scene .role-chip {
-  display: inline-block;
-  flex: none;
-  border: none;
-  font-family: var(--mono);
-  margin: 0 12px 0 4px;
-  width: var(--role-chip-w);
-  padding: 0 5px;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-radius: var(--radius-sm);
-  font-size: 9px;
-  line-height: 14px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  vertical-align: 1px;
-  background: var(--bd3);
-  color: var(--ui);
-}
-td.scene .role-chip:hover {
-  filter: brightness(1.25);
-  color: var(--fg);
-}
-
-td.scene .role-chip.none {
-  background: var(--bd2);
-  color: var(--caption);
-}
-td.scene .role-chip.uncolored {
-  background: transparent;
-  border: 1px dashed var(--bd3);
-  color: var(--caption);
-  line-height: 12px;
-}
-
-td.scene.picked {
-  --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--sel);
-  background: var(--sel);
-  box-shadow: inset 2px 0 0 var(--amber), var(--scene-gutter-plug);
-}
-
-td.scene .fire {
-  padding: 0;
-  width: 12px;
-  border: none;
-  background: none;
-  color: var(--idle);
-  font-size: 7px;
-  line-height: 1;
-  vertical-align: middle;
-}
-td.scene .fire:hover {
-  color: var(--amber);
-}
-td.scene .fire.live {
-  color: var(--green);
-}
-td.scene .fire.fired {
-  color: var(--amber);
-  animation: bsv-blink 0.5s infinite;
 }
 
 /* --- play state --------------------------------------------------- */
@@ -154,12 +174,13 @@ td.cell.empty.fired {
 }
 
 td.cell,
-td.scene {
+td.scene-meta,
+td.scene-role {
   scroll-margin-top: calc(var(--header-h) + var(--gutter));
 }
 
 td.cell {
-  scroll-margin-left: calc(var(--scene-col-w) + 2 * var(--gutter));
+  scroll-margin-left: calc(var(--meta-col-w) + var(--col-w) + 3 * var(--gutter));
   width: var(--col-w);
   max-width: var(--col-w);
   height: 20px;
@@ -263,7 +284,7 @@ td.cell.landing {
 }
 
 td.cell.active,
-td.scene.active {
+td.scene-role.active {
   outline: 1px solid var(--fg);
   outline-offset: -3px;
 }

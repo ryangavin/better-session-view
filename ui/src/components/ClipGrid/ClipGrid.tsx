@@ -9,8 +9,7 @@ import {
   metricsFor,
   isViewportColumnWidth,
   tableWidth,
-  ROLE_CHIP_W,
-  SCENE_COL_W,
+  META_COL_W,
   type ColumnWidth,
 } from '../../lib/columnWidth.js';
 import type { BridgeState, PlayState } from '../../hooks/useBridge.js';
@@ -230,16 +229,9 @@ export function ClipGrid({
     // the documented Master Track.color atom. Undefined also tolerates a UI
     // briefly paired with an older bridge during development.
     if (snapshot.masterColor == null) return undefined;
-    const ink = inkOn(snapshot.masterColor);
     return {
       background: hex(snapshot.masterColor),
-      color: ink,
-      // The controls sit directly on the Master fill. Derive their edge and
-      // ink from the same black-or-white contrast choice as the title instead
-      // of putting a second surface on top of the header color. Eight-digit
-      // hex is already used throughout this grid.
-      '--scene-action-ink': `${ink}d9`,
-      '--scene-action-border': `${ink}52`,
+      color: inkOn(snapshot.masterColor),
     } as CSSProperties;
   }, [snapshot.masterColor]);
 
@@ -252,8 +244,7 @@ export function ClipGrid({
     // source. Viewport modes write their two moving values through the resize
     // observer so resizing never has to re-render the scene rows.
     const common = {
-      '--scene-col-w': `${SCENE_COL_W}px`,
-      '--role-chip-w': `${ROLE_CHIP_W}px`,
+      '--meta-col-w': `${META_COL_W}px`,
     } as CSSProperties;
     if (isViewportColumnWidth(columnWidth)) return common;
     return {
@@ -270,32 +261,39 @@ export function ClipGrid({
           otherwise have to distribute its width across the columns it covers,
           at which point the widths stop being exact. */}
       <colgroup>
-        <col className="scene-col" />
+        <col className="meta-col" />
+        {/* Master is a track column in everything that costs width: it takes
+            `--col-w` from the same `<col>` rule the tracks do, which is what
+            makes its strip the same size as theirs and its role chips the same
+            size as the clips beside them. */}
+        <col />
         {columns.map((c) => (
           <col key={c.kind === 'track' ? `t${c.track.i}` : `g${c.group.i}`} />
         ))}
       </colgroup>
       <thead>
         <tr>
-          {/* The heading leads from the left. Reorder, color and add follow the
-              spacer from the right; app-only display controls live up top.
+          {/* The metadata column's heading. It is the app's own column — scene
+              numbers and the facts a scene states — so it carries the app's own
+              actions and none of Live's identity. The heading leads from the
+              left; reorder, color and add follow the spacer from the right.
 
               Flex on a wrapper div, never on the `th`: `display: flex` on a
               table cell stops it being a table cell and takes the grid's fixed
               layout with it. */}
-          <th className="scene-h" style={masterFill}>
-            <div className="scene-h-line">
-              <span className="scene-h-title">Songs</span>
+          <th className="meta-h">
+            <div className="meta-h-line">
+              <span className="meta-h-title">Songs</span>
               <div className="spacer" />
-              <div className="scene-action-groups">
+              <div className="song-action-groups">
                 <ControlGroup
-                  className="scene-action-group"
+                  className="song-action-group"
                   label="Live Set actions"
                   appearance="bare"
                 >
                   <ControlButton
                     icon
-                    className="scene-action"
+                    className="song-action"
                     aria-label="Reorder songs"
                     disabled={songCount === 0}
                     title="Reorder songs by name, tag, key, BPM, or drag"
@@ -305,7 +303,7 @@ export function ClipGrid({
                   </ControlButton>
                   <ControlButton
                     icon
-                    className="scene-action"
+                    className="song-action"
                     aria-label="Color songs"
                     disabled={songCount === 0}
                     title="Color songs by key, BPM, rainbow, or random"
@@ -315,7 +313,7 @@ export function ClipGrid({
                   </ControlButton>
                   <ControlButton
                     icon
-                    className="scene-action"
+                    className="song-action"
                     aria-label="Add a song"
                     title="Add a new song with eight scenes"
                     onClick={onAddSong}
@@ -325,6 +323,15 @@ export function ClipGrid({
                 </ControlGroup>
               </div>
             </div>
+          </th>
+          {/* Live's Master track, at the head of its own column — filled with
+              Live's Master color exactly as every track header is filled with
+              its track's. What sits under it is Live's too: the scene
+              launchers, the stop-all button and the Master strip. */}
+          <th className="master-h" style={masterFill} title="Live's Master track">
+            <span className="th-line">
+              <span className="th-label">Master</span>
+            </span>
           </th>
           {columns.map((c, i) => {
             // The band that replaced the group header row. A colored rule along
@@ -510,7 +517,10 @@ export function ClipGrid({
         <tfoot>
           {showStopClips && (
             <tr className="stop-row">
-              <td>
+              {/* The metadata column holds nothing in the footer: everything
+                  down here belongs to a Live output, and it isn't one. */}
+              <td className="meta-cell" />
+              <td className="master-cell">
                 <StopClipsButton
                   label="Stop all clips"
                   title="Stop all clips, keep the song rolling (Esc)"
@@ -542,7 +552,8 @@ export function ClipGrid({
           )}
           {showSends && (
             <tr className="sends-row">
-              <td className="sends-cell master" aria-label="Master has no sends" />
+              <td className="sends-cell meta-cell" />
+              <td className="sends-cell master-cell" aria-label="Master has no sends" />
               {columns.map((column) => {
                 const track = column.kind === 'track' ? column.track : column.group;
                 return (
@@ -562,9 +573,10 @@ export function ClipGrid({
               className={`meter-row${meterResize.dragging ? ' dragging' : ''}`}
               {...meterResize.rowProps}
             >
-              {/* The scene overview is the grid's master column, so its meter is
-                  structurally owned by this cell just as each track owns the
-                  meter cell below its own column. */}
+              <td className="meter-cell meta-cell" />
+              {/* Master owns a column now, so its strip is the same 56px as
+                  every other strip in the row rather than one centered in a
+                  cell three times too wide for it. */}
               <TrackMeter
                 meterKey="master"
                 label="Master"

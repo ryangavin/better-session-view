@@ -28,24 +28,20 @@ export const COLUMN_WIDTHS: readonly ColumnWidth[] = [
 export const DEFAULT_COLUMN_WIDTH: ColumnWidth = 'm';
 
 /**
- * The scene metadata and name column, px. Fixed, not a preset.
+ * The scene metadata column, px. Fixed, not a preset.
  *
- * The setting is about how many *tracks* fit on screen. A scene name is the
- * same length whatever that answer is, and shrinking the column to match `s`
- * only truncated names that were already the row's label — you lose the thing
- * you navigate by to gain one more track column. Its fixed width also keeps
- * the scene-number, BPM, key and role slots aligned in every mode.
- */
-export const SCENE_COL_W = 316;
-
-/**
- * The role chip that leads a scene name, px.
+ * The setting is about how many *tracks* fit on screen, and a scene number is
+ * the same three digits whatever the answer is. Its fixed width is also what
+ * keeps the scene-number, BPM and key slots on one vertical line in every mode,
+ * and what the song headers align their own facts against.
  *
- * Sized to its *content* rather than scaled with the grid: nine characters
- * covers nearly every role, and a wider chip is only more whitespace inside it.
- * Longer roles ellipsis.
+ * Sized by the widest thing in the column, which is its **heading** rather than
+ * a row: the number, BPM and key need about 100px, while the Songs label and the
+ * three song-workflow buttons need 158px between them and the cell's padding.
+ * This is that measured floor plus a few pixels of air, because a column whose
+ * own header doesn't fit is a column lying about its width.
  */
-export const ROLE_CHIP_W = 62;
+export const META_COL_W = 164;
 
 export interface ColumnMetrics {
   /** One track column, px. */
@@ -65,10 +61,12 @@ export function metricsFor(w: ColumnWidthPreset): ColumnMetrics {
 
 /**
  * Total table width for `n` track columns, px. `table-layout: fixed` needs this
- * stated explicitly — see the note in ClipGrid/ClipGrid.css.
+ * stated explicitly — see the note in ClipGrid/ClipGrid.tsx.
  *
- * border-spacing sits between every column *and* at both table edges, so n + 1
- * track columns (the scene column is the +1) means n + 2 gaps.
+ * The Master column is a track column in every way that costs width, so `n`
+ * tracks means `n + 1` columns of `col` beside the fixed metadata one.
+ * border-spacing sits between every column *and* at both table edges, so
+ * `n + 2` columns means `n + 3` gaps.
  */
 export function tableWidth(
   w: ColumnWidthPreset,
@@ -76,7 +74,7 @@ export function tableWidth(
   spacing = 2,
 ): number {
   const m = metricsFor(w);
-  return SCENE_COL_W + trackCount * m.col + (trackCount + 2) * spacing;
+  return META_COL_W + (trackCount + 1) * m.col + (trackCount + 3) * spacing;
 }
 
 export interface ViewportColumnLayout {
@@ -96,6 +94,11 @@ export function isViewportColumnWidth(w: ColumnWidth): w is ViewportColumnWidth 
  * Auto shares the width among the rendered tracks and stops at Narrow's 74px
  * readability floor. The 8/16 modes instead size one or two hardware banks
  * exactly; any tracks beyond that bank make the full table scroll.
+ *
+ * **The Master column takes a track's share without being one of the eight.**
+ * A bank mode is sizing the tracks a controller reaches, and Master isn't one
+ * of them — but it is the same width as one, so the space is divided by
+ * `target + 1` while the bank still counts `target`.
  */
 export function viewportColumnLayout(
   mode: ViewportColumnWidth,
@@ -107,13 +110,13 @@ export function viewportColumnLayout(
   if (count === 0) return { col: METRICS.m.col, table: tableWidth('m', 0, spacing) };
 
   const target = mode === 'auto' ? count : Number(mode);
-  const targetGutters = (target + 2) * spacing;
-  const trackSpace = Math.max(0, availableWidth - SCENE_COL_W - targetGutters);
-  const fitted = trackSpace / target;
+  const targetGutters = (target + 3) * spacing;
+  const trackSpace = Math.max(0, availableWidth - META_COL_W - targetGutters);
+  const fitted = trackSpace / (target + 1);
   const col = mode === 'auto' ? Math.max(METRICS.m.col, fitted) : Math.max(1, fitted);
   return {
     col,
-    table: SCENE_COL_W + count * col + (count + 2) * spacing,
+    table: META_COL_W + (count + 1) * col + (count + 3) * spacing,
   };
 }
 

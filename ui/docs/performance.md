@@ -33,8 +33,8 @@ covers exactly that, so padding there is a band where scrolled clip cells show t
 
 The sticky header row's calculated height is **36px** — 5px group band + 2px gutter + 2px
 label clearance + the main toolbar's 22px control height + 5px bottom padding. The
-scene-column groups and label share that 22px term, so `--header-h` and the row's actual
-height stay together.
+metadata header's Songs label and its song-action buttons share that 22px term, so
+`--header-h` and the row's actual height stay together.
 
 **Rows are `memo`ized.** `ClipGrid` renders `sceneCount` rows × non-group tracks —
 around 6,800 cells at full size. Memoizing the row is what keeps toggling one cell

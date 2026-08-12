@@ -83,8 +83,11 @@ Two separate things, and keeping them separate is the point:
   keys move, and what will hold the name field. Called *active cell* after spreadsheets
   rather than *cursor*, which in a DAW means a position on the timeline.
 
-The scene name column is one of the grid's cells, so the active cell can sit there;
-`moveActive` handles the crossing between it and the track columns at the left edge.
+The Master column's scene cell is one of the grid's cells, so the active cell can sit
+there; `moveActive` handles the crossing between it and the track columns at the left
+edge. There are still exactly two states, a clip or the scene, because the metadata
+column left of it is a row label rather than a cell you work in — it holds no clip, no
+role and nothing to fire.
 Horizontal movement walks the **rendered column order**, so a collapsed group is invisible
 to the arrow keys as well as to the eye — that's why `columns` is computed in
 `useTrackColumns` and passed down through `App` rather than living in `ClipGrid`.
@@ -110,42 +113,60 @@ immediately.
 
 | | track column | fits in ~1100px |
 |---|---|---|
-| Narrow (`m`) | 74px | ~14 tracks |
-| Wide (`l`) | 116px | ~9 tracks |
+| Narrow (`m`) | 74px | ~11 tracks |
+| Wide (`l`) | 116px | ~7 tracks |
 | `auto` | at least 74px | all rendered tracks, when they fit readably |
 | `8` | viewport-derived | exactly one 8-track bank |
 | `16` | viewport-derived | exactly two 8-track banks |
 
-**Auto divides the width left after the fixed scene column among every rendered track.**
-Narrow's 74px is its floor: a large set keeps horizontal scrolling rather than turning
-clip names into unusable slivers.
+**Auto divides the width left after the fixed metadata column among every rendered
+track.** Narrow's 74px is its floor: a large set keeps horizontal scrolling rather than
+turning clip names into unusable slivers.
 
 **8 and 16 divide that same space by a bank size instead.** The full table still contains
 every rendered track, so the ninth or seventeenth column begins the horizontal overflow.
 These modes deliberately do not inherit Narrow's floor: their job is to preview the exact
 one- or two-device layout, even in a narrow browser.
 
+**Master takes a track's share without being one of the eight.** It is a track column in
+everything that costs width, so the free space is divided by `target + 1` while the bank
+still counts `target` — otherwise asking for one device's worth of tracks would quietly
+give you seven of them and a Master.
+
 All three viewport layouts respond to the browser resizing, the rail opening or closing,
 and group columns folding or unfolding. `useViewportColumnWidth` observes the grid's own
 content box, not `window.innerWidth`, because the rail is part of the space calculation.
 
-**The setting sizes the track columns and nothing else.** The scene name column is a
-constant 316px — `SCENE_COL_W` — and the role chip a constant 62px.
-They scaled with the presets once; the question the setting answers is *how many tracks
-fit on screen*, and a scene name is the same length whatever the answer is. Shrinking it
-at `s` truncated the label you navigate the rows by to buy one more column of clips.
+**The setting sizes every column that holds a Live output, and nothing else.** That is
+the track columns and Master; the metadata column is a constant 164px — `META_COL_W`.
+The question the setting answers is *how many tracks fit on screen*, and a scene number
+is the same three digits whatever the answer is. The presets scaled it once, and
+shrinking it truncated the label you navigate the rows by to buy one more column of
+clips.
+
+Its 164px is set by the widest thing in the column, which is its **heading** rather than
+any row: the number, BPM and key need about 100px, while the Songs label and its three
+song-workflow buttons need 158px between them and the cell's padding. The constant is
+that measured floor plus a few pixels of air — a column whose own header doesn't fit is a
+column lying about its width, and the first version of this one was 148px and clipped.
+
+**The role chip has no width of its own any more.** It fills the Master column's cell,
+so it moves with the setting exactly as a clip does — which is the point of it being a
+column rather than a chip parked at the end of a metadata strip.
 
 The choice persists to `localStorage` under `bsv.columnWidth`, and `saveColumnWidth`
 swallows storage failures — a width that doesn't persist isn't worth failing a render
 over.
 
-**The scene/song column is sticky on the left.** The header, every scene cell, folded and
-open song headers, and the Master meter all pin at the table's existing 2px outer gutter.
-The top-left and bottom-left intersections sit above their independently sticky rows.
-Scene cells carry an opaque background because a sticky transparent cell would show clips
-moving underneath it. Track cells also reserve the pinned width in `scroll-margin-left`,
-so keyboard `scrollIntoView({ inline: 'nearest' })` cannot park the active clip behind the
-scene column.
+**Both left-hand columns are sticky.** The metadata column pins at the table's existing
+2px outer gutter and Master pins at `--role-col-left`, which is that gutter plus the
+metadata column plus the gutter between them — header, scene cell, folded song header and
+footer alike, so each of the four corners sits above its independently sticky row. Every
+pinned cell carries an opaque background, and both plug the transparent 2px gutter to
+their left with a flat `box-shadow` of that same surface; a sticky cell that let the
+gutter through would show clips sliding past in a 2px slot. Track cells reserve the whole
+pinned width in `scroll-margin-left`, so keyboard `scrollIntoView({ inline: 'nearest' })`
+cannot park the active clip behind either of them.
 
 Two things in here are load-bearing:
 
@@ -155,7 +176,8 @@ column and the grid stops being uniform — and the browser has to measure every
 find out. With a fixed table, `width: auto` would stretch to fill the container and dump
 the slack into the last column, so `ClipGrid` states the table's own width; the used
 width becomes the greater of that and the sum of the columns. `tableWidth()` computes it,
-including the `border-spacing` gaps (n + 1 columns means n + 2 gaps).
+including the `border-spacing` gaps — `n` tracks is `n + 2` columns, metadata and Master
+being the other two, and `n + 2` columns means `n + 3` gaps.
 
 **Widths ride down as CSS custom properties on the `<table>`, not as props on `Row`.**
 `Row` is memoized; a new prop would re-render all 848 scenes on every width change. As
@@ -175,7 +197,7 @@ someone reached for a right-click. `keys.ts` owns that decision.
 |---|---|---|
 | clip cell | click selects · ⇧ extends a block · **▶ fires the clip** | ⌘-click **fires the clip** |
 | empty slot | click selects · **■ stops the track**, **● records when armed** | ⌘-click does the same |
-| scene name | click selects the row · ⇧ extends over scenes · **number drags** | ⌘-click **fires the scene** |
+| scene cells | click selects the row · ⇧ extends over scenes · **number drags** · **▶ fires the scene** · the chip opens the role menu | ⌘-click **fires the scene** |
 | song header | click folds · title selects · **drag reorders** | — |
 | track header | click a group to collapse | ⌘-click **stops that track** |
 | keys | `↑↓←→` move the active cell | `⌘↑ ⌘↓` **move and fire** · `⌘⏎` fire |
@@ -188,8 +210,9 @@ modifier you're holding.
 The ▶ launchers are the plain-click exceptions, all for the same principled reason:
 firing is the button's only job, and the rule exists to keep firing away from
 *selection*, which a button that can't select has nothing to take from. The one in the
-**scene gutter** fires the scene — the primary gesture, so it has to be visible rather
-than a modifier away. The one in a **group's slot** fires the group, which has no
+**Master column** fires the scene — the primary gesture, so it has to be visible rather
+than a modifier away, and it sits at the left end of that cell exactly as a clip's does,
+in the place Live puts a scene launcher. The one in a **group's slot** fires the group, which has no
 selection to protect. The one in a **clip cell** fires that clip, which is Live's own
 launcher in Live's own place; the rest of the cell around it is untouched, so an
 unmodified click there still selects and opens the editor. A launcher never moves the

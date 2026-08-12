@@ -4,18 +4,18 @@ The set-wide song controls: the running order and coloring by rule — draft, pr
 
 ## Set-wide song controls
 
-The scene column is headed **Songs** on the left. On the right, order, color and Add share
-one Live Set group in that order. The app-only song-index and fold toggles live together
-in the main header's first button group after the logo.
+The metadata column is headed **Songs** on the left. On the right, order, color and Add
+share one Live Set group in that order. The app-only song-index and fold toggles live
+together in the main header's first button group after the logo.
 
-That header cell uses **Live's Master track color**, because the scene/song overview is
-the grid's Master column (the meter beneath it is Master too). Master lives outside
-`Song.tracks`, so the snapshot carries its RGB separately and `inkOn()` chooses black or
-white text exactly as it does for ordinary track headers. The action group stays
-transparent and uses that same ink choice for its icons, outline and dividers, rather than
-placing another surface on the Master color. If Master color cannot be read, the cell keeps
-the neutral app surface. A fixed Master color observer updates it after a recolor in Live
-without requiring a full snapshot.
+**That header carries no Live color.** It heads the column of the app's own facts about a
+scene — its number, its BPM, its key — and a column with no Live output under it has
+nothing of Live's to wear, so the cell takes the app surface and the action group ordinary
+neutral ink. It was filled with Live's Master track color once, when one column did both
+jobs and carried Master's meter and Stop All in the footer beneath those facts. That was
+an honest reading of the arrangement, and it still made an app label look like the name of
+a Live track. Splitting the two jobs into two columns sent the color to the Master one,
+where a filled header means exactly what it means above every other track.
 
 The running-order and coloring workflows work the same way: a draft you can push around
 for free, a preview of exactly what will be written, and one button that writes it. That

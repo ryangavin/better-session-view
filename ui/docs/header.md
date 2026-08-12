@@ -48,11 +48,11 @@ with 6px of air above and below plus its 1px bottom border.
   with no accessible name is a button for sighted mouse users and nobody else, and the
   `title` is now the only place longer meanings — what the Master stop slot spares, that
   Snapshot re-walks the whole set — can still be said in words.
-- **The scene-column controls reuse the same primitive, size and glyph set as the main
-  header**: 26×22px buttons with 14px icons. The grid header's calculated height grows
-  around them with equal space above and below, keeping the Songs controls and every
-  track heading on the same vertical center. The **Songs** heading is 16px while ordinary
-  track headings remain 9px.
+- **The metadata column's controls reuse the same primitive, size and glyph set as the
+  main header**: 26×22px buttons with 14px icons. The grid header's calculated height
+  grows around them with equal space above and below, keeping the song actions, the Songs
+  label and every track heading on the same vertical center. The **Songs** heading is 16px
+  while ordinary track headings remain 9px.
   Order, color and Add share one right-aligned group in that order. Their titles say what
   each control does.
 - **Fold, metronome, Scale Mode and Arrangement Record keep one glyph and light instead of

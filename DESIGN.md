@@ -14,8 +14,9 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   is used for compact labels, facts and grid headings.
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
   and are vertically centered with equal space above and below.
-- The grid uses a 2px gutter. Its scene column is 290px and its role chip is 62px; track
-  width modes are defined in [`ui/src/lib/columnWidth.ts`](ui/src/lib/columnWidth.ts).
+- The grid uses a 2px gutter. Its metadata column is a constant 164px; Master is a track
+  column and takes the track width, so the role chip filling it moves with the setting.
+  Track width modes are defined in [`ui/src/lib/columnWidth.ts`](ui/src/lib/columnWidth.ts).
 - The song index is as wide as the columns it shows and no wider: both its width and its
   grid track list are computed from the same visible-column list in
   [`ui/src/lib/songIndexColumns.ts`](ui/src/lib/songIndexColumns.ts), so turning a column
@@ -51,7 +52,7 @@ earns it.
 - Icon-only buttons use the centered `.icon-btn` primitive and carry both an `aria-label`
   and a `title`.
 - Icons are inline SVG on a 24-unit grid, draw with `currentColor`, and render at 14px by
-  default. The Songs-column controls use the main header's 26×22px icon-button size.
+  default. The metadata column's controls use the main header's 26×22px icon-button size.
 - Related controls generally share a bordered button group with dividers between segments.
   Controls with different consequences use separate groups: scene folding changes only
   this app's display; the song actions in the Songs header change the Live Set. The Songs
@@ -94,11 +95,12 @@ earns it.
 
 ## Grid
 
-- Scenes run down; tracks run across. The header row and scene column are sticky.
-- The Songs header uses Live's Master track color, with the neutral surface as its fallback.
-  Its transparent action group derives borders and icon ink from the same black-or-white
-  contrast choice as the title, so it remains coherent on light and dark Master colors
-  without covering the header color.
+- Scenes run down; tracks run across. The header row is sticky, as are both left-hand
+  columns: the metadata one and Master.
+- The Master header is filled with Live's Master track color, the neutral surface as its
+  fallback, exactly as every track header is filled with its own track's color.
+- The Songs header carries no Live color. It heads the app's own column, so it takes the
+  app surface and its action buttons take ordinary neutral ink.
 - Song headers are separated with surfaces and the grid gutter rather than borders.
 - A song header stacks the artist in dim mono under the song name, and only when the set
   names one. The name and artist are the only part that stacks: the fold glyph, bpm, key,
@@ -111,8 +113,9 @@ earns it.
   cell's content box.
 - Live colors are rendered from Live's palette. Text laid over a Live color chooses dark
   or light ink with the helpers in [`core/src/color.ts`](core/src/color.ts).
-- One ▶ launcher means "fire this" everywhere it appears: the scene gutter, a group's slot
-  and a clip cell. All three turn green while they sound and amber while they wait.
+- One ▶ launcher means "fire this" everywhere it appears: the Master column's scene cell,
+  a group's slot and a clip cell. All three turn green while they sound and amber while
+  they wait.
 - A clip cell's launcher is a button-shaped surface at the slot's left end, rounded on the
   left to continue the clip's own corners and square where it meets the name. It darkens
   the clip's color rather than taking a fixed one, since the ground under it is whatever
@@ -125,7 +128,7 @@ earns it.
   recessed: only the clip launcher needs a ground, because only it sits on a Live color.
   Their lit states fill, like the launcher's.
 - The mixer and stop slots are one resizable sticky table footer, so every strip remains
-  aligned with its track column and Master remains pinned under Songs. Optional stop,
+  aligned with its own column and Master's stays pinned in the Master one. Optional stop,
   sends and meter sections stack as table rows and use one 2px border for every join; that
   same border is the meter resize handle. The output rail grows from 8px to 16px when the
   column has room, then stops so whitespace remains.
