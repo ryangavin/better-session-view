@@ -56,7 +56,8 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const toggleStopClips = useCallback(() => {
     setShowStopClips((shown) => !shown);
   }, []);
-  const bridge = useBridge(showMeters, showSends);
+  // The status displays live in the stop row, so its toggle is their watch.
+  const bridge = useBridge(showMeters, showSends, showStopClips);
 
   // `bridge` is a fresh object every render, so this memo doesn't stop anything
   // re-rendering — App re-renders when bridge state changes, exactly as it did

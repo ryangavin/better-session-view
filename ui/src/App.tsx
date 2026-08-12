@@ -376,7 +376,9 @@ export function App() {
               showSends={showSends}
               subscribeMeters={bridge.subscribeMeters}
               subscribeMixer={bridge.subscribeMixer}
+              subscribeClipStatus={bridge.subscribeClipStatus}
               setMixer={bridge.setMixer}
+              tempo={bridge.transport?.tempo}
               columnWidth={columnWidth}
               palette={bridge.palette}
               roleColors={roleColors}

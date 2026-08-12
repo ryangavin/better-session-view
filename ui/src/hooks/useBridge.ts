@@ -51,6 +51,7 @@ export interface SongPosition {
 }
 
 export type MeterListener = (frame: BSV.MeterFrame) => void;
+export type ClipStatusListener = (frame: BSV.ClipStatusFrame) => void;
 export type MixerListener = (state: BSV.MixerState | null) => void;
 
 /** One write, of either kind or both. Empty arrays rather than optionals so
@@ -123,6 +124,12 @@ export interface BridgeState {
   subscribeMeters: (listener: MeterListener) => () => void;
   /** Mixer state bypasses App state so automated faders redraw one strip. */
   subscribeMixer: (listener: MixerListener) => () => void;
+  /**
+   * The playing clip in each track, for the stop row's status displays. Same
+   * arrangement as the meters and for the same reason: a playhead moving at
+   * 20 Hz through App state would re-render every row in the grid.
+   */
+  subscribeClipStatus: (listener: ClipStatusListener) => () => void;
 }
 
 /**
@@ -138,7 +145,11 @@ export interface BridgeState {
  * Read it through `useBridgeSession()` instead — see BridgeProvider for what
  * calling it from `App` used to cost.
  */
-export function useBridge(watchMeters = false, watchSends = false): BridgeState {
+export function useBridge(
+  watchMeters = false,
+  watchSends = false,
+  watchStatus = false,
+): BridgeState {
   const client = useMemo(() => new BridgeClient(), []);
   const { log, say } = useLog();
 
@@ -237,9 +248,11 @@ export function useBridge(watchMeters = false, watchSends = false): BridgeState 
         case 'playState':
           setPlay({ isPlaying: event.isPlaying, tracks: event.tracks });
           break;
-        // The output meters subscribe to this stream directly. Putting 30 Hz
-        // frames in this hook's state would re-render App and the whole grid.
+        // The output meters and the stop row's status displays subscribe to
+        // these streams directly. Putting 20–30 Hz frames in this hook's state
+        // would re-render App and the whole grid.
         case 'meterLevels':
+        case 'clipStatus':
         case 'mixerState':
           break;
         case 'songPosition':
@@ -335,6 +348,15 @@ export function useBridge(watchMeters = false, watchSends = false): BridgeState 
     return () => client.send({ type: 'watchMeters', on: false });
   }, [client, lomReady, trackCount, watchMeters]);
 
+  // The status displays read clip properties, which nothing else here does.
+  // They cost only while the stop row they draw in is on screen, and the read
+  // loop walks the set by track, so a new track count has to rebuild it.
+  useEffect(() => {
+    if (!lomReady || trackCount === undefined || !watchStatus) return;
+    client.send({ type: 'watchStatus', on: true });
+    return () => client.send({ type: 'watchStatus', on: false });
+  }, [client, lomReady, trackCount, watchStatus]);
+
   // Each displayed return adds one DeviceParameter observer per set track. Keep
   // those out of Live entirely until the neighboring sends toggle is on.
   useEffect(() => {
@@ -411,6 +433,17 @@ export function useBridge(watchMeters = false, watchSends = false): BridgeState 
         if (event.type === 'status' && !event.lomReady) {
           listener({ master: 0, tracks: [] });
         }
+      }),
+    [client],
+  );
+
+  const subscribeClipStatus = useCallback(
+    (listener: ClipStatusListener) =>
+      client.subscribe((event) => {
+        if (event.type === 'clipStatus') listener(event.frame);
+        // A held pie or a frozen countdown reads as a clip still playing. Empty
+        // the frame the moment the source goes away, same as the meters.
+        if (event.type === 'status' && !event.lomReady) listener({ tracks: [] });
       }),
     [client],
   );
@@ -895,5 +928,6 @@ export function useBridge(watchMeters = false, watchSends = false): BridgeState 
     selectScene,
     subscribeMeters,
     subscribeMixer,
+    subscribeClipStatus,
   };
 }

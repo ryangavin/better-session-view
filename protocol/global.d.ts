@@ -233,6 +233,46 @@ declare namespace BSV {
     tracks: TrackMeterLevel[];
   }
 
+  /**
+   * The clip playing in one track, in the terms its status display needs.
+   *
+   * Clip-addressed, unlike `TrackPlayState`, and affordable for the same reason
+   * that one is not: there is at most one playing clip per track, so this costs
+   * per *track* even though it reads clip properties. `TrackPlayState.playing`
+   * is what says which clip, and the bridge follows it.
+   *
+   * Every time value here shares one unit and `inSeconds` is which. Live gives
+   * `playing_position`, `loop_start` and `loop_end` in beats for MIDI and
+   * warped audio clips and in seconds for unwarped audio; mixing the two
+   * produces a loop phase quietly wrong by the tempo.
+   */
+  interface PlayingClip {
+    /** Track index, in the same space as `Snapshot.tracks`. */
+    t: number;
+    /** Live's `Clip.playing_position`. */
+    position: number;
+    /** For unlooped clips Live reports the start and end markers in these. */
+    loopStart: number;
+    loopEnd: number;
+    looping: boolean;
+    recording: boolean;
+    /** True for unwarped audio, whose times Live gives in seconds. */
+    inSeconds: boolean;
+    signatureNumerator: number;
+    signatureDenominator: number;
+  }
+
+  /**
+   * One coherent frame of every track that has something playing in it.
+   *
+   * Tracks with no playing clip are absent rather than present and empty: the
+   * frame is sent many times a second, and the common set has far more silent
+   * tracks than sounding ones.
+   */
+  interface ClipStatusFrame {
+    tracks: PlayingClip[];
+  }
+
   /** One writable Live mixer parameter, in its native DeviceParameter range. */
   interface MixerParameterState {
     value: number;
@@ -585,6 +625,11 @@ declare namespace BSV {
     | { id?: number; type: 'setMixer'; target: MixerTarget; patch: MixerPatch }
     | { id?: number; type: 'watchPlay'; on: boolean }
     | { id?: number; type: 'watchMeters'; on: boolean }
+    /**
+     * Follow the playing clip in every track, for the per-track status display.
+     * Held only while the stop row is on screen, which is where it draws.
+     */
+    | { id?: number; type: 'watchStatus'; on: boolean }
     | { id?: number; type: 'watchSends'; on: boolean }
     | { id?: number; type: 'watchTransport'; on: boolean }
     /**
@@ -673,6 +718,10 @@ declare namespace BSV {
     | {
         type: 'meterLevels';
         frame: MeterFrame;
+      }
+    | {
+        type: 'clipStatus';
+        frame: ClipStatusFrame;
       }
     | { type: 'mixerState'; state: MixerState }
     | {

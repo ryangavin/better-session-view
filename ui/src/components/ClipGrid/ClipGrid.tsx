@@ -15,6 +15,7 @@ import {
 } from '../../lib/columnWidth.js';
 import type { BridgeState, PlayState } from '../../hooks/useBridge.js';
 import { useMeters } from '../../hooks/useMeters.js';
+import { useTrackStatus } from '../../hooks/useTrackStatus.js';
 import { useMixer } from '../../hooks/useMixer.js';
 import { useViewportColumnWidth } from '../../hooks/useViewportColumnWidth.js';
 import { armedTracks, marksByScene } from '../../lib/rowMarks.js';
@@ -31,6 +32,7 @@ import { ControlButton, ControlGroup } from '../Control.js';
 import { Row, sceneDropEdge } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
 import { TrackMeter } from './TrackMeter.js';
+import { TrackStatusDisplay } from './TrackStatus.js';
 import { TrackSends } from './TrackSends.js';
 import { useMeterResize } from './useMeterResize.js';
 
@@ -47,7 +49,10 @@ export interface Props {
   showSends: boolean;
   subscribeMeters: BridgeState['subscribeMeters'];
   subscribeMixer: BridgeState['subscribeMixer'];
+  subscribeClipStatus: BridgeState['subscribeClipStatus'];
   setMixer: BridgeState['setMixer'];
+  /** Live's song tempo, which is what puts a one-shot's countdown in seconds. */
+  tempo: number | undefined;
   columnWidth: ColumnWidth;
   /** Live's palette, for resolving a song header's color index to an RGB. */
   palette: number[];
@@ -161,7 +166,9 @@ export function ClipGrid({
   showSends,
   subscribeMeters,
   subscribeMixer,
+  subscribeClipStatus,
   setMixer,
+  tempo,
   columnWidth,
   palette,
   roleColors,
@@ -211,6 +218,7 @@ export function ClipGrid({
     play.tracks.some((state) => state.playing >= 0) &&
     play.tracks.every((state) => state.playing < 0 || state.fired === STOP_FIRED);
   const meters = useMeters(subscribeMeters, showMeters);
+  const statuses = useTrackStatus(subscribeClipStatus, showStopClips, tempo);
   const mixer = useMixer(subscribeMixer, showMeters || showSends);
   const tableRef = useRef<HTMLTableElement>(null);
   const meterResize = useMeterResize(tableRef, showMeters);
@@ -520,6 +528,12 @@ export function ClipGrid({
                       disabled={!canControlLive}
                       onClick={() => onStopTrack(track.i)}
                     />
+                    {/* Live's Track Status Display, in the place Live puts it.
+                        Drawn over the stop button rather than beside it, and
+                        deaf to the pointer, so the whole cell stays one large
+                        stop target while still reporting what the track is
+                        doing. */}
+                    <TrackStatusDisplay store={statuses} t={track.i} />
                   </td>
                 );
               })}

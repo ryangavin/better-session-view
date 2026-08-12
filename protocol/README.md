@@ -60,6 +60,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `setMixer` `{ target, patch }` | update one track or Master mixer strip, including one indexed send |
 | `watchPlay` `{ on }` | install the per-track play-state observers |
 | `watchMeters` `{ on }` | install the track/Master level and mixer-control observers |
+| `watchStatus` `{ on }` | follow the playing clip in each track, for the stop row's status displays |
 | `watchSends` `{ on }` | add/remove per-track send observers while the mixer is open |
 | `watchTransport` `{ on }` | observe tempo, metronome, launch quantization, Arrangement Record and current scale |
 | `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
@@ -82,6 +83,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `delta` | — a partial re-read after a change made in Live |
 | `playState` | — a play-state observer fired |
 | `meterLevels` | — complete current track and master output-level frame |
+| `clipStatus` | — the clip playing in each track; silent tracks are absent from the frame |
 | `mixerState` | — complete current activator, Solo, Arm, volume, pan and optional sends state |
 | `songPosition` | — the Arrangement position crossed a sixteenth |
 | `transportState` | — Live's complete observed control-bar state changed |

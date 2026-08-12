@@ -15,6 +15,38 @@ it sits flush against the app footer rather than floating above it. Stop All no 
 appears in the header; Esc remains its keyboard equivalent, and ⌘-clicking a track header
 remains a shortcut for one track.
 
+The stop glyph sits at the left of its cell rather than centred, on the same vertical line
+as the launch and stop buttons in the clip cells above it. Centring put it at an x
+coordinate that moved with the column width, so no two tracks agreed on where a stop
+button was.
+
+## Track status display
+
+Beside each track's stop button, Live's own Track Status Display: a pie filling as a
+looping clip goes round, a `m:ss` countdown for a one-shot, and a red `bars.beats` count
+while Live records into a slot. Nothing when the track is silent. Live's help text names
+two further forms — an Arrangement miniature and an input-monitoring glyph — that this
+does not implement; [`core/docs/trackStatus.md`](../../core/docs/trackStatus.md) has the
+reasons and owns the rules for the three that are here.
+
+It is drawn *over* the stop button, absolutely positioned and with `pointer-events: none`,
+rather than laid out beside it. Sharing the cell as a flex row would have shrunk the stop
+button from the full cell to about 14px, and on stage the whole cell being one large stop
+target matters more than the status having its own box.
+
+Frames arrive at 20 Hz and never enter React state, exactly like the meters — see
+`useTrackStatus.ts`, which mirrors `useMeters.ts`. Two things keep the cost down:
+
+- the store holds the *rendered* status, not the raw clip, and compares a loop phase at
+  the 1% the pie is actually drawn to. A frame where no wedge visibly moved wakes nothing.
+- each display subscribes for its own track, so a moving playhead in one column redraws
+  that column alone.
+
+The watch is held only while the stop row is on screen, since that is where it draws — its
+toggle *is* the subscription. See
+[`bridge/docs/message-protocol.md`](../../bridge/docs/message-protocol.md) for what the
+device does with it, and why that one is polled where everything else here is observed.
+
 The header's meter icon opens a column-aligned mixer below the grid. Every visible track
 gets a full-height output meter, a draggable volume indicator beside it, resettable peak
 and exact volume readouts, compact pan, Track Activator, Solo and Arm; Master gets the

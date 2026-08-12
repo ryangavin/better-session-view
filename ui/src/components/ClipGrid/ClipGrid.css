@@ -266,6 +266,48 @@ button.stop-clips-button.control-button-on {
   color: var(--amber);
 }
 
+.track-status {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  height: var(--stop-row-h);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.track-status-pie {
+  flex: none;
+  display: block;
+}
+
+.track-status-pie-ring {
+  fill: none;
+  stroke: var(--idle);
+  stroke-width: 1;
+}
+
+.track-status-pie-fill {
+  fill: var(--green);
+}
+
+.track-status-time {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--green);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-status-time.recording {
+  color: var(--red);
+}
+
 table.grid tfoot tr.meter-row td {
   position: relative;
   height: var(--meter-panel-h);

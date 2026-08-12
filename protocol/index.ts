@@ -5,6 +5,8 @@
 export type Track = BSV.Track;
 export type Scene = BSV.Scene;
 export type Clip = BSV.Clip;
+export type PlayingClip = BSV.PlayingClip;
+export type ClipStatusFrame = BSV.ClipStatusFrame;
 export type Snapshot = BSV.Snapshot;
 export type Palette = BSV.Palette;
 export type TransportState = BSV.TransportState;
