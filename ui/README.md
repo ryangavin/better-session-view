@@ -47,6 +47,8 @@ src/components/       one component per file
     Row.tsx           one scene's row, memoized
     SongHeaderRow.tsx a song block's header row, memoized
     constants.ts      surfaces, contrast ratios, shared empties
+    dropEdge.ts       which edge of a row a scene drag's drop line lands on
+    TrackStatus.tsx   Live's Track Status Display, over the stop button
     TrackMeter.tsx    a track's meter column — level, fader and its controls
     TrackSends.tsx    one track column in the naturally sized sends section
     useMeterResize.ts makes the meter row's top border resize its height

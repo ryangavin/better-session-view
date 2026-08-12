@@ -12,31 +12,13 @@ import { IconGroupFold } from '../Icon.js';
 import { ControlButton } from '../Control.js';
 import { TagChip } from '../TagChip.js';
 import { BAND_CONTRAST, isShape, RAIL, UNTAGGED } from './constants.js';
+import type { DropEdge } from './dropEdge.js';
 
 /** `CHORUS ×4, JAM1` — what a track plays, for the cell's tooltip. */
 function sections(shape: TrackShape): string {
   const named = shape.roles.map((r) => (r.scenes > 1 ? `${r.name} ×${r.scenes}` : r.name));
   if (shape.untagged > 0) named.push(`${shape.untagged} untagged`);
   return named.length === 0 ? 'no sections' : named.join(', ');
-}
-
-/**
- * Which edge of this header the drop indicator belongs on, if either.
- *
- * A gap between two adjacent songs is addressable from both sides — song A
- * ending at 5 and song B starting at 6 are both "gap 6" — so this resolves
- * toward `above` and lets `below` render only where no header begins. That's the
- * tail of the set, which is the one gap `above` can't express.
- */
-export function dropEdgeFor(
-  header: SongHeader,
-  dropAt: number,
-  headers: Map<number, SongHeader>,
-): '' | 'above' | 'below' {
-  if (dropAt < 0) return '';
-  if (dropAt === header.from) return 'above';
-  if (dropAt === header.to + 1 && !headers.has(dropAt)) return 'below';
-  return '';
 }
 
 interface SongHeaderRowProps {
@@ -55,7 +37,7 @@ interface SongHeaderRowProps {
   /** This block is the one being dragged. */
   dragging: boolean;
   /** Which edge of this header the drop indicator sits on, if any. */
-  dropEdge: '' | 'above' | 'below';
+  dropEdge: DropEdge;
   /** What the drop would cost, shown on the indicator. `''` when not the target. */
   dropNote: string;
   onToggle: (songKey: string) => void;

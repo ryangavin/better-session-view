@@ -6,37 +6,14 @@ import { groupSlot } from '../../../../core/src/groupSlot.js';
 import { roleIn, roleKey } from '../../../../core/src/roles.js';
 import { titleOf } from '../../../../core/src/sceneTitle.js';
 import type { Column } from '../../../../core/src/trackColumns.js';
-import type { SongHeader } from '../../../../core/src/songRows.js';
 import { clipKey } from '../../lib/selection.js';
 import { LAUNCH_KEY, mods } from '../../lib/keys.js';
 import { has, type RowMarks } from '../../lib/rowMarks.js';
 import { TagChip } from '../TagChip.js';
 import { ControlButton } from '../Control.js';
 import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA, PANEL } from './constants.js';
+import type { DropEdge } from './dropEdge.js';
 import type { Props } from './ClipGrid.js';
-
-/**
- * Which edge of this scene row the drop indicator belongs on, if either.
- *
- * The counterpart to `dropEdgeFor`, and it defers to it: a gap that starts a
- * song is drawn by that song's header, which is already sitting on that
- * boundary. Without the check both would draw a line for the same gap.
- *
- * Everything else resolves toward `above`, because gap `g` is the top of scene
- * `g`. `below` renders on the last scene alone — the end of the set is the one
- * gap no scene's top can express.
- */
-export function sceneDropEdge(
-  s: number,
-  dropAt: number,
-  lastScene: number,
-  songHeaders: Map<number, SongHeader>,
-): '' | 'above' | 'below' {
-  if (dropAt < 0 || songHeaders.has(dropAt)) return '';
-  if (dropAt === s) return 'above';
-  if (dropAt === s + 1 && s === lastScene) return 'below';
-  return '';
-}
 
 interface RowProps {
   scene: BSV.Scene;
@@ -57,7 +34,7 @@ interface RowProps {
   /** This scene is one of the ones in flight. */
   dragging: boolean;
   /** Which edge the drop line sits on, if this row is the target. */
-  dropEdge: '' | 'above' | 'below';
+  dropEdge: DropEdge;
   /** Tracks whose clip in this row is in flight, as `|t|t|`. See RowMarks. */
   lifting: RowMarks;
   /** Tracks whose slot in this row is a drop target, same shape. */

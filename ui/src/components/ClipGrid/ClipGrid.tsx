@@ -29,8 +29,9 @@ import {
   IconStop,
 } from '../Icon.js';
 import { ControlButton, ControlGroup } from '../Control.js';
-import { Row, sceneDropEdge } from './Row.js';
-import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
+import { dropEdgeFor, sceneDropEdge } from './dropEdge.js';
+import { Row } from './Row.js';
+import { SongHeaderRow } from './SongHeaderRow.js';
 import { TrackMeter } from './TrackMeter.js';
 import { TrackStatusDisplay } from './TrackStatus.js';
 import { TrackSends } from './TrackSends.js';
