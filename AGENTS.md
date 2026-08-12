@@ -1,33 +1,44 @@
 # AGENTS.md
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first — it's the table of contents. Then read
-the README of the module you're about to touch. They exist because most of the constraints
-in this project are non-obvious and expensive to rediscover.
+**This file is the whole startup read.** Everything else is on demand.
 
-[`README.md`](README.md) is for users, not for you: what the app is, install, build. Keep
-it that way — architecture and rules go in `CONTRIBUTING.md`, planned work goes in
-[Issues](../../issues).
+Each module's README is an index, not a document — a table of topics, each pointing at one
+self-contained doc and the source it governs. Read the index, then **only the topic rows
+that match what you're changing**. Reading a module's docs end to end is the wrong default;
+most of what's in them is reasoning about a feature you aren't touching.
 
-| touching | read |
+| touching | start at |
 |---|---|
-| anything involving Live | [`bridge/README.md`](bridge/README.md) — the LOM gotchas section especially |
+| domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
+| components, hooks, the client | [`ui/README.md`](ui/README.md) — 14 topic docs |
+| anything involving Live | [`bridge/README.md`](bridge/README.md) — 8 topic docs. **Most constraints in this project live here** |
 | "does Live expose X?" | [`bridge/LOM.md`](bridge/LOM.md) — **look it up, don't guess.** Includes where the published docs are wrong |
 | a wire message | [`protocol/README.md`](protocol/README.md) |
-| domain logic | [`core/README.md`](core/README.md) |
-| components, the client | [`ui/README.md`](ui/README.md) |
 | the `.amxd` or the patcher | [`tools/README.md`](tools/README.md) |
-| anything a user can see or press | the [wiki](https://github.com/ryangavin/better-session-view/wiki) — the user manual, and a **separate repo** (`…wiki.git`), so updating it is a second clone and a second push. These READMEs explain decisions; the wiki tells someone how to use the thing |
+| how the modules fit together, or where this is headed | [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/direction.md`](docs/direction.md) |
+| anything a user can see or press | the [wiki](https://github.com/ryangavin/better-session-view/wiki) — see rule 8 |
+
+Two docs are worth reading even when they aren't obviously your topic:
+
+- [`ui/docs/performance.md`](ui/docs/performance.md) — governs **anything reaching a
+  memoized row**. A prop that changes identity per render re-renders 848 rows.
+- [`bridge/docs/lom-gotchas.md`](bridge/docs/lom-gotchas.md) — before any `lom.ts` edit.
+
+[`README.md`](README.md) is for users, not for you: what the app is, install, build. Keep
+it that way — architecture goes in `CONTRIBUTING.md`, rationale in the module docs, planned
+work in [Issues](../../issues).
 
 ## Rules
 
 1. **`core/` imports no transport, no React, and nothing Live-specific.** It's the only
-   code testable without Ableton running.
-2. **`bridge/src/lom.ts` is the only file that touches the Live Object Model.**
+   code testable without Ableton running, and what keeps a different backend possible.
+2. **`bridge/src/lom.ts` is the only file that touches the Live Object Model.** Everything
+   else talks to it through the protocol.
 3. **`lom.ts` cannot `import` anything** — it compiles with `module: "none"` so Max's
    `[v8]` finds its handlers as top-level globals. Protocol types come from the global
    `BSV` namespace. Adding an import breaks the device silently.
 4. **The bridge protocol is coarse-grained** — one message per operation, never per
-   property.
+   property. A full set is tens of thousands of LOM reads.
 5. **Clip color is written as `color_index`**, never raw RGB.
 6. **Nothing loads from a CDN.** This runs on stage.
 7. **Don't name things with words that already mean something in a DAW.** `transport`
@@ -46,6 +57,11 @@ it that way — architecture and rules go in `CONTRIBUTING.md`, planned work goe
    Co-authored-by: Codex <noreply@openai.com>
    ```
 
+10. **A change to how a feature works updates that feature's topic doc in the same
+    commit.** The docs are the reason this codebase is navigable; a doc that drifts is
+    worse than one that never existed, because it's believed. If a change makes a doc
+    wrong, fix the doc — don't append a note saying it's wrong.
+
 ## Before you claim something works
 
 `lom.ts` has no automated coverage — it needs Live open with the device loaded, and
@@ -53,7 +69,7 @@ it that way — architecture and rules go in `CONTRIBUTING.md`, planned work goe
 
 ```sh
 npm run typecheck    # all five projects
-npm test             # core/ unit tests
+npm test             # core/ and ui/lib unit tests
 npm run build        # must succeed from a clean tree
 ```
 

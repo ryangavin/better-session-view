@@ -1,11 +1,14 @@
 # Contributing
 
 Start with [`README.md`](README.md) for what the app is and how to build it. This file is
-the map for changing it: how the pieces fit, which README to read before touching what,
-the rules that aren't negotiable, and the thinking behind where it's headed.
+the map for how the pieces fit together.
 
-Most of the constraints here are non-obvious and expensive to rediscover. The module
-READMEs exist for that reason — read the one covering what you're about to change.
+**Agents: [`AGENTS.md`](AGENTS.md) is your startup read**, not this file. It carries the
+non-negotiable rules, how to verify a change, and the routing table into the module docs.
+This file is orientation you need only when the shape of the project is what's in question.
+
+Most of the constraints here are non-obvious and expensive to rediscover. Each module
+README is an index of topic docs — read the rows that match what you're changing.
 
 ## Architecture
 
@@ -43,40 +46,11 @@ rescrapes the docs to a scratch file to diff against, and never overwrites it.
 Live exposes something, and before assuming a property you can read is one you can
 write.**
 
-## The rules that aren't negotiable
+## The rules, and verifying a change
 
-1. **`core/` imports no transport, no React, and nothing Live-specific.** It's what
-   makes the domain logic testable without Live running, and what keeps a different
-   backend possible later.
-2. **`bridge/src/lom.ts` is the only file that touches the Live Object Model.** Everything
-   else talks to it through the protocol.
-3. **`lom.ts` cannot `import` anything.** It compiles with `module: "none"` so Max's `[v8]`
-   finds its handlers as top-level globals; protocol types come from the global `BSV`
-   namespace. Adding an import breaks the device silently.
-4. **The bridge protocol is coarse-grained** — one message per *operation*, never per
-   property. A full set is tens of thousands of LOM reads.
-5. **Clip color is written as `color_index`**, never raw RGB.
-6. **Nothing loads from a CDN.** This eventually runs on stage.
-7. **Don't name things with words that already mean something in a DAW.** `transport` is
-   play/stop/record. Same trap: scene, clip, cue, bus, send, return, warp, quantize,
-   follow action, slot, take, punch, bounce, freeze. Where a DAW term *is* the right word
-   for the actual Live concept, use it precisely and don't overload it.
-
-## Before you claim something works
-
-`lom.ts` has no automated coverage — it needs Live open with the device loaded, and
-**it's the file to suspect first**. Everything else is checkable:
-
-```sh
-npm run typecheck    # all five projects
-npm test             # pure core/ and ui/lib unit tests
-npm run build        # must succeed from a clean tree
-```
-
-If a change touches the LOM, say plainly that it's unverified rather than implying it was
-tested. Prefer failure modes that are visible and harmless (an empty snapshot) over ones
-that are silent, and add a fallback to the previously-working path where the new one
-depends on an atom shape we haven't confirmed.
+Both live in [`AGENTS.md`](AGENTS.md) — the ten rules that aren't negotiable, and what to
+run before claiming something works. They're there rather than here because they apply to
+every change, so they belong in the file that's always read.
 
 ## The user manual is a separate repo
 
@@ -114,87 +88,11 @@ embedded Max provides.
 | Node inside Node for Max | 22.18 (bundled with Max) |
 | Node for tooling | 24.1 — runs `.ts` directly via type stripping |
 
-## The design this is built toward
+## Where this is headed
 
-MVP was set management: bulk naming and coloring, with clip and scene launching so you can
-hear what you're labelling. That works — but every convention it applies still lives in
-someone's head and gets re-typed per selection.
-
-The direction is to define the conventions **outside** the current state of the set, map
-the set against them once, and thereafter re-derive the mapping by reversing the naming
-convention.
-
-```
-library (songs)              ─┐
-scheme  (patterns, rules)    ─┼─→ desired state ──┐
-mapping (scene → song, role) ─┘                   ├→ diff → apply
-snapshot (what Live holds) ───────────────────────┘
-                 ↑                           │
-                 └──── re-derived by reversing ────┘
-                       the naming convention
-```
-
-The mapping needs a human once. After the first apply the names **are** the mapping, so
-they read back on every later snapshot — no stable ids anywhere, nothing to lose, and a
-`.als` on the gig laptop stays fully self-describing.
-
-### Three layers, and what each owns
-
-| | lives | authoritative for |
-|---|---|---|
-| **Library** | one global file, outlives any `.als` | what a song *is* — bpm, key |
-| **Scheme** | one global file | patterns and rules — how a name is spelled, what color a clip gets |
-| **Mapping** | **in the set**, in scene names + device state | which scene is which song and role, plus naming defaults and color configuration |
-
-### The decisions behind it
-
-**Mapping is derived; facts are declared.** Which scene belongs to which song is always
-read out of the set. What a song *is* belongs to the library. A song is seeded from the
-set the first time it's seen; after that a set that disagrees is drift. Without that split
-the scheme is a suggestion rather than a convention, and lint has nothing to say.
-
-**The library is global and only grows.** It outlives any one `.als` — you have a library
-of songs and a given set contains some of them. Derivation unions into it. Role colors
-are different: they describe one set and live in that set's bridge-device state, alongside
-the set's default artist.
-
-**A song is a label, not a range** — whatever scenes carry its name, wherever they sit. A
-reprise sixty scenes later is the same song for free. Boundaries are computed; a song in
-two blocks is a lint line, not an error.
-
-**Song identity is the name text, and a rename is atomic** — renaming in the library
-rewrites its scenes in the same operation, because at that moment we still know which
-scenes were attached.
-
-**Patterns are configurable but must be reversible.** At most one free-text token unless a
-non-whitespace literal separates them. The rules, and why ambiguity splits into fatal and
-resolvable, are in [`core/README.md`](core/README.md).
-
-The convention this writes today is `[ROLE] @{key} {SONG} - {ARTIST} {TAG}` — `[CHORUS] @Bm
-NIGHTFALL - THE AVIATORS {COVER}`. Role first so a column of scene names reads as
-structure; `@` opens the key because after it a letter can only be a key. **A convention
-change can't be a clean break**, since the mapping *is* the names — so derivation reads more
-than one pattern and a set converts scene by scene as it's renamed.
-
-**The artist is a fact, not identity.** `songKey` is still the song name alone, so one
-title with two artists is drift the songs list reports rather than two songs. It is also
-the only place two free-text fields meet in one name, which is why `" - "` is load-bearing
-and why the parsing convention is the next thing that should become configuration rather
-than a constant.
-
-**bpm is not like the other tokens.** It's the one fact with a home in Live —
-`Scene.tempo` — and writing it changes how the set plays. See
-[`bridge/README.md`](bridge/README.md) for the `tempo_enabled` ordering.
-
-**Clip color is layered rules, first match wins**, so you can reason about why a clip is
-the color it is, and lint can report what matched nothing.
-
-**Scene reordering is the one write that can damage a set.** The LOM has no scene-move API
-— verified in both sources, see [`bridge/LOM.md`](bridge/LOM.md) — so a move is
-build-then-delete, made precise rather than wholesale by `ClipSlot.duplicate_clip_to`. It
-is one plan and one message however many songs moved, which is what keeps it a single
-entry in Live's history. What it costs and what guards it is under *Reordering scenes* in
-[`bridge/README.md`](bridge/README.md).
+The library / scheme / mapping split, what each layer owns, and the decisions behind the
+naming convention are in [`docs/direction.md`](docs/direction.md). Read it before changing
+how derivation, patterns or song identity work; skip it for routine feature work.
 
 ## Planned work
 
