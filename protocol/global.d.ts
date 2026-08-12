@@ -282,6 +282,12 @@ declare namespace BSV {
     metronome: boolean;
     /** Song.clip_trigger_quantization, using Live's documented 0–13 enum. */
     clipTriggerQuantization: number;
+    /**
+     * Song.record_mode — Live's Arrangement Record button. Armed rather than
+     * recording: with the song stopped it decides what the next start does,
+     * and turning it on while the song rolls begins the take there and then.
+     */
+    recordMode: boolean;
     /** Current Scale controls from Live's control bar. */
     rootNote: number;
     scaleName: string;
@@ -296,6 +302,7 @@ declare namespace BSV {
     tempo?: number;
     metronome?: boolean;
     clipTriggerQuantization?: number;
+    recordMode?: boolean;
     rootNote?: number;
     scaleName?: string;
     scaleMode?: boolean;

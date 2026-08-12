@@ -10,6 +10,7 @@ import {
   IconNote,
   IconMenu,
   IconPlay,
+  IconRecord,
   IconStop,
   IconSync,
   IconScale,
@@ -366,7 +367,7 @@ export function Header({
               ))}
             </span>
           </div>
-          <ControlGroup className="playback" label="Playback" surface="filled">
+          <ControlGroup className="playback" label="Transport" surface="filled">
             <ControlButton
               icon
               className={isPlaying ? 'rolling' : undefined}
@@ -385,6 +386,16 @@ export function Header({
               onClick={() => stop({ kind: 'song' })}
             >
               <IconStop />
+            </ControlButton>
+            <ControlButton
+              icon
+              pressed={transport?.recordMode ?? false}
+              aria-label="Arrangement Record"
+              title={`${transport?.recordMode ? 'Disarm' : 'Arm'} Live's Arrangement Record`}
+              disabled={!lomReady || transport === null}
+              onClick={() => onTransport({ recordMode: !transport?.recordMode })}
+            >
+              <IconRecord />
             </ControlButton>
           </ControlGroup>
         </div>

@@ -173,6 +173,15 @@ header {
 .playback .control-button.rolling {
   color: var(--green);
 }
+/* Live's own Arrangement Record is red when armed, and the group already
+   carries a second state color in the rolling play button — so the amber every
+   other header toggle lights doesn't apply here. */
+.playback .control-button.control-button-toggle.control-button-on {
+  color: var(--red);
+}
+.playback .control-button.control-button-toggle.control-button-on:hover:not(:disabled) {
+  color: var(--red);
+}
 
 .quantization-picker {
   width: 60px;

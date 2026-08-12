@@ -177,6 +177,13 @@ export const IconStop = () => (
   </svg>
 );
 
+/** Arrangement Record. Same 11-unit span as the stop square, drawn round. */
+export const IconRecord = () => (
+  <svg {...BASE} fill="currentColor" stroke="none">
+    <circle cx="12" cy="12" r="5.5" />
+  </svg>
+);
+
 /** GitHub's mark — links back to the project's source repository. */
 export const IconGitHub = () => (
   <svg {...BASE} fill="currentColor" stroke="none">
