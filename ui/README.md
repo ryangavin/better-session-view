@@ -290,9 +290,10 @@ or selected clips and apply to that selection, which is why the controls and too
 `Song.scale_name` docstring; an observed name that a newer Live adds is retained as an
 extra option instead of disappearing.
 
-The center keeps Live's bars, beats and sixteenths immediately left of play / stop /
-struck-through-slot. The right side carries the compact width select, mixer and sends
-toggles, and Snapshot.
+The center keeps Live's bars, beats and sixteenths immediately left of transport play and
+stop. Stop All Clips belongs to the Session grid's Master stop slot instead of this global
+transport group. The right side carries the compact width select, mixer and sends toggles,
+and Snapshot.
 Three equal flex regions keep that middle group at the header's true center,
 independent of how much chrome the left and right sides contain. The left region clips
 first on a narrow window. Every control shares `--ctl-h`; the bar is `--ctl-h + 13px`,
@@ -305,7 +306,7 @@ with 6px of air above and below plus its 1px bottom border.
   button's hover, `:disabled` and `.on` states reach the glyph for free.
 - **Every icon button carries an `aria-label` as well as a `title`.** An icon-only control
   with no accessible name is a button for sighted mouse users and nobody else, and the
-  `title` is now the only place the longer meanings — what "stop clips" spares, that
+  `title` is now the only place longer meanings — what the Master stop slot spares, that
   Snapshot re-walks the whole set — can still be said in words.
 - **The scene-column controls reuse the same primitive, size and glyph set as the main
   header**: 26×22px buttons with 14px icons. The grid header's calculated height grows
@@ -1215,6 +1216,16 @@ custom properties the browser just recalculates layout and `Row` never re-render
 those same properties directly so a browser resize does not turn into 848 React renders.
 
 ## Mixer panel
+
+An Ableton-style stop row is always pinned beneath the visible Session columns. Each
+ordinary or group track has a stop-clips button in its own column; the pinned Songs/Master
+cell holds Stop All Clips. The row reads `fired_slot_index = -2` back from Live, so a
+pending stop lights the corresponding button rather than relying on optimistic state.
+It sits at the grid bottom when the mixer is closed and moves directly above the mixer
+and its resize handle when opened. The row replaces the grid's former bottom padding, so
+it sits flush against the app footer rather than floating above it. Stop All no longer
+appears in the header; Esc remains its keyboard equivalent, and ⌘-clicking a track header
+remains a shortcut for one track.
 
 The header's meter icon opens a column-aligned mixer below the grid. Every visible track
 gets a full-height output meter, a draggable volume indicator beside it, resettable peak

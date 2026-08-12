@@ -11,7 +11,6 @@ import {
   IconMenu,
   IconPlay,
   IconStop,
-  IconStopClips,
   IconSync,
   IconScale,
   IconSends,
@@ -194,8 +193,8 @@ function TempoControl({
  * Every icon button here carries an `aria-label` as well as a `title`. An
  * icon-only control with no accessible name is a button that exists for
  * sighted mouse users and nobody else — and the `title` is also the only place
- * the longer ones (what "stop clips" spares, what Snapshot re-reads) can still
- * be said in words. Column width is the exception: a native single-select is
+ * the longer ones (what Snapshot re-reads) can still be said in words. Column width is
+ * the exception: a native single-select is
  * both more compact and already has the right keyboard semantics.
  */
 export function Header({
@@ -381,15 +380,6 @@ export function Header({
               onClick={() => stop({ kind: 'song' })}
             >
               <IconStop />
-            </ControlButton>
-            <ControlButton
-              icon
-              title="Stop all clips, keep the song rolling (Esc)"
-              aria-label="Stop all clips"
-              disabled={!lomReady}
-              onClick={() => stop({ kind: 'clips' })}
-            >
-              <IconStopClips />
             </ControlButton>
           </ControlGroup>
         </div>

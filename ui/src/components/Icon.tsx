@@ -177,13 +177,7 @@ export const IconStop = () => (
   </svg>
 );
 
-/**
- * Stop all clips, keep the song rolling — a clip slot struck through.
- *
- * The one action here with no conventional glyph, so it leans on the ordinary
- * "none of these" slash over the shape the grid is made of. It's the weakest of
- * the six; its tooltip does the real work.
- */
+/** Stop clips on one track — a clip slot struck through. */
 export const IconStopClips = () => (
   <svg {...BASE}>
     <rect x="4.5" y="4.5" width="15" height="15" rx="3" />

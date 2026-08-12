@@ -11,14 +11,10 @@ main {
   overflow: auto;
   /* No horizontal padding: the song column owns the left edge and the final
      track owns the right. No padding-top either: the sticky header pins below
-     it, so any padding there is a band where scrolled cells show through. */
-  padding: 0 0 12px;
-}
-
-/* The sticky mixer row is the grid's bottom edge while it is visible. Its own
-   panel chrome replaces the ordinary breathing room below the last scene. */
-.grid-wrap.meters-open {
-  padding-bottom: 0;
+     it, so any padding there is a band where scrolled cells show through. The
+     permanent stop row now owns the bottom edge too, replacing the old 12px
+     breathing room that would leave it floating above the app footer. */
+  padding: 0;
 }
 
 /* The seam where the grid meets the bottom chrome. The strip is one line tall

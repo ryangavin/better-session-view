@@ -19,6 +19,7 @@ table.grid {
   --gutter: 2px;
   --meter-panel-h: 220px;
   --meter-handle-h: 10px;
+  --stop-row-h: 26px;
   /* Track names sit inside saturated header cells rather than in the gutter.
      Enough inset to clear the 3px play-state bar, without starving S columns. */
   --track-pad-x: 5px;
@@ -377,6 +378,75 @@ table.grid th.track-h.stopping {
 
 /* --- mixer --------------------------------------------------------- */
 
+/* Ableton's stop slots are a permanent footer to Session content. They stay
+   at the viewport bottom on their own and move as one row above the mixer when
+   it opens; the table cells keep every action under its exact track column. */
+table.grid tfoot tr.stop-row td {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--layer-mixer-resize);
+  height: var(--stop-row-h);
+  padding: 3px 2px;
+  background: var(--rail);
+  background-image: linear-gradient(to right, var(--bd2) 0 1px, transparent 1px);
+  box-shadow:
+    calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
+    0 var(--gutter) 0 var(--rail), 0 -8px 14px -4px var(--shadow-edge);
+  vertical-align: middle;
+}
+
+/* The table's column gutters would break a border on each cell into dashes.
+   Overlap this rule into both neighbouring gutters so it reads as one edge. */
+table.grid tfoot tr.stop-row td::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: calc(-1 * var(--gutter));
+  left: calc(-1 * var(--gutter));
+  height: 1px;
+  background: var(--bd);
+  pointer-events: none;
+}
+
+.grid-wrap.meters-open table.grid tfoot tr.stop-row td {
+  bottom: calc(
+    var(--meter-panel-h) + var(--meter-handle-h) + var(--gutter) + var(--gutter)
+  );
+}
+
+table.grid tfoot tr.stop-row td:first-child {
+  left: var(--gutter);
+  z-index: var(--layer-mixer-corner);
+  background-image: none;
+}
+
+button.stop-clips-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(56px, 100%);
+  height: 20px;
+  margin: 0 auto;
+  padding: 0;
+  border-color: var(--bd3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-control);
+  color: var(--dim2);
+}
+
+button.stop-clips-button:hover:not(:disabled),
+button.stop-clips-button:focus-visible {
+  border-color: var(--focus);
+  color: var(--fg);
+  outline: none;
+}
+
+button.stop-clips-button.control-button-on {
+  border-color: var(--amber-muted);
+  background: var(--sel);
+  color: var(--amber);
+}
+
 /* The mixer section is part of the same table as the clips. Its cells inherit
    the exact colgroup widths and horizontal scroll position, while sticky keeps
    the row at the bottom of the grid viewport. The body can therefore move
@@ -422,7 +492,7 @@ table.grid tfoot td.meter-resize-cell {
   background: var(--rail);
   box-shadow:
     calc(-1 * var(--gutter)) 0 0 var(--rail), var(--gutter) 0 0 var(--rail),
-    0 var(--gutter) 0 var(--rail), 0 -8px 14px -4px var(--shadow-edge);
+    0 var(--gutter) 0 var(--rail);
 }
 
 .meter-resize-handle {

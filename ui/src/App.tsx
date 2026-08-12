@@ -58,6 +58,7 @@ export function App() {
   const { snapshot, play, launch, stop, setFold, selectScene, apply, applyScenes, undo } =
     bridge;
   const { showMeters, showSends, toggleMeters, toggleSends } = bridge;
+  const onStopAll = useCallback(() => stop({ kind: 'clips' }), [stop]);
 
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
   const chooseColumnWidth = useCallback((w: ColumnWidth) => {
@@ -360,6 +361,7 @@ export function App() {
               selected={selected}
               active={active}
               play={play}
+              canControlLive={bridge.lomReady}
               showMeters={showMeters}
               showSends={showSends}
               subscribeMeters={bridge.subscribeMeters}
@@ -404,6 +406,7 @@ export function App() {
               onFireClip={onFireClip}
               onRoleMenu={onRoleMenu}
               onStopTrack={onStopTrack}
+              onStopAll={onStopAll}
               onToggleGroup={onToggleGroup}
             />
           ) : (
