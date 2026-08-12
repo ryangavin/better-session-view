@@ -1,101 +1,30 @@
 /* --- grid --------------------------------------------------------- */
 
-/* table-layout: fixed takes every column width from the header row and ignores
-   the 848 rows below it — without it a long track name widens its column and
-   the grid stops being uniform, and the browser has to measure every cell.
-   ClipGrid states the table's own width because with `width: auto` a fixed
-   table stretches to fill its container and the last column absorbs the slack;
-   given a width, the used width is max(that, sum of columns). */
 table.grid {
   border-collapse: separate;
   border-spacing: var(--gutter);
   table-layout: fixed;
 
-  /* The grid's right edge — the same line the mixer ends with, carried the
-     table's full height.
-
-     The footer draws its own outer edge by filling the table's border-spacing,
-     so that rule lives in the last 2px strip *inside* the table box. The body
-     above had nothing there, which left the mixer reading as a bordered block
-     bolted onto an unbordered grid. Painting the strip as the table's own
-     background is what continues it: no cell reaches into border-spacing, so
-     nothing in the body covers it, and a `border-right` would sit outside the
-     strip rather than in it — 2px alongside the grid and 4px alongside the
-     footer, which is the doubled edge this is meant to avoid.
-
-     The one thing that does reach it is the last header cell's right-hand plug,
-     which fills the same gutter to stop rows showing through as they scroll
-     under. That plug takes this color instead of the background — see
-     `--header-plug-right` — or the line would break across the header row. */
   background: linear-gradient(var(--grid-rule), var(--grid-rule)) right top /
     var(--gutter) 100% no-repeat;
 
-  /* The 2px of background between every cell and the next. It's the grid's one
-     separator — no cell in the body has a border — so anything that needs to
-     divide two things here is this gap at this width, and it's named so that
-     stays true. `border-spacing` produces it between cells; the header's plug
-     shadows paint into it; the band's gutter below draws it by hand. */
   --gutter: 2px;
-  /* Every rule drawn in that gutter: the mixer's internal grid, its outer edge,
-     and the grid's right edge above it. One name because they are one line —
-     naming it for the footer is what let the footer look bolted on. */
   --grid-rule: var(--bd2);
   --meter-panel-h: 220px;
-  /* The stop row is a row of the grid, not a toolbar under it, so it stands as
-     tall as the clip cells in `Row.css` and no taller. */
   --stop-row-h: 20px;
-  /* Track names sit inside saturated header cells rather than in the gutter.
-     Enough inset to clear the 3px play-state bar, without starving S columns. */
   --track-pad-x: 5px;
 
-  /* The group band's weight, and the header height that follows from it.
-     A group and its tracks are often near-neighbours in Live's palette — a
-     green group over light-green tracks — and at 2px the band lost that
-     argument every time. It's thick enough now to read as the group's color
-     rather than as an edge on the track's.
-
-     Top only. It briefly closed at the bottom too, to bracket the run, and that
-     reads as the group's color leaking down the sides of every track rather
-     than as one bar over all of them. Live puts it on top and only on top.
-
-     The header grows around the main toolbar's control height so the song
-     actions remain legible. Its vertical inset clears the band and gutter,
-     then repeats below the label so every heading is geometrically centered.
-     Stated as its parts so `--header-h` can't drift from the padding that
-     produces it — both are written from these. */
   --band-w: 5px;
   --header-pad-y: calc(var(--band-w) + var(--gutter));
   --label-h: var(--ctl-h);
   --header-h: calc(var(--header-pad-y) + var(--label-h) + var(--header-pad-y));
 }
-/* Widths live on the columns, not the header cells: the song header's notice
-   cell uses colSpan, and a spanning cell would otherwise have to distribute its
-   width across the columns it covers. */
 table.grid col {
   width: var(--col-w);
 }
 table.grid col.scene-col {
   width: var(--scene-col-w);
 }
-/* The header row. Sticky, or it tears away on scroll.
- *
- * The stuck offset has to equal the row's *flow* position, or the header
- * changes height the moment you scroll. `border-spacing` puts 2px above it, so
- * measured from the top of the scroll box the row sits at 2 and sticks at 2 —
- * already at its stuck offset at rest, so nothing moves at all. Sticking it at
- * 0 would swallow that gap and take 2px off the header as soon as it left the
- * top. (There were two header rows once, a band of group names above this one;
- * the offsets were the fiddly part of that and are worth keeping right.)
- *
- * The gutter that opens above is plugged by this rule's own third shadow.
- *
- * Height is `--header-h` — see `table.grid` above. The padding here is what
- * actually produces it, so the two are written from the same variables. The
- * label line and bulk buttons share the main toolbar's control height.
- *
- * No `overflow: hidden` here, deliberately: the band bridges the gutter with a
- * pseudo-element that has to escape the cell by 2px. Clipping moved onto
- * `.th-label` instead, which is the only thing that ever needed it. */
 table.grid th {
   font-family: var(--mono);
   font-size: 9px;
@@ -110,23 +39,6 @@ table.grid th {
   top: var(--gutter);
   background: var(--bg);
   z-index: var(--layer-grid-header);
-  /* Three jobs, and the order is what keeps them apart — the first shadow in
-     the list paints on top. Named `--header-plugs` because the banded rules
-     below restate the whole `box-shadow` to add their insets, and this is the
-     part they must not lose in the process.
-     1. The gutters *between* header cells are transparent, so a body row
-        scrolling underneath shows through them as moving slivers. Two flat
-        copies of the cell, one either side, plug them.
-     2. The same gap sits *above* the row, between it and the top of the
-        scroll box, and a body row scrolling past shows through that one too.
-        A third flat copy plugs it. (The group header row above this one used
-        to cover it with a ring; it's gone, and this replaces that job.)
-     3. The drop shadow, so the header reads as sitting over the grid rather
-        than as another row of it. Same language as the footer's, pointing the
-        other way. Each cell casts its own and they meet across the gutters: at
-        this blur two neighbours' falloff sums to slightly *less* than one
-        cell's centre, which is invisible at 2px — where a hard-edged shadow
-        would have striped the grid once per column. */
   --header-plug-right: var(--bg);
   --header-plugs:
     calc(-1 * var(--gutter)) 0 0 var(--bg),
@@ -136,27 +48,14 @@ table.grid th {
   box-shadow: var(--header-plugs);
   white-space: nowrap;
 }
-/* The last heading's right-hand gutter is the grid's own edge rather than a gap
-   between two columns, so its plug is that rule and not the background. Set as
-   the custom property rather than as a `box-shadow`: the banded rules restate
-   the whole shadow list around `--header-plugs`, and a rule here would lose to
-   theirs on the last column whenever it happens to be banded. */
 table.grid th:last-child {
   --header-plug-right: var(--grid-rule);
 }
-/* Flex on a wrapper, never on the `th` itself — `display: flex` on a table cell
-   stops it being a table cell and takes the fixed layout with it. `min-width: 0`
-   on the label is what lets a flex item shrink far enough to ellipsis at all. */
 table.grid th .th-line {
   display: flex;
   align-items: center;
   justify-content: flex-start;
 }
-/* Track and group names carry weight; the `Scene` header and its workflow
-   buttons don't, which is why this sits on the label rather than on `th`. A
-   name now sits on a saturated fill instead of on the near-black background,
-   and 9px regular gets thin against a light one — `inkOn` picks a color that
-   clears contrast, but contrast at that weight is still a hairline. */
 table.grid th .th-label {
   min-width: 0;
   overflow: hidden;
@@ -165,24 +64,10 @@ table.grid th .th-label {
 }
 table.grid th.scene-h {
   left: var(--gutter);
-  /* Above both ordinary sticky track headers and the horizontally scrolling
-     body: this cell is the top-left intersection of two pinned axes. It also
-     stays above the pinned scene cells as they scroll vertically underneath. */
   z-index: var(--layer-pinned-corner);
   text-align: left;
-  /* The grid gutter is only 2px: useful between cells, but too tight as the
-     inset around a large title and full-size controls. Override only the
-     horizontal axis so the established header height stays unchanged. */
   padding-inline: 8px;
 }
-/* Set-wide Live Set actions sit at the head of the column their songs are read
-   down; app-only navigation and folding live in the main header. Flex on a
-   wrapper, never on the `th` — see the note above `table.grid`: `display: flex`
-   on a table cell stops it being one.
-
-   The groups use the main header's 22px control height and 26px icon-button
-   width. `--label-h` carries that height into `--header-h`, so the sticky row
-   and its scroll margin grow with the controls rather than clipping them. */
 table.grid th.scene-h .scene-h-line {
   display: flex;
   align-items: center;
@@ -221,63 +106,17 @@ table.grid th.scene-h .scene-action-group {
 
 /* --- groups ---------------------------------------------------------- */
 
-/* A group's extent, which used to be a header row of spanning cells above the
-   track names. A group track carries its own name in the header now, so a
-   second row repeating that word said nothing the column didn't. What the span
-   row did carry was *how far the group reaches*, and that survives as a rule in
-   the group's color along the top of every column in the run.
-
-   Drawn as an inset shadow rather than a border: a border is inside the cell's
-   box and would come out of the label's line-height, where this rides in the
-   padding widened for it.
-
-   This is the group's *own* column — the band is the top of its header and the
-   same color as it, so the two are one shape. Members get the rule below. */
 table.grid th.banded {
   box-shadow:
     inset 0 var(--band-w) 0 var(--band),
     var(--header-plugs);
 }
-/* A member's header, held under the band rather than joined to it.
- *
- * When a group and its tracks are near-neighbours in Live's palette, the band
- * and the fill beneath it meet as one field of green and the bar stops reading
- * as a bar. What separates them is the same 2px of background that separates
- * every other pair of cells in this grid — no new border, no shadow, just the
- * gutter, drawn here by hand because it falls inside a cell rather than between
- * two.
- *
- * Both insets are listed together because a second `box-shadow` would replace
- * the first rather than add to it. The band is first so it paints on top: the
- * `--bg` inset fills from the top edge down past it, and the band covers back
- * over the first `--band-w` of that, leaving exactly the gutter showing.
- *
- * `:not(.group-h)` is the whole rule. A group's own column never gets this —
- * including a nested group over its own run — so the group track keeps looking
- * like one continuous shape whose header extends across everything it holds.
- */
 table.grid th.banded:not(.group-h) {
   box-shadow:
     inset 0 var(--band-w) 0 var(--band),
     inset 0 calc(var(--band-w) + var(--gutter)) 0 var(--bg),
     var(--header-plugs);
 }
-/* The bridge. An inset shadow stops at the cell edge, so on its own the band
-   comes out as one segment per column with a 2px notch at every gutter, where
-   Live draws one unbroken bar. Each column in a run reaches back across the gap
-   to its left and fills the band's height in the band's color.
-
-   Reaching *left* rather than right is what makes it work without knowing where
-   a run ends. Sibling cells at the same z-index paint in document order, so the
-   later cell's bridge lands on the shared gutter after the earlier cell's `--bg`
-   plug has covered it — the opposite direction would be painted over. A run's
-   right end then needs no rule at all: whatever follows is either unbanded or
-   starts its own run, and neither reaches back.
-
-   `band-start` is exactly the column that must not reach back — the group's own
-   column, and the column where a parent's band resumes after a nested group
-   interrupted it. Both are where two runs meet, and the unbridged gutter is
-   what separates them. */
 table.grid th.banded:not(.band-start)::before {
   content: '';
   position: absolute;
@@ -288,39 +127,16 @@ table.grid th.banded:not(.band-start)::before {
   background: var(--band);
 }
 
-/* The group track's own header. Slightly tighter tracking than a plain track's,
-   to buy back the width the badge takes from the name, and left-read rather
-   than centred — the name starts at the same x in every group column. */
 table.grid th.group-h {
   letter-spacing: 0.08em;
 }
-/* Live pins the badge to the right edge of the header and reads the name from
-   the left, so the label takes all the slack and the badge sits after it. That
-   also means the badge holds one position per column instead of drifting with
-   the length of the name, which is what makes a row of them scannable.
-
-   `flex: 1` rather than `justify-content: space-between`: the label has to be
-   the thing that grows *and* the thing that shrinks, so a long group name
-   ellipsises against the badge instead of shoving it out of the cell. */
 table.grid th.group-h .th-label {
   flex: 1;
   text-align: left;
 }
-/* Hover lightens the track's own fill rather than replacing it: the fill *is*
-   the group's identity here, and swapping it for a flat highlight would drop
-   the one thing the header is saying. */
 table.grid th.group-h:hover {
   filter: brightness(1.15);
 }
-/* The fold badge. A flex item boxed to the label's line-height, so an 11px glyph
-   on a 13px line can't grow the row — the header's height is a calculation
-   (`--header-h`), and anything that quietly adds a pixel here puts every cell's
-   `scroll-margin-top` out with it. `flex: none` so it survives the squeeze that
-   ellipsises a long group name beside it.
-
-   Inherits the header's `inkOn` color, so it stays legible on any track color
-   without being told which one it's on — at full strength, not the 85% it wore
-   while the name beside it was still regular weight. */
 table.grid th.group-h .fold {
   display: flex;
   align-items: center;
@@ -329,8 +145,6 @@ table.grid th.group-h .fold {
   margin-left: 3px;
 }
 
-/* The group's clip slot. A launcher, not a cell you can select — no hover
-   affordance on the cell itself, only on the button inside it. */
 td.cell.group {
   background: var(--surface-cell-muted);
   color: var(--caption);
@@ -338,13 +152,6 @@ td.cell.group {
   text-align: center;
   padding: 0 2px;
 }
-/* The two marks sit at the ends: the launcher reads down the column as a strip
-   you can aim at, and the count stays out of its way.
-
-   Plain click fires — the second control in the app allowed to, after the scene
-   button, and for the same reason: firing is the button's whole job. The
-   modifier rule that keeps ⌘ in front of launching exists to protect
-   selection, and there is no selection here to protect. */
 td.cell.group > .fire {
   float: left;
   padding: 0;
@@ -365,8 +172,6 @@ td.cell.group.playing > .fire {
 td.cell.group.fired > .fire {
   color: var(--amber);
 }
-/* How many of the group's tracks have a clip here — the one thing a collapsed
-   group hides that nothing else on screen answers. */
 td.cell.group > .group-n {
   float: right;
   font-family: var(--mono);
@@ -384,16 +189,9 @@ table.grid th.track-h {
   padding-left: var(--track-pad-x);
 }
 
-/* Play state as a bar down the left edge, not as text color.
-   The header is filled with the track's own Live color now, and a green *word*
-   on a green track says nothing — worse, `inkOn` picked the text color for
-   contrast against that fill, and overriding it throws that away. A bar is the
-   same language the clip cells already use for the same fact, and it composes
-   over any fill because background-image paints above background-color. */
 table.grid th.track-h.live {
   background-image: linear-gradient(90deg, var(--green) 0 3px, transparent 3px);
 }
-/* fired_slot_index === -2: this track's stop button is armed and blinking. */
 table.grid th.track-h.stopping {
   background-image: linear-gradient(90deg, var(--amber) 0 3px, transparent 3px);
   animation: bsv-blink 0.5s infinite;
@@ -412,10 +210,6 @@ table.grid th.track-h.stopping {
 
 /* --- mixer --------------------------------------------------------- */
 
-/* The stop row, resize handle and meters are one sticky footer assembly. Let
-   table layout stack its rows instead of independently positioning each one;
-   the row-group background turns border-spacing into the same 2px rules used
-   between clip columns. */
 table.grid tfoot {
   position: sticky;
   bottom: 0;
@@ -423,9 +217,6 @@ table.grid tfoot {
   background: var(--grid-rule);
 }
 
-/* One shared outward shadow fills the table's 2px border-spacing on every side
-   of every footer cell. Adjacent copies meet exactly in the gutters, closing
-   both row and column gaps without positioning decorative rules by hand. */
 table.grid
   tfoot
   tr:is(.stop-row, .sends-row, .meter-row)
@@ -434,13 +225,6 @@ table.grid
   box-shadow: var(--footer-gutter-fill);
 }
 
-/* Ableton's stop slots are the first row of the sticky footer. The table cells
-   keep every action under its exact track column.
-
-   No padding: the button *is* the cell. A slot inset inside a cell reads as two
-   things — a container and a control sitting in it — when there's only ever one
-   thing to press here, and the 2px gutter already separates one track's stop
-   from the next exactly as it separates their clips. */
 table.grid tfoot tr.stop-row td {
   position: relative;
   padding: 0;
@@ -456,23 +240,13 @@ table.grid tfoot tr.stop-row td:first-child {
   z-index: var(--layer-mixer-corner);
 }
 
-/* Full-bleed, and the thing that states the row's height — the cell around it
-   carries no padding, so the row is exactly as tall as this button. Its edge is
-   transparent rather than absent so hover and focus have somewhere to land
-   without the cell changing size.
-
-   No background of its own either, so the cell's rail shows through. The button
-   fills its cell, so any surface here is the row's surface, and giving it the
-   control face lit the whole stop row a shade above the sends and meters under
-   it — one mixer section reading as two. The glyph, the hover edge and the lit
-   state are what say this is a control; the ground says which section it's in. */
 button.stop-clips-button {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   height: var(--stop-row-h);
-  padding: 0;
+  padding: 0 0 0 2px;
   border: 1px solid transparent;
   border-radius: var(--radius-xs);
   background: transparent;
@@ -492,9 +266,6 @@ button.stop-clips-button.control-button-on {
   color: var(--amber);
 }
 
-/* The mixer section is part of the same table as the clips. Its cells inherit
-   the exact colgroup widths and horizontal scroll position, while the sticky
-   footer keeps them at the viewport bottom as one unit. */
 table.grid tfoot tr.meter-row td {
   position: relative;
   height: var(--meter-panel-h);
@@ -503,9 +274,6 @@ table.grid tfoot tr.meter-row td {
   vertical-align: middle;
 }
 
-/* The table's existing 2px row gutter is the resize handle—no extra layout
-   row and therefore no doubled border. This transparent hit area reaches a few
-   pixels into the meter cell while leaving the border's appearance untouched. */
 table.grid tfoot tr.meter-row td::before {
   content: '';
   position: absolute;
@@ -522,8 +290,6 @@ table.grid tfoot tr.meter-row {
   outline: none;
 }
 
-/* Sends are their own naturally-sized footer section. Adding return rows grows
-   the footer; it never shortens the resizable meter section below. */
 table.grid tfoot tr.sends-row td {
   position: relative;
   padding: 7px 2px;
@@ -537,8 +303,6 @@ table.grid tfoot tr.sends-row td:first-child {
   z-index: var(--layer-mixer-corner);
 }
 
-/* The Master meter is the bottom-left intersection: pinned with its panel
-   vertically and with the scene/song column horizontally. */
 table.grid tfoot tr.meter-row td:first-child {
   position: sticky;
   left: var(--gutter);
@@ -549,9 +313,6 @@ table.grid tfoot tr.meter-row td:first-child {
   position: relative;
   display: flex;
   flex-direction: column;
-  /* Keep an 8px rail in very tight viewport-fit columns, then spend only the
-     first bit of available space on legibility. At 56px the rail reaches
-     16px; wider columns retain breathing room around the strip. */
   width: 56px;
   max-width: 100%;
   height: calc(var(--meter-panel-h) - 16px);
@@ -656,9 +417,6 @@ table.grid tfoot tr.meter-row td:first-child {
   cursor: default;
 }
 
-/* Same reading as the volume readout — a level you set — so it takes the same
-   step. It is the one place in the ramp that lands on a colored ground rather
-   than a surface, since the fill runs under it. */
 .mixer-send-value output {
   position: relative;
   z-index: 1;
@@ -677,8 +435,6 @@ table.grid tfoot tr.meter-row td:first-child {
   width: var(--mixer-meter-w);
 }
 
-/* No signal is literally black. Tick rules are painted over the well rather
-   than interrupting the green fill, so the bar stays one continuous reading. */
 .meter-well {
   position: relative;
   width: 100%;
@@ -718,11 +474,6 @@ table.grid tfoot tr.meter-row td:first-child {
   transform: scaleY(0);
   transform-origin: center bottom;
   border-radius: 0 0 var(--radius-xs) var(--radius-xs);
-  /* The zones are fixed to the rail's scale while the element itself reveals
-     the current level, so they have to hinge where the scale does. `TrackMeter`
-     writes both stops from the unity fraction Live reports for this strip —
-     green to 0 dB, red from +3 — rather than this file keeping its own copy of
-     where 0 dB fell, which is how the fill and the 0 dB rule came apart. */
   background: linear-gradient(
     to top,
     var(--green) 0 var(--meter-unity),
@@ -816,21 +567,12 @@ table.grid tfoot tr.meter-row td:first-child {
   background: var(--surface-control);
   color: var(--ui);
   font-family: var(--mono);
-  /* Whole decibels from `meterScale.ts` cap a strip at four mono characters, so
-     fit no longer picks this size — 8px is a choice about weight rather than
-     about room. These fields annotate the meter instead of competing with it,
-     and the reading anyone takes at a glance is the bar's own height. Every
-     field in the family stays one size, so a strip reads as a column of like
-     things and not as three unrelated ones. */
   font-size: 8px;
   line-height: 1;
   letter-spacing: -0.04em;
   white-space: nowrap;
 }
 
-/* Within the strip the ramp separates a value you set from one you only watch.
-   Volume is the ordinary interface reading; peak is an observation the meter
-   made on its own, so it sits a step further back until you go to reset it. */
 .meter-peak-readout {
   color: var(--detail);
   cursor: pointer;

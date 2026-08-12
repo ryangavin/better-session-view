@@ -3,13 +3,7 @@
 td.scene {
   position: sticky;
   left: var(--gutter);
-  /* Above every horizontally scrolling track cell and its paint effects. The
-     scene header and meter panel occupy higher, separate layers. */
   z-index: var(--layer-pinned);
-  /* Sticky cells overlap the scrolling track cells, so transparency here
-     would turn every clip passing underneath into noise behind the title.
-     The flat shadow extends that same opaque surface across the table's left
-     border-spacing gutter. */
   --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--bg);
   background: var(--bg);
   box-shadow: var(--scene-gutter-plug);
@@ -17,10 +11,6 @@ td.scene {
   font-size: 10px;
   color: var(--detail);
   white-space: nowrap;
-  /* The 10px inset plus 12px launcher lands the scene number under the song
-     header's 8px inset plus 14px fold badge. From there both row types use the
-     same 26px number, 26px BPM and 28px key slots, so every fact and identity
-     column shares an x coordinate. */
   padding-left: 10px;
   padding-right: 8px;
   width: var(--scene-col-w);
@@ -29,20 +19,12 @@ td.scene {
   text-overflow: ellipsis;
   cursor: pointer;
 }
-/* A real layout row rather than adjacent inline boxes. Inline whitespace was
-   enough to push the right-aligned tag outside the fixed table cell, where the
-   cell turned it into an ellipsis. Flex gives that remaining width explicitly. */
 td.scene .scene-line {
   display: flex;
   align-items: center;
   width: 100%;
   min-width: 0;
 }
-/* The scene number, and the grip that moves the scene. The cell around it
-   already means "select" and ⇧ already means "extend", so the row can't be the
-   handle without one gesture stealing from the other. `grab` is the only thing
-   that says so — there's no room for a dedicated handle in a column already
-   carrying a fire button, a role chip and a name. */
 td.scene .scene-n {
   color: var(--caption);
   flex: 0 0 26px;
@@ -52,17 +34,10 @@ td.scene .scene-n:active {
   cursor: grabbing;
 }
 
-/* Mid-drag. The rows in flight dim, so what you picked up is legible as a set
-   even when it's a non-contiguous one — which it can be, since a selection
-   moves together. */
 tr.scene-row.dragging td {
   opacity: 0.4;
 }
 
-/* The drop line, matching the song header's exactly: an inset shadow rather
-   than a border so it can't change a row's height. 848 rows sit under a sticky
-   header whose offset is measured in row metrics, and a 2px border appearing
-   mid-drag would shift every row below it. */
 tr.scene-row.drop-above td {
   box-shadow: inset 0 2px 0 var(--amber);
 }
@@ -75,9 +50,6 @@ tr.scene-row.drop-above td.scene {
 tr.scene-row.drop-below td.scene {
   box-shadow: inset 0 -2px 0 var(--amber), var(--scene-gutter-plug);
 }
-/* The scene's own tempo and musical key, in the same slots as song headers.
-   Fixed widths and right alignment make 94 / 128 and Bm / F#m share their
-   respective edges down the grid. The storage-only `@` stays out of the key. */
 td.scene .scene-bpm,
 td.scene .scene-key {
   font-family: var(--mono);
@@ -101,31 +73,12 @@ td.scene .scene-key.none {
   color: var(--caption);
 }
 
-/* The role, lifted out of the scene name. Live holds "Nightfall [chorus]"; we
-   paint the role while the song header owns the name, which is the point of
-   storing both in a name we can parse back.
-
-   It's a `<button>` — it opens the role menu — so the global button rule has to
-   be undone here: its border, padding and font all belong to the chip, not to
-   the rail's buttons. Scoped to the scene column: a scene shows one role,
-   while a folded song summarizes its roles as full-width bands. */
 td.scene .role-chip {
   display: inline-block;
   flex: none;
   border: none;
   font-family: var(--mono);
-  /* The gutter sits on the right, between the chip and the title: the chip is
-     a different kind of thing from the name beside it — Live's own text on one
-     side, our reading of it on the other — and it needs room to say so. Tight
-     to the scene number on the left, which it belongs with. */
   margin: 0 12px 0 4px;
-  /* One width for every role, so a column of them is a column rather than a
-     ragged edge — and so `[JAM1]` and `[PRACTICE]` weigh the same, which they
-     do. Sized to the roles, not to the grid setting: nine characters covers
-     nearly every one, and a wider chip is only whitespace inside it.
-     Longer roles ellipsis; the tooltip has the whole name. `box-sizing:
-     border-box` is global, so the padding and the dashed border below both sit
-     inside the width and the uncolored variant measures the same. */
   width: var(--role-chip-w);
   padding: 0 5px;
   text-align: center;
@@ -140,27 +93,15 @@ td.scene .role-chip {
   background: var(--bd3);
   color: var(--ui);
 }
-/* Hover says it's pressable without moving anything: the chip sits in a column
-   of chips, and a border or a size change on hover would shift the name beside
-   it on every row the pointer crosses. */
 td.scene .role-chip:hover {
   filter: brightness(1.25);
   color: var(--fg);
 }
 
-/* A scene with no role draws a pill saying so: same size and shape as a real
-   chip, a shade quieter, and the text dimmer than the fill is light — it names
-   the absence without competing with the roles beside it. Filled, not dashed: a
-   dashed chip already means something else here — see `.uncolored`.
-
-   It's the same button as a real chip, so an untagged scene is one click from a
-   role rather than a trip to the rail. */
 td.scene .role-chip.none {
   background: var(--bd2);
   color: var(--caption);
 }
-/* A role tagged in the set that nobody has given a color. Outlined rather than
-   hidden: the tag is really there, and it colors nothing until it's configured. */
 td.scene .role-chip.uncolored {
   background: transparent;
   border: 1px dashed var(--bd3);
@@ -168,8 +109,6 @@ td.scene .role-chip.uncolored {
   line-height: 12px;
 }
 
-/* Song metadata takes whatever remains after the fixed controls. Its contents
-   justify right, matching the header identity's right edge above it. */
 td.scene .song-tag-slot {
   display: flex;
   flex: 1 1 0;
@@ -177,18 +116,12 @@ td.scene .song-tag-slot {
   min-width: 0;
   vertical-align: 1px;
 }
-/* Scenes picked *as scenes* — what a role assignment would write to. Distinct
-   from clip selection, which paints the cells to the right. */
 td.scene.picked {
   --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--sel);
   background: var(--sel);
   box-shadow: inset 2px 0 0 var(--amber), var(--scene-gutter-plug);
 }
 
-/* Scene launch. The only plain-click control in the app that makes a sound —
-   allowed because firing is the button's whole job, and scene launching is the
-   primary gesture so it has to be visible rather than a modifier away. Narrow
-   because the scene column spends its width on the name and the role chip. */
 td.scene .fire {
   padding: 0;
   width: 12px;
@@ -212,10 +145,6 @@ td.scene .fire.fired {
 
 /* --- play state --------------------------------------------------- */
 
-/* A left bar rather than a border or a ring: the cell's background is the clip's
-   own Live color and its border is already spoken for by selection, so the only
-   free surface is a slice of the background. background-image paints over
-   background-color, so this composes with any clip color. */
 td.cell.playing {
   background-image: linear-gradient(90deg, var(--green) 0 3px, transparent 3px);
 }
@@ -224,15 +153,6 @@ td.cell.fired {
   animation: bsv-blink 0.5s infinite;
 }
 
-/* Except where a button already carries it. Every clip and every empty slot now
-   holds one that lights with the state, and those buttons stand 2px clear of
-   the cell's left edge — so the bar, which used to run underneath them unseen,
-   would now run down beside them: two marks for one fact, in two shapes, and on
-   a recording slot in two colors (a green bar beside a red square). Only the
-   blink stays on the cell, so a fired clip still pulses whole.
-
-   Group slots keep their bar. Their launcher is bare ink with no fill to light,
-   so the cell edge is the only thing there to say it. */
 td.cell.has.playing,
 td.cell.has.fired,
 td.cell.empty.playing,
@@ -240,20 +160,12 @@ td.cell.empty.fired {
   background-image: none;
 }
 
-/* Keyboard movement scrolls the active cell into view with `block: 'nearest'`,
-   which parks it at the very top of the scroll box — underneath the sticky
-   header, which is painted over it. `scroll-margin-top` reserves the header's
-   height plus the 2px it sticks at, so "nearest" means nearest *visible*.
-   Grew from a rough edge into a real one when the header got taller. */
 td.cell,
 td.scene {
   scroll-margin-top: calc(var(--header-h) + var(--gutter));
 }
 
 td.cell {
-  /* `scrollIntoView({ inline: 'nearest' })` knows the viewport edge but not the
-     scene column painted over it. Reserve that pinned width so keyboard
-     movement always lands on a visible track cell. */
   scroll-margin-left: calc(var(--scene-col-w) + 2 * var(--gutter));
   width: var(--col-w);
   max-width: var(--col-w);
@@ -263,12 +175,6 @@ td.cell {
   cursor: pointer;
   font-family: var(--mono);
   font-size: 8.5px;
-  /* The cell's content box — its 20px less the 1px borders — so the name's line
-     box fills the cell rather than sitting at the top of it. `overflow: hidden`
-     makes this cell a block formatting context, which means the launcher's
-     float counts toward the cell's height; without a line-height to match, an
-     8.5px name centers itself in its own ~10px line box and rides high in the
-     18px the float established. */
   line-height: 18px;
   padding: 0 5px;
   white-space: nowrap;
@@ -282,52 +188,19 @@ td.cell.sel {
   box-shadow: 0 0 0 1px rgba(240, 178, 60, 0.5);
 }
 
-/* Clip launch, the shape Live uses: a launcher occupying the slot's left end,
-   with the clip name filling what's left of the cell.
-
-   A surface rather than a rule between the two. The launcher is a button and
-   the name is a label, and a 1px divider on a 20px cell reads as a hairline
-   rather than as an edge you can press. Giving the button its own recessed
-   ground states the same boundary at the size the cell actually is.
-
-   Floated rather than laid out as a flex line, matching the group cell: only a
-   block container gets `text-overflow`, and turning the cell into a flex box to
-   hold two children would cost the clip name the ellipsis it already has. */
 td.cell.has {
-  /* The launcher owns this edge, so the cell stops reserving it — the button's
-     own left margin sets the inset instead, and the cell keeps its 5px on the
-     right where the name still ends. */
   padding-left: 0;
 }
 td.cell.has > .fire {
   float: left;
-  /* Square, and clear of the cell on all three outer sides. A full-height cap
-     took the clip's own top, bottom and left edges as its own, which made it
-     read as a slice taken out of the clip rather than as a button sitting on
-     it — and a shape 14 by 18 is a rectangle standing on end, which is not what
-     a launcher is. The 2px margin is what turns it into a square badge.
-
-     The margin box is still 18px tall, so the float continues to state the
-     cell's height and the clip name's line box is unmoved. */
   width: 14px;
   height: 14px;
   line-height: 14px;
   margin: 2px 4px 2px 2px;
   padding: 0;
   border: none;
-  /* All four corners now that the shape stands free inside the cell. Same
-     `--radius-xs` the cell itself carries, so the badge and the clip around it
-     curve alike at two different sizes. */
   border-radius: var(--radius-xs);
-  /* Darkened rather than tinted, because the ground underneath is the clip's
-     own Live color and no fixed color reads on all of them. Black at low alpha
-     recedes against every one, which is the whole message: the button sits
-     under the clip's surface, the name sits on it. */
   background: rgba(0, 0, 0, 0.25);
-  /* Full-strength ink now that the glyph has its own ground to sit on — it no
-     longer competes with the clip color, so it doesn't need to be quiet.
-     Sized with the empty slot's ■ so one column of buttons down a track reads
-     at one weight whether its slots hold clips or not. */
   color: inherit;
   font-size: 9px;
 }
@@ -336,17 +209,6 @@ td.cell.has > .fire:hover {
   color: inherit;
 }
 
-/* Play state, on the launcher rather than the cell — this is the only mark a
-   playing clip gets, since the cell's own left bar is off wherever a button
-   carries the state (see `td.cell.has.playing` under play state above). That
-   also puts this launcher with the scene and group ones, which have always
-   turned green while they sound.
-
-   The fill carries it rather than the glyph: green ink on a green clip is
-   nothing, but a green ground with the app's own background as ink reads on
-   every color in Live's palette. Same idea as the mixer's lit buttons. Ordered
-   after `:hover` because both selectors weigh the same and state outranks the
-   pointer. */
 td.cell.has.playing > .fire {
   background: var(--green);
   color: var(--bg);
@@ -358,24 +220,11 @@ td.cell.has.fired > .fire {
 
 /* --- empty slots -------------------------------------------------- */
 
-/* Live draws a button in an empty slot too, in the same place as the clip
-   launcher, and the same 14px strip here is what keeps one column of buttons
-   down a track whether its slots hold clips or not.
-
-   It is the *same* `ClipSlot.fire()` as the launcher. Live decides what that
-   means from the track: a stop button while the track is unarmed, a record
-   button once it's armed. So the glyph carries the whole distinction — ■ or ●,
-   readable before the press rather than discovered after it. */
 td.cell.empty {
-  /* The button owns this edge, exactly as the launcher does on a clip cell. */
   padding-left: 0;
 }
 td.cell.empty > .slot-btn {
   float: left;
-  /* The clip launcher's box exactly, down to the margins: these two alternate
-     down a track as its slots fill and empty, and a glyph that shifted by 2px
-     between one row and the next would break the column they make together.
-     What the shape is *for* is stated at the launcher. */
   width: 14px;
   height: 14px;
   line-height: 14px;
@@ -383,27 +232,14 @@ td.cell.empty > .slot-btn {
   padding: 0;
   border: none;
   border-radius: var(--radius-xs);
-  /* No ground at rest, unlike the clip launcher. That one is recessed because
-     it sits on the clip's own Live color and has to separate from it; this one
-     sits on the grid's quietest surface, and a second surface on it would draw
-     the eye to the four thousand cells with nothing in them. Bare ink and an
-     ink change on hover, the same as the scene and group launchers. */
   background: none;
   color: var(--idle);
-  /* The launcher's size, since the two share a column. 7px was too small for
-     any of them: ■ and ● are solid shapes with no interior, so they read as
-     specks at a size the arrow still survives, and this one has no clip color
-     behind it doing half the work of being seen. */
   font-size: 9px;
 }
 td.cell.empty > .slot-btn:hover {
   color: var(--fg);
 }
 
-/* Armed. Red is what Arm already means on the mixer strip, so a column of
-   record buttons reads as the state that Arm button is in rather than as a new
-   one — and it stays the only lit thing in an otherwise empty cell, which is
-   the point: which tracks are armed has to be answerable from the grid. */
 td.cell.empty > .slot-btn.rec {
   color: var(--red);
 }
@@ -411,13 +247,6 @@ td.cell.empty > .slot-btn.rec:hover {
   filter: brightness(1.25);
 }
 
-/* Queued, then recording. The lit states fill rather than tint, for the reason
-   the clip launcher's do — see `td.cell.has.playing > .fire`.
-
-   `.fired` is Live blinking the slot until the quantization point. `.playing`
-   on a slot we still believe is empty means Live has started recording into it
-   and our copy of the set hasn't caught up: the button is the recording
-   indicator until the next delta brings the new clip in. */
 td.cell.empty.fired > .slot-btn {
   background: var(--amber);
   color: var(--bg);
@@ -431,29 +260,15 @@ td.cell.empty.playing > .slot-btn.rec:hover {
 
 /* --- dragging clips ----------------------------------------------- */
 
-/* The clips you picked up. Dimmed rather than hidden: a drag is a move, and
-   showing the source empty before the drop implies it has already happened. */
 td.cell.lifting {
   opacity: 0.35;
 }
 
-/* Where they would land. A dashed outline rather than a fill, because the fill
-   is the clip's Live color and a target is usually a slot that already has one
-   — the outline has to read *over* whatever is there, including the clip it is
-   about to overwrite. `outline` doesn't participate in layout, so a row of
-   these can't shift the grid mid-drag.
-
-   Same amber as selection and the drop line. This grid has one color for "what
-   your gesture is about to act on", and a second would only ask which is which. */
 td.cell.landing {
   outline: 1px dashed var(--amber);
   outline-offset: -1px;
 }
 
-/* The active cell — where the keyboard is, and what ⌘-↑↓ fires. An inset
-   outline, because selection already owns the border and the outer ring, and a
-   cell is usually both. outline doesn't participate in layout, so it can't
-   shift the grid. */
 td.cell.active,
 td.scene.active {
   outline: 1px solid var(--fg);
