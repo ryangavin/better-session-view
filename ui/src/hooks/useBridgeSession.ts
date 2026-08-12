@@ -8,12 +8,14 @@ import type { BridgeState } from './useBridge.js';
  * Meters start a 30 Hz stream out of Live; sends add one observer per visible
  * track and return. Those flags decide which watches are installed — which
  * makes them part of what the connection is doing rather than only what App draws.
- * Keeping it up here also means the footer survives a hot update along with
- * everything else the socket holds.
+ * Stop-row visibility has no bridge cost, but lives beside the other footer flags
+ * so the entire footer survives a hot update with the socket.
  */
 export interface BridgeSession extends BridgeState {
+  showStopClips: boolean;
   showMeters: boolean;
   showSends: boolean;
+  toggleStopClips: () => void;
   toggleMeters: () => void;
   toggleSends: () => void;
 }

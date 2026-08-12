@@ -1151,30 +1151,29 @@ is `selected_device` / `device_insert_mode` / `is_collapsed`, and that last one 
 *arranger*, not the session. Real widths live only in the `.als`, which this project
 never parses. So the widths are ours to pick.
 
-`columnWidth.ts` holds three pixel presets and three viewport layouts, chosen over
-per-column dragging because the point of `s` is fitting a wide set on screen at once —
-something per-column widths actively work against.
+`columnWidth.ts` holds two pixel presets and three viewport layouts. The fixed presets
+start at the narrowest size where clip names and mixer controls remain useful; fitting a
+wider set is the job of the viewport layouts rather than an unusably small fixed column.
 
-The header exposes them through one compact native select rather than six persistent
+The header exposes them through one compact native select rather than five persistent
 buttons. The selected option is the stored mode, and changing it still applies
 immediately.
 
 | | track column | fits in ~1100px |
 |---|---|---|
-| `s` | 44px | ~24 tracks |
-| `m` | 74px | ~14 tracks |
-| `l` | 116px | ~9 tracks |
-| `auto` | at least 44px | all rendered tracks, when they fit readably |
+| Narrow (`m`) | 74px | ~14 tracks |
+| Wide (`l`) | 116px | ~9 tracks |
+| `auto` | at least 74px | all rendered tracks, when they fit readably |
 | `8` | viewport-derived | exactly one 8-track bank |
 | `16` | viewport-derived | exactly two 8-track banks |
 
 **Auto divides the width left after the fixed scene column among every rendered track.**
-Small's 44px is its floor: a large set keeps horizontal scrolling rather than turning
+Narrow's 74px is its floor: a large set keeps horizontal scrolling rather than turning
 clip names into unusable slivers.
 
 **8 and 16 divide that same space by a bank size instead.** The full table still contains
 every rendered track, so the ninth or seventeenth column begins the horizontal overflow.
-These modes deliberately do not inherit Small's floor: their job is to preview the exact
+These modes deliberately do not inherit Narrow's floor: their job is to preview the exact
 one- or two-device layout, even in a narrow browser.
 
 All three viewport layouts respond to the browser resizing, the rail opening or closing,
@@ -1217,7 +1216,8 @@ those same properties directly so a browser resize does not turn into 848 React 
 
 ## Mixer panel
 
-An Ableton-style stop row is always pinned beneath the visible Session columns. Each
+An Ableton-style stop row starts pinned beneath the visible Session columns and has its
+own filled-square header toggle. Each
 ordinary or group track has a stop-clips button in its own column; the pinned Songs/Master
 cell holds Stop All Clips. The row reads `fired_slot_index = -2` back from Live, so a
 pending stop lights the corresponding button rather than relying on optimistic state.
@@ -1237,12 +1237,11 @@ layout slot. On other tracks Arm remains visible but disabled when Live reports
 button rather than presenting a backwards Mute state.
 Selected Solo uses Live's blue visual language; activator and Arm remain amber and red.
 
-The adjacent sends icon opens Live-style A/B/C rows above each track fader and opens the
-mixer too if it was closed. Each row is a horizontal draggable value field backed by the
+The adjacent sends icon opens a separate Live-style A/B/C section above the meters and
+opens the mixer too if it was closed. Each row is a horizontal draggable value field backed by the
 corresponding `MixerDevice.sends` parameter; double-click restores Live's reported
-default. Master has no sends, so its meter and fader keep the full panel height. Many
-return tracks share the available upper area and scroll there rather than consuming the
-volume, pan and switch controls below.
+default. Master has no sends. The sends section takes its natural height and grows the
+whole footer, so toggling it never consumes the meter's resizable height.
 
 Live's `output_meter_*` values already represent positions on its normalized logarithmic
 meter. The fill uses that position directly; applying `log10` again makes a half-height
@@ -1258,14 +1257,14 @@ Master merely centers that shared subtree in its wider pinned cell. Its track-sw
 stays in the shared layout but is invisible, so its pan remains aligned with every other
 strip; a no-wrap Master label is painted over the unused switch area.
 
-The stop row, resize handle and panel are one sticky `<tfoot>`, so table layout stacks them
-without independently calculated offsets. The stop and meter rows retain one cell per
-visible column and share the grid's 2px gutters. Between them, a solid 4px divider changes
-the shared height from a 164px minimum without resembling another row of track controls;
-the 220px
-default leaves room for a useful volume range and the four offset controls even at
-Small's 44px column width. The output rail stays 8px there and grows smoothly to 16px as
-a roomier column admits a 56px strip; it stops at that width instead of consuming all the
+The optional stop, sends and meter sections are one sticky `<tfoot>`, so table layout
+stacks them without independently calculated offsets. Every join uses the grid's same 2px
+border; the border immediately above the meters is also their resize handle, with the
+cursor providing its hover affordance. Only the meter section changes height, from a
+164px minimum; the 220px
+default leaves room for a useful volume range and the four offset controls. The output
+rail stays 8px in exceptionally tight viewport-fit modes and grows smoothly to 16px as a
+roomier column admits a 56px strip; it stops at that width instead of consuming all the
 air in an 8-track view. The Activator, Solo, Arm, peak, volume and pan controls use a
 26px-wide column at every track width; their heights grow by the same proportion as their
 widths. The controls occupy the meter's lower-left side instead of

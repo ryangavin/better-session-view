@@ -51,9 +51,9 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   indicator beside that meter instead of a second vertical rail. Resettable peak and
   exact volume readouts occupy the top-left; each readout and the pan field is 26×19px
   so the entire control column grows without changing any control's aspect ratio. Pan
-  sits above the switch
-  stack. Optional sends follow Live's A/B-labelled value rows above ordinary-track
-  faders; Master has no sends, so its meter keeps the full panel height. The activator
+  sits above the switch stack. Optional sends occupy their own A/B-labelled footer section
+  above ordinary-track faders; opening them grows the footer instead of shortening the
+  meters. Master has no sends. The activator
   uses amber when enabled, Solo uses blue when selected and Arm uses red when armed.
   Group tracks retain the Arm button's layout slot but make the button itself invisible.
   Ordinary tracks and Master render the same 56px fader subtree. Master retains the track
@@ -86,13 +86,13 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   the clip's color rather than taking a fixed one, since the ground under it is whatever
   Live colored that clip; its lit states fill instead, with the app background as ink.
 - The mixer and stop slots are one resizable sticky table footer, so every strip remains
-  aligned with its track column and Master remains pinned under Songs. Its rows share the
-  grid's 2px gutters rather than floating at separately calculated offsets; one thin,
-  solid divider resizes the panel without resembling another track row. The output rail
-  grows from 8px to 16px when the column has room, then stops so whitespace remains.
-- A permanent stop-clips row is sticky under Session content and moves above the mixer
-  when it opens. Each visible track owns its stop slot; Stop All occupies the same slot in
-  the pinned Master column instead of living in the global transport controls.
+  aligned with its track column and Master remains pinned under Songs. Optional stop,
+  sends and meter sections stack as table rows and use one 2px border for every join; that
+  same border is the meter resize handle. The output rail grows from 8px to 16px when the
+  column has room, then stops so whitespace remains.
+- The stop-clips row starts visible and has its own header toggle. Each visible track owns
+  its stop slot; Stop All occupies the same slot in the pinned Master column instead of
+  living in the global transport controls.
 
 ## Stacking
 

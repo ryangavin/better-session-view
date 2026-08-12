@@ -12,13 +12,12 @@
 // label, and a setting about how many tracks fit shouldn't cost you the thing
 // you read the rows by.
 
-export type ColumnWidthPreset = 's' | 'm' | 'l';
+export type ColumnWidthPreset = 'm' | 'l';
 export type ViewportColumnWidth = 'auto' | '8' | '16';
 export type ColumnWidth = ColumnWidthPreset | ViewportColumnWidth;
 
 /** In presentation order — the header control renders straight from this. */
 export const COLUMN_WIDTHS: readonly ColumnWidth[] = [
-  's',
   'm',
   'l',
   'auto',
@@ -53,12 +52,9 @@ export interface ColumnMetrics {
   col: number;
 }
 
-// `m` is the width the grid shipped with. `s` is sized so ~24 tracks fit in a
-// 1100px track viewport; below about 40px of cell content the enlarged mixer
-// controls crowd their meter and a clip name is unreadable, so the cell may
-// as well be a color chip.
+// `m` is the narrow width the grid shipped with. Narrower fixed columns make
+// both clip names and mixer controls unusable, so the fixed presets begin here.
 const METRICS: Record<ColumnWidthPreset, ColumnMetrics> = {
-  s: { col: 44 },
   m: { col: 74 },
   l: { col: 116 },
 };
@@ -97,7 +93,7 @@ export function isViewportColumnWidth(w: ColumnWidth): w is ViewportColumnWidth 
 /**
  * Lay track columns out against the available grid viewport.
  *
- * Auto shares the width among the rendered tracks and stops at Small's 44px
+ * Auto shares the width among the rendered tracks and stops at Narrow's 74px
  * readability floor. The 8/16 modes instead size one or two hardware banks
  * exactly; any tracks beyond that bank make the full table scroll.
  */
@@ -108,13 +104,13 @@ export function viewportColumnLayout(
   spacing = 2,
 ): ViewportColumnLayout {
   const count = Math.max(0, Math.floor(trackCount));
-  if (count === 0) return { col: METRICS.s.col, table: tableWidth('s', 0, spacing) };
+  if (count === 0) return { col: METRICS.m.col, table: tableWidth('m', 0, spacing) };
 
   const target = mode === 'auto' ? count : Number(mode);
   const targetGutters = (target + 2) * spacing;
   const trackSpace = Math.max(0, availableWidth - SCENE_COL_W - targetGutters);
   const fitted = trackSpace / target;
-  const col = mode === 'auto' ? Math.max(METRICS.s.col, fitted) : Math.max(1, fitted);
+  const col = mode === 'auto' ? Math.max(METRICS.m.col, fitted) : Math.max(1, fitted);
   return {
     col,
     table: SCENE_COL_W + count * col + (count + 2) * spacing,
@@ -126,6 +122,9 @@ const KEY = 'bsv.columnWidth';
 export function loadColumnWidth(): ColumnWidth {
   try {
     const v = localStorage.getItem(KEY);
+    // Small was removed once the mixer controls outgrew a useful 44px track.
+    // Preserve existing browser preferences by moving it to Narrow.
+    if (v === 's') return 'm';
     return isColumnWidth(v) ? v : DEFAULT_COLUMN_WIDTH;
   } catch {
     return DEFAULT_COLUMN_WIDTH;
@@ -143,6 +142,6 @@ export function saveColumnWidth(w: ColumnWidth): void {
 
 function isColumnWidth(v: unknown): v is ColumnWidth {
   return (
-    v === 's' || v === 'm' || v === 'l' || v === 'auto' || v === '8' || v === '16'
+    v === 'm' || v === 'l' || v === 'auto' || v === '8' || v === '16'
   );
 }

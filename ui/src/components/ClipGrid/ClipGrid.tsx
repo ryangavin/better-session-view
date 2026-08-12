@@ -30,8 +30,9 @@ import {
 import { ControlButton, ControlGroup } from '../Control.js';
 import { Row, sceneDropEdge } from './Row.js';
 import { dropEdgeFor, SongHeaderRow } from './SongHeaderRow.js';
-import { MeterResizeHandle } from './MeterResizeHandle.js';
 import { TrackMeter } from './TrackMeter.js';
+import { TrackSends } from './TrackSends.js';
+import { useMeterResize } from './useMeterResize.js';
 
 export interface Props {
   snapshot: BSV.Snapshot;
@@ -41,6 +42,7 @@ export interface Props {
   active: ActiveCell | null;
   play: PlayState;
   canControlLive: boolean;
+  showStopClips: boolean;
   showMeters: boolean;
   showSends: boolean;
   subscribeMeters: BridgeState['subscribeMeters'];
@@ -154,6 +156,7 @@ export function ClipGrid({
   active,
   play,
   canControlLive,
+  showStopClips,
   showMeters,
   showSends,
   subscribeMeters,
@@ -204,8 +207,9 @@ export function ClipGrid({
     play.tracks.some((state) => state.playing >= 0) &&
     play.tracks.every((state) => state.playing < 0 || state.fired === STOP_FIRED);
   const meters = useMeters(subscribeMeters, showMeters);
-  const mixer = useMixer(subscribeMixer, showMeters);
+  const mixer = useMixer(subscribeMixer, showMeters || showSends);
   const tableRef = useRef<HTMLTableElement>(null);
+  const meterResize = useMeterResize(tableRef, showMeters);
   const viewportWidth = isViewportColumnWidth(columnWidth) ? columnWidth : null;
   useViewportColumnWidth(tableRef, viewportWidth, columns.length);
   const masterFill = useMemo<CSSProperties | undefined>(() => {
@@ -488,35 +492,56 @@ export function ClipGrid({
           return out;
         })}
       </tbody>
-      <tfoot>
-        <tr className="stop-row">
-          <td>
-            <StopClipsButton
-              label="Stop all clips"
-              title="Stop all clips, keep the song rolling (Esc)"
-              stopping={stoppingAll}
-              disabled={!canControlLive}
-              onClick={onStopAll}
-            />
-          </td>
-          {columns.map((column) => {
-            const track = column.kind === 'track' ? column.track : column.group;
-            return (
-              <td key={track.i}>
+      {(showStopClips || showSends || showMeters) && (
+        <tfoot>
+          {showStopClips && (
+            <tr className="stop-row">
+              <td>
                 <StopClipsButton
-                  label={`Stop clips on ${track.name}`}
-                  stopping={play.tracks[track.i]?.fired === STOP_FIRED}
+                  label="Stop all clips"
+                  title="Stop all clips, keep the song rolling (Esc)"
+                  stopping={stoppingAll}
                   disabled={!canControlLive}
-                  onClick={() => onStopTrack(track.i)}
+                  onClick={onStopAll}
                 />
               </td>
-            );
-          })}
-        </tr>
-        {showMeters && (
-          <>
-            <MeterResizeHandle cellCount={columns.length + 1} />
-            <tr className="meter-row">
+              {columns.map((column) => {
+                const track = column.kind === 'track' ? column.track : column.group;
+                return (
+                  <td key={track.i}>
+                    <StopClipsButton
+                      label={`Stop clips on ${track.name}`}
+                      stopping={play.tracks[track.i]?.fired === STOP_FIRED}
+                      disabled={!canControlLive}
+                      onClick={() => onStopTrack(track.i)}
+                    />
+                  </td>
+                );
+              })}
+            </tr>
+          )}
+          {showSends && (
+            <tr className="sends-row">
+              <td className="sends-cell master" aria-label="Master has no sends" />
+              {columns.map((column) => {
+                const track = column.kind === 'track' ? column.track : column.group;
+                return (
+                  <TrackSends
+                    key={track.i}
+                    trackIndex={track.i}
+                    label={track.name}
+                    mixer={mixer}
+                    setMixer={setMixer}
+                  />
+                );
+              })}
+            </tr>
+          )}
+          {showMeters && (
+            <tr
+              className={`meter-row${meterResize.dragging ? ' dragging' : ''}`}
+              {...meterResize.rowProps}
+            >
               {/* The scene overview is the grid's master column, so its meter is
                   structurally owned by this cell just as each track owns the
                   meter cell below its own column. */}
@@ -526,7 +551,6 @@ export function ClipGrid({
                 meters={meters}
                 mixer={mixer}
                 setMixer={setMixer}
-                showSends={showSends}
                 hideTrackControls
               />
               {columns.map((column) => {
@@ -539,15 +563,14 @@ export function ClipGrid({
                     meters={meters}
                     mixer={mixer}
                     setMixer={setMixer}
-                    showSends={showSends}
                     isGroup={track.isGroup}
                   />
                 );
               })}
             </tr>
-          </>
-        )}
-      </tfoot>
+          )}
+        </tfoot>
+      )}
     </table>
   );
 }
