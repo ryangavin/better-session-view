@@ -9,7 +9,7 @@ entirely** — see below.
 
 **LOM writes don't reach Live's own history**, so Live's ⌘Z will not bring a rename back —
 this is the only way back that exists. `useBridge` captures the reverse batch from the
-snapshot before every write (see [`core/src/ops.ts`](../../core/README.md)), which costs
+snapshot before every write (see [`core/src/ops.ts`](../../core/docs/ops.md)), which costs
 nothing because the snapshot already holds every clip's name and color.
 
 One level rather than a stack, on purpose: the snapshot an entry was captured against

@@ -89,8 +89,8 @@ language the clip cells use for the same fact. Once the header carries the track
 fill, a green *word* on a green track says nothing, and overriding the label color
 throws away the contrast `inkOn` just chose.
 
-The layout lives in [`core/src/trackColumns.ts`](../../core/README.md) and what a group
-slot shows in [`core/src/groupSlot.ts`](../../core/README.md), both with tests — nesting,
+The layout lives in [`core/src/trackColumns.ts`](../../core/docs/trackColumns.md) and what a group
+slot shows in [`core/src/groupSlot.ts`](../../core/docs/groupSlot.md), both with tests — nesting,
 ancestry and "which clip is first" are exactly the kind of logic that breaks quietly.
 
 **None of this costs the snapshot anything.** The LOM does expose group slots directly

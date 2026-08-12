@@ -9,7 +9,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 
 | touching | start at |
 |---|---|
-| domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — a linked catalogue, one entry per module |
+| domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
 | components, hooks, the client | [`ui/README.md`](ui/README.md) — 14 topic docs |
 | anything involving Live | [`bridge/README.md`](bridge/README.md) — 8 topic docs. **Most constraints in this project live here** |
 | "does Live expose X?" | [`bridge/LOM.md`](bridge/LOM.md) — **look it up, don't guess.** Includes where the published docs are wrong |

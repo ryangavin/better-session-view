@@ -52,7 +52,7 @@ Three things about it are load-bearing:
 - **`rows` replaces `sceneCount` everywhere movement or selection happens.**
   `useSongLayout` computes it from `songRows`, and `App` threads it into
   `moveActive` and `cellsInBlock` exactly as it threads `trackColumns`. Without that, `⌘↓` walks into folded scenes and fires
-  them — see [`core/README.md`](../../core/README.md).
+  them — see [`core/docs/songRows.md`](../../core/docs/songRows.md).
 - **`SongHeaderRow` is memoized on primitives**, for the same reason `Row` is. There can
   be a hundred of them and they must not all re-render because one song folded.
 
@@ -179,7 +179,7 @@ without the information — and dropping it gives the name the rest of the scene
 
 The **Songs** and **Unmapped** tiles in the status strip are derived, not stored — every
 snapshot re-reads the scene names through the scene pattern and works out which song each
-scene belongs to (see [`core/README.md`](../../core/README.md)). Clicking either opens
+scene belongs to (see [`core/docs/derive.md`](../../core/docs/derive.md)). Clicking either opens
 `SongsModal`, and clicking a song there selects its scenes.
 
 **The modal is read-only on purpose.** Its job is to answer "does derivation work on a

@@ -19,7 +19,7 @@ edit each have their own button. See below for why.
 **Role and key first, name next, song tag last.** Live's own scene column is narrow, so
 the performance metadata stays visible while the app-only tag truncates first; here it
 doesn't, because the grid lifts every field into its own presentation. Why the facts have distinct delimiters is in
-[`core/README.md`](../../core/README.md).
+[`core/docs/sceneTitle.md`](../../core/docs/sceneTitle.md).
 
 **BPM and key lead the rendered metadata**, with BPM read from the scene's own
 `Scene.tempo` and key shown without the storage-only `@`. Both use the same fixed-width,
@@ -54,7 +54,7 @@ through the whole expanded song.
 
 An existing set named the old way (`Nightfall 128 Bm [chorus]`) still shows its songs —
 derivation reads both conventions, and any rename converts a scene. See *Reading more
-than one convention* in [`core/README.md`](../../core/README.md).
+than one convention* in [`core/docs/namePattern.md`](../../core/docs/namePattern.md#reading-more-than-one-convention).
 
 ### The title fields
 
@@ -74,7 +74,7 @@ actions.
 
 The gesture is **click a scene name, click a role, click Color clips.** The role is
 written to the front of the scene's own name as `[ROLE]` (see
-[`core/README.md`](../../core/README.md) for why the set is the storage), and the grid shows
+[`core/docs/roles.md`](../../core/docs/roles.md) for why the set is the storage), and the grid shows
 the title with the tag lifted out into a colored chip — so Live holds
 `[CHORUS] @Bm NIGHTFALL {COVER}` and we render `Bm · CHORUS · COVER` beneath the song header.
 

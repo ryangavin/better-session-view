@@ -57,7 +57,7 @@ scenes were attached.
 
 **Patterns are configurable but must be reversible.** At most one free-text token unless a
 non-whitespace literal separates them. The rules, and why ambiguity splits into fatal and
-resolvable, are in [`core/README.md`](../core/README.md).
+resolvable, are in [`core/docs/namePattern.md`](../core/docs/namePattern.md).
 
 The convention this writes today is `[ROLE] @{key} {SONG} - {ARTIST} {TAG}` — `[CHORUS] @Bm
 NIGHTFALL - THE AVIATORS {COVER}`. Role first so a column of scene names reads as

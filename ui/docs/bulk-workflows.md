@@ -51,7 +51,7 @@ scene index is about to mean a different row.
 
 It is one plan and one `move` message, not a move per song. Live's undo grouping is
 per-message, a half-applied order is the worst state this app can leave a set in, and
-`planSceneReorder` is what makes one plan possible — see [`core/README.md`](../../core/README.md).
+`planSceneReorder` is what makes one plan possible — see [`core/docs/sceneMove.md`](../../core/docs/sceneMove.md).
 
 ### Coloring by rule
 
