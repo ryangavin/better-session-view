@@ -278,7 +278,6 @@ export function TrackMeter({
               <span aria-hidden="true" />
             </ControlButton>
           </ControlGroup>
-          {isMaster && <div className="mixer-master-label">Master</div>}
         </div>
       </div>
     </td>

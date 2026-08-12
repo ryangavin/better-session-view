@@ -1255,7 +1255,7 @@ control restores its reported `default_value`. Master and ordinary tracks render
 56px fader subtree, so the rail, peak/volume fields and pan cannot acquire separate sizing.
 Master merely centers that shared subtree in its wider pinned cell. Its track-switch stack
 stays in the shared layout but is invisible, so its pan remains aligned with every other
-strip; a no-wrap Master label is painted over the unused switch area.
+strip. The unused area has no label that could overlap the meter rail.
 
 The optional stop, sends and meter sections are one sticky `<tfoot>`, so table layout
 stacks them without independently calculated offsets. Every join uses the grid's same 2px

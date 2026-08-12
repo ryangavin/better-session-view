@@ -57,8 +57,8 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   uses amber when enabled, Solo uses blue when selected and Arm uses red when armed.
   Group tracks retain the Arm button's layout slot but make the button itself invisible.
   Ordinary tracks and Master render the same 56px fader subtree. Master retains the track
-  switch stack invisibly so pan stays aligned, with its non-clipping label painted over
-  that unused area; only sends differ outside the shared fader.
+  switch stack invisibly so pan stays aligned and leaves that unused area unlabelled; only
+  sends differ outside the shared fader.
 
 ## Grid
 
