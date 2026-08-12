@@ -128,6 +128,27 @@ What that cost, and what paid for it:
   `background`, and the drop indicators own `box-shadow` — three jobs, three properties,
   no ordering.
 
+### The height budget, and two rules that need their order
+
+`SongHeaderRow.css` explains nothing about itself — none of the grid's stylesheets do —
+so the parts of it that aren't self-evident live here.
+
+**Every header is 36px, artist or none**, and that number is a floor rather than a
+preference: it's what a folded row needs for its miniature scene sequence. A collapsed set
+is a list of nothing else, so a row that grew a line for some songs would cost both
+density and a straight edge to read down. The artist is free as long as it fits inside
+that floor, which is why the line heights are *stated* instead of left to the font:
+`--song-name-line` at 14px over `--song-artist-line` at 10px is exactly the 36px row less
+its 6px of padding top and bottom. `--song-text-h` caps the stacked pair at that same sum,
+so a font that renders taller than its line box — or a third line added here later — clips
+rather than reopening every row in the set.
+
+**Two of the facts rules tie on specificity and are resolved by source order.** `.facts
+.key` dims itself, so `.facts.clash .key` has to come after it or a disagreement would
+never turn amber. And `.bpm.none` has to come after `.clash` in turn, or a song stating no
+bpm beside a key its scenes disagree about would be painted as though the bpm disagreed
+too. Nothing said is not the same as two scenes saying different things.
+
 ### What a folded song holds, track by track
 
 Each track column of a folded header carries **one small square per section that track
