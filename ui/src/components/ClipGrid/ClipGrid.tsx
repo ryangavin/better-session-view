@@ -34,6 +34,7 @@ import { SongHeaderRow } from './SongHeaderRow.js';
 import { TrackMeter } from './TrackMeter.js';
 import { TrackStatusDisplay } from './TrackStatus.js';
 import { TrackSends } from './TrackSends.js';
+import { TrackViewControls } from './TrackViewControls.js';
 import { useMeterResize } from './useMeterResize.js';
 
 export interface Props {
@@ -44,9 +45,10 @@ export interface Props {
   active: ActiveCell | null;
   play: PlayState;
   canControlLive: boolean;
-  showStopClips: boolean;
   showMeters: boolean;
+  onToggleMeters: () => void;
   showSends: boolean;
+  onToggleSends: () => void;
   subscribeMeters: BridgeState['subscribeMeters'];
   subscribeMixer: BridgeState['subscribeMixer'];
   subscribeClipStatus: BridgeState['subscribeClipStatus'];
@@ -54,6 +56,7 @@ export interface Props {
   /** Live's song tempo, which is what puts a one-shot's countdown in seconds. */
   tempo: number | undefined;
   columnWidth: ColumnWidth;
+  onColumnWidth: (w: ColumnWidth) => void;
   /** Live's palette, for resolving a song header's color index to an RGB. */
   palette: number[];
   /** roleKey → the RGB its chip is painted. Must be a stable identity — see Row. */
@@ -161,15 +164,17 @@ export function ClipGrid({
   active,
   play,
   canControlLive,
-  showStopClips,
   showMeters,
+  onToggleMeters,
   showSends,
+  onToggleSends,
   subscribeMeters,
   subscribeMixer,
   subscribeClipStatus,
   setMixer,
   tempo,
   columnWidth,
+  onColumnWidth,
   palette,
   roleColors,
   selectedScenes,
@@ -218,7 +223,8 @@ export function ClipGrid({
     play.tracks.some((state) => state.playing >= 0) &&
     play.tracks.every((state) => state.playing < 0 || state.fired === STOP_FIRED);
   const meters = useMeters(subscribeMeters, showMeters);
-  const statuses = useTrackStatus(subscribeClipStatus, showStopClips, tempo);
+  // The stop row is always drawn, so its status displays always have a watch.
+  const statuses = useTrackStatus(subscribeClipStatus, true, tempo);
   const mixer = useMixer(subscribeMixer, showMeters || showSends);
   const tableRef = useRef<HTMLTableElement>(null);
   const meterResize = useMeterResize(tableRef, showMeters);
@@ -517,96 +523,106 @@ export function ClipGrid({
           return out;
         })}
       </tbody>
-      {(showStopClips || showSends || showMeters) && (
-        <tfoot>
-          {showStopClips && (
-            <tr className="stop-row">
-              {/* The metadata column holds nothing in the footer: everything
-                  down here belongs to a Live output, and it isn't one. */}
-              <td className="meta-cell" />
-              <td className="master-cell">
+      <tfoot>
+        {/* Always drawn. It carries the controls for the two rows below it, so
+            a toggle that could hide it would be a switch you can't switch
+            back. */}
+        <tr className="stop-row">
+          {/* The metadata column is the app's own — no Live output — so it has
+              nothing to stop, and the space goes to the controls for how the
+              track columns and the rest of this footer are drawn. */}
+          <td className="meta-cell">
+            <TrackViewControls
+              columnWidth={columnWidth}
+              onColumnWidth={onColumnWidth}
+              lomReady={canControlLive}
+              showMeters={showMeters}
+              onToggleMeters={onToggleMeters}
+              showSends={showSends}
+              onToggleSends={onToggleSends}
+            />
+          </td>
+          <td className="master-cell">
+            <StopClipsButton
+              label="Stop all clips"
+              title="Stop all clips, keep the song rolling (Esc)"
+              stopping={stoppingAll}
+              disabled={!canControlLive}
+              onClick={onStopAll}
+            />
+          </td>
+          {columns.map((column) => {
+            const track = column.kind === 'track' ? column.track : column.group;
+            return (
+              <td key={track.i}>
                 <StopClipsButton
-                  label="Stop all clips"
-                  title="Stop all clips, keep the song rolling (Esc)"
-                  stopping={stoppingAll}
+                  label={`Stop clips on ${track.name}`}
+                  stopping={play.tracks[track.i]?.fired === STOP_FIRED}
                   disabled={!canControlLive}
-                  onClick={onStopAll}
+                  onClick={() => onStopTrack(track.i)}
                 />
+                {/* Live's Track Status Display, in the place Live puts it.
+                    Drawn over the stop button rather than beside it, and
+                    deaf to the pointer, so the whole cell stays one large
+                    stop target while still reporting what the track is
+                    doing. */}
+                <TrackStatusDisplay store={statuses} t={track.i} />
               </td>
-              {columns.map((column) => {
-                const track = column.kind === 'track' ? column.track : column.group;
-                return (
-                  <td key={track.i}>
-                    <StopClipsButton
-                      label={`Stop clips on ${track.name}`}
-                      stopping={play.tracks[track.i]?.fired === STOP_FIRED}
-                      disabled={!canControlLive}
-                      onClick={() => onStopTrack(track.i)}
-                    />
-                    {/* Live's Track Status Display, in the place Live puts it.
-                        Drawn over the stop button rather than beside it, and
-                        deaf to the pointer, so the whole cell stays one large
-                        stop target while still reporting what the track is
-                        doing. */}
-                    <TrackStatusDisplay store={statuses} t={track.i} />
-                  </td>
-                );
-              })}
-            </tr>
-          )}
-          {showSends && (
-            <tr className="sends-row">
-              <td className="sends-cell meta-cell" />
-              <td className="sends-cell master-cell" aria-label="Master has no sends" />
-              {columns.map((column) => {
-                const track = column.kind === 'track' ? column.track : column.group;
-                return (
-                  <TrackSends
-                    key={track.i}
-                    trackIndex={track.i}
-                    label={track.name}
-                    mixer={mixer}
-                    setMixer={setMixer}
-                  />
-                );
-              })}
-            </tr>
-          )}
-          {showMeters && (
-            <tr
-              className={`meter-row${meterResize.dragging ? ' dragging' : ''}`}
-              {...meterResize.rowProps}
-            >
-              <td className="meter-cell meta-cell" />
-              {/* Master owns a column now, so its strip is the same 56px as
-                  every other strip in the row rather than one centered in a
-                  cell three times too wide for it. */}
-              <TrackMeter
-                meterKey="master"
-                label="Master"
-                meters={meters}
-                mixer={mixer}
-                setMixer={setMixer}
-                hideTrackControls
-              />
-              {columns.map((column) => {
-                const track = column.kind === 'track' ? column.track : column.group;
-                return (
-                  <TrackMeter
-                    key={track.i}
-                    meterKey={track.i}
-                    label={track.name}
-                    meters={meters}
-                    mixer={mixer}
-                    setMixer={setMixer}
-                    isGroup={track.isGroup}
-                  />
-                );
-              })}
-            </tr>
-          )}
-        </tfoot>
-      )}
+            );
+          })}
+        </tr>
+        {showSends && (
+          <tr className="sends-row">
+            <td className="sends-cell meta-cell" />
+            <td className="sends-cell master-cell" aria-label="Master has no sends" />
+            {columns.map((column) => {
+              const track = column.kind === 'track' ? column.track : column.group;
+              return (
+                <TrackSends
+                  key={track.i}
+                  trackIndex={track.i}
+                  label={track.name}
+                  mixer={mixer}
+                  setMixer={setMixer}
+                />
+              );
+            })}
+          </tr>
+        )}
+        {showMeters && (
+          <tr
+            className={`meter-row${meterResize.dragging ? ' dragging' : ''}`}
+            {...meterResize.rowProps}
+          >
+            <td className="meter-cell meta-cell" />
+            {/* Master owns a column now, so its strip is the same 56px as
+                every other strip in the row rather than one centered in a
+                cell three times too wide for it. */}
+            <TrackMeter
+              meterKey="master"
+              label="Master"
+              meters={meters}
+              mixer={mixer}
+              setMixer={setMixer}
+              hideTrackControls
+            />
+            {columns.map((column) => {
+              const track = column.kind === 'track' ? column.track : column.group;
+              return (
+                <TrackMeter
+                  key={track.i}
+                  meterKey={track.i}
+                  label={track.name}
+                  meters={meters}
+                  mixer={mixer}
+                  setMixer={setMixer}
+                  isGroup={track.isGroup}
+                />
+              );
+            })}
+          </tr>
+        )}
+      </tfoot>
     </table>
   );
 }

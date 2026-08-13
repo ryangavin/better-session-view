@@ -57,14 +57,7 @@ export function App() {
   const bridge = useBridgeSession();
   const { snapshot, play, launch, stop, setFold, selectScene, apply, applyScenes, undo } =
     bridge;
-  const {
-    showStopClips,
-    showMeters,
-    showSends,
-    toggleStopClips,
-    toggleMeters,
-    toggleSends,
-  } = bridge;
+  const { showMeters, showSends, toggleMeters, toggleSends } = bridge;
   const onStopAll = useCallback(() => stop({ kind: 'clips' }), [stop]);
 
   const [columnWidth, setColumnWidth] = useState<ColumnWidth>(loadColumnWidth);
@@ -340,14 +333,6 @@ export function App() {
         onCollapseAll={onCollapseAll}
         launch={launch}
         stop={stop}
-        columnWidth={columnWidth}
-        onColumnWidth={chooseColumnWidth}
-        showStopClips={showStopClips}
-        onToggleStopClips={toggleStopClips}
-        showMeters={showMeters}
-        onToggleMeters={toggleMeters}
-        showSends={showSends}
-        onToggleSends={toggleSends}
         onSetConfig={() => setConfigOpen(true)}
         onSnapshot={bridge.refresh}
       />
@@ -371,15 +356,17 @@ export function App() {
               active={active}
               play={play}
               canControlLive={bridge.lomReady}
-              showStopClips={showStopClips}
               showMeters={showMeters}
+              onToggleMeters={toggleMeters}
               showSends={showSends}
+              onToggleSends={toggleSends}
               subscribeMeters={bridge.subscribeMeters}
               subscribeMixer={bridge.subscribeMixer}
               subscribeClipStatus={bridge.subscribeClipStatus}
               setMixer={bridge.setMixer}
               tempo={bridge.transport?.tempo}
               columnWidth={columnWidth}
+              onColumnWidth={chooseColumnWidth}
               palette={bridge.palette}
               roleColors={roleColors}
               selectedScenes={selectedScenes}

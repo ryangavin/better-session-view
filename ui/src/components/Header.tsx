@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { COLUMN_WIDTHS, type ColumnWidth } from '../lib/columnWidth.js';
 import type { BridgeState } from '../hooks/useBridge.js';
 import './Header.css';
 import { ControlButton, ControlField, ControlGroup, ControlSelect } from './Control.js';
 import {
   IconIndex,
-  IconMeter,
   IconMetronome,
   IconNote,
   IconMenu,
@@ -14,7 +12,6 @@ import {
   IconStop,
   IconSync,
   IconScale,
-  IconSends,
   IconSettings,
 } from './Icon.js';
 
@@ -32,40 +29,9 @@ interface Props {
   onCollapseAll: (all: boolean) => void;
   launch: BridgeState['launch'];
   stop: BridgeState['stop'];
-  columnWidth: ColumnWidth;
-  onColumnWidth: (w: ColumnWidth) => void;
-  showStopClips: boolean;
-  onToggleStopClips: () => void;
-  showMeters: boolean;
-  onToggleMeters: () => void;
-  showSends: boolean;
-  onToggleSends: () => void;
   onSetConfig: () => void;
   onSnapshot: () => void;
 }
-
-const columnWidthText = (width: ColumnWidth): string => {
-  if (width === 'm') return 'Narrow';
-  if (width === 'l') return 'Wide';
-  if (width === 'auto') return 'Auto';
-  return `${width} tracks`;
-};
-
-const columnWidthLabel = (width: ColumnWidth): string => {
-  if (width === 'm') return 'Narrow track columns';
-  if (width === 'l') return 'Wide track columns';
-  if (width === 'auto') return 'Auto-fit all track columns';
-  if (width === '8') return 'Fit 8 track columns';
-  if (width === '16') return 'Fit 16 track columns';
-  return `${width} track columns`;
-};
-
-const columnWidthTitle = (width: ColumnWidth): string | undefined => {
-  if (width === 'auto') return 'Fit all visible track columns to the grid width';
-  if (width === '8') return 'Preview one 8-track clip-launcher bank';
-  if (width === '16') return 'Preview two 8-track clip-launcher banks';
-  return undefined;
-};
 
 const QUANTIZATION = [
   'None',
@@ -192,14 +158,19 @@ function TempoControl({
 }
 
 /**
- * The header bar: playback, view controls, set configuration, meters and Snapshot.
+ * The header bar: the song display, Live's control bar, transport, set
+ * configuration and Snapshot.
+ *
+ * How the *track columns* are drawn is not here — see `TrackViewControls`,
+ * which sits in the grid's own footer beside the rows it shows and hides.
  *
  * Every icon button here carries an `aria-label` as well as a `title`. An
  * icon-only control with no accessible name is a button that exists for
  * sighted mouse users and nobody else — and the `title` is also the only place
- * the longer ones (what Snapshot re-reads) can still be said in words. Column width is
- * the exception: a native single-select is
- * both more compact and already has the right keyboard semantics.
+ * the longer ones (what Snapshot re-reads) can still be said in words. The
+ * quantization, root and scale pickers are the exception: a native
+ * single-select is both more compact and already has the right keyboard
+ * semantics.
  */
 export function Header({
   lomReady,
@@ -215,14 +186,6 @@ export function Header({
   onCollapseAll,
   launch,
   stop,
-  columnWidth,
-  onColumnWidth,
-  showStopClips,
-  onToggleStopClips,
-  showMeters,
-  onToggleMeters,
-  showSends,
-  onToggleSends,
   onSetConfig,
   onSnapshot,
 }: Props) {
@@ -402,50 +365,6 @@ export function Header({
       </div>
 
       <div className="header-section header-right">
-        <ControlGroup label="Track view" surface="filled">
-          <ControlSelect
-            containerClassName="width-picker"
-            value={columnWidth}
-            aria-label="Track column display mode"
-            title={columnWidthTitle(columnWidth) ?? columnWidthLabel(columnWidth)}
-            onChange={(e) => onColumnWidth(e.currentTarget.value as ColumnWidth)}
-          >
-            {COLUMN_WIDTHS.map((w) => (
-              <option key={w} value={w}>
-                {columnWidthText(w)}
-              </option>
-            ))}
-          </ControlSelect>
-          <ControlButton
-            icon
-            pressed={showMeters}
-            aria-label="Mixer"
-            title={`${showMeters ? 'Hide' : 'Show'} track mixer and output meters`}
-            onClick={onToggleMeters}
-            disabled={!lomReady && !showMeters}
-          >
-            <IconMeter />
-          </ControlButton>
-          <ControlButton
-            icon
-            pressed={showSends}
-            aria-label="Sends"
-            title={`${showSends ? 'Hide' : 'Show'} track sends`}
-            onClick={onToggleSends}
-            disabled={!lomReady && !showSends}
-          >
-            <IconSends />
-          </ControlButton>
-          <ControlButton
-            icon
-            pressed={showStopClips}
-            aria-label="Stop clips row"
-            title={`${showStopClips ? 'Hide' : 'Show'} track stop-clips row`}
-            onClick={onToggleStopClips}
-          >
-            <IconStop />
-          </ControlButton>
-        </ControlGroup>
         <ControlButton
           icon
           aria-label="Set configuration"

@@ -42,7 +42,6 @@ import { BridgeContext, type BridgeSession } from '../hooks/useBridgeSession.js'
  * this file's own dependencies. That's the right bill for that edit.
  */
 export function BridgeProvider({ children }: { children: ReactNode }) {
-  const [showStopClips, setShowStopClips] = useState(true);
   const [showMeters, setShowMeters] = useState(false);
   const [showSends, setShowSends] = useState(false);
   const toggleMeters = useCallback(() => {
@@ -53,11 +52,9 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     setShowMeters(true);
     setShowSends((shown) => !shown);
   }, []);
-  const toggleStopClips = useCallback(() => {
-    setShowStopClips((shown) => !shown);
-  }, []);
-  // The status displays live in the stop row, so its toggle is their watch.
-  const bridge = useBridge(showMeters, showSends, showStopClips);
+  // The status displays live in the stop row, and the stop row is always drawn
+  // now that the track view controls sit in it — so their watch is always on.
+  const bridge = useBridge(showMeters, showSends, true);
 
   // `bridge` is a fresh object every render, so this memo doesn't stop anything
   // re-rendering — App re-renders when bridge state changes, exactly as it did
@@ -66,22 +63,12 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const session = useMemo<BridgeSession>(
     () => ({
       ...bridge,
-      showStopClips,
       showMeters,
       showSends,
-      toggleStopClips,
       toggleMeters,
       toggleSends,
     }),
-    [
-      bridge,
-      showStopClips,
-      showMeters,
-      showSends,
-      toggleStopClips,
-      toggleMeters,
-      toggleSends,
-    ],
+    [bridge, showMeters, showSends, toggleMeters, toggleSends],
   );
 
   return <BridgeContext.Provider value={session}>{children}</BridgeContext.Provider>;

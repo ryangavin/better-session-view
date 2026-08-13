@@ -198,8 +198,3 @@ header {
 .scale-group > .control-button {
   color: var(--detail);
 }
-
-/* --- column width ------------------------------------------------- */
-.width-picker {
-  width: 84px;
-}
