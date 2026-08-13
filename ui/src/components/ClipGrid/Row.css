@@ -63,6 +63,10 @@ td.scene-meta.picked {
 /* --- the Master column's scene cell -------------------------------- */
 
 td.scene-role {
+  --launcher-size: 14px;
+  --launcher-inset: 2px;
+  --launcher-gap: 4px;
+  --launcher-lane: calc(var(--launcher-inset) + var(--launcher-size) + var(--launcher-gap));
   position: sticky;
   left: var(--role-col-left);
   z-index: var(--layer-pinned);
@@ -90,16 +94,16 @@ td.scene-role.picked {
 
 td.scene-role > .fire {
   float: left;
-  width: 14px;
-  height: 14px;
-  margin: 2px 4px 2px 2px;
+  width: var(--launcher-size);
+  height: var(--launcher-size);
+  margin: var(--launcher-inset) var(--launcher-gap) var(--launcher-inset) var(--launcher-inset);
   padding: 0;
   border: none;
   border-radius: var(--radius-xs);
   background: rgba(0, 0, 0, 0.25);
   color: inherit;
   font-size: 7px;
-  line-height: 14px;
+  line-height: var(--launcher-size);
 }
 td.scene-role > .fire:hover {
   background: rgba(0, 0, 0, 0.45);
@@ -125,9 +129,10 @@ td.scene-role > .fire.fired {
 
 td.scene-role .role-chip {
   display: block;
+  width: calc(100% - var(--launcher-lane));
   overflow: hidden;
-  height: 14px;
-  margin: 2px 0;
+  height: var(--launcher-size);
+  margin: var(--launcher-inset) 0;
   padding: 0;
   border: none;
   border-radius: 0;
@@ -135,7 +140,7 @@ td.scene-role .role-chip {
   color: inherit;
   font-family: var(--mono);
   font-size: 9px;
-  line-height: 14px;
+  line-height: var(--launcher-size);
   letter-spacing: 0.06em;
   text-align: left;
   text-overflow: ellipsis;

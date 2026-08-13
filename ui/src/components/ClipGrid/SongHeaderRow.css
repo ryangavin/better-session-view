@@ -6,6 +6,7 @@ tr.song-row {
   --song-row-pad-x: 8px;
   --song-edge-w: 7px;
   --song-fold-size: 15px;
+  --song-tag-w: 34px;
   --song-text-h: calc(var(--song-row-h) - 2 * var(--song-row-pad-y));
   --song-name-line: 14px;
   --song-meta-line: 14px;
@@ -54,7 +55,7 @@ tr.song-row .song-identity {
 tr.song-row .song-name-line {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
   min-width: 0;
   height: var(--song-name-line);
@@ -112,9 +113,12 @@ tr.song-row .part {
   color: var(--caption);
 }
 tr.song-row .tag-chip.song-tag {
-  display: flex;
-  align-items: center;
-  height: var(--song-name-line);
+  width: var(--song-tag-w);
+  max-width: none;
+  padding: 0;
+  border: none;
+  text-align: right;
+  line-height: var(--song-name-line);
 }
 tr.song-row .facts {
   display: flex;

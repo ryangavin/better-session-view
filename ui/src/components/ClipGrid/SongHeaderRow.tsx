@@ -194,6 +194,13 @@ export const SongHeaderRow = memo(function SongHeaderRow({
      Both lines fit the row's existing height — 14 and 14 inside 36 — so a
      folded set is no taller for it.
 
+     The tag is a fixed slot rather than a pill sized to its word, for the same
+     reason the facts are: a chip that grows with its tag moves the name's right
+     edge song by song, and a jittering edge is the thing that stops a column
+     being scannable. It also has no outline here — the row already carries the
+     song's color as a bar and a wash, and the tag is drawn in that same color,
+     so the border was a third rectangle saying nothing the color didn't.
+
      Folded, the Master column has no roles to show and its width is the name's;
      open, the same block sits above scenes that have roles in it. One layout
      either way: a header should not move when a song folds. */
