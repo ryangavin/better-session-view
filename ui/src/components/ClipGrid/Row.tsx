@@ -94,10 +94,10 @@ export const Row = memo(function Row({
   // Live keeps the complete literal name either way.
   const role = roleIn(scene.name);
   const metadata = titleOf(scene.name);
-  // Scene.tempo is the current convention's source of truth. A BPM parsed
-  // from the name exists only for sets still carrying the legacy spelling,
-  // and matches the editor's migration fallback in useSceneTitles.
-  const bpm = scene.tempo >= MIN_TEMPO ? String(scene.tempo) : metadata.bpm;
+  // **The name is the record.** Scene.tempo is a projection of it onto the one
+  // scene Live should act on, so it stands in only for a set that hasn't been
+  // renamed yet — the same migration fallback the editor uses in useSceneTitles.
+  const bpm = metadata.bpm !== '' ? metadata.bpm : scene.tempo >= MIN_TEMPO ? String(scene.tempo) : '';
   const { key } = metadata;
   const roleRgb = role === null ? undefined : roleColors.get(roleKey(role));
 
@@ -160,7 +160,7 @@ export const Row = memo(function Row({
             edge of its segment — one column per side, not one shared one. */}
           <span
             className={`scene-bpm${bpm === '' ? ' none' : ''}`}
-            title={bpm === '' ? 'No BPM set for this scene' : `BPM: ${bpm}`}
+            title={bpm === '' ? 'This scene names no BPM' : `BPM: ${bpm}`}
           >
             {bpm || '---'}
           </span>

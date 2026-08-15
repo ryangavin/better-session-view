@@ -9,20 +9,23 @@ because naming a song and tagging its roles is the pass you make before touching
 individual clips, and the swatch grid below is the fallback for everything a role
 doesn't cover.
 
-A scene name is `[ROLE] @{key} {SONG} - {ARTIST} {TAG}` —
-`[CHORUS] @Bm NIGHTFALL - THE AVIATORS {COVER}`. Artist and tag are optional; `COVER`,
-`ORIGINAL` and `JAM` are tag suggestions rather than a fixed vocabulary. BPM lives on the
-scene's own `Scene.tempo` property instead. The panel edits all five pieces and they
-**commit differently, on purpose**: a role writes on click, a title edit and a tempo
-edit each have their own button. See below for why.
+A scene name is `[ROLE] @{bpm}-{key} {SONG} - {ARTIST} {TAG}` —
+`[CHORUS] @128-Bm NIGHTFALL - THE AVIATORS {COVER}`. Artist, tag, bpm and key are all
+optional; `COVER`, `ORIGINAL` and `JAM` are tag suggestions rather than a fixed
+vocabulary. The `-` joining bpm and key drops with either of them, so `@128`, `@Bm` and
+`@128-Bm` are one shape. The panel edits all five pieces and they **commit differently, on
+purpose**: a role writes on click, a title edit and the tempo projection each have their
+own button. See below for why.
 
-**Role and key first, name next, song tag last.** Live's own scene column is narrow, so
+**Role and facts first, name next, song tag last.** Live's own scene column is narrow, so
 the performance metadata stays visible while the app-only tag truncates first; here it
 doesn't, because the grid lifts every field into its own presentation. Why the facts have distinct delimiters is in
 [`core/docs/sceneTitle.md`](../../core/docs/sceneTitle.md).
 
-**BPM and key lead the rendered metadata**, with BPM read from the scene's own
-`Scene.tempo` and key shown without the storage-only `@`. Both use the same fixed-width,
+**BPM and key lead the rendered metadata**, both read from the name and shown without the
+storage-only `@`. A scene whose name states no bpm falls back to its own `Scene.tempo`,
+which is the migration path for a set written before the bpm went back in the name — the
+same fallback `useSceneTitles` uses to prefill the field. Both use the same fixed-width,
 right-aligned slots as song headers, and the scene number keeps a fixed width beside them,
 so every kind of fact reads as one vertical column down the grid. The song name is not
 repeated on each scene: the header already owns it, and every child scene necessarily
@@ -86,10 +89,20 @@ blank means "these scenes disagree" on arrival and "delete this part" once you'v
 deleted it — so `useSceneTitles` holds a `TitlePatch` of which fields have been
 *touched*, reset whenever the selection changes. The preview line is what makes the rule legible; keep it.
 
-Song, tag and key prefill from `commonTitle`; BPM comes from `Scene.tempo`, with older
-names used only as a migration fallback. A mixed field shows a `mixed` placeholder rather
-than one scene's answer. Tag, BPM and key are validated inline against their respective
-actions.
+All five prefill from `commonTitle` — **the name is the record** — and BPM falls back
+per scene to `Scene.tempo` for a set that hasn't been renamed yet. A mixed field shows a
+`mixed` placeholder rather than one scene's answer. Tag, BPM and key are validated inline,
+and all three now block **Rename**, because all three are written into the name.
+
+That fallback is also offered as a *pending* patch, exactly like the default artist: when
+every selected scene's name states no bpm but they all carry the same `Scene.tempo`, the
+field arrives filled and the rename writes it. Showing 128 in a field the rename would
+then drop is the one thing the preview line exists to prevent.
+
+**The tempo projection is song-scoped, not selection-scoped** — the same rule as the color
+swatch. `songTempoOps` writes each touched song's first scene and clears the rest of that
+song, reprise included; with the field untouched each song uses its own stated bpm, so
+selecting the whole set and pressing once is what converts it.
 
 ### Roles
 

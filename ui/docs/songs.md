@@ -12,12 +12,24 @@ folds; only the title selects, because folding is the frequent navigation gestur
 
 From there the rail does the three things at song scale:
 
-- **Rename** — the song/bpm/key fields, which prefill from what the song already agrees on.
-- **Set tempo on N scenes** — writes Live's own `Scene.tempo`, and is deliberately *not*
-  part of Rename. Everything else in the panel changes what a scene is called; this
-  changes what the set does, since Live takes a scene's tempo the moment it fires. Folding
-  it into a rename would make a naming pass silently alter playback. Clearing the bpm
-  field turns the button into **Clear tempo on N scenes**.
+- **Rename** — the song/artist/tag/bpm/key fields, which prefill from what the song
+  already agrees on. The bpm is part of the name now, and writing it changes nothing about
+  playback.
+- **Apply tempo to song start** — writes Live's own `Scene.tempo` on the song's **first**
+  scene and clears it off every other scene of the song. It is deliberately *not* part of
+  Rename: everything else in the panel changes what a scene is called; this changes what
+  the set does, since Live takes a scene's tempo the moment it fires. Folding it into a
+  rename would make a naming pass silently alter playback.
+
+  First scene only is the point rather than an economy. With the tempo on every scene, a
+  128 song could only ever be *entered* at 128 — dropping into its second chorus while the
+  set ran at 124 snapped everything. One scene carries it; the rest follow whatever is
+  playing. The clearing half is also how a set written the every-scene way converts, song
+  by song, which is why the button reads `tempoScenes` rather than only writing one scene.
+
+  With the bpm field empty the button becomes **Clear tempo on N scenes** — the way back
+  out. With more than one song selected it becomes **Apply tempo to N song starts**, and
+  each song uses its own stated bpm unless the field says otherwise.
 - **Song color** — a swatch grid that paints the scene rows themselves, so a song becomes
   a band of color in Live's own session view. Writes on click, like the clip swatches.
 

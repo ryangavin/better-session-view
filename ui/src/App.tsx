@@ -240,9 +240,11 @@ export function App() {
     sceneNameOps,
     titlePreview,
     onRenameScenes,
-    tempoWriteOps,
-    onSetTempo,
+    songCount,
+    songTempoWriteOps,
+    onApplySongTempo,
   } = useSceneTitles({
+    derivation,
     sceneList,
     scenesForOps,
     sceneNames,
@@ -438,8 +440,9 @@ export function App() {
               titleCount={sceneNameOps.length}
               titlePreview={selectedScenes.size === 0 ? null : titlePreview}
               onRenameScenes={onRenameScenes}
-              tempoCount={tempoWriteOps.length}
-              onSetTempo={onSetTempo}
+              songCount={songCount}
+              tempoCount={songTempoWriteOps.length}
+              onApplySongTempo={onApplySongTempo}
               songColorIndex={songColorIndex}
               songColorCount={songColorCount}
               songColorLabel={songColorLabel}

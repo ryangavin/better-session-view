@@ -47,9 +47,11 @@ interface Props {
   /** The first selected scene's name after the pending edit. */
   titlePreview: string | null;
   onRenameScenes: () => void;
-  /** Scenes whose own tempo the bpm field would change. */
+  /** Songs the selection touches — the unit the tempo projection works in. */
+  songCount: number;
+  /** Scenes the tempo projection would write: one per song, plus its strays. */
   tempoCount: number;
-  onSetTempo: () => void;
+  onApplySongTempo: () => void;
   /**
    * Palette slot the songs in the selection already share, or -1 when they
    * don't — which includes a song that's only half painted.
@@ -72,7 +74,8 @@ interface Props {
 
 /**
  * Everything that acts on the scenes picked in the scene-name column: the
- * name — `@{key} {SONG} {TAG}` — its Scene.tempo, and the role tag that leads it.
+ * name — `@{bpm}-{key} {SONG} {TAG}` — the song's start tempo, and the role tag
+ * that leads it.
  *
  * The two commit differently, on purpose. **Assigning a role writes on click,
  * the way a swatch does**, which only looks like it breaks the Inspector's rule
@@ -93,8 +96,9 @@ export function ScenePanel({
   titleCount,
   titlePreview,
   onRenameScenes,
+  songCount,
   tempoCount,
-  onSetTempo,
+  onApplySongTempo,
   songColorIndex,
   songColorCount,
   songColorLabel,
@@ -220,8 +224,9 @@ export function ScenePanel({
           'Shift-click a second scene name to take a whole song.'
         ) : (
           <>
-            Song, artist, tag and key rename scenes. Color paints all {songColorCount} scene
-            {songColorCount === 1 ? '' : 's'} of {songColorLabel}. BPM writes Scene.tempo.
+            Song, artist, tag, bpm and key rename scenes — the name is the record, and
+            writing a bpm changes nothing about playback. Color paints all {songColorCount}{' '}
+            scene{songColorCount === 1 ? '' : 's'} of {songColorLabel}.
           </>
         )}
       </div>
@@ -235,7 +240,7 @@ export function ScenePanel({
           instantly-legible action rather than the destructive one. */}
       <ControlButton
         type="button"
-        disabled={titleCount === 0 || busy || badSong || badTag || badKey}
+        disabled={titleCount === 0 || busy || badSong || badTag || badBpm || badKey}
         onClick={onRenameScenes}
       >
         Rename {titleCount} scene{titleCount === 1 ? '' : 's'}
@@ -244,19 +249,28 @@ export function ScenePanel({
       {/* Separate from the rename on purpose. Everything else in this panel
           changes what a scene is *called*; this changes what the set *does* —
           Live uses a scene's own tempo the moment that scene fires. Folding it
-          into Rename would make a naming pass quietly alter playback. */}
+          into Rename would make a naming pass quietly alter playback.
+
+          Song start, not "these scenes": the tempo goes on the song's first
+          scene alone, so entering the song at the top sets it and mixing into
+          the middle doesn't. The same press clears the tempo off the rest of
+          the song, which is how a set written the every-scene way converts. */}
       <ControlButton
         type="button"
         disabled={tempoCount === 0 || busy || badBpm}
         title={
           shown('bpm').trim() === ''
-            ? 'Clears the scene tempo, so these scenes follow the song again'
-            : `Sets Scene.tempo — firing these scenes will change the song tempo`
+            ? 'Clears the song\u2019s scene tempos, so it follows the Live Set tempo again'
+            : 'Writes Scene.tempo on each song\u2019s first scene and clears it off the ' +
+              'rest, so entering the song sets the tempo and mixing into it does not'
         }
-        onClick={onSetTempo}
+        onClick={onApplySongTempo}
       >
-        {shown('bpm').trim() === '' ? 'Clear tempo on' : 'Set tempo on'} {tempoCount}{' '}
-        scene{tempoCount === 1 ? '' : 's'}
+        {shown('bpm').trim() === ''
+          ? `Clear tempo on ${tempoCount} scene${tempoCount === 1 ? '' : 's'}`
+          : songCount > 1
+            ? `Apply tempo to ${songCount} song starts`
+            : 'Apply tempo to song start'}
       </ControlButton>
 
       <div className="lbl">Role</div>

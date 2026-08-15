@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { tempoOps, type SceneFields } from '../../../core/src/roles.js';
-import { MIN_TEMPO } from '../../../core/src/derive.js';
+import { songTempoOps, type SceneFields } from '../../../core/src/roles.js';
+import {
+  MIN_TEMPO,
+  songsOfScenes,
+  type Derivation,
+  type DerivedSong,
+} from '../../../core/src/derive.js';
 import {
   commonTitle,
   titleOf,
@@ -10,6 +15,7 @@ import {
 import type { BridgeState } from './useBridge.js';
 
 interface Args {
+  derivation: Derivation;
   /** The selected scenes, ascending — see useGridSelection. */
   sceneList: number[];
   scenesForOps: SceneFields[];
@@ -20,10 +26,30 @@ interface Args {
 }
 
 /**
- * Editing the selected scenes' names — `@{key} {SONG} - {ARTIST}`, everything
- * after the role tag — and their independent `Scene.tempo`.
+ * The bpm to project onto a song, when the panel's own field doesn't say.
+ *
+ * The song's own name, when its scenes agree on one — the name is the record.
+ * Failing that, whatever its first scene already carries, which makes the
+ * projection a no-op there and leaves the action doing only the useful half:
+ * clearing the strays. It never invents a value for a song whose scenes
+ * disagree, because picking one of two would be the drift the grid reports
+ * rather than resolves.
+ */
+function statedBpm(song: DerivedSong): number | null {
+  const named = song.observed.bpm.length === 1 ? Number(song.observed.bpm[0]) : NaN;
+  return Number.isFinite(named) ? named : song.firstSceneTempo;
+}
+
+/**
+ * Editing the selected scenes' names — `@{bpm}-{key} {SONG} - {ARTIST}`,
+ * everything after the role tag — and projecting a song's bpm onto Live.
+ *
+ * **The name is the record and the rename writes all five fields.** Projecting
+ * the bpm onto `Scene.tempo` is a second, separate action, because that one
+ * changes how the set plays: Live takes a scene's tempo the moment it fires.
  */
 export function useSceneTitles({
+  derivation,
   sceneList,
   scenesForOps,
   sceneNames,
@@ -45,31 +71,48 @@ export function useSceneTitles({
     [sceneList, sceneNames],
   );
 
+  /** What the selection's *names* agree on, field by field. */
+  const namedFields = useMemo(() => commonTitle(selectedTitles), [selectedTitles]);
+
   /**
-   * What the selection agrees on. Song and key come from the names; BPM comes
-   * from Scene.tempo, falling back to a legacy name only during migration.
+   * What the fields prefill from.
+   *
+   * Every part comes from the name, which is the durable record. BPM falls back
+   * to `Scene.tempo` per scene, and only per scene: a set written the
+   * every-scene way states its tempo there and nowhere else, and the field is
+   * how that gets moved into the name.
    */
   const commonFields = useMemo(() => {
-    const named = commonTitle(selectedTitles);
-    if (sceneList.length === 0) return named;
+    if (sceneList.length === 0) return namedFields;
     const scenes = new Map(scenesForOps.map((scene) => [scene.s, scene]));
     const bpms = sceneList.map((s, i) => {
+      const named = selectedTitles[i]?.bpm ?? '';
+      if (named !== '') return named;
       const tempo = scenes.get(s)?.tempo ?? -1;
-      return tempo >= MIN_TEMPO ? String(tempo) : (selectedTitles[i]?.bpm ?? '');
+      return tempo >= MIN_TEMPO ? String(tempo) : '';
     });
     const bpm = bpms.every((value) => value === bpms[0]) ? bpms[0]! : null;
-    return { ...named, bpm };
-  }, [sceneList, scenesForOps, selectedTitles]);
+    return { ...namedFields, bpm };
+  }, [namedFields, sceneList, scenesForOps, selectedTitles]);
 
-  // A default is a pending suggestion, never an implicit write. It appears
-  // only for a uniformly blank artist; a real or mixed value always wins. An
-  // explicit empty patch also wins, so deleting the seed lets this song remain
-  // artistless without the default springing back into the field.
+  // Two pending suggestions, never implicit writes, and both the same shape: a
+  // value the panel offers that an explicit edit always overrides.
+  //
+  // - A default artist, for a selection that uniformly has none.
+  // - A bpm that only exists on `Scene.tempo`, for a set still written the
+  //   every-scene way. Renaming is what moves it into the name, so the field
+  //   showing 128 while the rename dropped it would be a lie about the button.
   const pendingPatch = useMemo<TitlePatch>(() => {
-    if (titlePatch.artist !== undefined || commonFields.artist !== '') return titlePatch;
+    let out = titlePatch;
     const artist = defaultArtist.trim();
-    return artist === '' ? titlePatch : { ...titlePatch, artist };
-  }, [commonFields.artist, defaultArtist, titlePatch]);
+    if (out.artist === undefined && commonFields.artist === '' && artist !== '') {
+      out = { ...out, artist };
+    }
+    if (out.bpm === undefined && namedFields.bpm === '' && (commonFields.bpm ?? '') !== '') {
+      out = { ...out, bpm: commonFields.bpm! };
+    }
+    return out;
+  }, [commonFields.artist, commonFields.bpm, defaultArtist, namedFields.bpm, titlePatch]);
 
   const sceneNameOps = useMemo(
     () =>
@@ -77,6 +120,7 @@ export function useSceneTitles({
         song: pendingPatch.song,
         artist: pendingPatch.artist,
         tag: pendingPatch.tag,
+        bpm: pendingPatch.bpm,
         key: pendingPatch.key,
       }),
     [pendingPatch, sceneList, scenesForOps],
@@ -97,22 +141,35 @@ export function useSceneTitles({
     [applyScenes, sceneNameOps],
   );
 
-  // BPM belongs to Live's Scene.tempo, not to the name. A legacy name supplies
-  // the initial field only when the scene has no tempo property yet.
-  const wantedTempo = useMemo(() => {
-    const raw = (pendingPatch.bpm ?? commonFields.bpm ?? '').trim();
-    const n = Number(raw);
-    return raw !== '' && Number.isFinite(n) ? n : null;
-  }, [commonFields.bpm, pendingPatch.bpm]);
-
-  const tempoWriteOps = useMemo(
-    () => tempoOps(scenesForOps, sceneList, wantedTempo),
-    [sceneList, scenesForOps, wantedTempo],
+  /** The songs the selection touches — the unit the tempo projection works in. */
+  const selectedSongs = useMemo(
+    () => songsOfScenes(derivation, sceneList),
+    [derivation, sceneList],
   );
 
-  const onSetTempo = useCallback(
-    () => void applyScenes(tempoWriteOps, wantedTempo === null ? 'clear tempo' : 'set tempo'),
-    [applyScenes, tempoWriteOps, wantedTempo],
+  /**
+   * Putting each selected song's bpm on the one scene Live should act on.
+   *
+   * Song-scoped rather than selection-scoped, exactly like the color swatch:
+   * touching any scene of Nightfall projects onto Nightfall's first scene and
+   * clears the tempo off the rest of it, reprise included.
+   */
+  const songTempoWriteOps = useMemo(() => {
+    const edited = pendingPatch.bpm?.trim();
+    return selectedSongs.flatMap((song) => {
+      const wanted =
+        edited === undefined ? statedBpm(song) : edited === '' ? null : Number(edited);
+      return songTempoOps(
+        scenesForOps,
+        song,
+        wanted === null || !Number.isFinite(wanted) ? null : wanted,
+      );
+    });
+  }, [pendingPatch.bpm, scenesForOps, selectedSongs]);
+
+  const onApplySongTempo = useCallback(
+    () => void applyScenes(songTempoWriteOps, 'song start tempo'),
+    [applyScenes, songTempoWriteOps],
   );
 
   return {
@@ -122,7 +179,8 @@ export function useSceneTitles({
     sceneNameOps,
     titlePreview,
     onRenameScenes,
-    tempoWriteOps,
-    onSetTempo,
+    songCount: selectedSongs.length,
+    songTempoWriteOps,
+    onApplySongTempo,
   };
 }

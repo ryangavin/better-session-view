@@ -32,6 +32,10 @@ function rowFlags(song: DerivedSong): string[] {
   // Legal — a song is a label, not a range — but worth surfacing, because the
   // other reason for two blocks is that two different songs share a name.
   if (song.blocks.length > 1) flags.push(`${song.blocks.length} blocks`);
+  // A tempo anywhere but the first scene is a scene the set can't be mixed
+  // into: firing it snaps the Live Set tempo. This is where you find them.
+  const strays = song.tempoScenes.filter((s) => s !== song.scenes[0]).length;
+  if (strays > 0) flags.push(`${strays} stray tempo${strays === 1 ? '' : 's'}`);
   return flags;
 }
 
@@ -80,7 +84,9 @@ export function SongsModal({
                   <th>bpm</th>
                   <th>key</th>
                   <th>tag</th>
-                  <th>tempo</th>
+                  <th title="Scene.tempo on the song's first scene — what Live does when you enter the song at the top">
+                    start tempo
+                  </th>
                   <th />
                 </tr>
               </thead>
@@ -101,8 +107,16 @@ export function SongsModal({
                     <td>
                       <Observed values={song.observed.tag} />
                     </td>
+                    {/* What Live will actually do, which is not the same fact
+                        as the bpm the names state — that one is the record and
+                        this one is the projection of it. A song with none
+                        simply keeps whatever tempo is already running. */}
                     <td>
-                      <Observed values={song.observed.tempo} />
+                      {song.firstSceneTempo === null ? (
+                        <span className="caption">—</span>
+                      ) : (
+                        song.firstSceneTempo
+                      )}
                     </td>
                     <td className="flags">
                       {rowFlags(song).map((f) => (
