@@ -59,11 +59,13 @@ scenes were attached.
 non-whitespace literal separates them. The rules, and why ambiguity splits into fatal and
 resolvable, are in [`core/docs/namePattern.md`](../core/docs/namePattern.md).
 
-The convention this writes today is `[ROLE] @{key} {SONG} - {ARTIST} {TAG}` — `[CHORUS] @Bm
-NIGHTFALL - THE AVIATORS {COVER}`. Role first so a column of scene names reads as
-structure; `@` opens the key because after it a letter can only be a key. **A convention
-change can't be a clean break**, since the mapping *is* the names — so derivation reads more
-than one pattern and a set converts scene by scene as it's renamed.
+The convention this writes today is `[ROLE] @{bpm}-{key} {SONG} - {ARTIST} {TAG}` —
+`[CHORUS] @128-Bm NIGHTFALL - THE AVIATORS {COVER}`. Role first so a column of scene names
+reads as structure; `@` opens the facts because after it a digit can only be a tempo and a
+letter can only be a key. The `-` joins them and drops with either, so `@128`, `@Bm` and
+`@128-Bm` are one shape. **A convention change can't be a clean break**, since the mapping
+*is* the names — so derivation reads more than one pattern and a set converts scene by
+scene as it's renamed.
 
 **The artist is a fact, not identity.** `songKey` is still the song name alone, so one
 title with two artists is drift the songs list reports rather than two songs. It is also
@@ -71,9 +73,22 @@ the only place two free-text fields meet in one name, which is why `" - "` is lo
 and why the parsing convention is the next thing that should become configuration rather
 than a constant.
 
-**bpm is not like the other tokens.** It's the one fact with a home in Live —
-`Scene.tempo` — and writing it changes how the set plays. See
-[`bridge/README.md`](../bridge/README.md) for the `tempo_enabled` ordering.
+**bpm is a label in the name, and only a setting when the set asks for it.** It is the one
+fact that also has a home in Live — `Scene.tempo` — and writing *that* changes how the set
+plays, because Live takes a scene's own tempo the moment that scene fires. The convention
+used to put the bpm there and nowhere else, and it made mixing into the middle of a song
+impossible: every scene of a 128 song snapped the set to 128 however fast it was already
+running, so a song could only ever be entered at its own tempo.
+
+So the name is the record, and the tempo is a **projection** of it onto the song's *first*
+scene — entering the song at the top sets the tempo, mixing into its second chorus does
+not. Projecting is a deliberate action rather than a side effect of renaming, and whether
+a rename does it too is one flag the set stores (`DeviceState.writeSceneTempo`), off
+unless asked. See [`bridge/README.md`](../bridge/README.md) for the `tempo_enabled`
+ordering a tempo write depends on.
+
+A song that genuinely speeds up should eventually show a bpm *range* rather than a clash.
+That is a direction, not built.
 
 **Clip color is layered rules, first match wins**, so you can reason about why a clip is
 the color it is, and lint can report what matched nothing.
