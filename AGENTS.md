@@ -16,7 +16,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 | a wire message | [`protocol/README.md`](protocol/README.md) |
 | the `.amxd` or the patcher | [`tools/README.md`](tools/README.md) |
 | how the modules fit together, or where this is headed | [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/direction.md`](docs/direction.md) |
-| anything a user can see or press | the [wiki](https://github.com/ryangavin/better-session-view/wiki) — see rule 8 |
+| anything a user can see or press | the [wiki](https://github.com/ryangavin/better-session-view/wiki) — see rule 9 |
 
 Two docs are worth reading even when they aren't obviously your topic:
 
@@ -39,25 +39,33 @@ work in [Issues](../../issues).
    `BSV` namespace. Adding an import breaks the device silently.
 4. **The bridge protocol is coarse-grained** — one message per operation, never per
    property. A full set is tens of thousands of LOM reads.
-5. **Clip color is written as `color_index`**, never raw RGB.
-6. **Nothing loads from a CDN.** This runs on stage.
-7. **Don't name things with words that already mean something in a DAW.** `transport`
+5. **The device holds the set, and no client may change what it knows.** `bridge.js`
+   reads the set once when the LOM is ready, watches Live's structure and Session cursor
+   for as long as the device is loaded, and patches what it holds. A client connecting,
+   disconnecting, refreshing or hot-reloading must not start, stop or re-arm any of that,
+   and must never decide to walk Live — only the Snapshot button does. Two watches are the
+   device's (`observe`, `watch_selection`) and five are a viewport's; adding a watch means
+   answering which. This was violated for a release and the symptoms looked like six
+   different bugs — see [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
+6. **Clip color is written as `color_index`**, never raw RGB.
+7. **Nothing loads from a CDN.** This runs on stage.
+8. **Don't name things with words that already mean something in a DAW.** `transport`
    is play/stop/record. Same trap: scene, clip, cue, bus, send, return, warp, quantize,
    follow action, slot, take, punch, bounce, freeze. Where a DAW term *is* the right
    word for the actual Live concept, use it precisely and don't overload it.
-8. **Whenever feature functionality is added or changed, update the relevant wiki page
+9. **Whenever feature functionality is added or changed, update the relevant wiki page
    in the same change.** The wiki is the user manual, so documentation is part of the
    feature being done rather than follow-up work. It lives in the separate
    `better-session-view.wiki.git` repository and requires its own commit and push.
-9. **Every commit made by an agent must include a GitHub-compatible Codex co-author
-   trailer.** Leave a blank line between the commit message and the trailer, and add it
-   exactly as follows:
+10. **Every commit made by an agent must include a GitHub-compatible Codex co-author
+    trailer.** Leave a blank line between the commit message and the trailer, and add it
+    exactly as follows:
 
-   ```text
-   Co-authored-by: Codex <noreply@openai.com>
-   ```
+    ```text
+    Co-authored-by: Codex <noreply@openai.com>
+    ```
 
-10. **A change to how a feature works updates that feature's topic doc in the same
+11. **A change to how a feature works updates that feature's topic doc in the same
     commit.** The docs are the reason this codebase is navigable; a doc that drifts is
     worse than one that never existed, because it's believed. If a change makes a doc
     wrong, fix the doc — don't append a note saying it's wrong.

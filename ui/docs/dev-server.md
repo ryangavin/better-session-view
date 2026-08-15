@@ -24,10 +24,12 @@ were re-reading the whole set:
 - **Re-render with fresh dependencies.** React ignores the previous deps of every
   `useMemo`, `useCallback` and `useEffect` in a component it just hot-updated, so
   `useMemo(() => new BridgeClient(), [])` built a new client — dropping the socket,
-  reconnecting, and re-arming every watch. Re-arming `observe` re-attaches the
-  `tracks` and `scenes` observers, and an observer that calls back on attach is
-  broadcast as `changed structure`, which sends **every** connected client for a
-  full walk.
+  reconnecting, and re-arming every watch this client owns. That used to include
+  `observe`, which re-attaches the `tracks` and `scenes` observers; an observer
+  calls back on attach, that was broadcast as `changed structure`, and **every**
+  connected client walked the set. So editing a hook re-read forty tracks. The
+  device owns those two watches now and a reconnect cannot disturb them, which
+  makes this the cheap case rather than the expensive one.
 - **Remount.** Fast Refresh compares a signature built from the hooks a component
   calls, *including the hooks nested inside every custom hook it uses* — `App`'s is
   computed over fifteen of them. Change any one and the signatures differ, React
@@ -51,10 +53,11 @@ So the bill for an edit is now the honest one:
 | `useBridge.ts`, `useBridgeSession.ts`, `client.ts` | a reconnect and a walk — you edited the bridge |
 | `main.tsx`, `vite.config.ts` | a full page reload |
 
-One thing that still walks and isn't HMR: the staleness backstop re-reads the set
-when you come back to the window and what you're holding is over `STALE_MS` old.
-Editing for five minutes and clicking back into the browser is exactly that case —
-see `core/src/backstop.ts`, which is where to change your mind about it.
+One thing that still walks and isn't HMR: the staleness backstop. It runs in the
+**bridge** now, on a fixed tick, so editing for five minutes no longer means the
+next click into the browser spends Live's main thread — coming back to the window
+just re-asks for the set, which is a payload. See `core/src/backstop.ts` for the
+policy and `bridge.ts`'s `backstopTick` for the caller.
 
 Two env vars, both optional:
 

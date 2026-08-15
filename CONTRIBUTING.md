@@ -26,6 +26,34 @@ Set-owned configuration lives in a hidden parameter on the bridge device, so Liv
 stores it directly in the `.als`. The fixed Live color table is compiled into the app.
 Replacing the device folder or clearing browser storage costs the user nothing.
 
+### The device knows the set; clients are shown it
+
+**`bridge.js` holds the current state of the Live Set and keeps it current for its own
+sake.** It reads the set once when the LOM reports ready, watches Live's structure and its
+Session cursor from that moment until the device is unloaded, and patches what it holds
+from every delta and every write that passes through it. It derives the song mapping from
+that — once, for Push and every browser together — into a `SetModel`.
+
+A client asking for the set is therefore **a message and a payload**, not a walk. It never
+causes Live to do work except in one case it cannot avoid (the bridge holds nothing yet)
+and one a person asked for (the **Snapshot** button). Opening a tab, closing the last tab,
+refreshing, and hot-reloading a hook all leave what the device knows untouched.
+
+That last sentence is the invariant, and it was not free. The two watches that keep the
+held set current used to be client subscriptions, which made the device's knowledge of the
+set conditional on a browser being open: closing the last tab blinded the bridge, and
+opening one re-installed the LOM observers — which Live answers by calling back with the
+value it already had, indistinguishable from the set genuinely changing. So connecting
+invalidated the cache the client was about to read, then paid ~2.6s to rebuild it. The
+symptoms were varied and the cause was singular: **something outside the device was
+deciding what the device could see.**
+
+Why it matters beyond the speed: the state is what Push reads with no browser open at all,
+and a second kind of client — a stage display, a CLI — should cost nothing and perturb
+nothing. Anything that makes the held state depend on who is connected breaks both. The
+reasoning in full, including which watches are the device's and which are a viewport's, is
+in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
+
 ## Modules
 
 Five projects. Each has its own README; read the one you're touching.

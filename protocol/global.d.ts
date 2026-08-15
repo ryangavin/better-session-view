@@ -102,8 +102,9 @@ declare namespace BSV {
      *
      * Named `clipScope` and not `tracks` because `trackRows` below is also
      * "tracks" and means something else entirely — one is which columns were
-     * re-read, the other is what the columns themselves are called. Rule 7 in
-     * `CONTRIBUTING.md` is about DAW words, but the same trap is the reason.
+     * re-read, the other is what the columns themselves are called. The
+     * don't-overload-a-DAW-word rule in `AGENTS.md` is about Live's vocabulary,
+     * but the same trap is the reason.
      */
     clipScope: number[];
     /** Every clip now in the tracks named by `clipScope`. */
