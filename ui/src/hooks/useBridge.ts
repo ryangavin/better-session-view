@@ -8,7 +8,6 @@ import {
   sceneFields,
 } from '../../../core/src/roles.js';
 import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
-import { MIN_INTERVAL_MS, shouldWalk, STALE_MS } from '../../../core/src/backstop.js';
 import { canApplyDelta, mergeRows, mergeTrackDelta } from '../../../core/src/snapshotDelta.js';
 import { applyClipMove, type ClipMovePlan } from '../../../core/src/clipMove.js';
 import { LIVE_PALETTE } from '../../../core/src/livePalette.js';
@@ -221,13 +220,6 @@ export function useBridge(
    * that set it — which is the whole class of bug this guard exists to prevent.
    */
   const busyRef = useRef(false);
-  /**
-   * When a walk last succeeded, and when one was last attempted. Both feed
-   * `shouldWalk`; see `core/src/backstop.ts` for why only a snapshot may stamp
-   * the first of them and a delta may not.
-   */
-  const lastSnapshotAtRef = useRef<number | null>(null);
-  const lastAttemptAtRef = useRef<number | null>(null);
   /** The walk in flight, if there is one. Null between walks. */
   const walkRef = useRef<Promise<void> | null>(null);
 
@@ -416,59 +408,45 @@ export function useBridge(
     return () => client.send({ type: 'watchSends', on: false });
   }, [client, lomReady, trackCount, watchSends]);
 
-  // Follow what the user does in Live. Two things, and they cover different
-  // failures: `observe` reports structural changes (a track or scene added,
-  // removed or reordered), and `watchSelection` re-reads the tracks the Session
-  // cursor touches, which is how a clip dragged in Live reaches the grid.
+  // Live's control-bar state is a viewport concern — nothing off screen needs
+  // it — so it stays refcounted against this client like the meters do.
   //
-  // Not keyed on trackCount, unlike the play and meter watchers. Those install
-  // an observer per track and go stale when the count changes; these watch
-  // `live_set` and `live_set view`, which are the same two objects however many
-  // tracks there are.
+  // `observe` and `watchSelection` are deliberately **not** here. Following the
+  // set's structure and the Session cursor is how the *bridge* keeps the copy it
+  // holds current, so it does that for itself from the moment the LOM is ready,
+  // for as long as the device is loaded. A client subscribing to them made the
+  // device's knowledge of the set depend on whether a browser happened to be
+  // open, and re-armed the LOM observers on every connect — which announced
+  // itself as a structural change and threw the held set away. See
+  // `bridge/docs/multiple-clients.md`.
   useEffect(() => {
     if (!lomReady) return;
-    client.send({ type: 'observe', on: true });
-    client.send({ type: 'watchSelection', on: true });
     client.send({ type: 'watchTransport', on: true });
-    return () => {
-      client.send({ type: 'watchTransport', on: false });
-      client.send({ type: 'watchSelection', on: false });
-      client.send({ type: 'observe', on: false });
-    };
+    return () => client.send({ type: 'watchTransport', on: false });
   }, [client, lomReady]);
 
-  // The backstop, for what no observer can report: properties Live exposes with
-  // no `observe` at all — `Clip.length`, `Track.fold_state` — plus another M4L
-  // device or a remote script. Nothing announces those, so the only way to find
-  // out is to look.
+  // Coming back to the window asks the bridge for the set again. That is a
+  // message and a payload — no walk — so it costs Live nothing and covers the
+  // case where this tab sat in the background through changes it missed.
   //
-  // **Coming back to the window is the moment to ask, not the reason.** This
-  // walked on every focus, which spent ~950ms of Live's main thread per alt-tab
-  // to answer a question that is almost always "nothing changed". `shouldWalk`
-  // asks the question that actually matches the job — how old is what I hold —
-  // and it lives in core/ with tests rather than as two constants in a hook.
+  // **The staleness backstop is not here any more.** Deciding that the set has
+  // gone stale, and spending Live's main thread to find out, belongs to the
+  // thing that owns the set — one process that knows when it last looked, not N
+  // tabs each with their own clock reaching the same conclusion at the same
+  // moment. `shouldWalk` still exists and still has its tests; `bridge.ts` is
+  // what calls it now.
   useEffect(() => {
     if (!lomReady) return;
     const onFocus = () => {
       if (document.visibilityState !== 'visible') return;
-      // Never walk on top of a write. It reconciles or re-reads on its own, and
-      // a snapshot taken mid-`apply` would read a half-written set.
+      // Never re-read on top of a write. It reconciles on its own, and a read
+      // taken mid-`apply` would show a half-written set.
       if (busyRef.current) return;
-      const stale = shouldWalk({
-        now: Date.now(),
-        lastSnapshotAt: lastSnapshotAtRef.current,
-        lastAttemptAt: lastAttemptAtRef.current,
-        staleMs: STALE_MS,
-        minIntervalMs: MIN_INTERVAL_MS,
-      });
-      if (!stale) return;
-      // The one caller that means "go and look", not "tell me what you hold".
-      void resyncRef.current?.(true);
+      void resyncRef.current?.();
     };
     // Both, because they catch different things — `visibilitychange` covers a
     // minimised or hidden tab, `focus` covers switching windows on the same
-    // desktop. They also both fire on one alt-tab, which used to mean two
-    // walks; now the first stamps `lastAttemptAt` and the second is refused.
+    // desktop.
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
     return () => {
@@ -580,13 +558,11 @@ export function useBridge(
   const walk = useCallback(
     (fresh: boolean) =>
       guard('snapshot', async () => {
-        lastAttemptAtRef.current = Date.now();
         await whileSyncing(async () => {
           const e = await client.request({ type: 'snapshot', fresh });
           const wire = client.lastWireTiming;
           const commitStart = performance.now();
           setSet({ snapshot: e.data, model: e.model });
-          lastSnapshotAtRef.current = Date.now();
           // Queued after React's commit, so it captures render cost too.
           requestAnimationFrame(() => {
             reportSnapshotTiming(e, wire, performance.now() - commitStart);
@@ -668,12 +644,10 @@ export function useBridge(
     // them back a stale snapshot with no indication anything was skipped.
     if (walkRef.current) return walkRef.current;
     const run = async () => {
-      lastAttemptAtRef.current = Date.now();
       try {
         await whileSyncing(async () => {
           const s = await client.request({ type: 'snapshot', fresh });
           setSet({ snapshot: s.data, model: s.model });
-          lastSnapshotAtRef.current = Date.now();
         });
       } catch (e) {
         // Reported here rather than thrown. Three callers reach this as a bare

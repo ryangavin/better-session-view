@@ -53,7 +53,6 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `palette` | developer-only sweep of Live's palette |
 | `saveSetConfig` `{ defaultArtist, roles }` | store naming defaults and role definitions in the device |
 | `saveAllowedColors` `{ colors }` | store the bulk-color subset in the device |
-| `observe` `{ on }` | structural change notifications |
 | `launch` `{ target }` | fire a clip, a scene, or the song |
 | `stop` `{ target }` | stop a track, every clip, or the song |
 | `setTransport` `{ patch }` | update any related subset of Live's control-bar settings |
@@ -63,7 +62,6 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `watchStatus` `{ on }` | follow the playing clip in each track, for the stop row's status displays |
 | `watchSends` `{ on }` | add/remove per-track send observers while the mixer is open |
 | `watchTransport` `{ on }` | observe tempo, metronome, launch quantization, Arrangement Record and current scale |
-| `watchSelection` `{ on }` | follow edits made in Live by watching the Session cursor |
 | `selectScene` `{ s }` | select and reveal one exact scene in Live's Session View |
 | `ping` | |
 
@@ -117,7 +115,12 @@ than conclude the LOM got faster.
 can't be — so a client joining a running bridge costs Live nothing. `fresh: true` forces
 the walk, and it exists because some of what a snapshot carries has no `observe` in the
 LOM at all (`Clip.length`, `Track.fold_state`, another device entirely), so the only way
-to find out is to look. The **`SetModel`** on the event is the same idea one layer up: the
+to find out is to look — and the **Snapshot** button is the only thing that sends it. A
+client never decides to walk on its own. The bridge follows the set's structure and the
+Session cursor for itself, from the moment the LOM is ready and regardless of whether any
+browser is open, and it runs the staleness backstop too; there are no `observe` or
+`watchSelection` messages, because those are not a client's to hold. See
+[`../bridge/docs/multiple-clients.md`](../bridge/docs/multiple-clients.md). The **`SetModel`** on the event is the same idea one layer up: the
 mapping is read out of the scene names once, in the bridge, rather than by every client
 over the same names. It rides on a `delta` too, but only when that delta moved a scene
 row — the coarse-grained rule cuts both ways, and a song list re-sent on every clip edit

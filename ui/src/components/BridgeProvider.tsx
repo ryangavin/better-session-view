@@ -23,10 +23,17 @@ import { BridgeContext, type BridgeSession } from '../hooks/useBridgeSession.js'
  *
  * The second is the expensive one: a full walk is ~950ms of Live's main thread
  * with the sync modal over the screen. The first costs a reconnect and a
- * re-arm, and re-arming `observe` re-attaches the `tracks` and `scenes`
- * observers — Live calls at least its numeric observers back on attach (see
- * `watch_selection` in `lom.ts`), and a callback there is broadcast as
- * `changed structure`, which sends **every** connected client for a full walk.
+ * re-arm of the watches this client owns.
+ *
+ * It used to cost far more than that. `observe` and `watchSelection` were
+ * client subscriptions too, and re-arming `observe` re-attaches the `tracks`
+ * and `scenes` observers — Live calls back on attach, that callback was
+ * broadcast as `changed structure`, and every connected client walked the set.
+ * So editing a hook re-read forty tracks. Those two are the *device's* watches
+ * now: the bridge follows Live for its own sake and a client neither claims nor
+ * releases them, which is also why a reconnect no longer throws away the set
+ * the bridge holds. This component still earns its place for the remount case,
+ * which is the expensive one.
  *
  * Vite hands a hot update to the importers of the file that changed until it
  * reaches one that accepts it. Every hook under `hooks/`, and every module

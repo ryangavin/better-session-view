@@ -38,13 +38,14 @@ stays as the manual override now that the grid mostly keeps up on its own.
 **Asking for the set is not the same as walking it.** The bridge holds the current set and
 answers from it, so the automatic request on connect is normally free — no LOM walk, no
 ~8.8s of Live's main thread on a full-size set, and a second tab that opens instantly.
-`fresh: true` is what forces the walk anyway, and exactly two things send it:
+`fresh: true` is what forces the walk anyway, and exactly one thing sends it: the
+**Snapshot** button (`refresh`).
 
-- the **Snapshot** button (`refresh`), and
-- the staleness backstop, when `shouldWalk` says yes.
-
-Both are asking the one question held state cannot answer — whether something with no
-`observe` at all has changed. Everything else — the first connect, a `changed structure`,
+That is a person asking the one question held state cannot answer — whether something with
+no `observe` at all has changed. **The client never decides to walk on its own**; the
+staleness backstop that used to live here is the bridge's now, because deciding the set is
+stale and spending Live's main thread to find out belongs to the process that owns the set
+rather than to N tabs reaching the same conclusion at the same moment. Everything else — the first connect, a `changed structure`,
 a write Live took only half of, a delta that didn't line up — asks without `fresh`, because
 in each of those the bridge either holds a set that is current or has already dropped its
 own and will walk on that very request. What the bridge does with the two cases is in
@@ -74,13 +75,20 @@ Two things still read the names in the browser, and both are deliberate:
 
 ## Keeping up with Live
 
-`useBridge` subscribes to two things on mount and covers a third with the browser:
+**The bridge follows Live; the client is told.** These three are not client
+subscriptions — `useBridge` sends nothing to arm them, and a tab opening or closing does
+not start or stop any of them. The device holds them for as long as it is loaded, so what
+it knows about the set does not depend on whether a browser is open:
 
 | | catches | costs |
 |---|---|---|
 | `observe` → `changed structure` | a track or scene added, removed, reordered | a full re-walk, and it has to be — every index changed meaning |
-| `watchSelection` → `delta` | **a clip moved, copied or deleted in Live**, one renamed, recolored or deleted *in place*, and a scene or track renamed, recolored or retempoed | ~11ms a track |
+| `watch_selection` → `delta` | **a clip moved, copied or deleted in Live**, one renamed, recolored or deleted *in place*, and a scene or track renamed, recolored or retempoed | ~11ms a track |
 | staleness | what has no `observe` at all — `Clip.length`, `Track.fold_state`, another device | a full walk, at most one per `STALE_MS` |
+
+What reaches the client is the result: `changed`, `delta` and the `SetModel` riding on it.
+Coming back to the window re-asks the bridge for the set, which is a message and a payload
+rather than a walk.
 
 The middle one is the interesting one, and how it works is in
 [`bridge/README.md`](../../bridge/README.md) under *Following Live*: the bridge watches
@@ -116,8 +124,8 @@ So the merge takes `event.model ?? held.model`, the same shape as `d.tempo ?? he
 beside it. The bridge runs this identical merge over its own copy, which is what makes the
 next client's request free.
 
-**The backstop exists for what nothing can report.** Some of what a snapshot carries has
-no `observe` in the LOM at all — `Clip.length`, `Track.fold_state` — and another M4L
+**The backstop exists for what nothing can report, and it runs in the bridge.** Some of
+what a snapshot carries has no `observe` in the LOM at all — `Clip.length`, `Track.fold_state` — and another M4L
 device or a remote script announces nothing either. There is no cheap way to check: any
 honest fingerprint of the set needs clip content, which needs the slot scan, which is 80%
 of the walk. So the only way to find out is to look, and the only question is when.
@@ -125,8 +133,11 @@ of the walk. So the only way to find out is to look, and the only question is wh
 **It used to look on every window focus**, which spent ~950ms of Live's main thread per
 alt-tab to answer a question that is almost always "nothing changed". Focus is a
 convenient moment to ask, not a reason in itself; the trigger that matches the job is
-**age**. `shouldWalk` is in [`core/`](../../core/README.md) with tests rather than as two
-constants in a hook, and it answers three things at once:
+**age**. Then it moved again, out of the browser entirely: a tab that was merely *open*
+was deciding Live should spend ~2.6s, and several tabs decided it at once. `shouldWalk` is
+still in [`core/`](../../core/README.md) with tests rather than as two constants
+somewhere, and it answers three things at once — `bridge.ts` is what calls it now, on a
+fixed tick:
 
 - **only a snapshot resets the clock, never a delta.** A delta proves the bridge is alive
   and following; only a walk proves *everything* is current. Were deltas to stamp it, a
@@ -137,7 +148,7 @@ constants in a hook, and it answers three things at once:
   tab versus another window on the same desktop — so the floor is what makes them one walk
   instead of two.
 - **holding nothing is not staleness.** With no snapshot there's nothing to distrust, and
-  the first walk belongs to the once-per-session effect below.
+  the first walk belongs to the device's own read when the LOM reports ready.
 
 Two guards around the walk itself, and both were bugs before:
 

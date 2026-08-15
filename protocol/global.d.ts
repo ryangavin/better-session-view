@@ -734,7 +734,6 @@ declare namespace BSV {
         writeSceneTempo?: boolean;
       }
     | { id?: number; type: 'saveAllowedColors'; colors: number[] | null }
-    | { id?: number; type: 'observe'; on: boolean }
     /**
      * Fold or unfold a group track — Live's `fold_state`, which is what hides
      * a group's member tracks behind it.
@@ -766,13 +765,6 @@ declare namespace BSV {
     | { id?: number; type: 'watchStatus'; on: boolean }
     | { id?: number; type: 'watchSends'; on: boolean }
     | { id?: number; type: 'watchTransport'; on: boolean }
-    /**
-     * Follow changes the user makes in Live, by watching the Session cursor
-     * and re-reading the tracks it touches. Two observers, not one per slot —
-     * the LOM has no aggregate "a clip in this track changed" signal at all.
-     * Answers arrive as `delta` events.
-     */
-    | { id?: number; type: 'watchSelection'; on: boolean }
     | { id?: number; type: 'ping' };
 
   type RequestType = Request['type'];
