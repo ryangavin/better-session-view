@@ -540,11 +540,17 @@ declare namespace BSV {
     at: number;
     /** Fixed at eight by the quick-add workflow and validated on both bridge sides. */
     count: number;
-    /** Complete rendered scene name, including an optional key prefix. */
+    /** Complete rendered scene name, including an optional `@bpm-key` prefix. */
     name: string;
     /** Scene RGB. Omitted leaves Live's new scenes uncolored. */
     color?: number;
-    /** Scene.tempo. Omitted leaves the scenes following the Live Set tempo. */
+    /**
+     * Scene.tempo, on **every** created scene. Omitted leaves them following
+     * the Live Set tempo, and the app always omits it: one tempo across all
+     * eight scenes is the every-scene convention that made mixing into a song
+     * impossible. A new song states its bpm in its name, and projecting that
+     * onto the song's first scene is a separate write — `songTempoOps`.
+     */
     tempo?: number;
   }
 
@@ -707,8 +713,20 @@ declare namespace BSV {
      * Nothing in `ui/` sends this — `tools/diag.ts` does.
      */
     | { id?: number; type: 'diag'; what: string; arg?: number }
-    /** Replace the set's naming defaults and role definitions as one form. */
-    | { id?: number; type: 'saveSetConfig'; defaultArtist: string; roles: Role[] }
+    /**
+     * Replace the set's naming defaults and role definitions as one form.
+     *
+     * `writeSceneTempo` is optional so an older UI can still save the rest of
+     * the form; omitted leaves whatever the device already stored rather than
+     * turning a playback-affecting setting off behind the user's back.
+     */
+    | {
+        id?: number;
+        type: 'saveSetConfig';
+        defaultArtist: string;
+        roles: Role[];
+        writeSceneTempo?: boolean;
+      }
     | { id?: number; type: 'saveAllowedColors'; colors: number[] | null }
     | { id?: number; type: 'observe'; on: boolean }
     /**

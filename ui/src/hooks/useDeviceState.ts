@@ -18,6 +18,13 @@ export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
   const [defaultArtist, setDefaultArtist] = useState('');
   const [roles, setRoles] = useState<BSV.Role[]>([]);
   const [allowedColors, setAllowedColorsState] = useState<number[] | null>(null);
+  /**
+   * Whether a rename also projects the song's bpm onto its first `Scene.tempo`.
+   *
+   * Off unless the set says otherwise, and absent means off — a bpm is a label,
+   * and turning this on is what makes writing one change how the set plays.
+   */
+  const [writeSceneTempo, setWriteSceneTempo] = useState(false);
   const migratingAllowed = useRef(false);
 
   const adoptDeviceState = useCallback(
@@ -25,6 +32,7 @@ export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
       // Older bridge builds can still be running while Vite serves this UI.
       setDefaultArtist(state.defaultArtist ?? '');
       setRoles(state.roles);
+      setWriteSceneTempo(state.writeSceneTempo === true);
       if (state.allowedColors !== undefined) {
         setAllowedColorsState(state.allowedColors);
         return;
@@ -52,18 +60,23 @@ export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
   );
 
   const saveSetConfig = useCallback(
-    (nextArtist: string, nextRoles: BSV.Role[]) =>
+    (nextArtist: string, nextRoles: BSV.Role[], nextWriteSceneTempo?: boolean) =>
       guard('set configuration', async () => {
         const e = await client.request({
           type: 'saveSetConfig',
           defaultArtist: nextArtist,
           roles: nextRoles,
+          ...(nextWriteSceneTempo === undefined
+            ? {}
+            : { writeSceneTempo: nextWriteSceneTempo }),
         });
         setDefaultArtist(e.defaultArtist);
         setRoles(nextRoles);
+        if (nextWriteSceneTempo !== undefined) setWriteSceneTempo(nextWriteSceneTempo);
         say(
           `set configuration — ${e.roleCount} role(s), ` +
-            `${e.defaultArtist === '' ? 'no default artist' : `default artist ${e.defaultArtist}`}`,
+            `${e.defaultArtist === '' ? 'no default artist' : `default artist ${e.defaultArtist}`}` +
+            `${nextWriteSceneTempo ? ', bpm writes the song start tempo' : ''}`,
           'ok',
         );
       }),
@@ -86,6 +99,7 @@ export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
     defaultArtist,
     roles,
     allowedColors,
+    writeSceneTempo,
     adoptDeviceState,
     saveSetConfig,
     setAllowedColors,
