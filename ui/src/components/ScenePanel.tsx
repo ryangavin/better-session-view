@@ -1,5 +1,6 @@
 import { hex } from '../../../core/src/color.js';
 import './ScenePanel.css';
+import { MIN_TEMPO } from '../../../core/src/derive.js';
 import { roleKey, type Role } from '../../../core/src/roles.js';
 import {
   isBpm,
@@ -126,7 +127,12 @@ export function ScenePanel({
 
   const shown = (f: keyof TitlePatch) => patch[f] ?? common[f] ?? '';
   const badTag = shown('tag').trim() !== '' && !isTag(shown('tag'));
-  const badBpm = shown('bpm').trim() !== '' && !isBpm(shown('bpm'));
+  // Live's own lower bound as well as the name's shape. A `@19` name parses,
+  // but Live refuses that tempo — so the projection would silently *clear*
+  // where the button says apply. Rejected here, where it can still be fixed.
+  const badBpm =
+    shown('bpm').trim() !== '' &&
+    (!isBpm(shown('bpm')) || Number(shown('bpm').trim()) < MIN_TEMPO);
   const badKey = shown('key').trim() !== '' && !isKey(shown('key'));
   // A song carrying the artist separator is read back as a song *and* an
   // artist, so writing it would name one thing and map another. Blocked here
@@ -223,7 +229,7 @@ export function ScenePanel({
           <span className="bad">
             {badTag ? "tag uses letters, numbers, spaces, &, ' or -" : ''}
             {badTag && (badBpm || badKey) ? ' · ' : ''}
-            {badBpm ? 'bpm is 2–3 digits' : ''}
+            {badBpm ? `bpm is ${MIN_TEMPO}–999` : ''}
             {badBpm && badKey ? ' · ' : ''}
             {badKey ? 'key is like Bm, F#m, Eb' : ''}
           </span>
