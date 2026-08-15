@@ -12,6 +12,9 @@ import { MIN_INTERVAL_MS, shouldWalk, STALE_MS } from '../../../core/src/backsto
 import { canApplyDelta, mergeRows, mergeTrackDelta } from '../../../core/src/snapshotDelta.js';
 import { applyClipMove, type ClipMovePlan } from '../../../core/src/clipMove.js';
 import { LIVE_PALETTE } from '../../../core/src/livePalette.js';
+import { derive } from '../../../core/src/derive.js';
+import { SCENE_PATTERNS } from '../../../core/src/namePattern.js';
+import { buildSetModel } from '../../../core/src/setModel.js';
 import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.js';
 import { useLog, type LogLine } from './useLog.js';
 import { useDeviceState } from './useDeviceState.js';
@@ -61,10 +64,31 @@ interface Batch {
   sceneOps: BSV.SceneOp[];
 }
 
+/**
+ * The set in hand: what Live holds, and what this app reads it as.
+ *
+ * One piece of state rather than two, because a model that describes a
+ * different revision of the set than the snapshot beside it would draw song
+ * headers over rows they don't belong to. They are always replaced together.
+ */
+interface HeldSet {
+  snapshot: BSV.Snapshot;
+  model: BSV.SetModel;
+}
+
 export interface BridgeState {
   connection: ConnectionState;
   lomReady: boolean;
   snapshot: BSV.Snapshot | null;
+  /**
+   * The songs in the set, as the bridge read them — always describing the
+   * `snapshot` beside it. Null until the first one arrives.
+   *
+   * Nothing draws a song by reading a scene name; the mapping is read once, in
+   * the bridge, for Push and every browser tab together. See
+   * `core/docs/setModel.md`, and `reconcile` for the single exception.
+   */
+  model: BSV.SetModel | null;
   palette: number[];
   /** Set-owned configuration restored from the device's Stored Only parameter. */
   defaultArtist: string;
@@ -155,7 +179,8 @@ export function useBridge(
 
   const [connection, setConnection] = useState<ConnectionState>('connecting');
   const [lomReady, setLomReady] = useState(false);
-  const [snapshot, setSnapshot] = useState<BSV.Snapshot | null>(null);
+  const [set, setSet] = useState<HeldSet | null>(null);
+  const snapshot = set?.snapshot ?? null;
   const [play, setPlay] = useState<PlayState>(NOT_PLAYING);
   const [transport, setTransportState] = useState<BSV.TransportState | null>(null);
   const [songPosition, setSongPosition] = useState<SongPosition | null>(null);
@@ -167,8 +192,8 @@ export function useBridge(
   // can be established once. Making it depend on either identity would tear the
   // listener down and rebuild it — and with it every meter subscription — each
   // time a snapshot arrived, which is exactly when it must not.
-  const snapshotRef = useRef<BSV.Snapshot | null>(null);
-  const resyncRef = useRef<(() => Promise<void>) | null>(null);
+  const setRef = useRef<HeldSet | null>(null);
+  const resyncRef = useRef<((fresh?: boolean) => Promise<void>) | null>(null);
   /**
    * Read by the backstop, which must not walk the set on top of a write.
    *
@@ -283,29 +308,36 @@ export function useBridge(
         // together. A mismatch means a message was missed, and the answer to
         // that is a full walk, not a retry.
         case 'delta': {
-          const held = snapshotRef.current;
+          const held = setRef.current;
           if (!held) break;
-          if (!canApplyDelta(held.rev, event.data.prevRev)) {
+          const s = held.snapshot;
+          if (!canApplyDelta(s.rev, event.data.prevRev)) {
             say('missed an update from Live — re-reading the set', 'info');
             void resyncRef.current?.();
             break;
           }
           const d = event.data;
-          const clips = mergeTrackDelta(held.clips, d.clipScope, d.clips);
+          const clips = mergeTrackDelta(s.clips, d.clipScope, d.clips);
           // Rows upsert by index; clips replace by scope. The two merges differ
           // because a clip can vanish from a track and a scene cannot — see
           // `mergeRows` in core/ for the argument, which is worth reading before
           // "simplifying" them into one.
-          setSnapshot({
-            ...held,
-            rev: d.rev,
-            clips,
-            clipCount: clips.length,
-            scenes: mergeRows(held.scenes, d.sceneRows ?? []),
-            tracks: mergeRows(held.tracks, d.trackRows ?? []),
-            tempo: d.tempo ?? held.tempo,
-            masterColor:
-              d.masterColor === undefined ? held.masterColor : d.masterColor,
+          setSet({
+            snapshot: {
+              ...s,
+              rev: d.rev,
+              clips,
+              clipCount: clips.length,
+              scenes: mergeRows(s.scenes, d.sceneRows ?? []),
+              tracks: mergeRows(s.tracks, d.trackRows ?? []),
+              tempo: d.tempo ?? s.tempo,
+              masterColor: d.masterColor === undefined ? s.masterColor : d.masterColor,
+            },
+            // Present only when the delta moved a scene row, because nothing
+            // else can change the mapping. Same shape as `d.tempo` above, and
+            // on the event rather than in `data` because the snapshot is what
+            // Live holds and the model is what we read it as.
+            model: event.model ?? held.model,
           });
           break;
         }
@@ -411,7 +443,8 @@ export function useBridge(
         minIntervalMs: MIN_INTERVAL_MS,
       });
       if (!stale) return;
-      void resyncRef.current?.();
+      // The one caller that means "go and look", not "tell me what you hold".
+      void resyncRef.current?.(true);
     };
     // Both, because they catch different things — `visibilitychange` covers a
     // minimised or hidden tab, `focus` covers switching windows on the same
@@ -492,17 +525,22 @@ export function useBridge(
   const setFold = useCallback(
     (t: number, folded: boolean) => {
       client.send({ type: 'setFold', t, folded });
-      const s = snapshotRef.current;
-      if (!s) return;
+      const held = setRef.current;
+      if (!held) return;
+      const s = held.snapshot;
+      // Tracks only, so the songs are untouched.
       const next = {
-        ...s,
-        tracks: s.tracks.map((tr) => (tr.i === t ? { ...tr, isFolded: folded } : tr)),
+        ...held,
+        snapshot: {
+          ...s,
+          tracks: s.tracks.map((tr) => (tr.i === t ? { ...tr, isFolded: folded } : tr)),
+        },
       };
       // The ref as well as the state: `write` reconciles against the ref, and a
       // write in the same tick as the fold would otherwise reconcile away from
       // the copy React has not committed yet.
-      snapshotRef.current = next;
-      setSnapshot(next);
+      setRef.current = next;
+      setSet(next);
     },
     [client],
   );
@@ -512,22 +550,31 @@ export function useBridge(
     [client],
   );
 
-  const refresh = useCallback(
-    () =>
+  /**
+   * Ask for the whole set, and report what it cost.
+   *
+   * `fresh` is the difference between "give me the set" and "go and look".
+   * The bridge holds the current set and answers the first for free; only
+   * something no observer reports — `Clip.length`, `Track.fold_state`, another
+   * device entirely — is worth making Live walk every clip slot it has.
+   */
+  const walk = useCallback(
+    (fresh: boolean) =>
       guard('snapshot', async () => {
         lastAttemptAtRef.current = Date.now();
         await whileSyncing(async () => {
-          const e = await client.request({ type: 'snapshot' });
+          const e = await client.request({ type: 'snapshot', fresh });
           const wire = client.lastWireTiming;
           const commitStart = performance.now();
-          setSnapshot(e.data);
+          setSet({ snapshot: e.data, model: e.model });
           lastSnapshotAtRef.current = Date.now();
           // Queued after React's commit, so it captures render cost too.
           requestAnimationFrame(() => {
             reportSnapshotTiming(e, wire, performance.now() - commitStart);
           });
           say(
-            `snapshot — ${e.data.clipCount} clips · ${e.data.ms}ms lom` +
+            `snapshot — ${e.data.clipCount} clips · ` +
+              (e.cached ? 'held by the bridge, no walk' : `${e.data.ms}ms lom`) +
               (wire ? ` · ${Math.round(wire.totalMs)}ms end-to-end` : ''),
             'ok',
           );
@@ -535,6 +582,8 @@ export function useBridge(
       }),
     [client, guard, say, whileSyncing],
   );
+
+  const refresh = useCallback(() => walk(true), [walk]);
 
   /** Tried once this session — a failed walk must not become a retry loop. */
   const autoWalkedRef = useRef(false);
@@ -551,19 +600,23 @@ export function useBridge(
    * **fails** leaves it null with `lomReady` still true, so this effect would
    * re-run and try again forever — hammering the LOM with the walk that just
    * broke. One attempt, then the failure stands and the button is right there.
+   *
+   * **Not `fresh`**, and that is the point of the whole arrangement: a tab that
+   * joins a running bridge is answered from the set it already holds, so
+   * opening a second one costs Live nothing at all.
    */
   useEffect(() => {
     if (!lomReady || autoWalkedRef.current || snapshot !== null) return;
     autoWalkedRef.current = true;
-    void refresh();
-  }, [lomReady, refresh, snapshot]);
+    void walk(false);
+  }, [lomReady, snapshot, walk]);
 
   // One level of undo, captured from the snapshot rather than from Live. LOM
   // writes don't participate in Live's own history, so ⌘Z in Live will not bring
   // a rename back — this is the only way back there is. Deliberately one level:
   // a stack would need to survive the re-snapshot after every write, and a stale
   // entry that quietly restores the wrong thing is worse than no stack.
-  snapshotRef.current = snapshot;
+  setRef.current = set;
   const [undoDepth, setUndoDepth] = useState(0);
   const undoRef = useRef<{ batch: Batch; label: string } | null>(null);
 
@@ -576,11 +629,20 @@ export function useBridge(
   paletteRef.current = palette;
 
   /**
-   * Re-read the whole set. The honest answer to any write, and the expensive
-   * one — a full walk is tens of thousands of LOM reads, so it's the fallback
-   * rather than the routine.
+   * Ask the bridge for the set again. The honest answer to any write.
+   *
+   * **Not `fresh` by default**, which is what makes it cheap now. Every caller
+   * here reaches for it because *this client's* copy can no longer be patched —
+   * a delta that didn't line up, a write Live took only half of, a restructure —
+   * and in each of those the bridge either holds a set that is current or has
+   * dropped its own and will walk on this very request. Asking Live to walk on
+   * top of that would spend ~950ms to be told what the bridge already knows.
+   *
+   * The staleness backstop passes `true`, because it is asking the one question
+   * held state cannot answer: whether something with no observer at all has
+   * changed underneath both of us.
    */
-  const resync = useCallback((): Promise<void> => {
+  const resync = useCallback((fresh = false): Promise<void> => {
     // **Join, don't drop.** Three of the callers are fire-and-forget and would
     // be happy either way, but `write` and the move paths *await* this because
     // they need state they can trust afterwards — dropping the call would hand
@@ -590,8 +652,8 @@ export function useBridge(
       lastAttemptAtRef.current = Date.now();
       try {
         await whileSyncing(async () => {
-          const s = await client.request({ type: 'snapshot' });
-          setSnapshot(s.data);
+          const s = await client.request({ type: 'snapshot', fresh });
+          setSet({ snapshot: s.data, model: s.model });
           lastSnapshotAtRef.current = Date.now();
         });
       } catch (e) {
@@ -632,18 +694,34 @@ export function useBridge(
    * The caller adds the one that matters most: Live has to have taken *every*
    * op. It answers with counts and not with which ops it skipped, so a partial
    * write can't be reproduced here and doesn't try to be.
+   *
+   * **A scene write re-reads the mapping**, because a scene name *is* the
+   * mapping: rename four scenes and the song headers above them are about a
+   * different song. This is the one place the client reads the names itself
+   * rather than being told — the bridge's model describes what Live confirmed,
+   * and this describes an edit we have only just made to our own copy. Same
+   * function over the same rules, so the next snapshot or scene delta replaces
+   * it with an identical answer from the bridge.
    */
-  const reconcile = useCallback((batch: Batch): BSV.Snapshot | null => {
-    const s = snapshotRef.current;
-    if (!s) return null;
+  const reconcile = useCallback((batch: Batch): HeldSet | null => {
+    const held = setRef.current;
+    if (!held) return null;
+    const s = held.snapshot;
     const rgb = paletteRef.current;
     for (const op of batch.ops) {
       if (op.colorIndex !== undefined && rgb[op.colorIndex] === undefined) return null;
     }
+    const scenes = applySceneOps(s.scenes, batch.sceneOps);
     return {
-      ...s,
-      clips: applyOps(s.clips, batch.ops, (i) => rgb[i]),
-      scenes: applySceneOps(s.scenes, batch.sceneOps),
+      snapshot: {
+        ...s,
+        clips: applyOps(s.clips, batch.ops, (i) => rgb[i]),
+        scenes,
+      },
+      model:
+        batch.sceneOps.length === 0
+          ? held.model
+          : buildSetModel(derive(scenes, SCENE_PATTERNS), s.rev),
     };
   }, []);
 
@@ -676,7 +754,7 @@ export function useBridge(
         // Anything less than everything and we don't know *which* op missed, so
         // the walk is the only way to find out.
         const next = e.applied === sent ? reconcile(batch) : null;
-        if (next) setSnapshot(next);
+        if (next) setSet(next);
         else await resync();
       }),
     [client, guard, reconcile, resync, say],
@@ -684,7 +762,7 @@ export function useBridge(
 
   const apply = useCallback(
     (ops: BSV.ApplyOp[], label = 'apply') => {
-      const before = snapshotRef.current?.clips ?? [];
+      const before = setRef.current?.snapshot.clips ?? [];
       const back = inverseOps(before, ops);
       return write({ ops, sceneOps: [] }, label, {
         batch: { ops: back, sceneOps: [] },
@@ -696,7 +774,7 @@ export function useBridge(
 
   const applyScenes = useCallback(
     (sceneOps: BSV.SceneOp[], label = 'scenes') => {
-      const before = sceneFields(snapshotRef.current?.scenes ?? []);
+      const before = sceneFields(setRef.current?.snapshot.scenes ?? []);
       const back = inverseSceneOps(before, sceneOps);
       // Live gives us no way to write "no color", so a scene that had none
       // can't be put back to having none — inverseSceneOps drops that revert
@@ -874,10 +952,14 @@ export function useBridge(
         // what it meant, so the plan alone says where every clip ended up. A
         // failure doesn't: `lom.ts` skips the whole delete pass, and what that
         // leaves behind is a set we'd be describing from a plan it didn't run.
-        const s = snapshotRef.current;
-        if (e.failed === 0 && s) {
-          const clips = applyClipMove(s.clips, plan);
-          setSnapshot({ ...s, clips, clipCount: clips.length });
+        const held = setRef.current;
+        if (e.failed === 0 && held) {
+          // Slots only: no scene name moved, so the songs are what they were.
+          const clips = applyClipMove(held.snapshot.clips, plan);
+          setSet({
+            ...held,
+            snapshot: { ...held.snapshot, clips, clipCount: clips.length },
+          });
         } else {
           await resync();
         }
@@ -899,6 +981,7 @@ export function useBridge(
     connection,
     lomReady,
     snapshot,
+    model: set?.model ?? null,
     palette,
     defaultArtist,
     roles,

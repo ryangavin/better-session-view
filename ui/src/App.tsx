@@ -55,7 +55,7 @@ export function App() {
   // root. The mixer visibility flags are up there too because they decide
   // whether Live is streaming meter frames and observing sends at all.
   const bridge = useBridgeSession();
-  const { snapshot, play, launch, stop, setFold, selectScene, apply, applyScenes, undo } =
+  const { snapshot, model, play, launch, stop, setFold, selectScene, apply, applyScenes, undo } =
     bridge;
   const { showMeters, showSends, toggleMeters, toggleSends } = bridge;
   const onStopAll = useCallback(() => stop({ kind: 'clips' }), [stop]);
@@ -79,7 +79,7 @@ export function App() {
     onToggleSong,
     onCollapseAll,
     unfoldSong,
-  } = useSongLayout(snapshot);
+  } = useSongLayout(snapshot, model);
 
   const { showRail, openRail, hideRail, showLog, toggleLog } = useRailAndLog();
 

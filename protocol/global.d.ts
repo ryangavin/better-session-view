@@ -184,11 +184,20 @@ declare namespace BSV {
     key: string;
     artist: string;
     tag: string;
+    /**
+     * The `Scene.tempo` values the song's scenes carry, rendered the same way —
+     * `''` when none of them has one, `128 / 130` when they disagree.
+     *
+     * Live's own property rather than what the names state, which is what `bpm`
+     * is. The two are the same fact from two sources and they can disagree.
+     */
+    tempo: string;
     /** True when the song's scenes state more than one of that fact. */
     bpmClash: boolean;
     keyClash: boolean;
     artistClash: boolean;
     tagClash: boolean;
+    tempoClash: boolean;
     /** Palette slot for the whole song, or -1 when it has none *or* clashes. */
     colorIndex: number;
     colorClash: boolean;

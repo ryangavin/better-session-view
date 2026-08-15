@@ -46,7 +46,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 
 | client → server | |
 |---|---|
-| `snapshot` | walk the whole set |
+| `snapshot` `{ fresh? }` | the whole set. Answered from what the bridge holds unless `fresh` |
 | `apply` `{ ops, sceneOps? }` | bulk write — clip slots and/or scenes |
 | `addScenes` `{ addition }` | insert and configure a contiguous run of blank scenes |
 | `move` `{ plan }` | reorder scenes. **Structural, and not reversible** |
@@ -80,7 +80,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `progress` | — streams during `apply` and `move` |
 | `status` | — connection / LOM readiness |
 | `changed` | — an observer fired |
-| `delta` | — a partial re-read after a change made in Live |
+| `delta` | — a partial re-read after a change made in Live, plus a rebuilt `model` when it moved a scene row |
 | `playState` | — a play-state observer fired |
 | `meterLevels` | — complete current track and master output-level frame |
 | `clipStatus` | — the clip playing in each track; silent tracks are absent from the frame |
@@ -104,6 +104,24 @@ yourself adding a `getClipName` message, stop.
 **Timing fields are part of the contract.** `Snapshot.timings` breaks the walk into
 phases, and the `snapshot` event carries `dictMs` and `hostMs`. These aren't
 debug-only — they're how we know whether the design scales. Don't drop them.
+
+They are also not zeroed on a cached answer, and that is a deliberate reading of the same
+rule. `Snapshot.ms` and `timings` sit *inside* the payload and honestly describe the walk
+that payload was read by; zeroing the two host-side fields beside them would leave one
+answer disagreeing with itself. **`cached: true` is what says the numbers describe a walk
+that already happened**, and a reader that prints a projection has to branch on it rather
+than conclude the LOM got faster.
+
+**The set is held, not walked on demand.** `snapshot` is normally answered from the copy
+`bridge.ts` maintains — patched by every delta and by our own writes, dropped whenever it
+can't be — so a client joining a running bridge costs Live nothing. `fresh: true` forces
+the walk, and it exists because some of what a snapshot carries has no `observe` in the
+LOM at all (`Clip.length`, `Track.fold_state`, another device entirely), so the only way
+to find out is to look. The **`SetModel`** on the event is the same idea one layer up: the
+mapping is read out of the scene names once, in the bridge, rather than by every client
+over the same names. It rides on a `delta` too, but only when that delta moved a scene
+row — the coarse-grained rule cuts both ways, and a song list re-sent on every clip edit
+would be the chatty version of it.
 
 **Master is not an ordinary track.** Live exposes it at `Song.master_track`, outside
 `Song.tracks`, so `Snapshot.masterColor` carries its RGB separately for the heading over

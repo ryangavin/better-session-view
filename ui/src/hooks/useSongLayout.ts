@@ -3,17 +3,29 @@ import { derive } from '../../../core/src/derive.js';
 import { SCENE_PATTERNS } from '../../../core/src/namePattern.js';
 import { allSongKeys, blockTrackRoles, songRows } from '../../../core/src/songRows.js';
 
+/** Before the first snapshot lands. A constant, so its identity is stable. */
+const NO_SONGS: BSV.SetModel = { rev: -1, songs: [], songByScene: {}, unmapped: [] };
+
 /**
- * The mapping read back out of the set, and how it lays the grid out: which
- * scene belongs to which song (see core/src/derive.ts — nothing is stored for
- * this, it falls out of the names), which songs are folded, and what a folded
- * header shows in place of the rows it hides.
+ * How the songs lay the grid out: where the headers go, which songs are folded,
+ * and what a folded header shows in place of the rows it hides.
+ *
+ * **The songs come from the bridge**, as a `SetModel` — the mapping is read out
+ * of the scene names once, there, for Push and every browser tab at the same
+ * time (see `core/docs/setModel.md`). Nothing here compiles a pattern to draw a
+ * header.
+ *
+ * The `derivation` it returns is a different thing and still read here: the
+ * **scene** layer — every scene's parsed fields, which is what the scene-level
+ * modals work in and what the model deliberately doesn't carry.
  */
-export function useSongLayout(snapshot: BSV.Snapshot | null) {
+export function useSongLayout(snapshot: BSV.Snapshot | null, model: BSV.SetModel | null) {
   const derivation = useMemo(
     () => derive(snapshot?.scenes ?? [], SCENE_PATTERNS),
     [snapshot],
   );
+
+  const songs = model ?? NO_SONGS;
 
   // Which songs are folded. Keyed by song rather than by scene index, so it
   // survives a re-snapshot — every write re-walks the set, and a collapsed
@@ -23,17 +35,34 @@ export function useSongLayout(snapshot: BSV.Snapshot | null) {
     () => new Set(),
   );
 
+  /**
+   * Every scene in the set, in index order.
+   *
+   * From the snapshot rather than the model, because a scene belonging to no
+   * song is still a row: it can be selected, named, and folded into a song by
+   * being named. The model answers about songs, and an unnamed scene has none.
+   */
+  const sceneIndexes = useMemo(
+    () => snapshot?.scenes.map((sc) => sc.i) ?? [],
+    [snapshot],
+  );
+
   const layout = useMemo(
-    () => songRows(derivation, collapsedSongs),
-    [collapsedSongs, derivation],
+    () => songRows(songs, sceneIndexes, collapsedSongs),
+    [collapsedSongs, sceneIndexes, songs],
   );
 
   /**
    * Per block, per track, which sections of the song that track plays — what a
    * folded header shows in place of the rows it's hiding.
    *
+   * This one stays in the browser rather than riding on the model, and the
+   * reason is the boundary the model is drawn along: it reads the *clips*, so
+   * folding it into the bridge's answer would make every clip edit anywhere in
+   * the set rebuild the whole song list. See `core/docs/setModel.md`.
+   *
    * Computed for every block rather than only the folded ones, deliberately.
-   * It's a single pass over the clips, and keying it off `derivation` instead of
+   * It's a single pass over the clips, and keying it off the songs instead of
    * `collapsedSongs` means folding a song doesn't rebuild the map — which would
    * hand every header a new prop and re-render all hundred of them on a gesture
    * that changed one.
@@ -43,9 +72,9 @@ export function useSongLayout(snapshot: BSV.Snapshot | null) {
       blockTrackRoles(
         snapshot?.clips ?? [],
         snapshot?.scenes ?? [],
-        derivation.songs.flatMap((s) => s.blocks),
+        songs.songs.flatMap((s) => s.blocks),
       ),
-    [derivation, snapshot],
+    [songs, snapshot],
   );
 
   /**
@@ -68,8 +97,8 @@ export function useSongLayout(snapshot: BSV.Snapshot | null) {
   }, []);
 
   const onCollapseAll = useCallback(
-    (all: boolean) => setCollapsedSongs(all ? new Set(allSongKeys(derivation)) : new Set()),
-    [derivation],
+    (all: boolean) => setCollapsedSongs(all ? new Set(allSongKeys(songs)) : new Set()),
+    [songs],
   );
 
   /** Open one song, leaving the rest as they are. A no-op keeps the identity. */
@@ -84,6 +113,7 @@ export function useSongLayout(snapshot: BSV.Snapshot | null) {
 
   return {
     derivation,
+    songs,
     headers: layout.headers,
     hiddenScenes: layout.hidden,
     rows,

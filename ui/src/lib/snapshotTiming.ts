@@ -10,6 +10,12 @@ export const TARGET_SCENES = 848;
  * Writes the phase breakdown to the browser console. Every phase of the walk is
  * a linear scan, so a projection to full-set size is a fair extrapolation — and
  * it's the number that decides whether snapshotting needs a progress bar.
+ *
+ * **A cached answer gets one line instead**, because there is no walk to break
+ * into phases: the bridge held the set and Live did nothing at all. Printing
+ * the table would project full-set cost from a walk that happened minutes ago
+ * and attribute it to this request, which is the opposite of what the readout
+ * is for.
  */
 export function reportSnapshotTiming(
   e: BSV.EventOf<'snapshot'>,
@@ -17,6 +23,15 @@ export function reportSnapshotTiming(
   commitMs: number,
 ): void {
   const { data, dictMs, hostMs } = e;
+  if (e.cached) {
+    console.debug(
+      `⏱ snapshot ${data.clipCount} clips · ${data.sceneCount} scenes · ` +
+        `held by the bridge, no LOM walk — ` +
+        `${Math.round((wire ? wire.totalMs : 0) + commitMs)}ms end-to-end ` +
+        `(${Math.round(commitMs)}ms of it React)`,
+    );
+    return;
+  }
   const t = data.timings;
   const total = wire ? wire.totalMs + commitMs : data.ms;
   const scale = data.sceneCount > 0 ? TARGET_SCENES / data.sceneCount : 1;

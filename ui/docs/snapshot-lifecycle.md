@@ -29,11 +29,48 @@ snapshot walk and the apply/undo/moveScenes write path stay together in
 entry. `guard()` wraps every operation so failures land in the log rather than
 as unhandled rejections.
 
-## The snapshot happens by itself
+## The snapshot happens by itself, and usually costs nothing
 
-`useBridge` walks the set as soon as the LOM reports ready. **Snapshot** was the first
+`useBridge` asks for the set as soon as the LOM reports ready. **Snapshot** was the first
 thing anyone pressed every time, so it was a button that existed only to be pressed; it
 stays as the manual override now that the grid mostly keeps up on its own.
+
+**Asking for the set is not the same as walking it.** The bridge holds the current set and
+answers from it, so the automatic request on connect is normally free — no LOM walk, no
+~8.8s of Live's main thread on a full-size set, and a second tab that opens instantly.
+`fresh: true` is what forces the walk anyway, and exactly two things send it:
+
+- the **Snapshot** button (`refresh`), and
+- the staleness backstop, when `shouldWalk` says yes.
+
+Both are asking the one question held state cannot answer — whether something with no
+`observe` at all has changed. Everything else — the first connect, a `changed structure`,
+a write Live took only half of, a delta that didn't line up — asks without `fresh`, because
+in each of those the bridge either holds a set that is current or has already dropped its
+own and will walk on that very request. What the bridge does with the two cases is in
+[`bridge/docs/multiple-clients.md`](../../bridge/docs/multiple-clients.md).
+
+The reply carries `cached`, which says which of the two happened.
+
+## The songs come with it
+
+The snapshot event carries a **`SetModel`** beside the snapshot: the songs in the set with
+their facts already rendered, read out of the scene names once, in the bridge, for Push and
+every browser tab at the same time. `useBridge` holds the two together as one piece of
+state — a model describing a different revision than the snapshot beside it would draw song
+headers over rows they don't belong to — and `useSongLayout` lays the grid out from it
+without compiling a pattern.
+
+Two things still read the names in the browser, and both are deliberate:
+
+- **`useSongLayout`'s `derivation`.** That is the *scene* layer — each scene's parsed
+  fields — which the scene-level modals work in and which the model deliberately doesn't
+  carry. See `core/docs/setModel.md` for where the boundary is drawn.
+- **`reconcile`, after a scene write.** A scene name *is* the mapping, so renaming four
+  scenes changes the song headers above them; the copy we just patched needs a model that
+  matches it, and the bridge's answer describes what Live confirmed a moment ago. Same
+  function, same rules — the next snapshot or scene delta replaces it with an identical
+  answer from the bridge.
 
 ## Keeping up with Live
 
@@ -71,6 +108,13 @@ purpose. `mergeTrackDelta` replaces clips by scope; `mergeRows` upserts scene an
 rows by index. They differ because a clip can vanish from a track and a scene cannot —
 the reasoning is on `mergeRows` in `core/`, and it's worth reading before anyone
 "simplifies" them into one.
+
+A delta also carries a **`model`**, but only when it moved a scene row — a rename or a
+retempo is the one kind of change that can alter the songs, and re-sending the whole song
+list on every clip edit is the chatty design the coarse-grained rule exists to prevent.
+So the merge takes `event.model ?? held.model`, the same shape as `d.tempo ?? held.tempo`
+beside it. The bridge runs this identical merge over its own copy, which is what makes the
+next client's request free.
 
 **The backstop exists for what nothing can report.** Some of what a snapshot carries has
 no `observe` in the LOM at all — `Clip.length`, `Track.fold_state` — and another M4L
@@ -122,7 +166,12 @@ that changes instantly and one that changes after a visible pause.
 So `write` and `moveClips` patch the copy in hand instead. The arithmetic is in `core/` —
 `applyOps`, `applySceneOps`, `applyClipMove` — because a merge that's subtly wrong shows a
 grid disagreeing with Live and gives no hint which of the two is lying, and that deserves
-tests rather than a hook.
+tests rather than a hook. **The bridge patches its own held copy with the same three
+functions and the same batch**, so the two stay in step without either being told.
+
+A scene write also re-reads the mapping locally, because a scene name *is* the mapping:
+rename four scenes and the headers above them are about a different song. That is the one
+place the browser builds a `SetModel` for itself rather than being handed one.
 
 **`resync()` is still there and four things still reach for it**, which is what makes
 being optimistic safe:
@@ -145,7 +194,7 @@ Live disagree — the button is the answer, and it's the same button it always w
 
 ## Snapshot timing readout
 
-Every snapshot prints a phase breakdown to the browser console — the answer to "is
+A **walk** prints a phase breakdown to the browser console — the answer to "is
 this design going to scale":
 
 ```
@@ -161,5 +210,18 @@ projection to 848 scenes (×8.5, linear): ~8.8s end-to-end
 The projection is honest because every phase is a linear scan. `TARGET_SCENES` in
 `lib/snapshotTiming.ts` sets the reference size.
 
-The status strip also shows `LOM walk` and `Slot scan` tiles, and the log carries the
-headline numbers.
+**A cached answer prints one line instead**, and says so:
+
+```
+⏱ snapshot 243 clips · 100 scenes · held by the bridge, no LOM walk — 34ms end-to-end
+```
+
+The table would be a lie there. `data.ms` and `timings` describe the walk the held set was
+*originally* read from — the bridge re-sends them rather than zeroing them, because the
+snapshot really is that walk's output and half-zeroed numbers would disagree with
+themselves — so projecting full-set cost from them would attribute an old walk to a request
+that cost nothing. `cached` on the event is what separates the two, and it is the only
+thing that can.
+
+The status strip's `LOM walk` and `Slot scan` tiles read the same original numbers, and
+the log line says `held by the bridge, no walk` in place of the LOM time.

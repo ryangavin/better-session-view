@@ -192,8 +192,10 @@ the question, and it could never answer the other half.
 It works because the marks are **in the track columns**, not merely near them, and the
 track-name row is sticky: scroll a fully-folded set and every mark still has its track
 named above it. `blockTrackRoles` in core does the counting; `useSongLayout`
-memoizes it against the *derivation*, not against `collapsedSongs`, so folding one
-song doesn't rebuild the map and hand all hundred headers a new prop.
+memoizes it against the *songs*, not against `collapsedSongs`, so folding one
+song doesn't rebuild the map and hand all hundred headers a new prop. It reads the clips,
+which is why it stays in the browser rather than riding along on the bridge's `SetModel` —
+see [`core/docs/setModel.md`](../../core/docs/setModel.md).
 
 - **Color only, names on the cell's tooltip.** A hundred folded songs are a page of color
   signatures, and at that density a word per role is what turns a table of contents into a
