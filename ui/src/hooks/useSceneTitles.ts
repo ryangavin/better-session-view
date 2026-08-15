@@ -180,6 +180,10 @@ export function useSceneTitles({
     titlePreview,
     onRenameScenes,
     songCount: selectedSongs.length,
+    // Whether that button clears rather than applies. Not "the field looks
+    // empty": a field blank because the selection *disagrees* still applies,
+    // each song using its own bpm. Only an emptied field means delete.
+    clearingTempo: pendingPatch.bpm?.trim() === '',
     songTempoWriteOps,
     onApplySongTempo,
   };

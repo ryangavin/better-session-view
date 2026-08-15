@@ -49,6 +49,12 @@ interface Props {
   onRenameScenes: () => void;
   /** Songs the selection touches — the unit the tempo projection works in. */
   songCount: number;
+  /**
+   * True when the bpm field has been *emptied*, so the button clears rather
+   * than applies. Not the same as the field looking blank: blank because the
+   * selection disagrees still applies, each song using its own bpm.
+   */
+  clearingTempo: boolean;
   /** Scenes the tempo projection would write: one per song, plus its strays. */
   tempoCount: number;
   onApplySongTempo: () => void;
@@ -97,6 +103,7 @@ export function ScenePanel({
   titlePreview,
   onRenameScenes,
   songCount,
+  clearingTempo,
   tempoCount,
   onApplySongTempo,
   songColorIndex,
@@ -259,14 +266,14 @@ export function ScenePanel({
         type="button"
         disabled={tempoCount === 0 || busy || badBpm}
         title={
-          shown('bpm').trim() === ''
+          clearingTempo
             ? 'Clears the song\u2019s scene tempos, so it follows the Live Set tempo again'
             : 'Writes Scene.tempo on each song\u2019s first scene and clears it off the ' +
               'rest, so entering the song sets the tempo and mixing into it does not'
         }
         onClick={onApplySongTempo}
       >
-        {shown('bpm').trim() === ''
+        {clearingTempo
           ? `Clear tempo on ${tempoCount} scene${tempoCount === 1 ? '' : 's'}`
           : songCount > 1
             ? `Apply tempo to ${songCount} song starts`

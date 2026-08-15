@@ -241,6 +241,7 @@ export function App() {
     titlePreview,
     onRenameScenes,
     songCount,
+    clearingTempo,
     songTempoWriteOps,
     onApplySongTempo,
   } = useSceneTitles({
@@ -441,6 +442,7 @@ export function App() {
               titlePreview={selectedScenes.size === 0 ? null : titlePreview}
               onRenameScenes={onRenameScenes}
               songCount={songCount}
+              clearingTempo={clearingTempo}
               tempoCount={songTempoWriteOps.length}
               onApplySongTempo={onApplySongTempo}
               songColorIndex={songColorIndex}
