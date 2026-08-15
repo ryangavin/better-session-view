@@ -155,6 +155,90 @@ declare namespace BSV {
     clips: Clip[];
   }
 
+  // --- the set, as this app reads it -----------------------------------
+
+  /**
+   * One song, with every fact about it already worked out.
+   *
+   * The wire form of `DerivedSong` plus the rendered facts `songFacts` produces,
+   * so **nothing downstream parses a name again**. A client that wants the list
+   * of songs in the set reads `SetModel.songs` and is done; it does not compile
+   * a pattern, walk the scenes, or know that names are where the mapping lives.
+   *
+   * The facts arrive as rendered strings — `128`, or `128 / 130` when the
+   * scenes state two — for the reason `SongHeader` gives: they cross into a
+   * memoized React row, and an array prop re-renders every header in the set.
+   */
+  interface SongEntry {
+    /** Case-insensitive identity, from `songKey`. Not the musical key. */
+    songKey: string;
+    /** Display name, in the spelling the set uses. */
+    name: string;
+    /** Every scene carrying this song, ascending. */
+    scenes: number[];
+    /** Those scenes as contiguous runs. More than one is a reprise. */
+    blocks: Array<{ from: number; to: number }>;
+    /** `''` when the set says nothing, `a / b` when its scenes disagree. */
+    bpm: string;
+    /** The musical key, not `songKey`. */
+    key: string;
+    artist: string;
+    tag: string;
+    /** True when the song's scenes state more than one of that fact. */
+    bpmClash: boolean;
+    keyClash: boolean;
+    artistClash: boolean;
+    tagClash: boolean;
+    /** Palette slot for the whole song, or -1 when it has none *or* clashes. */
+    colorIndex: number;
+    colorClash: boolean;
+    /**
+     * `Scene.tempo` on the song's first scene — the one scene this app writes a
+     * tempo to. Null when it follows the Live Set. See `core/docs/derive.md`.
+     */
+    firstSceneTempo: number | null;
+    /**
+     * Every scene of the song carrying its own `Scene.tempo`, ascending. More
+     * than one entry is a song written by the every-scene convention, and it is
+     * what the clear-stray-tempos action reads.
+     */
+    tempoScenes: number[];
+  }
+
+  /**
+   * What this app understands the set to be — the derived layer, held by the
+   * bridge and shipped whole.
+   *
+   * **This exists so the mapping is read out of the names exactly once.** It
+   * used to be computed independently in the bridge (for Push's song list) and
+   * again in every browser tab, from the same scene names, by the same
+   * `derive()` — two answers to one question, which is the drift this project's
+   * naming scheme exists to avoid. The bridge now owns it and everyone else
+   * consumes it.
+   *
+   * Scoped to the **scene/song layer** on purpose: everything here is a function
+   * of scene names and `Scene.tempo`, which is what the bridge can keep current
+   * from a `sceneRows` delta. What a *folded song holds per track* is a function
+   * of the clips as well, so it stays in the browser (`blockTrackRoles`) rather
+   * than making every clip edit rebuild this.
+   */
+  interface SetModel {
+    /** The snapshot revision this was read from. See `Snapshot.rev`. */
+    rev: number;
+    /** Songs in order of first appearance. */
+    songs: SongEntry[];
+    /**
+     * Scene index → `songKey`. Absent for a scene belonging to no song.
+     *
+     * An object rather than a Map because it crosses the wire as JSON. Keys are
+     * scene indexes written as strings, which is what `JSON.stringify` does to
+     * a numeric key and what every consumer has to cope with anyway.
+     */
+    songByScene: Record<string, string>;
+    /** Scene indexes whose names match no pattern at all. */
+    unmapped: number[];
+  }
+
   interface Palette {
     count: number;
     colors: number[];
@@ -538,6 +622,19 @@ declare namespace BSV {
     defaultArtist: string;
     roles: Role[];
     allowedColors?: number[] | null;
+    /**
+     * Whether writing a song's bpm also writes Live's own `Scene.tempo` on that
+     * song's **first** scene.
+     *
+     * **Optional and off by default, deliberately.** The bpm belongs to the
+     * scene name, where it is a label and changes nothing about playback.
+     * Turning this on makes a naming pass alter how the set *plays*, because
+     * Live takes a scene's tempo the moment that scene fires — so it is a
+     * decision the set records rather than something a rename quietly does.
+     *
+     * Absent means off, which is also what an older device's stored state says.
+     */
+    writeSceneTempo?: boolean;
   }
 
   interface ApplyResult {
@@ -559,7 +656,20 @@ declare namespace BSV {
   // redraw a fold you just clicked is the one thing that would make it feel
   // slow. Live is being told, not asked.
   type Request =
-    | { id?: number; type: 'snapshot' }
+    /**
+     * The whole set.
+     *
+     * **Normally free.** The bridge holds the current set and answers from it,
+     * so a client joining a running bridge gets the payload without Live doing
+     * any work at all — which is the difference between a tab that opens
+     * instantly and one that waits out a walk of every clip slot in the set.
+     *
+     * `fresh` forces the walk anyway. It is what the Snapshot button and the
+     * staleness backstop send, because some of what a snapshot carries has no
+     * observer in the LOM (`Clip.length`, `Track.fold_state`, another device
+     * entirely) and the only way to find out is to look.
+     */
+    | { id?: number; type: 'snapshot'; fresh?: boolean }
     /**
      * One batch, both kinds of target. Clip and scene writes travel together so
      * "tag these scenes and recolor their clips" stays one operation with one
@@ -655,6 +765,23 @@ declare namespace BSV {
         /** Max.getDict() on the Node side, ms. */
         hostMs: number;
         data: Snapshot;
+        /**
+         * The derived layer, always. A client never runs `derive()` itself.
+         *
+         * On the event rather than inside `Snapshot` because `Snapshot` is
+         * built in `lom.ts`, which cannot import and so cannot compile a
+         * pattern. The split is honest anyway: the snapshot is what Live holds,
+         * the model is what we read it as.
+         */
+        model: SetModel;
+        /**
+         * True when this came from the bridge's held state and cost no LOM walk
+         * at all — the normal answer for a client joining an already-running
+         * bridge. `data.ms` and `timings` then describe the walk it was
+         * *originally* read from, which is why this flag exists rather than
+         * leaving a reader to conclude the LOM got faster.
+         */
+        cached: boolean;
       }
     | { type: 'progress'; id?: number; done: number; total: number }
     | {
@@ -737,7 +864,13 @@ declare namespace BSV {
      * Someone changed the set in Live and we re-read the affected tracks.
      * Broadcast, never a reply — nothing asked for it.
      */
-    | { type: 'delta'; data: SnapshotDelta }
+    /**
+     * `model` rides along only when the delta changed the mapping — a scene
+     * rename or a retempo. A clip-only delta leaves every song exactly as it
+     * was, and re-sending the whole song list to say so is the chatty design
+     * the coarse-grained rule exists to prevent.
+     */
+    | { type: 'delta'; data: SnapshotDelta; model?: SetModel }
     | { type: 'reload' }
     | { type: 'pong'; id?: number }
     | { type: 'error'; id?: number; message: string };
