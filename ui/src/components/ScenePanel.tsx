@@ -58,6 +58,11 @@ interface Props {
   clearingTempo: boolean;
   /** Scenes the tempo projection would write: one per song, plus its strays. */
   tempoCount: number;
+  /**
+   * The set has asked for a rename to project the bpm too — so the hint must
+   * stop promising that naming changes nothing about playback.
+   */
+  writeSceneTempo: boolean;
   onApplySongTempo: () => void;
   /**
    * Palette slot the songs in the selection already share, or -1 when they
@@ -106,6 +111,7 @@ export function ScenePanel({
   songCount,
   clearingTempo,
   tempoCount,
+  writeSceneTempo,
   onApplySongTempo,
   songColorIndex,
   songColorCount,
@@ -237,9 +243,17 @@ export function ScenePanel({
           'Shift-click a second scene name to take a whole song.'
         ) : (
           <>
-            Song, artist, tag, bpm and key rename scenes — the name is the record, and
-            writing a bpm changes nothing about playback. Color paints all {songColorCount}{' '}
-            scene{songColorCount === 1 ? '' : 's'} of {songColorLabel}.
+            Song, artist, tag, bpm and key rename scenes — the name is the record.{' '}
+            {writeSceneTempo ? (
+              <>
+                This set also projects the bpm on rename, so <b>Rename</b> moves each
+                song&rsquo;s start tempo too.
+              </>
+            ) : (
+              'Writing a bpm changes nothing about playback.'
+            )}{' '}
+            Color paints all {songColorCount} scene{songColorCount === 1 ? '' : 's'} of{' '}
+            {songColorLabel}.
           </>
         )}
       </div>

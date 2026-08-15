@@ -14,7 +14,14 @@ From there the rail does the three things at song scale:
 
 - **Rename** — the song/artist/tag/bpm/key fields, which prefill from what the song
   already agrees on. The bpm is part of the name now, and writing it changes nothing about
-  playback.
+  playback — unless the set has turned on **Song start tempo** in set configuration, in
+  which case Rename also does what the button below does. That is an opt-in stored in the
+  set (`DeviceState.writeSceneTempo`) and off by default, because a rename that quietly
+  changes how the set plays should be a decision someone made rather than the default.
+  When it is on, the two travel as **one batch** — `mergeSceneOps` in `core/` folds them,
+  since the song's first scene is usually in both lists and writing it twice would undo in
+  halves and break the `applied === total` check a patched snapshot depends on. The
+  panel's hint says so, and the log line names it.
 - **Apply tempo to song start** — writes Live's own `Scene.tempo` on the song's **first**
   scene and clears it off every other scene of the song. It is deliberately *not* part of
   Rename: everything else in the panel changes what a scene is called; this changes what

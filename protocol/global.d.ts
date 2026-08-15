@@ -184,26 +184,23 @@ declare namespace BSV {
     key: string;
     artist: string;
     tag: string;
-    /**
-     * The `Scene.tempo` values the song's scenes carry, rendered the same way —
-     * `''` when none of them has one, `128 / 130` when they disagree.
-     *
-     * Live's own property rather than what the names state, which is what `bpm`
-     * is. The two are the same fact from two sources and they can disagree.
-     */
-    tempo: string;
     /** True when the song's scenes state more than one of that fact. */
     bpmClash: boolean;
     keyClash: boolean;
     artistClash: boolean;
     tagClash: boolean;
-    tempoClash: boolean;
     /** Palette slot for the whole song, or -1 when it has none *or* clashes. */
     colorIndex: number;
     colorClash: boolean;
     /**
      * `Scene.tempo` on the song's first scene — the one scene this app writes a
      * tempo to. Null when it follows the Live Set. See `core/docs/derive.md`.
+     *
+     * **There is deliberately no rendered `tempo` string beside `bpm` here.**
+     * Collapsing a song's scene tempos to `128 / 130` says two scenes disagree
+     * and stops; under this convention that is the normal shape of a song that
+     * speeds up, and the useful questions are what it is *entered* at and which
+     * scenes change it. This field and `tempoScenes` answer both.
      */
     firstSceneTempo: number | null;
     /**

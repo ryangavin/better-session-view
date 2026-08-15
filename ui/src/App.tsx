@@ -250,6 +250,7 @@ export function App() {
     scenesForOps,
     sceneNames,
     defaultArtist: bridge.defaultArtist,
+    writeSceneTempo: bridge.writeSceneTempo,
     applyScenes,
   });
 
@@ -444,6 +445,7 @@ export function App() {
               songCount={songCount}
               clearingTempo={clearingTempo}
               tempoCount={songTempoWriteOps.length}
+              writeSceneTempo={bridge.writeSceneTempo}
               onApplySongTempo={onApplySongTempo}
               songColorIndex={songColorIndex}
               songColorCount={songColorCount}
@@ -512,10 +514,11 @@ export function App() {
           inUse={inUseKeys}
           derivation={derivation}
           scenes={scenesForOps}
+          writeSceneTempo={bridge.writeSceneTempo}
           busy={bridge.busy}
-          onSave={(defaultArtist, roles, fill) => {
+          onSave={(defaultArtist, roles, fill, writeSceneTempo) => {
             void (async () => {
-              await bridge.saveSetConfig(defaultArtist, roles);
+              await bridge.saveSetConfig(defaultArtist, roles, writeSceneTempo);
               if (fill.length > 0) await bridge.applyScenes(fill, 'fill missing artists');
             })();
             setConfigOpen(false);

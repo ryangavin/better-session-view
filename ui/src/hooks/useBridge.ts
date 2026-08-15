@@ -94,6 +94,13 @@ export interface BridgeState {
   defaultArtist: string;
   roles: BSV.Role[];
   allowedColors: number[] | null;
+  /**
+   * Whether a bpm write also sets `Scene.tempo` on the song's first scene.
+   *
+   * Off unless the set says otherwise: the bpm is a label and changes nothing
+   * about playback, and turning this on makes a rename alter how the set plays.
+   */
+  writeSceneTempo: boolean;
   play: PlayState;
   /** Live's observed control-bar settings. Null until the watch reports. */
   transport: BSV.TransportState | null;
@@ -124,7 +131,18 @@ export interface BridgeState {
    * clip any more than it can a deleted scene. Clears the undo entry.
    */
   moveClips: (plan: ClipMovePlanFor, label: string) => Promise<void>;
-  saveSetConfig: (defaultArtist: string, roles: BSV.Role[]) => Promise<void>;
+  /**
+   * Replace the set's naming defaults and role definitions as one form.
+   *
+   * `writeSceneTempo` is optional and **omitted means "not saying"**, not
+   * "false" — so a caller that doesn't know about the flag can't turn it off by
+   * saving the rest of the form.
+   */
+  saveSetConfig: (
+    defaultArtist: string,
+    roles: BSV.Role[],
+    writeSceneTempo?: boolean,
+  ) => Promise<void>;
   setAllowedColors: (colors: number[] | null) => void;
   undo: () => Promise<void>;
   /** Fire something. No await: the answer you want is `play` changing. */
@@ -235,6 +253,7 @@ export function useBridge(
     defaultArtist,
     roles,
     allowedColors,
+    writeSceneTempo,
     adoptDeviceState,
     saveSetConfig,
     setAllowedColors,
@@ -986,6 +1005,7 @@ export function useBridge(
     defaultArtist,
     roles,
     allowedColors,
+    writeSceneTempo,
     play,
     transport,
     songPosition,

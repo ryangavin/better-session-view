@@ -20,6 +20,14 @@
   color: var(--caption);
   text-transform: uppercase;
 }
+.set-config-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.set-config-toggle > span {
+  color: var(--ui);
+}
 .set-config-fill-summary {
   display: flex;
   flex-direction: column;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { songTempoOps, type SceneFields } from '../../../core/src/roles.js';
+import { mergeSceneOps, songTempoOps, type SceneFields } from '../../../core/src/roles.js';
 import {
   MIN_TEMPO,
   songsOfScenes,
@@ -22,6 +22,11 @@ interface Args {
   sceneNames: Map<number, string>;
   /** Set-wide seed offered only when every selected scene has a blank artist. */
   defaultArtist: string;
+  /**
+   * The set has opted into a rename also projecting the bpm onto Live — see
+   * `DeviceState.writeSceneTempo`. Off, renaming only renames.
+   */
+  writeSceneTempo: boolean;
   applyScenes: BridgeState['applyScenes'];
 }
 
@@ -54,6 +59,7 @@ export function useSceneTitles({
   scenesForOps,
   sceneNames,
   defaultArtist,
+  writeSceneTempo,
   applyScenes,
 }: Args) {
   /** Which title fields have been edited — see TitlePatch in core. */
@@ -136,11 +142,6 @@ export function useSceneTitles({
     return sceneNameOps.find((op) => op.s === first)?.name ?? sceneNames.get(first) ?? '';
   }, [sceneList, sceneNameOps, sceneNames]);
 
-  const onRenameScenes = useCallback(
-    () => void applyScenes(sceneNameOps, 'rename scenes'),
-    [applyScenes, sceneNameOps],
-  );
-
   /** The songs the selection touches — the unit the tempo projection works in. */
   const selectedSongs = useMemo(
     () => songsOfScenes(derivation, sceneList),
@@ -170,6 +171,34 @@ export function useSceneTitles({
   const onApplySongTempo = useCallback(
     () => void applyScenes(songTempoWriteOps, 'song start tempo'),
     [applyScenes, songTempoWriteOps],
+  );
+
+  /**
+   * What Rename writes — the names, plus the tempo projection when the set has
+   * asked for it.
+   *
+   * One batch rather than two calls, so it is one Live undo step and one
+   * `applied === total` check: the song's first scene is usually in both lists,
+   * and writing it twice would undo in halves. Off — the default — this is the
+   * name ops and nothing else, and renaming cannot change what the set does.
+   */
+  const renameOps = useMemo(
+    () =>
+      writeSceneTempo ? mergeSceneOps(sceneNameOps, songTempoWriteOps) : sceneNameOps,
+    [sceneNameOps, songTempoWriteOps, writeSceneTempo],
+  );
+
+  // The label says when the write did the second thing, because that one is the
+  // one you'd want to find in the log after a set changed tempo unexpectedly.
+  const onRenameScenes = useCallback(
+    () =>
+      void applyScenes(
+        renameOps,
+        writeSceneTempo && songTempoWriteOps.length > 0
+          ? 'rename scenes and set song start tempo'
+          : 'rename scenes',
+      ),
+    [applyScenes, renameOps, songTempoWriteOps.length, writeSceneTempo],
   );
 
   return {

@@ -26,8 +26,15 @@ interface Props {
   inUse: ReadonlySet<string>;
   derivation: Derivation;
   scenes: SceneFields[];
+  /** Whether renaming a song also writes `Scene.tempo` on its first scene. */
+  writeSceneTempo: boolean;
   busy: boolean;
-  onSave: (defaultArtist: string, roles: Role[], fill: SceneWriteOp[]) => void;
+  onSave: (
+    defaultArtist: string,
+    roles: Role[],
+    fill: SceneWriteOp[],
+    writeSceneTempo: boolean,
+  ) => void;
   onClose: () => void;
 }
 
@@ -69,11 +76,13 @@ export function SetConfigModal({
   inUse,
   derivation,
   scenes,
+  writeSceneTempo,
   busy,
   onSave,
   onClose,
 }: Props) {
   const [artistDraft, setArtistDraft] = useState(defaultArtist);
+  const [tempoDraft, setTempoDraft] = useState(writeSceneTempo);
   const [roleDraft, setRoleDraft] = useState<Role[]>(() =>
     vocabulary.map((role) => ({ ...role })),
   );
@@ -95,7 +104,7 @@ export function SetConfigModal({
 
   const save = (fill: boolean) => {
     const roles = roleDraft.map((role) => ({ ...role, name: role.name.trim() }));
-    onSave(artistDraft.trim(), roles, fill ? fillPlan.ops : []);
+    onSave(artistDraft.trim(), roles, fill ? fillPlan.ops : [], tempoDraft);
   };
 
   return (
@@ -129,6 +138,31 @@ export function SetConfigModal({
             />
           </label>
           <FillSummary plan={fillPlan} />
+        </section>
+
+        {/* Its own section rather than a third naming default, because it is
+            not one. Everything above changes what a scene is *called*; this
+            decides whether a rename also changes what the set *does*. */}
+        <section className="set-config-section">
+          <div className="lbl">Song start tempo</div>
+          <div className="set-config-toggle">
+            <ControlButton
+              type="button"
+              pressed={tempoDraft}
+              onClick={() => setTempoDraft((on) => !on)}
+            >
+              {tempoDraft ? 'On' : 'Off'}
+            </ControlButton>
+            <span>Renaming a song writes its bpm to the first scene</span>
+          </div>
+          <div className="hint">
+            A bpm in a scene name is a label and changes nothing on its own. With this on,
+            renaming a song also sets <span className="preview">Scene.tempo</span> on the
+            scene it starts at, and clears it from the rest — so entering the song from the
+            top takes the set to that tempo, and firing a scene part-way through leaves the
+            tempo where it is. Off, <b>Apply tempo to song start</b> in the scene panel is
+            the only thing that writes it.
+          </div>
         </section>
 
         <section className="set-config-section">
