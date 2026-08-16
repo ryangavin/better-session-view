@@ -15,7 +15,7 @@ export interface SliderProps {
   label?: string;
   name?: string;
   orientation?: 'vertical' | 'horizontal';
-  /** Where the fill grows from. Defaults to the middle on a range with two sides. */
+  /** Where the fill grows from. Defaults to the middle when zero is the middle. */
   origin?: FillOrigin;
   showValue?: boolean;
   /** Length along the axis, in px. The other dimension is fixed. */

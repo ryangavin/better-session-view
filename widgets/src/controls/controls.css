@@ -244,12 +244,12 @@
   cursor: pointer;
 }
 
-.wdg-toggle-body:hover:not(:disabled) {
+.wdg-toggle-body:hover:not(:disabled):not([data-on]) {
   border-color: var(--wdg-edge-live);
   color: var(--wdg-marker);
 }
 
-.wdg-toggle-body[aria-pressed='true'] {
+.wdg-toggle-body[data-on] {
   border-color: var(--wdg-fill);
   background: var(--wdg-fill);
   color: #000;

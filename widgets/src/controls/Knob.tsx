@@ -20,8 +20,8 @@ export interface KnobProps {
   name?: string;
   /**
    * Where the filled arc grows from. `live.dial` calls this the needle mode;
-   * the default reads it off the range, since a control that straddles zero is
-   * one whose middle means something.
+   * the default reads it off the range, since a control whose zero sits at the
+   * middle of its travel is one whose middle means something.
    */
   origin?: FillOrigin;
   showValue?: boolean;

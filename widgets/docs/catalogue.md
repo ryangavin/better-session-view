@@ -76,10 +76,13 @@ waveform display (Simpler), transfer function (Saturator, Roar), oscilloscope
 
 ## Two conventions worth knowing
 
-**Fills grow from the middle when the range has two sides.** A pan at center is not a pan
+**Fills grow from the middle when zero is the middle.** A pan at center is not a pan
 turned all the way down, and Live draws the distinction — `live.dial` calls it the needle
-mode. `fill.ts` decides it once for the knob, the slider and the number field, in
-JavaScript rather than a `calc()` because CSS `abs()` is younger than we want to depend on.
+mode. The test is where zero lands in the travel, not whether the range straddles it: a
+volume fader runs -70 to +6 dB, and 0 dB near the top of that fills from the bottom like
+any other level. `fill.ts` decides it once for the knob, the slider and the number field,
+in JavaScript rather than a `calc()` because CSS `abs()` is younger than we want to
+depend on.
 
 **Switches take a boolean, not a `Param`.** Live models a device's on/off as a 0–1
 `DeviceParameter`, but nothing about drawing a switch needs a range, a taper or a unit.

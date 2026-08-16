@@ -8,6 +8,11 @@ import './controls.css';
  * as a 0–1 `DeviceParameter`, but nothing about drawing a switch needs a range,
  * a taper or a unit — pushing it through the param model would buy a conversion
  * at every call site and no behavior at all.
+ *
+ * Lit is `data-on`, not `aria-pressed`. A momentary is a button rather than a
+ * switch and has no pressed state to report, but it still lights while it's
+ * held, so the two states part ways: one is what it means, the other is what
+ * it looks like.
  */
 export interface ToggleProps {
   on: boolean;
@@ -38,6 +43,7 @@ export function Toggle({
       <button
         type="button"
         className="wdg-toggle-body"
+        {...(on ? { 'data-on': '' } : {})}
         aria-pressed={momentary ? undefined : on}
         aria-label={label ?? name}
         disabled={disabled}

@@ -217,19 +217,16 @@ export function Bench() {
           <Case note="Decibels keep their tenth.">
             <Held param={GAIN}>{(v, set) => <NumberField param={GAIN} value={v} onChange={set} />}</Held>
           </Case>
-          <Case note="A MIDI note number, named the way Live names it.">
-            <Held param={NOTE}>{(v, set) => <NumberField param={NOTE} value={v} onChange={set} />}</Held>
+          <Case note="A MIDI note, named as Live names it. No fill: a note isn't a proportion.">
+            <Held param={NOTE}>
+              {(v, set) => <NumberField param={NOTE} value={v} onChange={set} showFill={false} />}
+            </Held>
           </Case>
           <Case note="Display text supplied by the host wins over ours.">
             <Held param={GAIN}>
               {(v, set) => (
                 <NumberField param={GAIN} value={v} onChange={set} display={`${v.toFixed(0)} units`} />
               )}
-            </Held>
-          </Case>
-          <Case note="No fill, for a field that isn't a proportion.">
-            <Held param={NOTE}>
-              {(v, set) => <NumberField param={NOTE} value={v} onChange={set} showFill={false} />}
             </Held>
           </Case>
           <Case note="Disabled.">

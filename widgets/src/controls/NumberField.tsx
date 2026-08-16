@@ -18,7 +18,7 @@ export interface NumberFieldProps {
   editable?: boolean;
   /** The value drawn as a bar behind the text, as Live's own value boxes do. */
   showFill?: boolean;
-  /** Where that bar grows from. Defaults to the middle on a range with two sides. */
+  /** Where that bar grows from. Defaults to the middle when zero is the middle. */
   origin?: FillOrigin;
   width?: number;
   travel?: number;
