@@ -63,6 +63,8 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `watchSends` `{ on }` | add/remove per-track send observers while the mixer is open |
 | `watchTransport` `{ on }` | observe tempo, metronome, launch quantization, Arrangement Record and current scale |
 | `selectScene` `{ s }` | select and reveal one exact scene in Live's Session View |
+| `selectTrack` `{ t }` | select one exact track, so Live's device view follows the device-chain footer |
+| `devices` `{ t }` | read one track's device chain — shells only. A read rather than a watch; see the type's own note |
 | `ping` | |
 
 | server → client | terminal for |
@@ -72,6 +74,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `scenesAdded` | `addScenes` |
 | `moved` | `move` |
 | `palette` | `palette` |
+| `trackDevices` | `devices` |
 | `setConfigSaved` | `saveSetConfig` |
 | `allowedColorsSaved` | `saveAllowedColors` |
 | `pong` | `ping` |
@@ -187,7 +190,7 @@ an object id; the bridge resolves it against the track list so the wire stays in
 same `i`-indexed space as everything else. It's the *immediate* parent — groups nest.
 
 **Some requests have no reply, deliberately.** `launch`, `stop`, `selectScene`,
-`setTransport`, `setMixer` and the watch requests are not in `TERMINAL`. What you want back from
+`selectTrack`, `setTransport`, `setMixer` and the watch requests are not in `TERMINAL`. What you want back from
 firing a clip isn't an acknowledgement, it's the play state changing, and that arrives
 on its own as `playState`. Selecting a scene likewise reports through the existing
 Session-cursor observers; the client has already navigated its own grid. Meter watching

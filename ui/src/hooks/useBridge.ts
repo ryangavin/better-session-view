@@ -159,6 +159,19 @@ export interface BridgeState {
   /** Select and reveal one exact scene in Live's Session View. */
   selectScene: (s: number) => void;
   /**
+   * Select one exact track in Live, so its own device view shows the chain the
+   * footer is showing. Fire-and-forget, like `selectScene`.
+   */
+  selectTrack: (t: number) => void;
+  /**
+   * Read one track's device chain. Resolves `null` when the index no longer
+   * resolves in Live; rejects if the socket is down or the read times out.
+   *
+   * A read rather than a subscription — see `devices` in the protocol for why
+   * this one isn't a watch yet.
+   */
+  readDevices: (t: number) => Promise<BSV.TrackDevices | null>;
+  /**
    * Listen to the high-frequency meter stream without putting it in the
    * composition root's state and re-rendering the entire grid every frame.
    */
@@ -544,6 +557,16 @@ export function useBridge(
 
   const selectScene = useCallback(
     (s: number) => client.send({ type: 'selectScene', s }),
+    [client],
+  );
+
+  const selectTrack = useCallback(
+    (t: number) => client.send({ type: 'selectTrack', t }),
+    [client],
+  );
+
+  const readDevices = useCallback(
+    async (t: number) => (await client.request({ type: 'devices', t })).state,
     [client],
   );
 
@@ -1003,6 +1026,8 @@ export function useBridge(
     setMixer,
     setFold,
     selectScene,
+    selectTrack,
+    readDevices,
     subscribeMeters,
     subscribeMixer,
     subscribeClipStatus,

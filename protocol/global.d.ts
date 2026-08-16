@@ -417,6 +417,46 @@ declare namespace BSV {
     send?: { index: number; value: number };
   }
 
+  /**
+   * One device in a track's chain, as much of it as a shell can draw.
+   *
+   * Deliberately not the whole device. `widgets/` draws a device shell from a
+   * name, an on state and a fold state, and that is exactly what this carries —
+   * no parameters, no faceplate. Parameters are a far larger read (one
+   * `DeviceParameter` per control, per device) and land here as a field when
+   * they land, not as a redesign of this.
+   *
+   * **Not `DeviceState`.** That one is this Max device's own stored
+   * configuration and has nothing to do with Live's devices.
+   */
+  interface ChainDevice {
+    /** `Device.name` — what the user called it, which needn't be its class. */
+    name: string;
+    /** `Device.class_name`, e.g. `Eq8`, `AudioEffectGroupDevice`. */
+    className: string;
+    /** `Device.is_active` — Live's device activator. */
+    on: boolean;
+    /** `Device.View.is_collapsed`. */
+    folded: boolean;
+    /**
+     * A rack's chains, each a device run of its own. Absent on every device
+     * that isn't a rack, which is most of them.
+     */
+    chains?: RackChain[];
+  }
+
+  /** One chain inside a rack — a device run with a name of its own. */
+  interface RackChain {
+    name: string;
+    devices: ChainDevice[];
+  }
+
+  /** One track's device chain, read on request. */
+  interface TrackDevices {
+    t: number;
+    devices: ChainDevice[];
+  }
+
   /** Live's set-wide control-bar state, observed and pushed as one unit. */
   interface TransportState {
     /** Song.tempo, 20–999 BPM. May move under Arrangement automation. */
@@ -751,6 +791,24 @@ declare namespace BSV {
     | { id?: number; type: 'setFold'; t: number; folded: boolean }
     /** Select an exact Session scene so Live reveals it in its own view. */
     | { id?: number; type: 'selectScene'; s: number }
+    /**
+     * Select an exact track, so Live's own device view follows the one whose
+     * chain we're showing. The same bargain `selectScene` makes.
+     */
+    | { id?: number; type: 'selectTrack'; t: number }
+    /**
+     * Read one track's device chain.
+     *
+     * **A read rather than a watch, and that's a first pass rather than a
+     * principle.** `Track.devices` is observable and one observer on the track
+     * being shown would be cheap. But every watch here is refcounted per *kind*
+     * across clients, and this one would have to be refcounted per kind *and*
+     * target — two clients looking at different tracks both want it on, and
+     * neither may turn the other's off. Until that exists, a device added in
+     * Live doesn't appear until something asks again, which the footer does
+     * whenever the track it's showing changes.
+     */
+    | { id?: number; type: 'devices'; t: number }
     | { id?: number; type: 'launch'; target: LaunchTarget }
     | { id?: number; type: 'stop'; target: StopTarget }
     /** Write any related subset of Live's control-bar settings in one operation. */
@@ -868,6 +926,12 @@ declare namespace BSV {
         frame: ClipStatusFrame;
       }
     | { type: 'mixerState'; state: MixerState }
+    /**
+     * One track's chain, answering a `devices` request. `null` means the track
+     * index didn't resolve — a set that shrank under a client still holding the
+     * old count, which is a normal race rather than an error.
+     */
+    | { type: 'trackDevices'; id?: number; state: TrackDevices | null }
     | {
         type: 'songPosition';
         /** First three fields of Live's bars.beats.sixteenths.ticks value. */

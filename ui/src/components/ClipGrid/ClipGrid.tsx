@@ -127,6 +127,13 @@ export interface Props {
   onStopTrack: (t: number) => void;
   onStopAll: () => void;
   onToggleGroup: (trackIndex: number) => void;
+  /**
+   * The track whose device chain the footer is showing, or -1 for none. A
+   * number rather than `null` so the prop stays one type all the way down.
+   */
+  selectedTrack: number;
+  /** Plain click on a track header: show that track's devices. */
+  onSelectTrack: (t: number) => void;
 }
 
 function StopClipsButton({
@@ -211,6 +218,8 @@ export function ClipGrid({
   onFireClip,
   onRoleMenu,
   onStopTrack,
+  selectedTrack,
+  onSelectTrack,
   onStopAll,
   onToggleGroup,
 }: Props) {
@@ -406,14 +415,24 @@ export function ClipGrid({
                 </th>
               );
             }
+            // A plain click shows this track's devices; the modifier still
+            // stops it. The two never collide — one is a view, the other is
+            // playback, and the modifier is the same one every launch surface
+            // in the grid uses to mean stop.
+            const showing = c.track.i === selectedTrack;
             return (
               <th
                 key={`t${c.track.i}`}
-                className={`track-h${state}${bandClass}`}
+                className={`track-h${state}${bandClass}${showing ? ' devices-shown' : ''}`}
                 style={{ ...band, ...fill } as CSSProperties}
-                title={`${c.track.name} — ${LAUNCH_KEY}-click to stop this track`}
+                aria-pressed={showing}
+                title={
+                  `${c.track.name} — click for its devices · ` +
+                  `${LAUNCH_KEY}-click to stop this track`
+                }
                 onClick={(e) => {
                   if (isLaunchModified(e)) onStopTrack(c.track.i);
+                  else onSelectTrack(c.track.i);
                 }}
               >
                 <span className="th-line">

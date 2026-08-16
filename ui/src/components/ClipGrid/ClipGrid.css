@@ -199,6 +199,13 @@ table.grid th.track-h {
   padding-left: var(--track-pad-x);
 }
 
+/* The track whose devices are in the footer, marked along the edge nearest it.
+   `currentColor` rather than a token: the header is filled with Live's own
+   track color and `inkOn` has already picked the one ink that reads on it. */
+table.grid th.track-h.devices-shown {
+  box-shadow: inset 0 -3px 0 currentColor;
+}
+
 table.grid th.track-h.live {
   background-image: linear-gradient(90deg, var(--green) 0 3px, transparent 3px);
 }

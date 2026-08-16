@@ -18,6 +18,7 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 | [bulk workflows](docs/bulk-workflows.md) | the running order or coloring by rule | `components/ReorderModal.tsx`, `RecolorModal.tsx`, `BulkWorkflow.css` |
 | [the header](docs/header.md) | the Live control bar, transport state, glyphs | `components/Header.tsx`, `Icon.tsx`, `Control.tsx` |
 | [mixer panel](docs/mixer.md) | meters, faders, sends, the stop row | `components/ClipGrid/TrackMeter.tsx`, `TrackSends.tsx`, `useMeterResize.ts`, `hooks/useMixer.ts`, `useMeters.ts`, `lib/mixerStore.ts`, `meterScale.ts`, `liveParam.ts` |
+| [the device chain](docs/device-chain.md) | the footer showing a track's devices, and the one place `widgets/` chrome is used | `components/DeviceChain.tsx`, `hooks/useDeviceChain.ts` |
 | [track groups](docs/track-groups.md) | group columns and collapsing | `hooks/useTrackColumns.ts` |
 | [undo](docs/undo.md) | the undo entry, or any new write path | `hooks/useBridge.ts` |
 | [performance notes](docs/performance.md) | **anything that reaches a memoized row** — props on `Row`, `SongHeaderRow`, or callbacks from `App` | `components/ClipGrid/Row.tsx`, `SongHeaderRow.tsx`, `App.tsx` |

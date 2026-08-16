@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import './App.css';
 import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
+import { DeviceChain } from './components/DeviceChain.js';
 import { Header } from './components/Header.js';
 import { IconSync } from './components/Icon.js';
 import { Inspector } from './components/Inspector.js';
@@ -31,6 +32,7 @@ import { useColorRules } from './hooks/useColorRules.js';
 import { useVocabulary } from './hooks/useVocabulary.js';
 import { useRoleAssignment } from './hooks/useRoleAssignment.js';
 import { useClipInspector } from './hooks/useClipInspector.js';
+import { useDeviceChain } from './hooks/useDeviceChain.js';
 import {
   loadColumnWidth,
   saveColumnWidth,
@@ -311,6 +313,14 @@ export function App() {
   const { chosenIndex, pattern, setPattern, onColor, renameCount, onRename, preview } =
     useClipInspector({ selected, clips, trackNames, sceneNames, snapshot, apply });
 
+  // Clicking a track header opens this track's chain along the bottom, and
+  // selects the same track in Live so its own device view agrees with ours.
+  const deviceChain = useDeviceChain({
+    lomReady: bridge.lomReady,
+    selectTrack: bridge.selectTrack,
+    readDevices: bridge.readDevices,
+  });
+
   // Set configuration is owned here rather than by any one opener: the header,
   // rail and grid role menu all reach it, and the rail can be shut while it is up.
   const [configOpen, setConfigOpen] = useState(false);
@@ -411,6 +421,8 @@ export function App() {
               onStopTrack={onStopTrack}
               onStopAll={onStopAll}
               onToggleGroup={onToggleGroup}
+              selectedTrack={deviceChain.track ?? -1}
+              onSelectTrack={deviceChain.onSelectTrack}
             />
           ) : (
             <div className="empty-state">
@@ -481,6 +493,20 @@ export function App() {
           </Rail>
         )}
       </main>
+
+      {/* Below `main` rather than inside it, so the chain spans the window the
+          way Live's device view does — under the rail as well as the grid,
+          rather than being one more column in the row. */}
+      {deviceChain.track !== null && (
+        <DeviceChain
+          name={trackNames.get(deviceChain.track) ?? `Track ${deviceChain.track + 1}`}
+          devices={deviceChain.devices}
+          loading={deviceChain.loading}
+          failed={deviceChain.failed}
+          onRefresh={deviceChain.onRefresh}
+          onClose={deviceChain.onClose}
+        />
+      )}
 
       {/* Outside `main` with the modals: it's anchored to the viewport, and a
           menu clipped by the grid's own scroll box would be cut off on the

@@ -17,6 +17,7 @@ const TERMINAL = {
   move: 'moved',
   moveClips: 'clipsMoved',
   palette: 'palette',
+  devices: 'trackDevices',
   saveSetConfig: 'setConfigSaved',
   saveAllowedColors: 'allowedColorsSaved',
   ping: 'pong',
