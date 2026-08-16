@@ -100,6 +100,11 @@ export function NumberField({
         <div className="wdg-number-body" title={title} {...gesture.props} onKeyDown={onKeyDown}>
           {showFill && <span className="wdg-number-fill" aria-hidden="true" />}
           <span className="wdg-number-text">{gesture.text}</span>
+          {showFill && (
+            <span className="wdg-number-ink" aria-hidden="true">
+              {gesture.text}
+            </span>
+          )}
         </div>
       ) : (
         <input

@@ -72,6 +72,7 @@ export function Knob({
       className={`wdg wdg-knob${className ? ` ${className}` : ''}`}
       style={{ ...reserved, '--wdg-knob-size': `${size}px` } as CSSProperties}
     >
+      {name && <span className="wdg-caption">{name}</span>}
       <div className="wdg-knob-dial" title={title} {...gesture.props}>
         <svg viewBox="0 0 40 40" aria-hidden="true">
           <path className="wdg-knob-empty" d={dialArc(dialAngle(0), dialAngle(1)) ?? undefined} />
@@ -79,7 +80,6 @@ export function Knob({
           <line className="wdg-knob-marker" x1={nx} y1={ny} x2={mx} y2={my} />
         </svg>
       </div>
-      {name && <span className="wdg-caption">{name}</span>}
       {showValue && <span className="wdg-readout">{gesture.text}</span>}
     </div>
   );

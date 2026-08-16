@@ -124,11 +124,27 @@ h2 {
   background: #111113;
 }
 
+.case.wide {
+  grid-column: 1 / -1;
+}
+
 .case-stage {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 108px;
+}
+
+.faceplate {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.chain {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
 }
 
 .case-note {

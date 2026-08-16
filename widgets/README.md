@@ -43,8 +43,12 @@ src/
     arc.ts          dial geometry
     fill.ts         where a fill starts, shared by all three value controls
     reserve.ts      space for the longest reading, so a control never resizes
-    controls.css    every control's styling
-  tokens.css        the widget tokens, resolved from the host's with fallbacks
+    shared.css      the parts every control is made of: face, type, states
+    controls.css    what's left after that — each control's own geometry
+  chrome/
+    Device.tsx      the shell a faceplate sits in, folded or open
+    chrome.css      its styling, on the same shared parts
+  tokens.css        the widget tokens: colour and type from the host, metrics ours
   index.ts          the barrel — pulls in every stylesheet, so prefer deep imports
 bench/              the harness. Dev-only; never built, never shipped
 ```

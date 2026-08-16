@@ -1,0 +1,124 @@
+@import '../controls/shared.css';
+
+.wdg-device {
+  display: inline-flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--wdg-edge);
+  border-radius: var(--wdg-plate-radius);
+  background: var(--wdg-plate);
+  color: var(--wdg-text);
+  font-family: var(--wdg-sans);
+}
+
+.wdg-device[data-selected] {
+  border-color: var(--wdg-edge-live);
+}
+
+.wdg-device-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--wdg-height);
+  padding: 0 4px;
+  border-bottom: 1px solid var(--wdg-edge);
+  background: var(--wdg-plate-head);
+  outline: none;
+}
+
+.wdg-device-name {
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wdg-device[data-selected] .wdg-device-head {
+  background: var(--wdg-plate-selected);
+}
+
+.wdg-device[data-selected] .wdg-device-name {
+  color: var(--wdg-marker);
+}
+
+.wdg-device-fold,
+.wdg-device-swap {
+  display: flex;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--wdg-caption);
+  cursor: pointer;
+}
+
+.wdg-device-fold:hover,
+.wdg-device-swap:hover {
+  color: var(--wdg-marker);
+}
+
+.wdg-device-fold svg,
+.wdg-device-swap svg {
+  width: 100%;
+  height: 100%;
+}
+
+.wdg-device-fold svg {
+  fill: currentColor;
+}
+
+.wdg-device[data-folded] .wdg-device-fold svg {
+  transform: rotate(-90deg);
+}
+
+.wdg-device-swap svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wdg-device-swap {
+  margin-left: auto;
+}
+
+.wdg-device-power {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 1px solid var(--wdg-empty);
+  border-radius: var(--wdg-radius);
+  background: transparent;
+  cursor: pointer;
+}
+
+.wdg-device-body {
+  flex: 1;
+  padding: 8px;
+}
+
+.wdg-device:not([data-on]) .wdg-device-body {
+  opacity: 0.55;
+}
+
+.wdg-device[data-folded] .wdg-device-head {
+  flex: 1;
+  flex-direction: column;
+  width: var(--wdg-height);
+  height: auto;
+  padding: 4px 0;
+  border-bottom: 0;
+}
+
+.wdg-device[data-folded] .wdg-device-name {
+  writing-mode: vertical-rl;
+}
+
+.wdg-device[data-folded] .wdg-device-swap {
+  margin: auto 0 0;
+}

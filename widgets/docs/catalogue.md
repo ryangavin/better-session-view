@@ -30,12 +30,20 @@ Built.
 | widget | M4L object | notes |
 |---|---|---|
 | [`Knob`](../src/controls/Knob.tsx) | `live.dial` | 270° sweep opening at the bottom, like Ableton's |
-| [`Slider`](../src/controls/Slider.tsx) | `live.slider` | vertical or horizontal; same hook as the knob |
+| [`Slider`](../src/controls/Slider.tsx) | `live.slider` | a fader; horizontal too, for the crossfader's shape |
 | [`NumberField`](../src/controls/NumberField.tsx) | `live.numbox` | drag, or type a digit / press Enter to edit |
 | [`Toggle`](../src/controls/Toggle.tsx) | `live.toggle`, `live.button` | `momentary` gives the second |
 | [`Segmented`](../src/controls/Segmented.tsx) | `live.tab` | an enum with every member on screen |
 | [`Label`](../src/controls/Label.tsx) | `live.comment` | carries the type rhythm for a whole panel |
 | `Divider` | `live.line` | in `Label.tsx` — same family, three lines |
+
+**Reach for a filled `NumberField` before a horizontal `Slider`.** Live's own collapsed
+fader is a value box you drag with the reading inside it — that's the Arrangement track
+header's volume and pan — and it costs a third of the room while saying more, because
+`travel` sets the drag distance independently of the drawn width. A vertical fader earns
+its length: a column of them is readable at a glance without reading a number, which is
+the mixer. On its side that advantage is gone. The orientation stays for the shape that
+genuinely wants it, the crossfader, and for hosts we haven't met.
 
 Not yet: `live.text` (a labelled toggle — `Toggle` with children is most of it),
 `live.gain~` (a slider with a meter beside it), `live.meter~` (the mixer has one, and it
@@ -43,10 +51,18 @@ belongs here when the second caller appears), `live.arrows`, `live.drop`.
 
 ## Tier 2 — the chrome, which M4L has none of
 
-Not built, and the actual next step for a device-chain footer. A faceplate of perfect
-knobs still doesn't look like Ableton without it.
+The shell is built; the rest isn't, and it's what a device-chain footer still needs. A
+faceplate of perfect knobs doesn't look like Ableton without it.
 
-- **Device shell** — title bar, activator, fold/unfold triangle, preset chevron, hot-swap
+| widget | from | notes |
+|---|---|---|
+| [`Device`](../src/chrome/Device.tsx) | the LOM, not M4L | title bar, activator, fold triangle, hot-swap slot, folded strip |
+
+`Device` takes three states and not a device object, because three is all a shell shows:
+`Device.name`, `Device.is_active`, `Device.View.is_collapsed`. Presets stay a callback —
+swapping one means opening a browser this module has no business knowing about.
+
+- **The rest of the shell** — rename, the preset chevron, a rack's title-bar buttons
 - **Parameter row and section rhythm** — Live's device panel is a strict grid, and that
   regularity is most of why it reads as one instrument rather than a pile of controls
 - **Chain strip** — the horizontal run of devices, with drop indicators between them
@@ -71,10 +87,19 @@ waveform display (Simpler), transfer function (Saturator, Roar), oscilloscope
 4. Take `className`, and put anything positional on CSS custom properties, so a host can
    restyle it without forking it.
 5. Root element gets `wdg` plus its own class, so [the tokens](../src/tokens.css) apply.
+   Then name it into [`shared.css`](../src/controls/shared.css) — the face, the type, the
+   fill, the states — and write only its own geometry in `controls.css`. A control that
+   draws its own border has already drifted.
 6. Add a case to [the bench](bench.md) — including the disabled one. It's the only test
    these get.
 
-## Three conventions worth knowing
+## Four conventions worth knowing
+
+**A label is on top, a value is underneath.** Every widget is the same column: caption,
+control, reading. The value box and the switch are the apparent exceptions and aren't —
+their reading is inside the control because the control *is* the reading. One rule, so a
+row of mixed controls lines up on its labels and again on its values instead of each
+widget arguing its own case, and so `shared.css` can stack all five roots with one rule.
 
 **A control is the size of what it can say, not of what it is saying.** Every control
 that reads a `Param` asks the model for its longest reading and reserves that much,
@@ -92,6 +117,12 @@ volume fader runs -70 to +6 dB, and 0 dB near the top of that fills from the bot
 any other level. `fill.ts` decides it once for the knob, the slider and the number field,
 in JavaScript rather than a `calc()` because CSS `abs()` is younger than we want to
 depend on.
+
+A fill is always the full `--wdg-fill` — the same amber as a knob's arc, a lit switch and
+a chosen tab, because one meaning should have one colour. The value box is the only place
+text sits on a fill, and it draws its reading twice rather than dimming the fill to make
+room: once in `--wdg-text`, once in `--wdg-fill-text` clipped to the filled part. The
+number then reads dark on the fill and light off it, splitting at the edge.
 
 **Switches take a boolean, not a `Param`.** Live models a device's on/off as a 0–1
 `DeviceParameter`, but nothing about drawing a switch needs a range, a taper or a unit.

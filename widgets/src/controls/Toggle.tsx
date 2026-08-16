@@ -53,6 +53,7 @@ export function Toggle({
         (width === undefined ? {} : { '--wdg-toggle-width': `${width}px` }) as CSSProperties
       }
     >
+      {name && <span className="wdg-caption">{name}</span>}
       <button
         type="button"
         className="wdg-toggle-body"
@@ -68,7 +69,6 @@ export function Toggle({
       >
         {children}
       </button>
-      {name && <span className="wdg-caption">{name}</span>}
     </div>
   );
 }

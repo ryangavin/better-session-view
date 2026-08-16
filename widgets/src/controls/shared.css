@@ -1,0 +1,119 @@
+@import '../tokens.css';
+
+.wdg,
+.wdg * {
+  box-sizing: border-box;
+}
+
+.wdg-knob,
+.wdg-slider,
+.wdg-number,
+.wdg-toggle,
+.wdg-segmented {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wdg-gap);
+}
+
+.wdg-slider-body,
+.wdg-number-body,
+.wdg-toggle-body,
+.wdg-segmented-body {
+  overflow: hidden;
+  border: 1px solid var(--wdg-edge);
+  border-radius: var(--wdg-radius);
+  background: var(--wdg-face);
+}
+
+.wdg-number-body,
+.wdg-toggle-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--wdg-height);
+  color: var(--wdg-text);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.wdg-caption,
+.wdg-label {
+  font-family: var(--wdg-sans);
+  font-size: 9px;
+  line-height: 1.2;
+  color: var(--wdg-caption);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.wdg-readout,
+.wdg-number-body {
+  font-family: var(--wdg-mono);
+  font-size: 9px;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wdg-toggle-body,
+.wdg-segmented-body button {
+  font-family: var(--wdg-sans);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.wdg-slider-body,
+.wdg-number-body {
+  position: relative;
+}
+
+.wdg-slider-fill,
+.wdg-number-fill {
+  position: absolute;
+  background: var(--wdg-fill);
+  pointer-events: none;
+}
+
+.wdg-number-fill,
+.wdg-slider-horizontal .wdg-slider-fill {
+  inset: 0 auto 0 calc(var(--wdg-fill-start) * 100%);
+  width: calc(var(--wdg-fill-size) * 100%);
+}
+
+.wdg-toggle-body:hover:not(:disabled):not([data-on]),
+.wdg-segmented-body button:hover:not(:disabled):not([aria-checked='true']) {
+  color: var(--wdg-marker);
+}
+
+.wdg-toggle-body[data-on],
+.wdg-device-power[data-on],
+.wdg-segmented-body button[aria-checked='true'] {
+  border-color: var(--wdg-fill);
+  background: var(--wdg-fill);
+  color: var(--wdg-fill-text);
+}
+
+.wdg [role='slider'] {
+  outline: none;
+  touch-action: none;
+}
+
+.wdg [role='slider']:focus-visible,
+.wdg-toggle-body:focus-visible,
+.wdg-device-head:focus-visible,
+.wdg-device-head button:focus-visible,
+.wdg-segmented-body button:focus-visible {
+  outline: 1px solid var(--wdg-focus);
+  outline-offset: 1px;
+}
+
+.wdg[aria-disabled='true'],
+.wdg:has(> [aria-disabled='true']),
+.wdg:has(> :disabled) {
+  opacity: 0.4;
+}
+
+.wdg [aria-disabled='true'],
+.wdg :disabled {
+  cursor: default;
+}

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { FINE_KEY } from '../src/gesture/platform.js';
 import { format } from '../src/param/format.js';
 import { enumParam, type Param, type UnitStyle } from '../src/param/param.js';
+import { Device } from '../src/chrome/Device.js';
 import { Divider, Label } from '../src/controls/Label.js';
 import { Knob } from '../src/controls/Knob.js';
 import { NumberField } from '../src/controls/NumberField.js';
@@ -9,7 +10,9 @@ import { Segmented } from '../src/controls/Segmented.js';
 import { Slider } from '../src/controls/Slider.js';
 import { Toggle } from '../src/controls/Toggle.js';
 
-const SECTIONS = ['Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Model'];
+const SECTIONS = [
+  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Device', 'Model',
+];
 
 /** One widget's own value, so every example on the page is genuinely live. */
 function Held({
@@ -23,9 +26,9 @@ function Held({
   return <>{children(value, setValue)}</>;
 }
 
-function Case({ note, children }: { note: string; children: ReactNode }) {
+function Case({ note, wide, children }: { note: string; wide?: boolean; children: ReactNode }) {
   return (
-    <div className="case">
+    <div className={`case${wide ? ' wide' : ''}`}>
       <div className="case-stage">{children}</div>
       <p className="case-note">{note}</p>
     </div>
@@ -63,6 +66,9 @@ const GAIN: Param = {
 const NOTE: Param = {
   kind: 'int', min: 0, max: 127, defaultValue: 60, unit: 'midi', shortName: 'Root',
 };
+const CROSSFADE: Param = {
+  kind: 'float', min: -1, max: 1, defaultValue: 0, unit: 'float', shortName: 'Crossfade',
+};
 const STEPPED: Param = {
   kind: 'float', min: 0, max: 64, defaultValue: 0, steps: 4, shortName: 'Steps',
 };
@@ -73,6 +79,72 @@ const UNITS: UnitStyle[] = [
   'native', 'int', 'float', 'time', 'hertz', 'decibel',
   'percent', 'pan', 'semitones', 'midi', 'custom',
 ];
+
+/** A faceplate worth putting in a shell: real controls, each with its own value. */
+function Faceplate() {
+  return (
+    <div className="faceplate">
+      <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
+      <Held param={DRY_WET}>{(v, set) => <Knob param={DRY_WET} value={v} onChange={set} />}</Held>
+      <Held param={GAIN}>
+        {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={44} />}
+      </Held>
+    </div>
+  );
+}
+
+function Shell({
+  name = 'Auto Filter',
+  active = true,
+  collapsed = false,
+  selected = false,
+  swappable = false,
+  onSelect,
+}: {
+  name?: string;
+  active?: boolean;
+  collapsed?: boolean;
+  selected?: boolean;
+  swappable?: boolean;
+  onSelect?(): void;
+}) {
+  const [on, setOn] = useState(active);
+  const [folded, setFolded] = useState(collapsed);
+  return (
+    <Device
+      name={name}
+      on={on}
+      onToggle={setOn}
+      folded={folded}
+      onFold={setFolded}
+      selected={selected}
+      onSelect={onSelect ?? (() => {})}
+      onHotSwap={swappable ? () => {} : undefined}
+    >
+      <Faceplate />
+    </Device>
+  );
+}
+
+/** Three of them, because a chain is the thing we're actually building. */
+function Chain() {
+  const [at, setAt] = useState(1);
+  const names = ['EQ Eight', 'Auto Filter', 'Saturator'];
+  return (
+    <div className="chain">
+      {names.map((name, i) => (
+        <Shell
+          key={name}
+          name={name}
+          collapsed={i === 0}
+          selected={i === at}
+          swappable={i === 1}
+          onSelect={() => setAt(i)}
+        />
+      ))}
+    </div>
+  );
+}
 
 /**
  * The point of the page: change the model, not the widget, and watch every
@@ -194,17 +266,17 @@ export function Bench() {
           <Case note="Vertical. The same hook as the knob, laid out straight.">
             <Held param={GAIN}>{(v, set) => <Slider param={GAIN} value={v} onChange={set} />}</Held>
           </Case>
-          <Case note="Horizontal.">
+          <Case note="Horizontal. The rarer choice — a value box usually reads better in a row.">
             <Held param={DRY_WET}>
               {(v, set) => (
                 <Slider param={DRY_WET} value={v} onChange={set} orientation="horizontal" length={120} />
               )}
             </Held>
           </Case>
-          <Case note="Bipolar, on the same widget.">
-            <Held param={PAN}>
+          <Case note="Bipolar and horizontal at once: Live's crossfader, and why the orientation is here.">
+            <Held param={CROSSFADE}>
               {(v, set) => (
-                <Slider param={PAN} value={v} onChange={set} orientation="horizontal" length={120} />
+                <Slider param={CROSSFADE} value={v} onChange={set} orientation="horizontal" length={120} />
               )}
             </Held>
           </Case>
@@ -216,6 +288,9 @@ export function Bench() {
           </Case>
           <Case note="Decibels keep their tenth.">
             <Held param={GAIN}>{(v, set) => <NumberField param={GAIN} value={v} onChange={set} />}</Held>
+          </Case>
+          <Case note="A pan collapsed to a value box. Zero is the middle, so the fill has two sides.">
+            <Held param={PAN}>{(v, set) => <NumberField param={PAN} value={v} onChange={set} />}</Held>
           </Case>
           <Case note="A MIDI note, named as Live names it. No fill: a note isn't a proportion.">
             <Held param={NOTE}>
@@ -296,6 +371,27 @@ export function Bench() {
               <Divider />
               <Label heading>Envelope</Label>
             </div>
+          </Case>
+        </Section>
+
+        <Section id="Device">
+          <Case note="The shell: activator, fold triangle, name, and a faceplate under it.">
+            <Shell />
+          </Case>
+          <Case note="Deactivated. The faceplate dims; every control on it still works.">
+            <Shell active={false} />
+          </Case>
+          <Case note="Folded, the way a long chain stays readable — name on end, body gone.">
+            <Shell collapsed />
+          </Case>
+          <Case note="Selected, and with presets: the hot-swap button appears only if a host can serve it.">
+            <Shell selected swappable />
+          </Case>
+          <Case
+            wide
+            note="A run of them, which is what a chain is. Click a title bar to move the selection; fold the first one back open."
+          >
+            <Chain />
           </Case>
         </Section>
 

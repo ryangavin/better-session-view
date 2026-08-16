@@ -54,9 +54,11 @@ changing the parameter, not the widget.
 
 ## The host-tokens switch
 
-`widgets/src/tokens.css` defines every widget token as `var(--host-token, fallback)`, so a
-widget picks up the app's palette when it's mounted in the app and uses its own when it
-isn't. The switch in the bench header adds and removes the app's palette from the page, so
+`widgets/src/tokens.css` defines every colour and type token as `var(--host-token,
+fallback)`, so a widget picks up the app's palette when it's mounted in the app and uses
+its own when it isn't. The metrics below them — height, track, gap — are the widget's own
+and take no host token, because a control's size is the module's decision; a host that
+wants them different sets `--wdg-height` and the rest directly. The switch in the bench header adds and removes the app's palette from the page, so
 both halves of that chain can be seen. A widget that looks right only with host tokens
 present is a widget that will look wrong the first time it's used anywhere else.
 

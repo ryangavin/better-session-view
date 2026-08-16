@@ -1,37 +1,17 @@
-@import '../tokens.css';
-
-.wdg,
-.wdg * {
-  box-sizing: border-box;
-}
-
-.wdg-caption,
-.wdg-label {
-  font-family: var(--wdg-sans);
-  font-size: 9px;
-  line-height: 1.2;
-  color: var(--wdg-caption);
-  white-space: nowrap;
-  text-align: center;
-}
+@import './shared.css';
 
 .wdg-label-heading {
   font-family: var(--wdg-mono);
-  font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .wdg-readout {
   min-width: calc(var(--wdg-chars, 0) * 1ch);
-  font-family: var(--wdg-mono);
-  font-size: 9px;
   line-height: 1.2;
-  letter-spacing: -0.04em;
   color: var(--wdg-text);
   white-space: nowrap;
   text-align: center;
-  font-variant-numeric: tabular-nums;
 }
 
 .wdg-divider {
@@ -49,22 +29,11 @@
   align-self: stretch;
 }
 
-.wdg-knob {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
 .wdg-knob-dial {
   width: var(--wdg-knob-size);
   height: var(--wdg-knob-size);
-  cursor: ns-resize;
   border-radius: 50%;
-}
-
-.wdg-knob-dial[aria-disabled='true'] {
-  cursor: default;
+  cursor: ns-resize;
 }
 
 .wdg-knob-dial svg {
@@ -95,69 +64,21 @@
   stroke-linecap: round;
 }
 
-.wdg-knob-dial[data-dragging] .wdg-knob-marker,
-.wdg-knob-dial:hover .wdg-knob-marker {
-  stroke: var(--wdg-marker);
-}
-
-.wdg-slider-vertical {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.wdg-slider-horizontal {
-  display: inline-grid;
-  grid-template-columns: max-content max-content;
-  align-items: center;
-  justify-items: center;
-  gap: 2px 4px;
-}
-
-.wdg-slider-horizontal .wdg-caption {
-  grid-column: 1 / -1;
-}
-
-.wdg-slider-body {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--wdg-edge);
-  border-radius: var(--wdg-radius);
-  background: var(--wdg-face);
-}
-
 .wdg-slider-vertical .wdg-slider-body {
-  width: 14px;
+  width: var(--wdg-track);
   height: var(--wdg-slider-length);
   cursor: ns-resize;
 }
 
 .wdg-slider-horizontal .wdg-slider-body {
   width: var(--wdg-slider-length);
-  height: 14px;
+  height: var(--wdg-track);
   cursor: ew-resize;
-}
-
-.wdg-slider-body[aria-disabled='true'] {
-  cursor: default;
-}
-
-.wdg-slider-fill {
-  position: absolute;
-  background: var(--wdg-fill);
-  opacity: 0.62;
-  pointer-events: none;
 }
 
 .wdg-slider-vertical .wdg-slider-fill {
   inset: auto 0 calc(var(--wdg-fill-start) * 100%) 0;
   height: calc(var(--wdg-fill-size) * 100%);
-}
-
-.wdg-slider-horizontal .wdg-slider-fill {
-  inset: 0 auto 0 calc(var(--wdg-fill-start) * 100%);
-  width: calc(var(--wdg-fill-size) * 100%);
 }
 
 .wdg-slider-thumb {
@@ -178,51 +99,29 @@
   transform: translateX(-1px);
 }
 
-.wdg-number {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
 .wdg-number-body {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: var(--wdg-number-width, max(38px, calc(var(--wdg-chars, 6) * 1ch + 12px)));
-  height: 17px;
-  overflow: hidden;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--wdg-edge);
-  border-radius: var(--wdg-radius);
-  background: var(--wdg-face);
-  color: var(--wdg-text);
-  font-family: var(--wdg-mono);
-  font-size: 9px;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
   cursor: ew-resize;
-}
-
-.wdg-number-body[aria-disabled='true'] {
-  cursor: default;
-}
-
-.wdg-number-fill {
-  position: absolute;
-  inset: 0 auto 0 calc(var(--wdg-fill-start) * 100%);
-  width: calc(var(--wdg-fill-size) * 100%);
-  background: var(--wdg-fill);
-  opacity: 0.62;
-  pointer-events: none;
 }
 
 .wdg-number-text {
   position: relative;
-  white-space: nowrap;
+  pointer-events: none;
+}
+
+.wdg-number-ink {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wdg-fill-text);
+  clip-path: inset(
+    0 calc(100% - (var(--wdg-fill-start) + var(--wdg-fill-size)) * 100%) 0
+      calc(var(--wdg-fill-start) * 100%)
+  );
   pointer-events: none;
 }
 
@@ -236,66 +135,17 @@
   border-color: var(--wdg-edge-live);
 }
 
-.wdg-toggle {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
 .wdg-toggle-body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: var(--wdg-toggle-width, calc(4ch + 10px));
-  height: 17px;
   padding: 0 5px;
-  overflow: hidden;
-  white-space: nowrap;
-  border: 1px solid var(--wdg-edge);
-  border-radius: var(--wdg-radius);
-  background: var(--wdg-face);
-  color: var(--wdg-text);
-  font-family: var(--wdg-sans);
-  font-size: 10px;
-  line-height: 1;
-  cursor: pointer;
 }
 
 .wdg-toggle-body:hover:not(:disabled):not([data-on]) {
   border-color: var(--wdg-edge-live);
-  color: var(--wdg-marker);
-}
-
-.wdg-toggle-body[data-on] {
-  border-color: var(--wdg-fill);
-  background: var(--wdg-fill);
-  color: #000;
-}
-
-.wdg-toggle-body:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.wdg-toggle-body:focus-visible {
-  outline: 1px solid var(--wdg-focus);
-  outline-offset: 1px;
-}
-
-.wdg-segmented {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
 }
 
 .wdg-segmented-body {
   display: inline-flex;
-  border: 1px solid var(--wdg-edge);
-  border-radius: var(--wdg-radius);
-  background: var(--wdg-face);
-  overflow: hidden;
 }
 
 .wdg-segmented-vertical {
@@ -303,16 +153,13 @@
 }
 
 .wdg-segmented-body button {
+  height: calc(var(--wdg-height) - 2px);
   padding: 0 7px;
-  height: 15px;
   border: 0;
   background: transparent;
   color: var(--wdg-text);
-  font-family: var(--wdg-sans);
-  font-size: 10px;
   line-height: 1;
   white-space: nowrap;
-  cursor: pointer;
 }
 
 .wdg-segmented-horizontal button + button {
@@ -323,24 +170,6 @@
   border-top: 1px solid var(--wdg-edge);
 }
 
-.wdg-segmented-body button:hover:not(:disabled) {
-  color: var(--wdg-marker);
-}
-
-.wdg-segmented-body button[aria-checked='true'] {
-  background: var(--wdg-fill);
-  color: #000;
-}
-
-.wdg-segmented-body button:disabled {
-  cursor: default;
-}
-
 .wdg-segmented-body button:focus-visible {
-  outline: 1px solid var(--wdg-focus);
   outline-offset: -1px;
-}
-
-.wdg-segmented-body[aria-disabled='true'] {
-  opacity: 0.4;
 }
