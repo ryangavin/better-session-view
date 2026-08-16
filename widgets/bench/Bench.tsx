@@ -91,7 +91,7 @@ function Faceplate() {
       <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
       <Held param={DRY_WET}>{(v, set) => <Knob param={DRY_WET} value={v} onChange={set} />}</Held>
       <Held param={GAIN}>
-        {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={44} />}
+        {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={34} />}
       </Held>
     </Row>
   );
@@ -103,7 +103,7 @@ function Mixed({ ruled }: { ruled?: boolean }) {
     <>
       <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
       <Held param={GAIN}>
-        {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={44} />}
+        {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={34} />}
       </Held>
       <Held param={TIME}>{(v, set) => <NumberField param={TIME} value={v} onChange={set} />}</Held>
       <Held param={FILTER}>
@@ -154,7 +154,7 @@ function Run({ dropAt }: { dropAt?: number }) {
   const [at, setAt] = useState(1);
   const names = ['EQ Eight', 'Auto Filter', 'Saturator'];
   return (
-    <Chain height={132} dropAt={dropAt}>
+    <Chain dropAt={dropAt}>
       {names.map((name, i) => (
         <Shell
           key={name}
@@ -179,7 +179,7 @@ function Grouped() {
   const [device, setDevice] = useState(0);
 
   return (
-    <Chain height={196}>
+    <Chain>
       <Shell name="EQ Eight" collapsed />
       <Rack
         name="Audio Effect Rack"

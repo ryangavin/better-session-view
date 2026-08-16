@@ -57,7 +57,7 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 | widget | from | notes |
 |---|---|---|
 | [`Device`](../src/chrome/Device.tsx) | the LOM, not M4L | title bar, activator, fold triangle, hot-swap slot, folded strip |
-| [`Chain`](../src/chrome/Chain.tsx) | Live's device view | the run, the drop mark, and what an empty one says |
+| [`Chain`](../src/chrome/Chain.tsx) | Live's device view | the run, the drop mark, what an empty one says, and how tall they all are |
 | [`Rack`](../src/chrome/Rack.tsx) | `RackDevice` | the macro face, the chain list, the selected chain's devices |
 | [`Row`](../src/chrome/Row.tsx) | Live's panel grid | controls on one line, sharing a caption height and a reading height |
 
@@ -118,12 +118,22 @@ waveform display (Simpler), transfer function (Saturator, Roar), oscilloscope
 
 ## Five conventions worth knowing
 
-**One height, set once, stretched all the way down.** Live's device footer is a fixed
-height and every device fills it, so nothing in the middle of the tree owns a height. A
-chain fills its container unless it's given one, devices stretch to the chain, a rack's
-panes stretch to the device, and a chain nested in a rack fills that. The only number is
-the one the app hands the outermost chain, which is the footer's. (A nested chain resets
-`--wdg-chain-height` to `initial`: custom properties inherit, and that one mustn't.)
+**One height, and the chain owns it.** Live's device footer is a fixed height and every
+device in it is that tall, so the height is fixed at the top and stretched down: a chain
+fills its container or stands however many rows it's told, devices stretch to the chain,
+a rack's panes stretch to the device, and a chain nested in a rack fills that. Nothing in
+the middle owns a height — and a device on its own owns none either. It is as tall as its
+faceplate, which is what a graph will want when there is no footer to fill.
+
+The default is two rows, because that is Live's, and `--wdg-row-height` is 60px because
+that is what one row of knobs comes to: a caption, a 34px dial and a reading. The check
+that it's the right number is a stock rack, whose eight macros in two rows of four fill a
+device exactly.
+
+Two gotchas, both from custom properties inheriting. A nested chain resets
+`--wdg-chain-height` to `initial` — the guaranteed-invalid value — so `var()` falls
+through to its `100%` fallback instead of inheriting the outer chain's pixels. And a rack
+sets `--wdg-device-min: 0px`, so nothing inside one demands a minimum of its own.
 
 **A label is on top, a value is underneath.** Every widget is the same column: caption,
 control, reading. The value box and the switch are the apparent exceptions and aren't —

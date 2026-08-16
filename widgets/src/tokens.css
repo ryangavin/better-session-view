@@ -21,4 +21,12 @@
   --wdg-height: 17px;
   --wdg-track: 14px;
   --wdg-gap: 2px;
+  --wdg-space: 8px;
+  --wdg-row-height: 60px;
+  --wdg-device-rows: 2;
+  --wdg-device-height: calc(
+    var(--wdg-height) + 1px + 2px + 2 * var(--wdg-space) +
+      var(--wdg-device-rows) * var(--wdg-row-height) +
+      (var(--wdg-device-rows) - 1) * var(--wdg-space)
+  );
 }

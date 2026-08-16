@@ -27,12 +27,19 @@ export interface ChainProps {
   dropAt?: number;
   /** What an empty chain says. Live's is "Drop an audio effect here". */
   placeholder?: string;
-  /** In px. Devices stretch to it, as they do in Live's device view. */
+  /**
+   * How many rows of controls a device in this chain is tall — two, the way
+   * Live's footer is, unless a host says otherwise. It's the chain that fixes
+   * the height, never the device: a device on its own is as tall as its
+   * faceplate, which is what a graph will want when there's no footer to fill.
+   */
+  rows?: number;
+  /** In px, if a host would rather say it outright than in rows. */
   height?: number;
   className?: string;
 }
 
-export function Chain({ children, dropAt, placeholder, height, className }: ChainProps) {
+export function Chain({ children, dropAt, placeholder, rows, height, className }: ChainProps) {
   const devices = Children.toArray(children);
   const marked =
     dropAt === undefined
@@ -47,7 +54,10 @@ export function Chain({ children, dropAt, placeholder, height, className }: Chai
     <div
       className={`wdg wdg-chain${className ? ` ${className}` : ''}`}
       style={
-        (height === undefined ? {} : { '--wdg-chain-height': `${height}px` }) as CSSProperties
+        {
+          ...(rows === undefined ? {} : { '--wdg-device-rows': rows }),
+          ...(height === undefined ? {} : { '--wdg-chain-height': `${height}px` }),
+        } as CSSProperties
       }
     >
       {devices.length === 0 && placeholder !== undefined ? (
