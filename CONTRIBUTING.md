@@ -56,15 +56,21 @@ in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
 ## Modules
 
-Five projects. Each has its own README; read the one you're touching.
+Six projects. Each has its own README; read the one you're touching.
 
 | module | what it is | read for |
 |---|---|---|
 | [`protocol/`](protocol/README.md) | wire types, single source of truth | adding or changing a message |
 | [`core/`](core/README.md) | pure domain logic — no I/O, no React, no Live | naming, colors, anything that deserves tests |
+| [`widgets/`](widgets/README.md) | DAW controls — React, but no Live | knobs, faders, the parameter model, the bench |
 | [`ui/`](ui/README.md) | React 19 + Vite | components, the bridge client, dev server |
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator | changing the patcher or device type |
+
+`core/` and `widgets/` are the same rule on two axes, and between them they are what keeps
+a DAW of our own possible: domain logic that has never heard of a transport, and controls
+that have never heard of Live. `ui/` is the only module allowed to know both, and it does
+the joining in one adapter — [`ui/src/lib/liveParam.ts`](ui/src/lib/liveParam.ts).
 
 [`bridge/LOM.md`](bridge/LOM.md) is the Live Object Model itself — every class, property
 and function with its type and access mode, plus the places Cycling '74's docs are wrong

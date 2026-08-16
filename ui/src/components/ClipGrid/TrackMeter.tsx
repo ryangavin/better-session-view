@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type CSSProperties,
-} from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import {
   useOutputMeter,
   type MeterKey,
@@ -23,6 +17,12 @@ import {
   mixerParameterFraction,
   peakDisplay,
 } from '../../lib/meterScale.js';
+import { liveParam } from '../../lib/liveParam.js';
+import { useParamGesture } from '../../../../widgets/src/gesture/useParamGesture.js';
+import {
+  readbackTolerance,
+  usePendingValue,
+} from '../../../../widgets/src/gesture/usePendingValue.js';
 import { ControlButton, ControlGroup } from '../Control.js';
 
 interface Props {
@@ -68,80 +68,49 @@ export function TrackMeter({
     if (level > peak) setPeak(level);
   }, [level, peak]);
 
-  // Keep the thumb under the pointer until Live's observed readback catches up.
-  // Writes are limited to one per animation frame; a drag remains continuous
-  // without flooding the bridge faster than the browser can paint it.
-  const [localVolume, setLocalVolume] = useState<number | null>(null);
-  const [localPan, setLocalPan] = useState<number | null>(null);
-  const pendingPatch = useRef<BSV.MixerPatch>({});
-  const frame = useRef<number | null>(null);
-  const volumeFallback = useRef<number | null>(null);
-  const panFallback = useRef<number | null>(null);
+  // Volume and pan are two ordinary parameters dragged the ordinary way. The
+  // grab, the fine modifier, double-click-to-default, the one-write-per-frame
+  // limit and the arrow keys all come from `widgets/`; what stays here is
+  // Live's own display text and where the strip draws things.
+  const volumeParam = liveParam(volume, { min: 0, max: 1 });
+  const panParam = liveParam(pan, { min: -1, max: 1 });
+  const heldVolume = usePendingValue(volume?.value ?? null, {
+    tolerance: readbackTolerance(volumeParam.min, volumeParam.max),
+  });
+  const heldPan = usePendingValue(pan?.value ?? null, {
+    tolerance: readbackTolerance(panParam.min, panParam.max),
+  });
 
-  useEffect(() => {
-    if (
-      localVolume !== null &&
-      volume &&
-      Math.abs(volume.value - localVolume) <= Math.max(0.0001, (volume.max - volume.min) / 2000)
-    ) {
-      setLocalVolume(null);
-    }
-  }, [localVolume, volume]);
-
-  useEffect(() => {
-    if (
-      localPan !== null &&
-      pan &&
-      Math.abs(pan.value - localPan) <= Math.max(0.0001, (pan.max - pan.min) / 2000)
-    ) {
-      setLocalPan(null);
-    }
-  }, [localPan, pan]);
-
-  useEffect(
-    () => () => {
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-      if (volumeFallback.current !== null) window.clearTimeout(volumeFallback.current);
-      if (panFallback.current !== null) window.clearTimeout(panFallback.current);
+  // No `onRelease`. Dropping the local value the instant a drag ends would snap
+  // the control back to whatever Live last echoed and then forward again when
+  // the write lands — a visible bounce on every release. The readback match
+  // clears it, and the deadline covers a write that never arrives.
+  const volumeGesture = useParamGesture({
+    param: volumeParam,
+    value: heldVolume.value ?? 0,
+    disabled: !volume?.enabled,
+    axis: 'vertical',
+    label: `${label} volume`,
+    display: volume?.display,
+    onChange: (next) => {
+      heldVolume.push(next);
+      setMixer(target, { volume: next });
     },
-    [],
-  );
+  });
 
-  const queueParameter = (field: 'volume' | 'pan', next: number) => {
-    pendingPatch.current[field] = next;
-    if (frame.current !== null) return;
-    frame.current = requestAnimationFrame(() => {
-      frame.current = null;
-      const patch = pendingPatch.current;
-      pendingPatch.current = {};
-      setMixer(target, patch);
-    });
-  };
+  const panGesture = useParamGesture({
+    param: panParam,
+    value: heldPan.value ?? 0,
+    disabled: !pan?.enabled,
+    axis: 'horizontal',
+    label: `${label} pan`,
+    display: pan?.display,
+    onChange: (next) => {
+      heldPan.push(next);
+      setMixer(target, { pan: next });
+    },
+  });
 
-  const changeVolume = (event: ChangeEvent<HTMLInputElement>) => {
-    const next = Number(event.currentTarget.value);
-    if (!Number.isFinite(next)) return;
-    setLocalVolume(next);
-    queueParameter('volume', next);
-    if (volumeFallback.current !== null) window.clearTimeout(volumeFallback.current);
-    volumeFallback.current = window.setTimeout(() => setLocalVolume(null), 750);
-  };
-
-  const changePan = (event: ChangeEvent<HTMLInputElement>) => {
-    const next = Number(event.currentTarget.value);
-    if (!Number.isFinite(next)) return;
-    setLocalPan(next);
-    queueParameter('pan', next);
-    if (panFallback.current !== null) window.clearTimeout(panFallback.current);
-    panFallback.current = window.setTimeout(() => setLocalPan(null), 750);
-  };
-
-  const shownVolume = localVolume ?? volume?.value ?? 0;
-  const volumeStep = volume ? Math.max((volume.max - volume.min) / 1000, 0.0001) : 0.001;
-  const volumeFraction = mixerParameterFraction(volume, shownVolume);
-  const shownPan = localPan ?? pan?.value ?? 0;
-  const panStep = pan ? Math.max((pan.max - pan.min) / 200, 0.0001) : 0.01;
-  const panFraction = mixerParameterFraction(pan, shownPan);
   const track = strip?.kind === 'track' ? strip : null;
   const isMaster = meterKey === 'master';
   return (
@@ -151,28 +120,14 @@ export function TrackMeter({
             owns only Master-specific presentation. */}
         <div className="mixer-fader">
           <div className="mixer-meter-control">
-            <input
+            <div
               className="volume-fader"
-              type="range"
-              min={volume?.min ?? 0}
-              max={volume?.max ?? 1}
-              step={volumeStep}
-              value={shownVolume}
-              disabled={!volume?.enabled}
-              aria-label={`${label} volume`}
-              aria-orientation="vertical"
               title={`${label} volume · ${volume?.display || 'unavailable'}`}
-              onChange={changeVolume}
-              onDoubleClick={() => {
-                if (volume?.enabled) {
-                  setLocalVolume(volume.defaultValue);
-                  queueParameter('volume', volume.defaultValue);
-                }
-              }}
+              {...volumeGesture.props}
             />
             <span
               className={`volume-indicator${volume?.enabled ? '' : ' disabled'}`}
-              style={{ bottom: `${volumeFraction * 100}%` }}
+              style={{ bottom: `${volumeGesture.fraction * 100}%` }}
               aria-hidden="true"
             />
             <div className="vertical-meter">
@@ -226,34 +181,18 @@ export function TrackMeter({
             </div>
           </div>
 
-          <label
+          <div
             className={`mixer-pan${pan?.enabled ? '' : ' disabled'}`}
             title={`${label} pan · ${pan?.display || 'unavailable'} · double-click to center`}
           >
-            <input
-              className="pan-fader"
-              type="range"
-              min={pan?.min ?? -1}
-              max={pan?.max ?? 1}
-              step={panStep}
-              value={shownPan}
-              disabled={!pan?.enabled}
-              aria-label={`${label} pan`}
-              onChange={changePan}
-              onDoubleClick={() => {
-                if (pan?.enabled) {
-                  setLocalPan(pan.defaultValue);
-                  queueParameter('pan', pan.defaultValue);
-                }
-              }}
-            />
+            <div className="pan-fader" {...panGesture.props} />
             <span
               aria-hidden="true"
-              style={{ '--pan-position': `${panFraction * 100}%` } as CSSProperties}
+              style={{ '--pan-position': `${panGesture.fraction * 100}%` } as CSSProperties}
             >
               {compactParameterDisplay(pan?.display)}
             </span>
-          </label>
+          </div>
 
           <ControlGroup
             className={`mixer-controls${hideTrackControls ? ' mixer-controls-hidden' : ''}`}

@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import type { BridgeState } from '../../hooks/useBridge.js';
 import { useMixerStrip, type MixerStore } from '../../hooks/useMixer.js';
+import { compactParameterDisplay } from '../../lib/meterScale.js';
+import { liveParam } from '../../lib/liveParam.js';
+import { useParamGesture } from '../../../../widgets/src/gesture/useParamGesture.js';
 import {
-  compactParameterDisplay,
-  mixerParameterFraction,
-} from '../../lib/meterScale.js';
+  readbackTolerance,
+  usePendingValue,
+} from '../../../../widgets/src/gesture/usePendingValue.js';
 
 function sendName(index: number): string {
   let name = '';
@@ -26,65 +29,39 @@ function SendControl({
   onChange: (index: number, value: number) => void;
 }) {
   const name = sendName(index);
-  const [localValue, setLocalValue] = useState<number | null>(null);
-  const fallback = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (
-      localValue !== null && parameter &&
-      Math.abs(parameter.value - localValue) <=
-        Math.max(0.0001, (parameter.max - parameter.min) / 2000)
-    ) {
-      setLocalValue(null);
-    }
-  }, [localValue, parameter]);
-
-  useEffect(
-    () => () => {
-      if (fallback.current !== null) window.clearTimeout(fallback.current);
+  const param = liveParam(parameter, { min: 0, max: 1 });
+  const held = usePendingValue(parameter?.value ?? null, {
+    tolerance: readbackTolerance(param.min, param.max),
+  });
+  const gesture = useParamGesture({
+    param,
+    value: held.value ?? 0,
+    disabled: !parameter?.enabled,
+    axis: 'horizontal',
+    label: `${trackLabel} send ${name}`,
+    display: parameter?.display,
+    onChange: (next) => {
+      held.push(next);
+      onChange(index, next);
     },
-    [],
-  );
-
-  const shown = localValue ?? parameter?.value ?? 0;
-  const step = parameter ? Math.max((parameter.max - parameter.min) / 1000, 0.0001) : 0.001;
-  const fraction = mixerParameterFraction(parameter, shown);
-  const change = (next: number) => {
-    if (!Number.isFinite(next)) return;
-    setLocalValue(next);
-    onChange(index, next);
-    if (fallback.current !== null) window.clearTimeout(fallback.current);
-    fallback.current = window.setTimeout(() => setLocalValue(null), 750);
-  };
+  });
 
   return (
-    <label
+    <div
       className={`mixer-send${parameter?.enabled ? '' : ' disabled'}`}
       title={`${trackLabel} send ${name} · ${parameter?.display || 'unavailable'} · double-click to reset`}
     >
       <span className="mixer-send-label" aria-hidden="true">{name}</span>
       <span
         className="mixer-send-value"
-        style={{ '--send-position': `${fraction * 100}%` } as CSSProperties}
+        style={{ '--send-position': `${gesture.fraction * 100}%` } as CSSProperties}
       >
-        <input
-          type="range"
-          min={parameter?.min ?? 0}
-          max={parameter?.max ?? 1}
-          step={step}
-          value={shown}
-          disabled={!parameter?.enabled}
-          aria-label={`${trackLabel} send ${name}`}
-          onChange={(event) => change(Number(event.currentTarget.value))}
-          onDoubleClick={() => {
-            if (parameter?.enabled) change(parameter.defaultValue);
-          }}
-        />
+        <span className="send-fader" {...gesture.props} />
         <output aria-label={`${trackLabel} send ${name} value`}>
           {compactParameterDisplay(parameter?.display)}
         </output>
       </span>
-    </label>
+    </div>
   );
 }
 
@@ -102,26 +79,6 @@ export function TrackSends({
 }) {
   const strip = useMixerStrip(mixer, trackIndex);
   const track = strip?.kind === 'track' ? strip : null;
-  const pending = useRef<{ index: number; value: number } | null>(null);
-  const frame = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-    },
-    [],
-  );
-
-  const queueSend = (index: number, value: number) => {
-    pending.current = { index, value };
-    if (frame.current !== null) return;
-    frame.current = requestAnimationFrame(() => {
-      frame.current = null;
-      const send = pending.current;
-      pending.current = null;
-      if (send) setMixer({ kind: 'track', t: trackIndex }, { send });
-    });
-  };
 
   return (
     <td className="sends-cell">
@@ -132,7 +89,12 @@ export function TrackSends({
             parameter={track?.sends[index] ?? null}
             index={index}
             trackLabel={label}
-            onChange={queueSend}
+            // Each control already limits itself to one write per frame, and
+            // only one of them can be under the pointer, so the column no
+            // longer needs a coalescing pass of its own.
+            onChange={(at, value) =>
+              setMixer({ kind: 'track', t: trackIndex }, { send: { index: at, value } })
+            }
           />
         ))}
       </div>

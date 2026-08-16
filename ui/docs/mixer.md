@@ -111,8 +111,35 @@ so one changing strip does not render `App` or every scene. The LOM seeds a comp
 `MixerState`, then updates a cached strip from each property callback and coalesces pushes
 to one per display frame. It does not re-read every track under parameter automation.
 
-Volume, pan and send input are limited to one `setMixer` patch per animation frame and stay
-optimistic until Live's observed value catches up. `DeviceParameter.is_enabled = 0`
-disables the indicator rather than pretending a mapped, automated or otherwise
-unavailable parameter can be written. Mixer writes do not participate in this app's
-clip/scene undo.
+## The three faders are widgets/'s gesture, not this module's
+
+Volume, pan and every send are ordinary parameters dragged the ordinary way, and the way
+is [`widgets/`](../../widgets/README.md)'s: `useParamGesture` for the drag and
+`usePendingValue` for the hold. `lib/liveParam.ts` turns a `BSV.MixerParameterState` into
+a `Param` and is the entire boundary — nothing about Live crosses it.
+
+They used to be three `<input type="range">` elements, which was wrong in a way that's
+easy to miss: **a native range input jumps to the click, and Live grabs.** On the 26px pan
+field that left about four reachable values. Two of the three also carried their own copy
+of the local-value-until-readback dance, with its own epsilon and its own timeout.
+
+What the strip still owns is where things are drawn, and Live's own text. The fader
+elements are invisible overlays positioned by this module's CSS; the gesture only supplies
+behavior and `aria-value*`. Volume, pan and send labels still come from
+`DeviceParameter.str_for_value`, which every widget prefers over its own formatting — so
+`liveParam` deliberately declares no unit style, and there is still exactly one place a
+decibel is spelled.
+
+Input is limited to one `setMixer` patch per animation frame — by the gesture now, so
+`TrackSends` no longer coalesces across a column — and stays optimistic until Live's
+observed value catches up. The local value is *not* dropped when a drag ends: doing so
+would snap the control back to Live's last echo and then forward again when the write
+lands, a visible bounce on every release. `DeviceParameter.is_enabled = 0` disables the
+indicator rather than pretending a mapped, automated or otherwise unavailable parameter
+can be written. Mixer writes do not participate in this app's clip/scene undo.
+
+Because the surfaces are `role="slider"` elements rather than form fields, the arrow keys
+now adjust a focused fader at the parameter's own step size — something the range inputs
+never did well. The gesture stops propagation on the keys it handles, which is what keeps
+`useGridKeyboard`'s window listener from also moving the active cell; `isTypingInto`
+covers real inputs only and would not have caught these.

@@ -25,6 +25,18 @@ content owns 300. That separation is structural: a sticky table cell must never 
 paint over a dialog. Small literal `z-index` values are reserved for local paint order
 inside a component, such as a meter's rules, marker, invisible input and buttons.
 
+### Widget tokens
+
+[`widgets/`](../../widgets/README.md) carries its own token set in `src/tokens.css`, and
+every one of them is written as `var(--host-token, fallback)` — `--wdg-fill` resolves to
+`--amber`, `--wdg-caption` to `--caption`, and so on. So a control mounted in this app
+inherits `shared.css` and a control on the bench uses its own defaults, without either
+side declaring a palette the other has to match.
+
+That is the only sanctioned direction. **`shared.css` never defines a `--wdg-*` token**,
+and a widget never reads an app token by name. If a control needs to look different here,
+it takes a `className` or a custom property from the component using it.
+
 ## Styling
 
 Plain CSS with custom properties in `:root` — dark, IBM Plex where available with

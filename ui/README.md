@@ -17,7 +17,7 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 | [moving scenes and clips](docs/moving.md) | either drag grip, the move plan, the drop indicator | `hooks/useSceneDrag.ts`, `useClipDrag.ts` |
 | [bulk workflows](docs/bulk-workflows.md) | the running order or coloring by rule | `components/ReorderModal.tsx`, `RecolorModal.tsx`, `BulkWorkflow.css` |
 | [the header](docs/header.md) | the Live control bar, transport state, glyphs | `components/Header.tsx`, `Icon.tsx`, `Control.tsx` |
-| [mixer panel](docs/mixer.md) | meters, faders, sends, the stop row | `components/ClipGrid/TrackMeter.tsx`, `TrackSends.tsx`, `useMeterResize.ts`, `hooks/useMixer.ts`, `useMeters.ts`, `lib/mixerStore.ts`, `meterScale.ts` |
+| [mixer panel](docs/mixer.md) | meters, faders, sends, the stop row | `components/ClipGrid/TrackMeter.tsx`, `TrackSends.tsx`, `useMeterResize.ts`, `hooks/useMixer.ts`, `useMeters.ts`, `lib/mixerStore.ts`, `meterScale.ts`, `liveParam.ts` |
 | [track groups](docs/track-groups.md) | group columns and collapsing | `hooks/useTrackColumns.ts` |
 | [undo](docs/undo.md) | the undo entry, or any new write path | `hooks/useBridge.ts` |
 | [performance notes](docs/performance.md) | **anything that reaches a memoized row** — props on `Row`, `SongHeaderRow`, or callbacks from `App` | `components/ClipGrid/Row.tsx`, `SongHeaderRow.tsx`, `App.tsx` |
@@ -105,7 +105,15 @@ src/lib/
   snapshotTiming.ts   the console phase breakdown + error text
   mixerStore.ts       the external store behind the meters and the mixer
   meterScale.ts       dB range, ticks, and Live's normalised meter position
+  liveParam.ts        a Live parameter read into widgets/'s model of one
 ```
+
+## The one dependency pointing out of the app
+
+`ui/` reaches into [`widgets/`](../widgets/README.md) for the controls a DAW is made of —
+today just the drag and the local-value hold behind the mixer's volume, pan and sends.
+That direction is one-way: **nothing in `widgets/` may import from here.** `liveParam.ts`
+is the whole boundary, and everything Live-specific about a control stops there.
 
 Pure helpers under `src/lib/` can have colocated Vitest coverage. `npm test` runs those
 alongside the core suite without requiring a browser or Live.

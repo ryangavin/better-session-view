@@ -1,0 +1,29 @@
+.wdg {
+  --wdg-face: var(--surface-control, #151517);
+  --wdg-edge: var(--bd3, #2c2c31);
+  --wdg-edge-live: var(--focus, #4a4a52);
+  --wdg-empty: var(--idle, #3a3a41);
+  --wdg-fill: var(--amber, #f0b23c);
+  --wdg-marker: var(--fg, #ececed);
+  --wdg-text: var(--ui, #b7b7be);
+  --wdg-caption: var(--caption, #5e5e66);
+  --wdg-focus: var(--focus, #4a4a52);
+  --wdg-radius: var(--radius-xs, 2px);
+  --wdg-mono: var(--mono, 'IBM Plex Mono', ui-monospace, Menlo, monospace);
+  --wdg-sans: var(--sans, 'IBM Plex Sans', system-ui, -apple-system, sans-serif);
+}
+
+.wdg[aria-disabled='true'],
+.wdg:has(> [aria-disabled='true']) {
+  opacity: 0.4;
+}
+
+.wdg [role='slider'] {
+  outline: none;
+  touch-action: none;
+}
+
+.wdg [role='slider']:focus-visible {
+  outline: 1px solid var(--wdg-focus);
+  outline-offset: 1px;
+}

@@ -11,6 +11,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 |---|---|
 | domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
 | components, hooks, the client | [`ui/README.md`](ui/README.md) — 14 topic docs |
+| a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](widgets/README.md) — 4 topic docs. **Knows nothing about Live, and must stay that way** |
 | anything involving Live | [`bridge/README.md`](bridge/README.md) — 8 topic docs. **Most constraints in this project live here** |
 | "does Live expose X?" | [`bridge/LOM.md`](bridge/LOM.md) — **look it up, don't guess.** Includes where the published docs are wrong |
 | a wire message | [`protocol/README.md`](protocol/README.md) |
@@ -32,6 +33,9 @@ work in [Issues](../../issues).
 
 1. **`core/` imports no transport, no React, and nothing Live-specific.** It's the only
    code testable without Ableton running, and what keeps a different backend possible.
+   **`widgets/` is the same rule on the other axis** — React, but no protocol, no bridge,
+   no `core/`, nothing that knows Live exists. It takes a `Param` and a number, and the
+   one adapter that hands it one is `ui/src/lib/liveParam.ts`.
 2. **`bridge/src/lom.ts` is the only file that touches the Live Object Model.** Everything
    else talks to it through the protocol.
 3. **`lom.ts` cannot `import` anything** — it compiles with `module: "none"` so Max's
@@ -76,8 +80,8 @@ work in [Issues](../../issues).
 **it's the file to suspect first**. Everything else is checkable:
 
 ```sh
-npm run typecheck    # all five projects
-npm test             # core/ and ui/lib unit tests
+npm run typecheck    # all six projects
+npm test             # core/, widgets/param and ui/lib unit tests
 npm run build        # must succeed from a clean tree
 ```
 
