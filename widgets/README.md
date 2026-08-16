@@ -51,11 +51,13 @@ bench/              the harness. Dev-only; never built, never shipped
 ## Running the bench
 
 ```sh
-npm run dev:widgets      # http://localhost:5174
+npm run dev              # everything — bridge watchers, the UI on :5173, the bench on :5273
+npm run dev:widgets      # the bench alone, http://localhost:5273
 ```
 
-It has no connection to Live and never will — that's what makes it worth having. Nothing
-in `bench/` is part of a build; `npm run build` doesn't touch this module.
+It has no connection to Live and never will — that's what makes it worth having, and why
+it costs nothing to leave running in the full dev stack. Nothing in `bench/` is part of a
+build; `npm run build` doesn't touch this module.
 
 ## Who uses it
 

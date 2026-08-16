@@ -5,7 +5,7 @@ Running the dev server, and what a hot update costs — why BridgeProvider sits 
 ## Dev
 
 ```sh
-npm run dev            # from repo root — starts this plus the bridge watchers
+npm run dev            # from repo root — this, the bridge watchers, and the widget bench
 npm run dev:ui         # this alone, against a device someone else is running
 ```
 
@@ -59,15 +59,21 @@ next click into the browser spends Live's main thread — coming back to the win
 just re-asks for the set, which is a payload. See `core/src/backstop.ts` for the
 policy and `bridge.ts`'s `backstopTick` for the caller.
 
-Two env vars, both optional:
+Three env vars, all optional:
 
 | var | default | for |
 |---|---|---|
 | `BSV_UI_PORT` | `5173` | a second UI alongside the first — one per worktree |
+| `BSV_BENCH_PORT` | `BSV_UI_PORT` + 100 | overriding where the widget bench lands |
 | `BSV_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
 
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next
 free one. That's deliberate: assign the port, don't discover it.
+
+The bench derives its port from this one so a worktree moves both in a single variable,
+and the offset is 100 rather than 1 because worktree ports get picked adjacently — see
+[`widgets/docs/bench.md`](../../widgets/docs/bench.md), which also covers why both Vite
+servers have to name their own `cacheDir` now that they run together.
 
 Several dev servers can share one device — they all proxy to the same bridge, and
 `BridgeClient` derives its socket URL from `location.host`, so nothing needs telling

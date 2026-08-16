@@ -4,8 +4,31 @@
 no app around it.
 
 ```sh
-npm run dev:widgets      # http://localhost:5174
+npm run dev              # everything at once — the bench is one of the five processes
+npm run dev:widgets      # the bench alone, http://localhost:5273
 ```
+
+It rides along in the full dev stack because it costs nothing to: no device, no Live, no
+socket, and a Vite server that idles until something asks it for a module.
+
+## Ports, and the one shared thing that isn't
+
+The bench port follows the UI's rather than being a second thing to assign — `BSV_UI_PORT`
+moves both, and `BSV_BENCH_PORT` overrides it outright. **The offset is 100, not 1**,
+because worktree ports get picked adjacently: with +1, a worktree on 5174 would put its
+bench on the UI of the worktree on 5175. `strictPort` is on for both, so a genuine
+collision fails loudly rather than drifting.
+
+| | default | |
+|---|---|---|
+| UI | 5173 | `BSV_UI_PORT` |
+| bench | UI + 100 | `BSV_BENCH_PORT` |
+
+The subtler one: **both Vite servers must name their own `cacheDir`.** The default
+resolves to the same `node_modules/.vite` for both, and Vite hashes the config into that
+cache's metadata — so two servers sharing it each decide the other's cache is stale and
+re-optimize on every start, which is a browser full of `504 Outdated Optimize Dep` waiting
+to happen. `ui/` uses `node_modules/.vite/ui` and the bench uses `node_modules/.vite/bench`.
 
 ## Why it's here rather than in the app
 

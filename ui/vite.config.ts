@@ -18,6 +18,11 @@ const PORT = Number(process.env.BSV_UI_PORT) || 5173;
 export default defineConfig({
   root: here,
   plugins: [react()],
+  // Named, because `npm run dev` runs this and the widget bench at once and the
+  // default resolves to the same `node_modules/.vite` for both. Two servers
+  // sharing one dep cache re-optimize over each other's work on every start —
+  // the config hash differs, so each one decides the cache is stale.
+  cacheDir: path.resolve(here, '../node_modules/.vite/ui'),
   // Nothing may come from a CDN — this eventually runs on stage.
   build: {
     outDir: path.resolve(here, '../bridge/public'),

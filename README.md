@@ -97,8 +97,9 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | script | does |
 |---|---|
 | `npm run build` | the UI, then a bundled bridge.js with that UI inlined, lom.js, and the device |
-| `npm run dev` | three watchers in parallel; UI dev server on :5173 |
+| `npm run dev` | three watchers in parallel; UI dev server on :5173, widget bench on :5273 |
 | `npm run dev:ui` | the UI dev server alone, against a device someone else is running |
+| `npm run dev:widgets` | the widget bench alone — no device needed |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
 | `npm test` | pure `core/` and `ui/lib` unit tests |
 | `npm run typecheck` | all five projects |
