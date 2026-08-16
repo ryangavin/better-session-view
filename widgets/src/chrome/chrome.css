@@ -182,6 +182,7 @@
 }
 
 .wdg-chain > .wdg-device,
+.wdg-chain > .wdg-rack,
 .wdg-chain-empty {
   min-height: var(--wdg-device-min, var(--wdg-device-height));
 }
@@ -208,18 +209,55 @@
 }
 
 .wdg-rack {
-  --wdg-device-min: 0px;
   display: flex;
   align-items: stretch;
-  gap: var(--wdg-space);
+  gap: 3px;
   height: 100%;
 }
 
-.wdg-rack > * + * {
+.wdg-rack[data-selected] {
+  outline: 1px solid var(--wdg-edge-live);
+  outline-offset: 1px;
+}
+
+.wdg-rack:not([data-on]) .wdg-rack-devices {
+  opacity: 0.55;
+}
+
+.wdg-rack[data-folded] > .wdg-rack-devices,
+.wdg-rack[data-folded] > .wdg-rack-end {
+  display: none;
+}
+
+.wdg-rack-face {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.wdg-rack[data-folded] > .wdg-rack-face {
+  border-radius: var(--wdg-plate-radius);
+}
+
+.wdg-rack-end {
+  flex: none;
+  width: var(--wdg-height);
+  border: 1px solid var(--wdg-edge);
+  border-radius: 0 var(--wdg-plate-radius) var(--wdg-plate-radius) 0;
+  background: var(--wdg-plate-head);
+}
+
+.wdg-rack-panes {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  gap: var(--wdg-space);
+  min-height: 0;
+}
+
+.wdg-rack-panes > * + * {
   padding-left: var(--wdg-space);
   border-left: 1px solid var(--wdg-edge);
 }
-
 
 .wdg-rack-macros {
   display: grid;
@@ -271,4 +309,12 @@
   flex: 1;
   align-items: stretch;
   min-width: 0;
+}
+
+.wdg-rack-devices > .wdg-chain {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }

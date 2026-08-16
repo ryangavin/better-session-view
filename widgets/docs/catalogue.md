@@ -58,7 +58,7 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 |---|---|---|
 | [`Device`](../src/chrome/Device.tsx) | the LOM, not M4L | title bar, activator, fold triangle, hot-swap slot, folded strip |
 | [`Chain`](../src/chrome/Chain.tsx) | Live's device view | the run, the drop mark, what an empty one says, and how tall they all are |
-| [`Rack`](../src/chrome/Rack.tsx) | `RackDevice` | the macro face, the chain list, the selected chain's devices |
+| [`Rack`](../src/chrome/Rack.tsx) | `RackDevice` | the macro face and the chain list, bracketing the selected chain's devices |
 | [`Row`](../src/chrome/Row.tsx) | Live's panel grid | controls on one line, sharing a caption height and a reading height |
 
 `Device` takes three states and not a device object, because three is all a shell shows:
@@ -92,6 +92,27 @@ Dragging follows [the gesture's](gesture.md) rule. `Chain` marks where a device 
 land and stops there; whoever is dragging decides whether the move is legal and performs
 it, the way a control emits a value and the host writes it to Live.
 
+## Why a rack is a bracket
+
+A rack *contains* chains, so the obvious drawing of it is a box with the chain inside. Live
+doesn't draw it that way, and the reason is the height. Nesting a device inside the rack's
+body costs it the rack's title bar and the body's padding — 33px on our metrics — so it
+comes out visibly shorter than the device next to it, and shorter again one rack deeper.
+
+So Live sandwiches instead: the rack's face on the left, a closing strip on the right, and
+the chain's devices between them at full height. `Rack` renders those three as siblings —
+a `Device` for the face, `.wdg-rack-devices` for the run, `.wdg-rack-end` for the cap —
+and the bracket around them takes no space of its own. A selected rack draws an `outline`
+rather than a border for the same reason: an outline doesn't participate in layout, so the
+highlight can't push anything a pixel shorter.
+
+Two things fall out. Folding a rack hides the devices and the cap, not just the face, so a
+folded rack is one strip the way Live's is. And deactivating a rack dims the devices in it,
+which needs saying explicitly now that they aren't its descendants in the shell any more.
+
+The containment is still real — it's in the props, where a host passes the selected
+chain's devices as `children`. It just isn't the drawing.
+
 ## Tier 3 — the bespoke displays
 
 Listed so they aren't forgotten, deliberately last. Each is one device's idea, and none of
@@ -123,20 +144,25 @@ waveform display (Simpler), transfer function (Saturator, Roar), oscilloscope
 
 **One height, and the chain owns it.** Live's device footer is a fixed height and every
 device in it is that tall, so the height is fixed at the top and stretched down: a chain
-fills its container or stands however many rows it's told, devices stretch to the chain,
-a rack's panes stretch to the device, and a chain nested in a rack fills that. Nothing in
-the middle owns a height — and a device on its own owns none either. It is as tall as its
-faceplate, which is what a graph will want when there is no footer to fill.
+fills its container or stands however many rows it's told, and everything in it stretches
+to the chain — devices, racks, and the devices inside a rack alike. Nothing in the middle
+owns a height, and a device on its own owns none either. It is as tall as its faceplate,
+which is what a graph will want when there is no footer to fill.
+
+That last clause is why a rack is [bookends rather than a box](#why-a-rack-is-a-bracket).
+A device that got shorter for being in a rack, and shorter again for being in a rack in a
+rack, would make the fixed height worth nothing at the depth where it matters most.
 
 The default is two rows, because that is Live's, and `--wdg-row-height` is 60px because
 that is what one row of knobs comes to: a caption, a 34px dial and a reading. The check
 that it's the right number is a stock rack, whose eight macros in two rows of four fill a
 device exactly.
 
-Two gotchas, both from custom properties inheriting. A nested chain resets
-`--wdg-chain-height` to `initial` — the guaranteed-invalid value — so `var()` falls
-through to its `100%` fallback instead of inheriting the outer chain's pixels. And a rack
-sets `--wdg-device-min: 0px`, so nothing inside one demands a minimum of its own.
+One gotcha, from custom properties inheriting: a nested chain resets `--wdg-chain-height`
+to `initial` — the guaranteed-invalid value — so `var()` falls through to its `100%`
+fallback instead of inheriting the outer chain's pixels. A chain inside a rack also drops
+its own border, padding and well, because it isn't a container there — it's the middle of
+the run, and 8px of inset is exactly the drift the bookends exist to avoid.
 
 **A label is on top, a value is underneath — and no control decides that.** Every widget
 is the same three regions: caption, control, reading. The value box and the switch are the

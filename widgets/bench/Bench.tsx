@@ -173,7 +173,7 @@ const MACROS = ['Macro 1', 'Macro 2', 'Macro 3', 'Macro 4'];
 
 /** A rack in a chain, holding chains of its own. The recursion is the point. */
 function Grouped() {
-  const [at, setAt] = useState(0);
+  const [at, setAt] = useState(1);
   const [on, setOn] = useState(true);
   const [folded, setFolded] = useState(false);
   const [device, setDevice] = useState(0);
@@ -215,6 +215,7 @@ function Grouped() {
                 ))}
         </Chain>
       </Rack>
+      <Shell name="Saturator" />
     </Chain>
   );
 }
@@ -536,7 +537,7 @@ export function Bench() {
           </Case>
           <Case
             wide
-            note="A rack: a device holding chains of its own, with the macros on its face. Pick a chain to see its devices — Dry has none."
+            note="A rack: bookends around the selected chain's devices, not a box holding them. Delay inside the rack is exactly as tall as Saturator beside it. Pick a chain to see its devices — Dry has none."
           >
             <Grouped />
           </Case>
