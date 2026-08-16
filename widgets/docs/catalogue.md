@@ -59,14 +59,15 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 | [`Device`](../src/chrome/Device.tsx) | the LOM, not M4L | title bar, activator, fold triangle, hot-swap slot, folded strip |
 | [`Chain`](../src/chrome/Chain.tsx) | Live's device view | the run, the drop mark, and what an empty one says |
 | [`Rack`](../src/chrome/Rack.tsx) | `RackDevice` | the macro face, the chain list, the selected chain's devices |
+| [`Row`](../src/chrome/Row.tsx) | Live's panel grid | controls on one line, sharing a caption height and a reading height |
 
 `Device` takes three states and not a device object, because three is all a shell shows:
 `Device.name`, `Device.is_active`, `Device.View.is_collapsed`. Presets stay a callback —
 swapping one means opening a browser this module has no business knowing about.
 
 - **The rest of the shell** — rename, the preset chevron, a rack's title-bar buttons
-- **Parameter row and section rhythm** — Live's device panel is a strict grid, and that
-  regularity is most of why it reads as one instrument rather than a pile of controls
+- **Section rhythm** — `Row` lines up one row; Live's panel also lines up columns *across*
+  rows, and that regularity is most of why a device reads as one instrument
 - **The rest of the rack** — the chain-selector zone editor, Map mode, macro variations,
   and a chain's own mute and solo
 - **Drum rack pad matrix**
@@ -115,13 +116,25 @@ waveform display (Simpler), transfer function (Saturator, Roar), oscilloscope
 6. Add a case to [the bench](bench.md) — including the disabled one. It's the only test
    these get.
 
-## Four conventions worth knowing
+## Five conventions worth knowing
+
+**One height, set once, stretched all the way down.** Live's device footer is a fixed
+height and every device fills it, so nothing in the middle of the tree owns a height. A
+chain fills its container unless it's given one, devices stretch to the chain, a rack's
+panes stretch to the device, and a chain nested in a rack fills that. The only number is
+the one the app hands the outermost chain, which is the footer's. (A nested chain resets
+`--wdg-chain-height` to `initial`: custom properties inherit, and that one mustn't.)
 
 **A label is on top, a value is underneath.** Every widget is the same column: caption,
 control, reading. The value box and the switch are the apparent exceptions and aren't —
 their reading is inside the control because the control *is* the reading. One rule, so a
 row of mixed controls lines up on its labels and again on its values instead of each
 widget arguing its own case, and so `shared.css` can stack all five roots with one rule.
+
+Those three parts are named — `wdg-caption`, `wdg-body`, `wdg-readout` — which is what
+lets [`Row`](../src/chrome/Row.tsx) lay a whole line of controls into three bands through
+a subgrid. Aligning siblings is easy; aligning their *insides* is what subgrid is for,
+and it's the only reason a knob and a fader can share a caption height.
 
 **A control is the size of what it can say, not of what it is saying.** Every control
 that reads a `Param` asks the model for its longest reading and reserves that much,

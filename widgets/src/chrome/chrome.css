@@ -98,8 +98,13 @@
 }
 
 .wdg-device-body {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
   padding: 8px;
+  overflow: hidden;
 }
 
 .wdg-device:not([data-on]) .wdg-device-body {
@@ -123,16 +128,50 @@
   margin: auto 0 0;
 }
 
+.wdg-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  grid-template-rows: auto auto auto;
+  align-items: center;
+  justify-items: center;
+  gap: var(--wdg-gap) var(--wdg-row-gap, 10px);
+}
+
+.wdg-row > .wdg {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  align-items: center;
+  justify-items: center;
+}
+
+.wdg-row > .wdg > .wdg-caption {
+  grid-row: 1;
+}
+
+.wdg-row > .wdg > .wdg-body {
+  grid-row: 2;
+}
+
+.wdg-row > .wdg > .wdg-readout {
+  grid-row: 3;
+}
+
 .wdg-chain {
   display: flex;
   align-items: stretch;
   gap: 3px;
-  height: var(--wdg-chain-height, auto);
+  height: var(--wdg-chain-height, 100%);
   padding: 3px;
   overflow-x: auto;
   border: 1px solid var(--wdg-edge);
   border-radius: var(--wdg-plate-radius);
   background: var(--wdg-well);
+}
+
+.wdg-chain .wdg-chain {
+  --wdg-chain-height: initial;
 }
 
 .wdg-chain-drop {
@@ -215,5 +254,7 @@
 
 .wdg-rack-devices {
   display: flex;
+  flex: 1;
   align-items: stretch;
+  min-width: 0;
 }

@@ -5,6 +5,7 @@ import { enumParam, type Param, type UnitStyle } from '../src/param/param.js';
 import { Chain } from '../src/chrome/Chain.js';
 import { Device } from '../src/chrome/Device.js';
 import { Rack } from '../src/chrome/Rack.js';
+import { Row } from '../src/chrome/Row.js';
 import { Divider, Label } from '../src/controls/Label.js';
 import { Knob } from '../src/controls/Knob.js';
 import { NumberField } from '../src/controls/NumberField.js';
@@ -13,7 +14,8 @@ import { Slider } from '../src/controls/Slider.js';
 import { Toggle } from '../src/controls/Toggle.js';
 
 const SECTIONS = [
-  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Device', 'Chain', 'Model',
+  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Row', 'Device', 'Chain',
+  'Model',
 ];
 
 /** One widget's own value, so every example on the page is genuinely live. */
@@ -85,14 +87,33 @@ const UNITS: UnitStyle[] = [
 /** A faceplate worth putting in a shell: real controls, each with its own value. */
 function Faceplate() {
   return (
-    <div className="faceplate">
+    <Row>
       <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
       <Held param={DRY_WET}>{(v, set) => <Knob param={DRY_WET} value={v} onChange={set} />}</Held>
       <Held param={GAIN}>
         {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={44} />}
       </Held>
-    </div>
+    </Row>
   );
+}
+
+/** The same controls twice: left to themselves, then given a rhythm. */
+function Mixed({ ruled }: { ruled?: boolean }) {
+  const controls = (
+    <>
+      <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
+      <Held param={GAIN}>
+        {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={44} />}
+      </Held>
+      <Held param={TIME}>{(v, set) => <NumberField param={TIME} value={v} onChange={set} />}</Held>
+      <Held param={FILTER}>
+        {(v, set) => (
+          <Segmented items={FILTER.items ?? []} index={Math.round(v)} onChange={set} name="Filter" />
+        )}
+      </Held>
+    </>
+  );
+  return ruled ? <Row>{controls}</Row> : <div className="loose">{controls}</div>;
 }
 
 function Shell({
@@ -423,6 +444,18 @@ export function Bench() {
               <Divider />
               <Label heading>Envelope</Label>
             </div>
+          </Case>
+        </Section>
+
+        <Section id="Row">
+          <Case wide note="Left to themselves: four controls, four different heights, nothing on a line.">
+            <Mixed />
+          </Case>
+          <Case
+            wide
+            note="The same four in a row. Captions at one height, readings at another, whatever is between them — the value box has no reading to place, so it sits in the control band."
+          >
+            <Mixed ruled />
           </Case>
         </Section>
 

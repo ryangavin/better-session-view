@@ -97,7 +97,7 @@ export function NumberField({
     >
       {name && <span className="wdg-caption">{name}</span>}
       {draft === null ? (
-        <div className="wdg-number-body" title={title} {...gesture.props} onKeyDown={onKeyDown}>
+        <div className="wdg-number-body wdg-body" title={title} {...gesture.props} onKeyDown={onKeyDown}>
           {showFill && <span className="wdg-number-fill" aria-hidden="true" />}
           <span className="wdg-number-text">{gesture.text}</span>
           {showFill && (
@@ -108,7 +108,7 @@ export function NumberField({
         </div>
       ) : (
         <input
-          className="wdg-number-body wdg-number-input"
+          className="wdg-number-body wdg-body wdg-number-input"
           ref={(node) => {
             node?.focus();
           }}

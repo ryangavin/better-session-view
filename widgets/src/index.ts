@@ -43,3 +43,4 @@ export { Divider, Label, type LabelProps } from './controls/Label.js';
 export { Chain, type ChainProps } from './chrome/Chain.js';
 export { Device, type DeviceProps } from './chrome/Device.js';
 export { Rack, type RackProps } from './chrome/Rack.js';
+export { Row, type RowProps } from './chrome/Row.js';

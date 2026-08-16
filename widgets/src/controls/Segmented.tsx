@@ -47,7 +47,7 @@ export function Segmented({
     <div className={`wdg wdg-segmented${className ? ` ${className}` : ''}`}>
       {name && <span className="wdg-caption">{name}</span>}
       <div
-        className={`wdg-segmented-body wdg-segmented-${orientation}`}
+        className={`wdg-segmented-body wdg-body wdg-segmented-${orientation}`}
         role="radiogroup"
         aria-label={label ?? name}
         aria-disabled={disabled || undefined}

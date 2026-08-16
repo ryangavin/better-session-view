@@ -73,7 +73,7 @@ export function Knob({
       style={{ ...reserved, '--wdg-knob-size': `${size}px` } as CSSProperties}
     >
       {name && <span className="wdg-caption">{name}</span>}
-      <div className="wdg-knob-dial" title={title} {...gesture.props}>
+      <div className="wdg-knob-dial wdg-body" title={title} {...gesture.props}>
         <svg viewBox="0 0 40 40" aria-hidden="true">
           <path className="wdg-knob-empty" d={dialArc(dialAngle(0), dialAngle(1)) ?? undefined} />
           {fill && <path className="wdg-knob-fill" d={fill} />}

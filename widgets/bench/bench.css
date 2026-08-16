@@ -135,7 +135,7 @@ h2 {
   min-height: 108px;
 }
 
-.faceplate {
+.loose {
   display: flex;
   align-items: flex-start;
   gap: 10px;

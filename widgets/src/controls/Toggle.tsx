@@ -56,7 +56,7 @@ export function Toggle({
       {name && <span className="wdg-caption">{name}</span>}
       <button
         type="button"
-        className="wdg-toggle-body"
+        className="wdg-toggle-body wdg-body"
         {...(on ? { 'data-on': '' } : {})}
         aria-pressed={momentary ? undefined : on}
         aria-label={label ?? name}

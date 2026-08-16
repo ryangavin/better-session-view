@@ -69,7 +69,7 @@ export function Slider({
       }
     >
       {name && <span className="wdg-caption">{name}</span>}
-      <div className="wdg-slider-body" title={title} {...gesture.props}>
+      <div className="wdg-slider-body wdg-body" title={title} {...gesture.props}>
         <span className="wdg-slider-fill" aria-hidden="true" />
         <span className="wdg-slider-thumb" aria-hidden="true" />
       </div>
