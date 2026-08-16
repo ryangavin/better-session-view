@@ -57,6 +57,8 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 | widget | from | notes |
 |---|---|---|
 | [`Device`](../src/chrome/Device.tsx) | the LOM, not M4L | title bar, activator, fold triangle, hot-swap slot, folded strip |
+| [`Chain`](../src/chrome/Chain.tsx) | Live's device view | the run, the drop mark, and what an empty one says |
+| [`Rack`](../src/chrome/Rack.tsx) | `RackDevice` | the macro face, the chain list, the selected chain's devices |
 
 `Device` takes three states and not a device object, because three is all a shell shows:
 `Device.name`, `Device.is_active`, `Device.View.is_collapsed`. Presets stay a callback —
@@ -65,9 +67,29 @@ swapping one means opening a browser this module has no business knowing about.
 - **The rest of the shell** — rename, the preset chevron, a rack's title-bar buttons
 - **Parameter row and section rhythm** — Live's device panel is a strict grid, and that
   regularity is most of why it reads as one instrument rather than a pile of controls
-- **Chain strip** — the horizontal run of devices, with drop indicators between them
-- **Rack** — the macro bank, the chain list, the chain-selector zone editor, Map mode
+- **The rest of the rack** — the chain-selector zone editor, Map mode, macro variations,
+  and a chain's own mute and solo
 - **Drum rack pad matrix**
+
+## Why the chain is a line
+
+Ableton's chain runs in series, and everything parallel is a rack: one device *in* that
+series whose body holds chains, each serial again. `Chain` and `Rack` model that and
+nothing more. A rack in a chain in a rack is ordinary, which is why `Rack` composes
+`Device` instead of reimplementing a shell — a rack is a device, and the recursion falls
+out for free.
+
+The line is a **layout, not a structure**, and the distinction is what keeps a graph
+possible later. `Chain` takes children, never a list of devices: a component that lays
+its children in a row doesn't know why they're in that order, so the order stays the
+app's and a node canvas can be a sibling layout over the same `Device` when there's
+something to plug together. The piece missing that day is ports — in a strip, adjacency
+*is* the connection and there's nothing to draw; a graph has to draw it. That's a slot
+added to `Device`, not a rewrite of any of this.
+
+Dragging follows [the gesture's](gesture.md) rule. `Chain` marks where a device would
+land and stops there; whoever is dragging decides whether the move is legal and performs
+it, the way a control emits a value and the host writes it to Live.
 
 ## Tier 3 — the bespoke displays
 

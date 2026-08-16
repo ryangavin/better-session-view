@@ -47,7 +47,9 @@ src/
     controls.css    what's left after that — each control's own geometry
   chrome/
     Device.tsx      the shell a faceplate sits in, folded or open
-    chrome.css      its styling, on the same shared parts
+    Chain.tsx       the run it sits in — children, so it never owns the order
+    Rack.tsx        a device holding chains: the macro face and the chain list
+    chrome.css      their styling, on the same shared parts
   tokens.css        the widget tokens: colour and type from the host, metrics ours
   index.ts          the barrel — pulls in every stylesheet, so prefer deep imports
 bench/              the harness. Dev-only; never built, never shipped

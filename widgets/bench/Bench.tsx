@@ -2,7 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { FINE_KEY } from '../src/gesture/platform.js';
 import { format } from '../src/param/format.js';
 import { enumParam, type Param, type UnitStyle } from '../src/param/param.js';
+import { Chain } from '../src/chrome/Chain.js';
 import { Device } from '../src/chrome/Device.js';
+import { Rack } from '../src/chrome/Rack.js';
 import { Divider, Label } from '../src/controls/Label.js';
 import { Knob } from '../src/controls/Knob.js';
 import { NumberField } from '../src/controls/NumberField.js';
@@ -11,7 +13,7 @@ import { Slider } from '../src/controls/Slider.js';
 import { Toggle } from '../src/controls/Toggle.js';
 
 const SECTIONS = [
-  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Device', 'Model',
+  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Device', 'Chain', 'Model',
 ];
 
 /** One widget's own value, so every example on the page is genuinely live. */
@@ -127,11 +129,11 @@ function Shell({
 }
 
 /** Three of them, because a chain is the thing we're actually building. */
-function Chain() {
+function Run({ dropAt }: { dropAt?: number }) {
   const [at, setAt] = useState(1);
   const names = ['EQ Eight', 'Auto Filter', 'Saturator'];
   return (
-    <div className="chain">
+    <Chain height={132} dropAt={dropAt}>
       {names.map((name, i) => (
         <Shell
           key={name}
@@ -142,7 +144,57 @@ function Chain() {
           onSelect={() => setAt(i)}
         />
       ))}
-    </div>
+    </Chain>
+  );
+}
+
+const MACROS = ['Macro 1', 'Macro 2', 'Macro 3', 'Macro 4'];
+
+/** A rack in a chain, holding chains of its own. The recursion is the point. */
+function Grouped() {
+  const [at, setAt] = useState(0);
+  const [on, setOn] = useState(true);
+  const [folded, setFolded] = useState(false);
+  const [device, setDevice] = useState(0);
+
+  return (
+    <Chain height={196}>
+      <Shell name="EQ Eight" collapsed />
+      <Rack
+        name="Audio Effect Rack"
+        on={on}
+        onToggle={setOn}
+        folded={folded}
+        onFold={setFolded}
+        selected
+        onSelect={() => {}}
+        chains={['Dry', 'Delay', 'Reverb']}
+        chainAt={at}
+        onChain={setAt}
+        macros={MACROS.map((name) => (
+          <Held key={name} param={DRY_WET}>
+            {(v, set) => (
+              <Knob param={DRY_WET} value={v} onChange={set} name={name} size={26} />
+            )}
+          </Held>
+        ))}
+      >
+        <Chain placeholder="Drop an audio effect here">
+          {at === 0
+            ? []
+            : ['Delay', 'Reverb']
+                .slice(at - 1, at)
+                .map((name) => (
+                  <Shell
+                    key={name}
+                    name={name}
+                    selected={device === 0}
+                    onSelect={() => setDevice(0)}
+                  />
+                ))}
+        </Chain>
+      </Rack>
+    </Chain>
   );
 }
 
@@ -387,11 +439,26 @@ export function Bench() {
           <Case note="Selected, and with presets: the hot-swap button appears only if a host can serve it.">
             <Shell selected swappable />
           </Case>
+        </Section>
+
+        <Section id="Chain">
           <Case
             wide
-            note="A run of them, which is what a chain is. Click a title bar to move the selection; fold the first one back open."
+            note="The run itself. Click a title bar to move the selection; fold the first one back open."
           >
-            <Chain />
+            <Run />
+          </Case>
+          <Case wide note="Mid-drag: the strip marks where a device would land. Whoever is dragging decides whether it may.">
+            <Run dropAt={2} />
+          </Case>
+          <Case note="Empty, which is most of what a new track's chain looks like.">
+            <Chain placeholder="Drop an audio effect here" />
+          </Case>
+          <Case
+            wide
+            note="A rack: a device holding chains of its own, with the macros on its face. Pick a chain to see its devices — Dry has none."
+          >
+            <Grouped />
           </Case>
         </Section>
 

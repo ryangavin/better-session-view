@@ -9,6 +9,7 @@
   --wdg-text: var(--ui, #b7b7be);
   --wdg-caption: var(--caption, #5e5e66);
   --wdg-focus: var(--focus, #4a4a52);
+  --wdg-well: var(--panel, #111113);
   --wdg-plate: var(--surface-cell, #18181b);
   --wdg-plate-head: var(--sel, #1c1c20);
   --wdg-plate-selected: var(--bd, #262629);
