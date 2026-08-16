@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { useParamGesture } from '../gesture/useParamGesture.js';
 import type { Param } from '../param/param.js';
 import { defaultOrigin, fillFrom, type FillOrigin } from './fill.js';
+import { useReserved } from './reserve.js';
 import './controls.css';
 
 /** `live.slider`. The same gesture as the knob, laid out straight. */
@@ -54,11 +55,14 @@ export function Slider({
     display,
   });
 
+  const reserved = useReserved(param);
+
   return (
     <div
       className={`wdg wdg-slider wdg-slider-${orientation}${className ? ` ${className}` : ''}`}
       style={
         {
+          ...reserved,
           '--wdg-slider-length': `${length}px`,
           ...fillFrom(param, origin, gesture.fraction),
         } as CSSProperties

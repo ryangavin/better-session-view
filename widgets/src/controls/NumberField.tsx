@@ -2,6 +2,7 @@ import { useCallback, useState, type CSSProperties, type KeyboardEvent } from 'r
 import { useParamGesture } from '../gesture/useParamGesture.js';
 import { clamp, quantize, type Param } from '../param/param.js';
 import { defaultOrigin, fillFrom, type FillOrigin } from './fill.js';
+import { useReserved } from './reserve.js';
 import './controls.css';
 
 /** `live.numbox`: drag it like a fader, or type into it. */
@@ -20,6 +21,7 @@ export interface NumberFieldProps {
   showFill?: boolean;
   /** Where that bar grows from. Defaults to the middle when zero is the middle. */
   origin?: FillOrigin;
+  /** In px. Defaults to the parameter's longest reading, so it never resizes. */
   width?: number;
   travel?: number;
   className?: string;
@@ -46,6 +48,7 @@ export function NumberField({
   title,
 }: NumberFieldProps) {
   const [draft, setDraft] = useState<string | null>(null);
+  const reserved = useReserved(param);
   const typeable = editable && param.kind !== 'enum' && param.kind !== 'blob' && !disabled;
 
   const gesture = useParamGesture({
@@ -86,6 +89,7 @@ export function NumberField({
       className={`wdg wdg-number${className ? ` ${className}` : ''}`}
       style={
         {
+          ...reserved,
           ...fillFrom(param, origin, gesture.fraction),
           ...(width === undefined ? {} : { '--wdg-number-width': `${width}px` }),
         } as CSSProperties

@@ -3,6 +3,7 @@ import { useParamGesture } from '../gesture/useParamGesture.js';
 import type { Param } from '../param/param.js';
 import { dialAngle, dialArc, dialPoint } from './arc.js';
 import { defaultOrigin, originFraction, type FillOrigin } from './fill.js';
+import { useReserved } from './reserve.js';
 import './controls.css';
 
 /** `live.dial`, and the control most of an Ableton device is made of. */
@@ -59,6 +60,7 @@ export function Knob({
     display,
   });
 
+  const reserved = useReserved(param);
   const angle = dialAngle(gesture.fraction);
   const from = dialAngle(originFraction(param, origin));
   const fill = dialArc(from, angle);
@@ -68,7 +70,7 @@ export function Knob({
   return (
     <div
       className={`wdg wdg-knob${className ? ` ${className}` : ''}`}
-      style={{ '--wdg-knob-size': `${size}px` } as CSSProperties}
+      style={{ ...reserved, '--wdg-knob-size': `${size}px` } as CSSProperties}
     >
       <div className="wdg-knob-dial" title={title} {...gesture.props}>
         <svg viewBox="0 0 40 40" aria-hidden="true">

@@ -74,7 +74,16 @@ waveform display (Simpler), transfer function (Saturator, Roar), oscilloscope
 6. Add a case to [the bench](bench.md) — including the disabled one. It's the only test
    these get.
 
-## Two conventions worth knowing
+## Three conventions worth knowing
+
+**A control is the size of what it can say, not of what it is saying.** Every control
+that reads a `Param` asks the model for its longest reading and reserves that much,
+in `ch` so it lands right in the host's font — `widestText` in `format.ts`, through
+`useReserved`. Sizing to the current reading instead means the box grows and shrinks
+as the value counts, and every control to its right steps sideways for the whole of a
+drag. Nothing in a widget wraps, either: a reading that outgrows its box is clipped,
+because a control that changes height moves the row it's in. `Toggle` is the exception
+and has to be — its label is the caller's, so it takes a `width`.
 
 **Fills grow from the middle when zero is the middle.** A pan at center is not a pan
 turned all the way down, and Live draws the distinction — `live.dial` calls it the needle

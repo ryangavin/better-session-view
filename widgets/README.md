@@ -42,6 +42,7 @@ src/
     Label.tsx       live.comment, and Divider for live.line
     arc.ts          dial geometry
     fill.ts         where a fill starts, shared by all three value controls
+    reserve.ts      space for the longest reading, so a control never resizes
     controls.css    every control's styling
   tokens.css        the widget tokens, resolved from the host's with fallbacks
   index.ts          the barrel — pulls in every stylesheet, so prefer deep imports

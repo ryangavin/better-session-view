@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import './controls.css';
 
 /**
@@ -22,6 +22,13 @@ export interface ToggleProps {
   name?: string;
   /** Springs back instead of staying down, like `live.button`. */
   momentary?: boolean;
+  /**
+   * In px. The label is the caller's and can be any length, so unlike the
+   * controls that read a `Param` this one can't reserve its own space — a
+   * switch that says On and Off changes width as it's pressed unless the box
+   * is settled in advance. Wide enough for four characters by default.
+   */
+  width?: number;
   className?: string;
   title?: string;
   children?: ReactNode;
@@ -34,12 +41,18 @@ export function Toggle({
   label,
   name,
   momentary = false,
+  width,
   className,
   title,
   children,
 }: ToggleProps) {
   return (
-    <div className={`wdg wdg-toggle${className ? ` ${className}` : ''}`}>
+    <div
+      className={`wdg wdg-toggle${className ? ` ${className}` : ''}`}
+      style={
+        (width === undefined ? {} : { '--wdg-toggle-width': `${width}px` }) as CSSProperties
+      }
+    >
       <button
         type="button"
         className="wdg-toggle-body"

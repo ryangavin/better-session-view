@@ -14,6 +14,9 @@
 
 import { clamp, span, type Param } from './param.js';
 
+/** Enough to catch every reading of an int, and every shape of a float's. */
+const SAMPLES = 129;
+
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 /**
@@ -107,4 +110,31 @@ export function format(p: Param, value: number): string {
     default:
       return p.kind === 'int' ? String(Math.round(held)) : fixed(held, decimals);
   }
+}
+
+/**
+ * The longest reading the parameter has, in characters.
+ *
+ * Fixed decimals stop a number jittering as it counts, but they don't stop the
+ * box around it changing size: `C` and `50L` are the same pan knob, 20px apart.
+ * A control that sizes itself to what it currently reads therefore drags its
+ * neighbours around for the whole of a drag, so every control reserves its
+ * longest reading up front instead and never moves again.
+ *
+ * It samples rather than reasoning, because the extremes are not reliably the
+ * longest: `-9.5 dB` is shorter than `-70.0 dB`, and `999 Hz` is longer than
+ * `1.00 kHz`. An int is sampled at every value it holds, so a `C#-2` two notes
+ * off the bottom of the range can't be missed.
+ */
+export function widestText(p: Param): number {
+  if (p.kind === 'enum' && p.items?.length) {
+    return p.items.reduce((widest, item) => Math.max(widest, item.length), 0);
+  }
+  const reach = p.kind === 'int' ? Math.round(Math.abs(span(p))) + 1 : SAMPLES;
+  const count = Math.max(2, Math.min(reach, SAMPLES));
+  let widest = 0;
+  for (let i = 0; i < count; i += 1) {
+    widest = Math.max(widest, format(p, p.min + (span(p) * i) / (count - 1)).length);
+  }
+  return widest;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { format, noteName } from './format.js';
+import { format, noteName, widestText } from './format.js';
 import { enumParam, type Param } from './param.js';
 
 function withUnit(unit: Param['unit'], over: Partial<Param> = {}): Param {
@@ -76,5 +76,23 @@ describe('spelling', () => {
 
   it('never shows a negative zero', () => {
     expect(format(withUnit('float', { min: -1, max: 1 }), -0)).toBe('0.00');
+  });
+});
+
+describe('the widest reading', () => {
+  it('finds the longest one rather than assuming an extreme', () => {
+    // 999 Hz is longer than either end: 20 Hz below it, 20.00 kHz above.
+    expect(widestText(withUnit('hertz', { min: 20, max: 20000 }))).toBe(9);
+    // -70.0 dB, and not the -9.5 dB the middle of the range reads.
+    expect(widestText(withUnit('decibel', { min: -70, max: 6 }))).toBe(8);
+  });
+
+  it('checks every value an int holds, not a sample of them', () => {
+    // C#-2 is note 1, one off the bottom, and two characters wider than C3.
+    expect(widestText({ kind: 'int', min: 0, max: 127, defaultValue: 60, unit: 'midi' })).toBe(4);
+  });
+
+  it('measures an enum by its longest member', () => {
+    expect(widestText(enumParam(['LP', 'BP', 'Notch']))).toBe(5);
   });
 });

@@ -19,7 +19,7 @@ export {
   type ParamKind,
   type UnitStyle,
 } from './param/param.js';
-export { format, noteName } from './param/format.js';
+export { format, noteName, widestText } from './param/format.js';
 
 export {
   useParamGesture,
@@ -32,6 +32,7 @@ export { usePendingValue, readbackTolerance, type PendingValue } from './gesture
 export { FINE_KEY, isFine } from './gesture/platform.js';
 
 export { defaultOrigin, fillFrom, originFraction, type FillOrigin } from './controls/fill.js';
+export { useReserved } from './controls/reserve.js';
 export { Knob, type KnobProps } from './controls/Knob.js';
 export { Slider, type SliderProps } from './controls/Slider.js';
 export { NumberField, type NumberFieldProps } from './controls/NumberField.js';
