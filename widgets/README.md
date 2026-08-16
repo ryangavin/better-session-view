@@ -34,6 +34,7 @@ src/
     usePendingValue.ts   showing what you just did until the engine agrees
     platform.ts          which key means fine
   controls/
+    Widget.tsx      the frame every control sits in: caption, control, reading
     Knob.tsx        live.dial
     Slider.tsx      live.slider
     NumberField.tsx live.numbox
@@ -43,7 +44,7 @@ src/
     arc.ts          dial geometry
     fill.ts         where a fill starts, shared by all three value controls
     reserve.ts      space for the longest reading, so a control never resizes
-    shared.css      the parts every control is made of: face, type, states
+    shared.css      the parts every control is made of: face, type, states, layout
     controls.css    what's left after that — each control's own geometry
   chrome/
     Device.tsx      the shell a faceplate sits in, folded or open

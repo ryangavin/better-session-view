@@ -160,6 +160,11 @@
   grid-row: 3;
 }
 
+.wdg-row > .wdg-widget[data-layout='inline'] {
+  display: flex;
+  grid-row: 1 / -1;
+}
+
 .wdg-chain {
   display: flex;
   align-items: stretch;

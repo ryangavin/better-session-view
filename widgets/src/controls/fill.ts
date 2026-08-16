@@ -1,5 +1,5 @@
 import { fractionOf, type Param } from '../param/param.js';
-import type { CSSProperties } from 'react';
+import type { WidgetVars } from './Widget.js';
 
 /**
  * Where a value's fill starts and how far it runs.
@@ -35,11 +35,11 @@ export function originFraction(param: Param, origin: FillOrigin): number {
   return origin === 'center' ? fractionOf(param, 0) : 0;
 }
 
-export function fillFrom(param: Param, origin: FillOrigin, fraction: number): CSSProperties {
+export function fillFrom(param: Param, origin: FillOrigin, fraction: number): WidgetVars {
   const from = originFraction(param, origin);
   return {
     '--wdg-fraction': fraction,
     '--wdg-fill-start': Math.min(fraction, from),
     '--wdg-fill-size': Math.abs(fraction - from),
-  } as CSSProperties;
+  };
 }

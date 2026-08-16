@@ -109,14 +109,17 @@ waveform display (Simpler), transfer function (Saturator, Roar), oscilloscope
 3. Take `display` and prefer it over `format`. The host may have a better spelling.
 4. Take `className`, and put anything positional on CSS custom properties, so a host can
    restyle it without forking it.
-5. Root element gets `wdg` plus its own class, so [the tokens](../src/tokens.css) apply.
-   Then name it into [`shared.css`](../src/controls/shared.css) — the face, the type, the
-   fill, the states — and write only its own geometry in `controls.css`. A control that
+5. Render a [`Widget`](../src/controls/Widget.tsx) with your one element inside it, and
+   extend `WidgetProps` instead of redeclaring `name`, `label`, `disabled`, `layout`,
+   `className` and `title`. The frame writes the root's classes, the caption, the reading,
+   the reserved width and the layout — none of those is yours to get right.
+6. Style your element in [`shared.css`](../src/controls/shared.css) — the face, the type,
+   the fill, the states — and write only its own geometry in `controls.css`. A control that
    draws its own border has already drifted.
-6. Add a case to [the bench](bench.md) — including the disabled one. It's the only test
+7. Add a case to [the bench](bench.md) — including the disabled one. It's the only test
    these get.
 
-## Five conventions worth knowing
+## Six conventions worth knowing
 
 **One height, and the chain owns it.** Live's device footer is a fixed height and every
 device in it is that tall, so the height is fixed at the top and stretched down: a chain
@@ -135,16 +138,30 @@ Two gotchas, both from custom properties inheriting. A nested chain resets
 through to its `100%` fallback instead of inheriting the outer chain's pixels. And a rack
 sets `--wdg-device-min: 0px`, so nothing inside one demands a minimum of its own.
 
-**A label is on top, a value is underneath.** Every widget is the same column: caption,
-control, reading. The value box and the switch are the apparent exceptions and aren't —
-their reading is inside the control because the control *is* the reading. One rule, so a
-row of mixed controls lines up on its labels and again on its values instead of each
-widget arguing its own case, and so `shared.css` can stack all five roots with one rule.
+**A label is on top, a value is underneath — and no control decides that.** Every widget
+is the same three regions: caption, control, reading. The value box and the switch are the
+apparent exceptions and aren't — their reading is inside the control because the control
+*is* the reading, so they pass no `readout` and the region isn't drawn.
 
-Those three parts are named — `wdg-caption`, `wdg-body`, `wdg-readout` — which is what
-lets [`Row`](../src/chrome/Row.tsx) lay a whole line of controls into three bands through
-a subgrid. Aligning siblings is easy; aligning their *insides* is what subgrid is for,
-and it's the only reason a knob and a fader can share a caption height.
+[`Widget`](../src/controls/Widget.tsx) renders those regions, which is the whole point of
+it. The rule used to live in this file and hold because everyone had read it; now a
+control physically cannot name `wdg-caption`, `wdg-body` or `wdg-readout`, so it cannot
+put one in the wrong place or nest it a level too deep. That last one is the failure worth
+preventing: it looks right on its own and falls silently out of alignment in a `Row`.
+
+Because those three parts are always direct children of the root,
+[`Row`](../src/chrome/Row.tsx) can lay a whole line of controls into three bands through a
+subgrid. Aligning siblings is easy; aligning their *insides* is what subgrid is for, and
+it's the only reason a knob and a fader can share a caption height.
+
+**`layout` is where the regions go; `orientation` is which way the control runs.** They
+are different questions and merging them would be a mistake. `layout="inline"` puts the
+caption and the reading beside the control instead of above and below it — an inspector
+line rather than a faceplate — and it's the frame's, so every control gets it at once. A
+slider's `orientation` is its track and its drag axis, and stays the slider's own. A
+horizontal fader with its caption above it is ordinary, and both spellings have to be
+sayable. In a `Row`, an inline widget takes the full height rather than one of the three
+bands, so it lines up on the middle instead of arguing with the stacked ones.
 
 **A control is the size of what it can say, not of what it is saying.** Every control
 that reads a `Param` asks the model for its longest reading and reserves that much,

@@ -33,6 +33,13 @@ export { FINE_KEY, isFine } from './gesture/platform.js';
 
 export { defaultOrigin, fillFrom, originFraction, type FillOrigin } from './controls/fill.js';
 export { useReserved } from './controls/reserve.js';
+export {
+  Widget,
+  type WidgetLayout,
+  type WidgetProps,
+  type WidgetSlots,
+  type WidgetVars,
+} from './controls/Widget.js';
 export { Knob, type KnobProps } from './controls/Knob.js';
 export { Slider, type SliderProps } from './controls/Slider.js';
 export { NumberField, type NumberFieldProps } from './controls/NumberField.js';

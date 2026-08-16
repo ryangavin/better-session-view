@@ -17,7 +17,11 @@ import type { Param } from '../param/param.js';
  * way to be wrong.
  *
  * Recomputed only when the parameter itself changes, never as the value moves.
+ * A control with no parameter to ask — a switch, a tab strip — reserves nothing.
  */
-export function useReserved(param: Param): CSSProperties {
-  return useMemo(() => ({ '--wdg-chars': widestText(param) }) as CSSProperties, [param]);
+export function useReserved(param?: Param): CSSProperties {
+  return useMemo(
+    () => (param ? ({ '--wdg-chars': widestText(param) } as CSSProperties) : {}),
+    [param],
+  );
 }

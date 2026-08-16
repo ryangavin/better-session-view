@@ -1,20 +1,22 @@
-import type { CSSProperties } from 'react';
 import { useParamGesture } from '../gesture/useParamGesture.js';
 import type { Param } from '../param/param.js';
 import { defaultOrigin, fillFrom, type FillOrigin } from './fill.js';
-import { useReserved } from './reserve.js';
+import { Widget, type WidgetProps } from './Widget.js';
 import './controls.css';
 
 /** `live.slider`. The same gesture as the knob, laid out straight. */
-export interface SliderProps {
+export interface SliderProps extends WidgetProps {
   param: Param;
   value: number;
   onChange(next: number): void;
   onRelease?(): void;
-  disabled?: boolean;
   display?: string;
-  label?: string;
-  name?: string;
+  /**
+   * Which way the track runs, and so which way the drag goes.
+   *
+   * Not to be confused with `layout`, which is where the caption and the
+   * reading sit. A horizontal fader with its caption above it is ordinary.
+   */
   orientation?: 'vertical' | 'horizontal';
   /** Where the fill grows from. Defaults to the middle when zero is the middle. */
   origin?: FillOrigin;
@@ -22,8 +24,6 @@ export interface SliderProps {
   /** Length along the axis, in px. The other dimension is fixed. */
   length?: number;
   travel?: number;
-  className?: string;
-  title?: string;
 }
 
 export function Slider({
@@ -40,6 +40,7 @@ export function Slider({
   showValue = true,
   length = 96,
   travel,
+  layout,
   className,
   title,
 }: SliderProps) {
@@ -55,25 +56,25 @@ export function Slider({
     display,
   });
 
-  const reserved = useReserved(param);
-
   return (
-    <div
-      className={`wdg wdg-slider wdg-slider-${orientation}${className ? ` ${className}` : ''}`}
-      style={
-        {
-          ...reserved,
-          '--wdg-slider-length': `${length}px`,
-          ...fillFrom(param, origin, gesture.fraction),
-        } as CSSProperties
-      }
+    <Widget
+      kind="slider"
+      param={param}
+      name={name}
+      readout={showValue ? gesture.text : undefined}
+      layout={layout}
+      disabled={disabled}
+      className={`wdg-slider-${orientation}${className ? ` ${className}` : ''}`}
+      title={title}
+      vars={{
+        '--wdg-slider-length': `${length}px`,
+        ...fillFrom(param, origin, gesture.fraction),
+      }}
     >
-      {name && <span className="wdg-caption">{name}</span>}
-      <div className="wdg-slider-body wdg-body" title={title} {...gesture.props}>
+      <div className="wdg-slider-body" {...gesture.props}>
         <span className="wdg-slider-fill" aria-hidden="true" />
         <span className="wdg-slider-thumb" aria-hidden="true" />
       </div>
-      {showValue && <span className="wdg-readout">{gesture.text}</span>}
-    </div>
+    </Widget>
   );
 }

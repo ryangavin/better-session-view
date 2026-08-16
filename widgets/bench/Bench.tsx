@@ -333,6 +333,11 @@ export function Bench() {
               {(v, set) => <Knob param={DRY_WET} value={v} onChange={set} disabled />}
             </Held>
           </Case>
+          <Case note="Laid inline: caption, control and reading on one line, for an inspector rather than a faceplate.">
+            <Held param={FREQ}>
+              {(v, set) => <Knob param={FREQ} value={v} onChange={set} layout="inline" size={26} />}
+            </Held>
+          </Case>
         </Section>
 
         <Section id="Slider">
@@ -350,6 +355,23 @@ export function Bench() {
             <Held param={CROSSFADE}>
               {(v, set) => (
                 <Slider param={CROSSFADE} value={v} onChange={set} orientation="horizontal" length={120} />
+              )}
+            </Held>
+          </Case>
+          <Case
+            wide
+            note="Orientation and layout are two questions. The track runs across; the caption and the reading sit beside it rather than above and below."
+          >
+            <Held param={GAIN}>
+              {(v, set) => (
+                <Slider
+                  param={GAIN}
+                  value={v}
+                  onChange={set}
+                  orientation="horizontal"
+                  layout="inline"
+                  length={120}
+                />
               )}
             </Held>
           </Case>
@@ -456,6 +478,31 @@ export function Bench() {
             note="The same four in a row. Captions at one height, readings at another, whatever is between them — the value box has no reading to place, so it sits in the control band."
           >
             <Mixed ruled />
+          </Case>
+          <Case
+            wide
+            note="An inline widget in a row takes the whole height rather than one of the three bands, so it lines up with the stacked ones on the middle instead of arguing with them."
+          >
+            <Row>
+              <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
+              <Held param={GAIN}>
+                {(v, set) => (
+                  <Slider
+                    param={GAIN}
+                    value={v}
+                    onChange={set}
+                    orientation="horizontal"
+                    layout="inline"
+                    length={100}
+                  />
+                )}
+              </Held>
+              <Held param={DRY_WET}>
+                {(v, set) => (
+                  <Knob param={DRY_WET} value={v} onChange={set} layout="inline" size={26} />
+                )}
+              </Held>
+            </Row>
           </Case>
         </Section>
 

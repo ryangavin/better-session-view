@@ -1,24 +1,18 @@
-import type { CSSProperties } from 'react';
 import { useParamGesture } from '../gesture/useParamGesture.js';
 import type { Param } from '../param/param.js';
 import { dialAngle, dialArc, dialPoint } from './arc.js';
 import { defaultOrigin, originFraction, type FillOrigin } from './fill.js';
-import { useReserved } from './reserve.js';
+import { Widget, type WidgetProps } from './Widget.js';
 import './controls.css';
 
 /** `live.dial`, and the control most of an Ableton device is made of. */
-export interface KnobProps {
+export interface KnobProps extends WidgetProps {
   param: Param;
   value: number;
   onChange(next: number): void;
   onRelease?(): void;
-  disabled?: boolean;
   /** Authoritative text — Live's own `str_for_value`, where there is a Live. */
   display?: string;
-  /** For assistive technology. Defaults to the printed caption. */
-  label?: string;
-  /** The printed caption. Defaults to the parameter's own short name. */
-  name?: string;
   /**
    * Where the filled arc grows from. `live.dial` calls this the needle mode;
    * the default reads it off the range, since a control whose zero sits at the
@@ -28,8 +22,6 @@ export interface KnobProps {
   showValue?: boolean;
   size?: number;
   travel?: number;
-  className?: string;
-  title?: string;
 }
 
 export function Knob({
@@ -45,6 +37,7 @@ export function Knob({
   showValue = true,
   size = 34,
   travel,
+  layout,
   className,
   title,
 }: KnobProps) {
@@ -60,7 +53,6 @@ export function Knob({
     display,
   });
 
-  const reserved = useReserved(param);
   const angle = dialAngle(gesture.fraction);
   const from = dialAngle(originFraction(param, origin));
   const fill = dialArc(from, angle);
@@ -68,19 +60,24 @@ export function Knob({
   const [mx, my] = dialPoint(angle, 13.5);
 
   return (
-    <div
-      className={`wdg wdg-knob${className ? ` ${className}` : ''}`}
-      style={{ ...reserved, '--wdg-knob-size': `${size}px` } as CSSProperties}
+    <Widget
+      kind="knob"
+      param={param}
+      name={name}
+      readout={showValue ? gesture.text : undefined}
+      layout={layout}
+      disabled={disabled}
+      className={className}
+      title={title}
+      vars={{ '--wdg-knob-size': `${size}px` }}
     >
-      {name && <span className="wdg-caption">{name}</span>}
-      <div className="wdg-knob-dial wdg-body" title={title} {...gesture.props}>
+      <div className="wdg-knob-dial" {...gesture.props}>
         <svg viewBox="0 0 40 40" aria-hidden="true">
           <path className="wdg-knob-empty" d={dialArc(dialAngle(0), dialAngle(1)) ?? undefined} />
           {fill && <path className="wdg-knob-fill" d={fill} />}
           <line className="wdg-knob-marker" x1={nx} y1={ny} x2={mx} y2={my} />
         </svg>
       </div>
-      {showValue && <span className="wdg-readout">{gesture.text}</span>}
-    </div>
+    </Widget>
   );
 }
