@@ -10,12 +10,13 @@ import { Divider, Label } from '../src/controls/Label.js';
 import { Knob } from '../src/controls/Knob.js';
 import { NumberField } from '../src/controls/NumberField.js';
 import { Segmented } from '../src/controls/Segmented.js';
+import { Select } from '../src/controls/Select.js';
 import { Slider } from '../src/controls/Slider.js';
 import { Toggle } from '../src/controls/Toggle.js';
 import { EQEight } from './EQEight.js';
 
 const SECTIONS = [
-  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Row', 'Device', 'EQ Eight', 'Chain',
+  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Select', 'Text', 'Row', 'Device', 'EQ Eight', 'Chain',
   'Model',
 ];
 
@@ -452,6 +453,30 @@ export function Bench() {
                 <Segmented items={FILTER.items ?? []} index={Math.round(v)} onChange={set} disabled />
               )}
             </Held>
+          </Case>
+        </Section>
+
+        <Section id="Select">
+          <Case note="A compact enum for a panel that cannot show every member at once.">
+            <Held param={FILTER}>
+              {(v, set) => (
+                <Select
+                  items={FILTER.items ?? []}
+                  index={Math.round(v)}
+                  onChange={set}
+                  name="Filter"
+                />
+              )}
+            </Held>
+          </Case>
+          <Case note="Disabled.">
+            <Select
+              items={FILTER.items ?? []}
+              index={0}
+              onChange={() => {}}
+              name="Filter"
+              disabled
+            />
           </Case>
         </Section>
 

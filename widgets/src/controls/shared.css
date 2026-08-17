@@ -8,7 +8,8 @@
 .wdg-widget,
 .wdg-number,
 .wdg-toggle,
-.wdg-segmented {
+.wdg-segmented,
+.wdg-select {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -29,7 +30,8 @@
 .wdg-slider-body,
 .wdg-number-body,
 .wdg-toggle-body,
-.wdg-segmented-body {
+.wdg-segmented-body,
+.wdg-select-body {
   overflow: hidden;
   border: 1px solid var(--wdg-edge);
   border-radius: var(--wdg-radius);
@@ -66,7 +68,8 @@
 }
 
 .wdg-toggle-body,
-.wdg-segmented-body button {
+.wdg-segmented-body button,
+.wdg-select-body {
   font-family: var(--wdg-sans);
   font-size: 10px;
   cursor: pointer;
@@ -95,10 +98,15 @@
   color: var(--wdg-marker);
 }
 
-.wdg-toggle-body[data-on],
 .wdg-device-power[data-on],
 .wdg-segmented-body button[aria-checked='true'] {
   border-color: var(--wdg-fill);
+  background: var(--wdg-fill);
+  color: var(--wdg-fill-text);
+}
+
+.wdg-toggle-body[data-on] {
+  border-color: var(--wdg-edge);
   background: var(--wdg-fill);
   color: var(--wdg-fill-text);
 }
@@ -112,7 +120,8 @@
 .wdg-toggle-body:focus-visible,
 .wdg-device-head:focus-visible,
 .wdg-device-head button:focus-visible,
-.wdg-segmented-body button:focus-visible {
+.wdg-segmented-body button:focus-visible,
+.wdg-select-body:focus-visible {
   outline: 1px solid var(--wdg-focus);
   outline-offset: 1px;
 }

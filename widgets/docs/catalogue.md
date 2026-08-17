@@ -34,6 +34,7 @@ Built.
 | [`NumberField`](../src/controls/NumberField.tsx) | `live.numbox` | drag, or type a digit / press Enter to edit |
 | [`Toggle`](../src/controls/Toggle.tsx) | `live.toggle`, `live.button` | `momentary` gives the second |
 | [`Segmented`](../src/controls/Segmented.tsx) | `live.tab` | an enum with every member on screen |
+| [`Select`](../src/controls/Select.tsx) | compact enum menu | an enum with one member on screen |
 | [`Label`](../src/controls/Label.tsx) | `live.comment` | carries the type rhythm for a whole panel |
 | `Divider` | `live.line` | in `Label.tsx` — same family, three lines |
 
@@ -225,6 +226,11 @@ as the value counts, and every control to its right steps sideways for the whole
 drag. Nothing in a widget wraps, either: a reading that outgrows its box is clipped,
 because a control that changes height moves the row it's in. `Toggle` is the exception
 and has to be — its label is the caller's, so it takes a `width`.
+
+The compact fields still share one physical box: `NumberField`, `Toggle` and `Select`
+all use `--wdg-height`, `--wdg-radius` and the same edge. A lit toggle changes its fill
+and text, not its outside geometry or border, so it cannot grow or appear rounder when it
+turns on. Device compositions make room around that box; they never scale it.
 
 **Fills grow from the middle when zero is the middle.** A pan at center is not a pan
 turned all the way down, and Live draws the distinction — `live.dial` calls it the needle

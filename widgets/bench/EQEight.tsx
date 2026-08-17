@@ -3,6 +3,7 @@ import { Device } from '../src/chrome/Device.js';
 import { Panel, PanelColumn } from '../src/chrome/Panel.js';
 import { Knob } from '../src/controls/Knob.js';
 import { NumberField } from '../src/controls/NumberField.js';
+import { Select } from '../src/controls/Select.js';
 import { Toggle } from '../src/controls/Toggle.js';
 import type { Param } from '../src/param/param.js';
 import './eq-eight.css';
@@ -22,11 +23,20 @@ const REFRESH: Param = {
 const AVERAGE: Param = {
   kind: 'float', min: 0, max: 10, defaultValue: 1, shortName: 'Avg',
 };
+const SCALE: Param = {
+  kind: 'float', min: 0, max: 200, defaultValue: 100, unit: 'percent', shortName: 'Scale',
+};
+const OUTPUT: Param = {
+  kind: 'float', min: -12, max: 12, defaultValue: 0, unit: 'decibel', shortName: 'Output',
+};
 
 const INITIAL_FREQUENCIES = [167, 200, 1290, 2610, 100, 10000, 5000, 18000];
 const INITIAL_GAINS = [0, 0, -7.81, 3.6, 0, 0, 0, 0];
 const INITIAL_QS = [1.37, 0.71, 0.93, 0.71, 0.71, 0.71, 0.71, 0.71];
 const INITIAL_FILTERS = [0, 2, 2, 3, 2, 2, 2, 1];
+const BLOCK_SIZES = ['1024', '2048', '4096', '8192', '16384'];
+const FILTER_TYPES = ['Low cut', 'Low shelf', 'Bell', 'Notch'];
+const CHANNEL_MODES = ['Stereo', 'L/R', 'M/S'];
 
 function replaceAt(values: number[], at: number, next: number) {
   return values.map((value, index) => (index === at ? next : value));
@@ -54,38 +64,6 @@ function DownIcon() {
   );
 }
 
-function FilterShape({ shape }: { shape: number }) {
-  const paths = [
-    'M1 9V5.5C1 3.6 2.2 2.4 4.2 2.4H11',
-    'M1 9H3.1C4.3 9 5 7.5 5.8 5.6 6.6 3.7 7.4 2.2 8.7 2.2H11',
-    'M1 6 3.7 2.5h4.1L11 6 7.8 9.5H3.7Z',
-    'M1 6h3l2-3.4L8 6h3',
-  ];
-  return <path d={paths[shape % paths.length]} />;
-}
-
-function FilterMenu({ shape, onChange }: { shape: number; onChange(next: number): void }) {
-  return (
-    <button
-      type="button"
-      className="eq-eight-filter"
-      aria-label="Filter type"
-      onClick={() => onChange((shape + 1) % 4)}
-    >
-      <svg viewBox="0 0 12 12" aria-hidden="true"><FilterShape shape={shape} /></svg>
-      <span aria-hidden="true" />
-    </button>
-  );
-}
-
-function MenuField({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <button type="button" className="eq-eight-menu" aria-label={label}>
-      <span>{children}</span><i aria-hidden="true" />
-    </button>
-  );
-}
-
 /** A composed stock-device face kept in the bench, never in the reusable library. */
 export function EQEight() {
   const [deviceOn, setDeviceOn] = useState(true);
@@ -96,7 +74,13 @@ export function EQEight() {
   const [bands, setBands] = useState([true, true, true, true, false, false, false, false]);
   const [refresh, setRefresh] = useState(60);
   const [average, setAverage] = useState(1);
+  const [analyzing, setAnalyzing] = useState(true);
+  const [blockSize, setBlockSize] = useState(3);
+  const [channelMode, setChannelMode] = useState(0);
+  const [editLeft, setEditLeft] = useState(true);
   const [adaptive, setAdaptive] = useState(true);
+  const [scale, setScale] = useState(100);
+  const [output, setOutput] = useState(0);
 
   return (
     <Device
@@ -105,7 +89,7 @@ export function EQEight() {
       on={deviceOn}
       onToggle={setDeviceOn}
       headerStart={<IconButton label="Load preset"><DownIcon /></IconButton>}
-      headerAfterName={<span className="eq-eight-hand" aria-label="Control surface focus">♨</span>}
+      headerAfterName={<span className="eq-eight-status" aria-label="Control surface focus">◆</span>}
       headerEnd={
         <>
           <IconButton label="Hot-swap"><span className="eq-eight-swap">↗</span></IconButton>
@@ -114,27 +98,32 @@ export function EQEight() {
         </>
       }
     >
-      <Panel rows={3} gap={2} className="eq-eight-panel">
+      <Panel rows={3} gap={4} className="eq-eight-panel">
         <PanelColumn className="eq-eight-side eq-eight-left">
           <div className="eq-eight-side-content">
-            <button type="button" className="eq-eight-analyze">Analyze</button>
-            <label>Block</label>
-            <MenuField label="Analyzer block size">8192</MenuField>
+            <Toggle on={analyzing} onChange={setAnalyzing} name="Analyze" width={56}>
+              {analyzing ? 'On' : 'Off'}
+            </Toggle>
+            <Select
+              items={BLOCK_SIZES}
+              index={blockSize}
+              onChange={setBlockSize}
+              name="Block"
+              width={56}
+            />
             <NumberField
               param={REFRESH}
               value={refresh}
               onChange={setRefresh}
               display={refresh.toFixed(2)}
-              showFill={false}
-              width={41}
+              width={56}
             />
             <NumberField
               param={AVERAGE}
               value={average}
               onChange={setAverage}
               display={average.toFixed(2)}
-              showFill={false}
-              width={41}
+              width={56}
             />
           </div>
         </PanelColumn>
@@ -150,7 +139,6 @@ export function EQEight() {
               onChange={(next) => setFrequencies((values) => replaceAt(values, index, next))}
               display={frequencyText(frequency)}
               disabled={!bands[index]}
-              size={27}
             />
             <Knob
               param={GAIN}
@@ -158,7 +146,6 @@ export function EQEight() {
               onChange={(next) => setGains((values) => replaceAt(values, index, next))}
               display={`${gains[index].toFixed(2)} dB`}
               disabled={!bands[index]}
-              size={27}
             />
             <div className="eq-eight-band-bottom">
               <NumberField
@@ -166,20 +153,23 @@ export function EQEight() {
                 value={qs[index]}
                 onChange={(next) => setQs((values) => replaceAt(values, index, next))}
                 display={qs[index].toFixed(2)}
-                showFill={false}
                 disabled={!bands[index]}
-                width={35}
+                width={44}
               />
-              <FilterMenu
-                shape={filters[index]}
+              <Select
+                items={FILTER_TYPES}
+                index={filters[index]}
                 onChange={(next) => setFilters((values) => replaceAt(values, index, next))}
+                label={`Band ${index + 1} filter type`}
+                disabled={!bands[index]}
+                width={44}
               />
               <div className="eq-eight-band-switch">
                 <Toggle
                   on={bands[index]}
                   onChange={(next) => setBands((values) => values.map((on, at) => at === index ? next : on))}
                   label={`Band ${index + 1}`}
-                  width={11}
+                  width={14}
                 />
                 <span>{index + 1}</span>
               </div>
@@ -193,18 +183,25 @@ export function EQEight() {
               <IconButton label="Headphone audition"><span>◉</span></IconButton>
               <IconButton label="Spectrum view"><span className="eq-eight-bars">▥</span></IconButton>
             </div>
-            <label>Mode</label>
-            <MenuField label="Channel mode">Stereo</MenuField>
-            <label>Edit</label>
-            <button type="button" className="eq-eight-value">L</button>
-            <label>Adapt. Q</label>
-            <Toggle on={adaptive} onChange={setAdaptive} width={45} className="eq-eight-adaptive">
+            <Select
+              items={CHANNEL_MODES}
+              index={channelMode}
+              onChange={setChannelMode}
+              name="Mode"
+              width={58}
+            />
+            <Toggle on={editLeft} onChange={setEditLeft} name="Edit" width={58}>L</Toggle>
+            <Toggle
+              on={adaptive}
+              onChange={setAdaptive}
+              name="Adapt. Q"
+              width={58}
+              className="eq-eight-adaptive"
+            >
               {adaptive ? 'On' : 'Off'}
             </Toggle>
-            <label>Scale</label>
-            <button type="button" className="eq-eight-value eq-eight-value-cyan">100 %</button>
-            <label>Output</label>
-            <button type="button" className="eq-eight-value eq-eight-value-cyan">0.00 dB</button>
+            <NumberField param={SCALE} value={scale} onChange={setScale} width={58} />
+            <NumberField param={OUTPUT} value={output} onChange={setOutput} width={58} />
           </div>
         </PanelColumn>
       </Panel>

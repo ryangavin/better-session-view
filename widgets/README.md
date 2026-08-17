@@ -40,6 +40,7 @@ src/
     NumberField.tsx live.numbox
     Toggle.tsx      live.toggle, and live.button when momentary
     Segmented.tsx   live.tab
+    Select.tsx      a compact enum with one member on screen
     Label.tsx       live.comment, and Divider for live.line
     arc.ts          dial geometry
     fill.ts         where a fill starts, shared by all three value controls

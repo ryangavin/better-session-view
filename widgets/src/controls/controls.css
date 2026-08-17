@@ -138,6 +138,7 @@
 .wdg-toggle-body {
   width: var(--wdg-toggle-width, calc(4ch + 10px));
   padding: 0 5px;
+  appearance: none;
 }
 
 .wdg-toggle-body:hover:not(:disabled):not([data-on]) {
@@ -172,4 +173,17 @@
 
 .wdg-segmented-body button:focus-visible {
   outline-offset: -1px;
+}
+
+.wdg-select-body {
+  width: var(--wdg-select-width, calc(var(--wdg-select-chars, 8) * 1ch + 18px));
+  height: var(--wdg-height);
+  padding: 0 4px;
+  color: var(--wdg-text);
+  cursor: pointer;
+  outline: none;
+}
+
+.wdg-select-body:hover:not(:disabled) {
+  border-color: var(--wdg-edge-live);
 }
