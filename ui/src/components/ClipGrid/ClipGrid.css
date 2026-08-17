@@ -147,12 +147,26 @@ table.grid th.group-h .th-label {
 table.grid th.group-h:hover {
   filter: brightness(1.15);
 }
+/* Its own button since the header stopped being one big fold target: the group
+   now opens its devices like any other track, and this is the only thing that
+   folds it. Padded wider than the glyph so it stays hittable at every column
+   width, and transparent so it keeps riding the group's own color. */
 table.grid th.group-h .fold {
   display: flex;
   align-items: center;
   flex: none;
   height: var(--label-h);
   margin-left: 3px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+table.grid th.group-h .fold:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: -1px;
 }
 
 td.cell.group {
@@ -197,13 +211,22 @@ table.grid th.track-h {
   cursor: pointer;
   padding-right: var(--track-pad-x);
   padding-left: var(--track-pad-x);
+  /* Held on every header, coloured on the selected one, so selecting changes a
+     colour rather than the layout — a border only on the marked header would
+     grow the whole row by 2px the moment you clicked. Transparent shows the
+     track's own fill through it, since the background paints under the border. */
+  border-bottom: 2px solid transparent;
 }
 
-/* The track whose devices are in the footer, marked along the edge nearest it.
-   `currentColor` rather than a token: the header is filled with Live's own
-   track color and `inkOn` has already picked the one ink that reads on it. */
+/* The track whose devices are in the footer. A border rather than another
+   `box-shadow`: the band, the gutter that holds a member off it, and the plugs
+   are all shadow layers on this same element, and `box-shadow` doesn't compose
+   across rules — a second declaration replaces the lot, which took the band with
+   it and dropped the marked track out of its group.
+   `currentColor` because `inkOn` has already picked the one ink that reads
+   against this track's own Live color, whatever Live made it. */
 table.grid th.track-h.devices-shown {
-  box-shadow: inset 0 -3px 0 currentColor;
+  border-bottom-color: currentColor;
 }
 
 table.grid th.track-h.live {

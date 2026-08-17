@@ -201,7 +201,7 @@ someone reached for a right-click. `keys.ts` owns that decision.
 | empty slot | click selects · **■ stops the track**, **● records when armed** | ⌘-click does the same |
 | scene cells | click selects the row · ⇧ extends over scenes · **number drags** · **▶ fires the scene** · the chip opens the role menu | ⌘-click **fires the scene** |
 | song header | click folds · title selects · **drag reorders** | — |
-| track header | click a group to collapse | ⌘-click **stops that track** |
+| track header | click **opens that track's devices** · a group's ⊙ chevron folds it | ⌘-click **stops that track** |
 | keys | `↑↓←→` move the active cell | `⌘↑ ⌘↓` **move and fire** · `⌘⏎` fire |
 | | `⌘A` select all scenes · `⌘Z` undo the last write | `esc` stop all clips · `space` transport |
 

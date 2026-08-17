@@ -60,14 +60,28 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 | [`Chain`](../src/chrome/Chain.tsx) | Live's device view | the run, the drop mark, what an empty one says, and how tall they all are |
 | [`Rack`](../src/chrome/Rack.tsx) | `RackDevice` | the macro face and the chain list, bracketing the selected chain's devices |
 | [`Row`](../src/chrome/Row.tsx) | Live's panel grid | controls on one line, sharing a caption height and a reading height |
+| [`Panel`](../src/chrome/Panel.tsx) | Live's panel grid | repeated vertical lanes sharing section heights across the faceplate |
+
+`Row` and `Panel` solve perpendicular alignment problems. A row aligns the caption,
+control and reading *inside* unlike widgets. A panel aligns the sections *between*
+repeated vertical lanes: every first section has one height, every second section another,
+and so on. `PanelColumn` joins that shared grid through subgrid, while the faceplate still
+owns each lane's width, background and contents. That is enough regularity to compose a
+dense multi-band device without teaching the reusable chrome what the device is.
+
+The title bar follows the same boundary. `Device` owns the universal activator, name,
+folding and hot-swap behavior; `headerStart`, `headerAfterName` and `headerEnd` are slots
+for the chrome that varies by device. The shell places those slots, but deliberately does
+not grow concepts for save buttons, status marks or device-specific modes.
 
 `Device` takes three states and not a device object, because three is all a shell shows:
 `Device.name`, `Device.is_active`, `Device.View.is_collapsed`. Presets stay a callback —
 swapping one means opening a browser this module has no business knowing about.
 
 - **The rest of the shell** — rename, the preset chevron, a rack's title-bar buttons
-- **Section rhythm** — `Row` lines up one row; Live's panel also lines up columns *across*
-  rows, and that regularity is most of why a device reads as one instrument
+- **More section rhythm** — `Row` lines up the insides of unlike controls on one line,
+  while `Panel` aligns repeated vertical lanes. Bespoke spans and nested sections still
+  belong to the faceplate composing them.
 - **The rest of the rack** — the chain-selector zone editor, Map mode, macro variations,
   and a chain's own mute and solo
 - **Drum rack pad matrix**
@@ -152,6 +166,20 @@ which is what a graph will want when there is no footer to fill.
 That last clause is why a rack is [bookends rather than a box](#why-a-rack-is-a-bracket).
 A device that got shorter for being in a rack, and shorter again for being in a rack in a
 rack, would make the fixed height worth nothing at the depth where it matters most.
+
+**In a chain, that height is also a width floor.** Live won't draw a device narrower than
+it is tall, and the reason shows up the moment a faceplate is one switch: without a floor,
+a device in a run collapses to a sliver with a title bar on it, unreadable and unclickable,
+and a chain of them stops looking like a chain. So a device in a chain is at least square —
+one rule, `min-width` reading the same `--wdg-device-min` the height does, because 1:1 is
+the height by definition.
+
+**Only in a chain.** A `Device` standing on its own keeps no minimum at all and is exactly
+as wide as its faceplate. That isn't an oversight left for later: the graph is coming, and
+on a canvas a node should be the size of what it holds rather than the size a strip needed
+it to be. The floor belongs to the layout that needs it, which is the same reason the
+height does. A folded device is exempt in both layouts — the whole point of folding is to
+become a strip, and a square strip is not one.
 
 The default is two rows, because that is Live's, and `--wdg-row-height` is 60px because
 that is what one row of knobs comes to: a caption, a 34px dial and a reading. The check

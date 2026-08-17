@@ -44,7 +44,10 @@ building, which is the earliest possible warning.
 ## What's on it
 
 One section per control, each a grid of cases with a note saying what the case is for.
-Every case is genuinely live, with its own value.
+Every case is genuinely live, with its own value. The control and chrome sections are
+followed by composed device faces: these belong only to the bench, so they can reproduce
+a stock device while proving that the reusable library underneath still knows nothing
+about Live.
 
 The last section is the point of the whole page: **the model playground**. Change the unit
 style, range, exponent or step count and watch a knob, a slider and a number field all

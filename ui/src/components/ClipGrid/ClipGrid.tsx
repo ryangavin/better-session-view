@@ -384,33 +384,55 @@ export function ClipGrid({
             // near-black to near-white, so no single text color survives it.
             const fill = { background: hex(track.color), color: inkOn(track.color) };
 
+            const showing = track.i === selectedTrack;
+
             if (c.kind === 'group') {
-              // The whole header is the fold control, so the badge isn't a
-              // separate button — the name is as much a click target as the
-              // icon, which is what makes a 40-column grid tolerable to fold.
+              // A group is a real track and has a device chain of its own, so
+              // its header behaves like every other one: click for its devices.
+              // That costs the whole-header fold target, which used to be the
+              // thing that made a 40-column grid tolerable to fold — folding is
+              // now the chevron alone, which is where Live puts it too.
+              //
               // ⌘-click still stops, same as any track header, and on a group
               // Live's stop_all_clips takes the members with it.
               return (
                 <th
                   key={`g${c.group.i}`}
-                  className={`track-h group-h${state}${bandClass}`}
+                  className={
+                    `track-h group-h${state}${bandClass}` +
+                    `${showing ? ' devices-shown' : ''}`
+                  }
                   style={{ ...band, ...fill } as CSSProperties}
+                  aria-pressed={showing}
                   title={
                     `${c.group.name} — ${c.members.length} track` +
-                    `${c.members.length === 1 ? '' : 's'} · click to ` +
-                    `${c.collapsed ? 'expand' : 'collapse'} · ` +
+                    `${c.members.length === 1 ? '' : 's'} · click for its devices · ` +
+                    `the chevron ${c.collapsed ? 'expands' : 'collapses'} it · ` +
                     `${LAUNCH_KEY}-click stops the group`
                   }
                   onClick={(e) => {
                     if (isLaunchModified(e)) onStopTrack(c.group.i);
-                    else onToggleGroup(c.group.i);
+                    else onSelectTrack(c.group.i);
                   }}
                 >
                   <span className="th-line">
                     <span className="th-label">{c.group.name}</span>
-                    <span className="fold">
+                    <button
+                      type="button"
+                      className="fold"
+                      aria-expanded={!c.collapsed}
+                      aria-label={`${c.collapsed ? 'Expand' : 'Collapse'} ${c.group.name}`}
+                      onClick={(e) => {
+                        // The modifier belongs to the header — let it bubble so
+                        // ⌘-clicking the chevron still stops the group rather
+                        // than folding it, which is what the cursor promised.
+                        if (isLaunchModified(e)) return;
+                        e.stopPropagation();
+                        onToggleGroup(c.group.i);
+                      }}
+                    >
                       <IconGroupFold folded={c.collapsed} />
-                    </span>
+                    </button>
                   </span>
                 </th>
               );
@@ -419,7 +441,6 @@ export function ClipGrid({
             // stops it. The two never collide — one is a view, the other is
             // playback, and the modifier is the same one every launch surface
             // in the grid uses to mean stop.
-            const showing = c.track.i === selectedTrack;
             return (
               <th
                 key={`t${c.track.i}`}

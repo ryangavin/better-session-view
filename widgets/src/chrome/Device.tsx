@@ -30,6 +30,12 @@ export interface DeviceProps {
   onSelect?(): void;
   /** The hot-swap button, shown only when the host has somewhere to send it. */
   onHotSwap?(): void;
+  /** Device-specific chrome between the activator and the device name. */
+  headerStart?: ReactNode;
+  /** Status or mode chrome that belongs immediately after the device name. */
+  headerAfterName?: ReactNode;
+  /** Device-specific actions pinned to the far edge of the title bar. */
+  headerEnd?: ReactNode;
   /** The faceplate. */
   children?: ReactNode;
   className?: string;
@@ -45,6 +51,9 @@ export function Device({
   selected = false,
   onSelect,
   onHotSwap,
+  headerStart,
+  headerAfterName,
+  headerEnd,
   children,
   className,
   title,
@@ -91,19 +100,26 @@ export function Device({
           aria-label={`${name} active`}
           onClick={() => onToggle?.(!on)}
         />
+        {headerStart}
         <span className="wdg-device-name">{name}</span>
-        {onHotSwap && (
-          <button
-            type="button"
-            className="wdg-device-swap"
-            aria-label={`Swap ${name} preset`}
-            onClick={onHotSwap}
-          >
-            <svg viewBox="0 0 10 10" aria-hidden="true">
-              <path d="M1.5 3.5H7.5M5.75 1.75 7.5 3.5 5.75 5.25" />
-              <path d="M8.5 6.5H2.5M4.25 4.75 2.5 6.5 4.25 8.25" />
-            </svg>
-          </button>
+        {headerAfterName}
+        {(onHotSwap || headerEnd) && (
+          <span className="wdg-device-head-end">
+            {onHotSwap && (
+              <button
+                type="button"
+                className="wdg-device-swap"
+                aria-label={`Swap ${name} preset`}
+                onClick={onHotSwap}
+              >
+                <svg viewBox="0 0 10 10" aria-hidden="true">
+                  <path d="M1.5 3.5H7.5M5.75 1.75 7.5 3.5 5.75 5.25" />
+                  <path d="M8.5 6.5H2.5M4.25 4.75 2.5 6.5 4.25 8.25" />
+                </svg>
+              </button>
+            )}
+            {headerEnd}
+          </span>
         )}
       </div>
       {!folded && <div className="wdg-device-body">{children}</div>}

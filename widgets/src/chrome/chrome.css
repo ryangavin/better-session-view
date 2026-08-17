@@ -83,6 +83,13 @@
 }
 
 .wdg-device-swap {
+  margin-left: 0;
+}
+
+.wdg-device-head-end {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   margin-left: auto;
 }
 
@@ -125,6 +132,11 @@
 }
 
 .wdg-device[data-folded] .wdg-device-swap {
+  margin: 0;
+}
+
+.wdg-device[data-folded] .wdg-device-head-end {
+  flex-direction: column;
   margin: auto 0 0;
 }
 
@@ -165,6 +177,22 @@
   grid-row: 1 / -1;
 }
 
+.wdg-panel {
+  display: grid;
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--wdg-panel-rows), minmax(0, 1fr));
+  align-items: stretch;
+  gap: var(--wdg-panel-gap, var(--wdg-space));
+}
+
+.wdg-panel-column {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  align-items: stretch;
+}
+
 .wdg-chain {
   display: flex;
   align-items: stretch;
@@ -185,6 +213,11 @@
 .wdg-chain > .wdg-rack,
 .wdg-chain-empty {
   min-height: var(--wdg-device-min, var(--wdg-device-height));
+}
+
+.wdg-chain > .wdg-device:not([data-folded]),
+.wdg-rack-face:not([data-folded]) {
+  min-width: var(--wdg-device-min, var(--wdg-device-height));
 }
 
 .wdg-chain-drop {

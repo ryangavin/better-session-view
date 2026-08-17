@@ -78,11 +78,36 @@ A plain click on a track header sends `selectTrack`, which writes `Song.View.sel
 view shows the selected track's chain, so without the write, this footer and Live's would
 be two answers to the same question.
 
+**Group headers too**, because a group is a real track with devices of its own. That cost
+the grid its whole-header fold target — folding is now the ⊙ chevron alone. See
+[track groups](track-groups.md) for what that traded away and why it wasn't a choice.
+
 The modifier-click that stops a track is untouched and can't collide: one is a view, the
 other is playback, and the modifier is the one every launch surface in the grid already
-uses to mean stop. The selected header is marked along its bottom edge — the edge nearest
-the footer — in `currentColor`, which reuses the ink `inkOn` already picked to read against
-that track's own Live color.
+uses to mean stop.
+
+The selected header is marked by a 2px rule along its bottom edge — the edge nearest the
+strip it opened — in `currentColor`, which reuses the ink `inkOn` already picked to read
+against that track's own Live color. It's an inset shadow, so the `live` and `stopping`
+gradients keep the `background-image` channel to themselves.
+
+**It's a border, and that matters.** A group's band, the gutter that holds a member's
+header off that band, and the plugs that fill the `border-spacing` between headers are all
+`box-shadow` layers on this same element, and `box-shadow` does not compose across rules —
+the winning declaration replaces the whole stack. Marking the header with another shadow
+therefore erased the band, and the selected track visibly rose out of its group. A border
+is a different property, so it can't collide with any of that.
+
+The transparent border is held on **every** track header and only recoloured on the
+selected one, so clicking changes a colour rather than the layout; a border applied only
+when selected would grow the whole header row by 2px on every click. The background paints
+under it, so unselected it simply shows the track's own fill.
+
+**The fill is deliberately left alone**, and that's the whole reason this works on a group.
+Every header carries its own Live color, and a group reads as *containing* its tracks
+because it shares that fill with them; tinting or lifting the selected one makes the group
+float off the run it heads. A mark on one edge has no such relationship to break, so group
+and ordinary headers need no case for either.
 
 The bridge observes `selected_track` for its own delta detection (see
 [`bridge/docs/following-live.md`](../../bridge/docs/following-live.md)), so this write is

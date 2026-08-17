@@ -12,9 +12,10 @@ import { NumberField } from '../src/controls/NumberField.js';
 import { Segmented } from '../src/controls/Segmented.js';
 import { Slider } from '../src/controls/Slider.js';
 import { Toggle } from '../src/controls/Toggle.js';
+import { EQEight } from './EQEight.js';
 
 const SECTIONS = [
-  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Row', 'Device', 'Chain',
+  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Text', 'Row', 'Device', 'EQ Eight', 'Chain',
   'Model',
 ];
 
@@ -522,6 +523,15 @@ export function Bench() {
           </Case>
         </Section>
 
+        <Section id="EQ Eight">
+          <Case
+            wide
+            note="A stock-device face composed from the same parameter controls and the panel's aligned vertical lanes. Band selection styling is deliberately omitted."
+          >
+            <EQEight />
+          </Case>
+        </Section>
+
         <Section id="Chain">
           <Case
             wide
@@ -534,6 +544,26 @@ export function Bench() {
           </Case>
           <Case note="Empty, which is most of what a new track's chain looks like.">
             <Chain placeholder="Drop an audio effect here" />
+          </Case>
+          <Case
+            wide
+            note="A one-switch faceplate. In a chain a device is never narrower than it is tall, so it stops at square rather than collapsing to a sliver — Live's rule, and what keeps a run readable."
+          >
+            <Chain>
+              <Device name="Gate" on onToggle={() => {}}>
+                <Row>
+                  <Switch />
+                </Row>
+              </Device>
+              <Shell name="Auto Filter" />
+            </Chain>
+          </Case>
+          <Case note="The same device on its own. No chain, no floor — it's the width of its faceplate, which is what a node on a canvas will want.">
+            <Device name="Gate" on onToggle={() => {}}>
+              <Row>
+                <Switch />
+              </Row>
+            </Device>
           </Case>
           <Case
             wide

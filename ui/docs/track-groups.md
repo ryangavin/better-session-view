@@ -9,9 +9,18 @@ slots, and firing its slot fires every clip the group holds in that scene. Colla
 hides its *members*, not the group — so the column is there either way, and there is no
 separate "stands in for its members" column kind.
 
-Clicking the group's header folds and unfolds it. ⌘-click stops the group, the same
-gesture as any track header; on a group Live's `stop_all_clips` takes the members with
-it.
+**A group is a real track, so its header behaves like every other one:** clicking it
+opens that group's own [device chain](device-chain.md) and selects it in Live. ⌘-click
+stops the group — the same gesture as any track header, and on a group Live's
+`stop_all_clips` takes the members with it.
+
+That leaves folding to the ⊙ chevron alone, which is a real loss and worth naming: the
+whole header used to be the fold target, and that is what made folding tolerable on a
+40-column grid. It went because a group having devices is not negotiable — it is a track —
+and one header cannot mean two things on a plain click. Live puts the fold on the chevron
+for the same reason. The chevron is padded wider than its glyph so it stays hittable at
+the narrowest column width, and ⌘-clicking it deliberately does *not* fold: the modifier
+belongs to the header, so the event is left to bubble and stops the group instead.
 
 The group's cell carries a launcher and a count — how many of its tracks have a clip in
 that scene — tinted with the first of those clips, which is the color Live paints the
