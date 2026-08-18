@@ -93,7 +93,7 @@ function Faceplate() {
       <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
       <Held param={DRY_WET}>{(v, set) => <Knob param={DRY_WET} value={v} onChange={set} />}</Held>
       <Held param={GAIN}>
-        {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={34} />}
+        {(v, set) => <Slider param={GAIN} value={v} onChange={set} />}
       </Held>
     </Row>
   );
@@ -105,7 +105,7 @@ function Mixed({ ruled }: { ruled?: boolean }) {
     <>
       <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
       <Held param={GAIN}>
-        {(v, set) => <Slider param={GAIN} value={v} onChange={set} length={34} />}
+        {(v, set) => <Slider param={GAIN} value={v} onChange={set} />}
       </Held>
       <Held param={TIME}>{(v, set) => <NumberField param={TIME} value={v} onChange={set} />}</Held>
       <Held param={FILTER}>
@@ -197,7 +197,7 @@ function Grouped() {
         macros={MACROS.map((name) => (
           <Held key={name} param={DRY_WET}>
             {(v, set) => (
-              <Knob param={DRY_WET} value={v} onChange={set} name={name} size={26} />
+              <Knob param={DRY_WET} value={v} onChange={set} name={name} />
             )}
           </Held>
         ))}
@@ -338,7 +338,7 @@ export function Bench() {
           </Case>
           <Case note="Laid inline: caption, control and reading on one line, for an inspector rather than a faceplate.">
             <Held param={FREQ}>
-              {(v, set) => <Knob param={FREQ} value={v} onChange={set} layout="inline" size={26} />}
+              {(v, set) => <Knob param={FREQ} value={v} onChange={set} layout="inline" />}
             </Held>
           </Case>
         </Section>
@@ -526,7 +526,7 @@ export function Bench() {
               </Held>
               <Held param={DRY_WET}>
                 {(v, set) => (
-                  <Knob param={DRY_WET} value={v} onChange={set} layout="inline" size={26} />
+                  <Knob param={DRY_WET} value={v} onChange={set} layout="inline" />
                 )}
               </Held>
             </Row>

@@ -50,6 +50,11 @@ Not yet: `live.text` (a labelled toggle — `Toggle` with children is most of it
 `live.gain~` (a slider with a meter beside it), `live.meter~` (the mixer has one, and it
 belongs here when the second caller appears), `live.arrows`, `live.drop`.
 
+The compact vertical slider defaults to the same 27px body height as the cropped knob,
+so a mixed `Row` keeps the generic 2px caption and readout gaps for both. A layout that
+genuinely needs a long fader passes its length explicitly; that is travel, not a scaled
+version of the compact control.
+
 ## Tier 2 — the chrome, which M4L has none of
 
 The shell is built; the rest isn't, and it's what a device-chain footer still needs. A
@@ -209,13 +214,13 @@ Because those three parts are always direct children of the root,
 subgrid. Aligning siblings is easy; aligning their *insides* is what subgrid is for, and
 it's the only reason a knob and a fader can share a caption height.
 
-A knob's control region is shorter than its width. The dial remains the declared size and
-its SVG geometry remains at the same scale, but the view box starts just above and ends
-just below the 270° arc instead of reserving the unused top and bottom of a full circle.
-The caption and readout keep their generic inter-region gaps and therefore stay in the
-same shared bands as every other control's; only empty artwork space has left layout. The
-resulting height is rounded to a whole pixel, so a default 34px knob occupies a 27px-tall
-control region.
+A knob's control region is shorter than its width. Every knob uses the module's fixed
+34px width — size is deliberately not a prop — and its SVG geometry remains at that
+scale, but the view box starts just above and ends just below the 270° arc instead of
+reserving the unused top and bottom of a full circle. The caption and readout keep their
+generic inter-region gaps and therefore stay in the same shared bands as every other
+control's; only empty artwork space has left layout. The resulting control region is 27px
+tall in every context: alone, in a `Row`, in a `Panel`, or in rack macros.
 
 **`layout` is where the regions go; `orientation` is which way the control runs.** They
 are different questions and merging them would be a mistake. `layout="inline"` puts the
@@ -239,8 +244,9 @@ The compact fields still share one physical box: `NumberField`, `Toggle` and `Se
 all use `--wdg-height`, `--wdg-radius` and the same edge. A lit toggle changes its fill
 and text, not its outside geometry or border, so it cannot grow or appear rounder when it
 turns on. `Select` draws the same small arrow on every platform instead of surrendering
-half a narrow field to native menu chrome. Device compositions make room around those
-boxes; they never scale them.
+half a narrow field to native menu chrome. That arrow, its padding and its font belong to
+the control rather than to a device stylesheet. Device compositions make room around
+these fixed boxes; they never scale or restyle them.
 
 **Fills grow from the middle when zero is the middle.** A pan at center is not a pan
 turned all the way down, and Live draws the distinction — `live.dial` calls it the needle

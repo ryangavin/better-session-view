@@ -26,7 +26,6 @@ export interface KnobProps extends WidgetProps {
    */
   origin?: FillOrigin;
   showValue?: boolean;
-  size?: number;
   travel?: number;
 }
 
@@ -41,7 +40,6 @@ export function Knob({
   name = param.shortName ?? param.name,
   origin = defaultOrigin(param),
   showValue = true,
-  size = 34,
   travel,
   layout,
   className,
@@ -64,7 +62,6 @@ export function Knob({
   const fill = dialArc(from, angle);
   const [nx, ny] = dialPoint(angle, 6);
   const [mx, my] = dialPoint(angle, 13.5);
-  const height = Math.round((size * DIAL_VIEWBOX_HEIGHT) / 40);
 
   return (
     <Widget
@@ -76,7 +73,6 @@ export function Knob({
       disabled={disabled}
       className={className}
       title={title}
-      vars={{ '--wdg-knob-size': `${size}px`, '--wdg-knob-height': `${height}px` }}
     >
       <div className="wdg-knob-dial" {...gesture.props}>
         <svg viewBox={`0 ${DIAL_VIEWBOX_TOP} 40 ${DIAL_VIEWBOX_HEIGHT}`} aria-hidden="true">

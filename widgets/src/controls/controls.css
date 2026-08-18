@@ -181,7 +181,7 @@
 
 .wdg-select::after {
   position: absolute;
-  right: 5px;
+  right: 3px;
   bottom: calc((var(--wdg-height) - 4px) / 2);
   width: 0;
   height: 0;
@@ -193,9 +193,9 @@
 }
 
 .wdg-select-body {
-  width: var(--wdg-select-width, calc(var(--wdg-select-chars, 8) * 1ch + 18px));
+  width: var(--wdg-select-width, calc(var(--wdg-select-chars, 8) * 1ch + 14px));
   height: var(--wdg-height);
-  padding: 0 13px 0 4px;
+  padding: 0 10px 0 3px;
   appearance: none;
   color: var(--wdg-text);
   cursor: pointer;

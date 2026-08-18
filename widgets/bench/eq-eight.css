@@ -83,11 +83,6 @@
   min-height: 0;
 }
 
-.eq-eight-band-bottom .wdg-select-body {
-  padding-right: 0;
-  font-size: 9px;
-}
-
 .eq-eight-band-switch {
   display: flex;
   align-items: center;
@@ -95,10 +90,6 @@
   color: var(--wdg-text);
   font-family: var(--wdg-sans);
   font-size: 10px;
-}
-
-.eq-eight-band-switch .wdg-toggle-body {
-  padding: 0;
 }
 
 .eq-eight-side {

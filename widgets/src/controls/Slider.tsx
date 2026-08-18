@@ -38,7 +38,7 @@ export function Slider({
   orientation = 'vertical',
   origin = defaultOrigin(param),
   showValue = true,
-  length = 96,
+  length = 27,
   travel,
   layout,
   className,
