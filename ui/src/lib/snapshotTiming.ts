@@ -33,7 +33,11 @@ export function reportSnapshotTiming(
     return;
   }
   const t = data.timings;
-  const total = wire ? wire.totalMs + commitMs : data.ms;
+  // `t.elapsed` is the LOM span, not `data.ms`: the walk chunks, so `data.ms`
+  // counts only the ticks it was working and understates the wait by whatever
+  // it gave back to Live.
+  const total = wire ? wire.totalMs + commitMs : t.elapsed;
+  const yielded = Math.max(0, t.elapsed - (t.tracks + t.scenes + t.slots + t.clips));
   const scale = data.sceneCount > 0 ? TARGET_SCENES / data.sceneCount : 1;
 
   const row = (ms: number, note: string) => ({
@@ -44,7 +48,8 @@ export function reportSnapshotTiming(
 
   console.groupCollapsed(
     `%c⏱ snapshot%c ${data.clipCount} clips · ${data.sceneCount} scenes · ` +
-      `${Math.round(total)}ms end-to-end`,
+      `${Math.round(total)}ms end-to-end` +
+      (t.restarts > 0 ? ` · ${t.restarts} restarts` : ''),
     'color:#f0b23c;font-weight:600',
     'color:inherit',
   );
@@ -53,10 +58,11 @@ export function reportSnapshotTiming(
     'lom: scenes': row(t.scenes, `${data.sceneCount} scenes`),
     'lom: slot scan': row(t.slots, `${t.slotsScanned} slots probed`),
     'lom: clip reads': row(t.clips, `${data.clipCount} clips`),
+    'lom: yielded': row(yielded, 'given back to Live between chunks'),
     'v8 → dict': row(dictMs, 'JSON.stringify + Dict.parse'),
     'node getDict': row(hostMs, 'Max dict → JS object'),
     'wire + parse': row(
-      wire ? Math.max(0, wire.totalMs - data.ms - dictMs - hostMs) : 0,
+      wire ? Math.max(0, wire.totalMs - t.elapsed - dictMs - hostMs) : 0,
       wire ? `${(wire.bytes / 1024).toFixed(0)} kB payload` : 'unmeasured',
     ),
     'react commit': row(commitMs, `${data.sceneCount} rows`),

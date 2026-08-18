@@ -69,6 +69,22 @@ declare namespace BSV {
     clips: number;
     /** How many slots the scan had to look at. */
     slotsScanned: number;
+    /**
+     * Wall clock from request to publish, including every gap the walk gave
+     * back to Live.
+     *
+     * The four phases above are **LOM work** and stay comparable to what they
+     * measured when the walk was one synchronous loop. This is what the caller
+     * waited. `elapsed - (tracks + scenes + slots + clips)` is therefore the
+     * time Live spent free to redraw, which is the whole point of chunking and
+     * the number to look at when tuning `SNAP_CHUNK`.
+     */
+    elapsed: number;
+    /**
+     * How many times the walk started over because the set restructured under
+     * it. Normally 0; anything else means someone was editing while it read.
+     */
+    restarts: number;
   }
 
   /**
@@ -142,7 +158,11 @@ declare namespace BSV {
      * be indistinguishable, and the whole point is to order them.
      */
     rev: number;
-    /** Total LOM walk, ms. */
+    /**
+     * Total LOM work, ms — the four phases summed, and **not** how long the
+     * caller waited. The walk yields between chunks so Live stays responsive;
+     * `timings.elapsed` is the wall clock across those gaps.
+     */
     ms: number;
     timings: SnapshotTimings;
     tempo: number;
