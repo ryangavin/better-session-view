@@ -73,9 +73,15 @@ build; `npm run build` doesn't touch this module.
 ## Who uses it
 
 `ui/` does, through one adapter: [`ui/src/lib/liveParam.ts`](../ui/src/lib/liveParam.ts)
-turns a `BSV.MixerParameterState` into a `Param`. Today the mixer's volume, pan and send
-controls are driven by the gesture hooks; the widgets themselves are waiting on the device
-chain. See [ui/docs/mixer.md](../ui/docs/mixer.md).
+turns a `BSV.MixerParameterState` into a `Param`. The mixer's volume, pan and send controls
+are driven by the gesture hooks ([ui/docs/mixer.md](../ui/docs/mixer.md)); the device chain
+draws a track's devices out of the chrome ([ui/docs/device-chain.md](../ui/docs/device-chain.md)).
+
+**A whole stock device face is composed there too, and deliberately not here.** Live's EQ
+Eight is [`ui/src/components/devices/eq8/Eq8.tsx`](../ui/src/components/devices/eq8/Eq8.tsx):
+the parts are this module's, the arrangement of them is one particular device, and a module
+that knows about no device can't hold one. See
+[ui/docs/device-faces.md](../ui/docs/device-faces.md).
 
 **Nothing here may import from `ui/`, `bridge/`, `protocol/` or `core/`.** If a widget
 needs something one of those has, it needs a prop instead.

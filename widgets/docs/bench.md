@@ -44,29 +44,23 @@ building, which is the earliest possible warning.
 ## What's on it
 
 One section per control, each a grid of cases with a note saying what the case is for.
-Every case is genuinely live, with its own value. The control and chrome sections are
-followed by composed device faces: these belong only to the bench, so they can reproduce
-a stock device while proving that the reusable library underneath still knows nothing
-about Live.
+Every case is genuinely live, with its own value. The chrome sections follow and stop
+where a shell with a faceplate under it stops.
+
+**A whole stock device face is not on this page**, and the omission is the boundary again.
+Composing one means naming a particular device, and a page that reproduces Live's EQ Eight
+is a page that has to be right about Live's EQ Eight — which is a claim this module makes
+about none of them. The face is composed in the app instead, out of these parts:
+[`ui/src/components/devices/eq8/Eq8.tsx`](../../ui/src/components/devices/eq8/Eq8.tsx),
+reasoned about in
+[ui/docs/device-faces.md](../../ui/docs/device-faces.md). What the bench owes it is the
+parts: a knob at every taper, a `Panel`'s aligned lanes, a `Device` shell folded and open.
 
 The last section is the point of the whole page: **the model playground**. Change the unit
 style, range, exponent or step count and watch a knob, a slider and a number field all
 change together, with the raw value and the formatted string printed underneath. It is the
 fastest way to check a formatter, and it makes the model-first design visible — you are
 changing the parameter, not the widget.
-
-Composed faces use `Panel` rows to balance repeated parameter lanes, and the track heights
-belong to those lanes: each is its group's height plus the same margin, so a lane's
-sections sit evenly however tall the group is. A side plate holds unrelated groups and
-fewer of them, so it spaces its own over the plate's full height instead of riding the
-lane grid — its captions never had to meet the lanes' alignment lines, and freeing it is
-what stops one tall lane row leaving a side group stranded in the middle of it.
-
-Widths work the other way round: the face names the gutter between a plate's edge and the
-controls inside it once, and every plate width follows from a control width plus two of
-them. Passing each control a `width` instead spreads the same geometry across a dozen call
-sites, where a plate and its contents drift a pixel or two apart and the outer plates stop
-matching the lanes.
 
 ## The host-tokens switch
 

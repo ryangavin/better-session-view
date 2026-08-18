@@ -13,10 +13,9 @@ import { Segmented } from '../src/controls/Segmented.js';
 import { Select } from '../src/controls/Select.js';
 import { Slider } from '../src/controls/Slider.js';
 import { Toggle } from '../src/controls/Toggle.js';
-import { EQEight } from './EQEight.js';
 
 const SECTIONS = [
-  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Select', 'Text', 'Row', 'Device', 'EQ Eight', 'Chain',
+  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Select', 'Text', 'Row', 'Device', 'Chain',
   'Model',
 ];
 
@@ -545,15 +544,6 @@ export function Bench() {
           </Case>
           <Case note="Selected, and with presets: the hot-swap button appears only if a host can serve it.">
             <Shell selected swappable />
-          </Case>
-        </Section>
-
-        <Section id="EQ Eight">
-          <Case
-            wide
-            note="A stock-device face composed from the same parameter controls and the panel's aligned vertical lanes. Band selection styling is deliberately omitted."
-          >
-            <EQEight />
           </Case>
         </Section>
 

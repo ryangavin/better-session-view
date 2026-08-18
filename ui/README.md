@@ -19,7 +19,7 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 | [the header](docs/header.md) | the Live control bar, transport state, glyphs | `components/Header.tsx`, `Icon.tsx`, `Control.tsx` |
 | [mixer panel](docs/mixer.md) | meters, faders, sends, the stop row | `components/ClipGrid/TrackMeter.tsx`, `TrackSends.tsx`, `useMeterResize.ts`, `hooks/useMixer.ts`, `useMeters.ts`, `lib/mixerStore.ts`, `meterScale.ts`, `liveParam.ts` |
 | [the device chain](docs/device-chain.md) | the footer showing a track's devices, what is watched, and where a faceplate reads its controls | `components/DeviceChain.tsx`, `hooks/useDeviceChain.ts`, `lib/chainStore.ts`, `liveParam.ts` |
-| [device faces](docs/device-faces.md) | a stock device drawn as a faceplate, and why the arrangement is the app's while the parts are `widgets/`'s | `components/EQEight.tsx`, `EQEight.css` |
+| [device faces](docs/device-faces.md) | a stock device drawn as a faceplate, and why the arrangement is the app's while the parts are `widgets/`'s | `components/devices/eq8/*` |
 | [track groups](docs/track-groups.md) | group columns and collapsing | `hooks/useTrackColumns.ts` |
 | [undo](docs/undo.md) | the undo entry, or any new write path | `hooks/useBridge.ts` |
 | [performance notes](docs/performance.md) | **anything that reaches a memoized row** — props on `Row`, `SongHeaderRow`, or callbacks from `App` | `components/ClipGrid/Row.tsx`, `SongHeaderRow.tsx`, `App.tsx` |
@@ -40,7 +40,7 @@ src/main.tsx          root — wraps App in the bridge provider
 src/App.tsx           the composition root — hooks in dependency order, wiring
 src/shared.css        design tokens, global reset, shared fields and primitives
 src/App.css           app shell, empty state and log
-src/components/       one component per file
+src/components/       a folder per component — see below; the flat pairs are the backlog
   *.css               component styles, imported by the component that owns them
   BridgeProvider.tsx  owns the connection, above App — see docs/dev-server.md
   Control.tsx         shared button, group, select and grouped-field primitives
@@ -57,7 +57,8 @@ src/components/       one component per file
   Header.tsx          Live control bar, Arrangement position, playback, view controls
   Icon.tsx            compact-control glyphs, as inline SVG
   DeviceChain.tsx     the selected track's devices, as widgets/ shells
-  EQEight.tsx         Live's EQ Eight as a faceplate, composed from widgets/ controls
+  devices/eq8/
+    Eq8.tsx           Live's EQ Eight as a faceplate, composed from widgets/ controls
   StatsBar.tsx        bottom status — readiness, stat tiles, key hints + log toggle
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it
@@ -113,6 +114,18 @@ src/lib/
   meterScale.ts       dB range, ticks, and Live's normalised meter position
   liveParam.ts        a Live parameter read into widgets/'s model of one
 ```
+
+## A folder per component
+
+A component is the component, its stylesheet, and any parts only it uses — so it should be
+one thing to open, move or delete. New ones therefore take a folder. `ClipGrid/` always
+was one; `devices/eq8/` is the first of the rest, and every flat `*.tsx` + `*.css` pair in
+the tree above is a conversion that hasn't happened yet rather than a second convention.
+
+**A device face is named for Live's `class_name`.** The folder, the file, the export and
+`ChainDevice.className` all say `Eq8`, which is what the chain will match on to pick a
+face; `EQ Eight` is `class_display_name` and stays a string in the title bar rather than
+becoming an identifier. See [device faces](docs/device-faces.md).
 
 ## The one dependency pointing out of the app
 

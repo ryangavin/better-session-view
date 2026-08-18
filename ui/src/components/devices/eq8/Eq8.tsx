@@ -1,12 +1,12 @@
 import { useState, type ReactNode } from 'react';
-import { Device } from '../src/chrome/Device.js';
-import { Panel, PanelColumn } from '../src/chrome/Panel.js';
-import { Knob } from '../src/controls/Knob.js';
-import { NumberField } from '../src/controls/NumberField.js';
-import { Select } from '../src/controls/Select.js';
-import { Toggle } from '../src/controls/Toggle.js';
-import type { Param } from '../src/param/param.js';
-import './eq-eight.css';
+import { Device } from '../../../../../widgets/src/chrome/Device.js';
+import { Panel, PanelColumn } from '../../../../../widgets/src/chrome/Panel.js';
+import { Knob } from '../../../../../widgets/src/controls/Knob.js';
+import { NumberField } from '../../../../../widgets/src/controls/NumberField.js';
+import { Select } from '../../../../../widgets/src/controls/Select.js';
+import { Toggle } from '../../../../../widgets/src/controls/Toggle.js';
+import type { Param } from '../../../../../widgets/src/param/param.js';
+import './Eq8.css';
 
 const FREQUENCY: Param = {
   kind: 'float', min: 20, max: 20000, defaultValue: 167, exponent: 3, shortName: 'Freq',
@@ -50,7 +50,7 @@ function frequencyText(value: number) {
 
 function IconButton({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <button type="button" className="eq-eight-icon" aria-label={label}>
+    <button type="button" className="eq8-icon" aria-label={label}>
       {children}
     </button>
   );
@@ -64,8 +64,34 @@ function DownIcon() {
   );
 }
 
-/** A composed stock-device face kept in the bench, never in the reusable library. */
-export function EQEight() {
+/**
+ * Live's EQ Eight, drawn out of [`widgets/`](../../../../../widgets/README.md)
+ * and composed here rather than there.
+ *
+ * The parts are the library's, because a knob is a knob wherever it's mounted.
+ * The arrangement of them is this device and no other: eight lanes on a shared
+ * row grid, the analyzer's controls on one plate and the output's on another,
+ * and a title bar carrying the preset chrome only a stock face has. Adding an
+ * `Eq8` to `widgets/` would be exporting one particular device from a module
+ * whose whole claim is that it knows about none of them — so it is a component
+ * of this app, using the same boundary the device chain already crosses.
+ *
+ * **`Eq8` and not `EQEight`, deliberately.** Live names a device three ways and
+ * this is the one a program uses: `class_name` is `Eq8`, `class_display_name`
+ * is `EQ Eight`, and `name` is whatever the user retyped in the title bar. The
+ * chain publishes the first as `ChainDevice.className`, so it is what a face
+ * gets picked by, and the folder, the file, the export and the wire all spell
+ * it the same. The display name survives as the string in the title bar below.
+ *
+ * **It states its own readings.** Not for want of any: an open device publishes
+ * its parameters, and `deviceParam` turns one into the `Param` a widget takes.
+ * This component simply accepts no props yet, so every value here is its own
+ * `useState`. The `display` each control takes is the seam that ends that — it
+ * wins over the formatter outright, so Live's `str_for_value` replaces the text
+ * computed below without any control changing. See
+ * [device faces](../../../../docs/device-faces.md).
+ */
+export function Eq8() {
   const [deviceOn, setDeviceOn] = useState(true);
   const [frequencies, setFrequencies] = useState(INITIAL_FREQUENCIES);
   const [gains, setGains] = useState(INITIAL_GAINS);
@@ -85,22 +111,22 @@ export function EQEight() {
   return (
     <Device
       name="EQ Eight"
-      className="eq-eight-device"
+      className="eq8-device"
       on={deviceOn}
       onToggle={setDeviceOn}
       headerStart={<IconButton label="Load preset"><DownIcon /></IconButton>}
-      headerAfterName={<span className="eq-eight-status" aria-label="Control surface focus">◆</span>}
+      headerAfterName={<span className="eq8-status" aria-label="Control surface focus">◆</span>}
       headerEnd={
         <>
-          <IconButton label="Hot-swap"><span className="eq-eight-swap">↗</span></IconButton>
-          <IconButton label="Save preset"><span className="eq-eight-save" /></IconButton>
-          <IconButton label="More options"><span className="eq-eight-more">•••</span></IconButton>
+          <IconButton label="Hot-swap"><span className="eq8-swap">↗</span></IconButton>
+          <IconButton label="Save preset"><span className="eq8-save" /></IconButton>
+          <IconButton label="More options"><span className="eq8-more">•••</span></IconButton>
         </>
       }
     >
-      <Panel rows={3} gap={2} className="eq-eight-panel">
-        <PanelColumn className="eq-eight-side eq-eight-left">
-          <div className="eq-eight-side-content">
+      <Panel rows={3} gap={2} className="eq8-panel">
+        <PanelColumn className="eq8-side eq8-left">
+          <div className="eq8-side-content">
             <Toggle on={analyzing} onChange={setAnalyzing} name="Analyze">
               {analyzing ? 'On' : 'Off'}
             </Toggle>
@@ -123,7 +149,7 @@ export function EQEight() {
         {frequencies.map((frequency, index) => (
           <PanelColumn
             key={index}
-            className={`eq-eight-band${bands[index] ? ' eq-eight-band-on' : ''}`}
+            className={`eq8-band${bands[index] ? ' eq8-band-on' : ''}`}
           >
             <Knob
               param={FREQUENCY}
@@ -139,7 +165,7 @@ export function EQEight() {
               display={`${gains[index].toFixed(2)} dB`}
               disabled={!bands[index]}
             />
-            <div className="eq-eight-band-bottom">
+            <div className="eq8-band-bottom">
               <NumberField
                 param={Q}
                 value={qs[index]}
@@ -154,7 +180,7 @@ export function EQEight() {
                 label={`Band ${index + 1} filter type`}
                 disabled={!bands[index]}
               />
-              <div className="eq-eight-band-switch">
+              <div className="eq8-band-switch">
                 <Toggle
                   on={bands[index]}
                   onChange={(next) => setBands((values) => values.map((on, at) => at === index ? next : on))}
@@ -166,12 +192,12 @@ export function EQEight() {
           </PanelColumn>
         ))}
 
-        <PanelColumn className="eq-eight-side eq-eight-right">
-          <div className="eq-eight-side-content">
-            <div className="eq-eight-side-section">
-              <div className="eq-eight-view-buttons">
+        <PanelColumn className="eq8-side eq8-right">
+          <div className="eq8-side-content">
+            <div className="eq8-side-section">
+              <div className="eq8-view-buttons">
                 <IconButton label="Headphone audition"><span>◉</span></IconButton>
-                <IconButton label="Spectrum view"><span className="eq-eight-bars">▥</span></IconButton>
+                <IconButton label="Spectrum view"><span className="eq8-bars">▥</span></IconButton>
               </div>
               <Select
                 items={CHANNEL_MODES}
@@ -180,13 +206,13 @@ export function EQEight() {
                 name="Mode"
               />
             </div>
-            <div className="eq-eight-side-section">
+            <div className="eq8-side-section">
               <Toggle on={editLeft} onChange={setEditLeft} name="Edit">L</Toggle>
               <Toggle on={adaptive} onChange={setAdaptive} name="Adapt. Q">
                 {adaptive ? 'On' : 'Off'}
               </Toggle>
             </div>
-            <div className="eq-eight-side-section">
+            <div className="eq8-side-section">
               <NumberField param={SCALE} value={scale} onChange={setScale} />
               <NumberField param={OUTPUT} value={output} onChange={setOutput} />
             </div>
