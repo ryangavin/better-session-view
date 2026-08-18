@@ -171,7 +171,7 @@ export function EQEight() {
                   on={bands[index]}
                   onChange={(next) => setBands((values) => values.map((on, at) => at === index ? next : on))}
                   label={`Band ${index + 1}`}
-                  width={14}
+                  width={16}
                 />
                 <span>{index + 1}</span>
               </div>

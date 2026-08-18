@@ -241,12 +241,14 @@ because a control that changes height moves the row it's in. `Toggle` is the exc
 and has to be — its label is the caller's, so it takes a `width`.
 
 The compact fields still share one physical box: `NumberField`, `Toggle` and `Select`
-all use `--wdg-height`, `--wdg-radius` and the same edge. A lit toggle changes its fill
-and text, not its outside geometry or border, so it cannot grow or appear rounder when it
-turns on. `Select` draws the same small arrow on every platform instead of surrendering
-half a narrow field to native menu chrome. That arrow, its padding and its font belong to
-the control rather than to a device stylesheet. Device compositions make room around
-these fixed boxes; they never scale or restyle them.
+all use the 16px `--wdg-field-height`, `--wdg-radius` and the same edge. `Segmented` uses
+that height too. It is separate from the 17px chrome height, so making fields dense cannot
+silently shrink a device header or folded strip. A lit toggle changes its fill and text,
+not its outside geometry or border, so it cannot grow or appear rounder when it turns on.
+`Select` draws the same small arrow on every platform instead of surrendering half a
+narrow field to native menu chrome. That arrow, its padding and its font belong to the
+control rather than to a device stylesheet. Device compositions make room around these
+fixed boxes; they never scale or restyle them.
 
 **Fills grow from the middle when zero is the middle.** A pan at center is not a pan
 turned all the way down, and Live draws the distinction — `live.dial` calls it the needle

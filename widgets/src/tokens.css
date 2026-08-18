@@ -19,6 +19,7 @@
   --wdg-sans: var(--sans, 'IBM Plex Sans', system-ui, -apple-system, sans-serif);
 
   --wdg-height: 17px;
+  --wdg-field-height: 16px;
   --wdg-track: 14px;
   --wdg-knob-size: 34px;
   --wdg-knob-height: 27px;

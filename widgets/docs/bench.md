@@ -55,13 +55,18 @@ change together, with the raw value and the formatted string printed underneath.
 fastest way to check a formatter, and it makes the model-first design visible — you are
 changing the parameter, not the widget.
 
+Composed faces use `Panel` rows to balance repeated parameter lanes. Side sections center
+their own control groups naturally; their captions do not have to meet the parameter
+lanes' alignment lines. Track heights should follow the dense side groups closely enough
+that the repeated lanes have even outer margins rather than excess space between rows.
+
 ## The host-tokens switch
 
 `widgets/src/tokens.css` defines every colour and type token as `var(--host-token,
 fallback)`, so a widget picks up the app's palette when it's mounted in the app and uses
 its own when it isn't. The metrics below them — height, track, gap — are the widget's own
 and take no host token, because a control's size is the module's decision; a host that
-wants them different sets `--wdg-height` and the rest directly. The switch in the bench header adds and removes the app's palette from the page, so
+wants them different sets `--wdg-height`, `--wdg-field-height` and the rest directly. The switch in the bench header adds and removes the app's palette from the page, so
 both halves of that chain can be seen. A widget that looks right only with host tokens
 present is a widget that will look wrong the first time it's used anywhere else.
 
