@@ -477,6 +477,63 @@ declare namespace BSV {
     devices: ChainDevice[];
   }
 
+  /**
+   * One device run a client is looking at, and which of its devices are open.
+   *
+   * **The first watch in this protocol with a target.** Every other one is a
+   * boolean per kind, refcounted across clients in one set each, because arming
+   * `watchPlay` costs the same whoever asked. This one's cost is entirely a
+   * function of *what* is being watched — a run of shells is a couple of
+   * observers per device, and one open EQ Eight is forty more — so the bridge
+   * unions what every client declared and the LOM side follows the union. See
+   * `core/src/chainWatch.ts`, where that arithmetic lives and is tested.
+   *
+   * A device has no id on the wire, so a run is addressed the way a clip is: by
+   * where it sits. `path` is empty for a track's own device list and indexes
+   * into racks from there.
+   */
+  interface ChainWatch {
+    t: number;
+    /**
+     * `[]` for the track's own run; otherwise **pairs** of device index and
+     * chain index — `[2, 0]` is the first chain of the rack at index 2, and a
+     * rack inside that chain adds two more. An odd length names half an
+     * address and is refused rather than truncated.
+     */
+    path: number[];
+    /**
+     * Indexes in that run whose parameters are wanted; everything else is drawn
+     * as a shell. A list rather than a flag because the panel shows one run with
+     * several devices open in it, and folding one shut must drop its parameters
+     * without dropping the run.
+     */
+    open: number[];
+  }
+
+  /** One watched device run, as the shell tier draws it. */
+  interface WatchedChain {
+    t: number;
+    path: number[];
+    /**
+     * **Null means the run no longer resolves** — a deleted rack, or a track
+     * that has gone. Distinct from `[]`, which means the run is there and holds
+     * no devices. Collapsing the two is how a rack that was deleted goes on
+     * being drawn.
+     */
+    devices: ChainDevice[] | null;
+  }
+
+  /**
+   * Every run anyone is watching, pushed as one unit.
+   *
+   * Broadcast rather than addressed, like `mixerState`: the bridge watches the
+   * union, so what arrives is everything being watched and not merely what this
+   * client asked for. A client picks its own runs back out by `(t, path)`.
+   */
+  interface ChainState {
+    chains: WatchedChain[];
+  }
+
   /** Live's set-wide control-bar state, observed and pushed as one unit. */
   interface TransportState {
     /** Song.tempo, 20–999 BPM. May move under Arrangement automation. */
@@ -835,6 +892,21 @@ declare namespace BSV {
     | { id?: number; type: 'setTransport'; patch: TransportPatch }
     /** Write one track or Master mixer strip; observed state is the acknowledgement. */
     | { id?: number; type: 'setMixer'; target: MixerTarget; patch: MixerPatch }
+    /**
+     * Everything this client is looking at, declared whole.
+     *
+     * **Not an on/off pair, and deliberately.** Every other watch here is
+     * `{ on: boolean }` because there is one thing to be watching; this one has
+     * a target, so "off" would have to name which target — and a client that
+     * dropped a message would leak a subscription nobody can find to release.
+     * Sending the complete current view instead makes an empty array the way to
+     * stop, a dropped socket exactly equivalent to sending one, and a client
+     * physically unable to release a subscription another client is holding.
+     *
+     * The bridge unions these across clients; a client never sees, and must
+     * never assume, that what it asked for is all that is being watched.
+     */
+    | { id?: number; type: 'watchChains'; subs: ChainWatch[] }
     | { id?: number; type: 'watchPlay'; on: boolean }
     | { id?: number; type: 'watchMeters'; on: boolean }
     /**
@@ -946,6 +1018,12 @@ declare namespace BSV {
         frame: ClipStatusFrame;
       }
     | { type: 'mixerState'; state: MixerState }
+    /**
+     * The watched device runs changed, or were just subscribed to. Broadcast —
+     * see `ChainState` for why it carries the union rather than one client's
+     * share of it.
+     */
+    | { type: 'chainState'; state: ChainState }
     /**
      * One track's chain, answering a `devices` request. `null` means the track
      * index didn't resolve — a set that shrank under a client still holding the

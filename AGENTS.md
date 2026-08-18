@@ -48,8 +48,10 @@ work in [Issues](../../issues).
    for as long as the device is loaded, and patches what it holds. A client connecting,
    disconnecting, refreshing or hot-reloading must not start, stop or re-arm any of that,
    and must never decide to walk Live — only the Snapshot button does. Two watches are the
-   device's (`observe`, `watch_selection`) and five are a viewport's; adding a watch means
-   answering which. This was violated for a release and the symptoms looked like six
+   device's (`observe`, `watch_selection`) and six are a viewport's; adding a watch means
+   answering which. `watch_chains` adds a second question, being the first with a
+   *target*: it is refcounted per target rather than per kind, so a client releasing it
+   can shrink what Live is watching without turning anything off. This was violated for a release and the symptoms looked like six
    different bugs — see [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 6. **Clip color is written as `color_index`**, never raw RGB.
 7. **Nothing loads from a CDN.** This runs on stage.
