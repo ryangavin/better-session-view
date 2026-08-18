@@ -465,16 +465,23 @@ declare namespace BSV {
     chains?: RackChain[];
   }
 
-  /** One chain inside a rack — a device run with a name of its own. */
+  /**
+   * One chain inside a rack — a device run with a name of its own.
+   *
+   * **`devices` is absent unless that chain is itself subscribed to.** A rack
+   * reports what it takes to draw its chain list and stops there; what is
+   * inside a chain arrives as a `WatchedChain` of its own, addressed by the
+   * `path` that names it. Following every chain of every rack instead is the
+   * cost the whole subscription model exists to avoid.
+   *
+   * Absent and empty therefore mean different things, as they do throughout
+   * this protocol: absent is "nobody is looking in here", `[]` is "this chain
+   * is genuinely bare". A client that drew the empty case for the first would
+   * show every unopened rack as containing nothing.
+   */
   interface RackChain {
     name: string;
-    devices: ChainDevice[];
-  }
-
-  /** One track's device chain, read on request. */
-  interface TrackDevices {
-    t: number;
-    devices: ChainDevice[];
+    devices?: ChainDevice[];
   }
 
   /**
@@ -873,19 +880,6 @@ declare namespace BSV {
      * chain we're showing. The same bargain `selectScene` makes.
      */
     | { id?: number; type: 'selectTrack'; t: number }
-    /**
-     * Read one track's device chain.
-     *
-     * **A read rather than a watch, and that's a first pass rather than a
-     * principle.** `Track.devices` is observable and one observer on the track
-     * being shown would be cheap. But every watch here is refcounted per *kind*
-     * across clients, and this one would have to be refcounted per kind *and*
-     * target — two clients looking at different tracks both want it on, and
-     * neither may turn the other's off. Until that exists, a device added in
-     * Live doesn't appear until something asks again, which the footer does
-     * whenever the track it's showing changes.
-     */
-    | { id?: number; type: 'devices'; t: number }
     | { id?: number; type: 'launch'; target: LaunchTarget }
     | { id?: number; type: 'stop'; target: StopTarget }
     /** Write any related subset of Live's control-bar settings in one operation. */
@@ -1024,12 +1018,6 @@ declare namespace BSV {
      * share of it.
      */
     | { type: 'chainState'; state: ChainState }
-    /**
-     * One track's chain, answering a `devices` request. `null` means the track
-     * index didn't resolve — a set that shrank under a client still holding the
-     * old count, which is a normal race rather than an error.
-     */
-    | { type: 'trackDevices'; id?: number; state: TrackDevices | null }
     | {
         type: 'songPosition';
         /** First three fields of Live's bars.beats.sixteenths.ticks value. */

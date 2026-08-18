@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { Chain } from '../../../widgets/src/chrome/Chain.js';
 import { Device } from '../../../widgets/src/chrome/Device.js';
 import { Rack } from '../../../widgets/src/chrome/Rack.js';
 import { ControlButton } from './Control.js';
-import { IconSync } from './Icon.js';
 import './DeviceChain.css';
 
 /**
@@ -17,15 +15,19 @@ import './DeviceChain.css';
  *
  * **Shells only, no faceplates.** Every device is a title bar with its name, its
  * activator and its fold state, and a rack additionally has its macro face and
- * its chain list. There are no knobs on any of them yet — parameters are a much
- * larger read than the structure, one `DeviceParameter` per control per device,
- * and they land as a field on `ChainDevice` when they land. What's here proves
- * the whole path: Live's chain, over the wire, into the widget library.
+ * its chain list. There are no knobs on any of them yet — parameters are the
+ * next tier of the same subscription and land as a field on what it publishes.
  *
  * **Read-only, and visibly so.** Nothing in this footer writes to Live, because
  * there is no write path for a device yet. The activator draws `Device.is_active`
  * and the fold triangle is absent rather than dead, which is `Device`'s own way
  * of saying a shell can't be folded from here.
+ *
+ * **There is no refresh button any more.** It existed because the chain was read
+ * on demand, so a device added in Live was invisible until something asked
+ * again — and the button was that ask. The run is watched now, including its own
+ * membership, so there is nothing for it to do; a button whose tooltip said
+ * devices are read on demand would be describing the version before this one.
  */
 export interface DeviceChainProps {
   /** The track being shown. Its name, for the strip's own label. */
@@ -33,23 +35,49 @@ export interface DeviceChainProps {
   devices: BSV.ChainDevice[];
   loading: boolean;
   failed: boolean;
-  onRefresh(): void;
+  /** A nested run's devices, or undefined while its subscription is in flight. */
+  runAt(path: readonly number[]): BSV.ChainDevice[] | null | undefined;
+  chainAt(path: readonly number[], index: number): number;
+  onChain(path: readonly number[], index: number, chain: number): void;
   onClose(): void;
+}
+
+/** What every shell needs to address itself and reach the run below it. */
+interface ShellContext {
+  /** The run this device sits in. */
+  path: readonly number[];
+  runAt: DeviceChainProps['runAt'];
+  chainAt: DeviceChainProps['chainAt'];
+  onChain: DeviceChainProps['onChain'];
 }
 
 /**
  * A rack, and the chain it currently has selected.
  *
- * Which chain is showing is this component's own state and deliberately not the
- * hook's: it's a view choice inside one rack, nothing over the wire depends on
- * it, and a rack in a rack needs its own copy anyway. Resetting when the track
- * changes falls out for free — the whole subtree is keyed by position, so a new
- * track builds new components.
+ * **Which chain is showing used to be this component's own state**, on the
+ * reasoning that it was a view choice inside one rack and nothing over the wire
+ * depended on it. The second half stopped being true: the chain a rack is
+ * showing is exactly what decides whether its devices are watched, so the
+ * choice now lives in the hook, which is the thing that declares it.
+ *
+ * A chain's devices arrive as a subscription of their own rather than nested in
+ * this device's payload, so `runAt` may answer `undefined` for a beat after the
+ * rack opens. That reads as "opening" rather than "empty", because a rack that
+ * is genuinely bare answers `[]`.
  */
-function RackShell({ device }: { device: BSV.ChainDevice }) {
-  const [at, setAt] = useState(0);
+function RackShell({
+  device,
+  index,
+  context,
+}: {
+  device: BSV.ChainDevice;
+  index: number;
+  context: ShellContext;
+}) {
   const chains = device.chains ?? [];
-  const chain = chains[Math.min(at, chains.length - 1)];
+  const at = Math.min(context.chainAt(context.path, index), Math.max(0, chains.length - 1));
+  const inner = [...context.path, index, at];
+  const devices = context.runAt(inner);
 
   return (
     <Rack
@@ -58,11 +86,18 @@ function RackShell({ device }: { device: BSV.ChainDevice }) {
       folded={device.folded}
       chains={chains.map((c) => c.name)}
       chainAt={at}
-      onChain={setAt}
+      onChain={(chain) => context.onChain(context.path, index, chain)}
     >
-      <Chain placeholder="No devices in this chain">
-        {chain?.devices.map((nested, i) => (
-          <DeviceShell key={`${i}:${nested.name}`} device={nested} />
+      <Chain
+        placeholder={devices === undefined ? 'Opening…' : 'No devices in this chain'}
+      >
+        {(devices ?? []).map((nested, i) => (
+          <DeviceShell
+            key={`${i}:${nested.name}`}
+            device={nested}
+            index={i}
+            context={{ ...context, path: inner }}
+          />
         ))}
       </Chain>
     </Rack>
@@ -77,8 +112,16 @@ function RackShell({ device }: { device: BSV.ChainDevice }) {
  * with the name. Position alone would keep a shell mounted when a device is
  * swapped for another at the same slot.
  */
-function DeviceShell({ device }: { device: BSV.ChainDevice }) {
-  if (device.chains) return <RackShell device={device} />;
+function DeviceShell({
+  device,
+  index,
+  context,
+}: {
+  device: BSV.ChainDevice;
+  index: number;
+  context: ShellContext;
+}) {
+  if (device.chains) return <RackShell device={device} index={index} context={context} />;
   return <Device name={device.name} on={device.on} folded={device.folded} />;
 }
 
@@ -87,7 +130,9 @@ export function DeviceChain({
   devices,
   loading,
   failed,
-  onRefresh,
+  runAt,
+  chainAt,
+  onChain,
   onClose,
 }: DeviceChainProps) {
   return (
@@ -96,21 +141,12 @@ export function DeviceChain({
         <span className="device-chain-track">{name}</span>
         <span className="device-chain-count">
           {loading
-            ? 'reading…'
+            ? 'opening…'
             : failed
               ? 'unavailable'
               : `${devices.length} device${devices.length === 1 ? '' : 's'}`}
         </span>
         <div className="spacer" />
-        <ControlButton
-          icon
-          aria-label="Re-read this track's devices"
-          title="Devices are read on demand — re-read this track"
-          disabled={loading}
-          onClick={onRefresh}
-        >
-          <IconSync />
-        </ControlButton>
         <ControlButton
           icon
           aria-label="Close the device chain"
@@ -121,10 +157,10 @@ export function DeviceChain({
         </ControlButton>
       </div>
 
-      {/* The strip stays mounted while a read is in flight rather than being
-          replaced by a spinner: the chain that's there is almost always the
-          chain that's still there, and swapping it for a message makes every
-          re-read look like the devices went away. */}
+      {/* The strip stays mounted through a change rather than being replaced by
+          a spinner: the chain that's there is almost always the chain that's
+          still there, and swapping it for a message makes every update look
+          like the devices went away. */}
       <div className="device-chain-run">
         <Chain
           placeholder={
@@ -132,7 +168,12 @@ export function DeviceChain({
           }
         >
           {devices.map((device, i) => (
-            <DeviceShell key={`${i}:${device.name}`} device={device} />
+            <DeviceShell
+              key={`${i}:${device.name}`}
+              device={device}
+              index={i}
+              context={{ path: [], runAt, chainAt, onChain }}
+            />
           ))}
         </Chain>
       </div>

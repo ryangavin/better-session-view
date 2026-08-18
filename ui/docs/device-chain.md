@@ -3,7 +3,7 @@
 The selected track's devices, along the bottom of the window. `components/DeviceChain.tsx`,
 `hooks/useDeviceChain.ts`.
 
-**Unverified against Live.** The read is in `lom.ts`, which has no automated coverage —
+**Unverified against Live.** The watch is in `lom.ts`, which has no automated coverage —
 see [what's confirmed and what isn't](#whats-confirmed-and-what-isnt) at the end.
 
 ## What it shows, and what it deliberately doesn't
@@ -26,6 +26,11 @@ folded from here. The one wart is that `widgets/`'s `Device` always draws its ac
 button, so there is a button in the title bar that reports state and does nothing when
 pressed. Giving `Device` a read-only mode is the fix, and it belongs in `widgets/`.
 
+**There is no refresh button.** There was one, and it existed only because the chain was
+read on demand: a device added in Live stayed invisible until something asked again, and
+the button was that ask. The run's own membership is watched now, so it has nothing left
+to do.
+
 ## It is the first thing in the app drawn out of widgets/
 
 The mixer's faders proved the gesture crossed the boundary; this is the first component to
@@ -37,39 +42,68 @@ The adapting turns out to be three lines, because a shell is a small thing — `
 `folded`, and a rack's chain names. `liveParam.ts` is the same boundary for parameters and
 is the file that grows when knobs land.
 
-Which chain a rack is showing is `RackShell`'s own `useState`, not the hook's. It's a view
-choice inside one rack, nothing over the wire depends on it, and a rack inside a rack needs
-its own copy regardless. Resetting when the track changes falls out for free: the subtree
-is keyed by position, so a different track builds different components.
+**Which chain a rack is showing lives in the hook**, and it used to be `RackShell`'s own
+`useState` on the reasoning that nothing over the wire depended on it. That half stopped
+being true. The chain a rack is showing is exactly what decides whether its devices are
+watched, so it is now part of what the footer declares — and the thing that declares it
+has to hold it. It resets when the track changes because a different track's runs are
+addressed by paths that mean something else entirely.
 
 A device has **no id on the wire.** Its address is its position in the run, the same
 bargain clips make with `(track, scene)`. Keys pair the index with the name so that
 swapping one device for another at the same slot remounts rather than reusing a shell.
 
-## A read, not a watch — and why that's a first pass
+## A watch with a target, and what it does not follow
 
-`Track.devices` is observable, and one observer on the one track being shown would be
-genuinely cheap. It isn't a watch anyway, and the reason is in `bridge.ts`: every watch is
-refcounted **per kind** across clients, in one `Set<WebSocket>` per kind, so that a client
-turning one off can't blind another. This one would need refcounting per kind *and per
-target* — two clients looking at two different tracks both want it on, and neither may
-release the other's. That's a real change to `setWatch`, and it isn't worth making before
-anything needs it.
+`Track.devices` was always observable. What stopped this being a watch was the bridge:
+every watch is refcounted **per kind** across clients, in one `Set<WebSocket>` each, and
+this one has to be refcounted per kind *and per target* — two clients looking at two
+different tracks both want it on, and neither may release the other's.
 
-So the chain is fetched when the shown track changes, and re-fetched on demand. **A device
-added in Live doesn't appear until something asks again.** The refresh button in the strip
-header is that ask, and re-clicking the header of the track already showing is the same
-thing — a gesture that would otherwise be a no-op, spent on the one thing you'd want there.
+That now exists. The footer declares every run it is looking at, the bridge unions those
+across clients ([`core/docs/chainWatch.md`](../../core/docs/chainWatch.md)), and `lom.ts`
+follows the union. **A device added, renamed, deactivated or folded in Live now appears
+here without anyone asking**, which is what the refresh button used to stand in for.
 
-Replies are correlated the ordinary way, through `client.request`, but the hook still
-guards against them landing out of order: click three headers quickly and the first read
-can answer last. The effect's cleanup flips a `current` flag, and a reply whose `state.t`
-isn't the track still on screen is dropped.
+### It watches what is visible, which is less than what exists
 
-`state: null` is a real answer rather than an error — the track index didn't resolve,
-which is a set that shrank under a client still holding the old count. The strip says
-"unavailable" and keeps the header selected, because the honest thing to report is that
-this track has gone, not that it has no devices.
+The subscription is per **run** — a track's device list, or one chain inside a rack. Not
+per track, and deliberately not recursive:
+
+- the shown track's own run, always;
+- for each rack in a run that is **open**, the one chain it is showing;
+- and into that, because a rack inside a chain is the same case again.
+
+A folded rack contributes nothing. A rack's other seven chains contribute nothing. That is
+the whole economy: an eight-chain rack of five devices each is ~120 LOM observers, and
+following one nobody has opened would spend all of them on something off screen.
+
+It costs a round trip per level. Subscribing to the track run is what reveals which of its
+devices are racks, which is what puts their open chains in the next declaration. On a local
+socket that is invisible, and it means the client never has to know a rack's shape before
+it can ask about it.
+
+**A rack therefore reports its chains as names only.** `RackChain.devices` is absent until
+that chain is itself subscribed to — absent and `[]` mean different things here, "nobody is
+looking in here" against "this chain is genuinely bare", and a client that drew the empty
+case for the first would show every unopened rack as containing nothing.
+
+### The declaration, not a subscribe/unsubscribe pair
+
+The footer sends everything it is looking at, every time any of it changes. There is no
+`off`. An empty list is how it stops, a dropped socket says the same thing, and no message
+this client can send releases a run another client is holding.
+
+It is keyed on the declaration's **content** rather than its identity, because every push
+rebuilds the list and almost none of them change what is being watched. The bridge drops
+an unchanged union anyway — it has to, since telling `lom.ts` rebuilds every observer it
+holds — but a message per push is the wrong shape to establish before parameters make it a
+message per knob turn.
+
+### What it still cannot follow
+
+Nothing in a device's *contents*. Parameters are the next tier of this same subscription
+and land as a field on what it publishes; until then a device is a title bar.
 
 ## Selecting a track selects it in Live too
 
@@ -126,19 +160,30 @@ message makes every re-read look like the devices went away.
 
 ## What's confirmed and what isn't
 
-Confirmed: it typechecks, builds, and the device is unchanged at 51 boxes — the new
-messages need no patcher change, because anything the `route` doesn't match falls through
-to `lom.js` already.
+Confirmed: it typechecks, builds, and the device is unchanged at 51 boxes — the messages
+need no patcher change, because anything the `route` doesn't match falls through to
+`lom.js` already.
 
-**Not confirmed, because it needs Live open:** that `Device.class_name`, `is_active` and
-`can_have_chains` answer as expected; that `Device.View.is_collapsed` resolves through a
-second `goto`; that `chains` and a Chain's `devices` walk the way
-[`LOM.md`](../../bridge/LOM.md) says; and that writing `Song.View.selected_track` by id
-reveals the track the way writing `selected_scene` reveals a scene. Every one of those is
-documented, and none of them has been watched.
+**Not confirmed, because it needs Live open:**
 
-The failure modes are deliberately visible rather than silent: a device that doesn't
-resolve is skipped, a chain list that raises logs to the Max window and reads as empty, and
-a malformed payload is rejected whole by `chainDevice` in `bridge.ts` rather than
-half-drawn. An empty footer on a track with devices means the read failed; it does not mean
-the track is empty, because a track that has genuinely gone answers `null` and says so.
+- that `watch_chains` installs and fires at all — the whole mechanism is unwatched;
+- that `Device.View.is_collapsed` observes the way the page says. It is documented
+  `get, set, observe`, and this project's own LOM table said `get, set` until the device
+  classes were un-trimmed, so it has been wrong here once already;
+- that a rack's `chains` observer fires when a chain is added or renamed;
+- that `Device.class_name`, `is_active` and `can_have_chains` answer as expected, and that
+  `Device.View.is_collapsed` resolves through a second `goto`;
+- that writing `Song.View.selected_track` by id reveals the track the way writing
+  `selected_scene` reveals a scene.
+
+The failure modes stay visible rather than silent: a device that doesn't resolve is
+skipped, a chain list that raises logs to the Max window and reads as empty, and a
+malformed payload is rejected whole by `chainDevice` in `bridge.ts` rather than
+half-drawn. An empty footer on a track with devices means the watch failed; it does not
+mean the track is empty, because a track that has genuinely gone answers `null` and the
+strip says "unavailable".
+
+One new failure mode worth knowing: the observer count is capped at
+`CHAIN_OBSERVER_MAX`, and hitting it posts to the Max window and leaves the shells past
+that point not updating. It is a runaway stop for a malformed set, not a limit anyone
+should reach — 400 observers is ~130 devices on screen at once.

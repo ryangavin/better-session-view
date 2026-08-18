@@ -318,7 +318,8 @@ export function App() {
   const deviceChain = useDeviceChain({
     lomReady: bridge.lomReady,
     selectTrack: bridge.selectTrack,
-    readDevices: bridge.readDevices,
+    watchChains: bridge.watchChains,
+    subscribeChains: bridge.subscribeChains,
   });
 
   // Set configuration is owned here rather than by any one opener: the header,
@@ -503,7 +504,9 @@ export function App() {
           devices={deviceChain.devices}
           loading={deviceChain.loading}
           failed={deviceChain.failed}
-          onRefresh={deviceChain.onRefresh}
+          runAt={deviceChain.runAt}
+          chainAt={deviceChain.chainAt}
+          onChain={deviceChain.onChain}
           onClose={deviceChain.onClose}
         />
       )}

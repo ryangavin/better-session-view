@@ -56,6 +56,9 @@ export type MeterListener = (frame: BSV.MeterFrame) => void;
 export type ClipStatusListener = (frame: BSV.ClipStatusFrame) => void;
 export type MixerListener = (state: BSV.MixerState | null) => void;
 
+/** Null when the LOM went away and every observer behind the chains with it. */
+export type ChainListener = (state: BSV.ChainState | null) => void;
+
 /** One write, of either kind or both. Empty arrays rather than optionals so
  *  every count in here is `ops.length + sceneOps.length` with no branching. */
 interface Batch {
@@ -164,13 +167,15 @@ export interface BridgeState {
    */
   selectTrack: (t: number) => void;
   /**
-   * Read one track's device chain. Resolves `null` when the index no longer
-   * resolves in Live; rejects if the socket is down or the read times out.
+   * Declare every device run this client is looking at, whole.
    *
-   * A read rather than a subscription — see `devices` in the protocol for why
-   * this one isn't a watch yet.
+   * Not a subscribe/unsubscribe pair: the bridge unions these across clients,
+   * so an empty list is how you stop and a dropped socket says the same thing.
+   * See [`core/src/chainWatch.ts`](../../../core/docs/chainWatch.md).
    */
-  readDevices: (t: number) => Promise<BSV.TrackDevices | null>;
+  watchChains: (subs: BSV.ChainWatch[]) => void;
+  /** The watched runs, pushed whenever anything in one of them changes. */
+  subscribeChains: (listener: ChainListener) => () => void;
   /**
    * Listen to the high-frequency meter stream without putting it in the
    * composition root's state and re-rendering the entire grid every frame.
@@ -491,6 +496,23 @@ export function useBridge(
     [client],
   );
 
+  const watchChains = useCallback(
+    (subs: BSV.ChainWatch[]) => client.send({ type: 'watchChains', subs }),
+    [client],
+  );
+
+  const subscribeChains = useCallback(
+    (listener: ChainListener) =>
+      client.subscribe((event) => {
+        if (event.type === 'chainState') listener(event.state);
+        // The device reloaded, so every observer behind this is gone and what
+        // we hold describes runs nobody is watching. Say so rather than leaving
+        // a stale chain on screen looking live.
+        if (event.type === 'status' && !event.lomReady) listener(null);
+      }),
+    [client],
+  );
+
   const subscribeMixer = useCallback(
     (listener: MixerListener) =>
       client.subscribe((event) => {
@@ -565,10 +587,6 @@ export function useBridge(
     [client],
   );
 
-  const readDevices = useCallback(
-    async (t: number) => (await client.request({ type: 'devices', t })).state,
-    [client],
-  );
 
   /**
    * Ask for the whole set, and report what it cost.
@@ -1027,9 +1045,10 @@ export function useBridge(
     setFold,
     selectScene,
     selectTrack,
-    readDevices,
     subscribeMeters,
     subscribeMixer,
+    watchChains,
+    subscribeChains,
     subscribeClipStatus,
   };
 }
