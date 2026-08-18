@@ -209,6 +209,14 @@ Because those three parts are always direct children of the root,
 subgrid. Aligning siblings is easy; aligning their *insides* is what subgrid is for, and
 it's the only reason a knob and a fader can share a caption height.
 
+A knob's control region is shorter than its width. The dial remains the declared size and
+its SVG geometry remains at the same scale, but the view box starts just above and ends
+just below the 270° arc instead of reserving the unused top and bottom of a full circle.
+The caption and readout keep their generic inter-region gaps and therefore stay in the
+same shared bands as every other control's; only empty artwork space has left layout. The
+resulting height is rounded to a whole pixel, so a default 34px knob occupies a 27px-tall
+control region.
+
 **`layout` is where the regions go; `orientation` is which way the control runs.** They
 are different questions and merging them would be a mistake. `layout="inline"` puts the
 caption and the reading beside the control instead of above and below it — an inspector
@@ -230,7 +238,9 @@ and has to be — its label is the caller's, so it takes a `width`.
 The compact fields still share one physical box: `NumberField`, `Toggle` and `Select`
 all use `--wdg-height`, `--wdg-radius` and the same edge. A lit toggle changes its fill
 and text, not its outside geometry or border, so it cannot grow or appear rounder when it
-turns on. Device compositions make room around that box; they never scale it.
+turns on. `Select` draws the same small arrow on every platform instead of surrendering
+half a narrow field to native menu chrome. Device compositions make room around those
+boxes; they never scale them.
 
 **Fills grow from the middle when zero is the middle.** A pan at center is not a pan
 turned all the way down, and Live draws the distinction — `live.dial` calls it the needle

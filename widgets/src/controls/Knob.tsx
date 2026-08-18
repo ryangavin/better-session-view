@@ -1,6 +1,12 @@
 import { useParamGesture } from '../gesture/useParamGesture.js';
 import type { Param } from '../param/param.js';
-import { dialAngle, dialArc, dialPoint } from './arc.js';
+import {
+  DIAL_VIEWBOX_HEIGHT,
+  DIAL_VIEWBOX_TOP,
+  dialAngle,
+  dialArc,
+  dialPoint,
+} from './arc.js';
 import { defaultOrigin, originFraction, type FillOrigin } from './fill.js';
 import { Widget, type WidgetProps } from './Widget.js';
 import './controls.css';
@@ -58,6 +64,7 @@ export function Knob({
   const fill = dialArc(from, angle);
   const [nx, ny] = dialPoint(angle, 6);
   const [mx, my] = dialPoint(angle, 13.5);
+  const height = Math.round((size * DIAL_VIEWBOX_HEIGHT) / 40);
 
   return (
     <Widget
@@ -69,10 +76,10 @@ export function Knob({
       disabled={disabled}
       className={className}
       title={title}
-      vars={{ '--wdg-knob-size': `${size}px` }}
+      vars={{ '--wdg-knob-size': `${size}px`, '--wdg-knob-height': `${height}px` }}
     >
       <div className="wdg-knob-dial" {...gesture.props}>
-        <svg viewBox="0 0 40 40" aria-hidden="true">
+        <svg viewBox={`0 ${DIAL_VIEWBOX_TOP} 40 ${DIAL_VIEWBOX_HEIGHT}`} aria-hidden="true">
           <path className="wdg-knob-empty" d={dialArc(dialAngle(0), dialAngle(1)) ?? undefined} />
           {fill && <path className="wdg-knob-fill" d={fill} />}
           <line className="wdg-knob-marker" x1={nx} y1={ny} x2={mx} y2={my} />

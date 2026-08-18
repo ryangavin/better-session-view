@@ -35,7 +35,7 @@ const INITIAL_GAINS = [0, 0, -7.81, 3.6, 0, 0, 0, 0];
 const INITIAL_QS = [1.37, 0.71, 0.93, 0.71, 0.71, 0.71, 0.71, 0.71];
 const INITIAL_FILTERS = [0, 2, 2, 3, 2, 2, 2, 1];
 const BLOCK_SIZES = ['1024', '2048', '4096', '8192', '16384'];
-const FILTER_TYPES = ['Low cut', 'Low shelf', 'Bell', 'Notch'];
+const FILTER_TYPES = ['Low', 'Shelf', 'Bell', 'Notch'];
 const CHANNEL_MODES = ['Stereo', 'L/R', 'M/S'];
 
 function replaceAt(values: number[], at: number, next: number) {
@@ -98,32 +98,34 @@ export function EQEight() {
         </>
       }
     >
-      <Panel rows={3} gap={4} className="eq-eight-panel">
+      <Panel rows={3} gap={2} className="eq-eight-panel">
         <PanelColumn className="eq-eight-side eq-eight-left">
           <div className="eq-eight-side-content">
-            <Toggle on={analyzing} onChange={setAnalyzing} name="Analyze" width={56}>
-              {analyzing ? 'On' : 'Off'}
-            </Toggle>
-            <Select
-              items={BLOCK_SIZES}
-              index={blockSize}
-              onChange={setBlockSize}
-              name="Block"
-              width={56}
-            />
+            <div className="eq-eight-side-section">
+              <Toggle on={analyzing} onChange={setAnalyzing} name="Analyze" width={44}>
+                {analyzing ? 'On' : 'Off'}
+              </Toggle>
+              <Select
+                items={BLOCK_SIZES}
+                index={blockSize}
+                onChange={setBlockSize}
+                name="Block"
+                width={44}
+              />
+            </div>
             <NumberField
               param={REFRESH}
               value={refresh}
               onChange={setRefresh}
               display={refresh.toFixed(2)}
-              width={56}
+              width={44}
             />
             <NumberField
               param={AVERAGE}
               value={average}
               onChange={setAverage}
               display={average.toFixed(2)}
-              width={56}
+              width={44}
             />
           </div>
         </PanelColumn>
@@ -154,7 +156,7 @@ export function EQEight() {
                 onChange={(next) => setQs((values) => replaceAt(values, index, next))}
                 display={qs[index].toFixed(2)}
                 disabled={!bands[index]}
-                width={44}
+                width={38}
               />
               <Select
                 items={FILTER_TYPES}
@@ -162,7 +164,7 @@ export function EQEight() {
                 onChange={(next) => setFilters((values) => replaceAt(values, index, next))}
                 label={`Band ${index + 1} filter type`}
                 disabled={!bands[index]}
-                width={44}
+                width={38}
               />
               <div className="eq-eight-band-switch">
                 <Toggle
@@ -179,29 +181,35 @@ export function EQEight() {
 
         <PanelColumn className="eq-eight-side eq-eight-right">
           <div className="eq-eight-side-content">
-            <div className="eq-eight-view-buttons">
-              <IconButton label="Headphone audition"><span>◉</span></IconButton>
-              <IconButton label="Spectrum view"><span className="eq-eight-bars">▥</span></IconButton>
+            <div className="eq-eight-side-section">
+              <div className="eq-eight-view-buttons">
+                <IconButton label="Headphone audition"><span>◉</span></IconButton>
+                <IconButton label="Spectrum view"><span className="eq-eight-bars">▥</span></IconButton>
+              </div>
+              <Select
+                items={CHANNEL_MODES}
+                index={channelMode}
+                onChange={setChannelMode}
+                name="Mode"
+                width={48}
+              />
             </div>
-            <Select
-              items={CHANNEL_MODES}
-              index={channelMode}
-              onChange={setChannelMode}
-              name="Mode"
-              width={58}
-            />
-            <Toggle on={editLeft} onChange={setEditLeft} name="Edit" width={58}>L</Toggle>
-            <Toggle
-              on={adaptive}
-              onChange={setAdaptive}
-              name="Adapt. Q"
-              width={58}
-              className="eq-eight-adaptive"
-            >
-              {adaptive ? 'On' : 'Off'}
-            </Toggle>
-            <NumberField param={SCALE} value={scale} onChange={setScale} width={58} />
-            <NumberField param={OUTPUT} value={output} onChange={setOutput} width={58} />
+            <div className="eq-eight-side-section">
+              <Toggle on={editLeft} onChange={setEditLeft} name="Edit" width={48}>L</Toggle>
+              <Toggle
+                on={adaptive}
+                onChange={setAdaptive}
+                name="Adapt. Q"
+                width={48}
+                className="eq-eight-adaptive"
+              >
+                {adaptive ? 'On' : 'Off'}
+              </Toggle>
+            </div>
+            <div className="eq-eight-side-section">
+              <NumberField param={SCALE} value={scale} onChange={setScale} width={48} />
+              <NumberField param={OUTPUT} value={output} onChange={setOutput} width={48} />
+            </div>
           </div>
         </PanelColumn>
       </Panel>

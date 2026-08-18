@@ -7,6 +7,9 @@ export const DIAL_CENTER = 20;
 export const DIAL_RADIUS = 15;
 export const DIAL_START = -135;
 export const DIAL_END = 135;
+/** Crop unused square-canvas space without changing the dial geometry's scale. */
+export const DIAL_VIEWBOX_TOP = 2;
+export const DIAL_VIEWBOX_HEIGHT = 32;
 
 export function dialAngle(fraction: number): number {
   return DIAL_START + fraction * (DIAL_END - DIAL_START);
