@@ -160,19 +160,26 @@ message makes every re-read look like the devices went away.
 
 ## What's confirmed and what isn't
 
-Confirmed: it typechecks, builds, and the device is unchanged at 51 boxes — the messages
-need no patcher change, because anything the `route` doesn't match falls through to
-`lom.js` already.
+**Confirmed with Live open:** the subscription path works end to end. Clicking a track
+header declares a run, `watch_chains` installs against it, and the shells come back and
+draw. That covers the parts with the most ways to be wrong — the union reaching `lom.ts`,
+`chainRunPath` resolving, `readWatchedRun` answering, and `chainDevice` accepting a rack
+whose chains carry no devices.
 
-**Not confirmed, because it needs Live open:**
+It typechecks, builds, and the device is unchanged at 51 boxes — the messages need no
+patcher change, because anything the `route` doesn't match falls through to `lom.js`.
 
-- that `watch_chains` installs and fires at all — the whole mechanism is unwatched;
+**Not confirmed. Loading is not following, and every one of these is the second half:**
+
+- that the observers *fire* — a device added, renamed or deactivated in Live updating the
+  strip on its own. Nothing here has been watched changing, only appearing;
 - that `Device.View.is_collapsed` observes the way the page says. It is documented
   `get, set, observe`, and this project's own LOM table said `get, set` until the device
   classes were un-trimmed, so it has been wrong here once already;
 - that a rack's `chains` observer fires when a chain is added or renamed;
-- that `Device.class_name`, `is_active` and `can_have_chains` answer as expected, and that
-  `Device.View.is_collapsed` resolves through a second `goto`;
+- that opening a rack chain subscribes and fills — the round-trip-per-level expansion;
+- that `CHAIN_DEBOUNCE_MS` is long enough for Live to finish rearranging a rack before the
+  re-read, and short enough not to feel laggy. It is a guess;
 - that writing `Song.View.selected_track` by id reveals the track the way writing
   `selected_scene` reveals a scene.
 
