@@ -320,6 +320,7 @@ export function App() {
     selectTrack: bridge.selectTrack,
     watchChains: bridge.watchChains,
     subscribeChains: bridge.subscribeChains,
+    subscribeChainValues: bridge.subscribeChainValues,
   });
 
   // Set configuration is owned here rather than by any one opener: the header,

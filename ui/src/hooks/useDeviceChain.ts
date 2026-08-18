@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { BridgeState } from './useBridge.js';
+import { ChainStore, deviceKey } from '../lib/chainStore.js';
 
 /**
  * Which track's device chain the footer is showing, and what's in it.
@@ -33,7 +34,7 @@ function runKey(path: readonly number[]): string {
 }
 
 /** Address of a *device* — odd length, so it can't collide with a run. */
-function deviceKey(path: readonly number[], index: number): string {
+function devicePathKey(path: readonly number[], index: number): string {
   return [...path, index].join('.');
 }
 
@@ -50,19 +51,32 @@ function visibleRuns(
   chainAt: Readonly<Record<string, number>>,
 ): BSV.ChainWatch[] {
   const known = new Map(chains.filter((c) => c.t === t).map((c) => [runKey(c.path), c]));
-  const subs: BSV.ChainWatch[] = [{ t, path: [], open: [] }];
+  const subs: BSV.ChainWatch[] = [];
 
   const descend = (path: number[]) => {
     const run = known.get(runKey(path));
-    if (!run?.devices) return;
-    run.devices.forEach((device, i) => {
+    const devices = run?.devices;
+
+    // **`open` is fold state**, and nothing else needed inventing. A device
+    // drawn shut has no face to fill, and Live already tracks which of them are
+    // shut — so folding one in Live drops its forty observers, which is exactly
+    // the behaviour we would have built a second concept to get.
+    const open: number[] = [];
+    devices?.forEach((device, i) => {
+      if (!device.folded) open.push(i);
+    });
+
+    // Declared even before its contents are known: that first declaration is
+    // what makes them arrive, with `open` empty until they do.
+    subs.push({ t, path, open });
+    if (!devices) return;
+
+    devices.forEach((device, i) => {
       const count = device.chains?.length ?? 0;
       // A rack drawn shut is showing nothing, so nothing inside it is watched.
       if (count === 0 || device.folded) return;
-      const chosen = Math.min(chainAt[deviceKey(path, i)] ?? 0, count - 1);
-      const inner = [...path, i, chosen];
-      subs.push({ t, path: inner, open: [] });
-      descend(inner);
+      const chosen = Math.min(chainAt[devicePathKey(path, i)] ?? 0, count - 1);
+      descend([...path, i, chosen]);
     });
   };
 
@@ -81,6 +95,14 @@ export interface DeviceChainState {
   failed: boolean;
   /** One rack's chain devices, or undefined while its subscription is in flight. */
   runAt: (path: readonly number[]) => BSV.ChainDevice[] | null | undefined;
+  /**
+   * Where a faceplate reads its controls from.
+   *
+   * Outside React state on purpose — a knob moving in Live pushes at gesture
+   * rate, and routing that through the composition root would re-render the
+   * grid with it. Read one device's worth with `useDeviceParameters`.
+   */
+  store: ChainStore;
   /** Which chain a rack is showing. */
   chainAt: (path: readonly number[], index: number) => number;
   onChain: (path: readonly number[], index: number, chain: number) => void;
@@ -93,17 +115,33 @@ export function useDeviceChain({
   selectTrack,
   watchChains,
   subscribeChains,
+  subscribeChainValues,
 }: {
   lomReady: boolean;
   selectTrack: BridgeState['selectTrack'];
   watchChains: BridgeState['watchChains'];
   subscribeChains: BridgeState['subscribeChains'];
+  subscribeChainValues: BridgeState['subscribeChainValues'];
 }): DeviceChainState {
   const [track, setTrack] = useState<number | null>(null);
   const [state, setState] = useState<BSV.ChainState | null>(null);
   const [chosen, setChosen] = useState<Record<string, number>>({});
+  const store = useMemo(() => new ChainStore(), []);
 
-  useEffect(() => subscribeChains(setState), [subscribeChains]);
+  useEffect(
+    () =>
+      subscribeChains((next) => {
+        // Both, from one push. The structure goes to React because the shells
+        // are drawn from it; the parameters go to the store because they are
+        // not, and because the value stream that follows has to land somewhere
+        // it can be patched into.
+        setState(next);
+        store.update(next);
+      }),
+    [subscribeChains, store],
+  );
+
+  useEffect(() => subscribeChainValues(store.apply), [subscribeChainValues, store]);
 
   const subs = useMemo(
     () => (track === null ? [] : visibleRuns(track, state?.chains ?? [], chosen)),
@@ -135,12 +173,12 @@ export function useDeviceChain({
   );
 
   const chainAt = useCallback(
-    (path: readonly number[], index: number) => chosen[deviceKey(path, index)] ?? 0,
+    (path: readonly number[], index: number) => chosen[devicePathKey(path, index)] ?? 0,
     [chosen],
   );
 
   const onChain = useCallback((path: readonly number[], index: number, chain: number) => {
-    setChosen((held) => ({ ...held, [deviceKey(path, index)]: chain }));
+    setChosen((held) => ({ ...held, [devicePathKey(path, index)]: chain }));
   }, []);
 
   const onSelectTrack = useCallback(
@@ -169,9 +207,35 @@ export function useDeviceChain({
     loading: track !== null && run === undefined,
     failed: run === null,
     runAt,
+    store,
     chainAt,
     onChain,
     onSelectTrack,
     onClose,
   };
 }
+
+/**
+ * One device's controls, as a faceplate reads them.
+ *
+ * Subscribed per device, so a knob moving on the EQ wakes the EQ and nothing
+ * else — not the chain around it, and not the grid above it. Null means the
+ * device is folded, not watched, or has not been read yet; a face draws its
+ * shell and waits rather than inventing controls.
+ */
+export function useDeviceParameters(
+  store: ChainStore,
+  t: number,
+  path: readonly number[],
+  index: number,
+): BSV.DeviceParameterState[] | null {
+  const key = deviceKey(t, path, index);
+  const subscribe = useCallback(
+    (listener: () => void) => store.subscribe(key, listener),
+    [store, key],
+  );
+  const snapshot = useCallback(() => store.parameters(key), [store, key]);
+  return useSyncExternalStore(subscribe, snapshot, alwaysNull);
+}
+
+const alwaysNull = () => null;

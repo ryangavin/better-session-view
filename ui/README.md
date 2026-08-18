@@ -18,7 +18,8 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 | [bulk workflows](docs/bulk-workflows.md) | the running order or coloring by rule | `components/ReorderModal.tsx`, `RecolorModal.tsx`, `BulkWorkflow.css` |
 | [the header](docs/header.md) | the Live control bar, transport state, glyphs | `components/Header.tsx`, `Icon.tsx`, `Control.tsx` |
 | [mixer panel](docs/mixer.md) | meters, faders, sends, the stop row | `components/ClipGrid/TrackMeter.tsx`, `TrackSends.tsx`, `useMeterResize.ts`, `hooks/useMixer.ts`, `useMeters.ts`, `lib/mixerStore.ts`, `meterScale.ts`, `liveParam.ts` |
-| [the device chain](docs/device-chain.md) | the footer showing a track's devices, and the one place `widgets/` chrome is used | `components/DeviceChain.tsx`, `hooks/useDeviceChain.ts` |
+| [the device chain](docs/device-chain.md) | the footer showing a track's devices, what is watched, and where a faceplate reads its controls | `components/DeviceChain.tsx`, `hooks/useDeviceChain.ts`, `lib/chainStore.ts`, `liveParam.ts` |
+| [device faces](docs/device-faces.md) | a stock device drawn as a faceplate, and why the arrangement is the app's while the parts are `widgets/`'s | `components/EQEight.tsx`, `EQEight.css` |
 | [track groups](docs/track-groups.md) | group columns and collapsing | `hooks/useTrackColumns.ts` |
 | [undo](docs/undo.md) | the undo entry, or any new write path | `hooks/useBridge.ts` |
 | [performance notes](docs/performance.md) | **anything that reaches a memoized row** — props on `Row`, `SongHeaderRow`, or callbacks from `App` | `components/ClipGrid/Row.tsx`, `SongHeaderRow.tsx`, `App.tsx` |
@@ -55,6 +56,8 @@ src/components/       one component per file
     useMeterResize.ts makes the meter row's top border resize its height
   Header.tsx          Live control bar, Arrangement position, playback, view controls
   Icon.tsx            compact-control glyphs, as inline SVG
+  DeviceChain.tsx     the selected track's devices, as widgets/ shells
+  EQEight.tsx         Live's EQ Eight as a faceplate, composed from widgets/ controls
   StatsBar.tsx        bottom status — readiness, stat tiles, key hints + log toggle
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it
@@ -76,6 +79,7 @@ src/hooks/            one hook per file
   useBridgeSession.ts the context App reads it back out of
   useLog.ts           the shared say sink
   useDeviceState.ts   default artist, roles + allowed colors stored in the Live device
+  useDeviceChain.ts   the runs the footer is looking at, and what comes back
   useSnapshotLookups.ts  the lookup Maps every other hook reads
   useTrackColumns.ts  rendered column order + group collapsing
   useViewportColumnWidth.ts  Auto and 8/16-bank widths from the grid viewport
@@ -105,6 +109,7 @@ src/lib/
   rowMarks.ts         play state flattened to memo-safe strings
   snapshotTiming.ts   the console phase breakdown + error text
   mixerStore.ts       the external store behind the meters and the mixer
+  chainStore.ts       the same, per device, behind a faceplate's controls
   meterScale.ts       dB range, ticks, and Live's normalised meter position
   liveParam.ts        a Live parameter read into widgets/'s model of one
 ```

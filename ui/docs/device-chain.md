@@ -100,10 +100,69 @@ an unchanged union anyway — it has to, since telling `lom.ts` rebuilds every o
 holds — but a message per push is the wrong shape to establish before parameters make it a
 message per knob turn.
 
+## The parameter tier
+
+A device's controls ride the same subscription, gated on `ChainWatch.open`.
+
+**`open` is fold state, and nothing new had to be invented for it.** A device drawn shut
+has no face to fill, and Live already tracks which ones are shut — so `visibleRuns`
+derives `open` from `!device.folded`, and folding a device in Live drops its ~40
+observers. A rack counts as open too, and its parameters are its macros.
+
+### Read once, observe one thing
+
+Everything about a control except `value`, `display` and `state` is fixed for as long as
+the device exists. So the whole descriptor — name, range, default, quantization, members —
+is read when the device opens and travels with `ChainDevice.parameters`; after that, one
+observer per control on `value` alone.
+
+`state` is observable and deliberately isn't watched. It moves when a parameter becomes
+macro-controlled or automation is armed, which is roughly never mid-set, and watching it
+would double the budget of the most expensive tier here. It rides the structural re-read
+instead, so a control greys out on the next chain change rather than instantly.
+
+That is the difference between ~40 observers for an open EQ Eight and ~280 LOM reads every
+time anything moved.
+
+### The members of an enum come from `str_for_value`, not `value_items`
+
+`DeviceParameter.value_items` looks like the obvious source and is a trap: it arrives as
+Max atoms, so a member whose name holds a space — `Low cut` — comes back as two of them.
+The list reads correctly when joined and is the wrong *length*, which is precisely what an
+enum indexes by.
+
+`str_for_value(min + k)` per member has no such ambiguity. It costs n calls instead of one,
+once, when the device opens, and it is the same function every other readout in this
+project already trusts. See [`LOM.md`](../../bridge/LOM.md) under `DeviceParameter`.
+
+### Values land in a store, not in React state
+
+`chainValues` is a stream of `(t, path, i, p, value, display)` at gesture rate, batched one
+message a frame. It goes to [`lib/chainStore.ts`](../src/lib/chainStore.ts), subscribed
+**per device**, so a knob moving on the EQ wakes the EQ and neither the chain around it nor
+the grid above it. Same arrangement as the meters and the mixer, for the same reason.
+
+`useDeviceParameters(store, t, path, index)` is what a faceplate reads. Null means folded,
+unwatched, or not read yet — a face draws its shell and waits rather than inventing
+controls.
+
+The store preserves array identity when nothing moved, which is a requirement rather than a
+nicety: `useSyncExternalStore` compares snapshots by reference and tears if the getter
+returns a fresh array every call.
+
+### There is still no write path
+
+Every control here reports and none of them moves anything. `setDeviceParam` is the next
+message, and the local-value hold it needs — `usePendingValue` — already exists in
+`widgets/` from the mixer's faders.
+
 ### What it still cannot follow
 
-Nothing in a device's *contents*. Parameters are the next tier of this same subscription
-and land as a field on what it publishes; until then a device is a title bar.
+A parameter's `state` between structural re-reads, per above. And Live exposes **no taper**
+for a device parameter, which is why [`liveParam.ts`](../src/lib/liveParam.ts) sets no
+`exponent`: `DeviceParameter.value` is documented "Linear-to-GUI", so the curve is already
+applied on Live's side and the number is a position on the control rather than a physical
+quantity. Bending it here would bend it twice and disagree with `display`.
 
 ## Selecting a track selects it in Live too
 
@@ -178,6 +237,10 @@ patcher change, because anything the `route` doesn't match falls through to `lom
   classes were un-trimmed, so it has been wrong here once already;
 - that a rack's `chains` observer fires when a chain is added or renamed;
 - that opening a rack chain subscribes and fills — the round-trip-per-level expansion;
+- **the entire parameter tier.** Nothing has read a `DeviceParameter` off a real device:
+  not the descriptor read, not `str_for_value` spelling an enum's members, not the value
+  observers firing, not `state` answering 0/1/2. `npm run dev:diag -- param` reads this
+  device's own parameters and is the closest thing to a probe that already exists;
 - that `CHAIN_DEBOUNCE_MS` is long enough for Live to finish rearranging a rack before the
   re-read, and short enough not to feel laggy. It is a guess;
 - that writing `Song.View.selected_track` by id reveals the track the way writing

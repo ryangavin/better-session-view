@@ -59,6 +59,8 @@ export type MixerListener = (state: BSV.MixerState | null) => void;
 /** Null when the LOM went away and every observer behind the chains with it. */
 export type ChainListener = (state: BSV.ChainState | null) => void;
 
+export type ChainValueListener = (changes: readonly BSV.ChainValueChange[]) => void;
+
 /** One write, of either kind or both. Empty arrays rather than optionals so
  *  every count in here is `ops.length + sceneOps.length` with no branching. */
 interface Batch {
@@ -176,6 +178,11 @@ export interface BridgeState {
   watchChains: (subs: BSV.ChainWatch[]) => void;
   /** The watched runs, pushed whenever anything in one of them changes. */
   subscribeChains: (listener: ChainListener) => () => void;
+  /**
+   * Controls that moved, at gesture rate. Kept off App state for the reason the
+   * meters are: one automated knob would re-render everything under `App`.
+   */
+  subscribeChainValues: (listener: ChainValueListener) => () => void;
   /**
    * Listen to the high-frequency meter stream without putting it in the
    * composition root's state and re-rendering the entire grid every frame.
@@ -509,6 +516,14 @@ export function useBridge(
         // we hold describes runs nobody is watching. Say so rather than leaving
         // a stale chain on screen looking live.
         if (event.type === 'status' && !event.lomReady) listener(null);
+      }),
+    [client],
+  );
+
+  const subscribeChainValues = useCallback(
+    (listener: ChainValueListener) =>
+      client.subscribe((event) => {
+        if (event.type === 'chainValues') listener(event.changes);
       }),
     [client],
   );
@@ -1049,6 +1064,7 @@ export function useBridge(
     subscribeMixer,
     watchChains,
     subscribeChains,
+    subscribeChainValues,
     subscribeClipStatus,
   };
 }

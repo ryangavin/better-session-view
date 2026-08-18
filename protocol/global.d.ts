@@ -438,6 +438,57 @@ declare namespace BSV {
   }
 
   /**
+   * One control on a device, as Live's `DeviceParameter` describes it.
+   *
+   * **Everything here except `value`, `display` and `state` is fixed for as
+   * long as the device exists**, which is what makes a parameter subscription
+   * affordable. The fixed half is read once when a device opens and travels
+   * with `ChainDevice.parameters`; the three that move arrive afterwards as
+   * `ChainValueChange`, and only for the parameters that actually moved.
+   *
+   * Close cousin of `MixerParameterState`, which is the same LOM class read for
+   * the mixer strip. They should converge; they haven't yet because unifying
+   * them means touching a shipped path for no behaviour.
+   */
+  interface DeviceParameterState {
+    /** `DeviceParameter.name` — the short name, as in the automation chooser. */
+    name: string;
+    value: number;
+    min: number;
+    max: number;
+    /**
+     * `DeviceParameter.default_value`, and **absent when `quantized`** — Live
+     * only exposes a default for continuous parameters, so a quantized control
+     * has nothing to reset to and must not draw a reset affordance.
+     */
+    defaultValue?: number;
+    /**
+     * `DeviceParameter.is_quantized` — 1 for booleans and enums, 0 for
+     * int/float. **Not a reliable guide to how a control should feel:** Live's
+     * own docs name `MidiPitch.Pitch` as a parameter that looks stepped to the
+     * user and answers 0. What it does decide is which of `defaultValue` and
+     * `items` exists.
+     */
+    quantized: boolean;
+    /** `DeviceParameter.value_items`. Present only when `quantized`. */
+    items?: string[];
+    /** Live's own spelling of the current value, via `str_for_value`. */
+    display: string;
+    /**
+     * `DeviceParameter.state` — 0 active, 1 changeable but inaudible, 2 cannot
+     * be changed.
+     *
+     * This rather than `is_enabled`, which answers a coarser version of the
+     * same question and **has no observer at all**. Read on the structural
+     * re-read rather than watched, so a parameter that becomes macro-controlled
+     * greys out on the next chain change rather than immediately — one observer
+     * per parameter is the budget this tier is already spending, and doubling
+     * it for a property that moves once an hour isn't the trade.
+     */
+    state: number;
+  }
+
+  /**
    * One device in a track's chain, as much of it as a shell can draw.
    *
    * Deliberately not the whole device. `widgets/` draws a device shell from a
@@ -463,6 +514,15 @@ declare namespace BSV {
      * that isn't a rack, which is most of them.
      */
     chains?: RackChain[];
+    /**
+     * Every control on the device, **present only while it is open** — that is,
+     * while its index is in the subscription's `open` list.
+     *
+     * Absent is therefore "nobody has this device expanded", not "this device
+     * has no controls". A folded device drops this and the ~40 observers behind
+     * it, which is the entire economy of the parameter tier.
+     */
+    parameters?: DeviceParameterState[];
   }
 
   /**
@@ -528,6 +588,26 @@ declare namespace BSV {
      * being drawn.
      */
     devices: ChainDevice[] | null;
+  }
+
+  /**
+   * One parameter that moved, addressed all the way down.
+   *
+   * Sent per *change* rather than as a whole-device frame, because the observer
+   * fires per parameter and a knob drag would otherwise re-send forty values to
+   * report one. Batched per tick, so a drag costs one message a frame however
+   * many parameters it crosses.
+   */
+  interface ChainValueChange {
+    t: number;
+    /** The run, as in `ChainWatch.path`. */
+    path: number[];
+    /** Index of the device within that run. */
+    i: number;
+    /** Index of the parameter within that device's `parameters`. */
+    p: number;
+    value: number;
+    display: string;
   }
 
   /**
@@ -1018,6 +1098,16 @@ declare namespace BSV {
      * share of it.
      */
     | { type: 'chainState'; state: ChainState }
+    /**
+     * Parameters that moved since the last frame. Broadcast, and addressed by
+     * `(t, path, i, p)` so a client can ignore runs it isn't drawing.
+     *
+     * Separate from `chainState` deliberately: shells and descriptors change
+     * rarely, values change at gesture rate, and folding them into one message
+     * would re-send a chain's whole structure on every knob turn. Same split as
+     * `mixerState` against `meterLevels`, for the same reason.
+     */
+    | { type: 'chainValues'; changes: ChainValueChange[] }
     | {
         type: 'songPosition';
         /** First three fields of Live's bars.beats.sixteenths.ticks value. */
