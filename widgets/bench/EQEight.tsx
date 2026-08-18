@@ -101,31 +101,21 @@ export function EQEight() {
       <Panel rows={3} gap={2} className="eq-eight-panel">
         <PanelColumn className="eq-eight-side eq-eight-left">
           <div className="eq-eight-side-content">
-            <div className="eq-eight-side-section">
-              <Toggle on={analyzing} onChange={setAnalyzing} name="Analyze" width={44}>
-                {analyzing ? 'On' : 'Off'}
-              </Toggle>
-              <Select
-                items={BLOCK_SIZES}
-                index={blockSize}
-                onChange={setBlockSize}
-                name="Block"
-                width={44}
-              />
-            </div>
+            <Toggle on={analyzing} onChange={setAnalyzing} name="Analyze">
+              {analyzing ? 'On' : 'Off'}
+            </Toggle>
+            <Select items={BLOCK_SIZES} index={blockSize} onChange={setBlockSize} name="Block" />
             <NumberField
               param={REFRESH}
               value={refresh}
               onChange={setRefresh}
               display={refresh.toFixed(2)}
-              width={44}
             />
             <NumberField
               param={AVERAGE}
               value={average}
               onChange={setAverage}
               display={average.toFixed(2)}
-              width={44}
             />
           </div>
         </PanelColumn>
@@ -156,7 +146,6 @@ export function EQEight() {
                 onChange={(next) => setQs((values) => replaceAt(values, index, next))}
                 display={qs[index].toFixed(2)}
                 disabled={!bands[index]}
-                width={38}
               />
               <Select
                 items={FILTER_TYPES}
@@ -164,14 +153,12 @@ export function EQEight() {
                 onChange={(next) => setFilters((values) => replaceAt(values, index, next))}
                 label={`Band ${index + 1} filter type`}
                 disabled={!bands[index]}
-                width={38}
               />
               <div className="eq-eight-band-switch">
                 <Toggle
                   on={bands[index]}
                   onChange={(next) => setBands((values) => values.map((on, at) => at === index ? next : on))}
                   label={`Band ${index + 1}`}
-                  width={16}
                 />
                 <span>{index + 1}</span>
               </div>
@@ -191,24 +178,17 @@ export function EQEight() {
                 index={channelMode}
                 onChange={setChannelMode}
                 name="Mode"
-                width={48}
               />
             </div>
             <div className="eq-eight-side-section">
-              <Toggle on={editLeft} onChange={setEditLeft} name="Edit" width={48}>L</Toggle>
-              <Toggle
-                on={adaptive}
-                onChange={setAdaptive}
-                name="Adapt. Q"
-                width={48}
-                className="eq-eight-adaptive"
-              >
+              <Toggle on={editLeft} onChange={setEditLeft} name="Edit">L</Toggle>
+              <Toggle on={adaptive} onChange={setAdaptive} name="Adapt. Q">
                 {adaptive ? 'On' : 'Off'}
               </Toggle>
             </div>
             <div className="eq-eight-side-section">
-              <NumberField param={SCALE} value={scale} onChange={setScale} width={48} />
-              <NumberField param={OUTPUT} value={output} onChange={setOutput} width={48} />
+              <NumberField param={SCALE} value={scale} onChange={setScale} />
+              <NumberField param={OUTPUT} value={output} onChange={setOutput} />
             </div>
           </div>
         </PanelColumn>

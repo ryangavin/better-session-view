@@ -53,23 +53,28 @@
 
 .eq-eight-panel {
   --wdg-gap: 1px;
+  --eq-gutter: 5px;
+  --eq-band-field: 38px;
+  --eq-side-field: 48px;
 
-  grid-template-rows: 57px 57px 66px;
+  grid-template-rows: 57px 57px 68px;
   row-gap: 0;
-  height: 180px;
 }
 
 .eq-eight-band,
 .eq-eight-side {
   overflow: hidden;
+  padding: 0 calc(var(--eq-gutter) - 1px);
   border: 1px solid var(--wdg-edge);
   border-radius: var(--wdg-plate-radius);
   background: var(--wdg-well);
 }
 
 .eq-eight-band {
-  width: 48px;
-  padding: 0 2px;
+  --wdg-number-width: var(--eq-band-field);
+  --wdg-select-width: var(--eq-band-field);
+
+  width: calc(var(--eq-band-field) + 2 * var(--eq-gutter));
 }
 
 .eq-eight-band > .wdg-knob {
@@ -82,11 +87,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: var(--wdg-gap);
   min-height: 0;
 }
 
 .eq-eight-band-switch {
+  --wdg-toggle-width: var(--wdg-field-height);
+
   display: flex;
   align-items: center;
   gap: 5px;
@@ -96,7 +103,11 @@
 }
 
 .eq-eight-side {
-  width: 52px;
+  --wdg-number-width: var(--eq-side-field);
+  --wdg-select-width: var(--eq-side-field);
+  --wdg-toggle-width: var(--eq-side-field);
+
+  width: calc(var(--eq-side-field) + 2 * var(--eq-gutter));
 }
 
 .eq-eight-side > * {
@@ -104,34 +115,31 @@
 }
 
 .eq-eight-side-content {
-  display: grid;
-  grid-row: 1 / -1;
-  grid-template-rows: subgrid;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
+  justify-content: space-evenly;
   min-height: 0;
-  padding: 0 2px;
 }
 
 .eq-eight-side-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 1px;
-  min-height: 0;
+  gap: var(--wdg-gap);
 }
 
 .eq-eight-view-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: center;
+  align-items: start;
   gap: var(--wdg-gap);
+  width: var(--eq-side-field);
   height: calc(11px + var(--wdg-gap) + var(--wdg-field-height));
 }
 
 .eq-eight-view-buttons .eq-eight-icon {
-  width: 23px;
+  width: 100%;
   height: var(--wdg-field-height);
 }
 

@@ -55,10 +55,18 @@ change together, with the raw value and the formatted string printed underneath.
 fastest way to check a formatter, and it makes the model-first design visible — you are
 changing the parameter, not the widget.
 
-Composed faces use `Panel` rows to balance repeated parameter lanes. Side sections center
-their own control groups naturally; their captions do not have to meet the parameter
-lanes' alignment lines. Track heights should follow the dense side groups closely enough
-that the repeated lanes have even outer margins rather than excess space between rows.
+Composed faces use `Panel` rows to balance repeated parameter lanes, and the track heights
+belong to those lanes: each is its group's height plus the same margin, so a lane's
+sections sit evenly however tall the group is. A side plate holds unrelated groups and
+fewer of them, so it spaces its own over the plate's full height instead of riding the
+lane grid — its captions never had to meet the lanes' alignment lines, and freeing it is
+what stops one tall lane row leaving a side group stranded in the middle of it.
+
+Widths work the other way round: the face names the gutter between a plate's edge and the
+controls inside it once, and every plate width follows from a control width plus two of
+them. Passing each control a `width` instead spreads the same geometry across a dozen call
+sites, where a plate and its contents drift a pixel or two apart and the outer plates stop
+matching the lanes.
 
 ## The host-tokens switch
 
