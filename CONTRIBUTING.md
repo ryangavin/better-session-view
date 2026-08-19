@@ -56,7 +56,7 @@ in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
 ## Modules
 
-Six projects. Each has its own README; read the one you're touching.
+Seven projects. Each has its own README; read the one you're touching.
 
 | module | what it is | read for |
 |---|---|---|
@@ -66,6 +66,12 @@ Six projects. Each has its own README; read the one you're touching.
 | [`ui/`](ui/README.md) | React 19 + Vite | components, the bridge client, dev server |
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator | changing the patcher or device type |
+| [`visuals/`](visuals/README.md) | a VJ rig: Link peer, bridge client, WebGL2 renderer | visuals, the clock, or a second kind of client |
+
+`visuals/` is the first thing to take rule 5 up on its offer of "a second kind of client":
+it follows the bridge, perturbs nothing, and needs no browser open anywhere else. It is a
+separate process because Ableton Link is a native addon and the bridge's Node lives inside
+Max, and because it is meant to run on a different machine entirely.
 
 `core/` and `widgets/` are the same rule on two axes, and between them they are what keeps
 a DAW of our own possible: domain logic that has never heard of a transport, and controls
@@ -108,7 +114,12 @@ Not in git; `npm run build` recreates all of them.
 bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
 bridge/public/                           vite build output
 bridge/SessionBridge.amxd  .maxpat       device + debug patcher
+visuals/dist/                            the renderer — `npm run build:visuals`
 ```
+
+`visuals/` is not part of `npm run build`, deliberately: the device must build on a machine
+where the Link addon does not, so the thing that ships cannot depend on a native compile.
+`npm install` still builds the addon, and failing that is a warning rather than an error.
 
 ## Environment this was built against
 

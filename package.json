@@ -29,9 +29,13 @@
     "dev:ui": "vite --config ui/vite.config.ts",
     "dev:widgets": "vite --config widgets/vite.config.ts",
     "dev:devices": "vite --config ui/vite.bench.config.ts",
-    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p widgets/tsconfig.json && tsc -p ui/tsconfig.json && tsc -p tools/tsconfig.json",
+    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p widgets/tsconfig.json && tsc -p ui/tsconfig.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json",
     "test": "vitest run",
-    "postinstall": "cd bridge && npm install --no-audit --no-fund"
+    "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link",
+    "build:visuals": "vite build --config visuals/vite.config.ts",
+    "dev:visuals": "node --disable-warning=ExperimentalWarning visuals/server/index.ts",
+    "dev:visuals-ui": "vite --config visuals/vite.config.ts",
+    "dev:fake-live": "node --disable-warning=ExperimentalWarning visuals/tools/fake-live.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
