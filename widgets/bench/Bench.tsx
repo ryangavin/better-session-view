@@ -13,9 +13,11 @@ import { Segmented } from '../src/controls/Segmented.js';
 import { Select } from '../src/controls/Select.js';
 import { Slider } from '../src/controls/Slider.js';
 import { Toggle } from '../src/controls/Toggle.js';
+import { XYPad } from '../src/controls/XYPad.js';
 
 const SECTIONS = [
-  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Select', 'Text', 'Row', 'Device', 'Chain',
+  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',
+  'Chain',
   'Model',
 ];
 
@@ -37,6 +39,20 @@ function Case({ note, wide, children }: { note: string; wide?: boolean; children
       <div className="case-stage">{children}</div>
       <p className="case-note">{note}</p>
     </div>
+  );
+}
+
+/** Something for the plane to draw over, standing in for a device's own curve. */
+function PadGrid() {
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      {[25, 50, 75].map((at) => (
+        <line key={`v${at}`} x1={at} y1="0" x2={at} y2="100" stroke="#2c2c31" strokeWidth="0.4" />
+      ))}
+      {[25, 50, 75].map((at) => (
+        <line key={`h${at}`} x1="0" y1={at} x2="100" y2={at} stroke="#2c2c31" strokeWidth="0.4" />
+      ))}
+    </svg>
   );
 }
 
@@ -474,6 +490,69 @@ export function Bench() {
               index={0}
               onChange={() => {}}
               name="Filter"
+              disabled
+            />
+          </Case>
+        </Section>
+
+        <Section id="XY pad">
+          <Case note="Two parameters on one pointer. Drag anywhere on the plane; the fine modifier and double-click to reset work as they do on a knob, and each axis takes the arrows on its own tab stop.">
+            <Held param={FREQ}>
+              {(hz, setHz) => (
+                <Held param={GAIN}>
+                  {(db, setDb) => (
+                    <XYPad
+                      x={{ param: FREQ, value: hz, onChange: setHz }}
+                      y={{ param: GAIN, value: db, onChange: setDb }}
+                      label="Frequency and gain"
+                    />
+                  )}
+                </Held>
+              )}
+            </Held>
+          </Case>
+          <Case
+            wide
+            note="Wider than it is tall, with artwork behind it — the slot a device's response curve goes in. The plane owns the geometry and the gesture and knows nothing about what's drawn under it."
+          >
+            <Held param={FREQ}>
+              {(hz, setHz) => (
+                <Held param={GAIN}>
+                  {(db, setDb) => (
+                    <XYPad
+                      x={{ param: FREQ, value: hz, onChange: setHz }}
+                      y={{ param: GAIN, value: db, onChange: setDb }}
+                      width={260}
+                      height={110}
+                      label="Frequency and gain over a grid"
+                    >
+                      <PadGrid />
+                    </XYPad>
+                  )}
+                </Held>
+              )}
+            </Held>
+          </Case>
+          <Case note="A tapered axis reads as position: the frequency's exponent puts a third of the plane under the first 200 Hz, exactly as it puts a third of a knob's travel there.">
+            <Held param={FREQ}>
+              {(hz, setHz) => (
+                <Held param={PAN}>
+                  {(pan, setPan) => (
+                    <XYPad
+                      x={{ param: FREQ, value: hz, onChange: setHz }}
+                      y={{ param: PAN, value: pan, onChange: setPan }}
+                      label="Frequency and pan"
+                    />
+                  )}
+                </Held>
+              )}
+            </Held>
+          </Case>
+          <Case note="Disabled.">
+            <XYPad
+              x={{ param: FREQ, value: 440, onChange: () => {} }}
+              y={{ param: GAIN, value: 0, onChange: () => {} }}
+              label="Frequency and gain"
               disabled
             />
           </Case>

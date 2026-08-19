@@ -24,7 +24,7 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 | [undo](docs/undo.md) | the undo entry, or any new write path | `hooks/useBridge.ts` |
 | [performance notes](docs/performance.md) | **anything that reaches a memoized row** — props on `Row`, `SongHeaderRow`, or callbacks from `App` | `components/ClipGrid/Row.tsx`, `SongHeaderRow.tsx`, `App.tsx` |
 | [layout and CSS](docs/layout-and-css.md) | any stylesheet, a token, or a `z-index` | `src/shared.css`, `App.css`, `components/Control.css` |
-| [dev server](docs/dev-server.md) | the dev loop, HMR, or the provider/App boundary | `src/main.tsx`, `components/BridgeProvider.tsx`, `vite.config.ts` |
+| [dev server](docs/dev-server.md) | the dev loop, HMR, the provider/App boundary, or either bench's port | `src/main.tsx`, `components/BridgeProvider.tsx`, `vite.config.ts`, `vite.bench.config.ts` |
 
 Cross-cutting: **performance notes governs every component under `ClipGrid/`** regardless
 of which feature you came for — a prop that changes identity per render re-renders 848 rows.
@@ -36,6 +36,8 @@ The matching domain logic is in [`core/`](../core/README.md); it has its own ind
 ```
 index.html            vite entry
 vite.config.ts        build target + dev proxy
+vite.bench.config.ts  the device bench's server — dev only, never built
+bench/                the device bench: every face, fed a fixture, with no Live
 src/main.tsx          root — wraps App in the bridge provider
 src/App.tsx           the composition root — hooks in dependency order, wiring
 src/shared.css        design tokens, global reset, shared fields and primitives
@@ -65,6 +67,8 @@ src/components/       a folder per component — see below; the flat pairs are t
     eq8/
       Eq8.tsx         Live's EQ Eight as a faceplate, composed from widgets/ controls
       bind.ts         which of the device's parameters is which band's control
+    plugin/
+      Plugin.tsx      the container Live draws around a plug-in: one X-Y control
   StatsBar.tsx        bottom status — readiness, stat tiles, key hints + log toggle
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it

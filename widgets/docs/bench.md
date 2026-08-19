@@ -4,8 +4,9 @@
 no app around it.
 
 ```sh
-npm run dev              # everything at once — the bench is one of the five processes
+npm run dev              # everything at once — the bench is one of the six processes
 npm run dev:widgets      # the bench alone, http://localhost:5273
+npm run dev:devices      # its opposite number, the device bench, on :5373
 ```
 
 It rides along in the full dev stack because it costs nothing to: no device, no Live, no
@@ -22,13 +23,19 @@ collision fails loudly rather than drifting.
 | | default | |
 |---|---|---|
 | UI | 5173 | `BSV_UI_PORT` |
-| bench | UI + 100 | `BSV_BENCH_PORT` |
+| widget bench | UI + 100 | `BSV_BENCH_PORT` |
+| device bench | UI + 200 | `BSV_DEVICE_BENCH_PORT` |
 
-The subtler one: **both Vite servers must name their own `cacheDir`.** The default
+The device bench is [`ui/bench/`](../../ui/docs/device-faces.md#the-device-bench) and holds
+the faces, which are composed in the app. Same offset reasoning at +200: a worktree keeps
+all three of its servers clear of the next worktree's.
+
+The subtler one: **all three Vite servers must name their own `cacheDir`.** The default
 resolves to the same `node_modules/.vite` for both, and Vite hashes the config into that
 cache's metadata — so two servers sharing it each decide the other's cache is stale and
 re-optimize on every start, which is a browser full of `504 Outdated Optimize Dep` waiting
-to happen. `ui/` uses `node_modules/.vite/ui` and the bench uses `node_modules/.vite/bench`.
+to happen. `ui/` uses `node_modules/.vite/ui`, the widget bench uses `node_modules/.vite/bench`, and
+the device bench uses `node_modules/.vite/devices`.
 
 ## Why it's here rather than in the app
 

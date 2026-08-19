@@ -31,7 +31,8 @@
 .wdg-number-body,
 .wdg-toggle-body,
 .wdg-segmented-body,
-.wdg-select-body {
+.wdg-select-body,
+.wdg-xypad-body {
   overflow: hidden;
   border: 1px solid var(--wdg-edge);
   border-radius: var(--wdg-radius);

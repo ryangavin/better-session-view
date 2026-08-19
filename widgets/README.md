@@ -41,6 +41,7 @@ src/
     Toggle.tsx      live.toggle, and live.button when momentary
     Segmented.tsx   live.tab
     Select.tsx      a compact enum with one member on screen
+    XYPad.tsx       two parameters on one plane, with a slot for a device's artwork
     Label.tsx       live.comment, and Divider for live.line
     arc.ts          dial geometry
     fill.ts         where a fill starts, shared by all three value controls
@@ -65,6 +66,10 @@ bench/              the harness. Dev-only; never built, never shipped
 npm run dev              # everything — bridge watchers, the UI on :5173, the bench on :5273
 npm run dev:widgets      # the bench alone, http://localhost:5273
 ```
+
+The faces built *out of* these parts have a bench of their own in the app —
+`npm run dev:devices`, and [ui/docs/device-faces.md](../ui/docs/device-faces.md). This one
+may not import from there, which is what keeps a widget from learning what a device is.
 
 It has no connection to Live and never will — that's what makes it worth having, and why
 it costs nothing to leave running in the full dev stack. Nothing in `bench/` is part of a

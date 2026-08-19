@@ -82,6 +82,43 @@ parameter list **as Live spells it**, captions and all. So it is where the names
 to match get read off a real device, and where a face that stopped matching them shows up.
 Open any device in the footer and its parameters are on screen with their real names.
 
+## The plug-in container, and why it is not in the registry
+
+`devices/plugin/Plugin.tsx` is the other face here, and it exists because it is the
+smallest real device Live has: a plug-in has its own window that Live cannot draw inside,
+so the container is one X-Y control and two choosers naming which of the plug-in's
+parameters that control moves. Nothing else. That makes it the plainest caller of
+[`XYPad`](../../widgets/src/controls/XYPad.tsx) — a plane with no artwork behind it.
+
+It is deliberately absent from [`faces.ts`](../src/components/devices/faces.ts), and would
+need two things to earn a place. A plug-in's `class_name` is almost certainly
+`PluginDevice`, but `bridge/LOM.md` has no section for that class and nothing here has read
+one off a real set; registering a guess would put this face in front of every plug-in in
+every chain, *replacing* `Faceplate`, which draws all of a plug-in's controls and is the
+better answer. And the axis assignment doesn't round-trip: Live keeps it in the container
+and the protocol carries a device's parameters rather than the container's own state, so
+the choosers here hold the choice locally and start at `none`. Moving the plane is a real
+write; remembering what it was pointed at is not yet possible.
+
+## The device bench
+
+`npm run dev:devices`, on the UI's port + 200. It draws every face in this folder with the
+app's palette and **no connection at all** — no provider, no client, no socket.
+
+That works because a face takes a `ChainDevice` and a list of parameters and nothing else,
+so [`ui/bench/fixtures.ts`](../bench/fixtures.ts) can answer like a device without being
+one. It holds the parameters in state, so a control that moves writes the fixture and the
+face re-reads it — the same round trip a control makes through Live, which is the part
+worth rehearsing. A face that only *looked* right with values it owned would hide exactly
+the bug that matters.
+
+It is a separate page from [the widget bench](../../widgets/docs/bench.md) because it has
+to be: a face is composed here out of `widgets/`, and that bench may import `widgets/src`
+and nothing else. The split is the same one the modules have — parts there, arrangements
+here — and the practical gain is that a face can be seen in states a real set won't
+readily produce, including a device whose parameter names don't match and whose slots
+therefore draw dead.
+
 ## The geometry, which is the part that took the iterations
 
 Three kinds of plate sit on one `Panel`: eight identical band lanes, and a side plate at

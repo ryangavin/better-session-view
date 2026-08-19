@@ -59,21 +59,27 @@ next click into the browser spends Live's main thread — coming back to the win
 just re-asks for the set, which is a payload. See `core/src/backstop.ts` for the
 policy and `bridge.ts`'s `backstopTick` for the caller.
 
-Three env vars, all optional:
+Four env vars, all optional:
 
 | var | default | for |
 |---|---|---|
 | `BSV_UI_PORT` | `5173` | a second UI alongside the first — one per worktree |
 | `BSV_BENCH_PORT` | `BSV_UI_PORT` + 100 | overriding where the widget bench lands |
+| `BSV_DEVICE_BENCH_PORT` | `BSV_UI_PORT` + 200 | the same, for the device bench |
 | `BSV_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
 
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next
 free one. That's deliberate: assign the port, don't discover it.
 
-The bench derives its port from this one so a worktree moves both in a single variable,
-and the offset is 100 rather than 1 because worktree ports get picked adjacently — see
+Both benches derive their port from this one so a worktree moves all three servers in a
+single variable, and the offsets are 100 and 200 rather than 1 and 2 because worktree ports
+get picked adjacently — see
 [`widgets/docs/bench.md`](../../widgets/docs/bench.md), which also covers why both Vite
 servers have to name their own `cacheDir` now that they run together.
+
+The device bench is `ui/bench/`, served by `ui/vite.bench.config.ts`. It draws the faces
+with the app's palette and no connection at all — no provider, no client, no socket — so
+it is the one dev server that says nothing about whether the bridge is up.
 
 Several dev servers can share one device — they all proxy to the same bridge, and
 `BridgeClient` derives its socket URL from `location.host`, so nothing needs telling

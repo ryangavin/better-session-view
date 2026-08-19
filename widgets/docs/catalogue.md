@@ -37,6 +37,7 @@ Built.
 | [`Select`](../src/controls/Select.tsx) | compact enum menu | an enum with one member on screen |
 | [`Label`](../src/controls/Label.tsx) | `live.comment` | carries the type rhythm for a whole panel |
 | `Divider` | `live.line` | in `Label.tsx` — same family, three lines |
+| [`XYPad`](../src/controls/XYPad.tsx) | `live.pictslider` | two parameters on one plane, with a slot for a device's own artwork |
 
 **Reach for a filled `NumberField` before a horizontal `Slider`.** Live's own collapsed
 fader is a value box you drag with the reading inside it — that's the Arrangement track
@@ -45,6 +46,13 @@ header's volume and pan — and it costs a third of the room while saying more, 
 its length: a column of them is readable at a glance without reading a number, which is
 the mixer. On its side that advantage is gone. The orientation stays for the shape that
 genuinely wants it, the crossfader, and for hosts we haven't met.
+
+**The pad is one pointer and two gestures**, not a new drag. It calls `useParamGesture`
+once per axis and hands both the same pointer events, so each keeps its own component of
+the movement and the fine modifier, the anchor, the write rate and double-click-to-reset
+are the ones every other control has. The keyboard falls out of the same arrangement: each
+axis is a `role="slider"` of its own with the full `aria-value*` set, so tabbing lands on
+one axis at a time and the arrows mean something on a control with two of them.
 
 Not yet: `live.text` (a labelled toggle — `Toggle` with children is most of it),
 `live.gain~` (a slider with a meter beside it), `live.meter~` (the mixer has one, and it
@@ -138,9 +146,16 @@ chain's devices as `children`. It just isn't the drawing.
 Listed so they aren't forgotten, deliberately last. Each is one device's idea, and none of
 them shares anything with the others except the gesture.
 
-ADSR envelope (`live.adsrui` is a real head start), EQ Eight curve, XY pad (Auto Filter),
+ADSR envelope (`live.adsrui` is a real head start), EQ Eight curve, Auto Filter's response,
 waveform display (Simpler), transfer function (Saturator, Roar), oscilloscope
 (`live.scope~`), matrix (`live.grid`), step lanes (`live.step`).
+
+**Two of those got smaller when `XYPad` landed.** The EQ Eight's curve and Auto Filter's
+display looked like separate bespoke controls until you notice what they have in common: a
+plane, scaled axes, and handles you drag two parameters with. That part is now a Tier 1
+widget, and what's left of each is a *drawing* — a response curve the device computes —
+which goes in the pad's artwork slot and stays in the app, because the shape of an EQ's
+curve is one device's idea and this module knows about none of them.
 
 ## Adding one
 
