@@ -25,6 +25,7 @@
 }
 
 .device-chain-run {
+  max-height: 46vh;
   padding: 0 8px 8px;
-  overflow-x: auto;
+  overflow: auto;
 }

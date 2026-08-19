@@ -621,6 +621,44 @@ declare namespace BSV {
     chains: WatchedChain[];
   }
 
+  /**
+   * One device, addressed the way a run is.
+   *
+   * The same `(t, path)` a `ChainWatch` carries, plus which device in that run
+   * — so a write names exactly what the client is already looking at, and the
+   * bridge needs no id it would have to invent and keep.
+   */
+  interface DeviceTarget {
+    t: number;
+    /** Pairs, exactly as in `ChainWatch.path`. `[]` is the track's own run. */
+    path: number[];
+    /** Index of the device within that run. */
+    i: number;
+  }
+
+  /**
+   * One device write. Related fields travel together, as everywhere else here.
+   *
+   * `folded` is the field with a second life: it is a view state on Live's
+   * side, and on this side it is what decides whether the device's parameters
+   * are read and observed at all. Unfolding a device in the app is therefore
+   * the same gesture as subscribing to its controls, which is why there is no
+   * separate way to ask for them.
+   */
+  interface DevicePatch {
+    /** `Device.is_active` — the activator in the title bar. */
+    on?: boolean;
+    /** `Device.View.is_collapsed`. */
+    folded?: boolean;
+    /**
+     * One control, by its index in `ChainDevice.parameters`.
+     *
+     * Singular because a gesture moves one control, the same bargain
+     * `MixerPatch.send` makes. A face that wants two writes sends two.
+     */
+    param?: { p: number; value: number };
+  }
+
   /** Live's set-wide control-bar state, observed and pushed as one unit. */
   interface TransportState {
     /** Song.tempo, 20–999 BPM. May move under Arrangement automation. */
@@ -862,7 +900,8 @@ declare namespace BSV {
 
   // --- client -> server ------------------------------------------------
 
-  // `launch`, `stop`, `selectScene`, `setFold`, `setTransport`, `setMixer`, and the watches
+  // `launch`, `stop`, `selectScene`, `setFold`, `setTransport`, `setMixer`, `setDevice`,
+  // and the watches
   // deliberately have no terminal reply. What you want back from firing a clip
   // is not an acknowledgement, it's the play state changing — which arrives as
   // an unsolicited `playState`. A failure still surfaces: the bridge broadcasts
@@ -966,6 +1005,21 @@ declare namespace BSV {
     | { id?: number; type: 'setTransport'; patch: TransportPatch }
     /** Write one track or Master mixer strip; observed state is the acknowledgement. */
     | { id?: number; type: 'setMixer'; target: MixerTarget; patch: MixerPatch }
+    /**
+     * Write one device: its activator, its fold state, or one of its controls.
+     *
+     * **Acknowledged by the watch, not by a reply.** Every field here is
+     * already observed by whoever is subscribed to the run — `is_active` and
+     * `is_collapsed` by the shell tier, `value` by the parameter tier — so the
+     * answer to "did that land" is the next `chainState` or `chainValues`,
+     * which is a better answer than confirming a `set()` was called. It is also
+     * the only answer that is right when *another* client made the change.
+     *
+     * A write to a device nobody is watching is legal and simply goes unheard.
+     * That isn't a hole: a client that isn't watching a run has no way to name
+     * a device in it, because the address is a position it hasn't been told.
+     */
+    | { id?: number; type: 'setDevice'; target: DeviceTarget; patch: DevicePatch }
     /**
      * Everything this client is looking at, declared whole.
      *

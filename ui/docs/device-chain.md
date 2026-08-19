@@ -9,22 +9,20 @@ see [what's confirmed and what isn't](#whats-confirmed-and-what-isnt) at the end
 ## What it shows, and what it deliberately doesn't
 
 Click a track header and its chain opens below the grid: every device as a shell — its
-name, its activator, whether it's folded — and a rack additionally as its macro face, its
+name, its activator, its fold triangle — and a rack additionally as its macro face, its
 chain list and the selected chain's own devices, recursively.
 
-**There are no knobs on any of it.** That isn't an omission waiting to be noticed, it's the
-line this first pass drew: structure over the wire, drawn by `widgets/`, and nothing else.
-Parameters are a much larger read — one `DeviceParameter` per control per device, where a
-five-device chain is comfortably 300 of them — and they arrive as a field on `ChainDevice`
-when they arrive, not as a redesign of any of this. What's here proves the whole path from
-Live's chain to the widget library, which is the part worth being sure of first.
+**An open device shows its controls.** The face registered for its `class_name` if the app
+has drawn one, and otherwise `Faceplate`, which lays out every control the device reports
+in the order Live reports them. Both are the app's, not `widgets/`'s — see
+[device faces](device-faces.md) for where that boundary runs and how a control is bound to
+a parameter.
 
-It follows that the footer is **read-only**. Nothing in it writes to Live, because no
-device has a write path yet. The activator draws `Device.is_active` and doesn't move; the
-fold triangle isn't drawn at all, which is `Device`'s own way of saying a shell can't be
-folded from here. The one wart is that `widgets/`'s `Device` always draws its activator
-button, so there is a button in the title bar that reports state and does nothing when
-pressed. Giving `Device` a read-only mode is the fix, and it belongs in `widgets/`.
+**A folded device shows nothing, and costs nothing.** That is one fact said twice: `open`
+in the watch is derived from fold state, so the triangle in the title bar *is* the
+subscription. Folding a device drops its ~40 parameter reads and its ~40 observers;
+unfolding one is what asks for them. Nothing else in the app asks for a device's controls,
+because there is nothing else to ask with.
 
 **There is no refresh button.** There was one, and it existed only because the chain was
 read on demand: a device added in Live stayed invisible until something asked again, and
@@ -150,12 +148,6 @@ The store preserves array identity when nothing moved, which is a requirement ra
 nicety: `useSyncExternalStore` compares snapshots by reference and tears if the getter
 returns a fresh array every call.
 
-### There is still no write path
-
-Every control here reports and none of them moves anything. `setDeviceParam` is the next
-message, and the local-value hold it needs — `usePendingValue` — already exists in
-`widgets/` from the mixer's faders.
-
 ### What it still cannot follow
 
 A parameter's `state` between structural re-reads, per above. And Live exposes **no taper**
@@ -163,6 +155,35 @@ for a device parameter, which is why [`liveParam.ts`](../src/lib/liveParam.ts) s
 `exponent`: `DeviceParameter.value` is documented "Linear-to-GUI", so the curve is already
 applied on Live's side and the number is a position on the control rather than a physical
 quantity. Bending it here would bend it twice and disagree with `display`.
+
+## Writing back
+
+`setDevice` carries all three of a device's writes in one message — `on`, `folded`, and one
+control by index — because they are one operation on one thing and the protocol is
+coarse-grained by rule. `{ target: { t, path, i }, patch }`, where the target is the same
+`(t, path)` a `ChainWatch` uses plus a position in that run. There is no device id on the
+wire to use instead, and inventing one would mean the bridge keeping a copy of the set's
+device tree, which is what the watch model exists to avoid.
+
+**Nothing replies.** Every field is already observed by whoever is watching the run —
+`is_active` and `is_collapsed` on the shell, `value` on each control — so the
+acknowledgement is the next `chainState` or `chainValues`. That is a better answer than
+confirming a `set()` was called, and it is the *same* answer another client's write
+produces, which a reply would not be.
+
+Three consequences worth knowing:
+
+- **The bridge validates shape, not existence.** It checks that the address is an even path
+  of non-negative integers and stops there; whether it resolves is `lom.ts`'s to answer,
+  because only that side can. A parameter's range is checked there too, against the
+  parameter's own `min` and `max`.
+- **`state === 2` is refused on both sides.** `paramDisabled` won't let the gesture start,
+  and `set_device` refuses it again — the client's copy of `state` is only as fresh as the
+  last structural re-read.
+- **`on` and `folded` nudge a re-read; a control never does.** An unchanged write may not
+  notify, and a shell has no deadline to recover from that the way a dragged control has
+  `usePendingValue`'s. Nudging on every control write instead would rebuild every observer
+  in the watch sixteen times a second during a drag.
 
 ## Selecting a track selects it in Live too
 
@@ -221,7 +242,7 @@ message makes every re-read look like the devices went away.
 
 **Confirmed with Live open:** the subscription path works end to end. Clicking a track
 header declares a run, `watch_chains` installs against it, and the shells come back and
-draw. That covers the parts with the most ways to be wrong — the union reaching `lom.ts`,
+draw. That was the shell tier; nothing above it has been in front of Live. That covers the parts with the most ways to be wrong — the union reaching `lom.ts`,
 `chainRunPath` resolving, `readWatchedRun` answering, and `chainDevice` accepting a rack
 whose chains carry no devices.
 
@@ -241,8 +262,24 @@ patcher change, because anything the `route` doesn't match falls through to `lom
   not the descriptor read, not `str_for_value` spelling an enum's members, not the value
   observers firing, not `state` answering 0/1/2. `npm run dev:diag -- param` reads this
   device's own parameters and is the closest thing to a probe that already exists;
+- **every write in `set_device`**, which is all three of them. That `is_active` and
+  `is_collapsed` accept a write at all, that a parameter's `value` does, that Live's
+  readback comes back through the observers rather than needing a nudge, and that the
+  round trip is quick enough for a knob to feel attached to the pointer;
+- **that unfolding a device from the app arms its parameters.** It is two round trips by
+  design — the fold lands, the re-read reports it, the declaration changes, the watch
+  re-arms — and nothing has watched that sequence complete;
+- **the EQ Eight's parameter names**, which `eq8/bind.ts` matches on and which have never
+  been read off a device. A miss draws the control dead rather than dropping it, so the
+  failure is visible; the plain faceplate on the same device shows the real names;
 - that `CHAIN_DEBOUNCE_MS` is long enough for Live to finish rearranging a rack before the
   re-read, and short enough not to feel laggy. It is a guess;
+- **that opening a track with several devices already unfolded doesn't hitch Live.**
+  `readWatchedRun` reads every open device's parameters in one tick — ~7 properties per
+  control, so five open devices is on the order of 1,400 LOM calls at once, on the same
+  thread that draws Live. It is bounded (`DEVICE_COUNT_MAX`, `PARAM_COUNT_MAX`) but it is
+  not *chunked*, and the snapshot walk needed chunking for less. If clicking a track header
+  stutters, this is where it is, and `snapshotStep`'s pattern is the fix;
 - that writing `Song.View.selected_track` by id reveals the track the way writing
   `selected_scene` reveals a scene.
 

@@ -1,10 +1,13 @@
 # Device faces
 
 A stock Live device drawn as a faceplate rather than a title bar.
-`components/devices/eq8/Eq8.tsx`, `Eq8.css`.
+`components/devices/`, and `eq8/` inside it.
 
-**Nothing renders it yet.** It is a complete face with no data behind it and no call site —
-see [what it needs to be drawn](#what-it-needs-before-anything-draws-it) at the end.
+The device chain mounts one per open device: the face registered for its `class_name` if
+the app has drawn one, and `Faceplate` — every control the device reports, in order —
+if it hasn't. Both write back, so a knob moved here moves in Live and a knob moved in Live
+moves here. What is *not* connected is [listed at the end](#what-is-still-unbound), and
+every bit of it is drawn dead on the face rather than left to look live.
 
 ## Why the face is the app's, and the parts aren't
 
@@ -24,20 +27,60 @@ same crossing [the device chain](device-chain.md) already makes for shells, one 
 that footer takes a name and two booleans and draws chrome, and this takes a parameter and a
 number and draws a control.
 
-## It states its own readings
+## How a control reaches Live
 
-Every value on the face is the component's own `useState`, seeded from a constant at the top
-of the file. It is not that there is nothing to read any more — the parameter tier landed:
-an open device publishes `ChainDevice.parameters`, values stream into `ChainStore` and come
-back out of `useDeviceParameters`, and `deviceParam` in `lib/liveParam.ts` turns one into
-the `Param` a widget takes. What's missing is smaller and duller than it was: **this
-component accepts no props.** Nothing can hand it a parameter, so it holds its own.
+`ParamControl.tsx` is the whole seam, and everything in it is the same wherever a control
+is drawn — which is why no face repeats any of it:
 
-The seam where that changes is already in the props. Every widget takes an optional
-`display`, and it wins outright over the formatter in `widgets/src/param/format.ts` — the
-face computes `167 Hz` and `-7.81 dB` itself today, and hands over the moment Live's own
-`str_for_value` is on the wire. That is what the optional-and-authoritative rule in
-[the parameter model](../../widgets/docs/param-model.md) was for.
+- the range, the kind and the members come off the parameter through `deviceParam` in
+  [`lib/liveParam.ts`](../src/lib/liveParam.ts);
+- the printed reading is Live's own `str_for_value`, carried as `display`, which every
+  widget prefers over its own formatter — that optional-and-authoritative rule in
+  [the parameter model](../../widgets/docs/param-model.md) was built for exactly this;
+- a dragged value is held over the reported one by `usePendingValue` until Live's agrees
+  or its deadline passes, so a knob doesn't lag a round trip and doesn't lie about a write
+  Live clamped;
+- and a move goes out as `setDevice`, whose acknowledgement is the next value push rather
+  than a reply. See [the device chain](device-chain.md#writing-back).
+
+A face therefore only decides *arrangement*: which widget, where, captioned what. It picks
+one of `ParamKnob`, `ParamNumber`, `ParamSelect` or `ParamSwitch` explicitly, because which
+control Ableton used is part of what the face is copying and can't be inferred from a
+range. `ParamControl` does infer it, and that is what `Faceplate` is built from.
+
+**A slot may match nothing, and it shows.** A face joins its layout to a flat parameter
+list by *name* — there is no id, and a position in the list is a fact about one Live
+version. Every control accepts `null` and draws itself plainly dead, with a title saying
+which name it went looking for. A face that silently dropped the control it couldn't find
+would be a face that looks correct and isn't.
+
+## Which parameter is which, for the EQ Eight
+
+[`eq8/bind.ts`](../src/components/devices/eq8/bind.ts) does that join, and it is matched
+**loosely on purpose**: a band's controls are found by band number plus a keyword, not by
+an exact table. Live's names have not been read off a real device in this project, and an
+exact table would turn one renamed control into forty dead ones.
+
+Two orderings in there are load-bearing and have tests: `frequency` is claimed before `q`,
+because `Frequency` contains a q, and `filter type` before `filter on`, because a claimed
+parameter is out of the running and otherwise the wrong one takes the slot. `Resonance`
+contains an `on`, which is why the patterns are anchored to word boundaries rather than
+being substrings.
+
+**The A channel wins.** In L/R and M/S modes an EQ Eight has two sets of bands, `… A` and
+`… B`, and the join takes whichever comes first. Choosing between them needs
+`Eq8Device.edit_mode` — a device property, not a parameter.
+
+## The plain faceplate is not a degraded mode
+
+`Faceplate` draws every control a device reports, in Live's own order, each as whichever
+widget its shape calls for. It is what nearly every device in a set will use, since the
+registry holds one face.
+
+It also earns its place a second way: it is the only thing in the app that shows a
+parameter list **as Live spells it**, captions and all. So it is where the names a face has
+to match get read off a real device, and where a face that stopped matching them shows up.
+Open any device in the footer and its parameters are on screen with their real names.
 
 ## The geometry, which is the part that took the iterations
 
@@ -74,34 +117,35 @@ Two consequences worth knowing before adjusting anything:
   the wire carries it today, which is why the face has no notion of it.
 
 Colours come from the app through the token bridge: every `--wdg-*` token resolves to a
-`shared.css` token with its own fallback, which is why the same face works on the widget
-bench with no palette around it. See [layout and CSS](layout-and-css.md#widget-tokens) — and
-note the direction, because `shared.css` never defines a `--wdg-*` token.
+`shared.css` token with its own fallback, which is what lets a control drawn from these
+parts sit on a page with no palette around it at all. See
+[layout and CSS](layout-and-css.md#widget-tokens) — and note the direction, because
+`shared.css` never defines a `--wdg-*` token.
 
-## What it needs before anything draws it
+## What is still unbound
 
-1. **Props, and a binding.** The parameters exist; what doesn't is any way to give them to
-   this component, and any decision about how a face finds the three it wants for band 4
-   out of a flat list of `DeviceParameterState`. Matching is by `name`, and the names are
-   Live's — none of them has been read off a real device yet.
+Seven controls on the EQ Eight's face are drawn **disabled**, with a title saying why. That
+is deliberate: a control that moves and does nothing is worse than one that plainly can't,
+and the point of drawing them at all is that the gap stays visible.
 
-   **The mapping will not be one-to-one, and `bridge/LOM.md` says so:** three of the EQ
-   Eight's controls are device *properties* rather than parameters, so they will never
-   appear in that list. `global_mode` is this face's Mode select, `edit_mode` is its Edit
-   switch, and `oversample` is a control the face doesn't draw at all. A face built only
-   from `parameters` loses them silently, which is the failure worth designing against.
-2. **A decision about the shell.** `Eq8` renders its own `Device`, title bar and all,
-   while `DeviceChain` renders a `Device` per chain entry. One of them has to give: either
-   the face becomes a faceplate that a shell wraps, or the chain hands the whole shell to a
-   face when it has one. The second reads better — the preset chrome in that title bar is
-   the face's, not the chain's — but it means `DeviceShell` picks a component by device kind.
-3. **A kind to pick it by, which already exists.** `ChainDevice.className` is
-   `Device.class_name` — `Eq8`, not `EQ Eight` and not the title bar, because a renamed EQ
-   Eight is still an `Eq8`. Match on that and never on `name`. See
-   [`bridge/LOM.md`](../../bridge/LOM.md) for the three-way distinction.
+1. **The analyzer's four** — Analyze, Block, Refresh, Avg. Live exposes none of them to the
+   LOM, as parameters or as properties, and this face draws no spectrum for them to drive.
+   They would need something to be for before they could be bound.
+2. **Mode and Edit** — `Eq8Device.global_mode` and `edit_mode`, which are device
+   *properties* rather than parameters and so will never appear in `ChainDevice.parameters`
+   however well the name matching works. Both are `get, set, observe` — see
+   [`bridge/LOM.md`](../../bridge/LOM.md) — so the gap is in what the wire carries. Closing
+   it means a per-class properties tier alongside the parameter one: which properties a
+   class publishes, read on open and observed like a value. `oversample` is the third of
+   these and the face doesn't draw it at all.
+3. **Band selection**, still. `Eq8Device.View.selected_band` is settable and observable and
+   would ride the same tier.
 
-The naming follows from that last point rather than from taste: a face lives at
-`components/devices/<class_name>/`, and the folder, the file and the export spell it the
-way the wire does. A lookup from `className` to a component is then a table of the same
-string three times, which is the point — `EQ Eight` is what the title bar says, not what
-anything matches on.
+And the standing one, which no amount of code here settles:
+
+**None of this has been read off a real device.** Not the parameter names `bind.ts` matches
+on, not `str_for_value` spelling a filter type's members, not `state` answering 0/1/2, not a
+`value` observer firing during a drag. The plain faceplate is the fastest way to check the
+first of those — open any device in the footer and its controls are on screen with Live's
+own names on them. `npm run dev:diag -- param` reads this device's own parameters and is the
+closest thing to a probe that already exists.

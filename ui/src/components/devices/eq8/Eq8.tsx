@@ -1,52 +1,53 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Device } from '../../../../../widgets/src/chrome/Device.js';
 import { Panel, PanelColumn } from '../../../../../widgets/src/chrome/Panel.js';
-import { Knob } from '../../../../../widgets/src/controls/Knob.js';
 import { NumberField } from '../../../../../widgets/src/controls/NumberField.js';
 import { Select } from '../../../../../widgets/src/controls/Select.js';
 import { Toggle } from '../../../../../widgets/src/controls/Toggle.js';
 import type { Param } from '../../../../../widgets/src/param/param.js';
+import type { DeviceFaceProps } from '../face.js';
+import {
+  ParamKnob,
+  ParamNumber,
+  ParamSelect,
+  ParamSwitch,
+  type ParamBinding,
+} from '../ParamControl.js';
+import { bindEq8 } from './bind.js';
 import './Eq8.css';
 
-const FREQUENCY: Param = {
-  kind: 'float', min: 20, max: 20000, defaultValue: 167, exponent: 3, shortName: 'Freq',
-};
-const GAIN: Param = {
-  kind: 'float', min: -15, max: 15, defaultValue: 0, shortName: 'Gain',
-};
-const Q: Param = {
-  kind: 'float', min: 0.1, max: 18, defaultValue: 0.71, exponent: 2, shortName: 'Q',
-};
+/** The analyzer's own settings, which have no range Live will tell us about. */
 const REFRESH: Param = {
   kind: 'float', min: 1, max: 60, defaultValue: 60, shortName: 'Refresh',
 };
 const AVERAGE: Param = {
   kind: 'float', min: 0, max: 10, defaultValue: 1, shortName: 'Avg',
 };
-const SCALE: Param = {
-  kind: 'float', min: 0, max: 200, defaultValue: 100, unit: 'percent', shortName: 'Scale',
-};
-const OUTPUT: Param = {
-  kind: 'float', min: -12, max: 12, defaultValue: 0, unit: 'decibel', shortName: 'Output',
-};
 
-const INITIAL_FREQUENCIES = [167, 200, 1290, 2610, 100, 10000, 5000, 18000];
-const INITIAL_GAINS = [0, 0, -7.81, 3.6, 0, 0, 0, 0];
-const INITIAL_QS = [1.37, 0.71, 0.93, 0.71, 0.71, 0.71, 0.71, 0.71];
-const INITIAL_FILTERS = [0, 2, 2, 3, 2, 2, 2, 1];
 const BLOCK_SIZES = ['1024', '2048', '4096', '8192', '16384'];
-const FILTER_TYPES = ['Low', 'Shelf', 'Bell', 'Notch'];
 const CHANNEL_MODES = ['Stereo', 'L/R', 'M/S'];
 
-function replaceAt(values: number[], at: number, next: number) {
-  return values.map((value, index) => (index === at ? next : value));
-}
+/**
+ * Why four controls on this face are dead, and what would revive them.
+ *
+ * Live's analyzer settings — Analyze, Block, Refresh, Avg — are a property of
+ * its own display and appear nowhere in the LOM, not as parameters and not as
+ * device properties. There is nothing to bind them to and nothing they could
+ * drive, since this face draws no spectrum.
+ */
+const ANALYZER_NOTE = 'Live does not expose its analyzer settings to the LOM';
 
-function frequencyText(value: number) {
-  if (value < 1000) return `${Math.round(value)} Hz`;
-  const decimals = value >= 10000 ? 1 : 2;
-  return `${(value / 1000).toFixed(decimals)} kHz`;
-}
+/**
+ * And why three more are.
+ *
+ * Mode, Edit and oversample are `Eq8Device` *properties* rather than
+ * parameters, so they will never appear in `ChainDevice.parameters` however
+ * well the name matching works. They are all `get, set, observe` — see
+ * `bridge/LOM.md` — so this is a gap in what the wire carries, not in Live.
+ */
+const PROPERTY_NOTE = 'A device property, which the chain does not carry yet';
+
+const NOOP = () => {};
 
 function IconButton({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -64,6 +65,12 @@ function DownIcon() {
   );
 }
 
+/** Whether a two-state parameter is up. Unmatched reads as on, not as off. */
+function switchedOn(state: BSV.DeviceParameterState | null): boolean {
+  if (!state) return true;
+  return state.value >= (state.min + state.max) / 2;
+}
+
 /**
  * Live's EQ Eight, drawn out of [`widgets/`](../../../../../widgets/README.md)
  * and composed here rather than there.
@@ -79,41 +86,38 @@ function DownIcon() {
  * **`Eq8` and not `EQEight`, deliberately.** Live names a device three ways and
  * this is the one a program uses: `class_name` is `Eq8`, `class_display_name`
  * is `EQ Eight`, and `name` is whatever the user retyped in the title bar. The
- * chain publishes the first as `ChainDevice.className`, so it is what a face
- * gets picked by, and the folder, the file, the export and the wire all spell
- * it the same. The display name survives as the string in the title bar below.
+ * chain publishes the first as `ChainDevice.className`, which is what the face
+ * registry keys on; the title bar below shows the third, because that is the
+ * one a person reads.
  *
- * **It states its own readings.** Not for want of any: an open device publishes
- * its parameters, and `deviceParam` turns one into the `Param` a widget takes.
- * This component simply accepts no props yet, so every value here is its own
- * `useState`. The `display` each control takes is the seam that ends that — it
- * wins over the formatter outright, so Live's `str_for_value` replaces the text
- * computed below without any control changing. See
- * [device faces](../../../../docs/device-faces.md).
+ * **It reads Live now, and where it can't, it shows that.** Every band control
+ * is bound through [`bindEq8`](./bind.ts) and moves Live when moved. Seven are
+ * not bound and are drawn dead rather than local: four analyzer settings that
+ * the LOM does not expose at all, and three `Eq8Device` properties that it does
+ * but this protocol doesn't carry. A control that silently did nothing when
+ * dragged would be the worse of the two.
  */
-export function Eq8() {
-  const [deviceOn, setDeviceOn] = useState(true);
-  const [frequencies, setFrequencies] = useState(INITIAL_FREQUENCIES);
-  const [gains, setGains] = useState(INITIAL_GAINS);
-  const [qs, setQs] = useState(INITIAL_QS);
-  const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [bands, setBands] = useState([true, true, true, true, false, false, false, false]);
-  const [refresh, setRefresh] = useState(60);
-  const [average, setAverage] = useState(1);
-  const [analyzing, setAnalyzing] = useState(true);
-  const [blockSize, setBlockSize] = useState(3);
-  const [channelMode, setChannelMode] = useState(0);
-  const [editLeft, setEditLeft] = useState(true);
-  const [adaptive, setAdaptive] = useState(true);
-  const [scale, setScale] = useState(100);
-  const [output, setOutput] = useState(0);
+export function Eq8({ device, parameters, onParam, onToggle, onFold }: DeviceFaceProps) {
+  const binding = useMemo(() => bindEq8(parameters), [parameters]);
+
+  // Rebuilt per render rather than memoised: a binding closes over `onParam`
+  // and an index, both of which are cheap, and forty memo entries to save forty
+  // object literals is the kind of caching that costs more than it saves.
+  const slot = (index: number | null): ParamBinding => ({
+    state: index === null ? null : parameters?.[index] ?? null,
+    onChange: (value) => {
+      if (index !== null) onParam(index, value);
+    },
+  });
 
   return (
     <Device
-      name="EQ Eight"
+      name={device.name}
       className="eq8-device"
-      on={deviceOn}
-      onToggle={setDeviceOn}
+      on={device.on}
+      onToggle={onToggle}
+      folded={device.folded}
+      onFold={onFold}
       headerStart={<IconButton label="Load preset"><DownIcon /></IconButton>}
       headerAfterName={<span className="eq8-status" aria-label="Control surface focus">◆</span>}
       headerEnd={
@@ -127,70 +131,75 @@ export function Eq8() {
       <Panel rows={3} gap={2} className="eq8-panel">
         <PanelColumn className="eq8-side eq8-left">
           <div className="eq8-side-content">
-            <Toggle on={analyzing} onChange={setAnalyzing} name="Analyze">
-              {analyzing ? 'On' : 'Off'}
+            <Toggle on onChange={NOOP} disabled name="Analyze" title={ANALYZER_NOTE}>
+              On
             </Toggle>
-            <Select items={BLOCK_SIZES} index={blockSize} onChange={setBlockSize} name="Block" />
+            <Select
+              items={BLOCK_SIZES}
+              index={3}
+              onChange={NOOP}
+              disabled
+              name="Block"
+              title={ANALYZER_NOTE}
+            />
             <NumberField
               param={REFRESH}
-              value={refresh}
-              onChange={setRefresh}
-              display={refresh.toFixed(2)}
+              value={60}
+              onChange={NOOP}
+              disabled
+              display="60.00"
+              title={ANALYZER_NOTE}
             />
             <NumberField
               param={AVERAGE}
-              value={average}
-              onChange={setAverage}
-              display={average.toFixed(2)}
+              value={1}
+              onChange={NOOP}
+              disabled
+              display="1.00"
+              title={ANALYZER_NOTE}
             />
           </div>
         </PanelColumn>
 
-        {frequencies.map((frequency, index) => (
-          <PanelColumn
-            key={index}
-            className={`eq8-band${bands[index] ? ' eq8-band-on' : ''}`}
-          >
-            <Knob
-              param={FREQUENCY}
-              value={frequency}
-              onChange={(next) => setFrequencies((values) => replaceAt(values, index, next))}
-              display={frequencyText(frequency)}
-              disabled={!bands[index]}
-            />
-            <Knob
-              param={GAIN}
-              value={gains[index]}
-              onChange={(next) => setGains((values) => replaceAt(values, index, next))}
-              display={`${gains[index].toFixed(2)} dB`}
-              disabled={!bands[index]}
-            />
-            <div className="eq8-band-bottom">
-              <NumberField
-                param={Q}
-                value={qs[index]}
-                onChange={(next) => setQs((values) => replaceAt(values, index, next))}
-                display={qs[index].toFixed(2)}
-                disabled={!bands[index]}
+        {binding.bands.map((band, index) => {
+          const on = switchedOn(slot(band.on).state);
+          return (
+            <PanelColumn
+              key={index}
+              className={`eq8-band${on ? ' eq8-band-on' : ''}`}
+            >
+              <ParamKnob
+                binding={slot(band.frequency)}
+                name="Freq"
+                label={`Band ${index + 1} frequency`}
+                disabled={!on}
               />
-              <Select
-                items={FILTER_TYPES}
-                index={filters[index]}
-                onChange={(next) => setFilters((values) => replaceAt(values, index, next))}
-                label={`Band ${index + 1} filter type`}
-                disabled={!bands[index]}
+              <ParamKnob
+                binding={slot(band.gain)}
+                name="Gain"
+                label={`Band ${index + 1} gain`}
+                disabled={!on}
               />
-              <div className="eq8-band-switch">
-                <Toggle
-                  on={bands[index]}
-                  onChange={(next) => setBands((values) => values.map((on, at) => at === index ? next : on))}
-                  label={`Band ${index + 1}`}
+              <div className="eq8-band-bottom">
+                <ParamNumber
+                  binding={slot(band.q)}
+                  name="Q"
+                  label={`Band ${index + 1} Q`}
+                  disabled={!on}
                 />
-                <span>{index + 1}</span>
+                <ParamSelect
+                  binding={slot(band.filterType)}
+                  label={`Band ${index + 1} filter type`}
+                  disabled={!on}
+                />
+                <div className="eq8-band-switch">
+                  <ParamSwitch binding={slot(band.on)} label={`Band ${index + 1}`} />
+                  <span>{index + 1}</span>
+                </div>
               </div>
-            </div>
-          </PanelColumn>
-        ))}
+            </PanelColumn>
+          );
+        })}
 
         <PanelColumn className="eq8-side eq8-right">
           <div className="eq8-side-content">
@@ -201,20 +210,24 @@ export function Eq8() {
               </div>
               <Select
                 items={CHANNEL_MODES}
-                index={channelMode}
-                onChange={setChannelMode}
+                index={0}
+                onChange={NOOP}
+                disabled
                 name="Mode"
+                title={PROPERTY_NOTE}
               />
             </div>
             <div className="eq8-side-section">
-              <Toggle on={editLeft} onChange={setEditLeft} name="Edit">L</Toggle>
-              <Toggle on={adaptive} onChange={setAdaptive} name="Adapt. Q">
-                {adaptive ? 'On' : 'Off'}
+              <Toggle on onChange={NOOP} disabled name="Edit" title={PROPERTY_NOTE}>
+                L
               </Toggle>
+              <ParamSwitch binding={slot(binding.adaptiveQ)} name="Adapt. Q">
+                {switchedOn(slot(binding.adaptiveQ).state) ? 'On' : 'Off'}
+              </ParamSwitch>
             </div>
             <div className="eq8-side-section">
-              <NumberField param={SCALE} value={scale} onChange={setScale} />
-              <NumberField param={OUTPUT} value={output} onChange={setOutput} />
+              <ParamNumber binding={slot(binding.scale)} name="Scale" />
+              <ParamNumber binding={slot(binding.output)} name="Output" />
             </div>
           </div>
         </PanelColumn>

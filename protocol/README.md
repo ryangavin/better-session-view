@@ -57,6 +57,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `stop` `{ target }` | stop a track, every clip, or the song |
 | `setTransport` `{ patch }` | update any related subset of Live's control-bar settings |
 | `setMixer` `{ target, patch }` | update one track or Master mixer strip, including one indexed send |
+| `setDevice` `{ target, patch }` | set one device's activator, its fold state, and/or one of its controls |
 | `watchPlay` `{ on }` | install the per-track play-state observers |
 | `watchMeters` `{ on }` | install the track/Master level and mixer-control observers |
 | `watchStatus` `{ on }` | follow the playing clip in each track, for the stop row's status displays |
@@ -190,7 +191,8 @@ an object id; the bridge resolves it against the track list so the wire stays in
 same `i`-indexed space as everything else. It's the *immediate* parent — groups nest.
 
 **Some requests have no reply, deliberately.** `launch`, `stop`, `selectScene`,
-`selectTrack`, `setTransport`, `setMixer` and the watch requests are not in `TERMINAL`. What you want back from
+`selectTrack`, `setTransport`, `setMixer`, `setDevice` and the watch requests are not in
+`TERMINAL`. What you want back from
 firing a clip isn't an acknowledgement, it's the play state changing, and that arrives
 on its own as `playState`. Selecting a scene likewise reports through the existing
 Session-cursor observers; the client has already navigated its own grid. Meter watching
@@ -210,6 +212,14 @@ callback produces one coherent cached state; it does not re-read every strip. `M
 remains numbers-only at 30 Hz, so moving a control or running parameter automation never
 puts the entire grid through React state. `setMixer` is one patch
 for one strip, even when a future gesture changes several related fields together.
+
+**A device is written the same way, and addressed by position.** `setDevice` carries a
+target of `{ t, path, i }` — the run a `ChainWatch` names, plus which device in it — and a
+patch of `on`, `folded` and one control by index. There is no device id on the wire, so
+there is none to write against: an id would mean the bridge holding a copy of the set's
+device tree, which is the thing the targeted watch exists to avoid. `folded` is the field
+that does two jobs, because `open` in the watch is derived from it — writing it is how a
+client asks for a device's parameters and how it gives them up.
 
 **Play state is per track, never per clip.** `TrackPlayState` carries
 `playing_slot_index`, `fired_slot_index` and `arm`, which between them describe the whole

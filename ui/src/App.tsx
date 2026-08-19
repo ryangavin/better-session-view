@@ -321,6 +321,7 @@ export function App() {
     watchChains: bridge.watchChains,
     subscribeChains: bridge.subscribeChains,
     subscribeChainValues: bridge.subscribeChainValues,
+    setDevice: bridge.setDevice,
   });
 
   // Set configuration is owned here rather than by any one opener: the header,
@@ -501,6 +502,7 @@ export function App() {
           rather than being one more column in the row. */}
       {deviceChain.track !== null && (
         <DeviceChain
+          t={deviceChain.track}
           name={trackNames.get(deviceChain.track) ?? `Track ${deviceChain.track + 1}`}
           devices={deviceChain.devices}
           loading={deviceChain.loading}
@@ -508,6 +510,8 @@ export function App() {
           runAt={deviceChain.runAt}
           chainAt={deviceChain.chainAt}
           onChain={deviceChain.onChain}
+          store={deviceChain.store}
+          onDevice={deviceChain.onDevice}
           onClose={deviceChain.onClose}
         />
       )}

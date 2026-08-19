@@ -106,6 +106,15 @@ export interface DeviceChainState {
   /** Which chain a rack is showing. */
   chainAt: (path: readonly number[], index: number) => number;
   onChain: (path: readonly number[], index: number, chain: number) => void;
+  /**
+   * Write one device in the shown track: its activator, its fold, one control.
+   *
+   * **Unfolding is how a face gets its controls.** `open` is derived from fold
+   * state, so this one write is both "show me this device" and "start watching
+   * it" — there is no separate subscribe, and there is nothing to leak if the
+   * user closes the tab mid-gesture.
+   */
+  onDevice: (path: readonly number[], index: number, patch: BSV.DevicePatch) => void;
   onSelectTrack: (t: number) => void;
   onClose: () => void;
 }
@@ -116,12 +125,14 @@ export function useDeviceChain({
   watchChains,
   subscribeChains,
   subscribeChainValues,
+  setDevice,
 }: {
   lomReady: boolean;
   selectTrack: BridgeState['selectTrack'];
   watchChains: BridgeState['watchChains'];
   subscribeChains: BridgeState['subscribeChains'];
   subscribeChainValues: BridgeState['subscribeChainValues'];
+  setDevice: BridgeState['setDevice'];
 }): DeviceChainState {
   const [track, setTrack] = useState<number | null>(null);
   const [state, setState] = useState<BSV.ChainState | null>(null);
@@ -181,6 +192,16 @@ export function useDeviceChain({
     setChosen((held) => ({ ...held, [devicePathKey(path, index)]: chain }));
   }, []);
 
+  const onDevice = useCallback(
+    (path: readonly number[], index: number, patch: BSV.DevicePatch) => {
+      // Addressed against the track this hook is showing, so a caller can name
+      // a device with the run-relative address it was already drawn with.
+      if (track === null) return;
+      setDevice({ t: track, path: [...path], i: index }, patch);
+    },
+    [track, setDevice],
+  );
+
   const onSelectTrack = useCallback(
     (t: number) => {
       setTrack((shown) => {
@@ -210,6 +231,7 @@ export function useDeviceChain({
     store,
     chainAt,
     onChain,
+    onDevice,
     onSelectTrack,
     onClose,
   };

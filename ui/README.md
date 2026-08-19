@@ -18,8 +18,8 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 | [bulk workflows](docs/bulk-workflows.md) | the running order or coloring by rule | `components/ReorderModal.tsx`, `RecolorModal.tsx`, `BulkWorkflow.css` |
 | [the header](docs/header.md) | the Live control bar, transport state, glyphs | `components/Header.tsx`, `Icon.tsx`, `Control.tsx` |
 | [mixer panel](docs/mixer.md) | meters, faders, sends, the stop row | `components/ClipGrid/TrackMeter.tsx`, `TrackSends.tsx`, `useMeterResize.ts`, `hooks/useMixer.ts`, `useMeters.ts`, `lib/mixerStore.ts`, `meterScale.ts`, `liveParam.ts` |
-| [the device chain](docs/device-chain.md) | the footer showing a track's devices, what is watched, and where a faceplate reads its controls | `components/DeviceChain.tsx`, `hooks/useDeviceChain.ts`, `lib/chainStore.ts`, `liveParam.ts` |
-| [device faces](docs/device-faces.md) | a stock device drawn as a faceplate, and why the arrangement is the app's while the parts are `widgets/`'s | `components/devices/eq8/*` |
+| [the device chain](docs/device-chain.md) | the footer showing a track's devices, what is watched, where a faceplate reads its controls, and how a write gets back | `components/DeviceChain.tsx`, `hooks/useDeviceChain.ts`, `lib/chainStore.ts`, `liveParam.ts` |
+| [device faces](docs/device-faces.md) | a stock device drawn as a faceplate, how a control is bound to Live, and why the arrangement is the app's while the parts are `widgets/`'s | `components/devices/*` |
 | [track groups](docs/track-groups.md) | group columns and collapsing | `hooks/useTrackColumns.ts` |
 | [undo](docs/undo.md) | the undo entry, or any new write path | `hooks/useBridge.ts` |
 | [performance notes](docs/performance.md) | **anything that reaches a memoized row** — props on `Row`, `SongHeaderRow`, or callbacks from `App` | `components/ClipGrid/Row.tsx`, `SongHeaderRow.tsx`, `App.tsx` |
@@ -56,9 +56,15 @@ src/components/       a folder per component — see below; the flat pairs are t
     useMeterResize.ts makes the meter row's top border resize its height
   Header.tsx          Live control bar, Arrangement position, playback, view controls
   Icon.tsx            compact-control glyphs, as inline SVG
-  DeviceChain.tsx     the selected track's devices, as widgets/ shells
-  devices/eq8/
-    Eq8.tsx           Live's EQ Eight as a faceplate, composed from widgets/ controls
+  DeviceChain.tsx     the selected track's devices, as widgets/ shells and faces
+  devices/
+    face.ts           what every face is handed, and what the chain picks one by
+    faces.ts          class_name -> face; everything else gets Faceplate
+    ParamControl.tsx  one Live parameter bound to one widget — the whole seam
+    Faceplate.tsx     the plain face: every control a device reports, in order
+    eq8/
+      Eq8.tsx         Live's EQ Eight as a faceplate, composed from widgets/ controls
+      bind.ts         which of the device's parameters is which band's control
   StatsBar.tsx        bottom status — readiness, stat tiles, key hints + log toggle
   Stat.tsx            one tile
   Rail.tsx            the rail's chrome; App nests the panels inside it
@@ -123,9 +129,9 @@ was one; `devices/eq8/` is the first of the rest, and every flat `*.tsx` + `*.cs
 the tree above is a conversion that hasn't happened yet rather than a second convention.
 
 **A device face is named for Live's `class_name`.** The folder, the file, the export and
-`ChainDevice.className` all say `Eq8`, which is what the chain will match on to pick a
-face; `EQ Eight` is `class_display_name` and stays a string in the title bar rather than
-becoming an identifier. See [device faces](docs/device-faces.md).
+`ChainDevice.className` all say `Eq8`, which is what `faces.ts` matches on to pick a face;
+`EQ Eight` is `class_display_name` and stays a string in the title bar rather than becoming
+an identifier. See [device faces](docs/device-faces.md).
 
 ## The one dependency pointing out of the app
 

@@ -157,6 +157,14 @@ export interface BridgeState {
   /** Write one mixer strip. Its observed readback updates the panel. */
   setMixer: (target: BSV.MixerTarget, patch: BSV.MixerPatch) => void;
   /**
+   * Write one device: its activator, its fold state, or one of its controls.
+   *
+   * Fire-and-forget, and the readback is the watch. Unfolding is the same
+   * gesture as subscribing to a device's controls — `open` is derived from
+   * fold state — so this is how a face gets its parameters at all.
+   */
+  setDevice: (target: BSV.DeviceTarget, patch: BSV.DevicePatch) => void;
+  /**
    * Fold or unfold a group track in Live. No await, and no reply — the grid
    * has already moved its own columns. See `setFold` in the protocol.
    */
@@ -555,6 +563,12 @@ export function useBridge(
   const setMixer = useCallback(
     (target: BSV.MixerTarget, patch: BSV.MixerPatch) =>
       client.send({ type: 'setMixer', target, patch }),
+    [client],
+  );
+
+  const setDevice = useCallback(
+    (target: BSV.DeviceTarget, patch: BSV.DevicePatch) =>
+      client.send({ type: 'setDevice', target, patch }),
     [client],
   );
 
@@ -1057,6 +1071,7 @@ export function useBridge(
     stop,
     setTransport,
     setMixer,
+    setDevice,
     setFold,
     selectScene,
     selectTrack,

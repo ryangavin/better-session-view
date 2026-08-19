@@ -2,6 +2,11 @@ import { Chain } from '../../../widgets/src/chrome/Chain.js';
 import { Device } from '../../../widgets/src/chrome/Device.js';
 import { Rack } from '../../../widgets/src/chrome/Rack.js';
 import { ControlButton } from './Control.js';
+import { Faceplate } from './devices/Faceplate.js';
+import { faceFor } from './devices/faces.js';
+import type { DeviceFaceProps } from './devices/face.js';
+import { useDeviceParameters } from '../hooks/useDeviceChain.js';
+import type { ChainStore } from '../lib/chainStore.js';
 import './DeviceChain.css';
 
 /**
@@ -10,27 +15,25 @@ import './DeviceChain.css';
  * This is the first thing in the app drawn out of [`widgets/`](../../../widgets/README.md)
  * rather than its own components, and the boundary holds the way the mixer's
  * faders proved it could: `widgets/` takes a name and two booleans, and knows
- * nothing about `BSV`, the bridge, or Live. The adapting is all here, and it is
- * three lines of it, because a shell is a small thing.
+ * nothing about `BSV`, the bridge, or Live. The adapting is all here and in
+ * [`devices/`](./devices/), which is where a device's controls become widgets.
  *
- * **Shells only, no faceplates.** Every device is a title bar with its name, its
- * activator and its fold state, and a rack additionally has its macro face and
- * its chain list. There are no knobs on any of them yet — parameters are the
- * next tier of the same subscription and land as a field on what it publishes.
+ * **Faces, not just shells.** A device the app has drawn a face for renders it;
+ * everything else gets `Faceplate`, which lays out whatever controls the device
+ * reports. Both only when the device is open — a folded one is a title bar with
+ * nothing behind it, and nothing behind it is being watched either.
  *
- * **Read-only, and visibly so.** Nothing in this footer writes to Live, because
- * there is no write path for a device yet. The activator draws `Device.is_active`
- * and the fold triangle is absent rather than dead, which is `Device`'s own way
- * of saying a shell can't be folded from here.
- *
- * **There is no refresh button any more.** It existed because the chain was read
- * on demand, so a device added in Live was invisible until something asked
- * again — and the button was that ask. The run is watched now, including its own
- * membership, so there is nothing for it to do; a button whose tooltip said
- * devices are read on demand would be describing the version before this one.
+ * **The fold triangle is the subscription.** `open` in the chain watch is
+ * derived from fold state, so unfolding a device here is what makes the bridge
+ * read and observe its ~40 parameters, and folding it is what drops them. That
+ * is the whole economy of the parameter tier expressed as one triangle, and it
+ * is why this component writes fold rather than keeping it locally: a fold that
+ * didn't reach Live would be a fold that changed nothing about the cost.
  */
 export interface DeviceChainProps {
-  /** The track being shown. Its name, for the strip's own label. */
+  /** The track being shown. Its index addresses every device in the strip. */
+  t: number;
+  /** Its name, for the strip's own label. */
   name: string;
   devices: BSV.ChainDevice[];
   loading: boolean;
@@ -39,16 +42,41 @@ export interface DeviceChainProps {
   runAt(path: readonly number[]): BSV.ChainDevice[] | null | undefined;
   chainAt(path: readonly number[], index: number): number;
   onChain(path: readonly number[], index: number, chain: number): void;
+  /** Where a face's controls read from — outside React, at gesture rate. */
+  store: ChainStore;
+  onDevice(path: readonly number[], index: number, patch: BSV.DevicePatch): void;
   onClose(): void;
 }
 
 /** What every shell needs to address itself and reach the run below it. */
 interface ShellContext {
+  /** The track, which every device address starts from. */
+  t: DeviceChainProps['t'];
   /** The run this device sits in. */
   path: readonly number[];
   runAt: DeviceChainProps['runAt'];
   chainAt: DeviceChainProps['chainAt'];
   onChain: DeviceChainProps['onChain'];
+  store: DeviceChainProps['store'];
+  onDevice: DeviceChainProps['onDevice'];
+}
+
+/**
+ * The three writes a device shell offers, bound to one device's address.
+ *
+ * Assembled in one place because a rack and an ordinary device need the same
+ * three, and because a face is handed them as a unit — `DeviceFaceProps` is the
+ * contract, and building half of it in two components is how the two drift.
+ */
+function writesFor(
+  context: ShellContext,
+  index: number,
+): Pick<DeviceFaceProps, 'onParam' | 'onToggle' | 'onFold'> {
+  return {
+    onParam: (p, value) => context.onDevice(context.path, index, { param: { p, value } }),
+    onToggle: (on) => context.onDevice(context.path, index, { on }),
+    onFold: (folded) => context.onDevice(context.path, index, { folded }),
+  };
 }
 
 /**
@@ -64,6 +92,9 @@ interface ShellContext {
  * this device's payload, so `runAt` may answer `undefined` for a beat after the
  * rack opens. That reads as "opening" rather than "empty", because a rack that
  * is genuinely bare answers `[]`.
+ *
+ * A rack's parameters are its macros, so they go in the pane Live puts them in
+ * rather than into a face of their own.
  */
 function RackShell({
   device,
@@ -74,6 +105,8 @@ function RackShell({
   index: number;
   context: ShellContext;
 }) {
+  const parameters = useDeviceParameters(context.store, context.t, context.path, index);
+  const writes = writesFor(context, index);
   const chains = device.chains ?? [];
   const at = Math.min(context.chainAt(context.path, index), Math.max(0, chains.length - 1));
   const inner = [...context.path, index, at];
@@ -83,7 +116,14 @@ function RackShell({
     <Rack
       name={device.name}
       on={device.on}
+      onToggle={writes.onToggle}
       folded={device.folded}
+      onFold={writes.onFold}
+      macros={
+        device.folded ? undefined : (
+          <Faceplate parameters={parameters} onParam={writes.onParam} />
+        )
+      }
       chains={chains.map((c) => c.name)}
       chainAt={at}
       onChain={(chain) => context.onChain(context.path, index, chain)}
@@ -105,6 +145,41 @@ function RackShell({
 }
 
 /**
+ * An ordinary device: its face if the app has drawn one, a plain plate if not.
+ *
+ * A face owns its whole shell, title bar included — see
+ * [`face.ts`](./devices/face.ts) for why — so this either renders the face and
+ * nothing else, or builds the shell itself and puts `Faceplate` inside it.
+ */
+function PlainShell({
+  device,
+  index,
+  context,
+}: {
+  device: BSV.ChainDevice;
+  index: number;
+  context: ShellContext;
+}) {
+  const parameters = useDeviceParameters(context.store, context.t, context.path, index);
+  const Face = faceFor(device.className);
+  const writes = writesFor(context, index);
+
+  if (Face) return <Face device={device} parameters={parameters} {...writes} />;
+  return (
+    <Device
+      name={device.name}
+      on={device.on}
+      onToggle={writes.onToggle}
+      folded={device.folded}
+      onFold={writes.onFold}
+      title={`${device.name} · ${device.className}`}
+    >
+      <Faceplate parameters={parameters} onParam={writes.onParam} />
+    </Device>
+  );
+}
+
+/**
  * One device: a rack if it has chains, an ordinary shell otherwise.
  *
  * A device has no id on the wire — its address is its position in the run, the
@@ -122,10 +197,11 @@ function DeviceShell({
   context: ShellContext;
 }) {
   if (device.chains) return <RackShell device={device} index={index} context={context} />;
-  return <Device name={device.name} on={device.on} folded={device.folded} />;
+  return <PlainShell device={device} index={index} context={context} />;
 }
 
 export function DeviceChain({
+  t,
   name,
   devices,
   loading,
@@ -133,8 +209,12 @@ export function DeviceChain({
   runAt,
   chainAt,
   onChain,
+  store,
+  onDevice,
   onClose,
 }: DeviceChainProps) {
+  const context: ShellContext = { t, path: [], runAt, chainAt, onChain, store, onDevice };
+
   return (
     <section className="device-chain" aria-label={`${name} devices`}>
       <div className="device-chain-head">
@@ -168,12 +248,7 @@ export function DeviceChain({
           }
         >
           {devices.map((device, i) => (
-            <DeviceShell
-              key={`${i}:${device.name}`}
-              device={device}
-              index={i}
-              context={{ path: [], runAt, chainAt, onChain }}
-            />
+            <DeviceShell key={`${i}:${device.name}`} device={device} index={i} context={context} />
           ))}
         </Chain>
       </div>
