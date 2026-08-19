@@ -84,7 +84,7 @@ work in [Issues](../../issues).
 
 ```sh
 npm run typecheck    # all seven projects
-npm test             # core/, widgets/param and ui/lib unit tests
+npm test             # core/, widgets/param, ui/lib and visuals/ unit tests
 npm run build        # must succeed from a clean tree
 ```
 
