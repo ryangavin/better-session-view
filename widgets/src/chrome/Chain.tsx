@@ -8,8 +8,8 @@ import './chrome.css';
  * accepted a list of devices would own the order, and owning the order means
  * knowing what a device is — which is the app's job and, later, a graph's. A
  * component that lays its children in a row doesn't know why they are in that
- * order, so the same `Device` can hang off a strip today and a node canvas
- * afterwards without learning which one it's in.
+ * order, so the same `Device` hangs off a strip here and off
+ * [`Graph`](./Graph.tsx)'s canvas without learning which one it's in.
  *
  * Linear is not a limitation smuggled in here, either. It's Ableton's model:
  * a chain runs in series, and anything parallel is a rack containing chains
@@ -31,7 +31,7 @@ export interface ChainProps {
    * How many rows of controls a device in this chain is tall — two, the way
    * Live's footer is, unless a host says otherwise. It's the chain that fixes
    * the height, never the device: a device on its own is as tall as its
-   * faceplate, which is what a graph will want when there's no footer to fill.
+   * faceplate, which is what [`Graph`](./Graph.tsx) wants, having no footer.
    */
   rows?: number;
   /** In px, if a host would rather say it outright than in rows. */

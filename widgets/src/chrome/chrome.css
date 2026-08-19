@@ -351,3 +351,138 @@
   border-radius: 0;
   background: transparent;
 }
+
+.wdg-device-main {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.wdg-device-main > .wdg-device-body {
+  flex: 1;
+}
+
+.wdg-device-ports {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--wdg-port-gap);
+  padding: var(--wdg-space) 2px;
+}
+
+.wdg-device-ports[data-side='out'] {
+  align-items: flex-end;
+}
+
+.wdg-port-slot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wdg-port-slot[data-side='out'] {
+  flex-direction: row-reverse;
+}
+
+.wdg-port {
+  flex: none;
+  width: var(--wdg-port-size);
+  height: var(--wdg-port-size);
+  padding: 0;
+  border: 1px solid var(--wdg-port-edge);
+  border-radius: 50%;
+  background: var(--wdg-well);
+  cursor: crosshair;
+}
+
+.wdg-port[data-connected] {
+  border-color: var(--wdg-port-ink);
+  background: var(--wdg-port-ink);
+}
+
+.wdg-port:hover:not(:disabled),
+.wdg-port[data-over] {
+  border-color: var(--wdg-fill);
+}
+
+.wdg-port[data-pending] {
+  border-color: var(--wdg-fill);
+  background: var(--wdg-fill);
+}
+
+.wdg-port:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.wdg-port:focus-visible {
+  outline: 1px solid var(--wdg-focus);
+  outline-offset: 1px;
+}
+
+.wdg-port-label {
+  overflow: hidden;
+  color: var(--wdg-caption);
+  font-family: var(--wdg-sans);
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.wdg-graph {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--wdg-edge);
+  border-radius: var(--wdg-plate-radius);
+  background-color: var(--wdg-well);
+  background-image: radial-gradient(circle at center, var(--wdg-graph-dot) 1px, transparent 1.5px);
+  background-position: var(--wdg-graph-x) var(--wdg-graph-y);
+  background-size: var(--wdg-graph-grid) var(--wdg-graph-grid);
+  touch-action: none;
+  cursor: grab;
+}
+
+.wdg-graph[data-panning] {
+  cursor: grabbing;
+}
+
+.wdg-graph-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+.wdg-graph-cords {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.wdg-graph-cord {
+  fill: none;
+  stroke: var(--wdg-cord);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.wdg-graph-cord[data-pending] {
+  stroke: var(--wdg-fill);
+  stroke-dasharray: 4 3;
+}
+
+.wdg-graph-node {
+  position: absolute;
+  touch-action: none;
+}
+
+.wdg-device-ports:empty {
+  padding: 0;
+}

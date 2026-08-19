@@ -4,6 +4,8 @@ import { format } from '../src/param/format.js';
 import { enumParam, type Param, type UnitStyle } from '../src/param/param.js';
 import { Chain } from '../src/chrome/Chain.js';
 import { Device } from '../src/chrome/Device.js';
+import { Graph, GraphNode, type GraphCord } from '../src/chrome/Graph.js';
+import { Port } from '../src/chrome/Port.js';
 import { Rack } from '../src/chrome/Rack.js';
 import { Row } from '../src/chrome/Row.js';
 import { Divider, Label } from '../src/controls/Label.js';
@@ -18,6 +20,7 @@ import { XYPad } from '../src/controls/XYPad.js';
 const SECTIONS = [
   'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',
   'Chain',
+  'Graph',
   'Model',
 ];
 
@@ -234,6 +237,134 @@ function Grouped() {
       </Rack>
       <Shell name="Saturator" />
     </Chain>
+  );
+}
+
+/** Small enough that three of them fit on a canvas without scrolling. */
+function PatchFace() {
+  return (
+    <Row>
+      <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
+      <Held param={DRY_WET}>{(v, set) => <Knob param={DRY_WET} value={v} onChange={set} />}</Held>
+    </Row>
+  );
+}
+
+/**
+ * Two kinds, so the host has something to refuse a cord for.
+ *
+ * The names are deliberately no device in particular: this module has no list
+ * of kinds and no opinion about what a port carries, and a bench case naming a
+ * real one would be the first place that stopped being true.
+ */
+const PATCH = [
+  {
+    id: 'source',
+    name: 'Source',
+    x: 16,
+    y: 28,
+    inlets: [],
+    outlets: [
+      { id: 'source:notes', label: 'Notes', kind: 'note' },
+      { id: 'source:level', label: 'Level', kind: 'signal' },
+    ],
+  },
+  {
+    id: 'shape',
+    name: 'Shape',
+    x: 236,
+    y: 16,
+    inlets: [
+      { id: 'shape:pitch', label: 'Pitch', kind: 'note' },
+      { id: 'shape:size', label: 'Size', kind: 'signal' },
+    ],
+    outlets: [{ id: 'shape:out', label: 'Out', kind: 'signal' }],
+  },
+  {
+    id: 'output',
+    name: 'Output',
+    x: 456,
+    y: 44,
+    inlets: [{ id: 'output:in', label: 'In', kind: 'signal' }],
+    outlets: [],
+  },
+] as const;
+
+const PORTS = PATCH.flatMap((node) => [...node.inlets, ...node.outlets]);
+
+/**
+ * The canvas, doing the whole bargain: the graph emits a pair of ids, and this
+ * host decides whether the kinds agree and whether the inlet was already taken.
+ * Refuse one and watch nothing happen.
+ */
+function Patch() {
+  const [at, setAt] = useState<Record<string, { x: number; y: number }>>(() =>
+    Object.fromEntries(PATCH.map((node) => [node.id, { x: node.x, y: node.y }])),
+  );
+  const [cords, setCords] = useState<GraphCord[]>([
+    { from: 'source:notes', to: 'shape:pitch', kind: 'note' },
+    { from: 'shape:out', to: 'output:in', kind: 'signal' },
+  ]);
+  const [picked, setPicked] = useState<string | null>('shape');
+  const [said, setSaid] = useState('two cords, both landed');
+
+  const connect = (from: string, to: string) => {
+    const carries = PORTS.find((port) => port.id === from)?.kind;
+    const takes = PORTS.find((port) => port.id === to)?.kind;
+    if (carries !== takes) {
+      setSaid(`refused: ${from} carries ${carries}, ${to} takes ${takes}`);
+      return;
+    }
+    setSaid(`${from} to ${to}`);
+    // One cord per inlet, which is this host's rule and not the graph's.
+    setCords((held) => [...held.filter((cord) => cord.to !== to), { from, to, kind: carries }]);
+  };
+
+  return (
+    <div className="patch-case">
+      <Graph
+        className="patch"
+        cords={cords}
+        onConnect={connect}
+        onMove={(id, x, y) => setAt((held) => ({ ...held, [id]: { x, y } }))}
+        onClearSelection={() => setPicked(null)}
+      >
+        {PATCH.map((node) => (
+          <GraphNode key={node.id} id={node.id} x={at[node.id].x} y={at[node.id].y}>
+            <Device
+              name={node.name}
+              on
+              onToggle={() => {}}
+              selected={picked === node.id}
+              onSelect={() => setPicked(node.id)}
+              inlets={node.inlets.map((port) => (
+                <Port
+                  key={port.id}
+                  id={port.id}
+                  side="in"
+                  label={port.label}
+                  kind={port.kind}
+                  connected={cords.some((cord) => cord.to === port.id)}
+                />
+              ))}
+              outlets={node.outlets.map((port) => (
+                <Port
+                  key={port.id}
+                  id={port.id}
+                  side="out"
+                  label={port.label}
+                  kind={port.kind}
+                  connected={cords.some((cord) => cord.from === port.id)}
+                />
+              ))}
+            >
+              <PatchFace />
+            </Device>
+          </GraphNode>
+        ))}
+      </Graph>
+      <p className="patch-out">{said}</p>
+    </div>
   );
 }
 
@@ -664,6 +795,37 @@ export function Bench() {
             note="A rack: bookends around the selected chain's devices, not a box holding them. Delay inside the rack is exactly as tall as Saturator beside it. Pick a chain to see its devices — Dry has none."
           >
             <Grouped />
+          </Case>
+        </Section>
+
+        <Section id="Graph">
+          <Case
+            wide
+            note="The canvas the chain leaves room for. Drag a node by anywhere a control hasn't claimed, drag between two ports to connect, scroll to zoom about the cursor, drag the background to pan. Notes only reach Pitch and signals only reach Size: the graph offers the pair, this page refuses it."
+          >
+            <Patch />
+          </Case>
+          <Case
+            wide
+            note="The same connection without a pointer. Tab to a port, press Enter to arm it, Tab to another and press Enter again. Escape drops the cord. Arrow keys move a node once its title bar has focus, so a patch needs no tab stop of its own."
+          >
+            <Patch />
+          </Case>
+          <Case note="A device with ports and no graph around it. The rails draw; nothing measures them and nothing connects, because the surface is what owns both.">
+            <Device
+              name="Shape"
+              on
+              onToggle={() => {}}
+              inlets={<Port id="loose:in" side="in" label="In" kind="signal" />}
+              outlets={<Port id="loose:out" side="out" label="Out" kind="signal" connected />}
+            >
+              <PatchFace />
+            </Device>
+          </Case>
+          <Case note="In a chain, where adjacency is the connection and there is nothing to draw. The same shell, no ports passed, exactly as it was.">
+            <Chain>
+              <Shell name="Shape" />
+            </Chain>
           </Case>
         </Section>
 

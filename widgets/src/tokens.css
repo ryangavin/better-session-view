@@ -10,6 +10,10 @@
   --wdg-caption: var(--caption, #5e5e66);
   --wdg-focus: var(--focus, #4a4a52);
   --wdg-well: var(--panel, #111113);
+  --wdg-port-edge: var(--bd3, #2c2c31);
+  --wdg-port-ink: var(--focus, #4a4a52);
+  --wdg-cord: var(--focus, #4a4a52);
+  --wdg-graph-dot: var(--sel, #1c1c20);
   --wdg-plate: var(--surface-cell, #18181b);
   --wdg-plate-head: var(--sel, #1c1c20);
   --wdg-plate-selected: var(--bd, #262629);
@@ -24,6 +28,11 @@
   --wdg-knob-size: 34px;
   --wdg-knob-height: 27px;
   --wdg-xypad-handle: 11px;
+  --wdg-port-size: 9px;
+  --wdg-port-gap: 6px;
+  --wdg-graph-grid: 24px;
+  --wdg-graph-x: 0px;
+  --wdg-graph-y: 0px;
   --wdg-gap: 2px;
   --wdg-space: 8px;
   --wdg-row-height: 60px;

@@ -78,6 +78,8 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 | [`Rack`](../src/chrome/Rack.tsx) | `RackDevice` | the macro face and the chain list, bracketing the selected chain's devices |
 | [`Row`](../src/chrome/Row.tsx) | Live's panel grid | controls on one line, sharing a caption height and a reading height |
 | [`Panel`](../src/chrome/Panel.tsx) | Live's panel grid | repeated vertical lanes sharing section heights across the faceplate |
+| [`Graph`](../src/chrome/Graph.tsx) | neither — a DAW of our own | the canvas layout, the cords, pan and zoom. See [the graph](graph.md) |
+| [`Port`](../src/chrome/Port.tsx) | neither | where a cord ends. `Device` grew two slots for them |
 
 `Row` and `Panel` solve perpendicular alignment problems. A row aligns the caption,
 control and reading *inside* unlike widgets. A panel aligns the sections *between*
@@ -111,13 +113,14 @@ nothing more. A rack in a chain in a rack is ordinary, which is why `Rack` compo
 `Device` instead of reimplementing a shell — a rack is a device, and the recursion falls
 out for free.
 
-The line is a **layout, not a structure**, and the distinction is what keeps a graph
-possible later. `Chain` takes children, never a list of devices: a component that lays
-its children in a row doesn't know why they're in that order, so the order stays the
-app's and a node canvas can be a sibling layout over the same `Device` when there's
-something to plug together. The piece missing that day is ports — in a strip, adjacency
-*is* the connection and there's nothing to draw; a graph has to draw it. That's a slot
-added to `Device`, not a rewrite of any of this.
+The line is a **layout, not a structure**, and the distinction is what kept the graph
+cheap. `Chain` takes children, never a list of devices: a component that lays its children
+in a row doesn't know why they're in that order, so the order stays the app's — and
+[`Graph`](../src/chrome/Graph.tsx) is now the sibling layout over the same `Device`,
+positioning its children instead of queueing them. The one piece a strip never needed is
+ports, because there adjacency *is* the connection and there's nothing to draw; a graph has
+to draw it. That came out as two slots on `Device` and no change to any of this, which is
+what the rule was for. The reasoning is in [the graph](graph.md).
 
 Dragging follows [the gesture's](gesture.md) rule. `Chain` marks where a device would
 land and stops there; whoever is dragging decides whether the move is legal and performs
@@ -185,7 +188,7 @@ device in it is that tall, so the height is fixed at the top and stretched down:
 fills its container or stands however many rows it's told, and everything in it stretches
 to the chain — devices, racks, and the devices inside a rack alike. Nothing in the middle
 owns a height, and a device on its own owns none either. It is as tall as its faceplate,
-which is what a graph will want when there is no footer to fill.
+which is what the graph wants, having no footer to fill.
 
 That last clause is why a rack is [bookends rather than a box](#why-a-rack-is-a-bracket).
 A device that got shorter for being in a rack, and shorter again for being in a rack in a
@@ -199,9 +202,9 @@ one rule, `min-width` reading the same `--wdg-device-min` the height does, becau
 the height by definition.
 
 **Only in a chain.** A `Device` standing on its own keeps no minimum at all and is exactly
-as wide as its faceplate. That isn't an oversight left for later: the graph is coming, and
-on a canvas a node should be the size of what it holds rather than the size a strip needed
-it to be. The floor belongs to the layout that needs it, which is the same reason the
+as wide as its faceplate. That was never an oversight left for later: on a canvas a node
+should be the size of what it holds rather than the size a strip needed it to be, and
+[`Graph`](../src/chrome/Graph.tsx) relies on it. The floor belongs to the layout that needs it, which is the same reason the
 height does. A folded device is exempt in both layouts — the whole point of folding is to
 become a strip, and a square strip is not one.
 

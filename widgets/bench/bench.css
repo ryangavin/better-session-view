@@ -224,3 +224,34 @@ h2 {
   margin: 0;
   color: #ececed;
 }
+
+.patch-case {
+  width: 100%;
+}
+
+.patch {
+  height: 300px;
+}
+
+.patch .wdg-port[data-kind='note'] {
+  --wdg-port-ink: #7aa2f7;
+}
+
+.patch .wdg-port[data-kind='signal'] {
+  --wdg-port-ink: #f0b23c;
+}
+
+.patch .wdg-graph-cord[data-kind='note'] {
+  stroke: #7aa2f7;
+}
+
+.patch .wdg-graph-cord[data-kind='signal'] {
+  stroke: #f0b23c;
+}
+
+.patch-out {
+  margin: 8px 0 0;
+  color: #8b8b93;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+}

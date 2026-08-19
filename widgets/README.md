@@ -20,6 +20,7 @@ with no React, this is React with no domain.
 | [the parameter model](docs/param-model.md) | what a control *is*, ranges, tapers, steps, how a value is spelled | `src/param/param.ts`, `format.ts` |
 | [the gesture](docs/gesture.md) | dragging, the fine modifier, keys, write rate, the local-value hold | `src/gesture/*` |
 | [the catalogue](docs/catalogue.md) | **adding a widget** — what exists, what's next, and what Max for Live does and doesn't tell you | `src/controls/*` |
+| [the graph](docs/graph.md) | the node canvas, ports, cords, or who owns a position | `src/chrome/Graph.tsx`, `Port.tsx`, `graphContext.ts` |
 | [the bench](docs/bench.md) | the dev harness, or adding a case to it | `bench/*`, `vite.config.ts` |
 
 ## The shape of it
@@ -51,6 +52,9 @@ src/
   chrome/
     Device.tsx      the shell a faceplate sits in, folded or open
     Chain.tsx       the run it sits in — children, so it never owns the order
+    Graph.tsx       the canvas it sits on instead — the sibling layout, and the cords
+    Port.tsx        where a cord ends. Two slots on Device, and nothing in a chain
+    graphContext.ts what a port and a node need from the surface under them
     Rack.tsx        a device holding chains: the macro face and the chain list
     Row.tsx         controls on one line, in three bands, through a subgrid
     Panel.tsx       aligned vertical parameter lanes, through a shared row grid

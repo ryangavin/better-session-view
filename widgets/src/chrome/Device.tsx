@@ -36,6 +36,22 @@ export interface DeviceProps {
   headerAfterName?: ReactNode;
   /** Device-specific actions pinned to the far edge of the title bar. */
   headerEnd?: ReactNode;
+  /**
+   * `Port`s on the leading edge, and on the trailing one.
+   *
+   * In a chain these stay empty, because adjacency *is* the connection there
+   * and there is nothing to draw. A graph has to draw it, so a node needs
+   * somewhere for a cord to end — and it belongs to the device rather than to
+   * whatever positions it, or a device inside a `Rack` could never have one.
+   *
+   * They are hidden while folded. Folding turns a device into a strip 17px
+   * wide, which has no edges to hang a rail on — and a canvas doesn't need
+   * folding anyway, having pan and zoom for the same problem a long chain has.
+   * `Graph` skips a cord whose ends aren't both mounted, so a host that folds a
+   * node anyway loses the drawing rather than breaking it.
+   */
+  inlets?: ReactNode;
+  outlets?: ReactNode;
   /** The faceplate. */
   children?: ReactNode;
   className?: string;
@@ -54,10 +70,13 @@ export function Device({
   headerStart,
   headerAfterName,
   headerEnd,
+  inlets,
+  outlets,
   children,
   className,
   title,
 }: DeviceProps) {
+  const ported = inlets !== undefined || outlets !== undefined;
   const select = onSelect
     ? {
         tabIndex: 0,
@@ -122,7 +141,22 @@ export function Device({
           </span>
         )}
       </div>
-      {!folded && <div className="wdg-device-body">{children}</div>}
+      {!folded &&
+        // The body stays the device's only child when there are no ports, so a
+        // chain's height and stretch chain is exactly what it always was.
+        (ported ? (
+          <div className="wdg-device-main">
+            <div className="wdg-device-ports" data-side="in">
+              {inlets}
+            </div>
+            <div className="wdg-device-body">{children}</div>
+            <div className="wdg-device-ports" data-side="out">
+              {outlets}
+            </div>
+          </div>
+        ) : (
+          <div className="wdg-device-body">{children}</div>
+        ))}
     </div>
   );
 }
