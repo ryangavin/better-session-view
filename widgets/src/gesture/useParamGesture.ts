@@ -25,6 +25,19 @@ import { isFine } from './platform.js';
 
 export type ParamAxis = 'vertical' | 'horizontal';
 
+/**
+ * Where a drag starts from: the value the control already holds, or the point
+ * that was pressed.
+ *
+ * `value` for everything with a knob's problem — a small control where jumping
+ * to the click throws away most of the range. `pointer` for a surface where the
+ * position *is* the value and the pointer is already pointing at one: a plane
+ * you drop a handle onto, a long fader. Accrual after the anchor is identical
+ * either way, so a control whose `travel` matches its drawn extent tracks the
+ * pointer exactly, and the fine modifier still slows it from where it is.
+ */
+export type ParamAnchor = 'value' | 'pointer';
+
 /** Pixels of travel for the full range, before the fine modifier stretches it. */
 const DEFAULT_TRAVEL = 200;
 
@@ -40,6 +53,8 @@ export interface ParamGestureOptions {
   onRelease?(): void;
   disabled?: boolean;
   axis?: ParamAxis;
+  /** Defaults to `value` — Live grabs a control where it is rather than jumping. */
+  anchor?: ParamAnchor;
   travel?: number;
   label?: string;
   /** Authoritative text, when something else is spelling the value. */
@@ -82,6 +97,7 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     onRelease,
     disabled = false,
     axis = 'vertical',
+    anchor = 'value',
     travel = DEFAULT_TRAVEL,
     label,
     display,
@@ -138,24 +154,38 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     latest.current.onRelease?.();
   }, [flush]);
 
-  const onPointerDown = useCallback((e: PointerEvent<HTMLElement>) => {
-    const now = latest.current;
-    if (now.disabled || e.button !== 0) return;
-    // Not a jump to the click. Live grabs the control where it already is, and
-    // an absolute-positioned control is unusable on anything small anyway —
-    // a 26px pan field would have four reachable values.
-    e.preventDefault();
-    e.currentTarget.focus();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    sent.current = now.value;
-    drag.current = {
-      id: e.pointerId,
-      x: e.clientX,
-      y: e.clientY,
-      fraction: fractionOf(now.param, now.value),
-    };
-    setDragging(true);
-  }, []);
+  const onPointerDown = useCallback(
+    (e: PointerEvent<HTMLElement>) => {
+      const now = latest.current;
+      if (now.disabled || e.button !== 0) return;
+      // Not a jump to the click, by default. Live grabs the control where it
+      // already is, and an absolute-positioned control is unusable on anything
+      // small anyway — a 26px pan field would have four reachable values.
+      //
+      // A plane is the case that argues back: it is large, and the handle on it
+      // is a position rather than a quantity, so pressing somewhere and having
+      // the handle stay put reads as the control ignoring the pointer. Those
+      // ask for `pointer`, and only the anchor changes — everything after it is
+      // the same accrual.
+      e.preventDefault();
+      e.currentTarget.focus();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      sent.current = now.value;
+      let fraction = fractionOf(now.param, now.value);
+      if (anchor === 'pointer') {
+        const box = e.currentTarget.getBoundingClientRect();
+        const along =
+          axis === 'vertical'
+            ? (box.bottom - e.clientY) / (box.height || 1)
+            : (e.clientX - box.left) / (box.width || 1);
+        fraction = Math.max(0, Math.min(1, along));
+        emit(valueAt(now.param, fraction));
+      }
+      drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, fraction };
+      setDragging(true);
+    },
+    [anchor, axis, emit],
+  );
 
   const onPointerMove = useCallback(
     (e: PointerEvent<HTMLElement>) => {

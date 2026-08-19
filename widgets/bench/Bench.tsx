@@ -496,7 +496,7 @@ export function Bench() {
         </Section>
 
         <Section id="XY pad">
-          <Case note="Two parameters on one pointer. Drag anywhere on the plane; the fine modifier and double-click to reset work as they do on a knob, and each axis takes the arrows on its own tab stop.">
+          <Case note="Two parameters on one pointer. Press anywhere and the handle comes to you, then stays with the pointer — a plane is the one control that doesn't grab where its value already is. The fine modifier and double-click to reset work as they do on a knob, and each axis takes the arrows on its own tab stop.">
             <Held param={FREQ}>
               {(hz, setHz) => (
                 <Held param={GAIN}>

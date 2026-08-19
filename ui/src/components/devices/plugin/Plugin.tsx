@@ -1,11 +1,19 @@
 import { useState } from 'react';
 import { Device } from '../../../../../widgets/src/chrome/Device.js';
 import { Select } from '../../../../../widgets/src/controls/Select.js';
-import { XYPad } from '../../../../../widgets/src/controls/XYPad.js';
+import { XYPad, type PadAxis } from '../../../../../widgets/src/controls/XYPad.js';
 import type { Param } from '../../../../../widgets/src/param/param.js';
 import { deviceParam } from '../../../lib/liveParam.js';
 import type { DeviceFaceProps } from '../face.js';
 import './Plugin.css';
+
+const UNASSIGNED = 'none';
+
+/** What an axis reads as before it has been pointed at anything: a position. */
+const FREE_X: Param = {
+  kind: 'float', min: 0, max: 100, defaultValue: 0, unit: 'percent', shortName: 'X',
+};
+const FREE_Y: Param = { ...FREE_X, shortName: 'Y' };
 
 /**
  * The container Live draws around a plug-in it cannot draw itself.
@@ -33,35 +41,49 @@ import './Plugin.css';
  * won't round-trip is the *choice*, which is why it starts at `none` rather
  * than pretending to restore what Live has.
  *
+ * **An unassigned axis still moves, and that isn't the dead-slot rule being
+ * broken.** A control drawn dead means a slot that expected a parameter and
+ * found none — the face is wrong and has to show it. This is the other thing:
+ * the axis has no target *because nobody has picked one*, which the chooser an
+ * inch below says outright. Live's own container moves the same way, and a
+ * plane that refused to until it was told where to point would read as broken
+ * rather than as unassigned. The position it holds is its own until an
+ * assignment arrives, and then the parameter's value is what it draws.
+ *
  * The write goes straight out rather than through
  * [`ParamControl`](../ParamControl.tsx), so it has no local hold while the
  * readback catches up. Every other bound control in the app does have one, and
  * the fix is a `ParamPad` next to the rest of that file rather than anything
  * here.
  */
-const UNASSIGNED = 'none';
-
-/** A stand-in range, so an unassigned axis still has a plane to sit on. */
-const ABSENT: Param = { kind: 'float', min: 0, max: 1, defaultValue: 0 };
-
-function axisOf(parameters: BSV.DeviceParameterState[] | null, at: number) {
-  const state = at > 0 ? parameters?.[at - 1] ?? null : null;
-  return {
-    state,
-    param: state ? deviceParam(state) : ABSENT,
-    value: state?.value ?? 0,
-    display: state?.display,
-  };
-}
-
 export function Plugin({ device, parameters, onParam, onToggle, onFold }: DeviceFaceProps) {
   // 0 is `none`; every other index is one past the parameter it names, so the
   // chooser and the parameter list can't drift apart as the list arrives.
   const [assigned, setAssigned] = useState<[number, number]>([0, 0]);
+  const [free, setFree] = useState<[number, number]>([0, 0]);
   const names = [UNASSIGNED, ...(parameters ?? []).map((p) => p.name)];
 
-  const x = axisOf(parameters, assigned[0]);
-  const y = axisOf(parameters, assigned[1]);
+  const axis = (at: 0 | 1): PadAxis => {
+    const index = assigned[at];
+    const state = index > 0 ? parameters?.[index - 1] ?? null : null;
+    if (state === null) {
+      return {
+        param: at === 0 ? FREE_X : FREE_Y,
+        value: free[at],
+        onChange: (next) =>
+          setFree((held) => (at === 0 ? [next, held[1]] : [held[0], next])),
+      };
+    }
+    return {
+      param: deviceParam(state),
+      value: state.value,
+      onChange: (next) => onParam(index - 1, next),
+      display: state.display,
+    };
+  };
+
+  const x = axis(0);
+  const y = axis(1);
 
   return (
     <Device
@@ -74,18 +96,8 @@ export function Plugin({ device, parameters, onParam, onToggle, onFold }: Device
       onHotSwap={() => {}}
     >
       <XYPad
-        x={{
-          param: x.param,
-          value: x.value,
-          onChange: (next) => assigned[0] > 0 && onParam(assigned[0] - 1, next),
-          display: x.display,
-        }}
-        y={{
-          param: y.param,
-          value: y.value,
-          onChange: (next) => assigned[1] > 0 && onParam(assigned[1] - 1, next),
-          display: y.display,
-        }}
+        x={x}
+        y={y}
         width={168}
         height={168}
         showValue={false}

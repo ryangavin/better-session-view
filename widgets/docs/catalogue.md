@@ -49,8 +49,11 @@ genuinely wants it, the crossfader, and for hosts we haven't met.
 
 **The pad is one pointer and two gestures**, not a new drag. It calls `useParamGesture`
 once per axis and hands both the same pointer events, so each keeps its own component of
-the movement and the fine modifier, the anchor, the write rate and double-click-to-reset
-are the ones every other control has. The keyboard falls out of the same arrangement: each
+the movement and the fine modifier, the write rate and double-click-to-reset are the ones
+every other control has. The anchor is the one thing it doesn't share: a plane presses to
+the pointer rather than grabbing where the value already is, for the reason in
+[the gesture](gesture.md), and a caller drawing many handles on one plane can take the
+knob's bargain back with `anchor="value"`. The keyboard falls out of the same arrangement: each
 axis is a `role="slider"` of its own with the full `aria-value*` set, so tabbing lands on
 one axis at a time and the arrows mean something on a control with two of them.
 

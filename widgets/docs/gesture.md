@@ -27,6 +27,15 @@ property that makes a laggy authority survivable — if the drag re-derived its 
 from the incoming value, every echo from Live would tug the control back to where it was
 one round trip ago and fight the pointer.
 
+**A plane is the exception, and it asks for the opposite.** `anchor: 'pointer'` starts the
+drag from the point that was pressed rather than the value being held, which is what
+[`XYPad`](../src/controls/XYPad.tsx) passes. The reasoning that makes grabbing right on a
+26px pan field inverts on a surface: it is large enough that the click doesn't throw the
+range away, and its handle is a *position*, so pressing somewhere and watching the handle
+stay put reads as the control ignoring the pointer. Only the anchor changes. Everything
+after it is the same accrual, so a control whose `travel` matches its drawn extent has the
+handle land under the pointer and stay with it, and fine still slows it from where it is.
+
 **Distance accrues rather than being measured from the grab point.** Each move adds
 `delta ÷ travel` to the running fraction. Measuring from the origin would be simpler, but
 then taking the fine modifier mid-drag would teleport the control: the same pixel distance

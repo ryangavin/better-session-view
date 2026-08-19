@@ -139,7 +139,11 @@
   position: relative;
   width: var(--wdg-xypad-width);
   height: var(--wdg-xypad-height);
-  cursor: move;
+  overflow: hidden;
+  border-radius: var(--wdg-radius);
+  background: var(--wdg-face);
+  box-shadow: inset 0 0 0 1px var(--wdg-edge);
+  cursor: crosshair;
   touch-action: none;
 }
 
@@ -167,8 +171,8 @@
   bottom: calc(var(--wdg-xypad-y) * 100%);
   width: var(--wdg-xypad-handle);
   height: var(--wdg-xypad-handle);
-  border: 2px solid var(--wdg-fill);
   border-radius: 50%;
+  background: var(--wdg-fill);
   transform: translate(-50%, 50%);
   pointer-events: none;
 }
