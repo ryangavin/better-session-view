@@ -143,6 +143,36 @@ instead, so a control greys out on the next chain change rather than instantly.
 That is the difference between ~40 observers for an open EQ Eight and ~280 LOM reads every
 time anything moved.
 
+**"Read once" is a cache, and for a while it wasn't one.** `sendChainState` rebuilds the
+whole published state on every structural change, and it was calling the full descriptor
+read each time — so renaming one device re-read every control on every open device in the
+run *and* re-spelled every enum's members, which is a `str_for_value` call per member. One
+open EQ Eight came to roughly 800 LOM operations per push, on the thread that draws Live,
+for a change that moved nothing.
+
+`paramShapes` holds descriptors keyed by the device's LOM id **and** its control count —
+the id alone is wrong for a plugin whose parameter list changes underneath it, the count
+alone is wrong for a device swapped for another with as many controls. A push then costs
+two `get`s and one `call` per control instead of nine-plus and a call per member.
+
+Two details in that are deliberate:
+
+- **Entries survive an observer rebuild.** Opening a fourth device must not re-read the
+  three already open, and that is exactly the gesture that hurt. They are evicted by not
+  being used instead: each push keeps only what it touched, so folding a device shut drops
+  its descriptor along with everything else it was costing.
+- **A rack is never cached.** Not for cost — a rack has a handful of macros where an EQ has
+  ninety — but because its chain selector spells its members as the *chain names*, so
+  renaming a chain changes an enum's text without changing its parameter count. Re-reading
+  the one device whose members are genuinely dynamic beats a cache key that can't tell.
+
+### The parameter list is index-aligned, and has to be
+
+`p` on the wire is the LOM's own index: it is what a value observer reports and what
+`set_device` writes against. A parameter that fails to resolve therefore travels as a dead
+entry rather than being dropped — dropping it would slide every control after it onto the
+wrong parameter, silently, and only on the devices where one failed.
+
 ### The members of an enum come from `str_for_value`, not `value_items`
 
 `DeviceParameter.value_items` looks like the obvious source and is a trap: it arrives as
