@@ -217,16 +217,34 @@
   outline-offset: -1px;
 }
 
+/*
+ * A grid rather than block flow, so the arrow can be told which band it is in.
+ *
+ * It used to be absolutely positioned against this box, which is right until a
+ * `Row` makes the box span all three bands — then "the bottom" is the bottom of
+ * an empty readout band and the arrow sits under the field it belongs to. Three
+ * explicit rows here means the same placement holds in a row and out of one.
+ */
 .wdg-select {
-  position: relative;
+  display: inline-grid;
+  grid-template-rows: auto auto auto;
+  align-items: center;
+  justify-items: center;
+  gap: var(--wdg-gap);
+}
+
+.wdg-select > .wdg-caption {
+  grid-row: 1;
 }
 
 .wdg-select::after {
-  position: absolute;
-  right: 3px;
-  bottom: calc((var(--wdg-field-height) - 4px) / 2);
+  grid-row: 2;
+  grid-column: 1;
+  align-self: center;
+  justify-self: end;
   width: 0;
   height: 0;
+  margin-right: 3px;
   border-right: 3px solid transparent;
   border-left: 3px solid transparent;
   border-top: 4px solid var(--wdg-text);
@@ -235,6 +253,8 @@
 }
 
 .wdg-select-body {
+  grid-row: 2;
+  grid-column: 1;
   width: var(--wdg-select-width, calc(var(--wdg-select-chars, 8) * 1ch + 14px));
   height: var(--wdg-field-height);
   padding: 0 10px 0 3px;

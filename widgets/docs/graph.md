@@ -13,6 +13,14 @@ Only one thing had to be added to `Device` for it: **ports**. In a strip adjacen
 connection and there is nothing to draw; a graph has to draw it, so a cord needs somewhere
 to end.
 
+**Its first host is `visuals/`'s circuit editor**, where a node is one operation in a
+fragment shader — see [circuits](../../visuals/docs/circuit.md). Two things written here
+against no caller turned out to be exactly right, and are worth pointing at because they
+are the parts that would have been tempting to skip: a knob inside a node turns without
+dragging the node (the `defaultPrevented` check, below), and a refused connection costs
+nothing because the host draws the cords (the bargain, below). The host names three kinds —
+`p`, `n`, `c` — and this module still has no idea what any of them are.
+
 ## Who owns what
 
 This is the whole design, and everything else follows from it.
@@ -147,7 +155,9 @@ node should be the size of what it holds.
 
 - **Deleting a cord.** The cord layer is `pointer-events: none`, so nothing can be clicked
   yet. Hit-testing a bezier is real work and it should wait for a caller who knows what
-  selecting one is supposed to do.
+  selecting one is supposed to do. The first host works around it without needing anything
+  from here: an inlet that has a cord grows a small `×` beside its port, in the host's own
+  `inlets` slot, and the host drops the cord from its own state.
 - **Selecting more than one node**, and moving a selection together.
 - **Driving pan and zoom from outside** — fit-to-content, or restoring a saved view. The
   props are easy; the question of who owns the view isn't, and there's no caller yet.

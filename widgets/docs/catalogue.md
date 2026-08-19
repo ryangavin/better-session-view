@@ -268,7 +268,11 @@ silently shrink a device header or folded strip. A lit toggle changes its fill a
 not its outside geometry or border, so it cannot grow or appear rounder when it turns on.
 `Select` draws the same small arrow on every platform instead of surrendering half a
 narrow field to native menu chrome. That arrow, its padding and its font belong to the
-control rather than to a device stylesheet. Device compositions make room around these
+control rather than to a device stylesheet. It is a **grid item placed in the field's own
+band**, not something positioned against the widget's box: inside a `Row` that box spans
+all three bands, so "the bottom of it" is the bottom of an empty readout band and the arrow
+sat under the field it belongs to. Three explicit rows on `.wdg-select` make the placement
+the same in a row and out of one. Device compositions make room around these
 fixed boxes; they never scale or restyle them.
 
 **Fills grow from the middle when zero is the middle.** A pan at center is not a pan

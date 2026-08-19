@@ -5,11 +5,15 @@
   box-sizing: border-box;
 }
 
+/*
+ * Caption above, control below. `Select` is deliberately absent: its arrow has
+ * to be placed in the same band as its field, which needs a grid, so the whole
+ * of its layout lives with it in `controls.css`.
+ */
 .wdg-widget,
 .wdg-number,
 .wdg-toggle,
-.wdg-segmented,
-.wdg-select {
+.wdg-segmented {
   display: inline-flex;
   flex-direction: column;
   align-items: center;

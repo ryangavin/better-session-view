@@ -12,7 +12,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 | domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
 | components, hooks, the client | [`ui/README.md`](ui/README.md) — 16 topic docs |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](widgets/README.md) — 5 topic docs. **Knows nothing about Live, and must stay that way** |
-| a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 4 topic docs. Its own server and its own `node_modules`; an ordinary **client** of the bridge |
+| a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. Its own server and its own `node_modules`; an ordinary **client** of the bridge |
 | anything involving Live | [`bridge/README.md`](bridge/README.md) — 8 topic docs. **Most constraints in this project live here** |
 | "does Live expose X?" | [`bridge/LOM.md`](bridge/LOM.md) — **look it up, don't guess.** Includes where the published docs are wrong |
 | a wire message | [`protocol/README.md`](protocol/README.md) |
