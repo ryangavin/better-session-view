@@ -86,6 +86,27 @@ that chain is itself subscribed to — absent and `[]` mean different things her
 looking in here" against "this chain is genuinely bare", and a client that drew the empty
 case for the first would show every unopened rack as containing nothing.
 
+### Two guards keep the rebuild from eating Live
+
+Observers here are path-addressed, so a device inserted into a run re-points every one
+after it — which is why any change rebuilds rather than patches. Two things stop that being
+ruinous, and both were learned the hard way:
+
+**A re-entrancy flag.** Constructing a `LiveAPI` fires its callback synchronously, and this
+tier's callbacks infer nothing from their arguments — any callback means "re-read
+everything". So attaching an observer scheduled the rebuild that was attaching it, and the
+rebuild attached again: a 60ms loop constructing up to four hundred `LiveAPI` objects a
+turn, on the thread that draws Live. It froze Ableton. `chainAttaching` makes the watch
+deaf to its own attach and detach.
+
+**A shape guard.** `chainShapeKey` describes what the observers point *at* — whether each
+run resolves, its devices by **id**, which are open, and how many controls each open one
+has — and an unchanged key skips the rebuild entirely. It deliberately excludes names,
+activators and fold state, because those are what the observers *report*: renaming a device
+fires `onChainChange` and moves no observer, and tearing down four hundred of them to
+re-attach them to the same objects is the definition of work for nothing. Same guard
+`rebuildCursorObservers` makes, one tier down.
+
 ### The declaration, not a subscribe/unsubscribe pair
 
 The footer sends everything it is looking at, every time any of it changes. There is no
@@ -242,7 +263,9 @@ message makes every re-read look like the devices went away.
 
 **Confirmed with Live open:** the subscription path works end to end. Clicking a track
 header declares a run, `watch_chains` installs against it, and the shells come back and
-draw. That was the shell tier; nothing above it has been in front of Live. That covers the parts with the most ways to be wrong — the union reaching `lom.ts`,
+draw. Also confirmed the hard way: the rebuild loop above was real, and it froze Ableton
+within seconds of a device being opened. Treat any new callback in this tier as guilty
+until it is proved not to re-enter the rebuild. That covers the parts with the most ways to be wrong — the union reaching `lom.ts`,
 `chainRunPath` resolving, `readWatchedRun` answering, and `chainDevice` accepting a rack
 whose chains carry no devices.
 
