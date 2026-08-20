@@ -8,7 +8,9 @@ import { Graph, GraphNode, type GraphCord } from '../src/chrome/Graph.js';
 import { Port } from '../src/chrome/Port.js';
 import { Rack } from '../src/chrome/Rack.js';
 import { Row } from '../src/chrome/Row.js';
+import { Button } from '../src/controls/Button.js';
 import { Divider, Label } from '../src/controls/Label.js';
+import { Meter } from '../src/controls/Meter.js';
 import { Knob } from '../src/controls/Knob.js';
 import { NumberField } from '../src/controls/NumberField.js';
 import { Segmented } from '../src/controls/Segmented.js';
@@ -18,7 +20,7 @@ import { Toggle } from '../src/controls/Toggle.js';
 import { XYPad } from '../src/controls/XYPad.js';
 
 const SECTIONS = [
-  'Knob', 'Slider', 'Number field', 'Toggle', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',
+  'Knob', 'Slider', 'Number field', 'Toggle', 'Button', 'Meter', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',
   'Chain',
   'Graph',
   'Model',
@@ -564,6 +566,39 @@ export function Bench() {
           </Case>
           <Case note="Disabled.">
             <Switch disabled />
+          </Case>
+        </Section>
+
+        <Section id="Button">
+          <Case note="An action, not a parameter. Nothing is left behind when you let go.">
+            <Button onPress={() => {}}>Add node</Button>
+          </Case>
+          <Case note="Quiet: furniture on a canvas, where a box on every control would read as a form.">
+            <Button tone="quiet" onPress={() => {}} label="Unwire">
+              ×
+            </Button>
+          </Case>
+          <Case note="Danger. Ordinary until you are on it, then it says so.">
+            <Button tone="danger" onPress={() => {}}>
+              Delete
+            </Button>
+          </Case>
+          <Case note="Disabled, and with a caption so it lines up in a Row.">
+            <Button name="Roll" disabled onPress={() => {}}>
+              Roll
+            </Button>
+          </Case>
+        </Section>
+
+        <Section id="Meter">
+          <Case note="A level, read-only. Not a disabled slider — it never invited you.">
+            <Meter value={0.62} name="Out" />
+          </Case>
+          <Case note="With a hold, drawn as a line: where it is now, and how far it has been.">
+            <Meter value={0.45} peak={0.83} name="Peak" />
+          </Case>
+          <Case note="Vertical, which is the mixer's shape.">
+            <Meter value={0.7} peak={0.9} orientation="vertical" length={60} name="L" />
           </Case>
         </Section>
 

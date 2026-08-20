@@ -38,6 +38,8 @@ Built.
 | [`Label`](../src/controls/Label.tsx) | `live.comment` | carries the type rhythm for a whole panel |
 | `Divider` | `live.line` | in `Label.tsx` — same family, three lines |
 | [`XYPad`](../src/controls/XYPad.tsx) | `live.pictslider` | two parameters on one plane, with a slot for a device's own artwork |
+| [`Meter`](../src/controls/Meter.tsx) | `live.meter~` | a level, read-only. Optional peak hold |
+| [`Button`](../src/controls/Button.tsx) | none | an action that is not a parameter |
 
 **Reach for a filled `NumberField` before a horizontal `Slider`.** Live's own collapsed
 fader is a value box you drag with the reading inside it — that's the Arrangement track
@@ -58,8 +60,26 @@ axis is a `role="slider"` of its own with the full `aria-value*` set, so tabbing
 one axis at a time and the arrows mean something on a control with two of them.
 
 Not yet: `live.text` (a labelled toggle — `Toggle` with children is most of it),
-`live.gain~` (a slider with a meter beside it), `live.meter~` (the mixer has one, and it
-belongs here when the second caller appears), `live.arrows`, `live.drop`.
+`live.gain~` (a slider with a meter beside it, now that both halves exist), `live.arrows`,
+`live.drop`.
+
+**`Meter` arrived when the second caller did**, which is what this list said would happen.
+The first was a mixer strip. The second is a signal a look is being driven by, and it is
+the one that makes a meter a widget rather than a bar the mixer draws: a *hand-driven*
+signal can be a slider, because you set it and can see where you set it, but a **generated**
+one has no handle to look at. An envelope pulsing on the beat is invisible without a
+display, and you end up guessing at what the picture is reacting to.
+
+**`Button` is the one thing here that is not a `live.*` object at all**, and the reason is
+in the first paragraph of this file: the M4L palette is the set for building a *device*, and
+a device is made of parameters. Every other control reports a value the host writes
+somewhere; a button reports that it happened and leaves nothing behind. That is why it
+could not be `Toggle` with `momentary` — a momentary toggle is a parameter that springs
+back, so it has an on state, an `aria-pressed` and a boolean the caller does not want.
+
+Delete, close, add and cut are the vocabulary of an **editor** rather than a device, and
+the graph canvas is an editor. Every one of them had been hand-rolled at the call site
+before this existed — twice over, in two stylesheets, in two shapes.
 
 The compact vertical slider defaults to the same 27px body height as the cropped knob,
 so a mixed `Row` keeps the generic 2px caption and readout gaps for both. A layout that
