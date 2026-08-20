@@ -13,6 +13,8 @@ bridge/palette.json.tmp
 # the role vocabulary — yours, not the repo's
 bridge/roles.json
 bridge/roles.json.tmp
+# the show — yours, not the repo's, and rewritten every time a knob moves
+visuals/scheme.json
 # generated: the renderer's vite build output, served by the visuals server
 visuals/dist/
 # the user manual — its own repo (…wiki.git), cloned here so it edits alongside the code
