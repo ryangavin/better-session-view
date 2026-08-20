@@ -1,10 +1,12 @@
 // The wire between the chart server and a phone.
 //
-// One direction only, and that is the design rather than a simplification. A
-// phone reading the chart has nothing to say back — it cannot fire a clip,
-// rename a scene or move anything — so the transport is Server-Sent Events and
-// the payload type below is the whole vocabulary. Read-only by construction
-// beats read-only by convention: there is no request type here to add one to.
+// **Almost one direction.** Everything the phone is shown arrives over
+// Server-Sent Events, which cannot carry anything back; the single thing it can
+// send is a tempo nudge, and that is a `POST` of `{ by: 1 }` or `{ by: -1 }` —
+// a *relative* step and nothing else. There is deliberately no way to state a
+// tempo, because a phone that could would be a phone that could jump a running
+// set to 200 from a stale reading. See `docs/following.md` on what opening this
+// to the wifi does and does not expose.
 //
 // Everything is worked out server-side. Nothing on the phone parses a scene
 // name, compiles a pattern or knows that the mapping lives in the names, for
@@ -16,6 +18,81 @@ export const CHART_PORT = 18000;
 
 /** The SSE stream. Every other path is the app. */
 export const EVENTS_PATH = '/events';
+
+/** The one thing a phone can send. `POST` `{ by: 1 }` or `{ by: -1 }`. */
+export const TEMPO_PATH = '/tempo';
+
+/**
+ * The two SSE event names, because the two payloads move at different rates.
+ *
+ * A chart changes when somebody fires something. Loop positions change
+ * continuously, and Live reports them at 20 Hz. Putting both in one message
+ * would push the whole song list several times a second to say a playhead
+ * moved, which is the traffic split this exists to avoid — the same split
+ * `visuals` makes between its show and its anchor.
+ */
+export const CHART_EVENT = 'chart';
+export const LOOPS_EVENT = 'loops';
+
+/** The most a single nudge may move the tempo, in BPM. */
+export const NUDGE = 1;
+
+/**
+ * The `pathLength` a loop wheel's circle declares, so its dash array is the
+ * phase itself and no circumference arithmetic has to track the radius.
+ */
+export const LOOPS_PATH_LENGTH = 1;
+
+/** One playing clip, as something to watch go round. */
+export interface LoopTrack {
+  /** Track index, in the same space as `BSV.Snapshot.tracks`. */
+  t: number;
+  name: string;
+  /** The track's colour as Live renders it. */
+  color: number;
+  /**
+   * Live's `playing_position` **at the moment this frame was built**, in the
+   * unit `inSeconds` names. It is an anchor, not a reading to print: the phone
+   * advances it itself between frames — see `docs/following.md`.
+   */
+  position: number;
+  loopStart: number;
+  loopEnd: number;
+  looping: boolean;
+  recording: boolean;
+  /** True for unwarped audio, whose times Live gives in seconds, not beats. */
+  inSeconds: boolean;
+  signatureNumerator: number;
+  signatureDenominator: number;
+}
+
+/**
+ * Every track with something playing in it, as one coherent frame.
+ *
+ * Sent far more slowly than Live reports it, because the phone does not need
+ * to be *told* where a playhead is. A loop advances at a rate the tempo states,
+ * so a position and the moment it was read are enough to draw every frame in
+ * between — this arrives a couple of times a second to correct the drift and to
+ * say when the clips themselves changed.
+ */
+export interface ChartLoops {
+  /** The tempo the positions advance at. Beats per minute. */
+  tempo: number;
+  /**
+   * Whether the positions are advancing at all.
+   *
+   * Here rather than read off the chart, so a frame carries everything needed
+   * to extrapolate from it and nothing has to be correlated across two streams
+   * arriving at different rates. **A stopped set is the case that makes this
+   * necessary**: Live freezes each clip where it stands and goes on reporting
+   * it, so a reader advancing the position anyway would spin every wheel on a
+   * silent stage — the one state where being obviously wrong is guaranteed to
+   * be noticed.
+   */
+  rolling: boolean;
+  /** Absent from the frame rather than present and silent. */
+  tracks: LoopTrack[];
+}
 
 /**
  * One scene of the song, as something to follow rather than something to fire.

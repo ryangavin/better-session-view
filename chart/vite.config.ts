@@ -38,6 +38,7 @@ export default defineConfig({
     // bridge. `text/event-stream` streams through untouched.
     proxy: {
       '/events': { target: SERVER, changeOrigin: true },
+      '/tempo': { target: SERVER, changeOrigin: true },
     },
   },
 });

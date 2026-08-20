@@ -3,9 +3,17 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CHART_PORT, EVENTS_PATH } from '../protocol.ts';
+import {
+  CHART_EVENT,
+  CHART_PORT,
+  EVENTS_PATH,
+  LOOPS_EVENT,
+  NUDGE,
+  TEMPO_PATH,
+} from '../protocol.ts';
 import { followBridge } from './bridge.ts';
 import { buildChart } from './chart.ts';
+import { buildLoops, loopShape } from './loops.ts';
 
 /**
  * The chart server: one bridge client, and a page for everyone else's phone.
@@ -17,9 +25,9 @@ import { buildChart } from './chart.ts';
  *
  * The shape is the point. **One** connection reaches the device however many
  * people are looking, so the bridge's connection count does not climb with the
- * size of the band, and the only thing crossing to the wifi is a read-only
- * projection of what is playing. The full protocol — every write, every launch,
- * every scene move — stays on loopback where the device put it.
+ * size of the band, and what crosses to the wifi is a projection of what is
+ * playing plus exactly one verb. The rest of the protocol — every launch, every
+ * rename, every scene move — stays on loopback where the device put it.
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -58,7 +66,16 @@ const TYPES: Record<string, string> = {
 
 const readers = new Set<http.ServerResponse>();
 
-const frame = () => JSON.stringify(buildChart(bridge.state));
+const chartFrame = () => JSON.stringify(buildChart(bridge.state));
+
+/** One named SSE event to one reader. */
+function push(res: http.ServerResponse, event: string, data: string): void {
+  res.write(`event: ${event}\ndata: ${data}\n\n`);
+}
+
+function pushAll(event: string, data: string): void {
+  for (const res of readers) push(res, event, data);
+}
 
 /**
  * Server-Sent Events rather than a WebSocket, and it is not a shortcut.
@@ -83,15 +100,82 @@ function stream(res: http.ServerResponse): void {
   // Faster than the browser's five-second default. A set does not wait for a
   // phone to come back.
   res.write('retry: 2000\n\n');
-  res.write(`data: ${frame()}\n\n`);
+  push(res, CHART_EVENT, chartFrame());
+  push(res, LOOPS_EVENT, JSON.stringify(buildLoops(bridge.state)));
   readers.add(res);
   res.on('close', () => readers.delete(res));
+}
+
+/**
+ * The one thing a phone may ask for: one BPM, up or down.
+ *
+ * Relative and bounded to a single step. There is no way to *state* a tempo,
+ * because a phone's reading is always a little stale and asking for 101 when
+ * the set has already moved is how a nudge becomes a jump. `by` is taken only
+ * as exactly ±1, so a malformed or hostile body cannot widen the step, and the
+ * rate limit below stops a stuck button dragging the set across the room.
+ */
+let lastNudge = 0;
+
+function nudge(req: http.IncomingMessage, res: http.ServerResponse): void {
+  let body = '';
+  req.on('data', (chunk) => {
+    body += chunk;
+    // Nothing legitimate here is longer than a couple of dozen bytes.
+    if (body.length > 200) req.destroy();
+  });
+  req.on('end', () => {
+    let by: unknown = null;
+    try {
+      by = (JSON.parse(body) as { by?: unknown }).by;
+    } catch {
+      by = null;
+    }
+    // Strict rather than coerced. `Number("1")` is 1, so coercion would accept
+    // a string here — harmless, since the value still has to *be* ±1, but the
+    // point of this endpoint is that what it accepts can be stated in one line.
+    // Anything that has to be converted first is something to reason about.
+    if (typeof by !== 'number' || (by !== NUDGE && by !== -NUDGE)) {
+      res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end(`by must be ${NUDGE} or ${-NUDGE}`);
+      return;
+    }
+    // A person tapping cannot outrun this; a button held down by a pocket, or a
+    // script, can. Twelve a second is faster than anyone taps and slow enough
+    // that a runaway is something you can see happening and stop.
+    const now = Date.now();
+    if (now - lastNudge < 80) {
+      res.writeHead(429, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('slow down');
+      return;
+    }
+    lastNudge = now;
+
+    const asked = bridge.nudgeTempo(by);
+    if (asked === null) {
+      res.writeHead(409, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('no set to nudge');
+      return;
+    }
+    // No body worth reading. `setTransport` has no reply by design — what Live
+    // actually took arrives as the next `transportState`, and that reaches
+    // every phone at once rather than only the one that pressed.
+    res.writeHead(204).end();
+  });
 }
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
   if (url.pathname === EVENTS_PATH) {
     stream(res);
+    return;
+  }
+  if (url.pathname === TEMPO_PATH) {
+    if (req.method !== 'POST') {
+      res.writeHead(405, { allow: 'POST' }).end();
+      return;
+    }
+    nudge(req, res);
     return;
   }
 
@@ -131,29 +215,69 @@ const server = http.createServer((req, res) => {
  */
 const TICK_MS = 250;
 const BEAT_MS = 15_000;
+
+/**
+ * How often a loop frame goes out, against Live reporting them at 20 Hz.
+ *
+ * A phone does not need to be *told* where a playhead is. A loop advances at a
+ * rate the tempo states, so a position and the moment it arrived are enough for
+ * the browser to draw every frame in between at whatever rate its display runs
+ * — which is also the only way a wheel turns smoothly rather than stepping.
+ * What this rate buys is correction: drift, and the moment the clips themselves
+ * change. Half a second of drift at 120 BPM is one beat, and the frame that
+ * lands puts it right.
+ *
+ * A **change of shape** does not wait for it. Firing a scene swaps every clip,
+ * and a wheel that kept turning against the loop it used to be drawing for half
+ * a second would be wrong at exactly the moment somebody looked.
+ */
+const LOOPS_MS = 500;
+
 let last = '';
+let lastShape = '';
 let sinceBeat = 0;
+let sinceLoops = 0;
 
 setInterval(() => {
   sinceBeat += TICK_MS;
+  sinceLoops += TICK_MS;
   const beat = sinceBeat >= BEAT_MS;
   if (beat) sinceBeat = 0;
   if (readers.size === 0) {
     dirty = false;
     return;
   }
+
+  let said = false;
+
   if (dirty) {
     dirty = false;
-    const next = frame();
+    const next = chartFrame();
     if (next !== last) {
       last = next;
-      for (const res of readers) res.write(`data: ${next}\n\n`);
-      return;
+      pushAll(CHART_EVENT, next);
+      said = true;
     }
   }
+
+  const loops = buildLoops(bridge.state);
+  const shape = loopShape(loops);
+  // The periodic frame exists to correct drift, so it is worth sending only
+  // while there is drift to correct. A stopped set's positions are not moving
+  // and the phone is not advancing them, so re-stating them twice a second
+  // says nothing — a chart left open between songs should cost the wifi
+  // nothing at all. A change of shape still goes out immediately either way.
+  if (shape !== lastShape || (loops.rolling && sinceLoops >= LOOPS_MS)) {
+    lastShape = shape;
+    sinceLoops = 0;
+    pushAll(LOOPS_EVENT, JSON.stringify(loops));
+    said = true;
+  }
+
   // A comment, so it costs a phone nothing to receive and keeps whatever is
-  // between us from deciding the connection is idle.
-  if (beat) for (const res of readers) res.write(': beat\n\n');
+  // between us from deciding the connection is idle. Only needed when the set
+  // has been silent long enough that nothing else has gone out.
+  if (beat && !said) for (const res of readers) res.write(': beat\n\n');
 }, TICK_MS);
 
 /** Every address a phone could actually type. */

@@ -91,8 +91,14 @@ the one `SetModel` exists for.
 same machine; this one's clients are other people's phones, so loopback would defeat the
 point.
 
-It remains a deliberate exposure. There is no authentication and it answers anyone who can
-reach the port, so it belongs on rehearsal or show wifi and not on a hotel network. What is
-exposed is a song title and a list of sections — **nothing reachable from the LAN can
-change the set**, because the write half of the protocol never leaves loopback.
-`BSV_CHART_HOST=127.0.0.1` takes it back for anyone who wants that.
+It remains a deliberate exposure, and since the tempo nudge it is a slightly larger one.
+There is no authentication and it answers anyone who can reach the port, so it belongs on
+rehearsal or show wifi and not on a hotel network.
+
+What is exposed is a song title, a list of sections, where each loop has got to — and
+**exactly one verb, which can move the tempo by one beat per press.** Everything else in
+the protocol still never leaves loopback: nothing on the LAN can fire a clip, rename a
+scene, recolour anything or reorder a set. The worst a phone can do is nudge, and the worst
+a determined phone can do is nudge repeatedly, which is visible on every other phone in the
+room while it happens. `BSV_CHART_HOST=127.0.0.1` takes the whole thing back to loopback
+for anyone who wants that.

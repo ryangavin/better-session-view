@@ -96,6 +96,42 @@ Live, stopped, live. They are distinct because the fixes are: the chart server i
 running, the device is not loaded, Live has not finished starting, nobody has pressed play.
 A single "offline" would send someone to the wrong one.
 
+## The wheels
+
+One per track with something playing in it, in **track order** — not sorted by loop length.
+The longest loop is the structural one and the temptation is to float it to the top, but
+these are read at a glance against a stage where the tracks are in Live's order, and a list
+that reorders itself whenever a clip changes is one nobody can find anything in twice.
+Which loop is the long one is legible from its bar count.
+
+A **ring**, where the grid draws a filled pie. That pie is justified at ten pixels across,
+where a ring is all stroke and its two ends sit a pixel apart at every phase but the first
+and last. At this size there is room for the ring to read from a music stand *and* for the
+bar count to sit inside it, which is the pair of facts somebody counting bars needs: how
+far round, and how far round *of what*. A four-bar loop and a sixteen-bar loop are the same
+arc at the same phase.
+
+The count is `loopBars` from `core/`, which is where the arithmetic and its tests live —
+including the rounding that stops a loop the LOM reports as 7.999 beats becoming a one-bar
+loop. A clip that isn't looping fills once and shows a countdown instead; one being
+recorded into shows its length so far. A group track is left out, because it carries no
+clip of its own and would be a second wheel turning in lockstep with the ones beneath it.
+
+## The tempo, and the two buttons
+
+The big number is what **Live is actually running at**, not what the song's name claims,
+because that is what the buttons change. The name's bpm appears beneath it only when the
+two disagree — which is the same rule as everything else here, applied to a fact that has
+two sources rather than two levels.
+
+It takes the room it does because it is the display *and* the control. A band nudging a
+tempo needs to hit the target without looking and read the result from across a stage, and
+a big number flanked by two big buttons is one object doing both jobs rather than a readout
+with controls parked somewhere else.
+
+What a phone may send, and what stops it being a way to wreck a set, is in
+[following the bridge](following.md).
+
 ## Not built
 
 **Chord progressions.** The thing this is ultimately for, and the only part with nowhere to
@@ -104,11 +140,10 @@ convention question comes before the code — whether they belong in a track of 
 whose clip names carry the bars, or in set-owned device state keyed by song. Both keep the
 `.als` the complete record, which is the property that must not be given up.
 
-**How long is this build.** `core/src/trackStatus.ts` already turns the playing clip into a
-loop phase, a countdown or a bar count, and `watchStatus` is the watch that feeds it. It is
-a third viewport watch and a frame several times a second rather than several times a song,
-so it is a deliberate step up in traffic from what this module currently costs — which is
-why it is not simply switched on.
+**When the loops line up.** Each wheel says where its own loop is; nothing says when the
+long one comes round, which is the question "when do I drop" actually asks. The arithmetic
+is small — the tracks share a tempo, so their phases are comparable — but what to *show*
+is not obvious, and a wrong answer here is worse than none.
 
 **A song's structure before it is playing.** The section list is the current song's. Looking
 ahead to the *next* song means a running order, which the set states but this does not read.

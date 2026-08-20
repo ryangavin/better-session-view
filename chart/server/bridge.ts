@@ -34,6 +34,14 @@ export interface SetState {
   /** Live's transport, which is the answer no observer gives on joining. */
   rolling: boolean;
   play: BSV.TrackPlayState[];
+  /**
+   * The clip playing in each track, at 20 Hz from Live.
+   *
+   * Tracks with nothing playing are absent rather than present and empty, which
+   * is the frame's own convention and the reason it stays small on a set with
+   * far more silent tracks than sounding ones.
+   */
+  status: BSV.PlayingClip[];
 }
 
 export function emptySet(): SetState {
@@ -47,13 +55,35 @@ export function emptySet(): SetState {
     model: null,
     rolling: false,
     play: [],
+    status: [],
   };
 }
 
 export interface BridgeLink {
   state: SetState;
+  /**
+   * Move Live's tempo by a whole number of BPM, relative to where it is now.
+   *
+   * Relative because the caller is a phone and a phone's reading is always a
+   * little stale. Asking for "one more than what you have" cannot land
+   * somewhere surprising; asking for 101 when the set has already moved on can.
+   *
+   * Rounded before the step, so a set at 100.4 nudges to 101 rather than 101.4
+   * — a band nudging a tempo wants whole numbers, and the drift is the thing
+   * they are correcting. Clamped to the range `bridge.ts` validates, so an
+   * out-of-range ask is a no-op here rather than an error broadcast there.
+   *
+   * There is no reply, by the protocol's own design: `setTransport` is
+   * acknowledged by the next observed `transportState`, which is the value Live
+   * actually took. Returns what it asked for, for the log.
+   */
+  nudgeTempo(by: number): number | null;
   close(): void;
 }
+
+/** Live's own limits, as `bridge.ts` states them. */
+const MIN_TEMPO = 20;
+const MAX_TEMPO = 999;
 
 /**
  * Follows the bridge, reconnecting forever.
@@ -73,6 +103,35 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
 
   const send = (request: BSV.Request) => {
     if (socket?.readyState === 1) socket.send(JSON.stringify(request));
+  };
+
+  /**
+   * The track count the watches were last armed for, or -1 for "not armed".
+   *
+   * **Watches have to be re-sent, and getting this wrong is silent.** The
+   * device refuses every request until the LOM is ready, so a chart running
+   * before Live finished loading has all three refused — and unlike `snapshot`
+   * nothing retries them, leaving a client that looks connected, shows the
+   * song, and never draws a wheel. Two things therefore re-arm: the LOM
+   * reporting ready, and a snapshot whose track count differs from the one the
+   * watches were built against, because `watchPlay` and `watchStatus` install
+   * observers *per track* and a set that grew a track has a gap in them.
+   *
+   * Re-sending is free by the protocol's own design: every `watch_*` handler in
+   * `lom.ts` clears and rebuilds before it installs, which is why `on` is
+   * forwarded on every subscribe and only `off` is edge-triggered.
+   */
+  let armedFor = -1;
+
+  const arm = (trackCount: number) => {
+    armedFor = trackCount;
+    // Three viewport watches and no more. Play state is which scene; transport
+    // is the tempo the set is actually running at; status is where each playing
+    // clip is in its loop. Meters, the mixer and the device chains are somebody
+    // else's client.
+    send({ type: 'watchPlay', on: true });
+    send({ type: 'watchTransport', on: true });
+    send({ type: 'watchStatus', on: true });
   };
 
   /**
@@ -100,8 +159,12 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
       case 'status':
         state.lomReady = event.lomReady;
         // The LOM going ready is what makes an earlier refusal worth retrying,
-        // and it arrives unprompted.
-        if (event.lomReady && state.rev < 0) send({ type: 'snapshot' });
+        // and it arrives unprompted. Both the set and the watches were refused
+        // by the same "device not ready", so both come back here.
+        if (event.lomReady) {
+          if (state.rev < 0) send({ type: 'snapshot' });
+          arm(state.tracks.length);
+        }
         askAgain();
         return true;
       case 'snapshot':
@@ -110,6 +173,9 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
         state.tracks = event.data.tracks;
         state.scenes = event.data.scenes;
         state.model = event.model;
+        // A set with a different number of tracks than the watches were built
+        // against has tracks nothing is observing.
+        if (state.tracks.length !== armedFor) arm(state.tracks.length);
         return true;
       case 'delta':
         // A delta is a partial re-read, and patching a copy of the set here
@@ -126,6 +192,13 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
       case 'transportState':
         state.tempo = event.state.tempo;
         return true;
+      case 'clipStatus':
+        state.status = event.frame.tracks;
+        // **Not a change.** Positions move twenty times a second and are read
+        // rather than diffed against; letting them mark the chart dirty would
+        // push the whole song list at 20 Hz to report that a playhead moved.
+        // They ride their own slower stream — see `index.ts`.
+        return false;
       case 'error':
         // Never fatal. The device refuses everything until it is ready, and the
         // only useful response is to ask again rather than to give up or take
@@ -153,12 +226,9 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
     ws.addEventListener('open', () => {
       state.connected = true;
       send({ type: 'snapshot' });
-      // Two viewport watches and no more. Play state is the whole question this
-      // client asks — which scene, and what is fired — and transport is the
-      // tempo the set is actually running at. Meters, the mixer and the device
-      // chains are somebody else's client.
-      send({ type: 'watchPlay', on: true });
-      send({ type: 'watchTransport', on: true });
+      // Armed now for the common case — a bridge that is already up — and
+      // re-armed by `arm` above when it is not, or when the set changes shape.
+      arm(-1);
       onChange();
     });
 
@@ -177,7 +247,9 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
       state.lomReady = false;
       state.rev = -1;
       state.play = [];
+      state.status = [];
       state.rolling = false;
+      armedFor = -1;
       if (asking) {
         clearTimeout(asking);
         asking = null;
@@ -196,6 +268,13 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
 
   return {
     state,
+    nudgeTempo(by) {
+      if (!state.lomReady || !Number.isFinite(by)) return null;
+      const want = Math.round(state.tempo) + Math.round(by);
+      if (want < MIN_TEMPO || want > MAX_TEMPO) return null;
+      send({ type: 'setTransport', patch: { tempo: want } });
+      return want;
+    },
     close() {
       closed = true;
       if (timer) clearTimeout(timer);

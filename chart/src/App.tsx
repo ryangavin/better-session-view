@@ -1,40 +1,35 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { hex } from '../../core/src/color.ts';
-import { EVENTS_PATH, type Chart, type ChartSection, type ChartSong } from '../protocol.ts';
+import {
+  formatSecondsLeft,
+  loopBars,
+  trackStatus,
+} from '../../core/src/trackStatus.ts';
+import {
+  CHART_EVENT,
+  EVENTS_PATH,
+  LOOPS_EVENT,
+  LOOPS_PATH_LENGTH,
+  NUDGE,
+  TEMPO_PATH,
+  type Chart,
+  type ChartLoops,
+  type ChartSection,
+  type ChartSong,
+  type LoopTrack,
+} from '../protocol.ts';
 
 /**
  * The chart, as somebody in the band sees it.
  *
- * Everything here is presentation. The payload arrives with every fact already
- * worked out — the song, its sections, which one is lit — because the phone is
- * the one client of this project that must not know how a scene name is spelled.
- *
- * It reads and never writes. There is no request on the wire, so there is
- * nothing to guard: the worst a bandmate can do with this page open is watch.
+ * Everything about the *song* arrives with every fact already worked out,
+ * because the phone is the one client of this project that must not know how a
+ * scene name is spelled. The one thing it does compute is where a playhead is
+ * right now, and it has to: a wheel told its position twice a second would
+ * step, and being told sixty times a second would put the network in the
+ * animation loop. It is given a position and the moment it arrived, and it
+ * advances that itself — the same trade `visuals` makes with the Link anchor.
  */
-
-/**
- * Live's actual tempo, and **only when it is not already the big number**.
- *
- * The song's bpm vital is what the set is nominally at; this is what the room
- * is at. When they agree, printing both is the same number twice — so it stays
- * hidden and its appearance means something: either the band is running the
- * song somewhere other than its label, or the song has no label to run against
- * (unnamed, or stating a bpm per section) and this is the only tempo there is.
- *
- * Rounded on both sides because Live's tempo is a float and a set sitting at
- * 100.02 is sitting at 100.
- */
-function runningTempo(chart: Chart): number | null {
-  if (!chart.ready) return null;
-  // Not `Number(bpm)` alone: `Number('')` is 0, which is finite, so a song with
-  // no bpm at all would compare as though it had stated one.
-  const labelled = chart.song?.bpm ? Number(chart.song.bpm) : Number.NaN;
-  if (Number.isFinite(labelled) && Math.round(labelled) === Math.round(chart.tempo)) {
-    return null;
-  }
-  return chart.tempo;
-}
 
 /** What the top line says, in the order the answers stop being reassuring. */
 function condition(linked: boolean, chart: Chart | null): { text: string; live: boolean } {
@@ -83,32 +78,15 @@ function useAwake(): void {
   }, []);
 }
 
-/**
- * The two facts somebody hearing the song for the first time needs.
- *
- * Split out from the artist and the tag rather than sitting in one row with
- * them, because they are not the same kind of thing: these two are what you
- * need to *play* along, and the other two are what the song is filed under.
- * Given one glance from a music stand, this is what the glance should land on.
- *
- * Either can be missing, and that is the section list carrying it instead — a
- * song that modulates or speeds up states those per section, so an empty slot
- * here is a signal rather than a gap. See `protocol.ts`.
- */
+/** The song's key, which is the one fact the tempo readout does not carry. */
 function Vitals({ song }: { song: ChartSong }) {
-  const shown = [
-    { of: 'key', value: song.key },
-    { of: 'bpm', value: song.bpm },
-  ].filter((vital) => vital.value !== '');
-  if (shown.length === 0) return null;
+  if (!song.key) return null;
   return (
     <p className="vitals">
-      {shown.map((vital) => (
-        <span key={vital.of} className="vital">
-          <span className="value">{vital.value}</span>
-          <span className="of">{vital.of}</span>
-        </span>
-      ))}
+      <span className="vital">
+        <span className="value">{song.key}</span>
+        <span className="of">key</span>
+      </span>
     </p>
   );
 }
@@ -128,25 +106,241 @@ function Credits({ song }: { song: ChartSong }) {
   );
 }
 
-function Section({ section }: { section: ChartSection }) {
-  const mark = section.playing ? 'playing' : section.queued ? 'queued' : 'idle';
+/**
+ * Live's tempo, and the two buttons that move it.
+ *
+ * The number is the display *and* the control, which is why it takes the room
+ * it does: a band nudging a tempo needs to hit the target without looking and
+ * read the result from across a stage. It shows what Live is actually running
+ * at rather than what the song's name claims, because that is the thing the
+ * buttons change — the claim appears beneath only when the two disagree.
+ *
+ * Nothing is optimistic. A press sends one nudge and the number moves when Live
+ * says it moved, so a number that does not move is telling the truth about a
+ * write that did not land.
+ */
+function Tempo({
+  tempo,
+  labelled,
+  live,
+  onNudge,
+}: {
+  tempo: number;
+  labelled: string | null;
+  live: boolean;
+  onNudge: (by: number) => void;
+}) {
   return (
-    <li className={`section ${mark}`}>
-      <span
-        className="edge"
-        style={section.color === null ? undefined : { background: hex(section.color) }}
-      />
-      <span className="label">{section.label}</span>
-      {/* Present only when the heading could not state it — a song that
-          modulates or speeds up — so a row carrying one is a row to look at. */}
-      {section.bpm && <span className="states">{section.bpm}</span>}
-      {section.key && <span className="states">{section.key}</span>}
+    <div className="deck">
+      <button
+        className="nudge"
+        type="button"
+        disabled={!live}
+        aria-label="one bpm slower"
+        // Pointer-down rather than click: this is a control somebody reaches
+        // for mid-song, and the press should land when the finger does.
+        onPointerDown={() => onNudge(-NUDGE)}
+      >
+        −
+      </button>
+      <span className="reading">
+        <span className="bpm">{live ? Math.round(tempo) : '—'}</span>
+        <span className="of">bpm</span>
+        {labelled && <span className="labelled">named {labelled}</span>}
+      </span>
+      <button
+        className="nudge"
+        type="button"
+        disabled={!live}
+        aria-label="one bpm faster"
+        onPointerDown={() => onNudge(NUDGE)}
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
+/** The song's sections, down the side, current one lit. */
+function Rail({ sections }: { sections: ChartSection[] }) {
+  return (
+    <ol className="rail">
+      {sections.map((section) => {
+        const mark = section.playing ? 'playing' : section.queued ? 'queued' : 'idle';
+        return (
+          <li key={section.s} className={`section ${mark}`}>
+            <span
+              className="edge"
+              style={section.color === null ? undefined : { background: hex(section.color) }}
+            />
+            <span className="label">{section.label}</span>
+            {section.bpm && <span className="states">{section.bpm}</span>}
+            {section.key && <span className="states">{section.key}</span>}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** The frame, and the moment it landed here. Monotonic, so a clock change can't move it. */
+interface Anchor {
+  loops: ChartLoops;
+  at: number;
+}
+
+/**
+ * Where a clip has got to, `ms` after the frame that reported it.
+ *
+ * A loop advances at a rate the tempo states and nothing else, so this is the
+ * whole of the extrapolation. Live reports position in beats for MIDI and
+ * warped audio and in **seconds** for unwarped audio, and `inSeconds` is which
+ * — advancing seconds at the beat rate would run a wheel at twice speed on a
+ * 120 BPM set and look almost right, which is the worst kind of wrong.
+ */
+function advance(track: LoopTrack, tempo: number, ms: number): BSV.PlayingClip {
+  const perSecond = track.inSeconds ? 1 : tempo / 60;
+  return {
+    t: track.t,
+    position: track.position + (ms / 1000) * perSecond,
+    loopStart: track.loopStart,
+    loopEnd: track.loopEnd,
+    looping: track.looping,
+    recording: track.recording,
+    inSeconds: track.inSeconds,
+    signatureNumerator: track.signatureNumerator,
+    signatureDenominator: track.signatureDenominator,
+  };
+}
+
+/** How full to draw one wheel, and what to write in the middle of it. */
+function reading(clip: BSV.PlayingClip, tempo: number): { phase: number; text: string } | null {
+  const status = trackStatus(clip, tempo);
+  if (!status) return null;
+
+  if (status.kind === 'oneShot') {
+    // Not a loop, so the wheel fills once and stops rather than wrapping.
+    const span = clip.loopEnd - clip.loopStart;
+    const done = span > 0 ? (clip.position - clip.loopStart) / span : 1;
+    return { phase: Math.max(0, Math.min(1, done)), text: formatSecondsLeft(status.secondsLeft) };
+  }
+
+  const bars = loopBars(clip);
+  if (status.kind === 'recording') {
+    return { phase: 0, text: `${status.bars}.${status.beats}` };
+  }
+  return { phase: status.phase, text: bars ? `${bars.bar}/${bars.bars}` : '' };
+}
+
+/**
+ * One track's loop, as a wheel with its position written in the middle.
+ *
+ * A ring rather than the filled pie the grid draws. That pie exists at ten
+ * pixels across, where a ring is all stroke and its two ends are a pixel apart
+ * at every phase; here there is room for the ring to read from a music stand
+ * *and* for the bar count to sit inside it, which is the pair of facts somebody
+ * counting bars actually needs.
+ *
+ * `pathLength` is declared as 1 so the dash array is the phase itself, with no
+ * circumference arithmetic to keep in step with the radius.
+ */
+function Wheel({
+  track,
+  arcRef,
+  textRef,
+}: {
+  track: LoopTrack;
+  arcRef: (el: SVGCircleElement | null) => void;
+  textRef: (el: HTMLSpanElement | null) => void;
+}) {
+  return (
+    <li className="loop">
+      <span className="wheel">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <circle className="track" cx="20" cy="20" r="17" />
+          <circle
+            className="arc"
+            cx="20"
+            cy="20"
+            r="17"
+            pathLength={LOOPS_PATH_LENGTH}
+            style={{ stroke: hex(track.color) }}
+            ref={arcRef}
+          />
+        </svg>
+        <span className="count" ref={textRef} />
+      </span>
+      <span className="track-name">{track.name}</span>
     </li>
+  );
+}
+
+/**
+ * Every playing track's loop, turning.
+ *
+ * React owns which rows exist; the animation frame owns what is written in
+ * them. Putting the phase through React state would re-render the whole list
+ * sixty times a second to move an arc, which is the cost this project's
+ * performance note is about — and here it would be paid on the oldest phone in
+ * the room.
+ */
+function Loops({ anchor }: { anchor: Anchor | null }) {
+  const arcs = useRef(new Map<number, SVGCircleElement>());
+  const texts = useRef(new Map<number, HTMLSpanElement>());
+  const held = useRef<Anchor | null>(anchor);
+  held.current = anchor;
+
+  useEffect(() => {
+    let frame = 0;
+    const draw = () => {
+      frame = requestAnimationFrame(draw);
+      const now = held.current;
+      if (!now) return;
+      // A stopped set's clips are frozen where they stand, and Live goes on
+      // reporting them. Advancing anyway would spin every wheel on a silent
+      // stage.
+      const ms = now.loops.rolling ? performance.now() - now.at : 0;
+      for (const track of now.loops.tracks) {
+        const read = reading(advance(track, now.loops.tempo, ms), now.loops.tempo);
+        const arc = arcs.current.get(track.t);
+        if (arc) {
+          const phase = read ? read.phase : 0;
+          arc.style.strokeDasharray = `${phase} ${LOOPS_PATH_LENGTH - phase}`;
+        }
+        const text = texts.current.get(track.t);
+        if (text) text.textContent = read ? read.text : '';
+      }
+    };
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const tracks = anchor?.loops.tracks ?? [];
+  if (tracks.length === 0) return null;
+
+  return (
+    <ol className="loops">
+      {tracks.map((track) => (
+        <Wheel
+          key={track.t}
+          track={track}
+          arcRef={(el) => {
+            if (el) arcs.current.set(track.t, el);
+            else arcs.current.delete(track.t);
+          }}
+          textRef={(el) => {
+            if (el) texts.current.set(track.t, el);
+            else texts.current.delete(track.t);
+          }}
+        />
+      ))}
+    </ol>
   );
 }
 
 export function App() {
   const [chart, setChart] = useState<Chart | null>(null);
+  const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [linked, setLinked] = useState(false);
   useAwake();
 
@@ -156,54 +350,78 @@ export function App() {
     // not a socket.
     const source = new EventSource(EVENTS_PATH);
     source.onopen = () => setLinked(true);
-    source.onmessage = (message) => {
-      setLinked(true);
-      try {
-        setChart(JSON.parse(message.data) as Chart);
-      } catch {
-        // A truncated frame is not worth blanking the page over; the next one
-        // is a quarter of a second away.
-      }
-    };
     source.onerror = () => setLinked(false);
+
+    const take = <T,>(name: string, hand: (value: T) => void) => {
+      source.addEventListener(name, ((message: MessageEvent) => {
+        setLinked(true);
+        try {
+          hand(JSON.parse(message.data) as T);
+        } catch {
+          // A truncated frame is not worth blanking the page over; the next one
+          // is along shortly.
+        }
+      }) as EventListener);
+    };
+
+    take<Chart>(CHART_EVENT, setChart);
+    // Stamped on arrival with the browser's own monotonic clock, so nothing
+    // here depends on the two machines agreeing about the time.
+    take<ChartLoops>(LOOPS_EVENT, (loops) => setAnchor({ loops, at: performance.now() }));
+
     return () => source.close();
   }, []);
 
+  const nudge = useCallback((by: number) => {
+    void fetch(TEMPO_PATH, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ by }),
+    }).catch(() => {
+      // Nothing useful to say to the room. The tempo not moving is the report.
+    });
+  }, []);
+
   const state = condition(linked, chart);
-  const running = chart ? runningTempo(chart) : null;
   const song = chart?.song ?? null;
   const now = chart?.now ?? null;
   const next = chart?.next ?? null;
+  const ready = chart?.ready === true;
+
+  // Only when it disagrees with what Live is doing. When they match, the big
+  // number already says it.
+  const named = song?.bpm ? Number(song.bpm) : Number.NaN;
+  const labelled =
+    ready && Number.isFinite(named) && Math.round(named) !== Math.round(chart?.tempo ?? 0)
+      ? song!.bpm
+      : null;
 
   return (
     <main className="chart">
       <header className="condition">
         <span className={`dot ${state.live ? 'on' : 'off'}`} />
         <span className="what">{state.text}</span>
-        {running !== null && <span className="tempo">{Math.round(running)}</span>}
       </header>
 
-      {/* A set with nothing playing is the ordinary state between songs, so it
-          gets a sentence rather than an empty screen. */}
-      {!now && !next && <p className="quiet">Nothing playing</p>}
+      <section className="head">
+        <h1 className="song">
+          {song?.name ?? now?.label ?? next?.label ?? 'Nothing playing'}
+        </h1>
+        {song && <Vitals song={song} />}
+        {song && <Credits song={song} />}
+      </section>
 
-      {(now || next) && (
-        <section className="head">
-          <h1 className="song">{song?.name ?? now?.label ?? next?.label}</h1>
-          {song && <Vitals song={song} />}
-          {song && <Credits song={song} />}
-          {now && <p className="now">{now.label}</p>}
-          {next && !next.playing && <p className="next">{next.label}</p>}
-        </section>
-      )}
+      <section className="middle">
+        <Tempo
+          tempo={chart?.tempo ?? 0}
+          labelled={labelled}
+          live={ready}
+          onNudge={nudge}
+        />
+        {song && song.sections.length > 0 && <Rail sections={song.sections} />}
+      </section>
 
-      {song && song.sections.length > 0 && (
-        <ol className="sections">
-          {song.sections.map((section) => (
-            <Section key={section.s} section={section} />
-          ))}
-        </ol>
-      )}
+      <Loops anchor={anchor} />
 
       {/* Somebody dropped a scene into the set that the naming convention does
           not cover. Saying so is more use than drawing nothing. */}
