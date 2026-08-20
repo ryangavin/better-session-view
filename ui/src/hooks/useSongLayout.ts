@@ -4,7 +4,13 @@ import { SCENE_PATTERNS } from '../../../core/src/namePattern.js';
 import { allSongKeys, blockTrackRoles, songRows } from '../../../core/src/songRows.js';
 
 /** Before the first snapshot lands. A constant, so its identity is stable. */
-const NO_SONGS: BSV.SetModel = { rev: -1, songs: [], songByScene: {}, unmapped: [] };
+const NO_SONGS: BSV.SetModel = {
+  rev: -1,
+  songs: [],
+  songByScene: {},
+  factsByScene: {},
+  unmapped: [],
+};
 
 /**
  * How the songs lay the grid out: where the headers go, which songs are folded,

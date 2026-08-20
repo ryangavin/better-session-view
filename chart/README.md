@@ -1,0 +1,76 @@
+# chart/
+
+What the band reads. A one-screen view of the song the set is playing — its name, its
+facts and its sections — served to everyone's phone, with no dependencies and nothing to
+install.
+
+```
+Live ─ SessionBridge :17800 ─WS─> chart server :18000 ─SSE─> phones
+           (loopback)                    (the band's wifi)
+```
+
+## Where the reasoning lives
+
+**Read the row you need, not the set.**
+
+| doc | read it before touching | source |
+|---|---|---|
+| [following the bridge](docs/following.md) | the connection, the LAN binding, SSE, why there is no `package.json`, and the `core/` import constraint any Node client hits | `server/bridge.ts`, `server/index.ts` |
+| [reading the set](docs/reading.md) | which scene is "now", which song, where a fact is printed, and what is deliberately not built | `server/chart.ts`, `protocol.ts` |
+
+## The one idea
+
+**A chart states each fact once, as high up as it is true.**
+
+A song in one key states it in the heading. A song that modulates cannot — so the heading
+says nothing about key and every section states its own, which is what makes the section
+that changes visible. bpm behaves identically. Everything else here follows from wanting
+that to be true without anybody typing it twice: the facts are read out of the scene names
+once, by the bridge, and this reads them off `SetModel`.
+
+## Running it
+
+```sh
+npm run dev                # everything, this included: server on :18000, page on :5573
+npm run dev:chart          # the server alone: bridge client + host, :18000
+npm run dev:chart-ui       # the page with HMR, :5573, proxying /events to the server
+npm run build:chart        # the page into chart/dist, which the server serves
+```
+
+The server prints every address a phone can reach it on. Whoever is running Live reads one
+out; everyone else types it once and adds it to their home screen.
+
+| | | |
+|---|---|---|
+| server | 18000 | `BSV_CHART_PORT`, `BSV_CHART_HOST` |
+| page (dev) | UI + 400 | `BSV_CHART_UI_PORT` |
+| bridge it follows | `ws://127.0.0.1:17800/ws` | `BSV_BRIDGE_WS` |
+
+Working on it without Ableton is the same harness the visuals rig uses:
+
+```sh
+npm run dev:fake-live                                            # :17801
+BSV_BRIDGE_WS=ws://127.0.0.1:17801/ws npm run dev:chart
+```
+
+## It cannot change anything
+
+The write half of the protocol never leaves loopback. This server holds **one** connection
+to the bridge however many people are looking, and what crosses to the wifi is a read-only
+projection — [`protocol.ts`](protocol.ts) has no request type on it, so there is nothing
+for a phone to send and nothing to guard.
+
+That is also why the module is a separate process rather than a route on the device: the
+device binds `127.0.0.1` deliberately, and the way to put a chart on the band's phones
+without giving the band's phones the ability to move scenes is to put something read-only
+in between. Rule 5 in [`AGENTS.md`](../AGENTS.md) anticipated it — *"a second kind of
+client — a stage display, a CLI — should cost nothing and perturb nothing"* — and this is
+the stage display.
+
+## What it is for next
+
+The section list is the beginning of the real goal rather than the end of it: **anyone on
+stage should be able to see what is coming without having played the song before.** The
+two things it does not yet show are chord progressions, which have nowhere in the set to
+live yet, and how long the current section runs, which `core/src/trackStatus.ts` already
+computes. Both are argued in [reading the set](docs/reading.md).

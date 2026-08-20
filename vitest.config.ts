@@ -8,6 +8,7 @@ export default defineConfig({
       'ui/src/lib/**/*.test.ts',
       'ui/src/components/**/*.test.ts',
       'visuals/**/*.test.ts',
+      'chart/**/*.test.ts',
     ],
     environment: 'node',
   },

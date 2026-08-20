@@ -56,7 +56,7 @@ in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
 ## Modules
 
-Seven projects. Each has its own README; read the one you're touching.
+Eight projects. Each has its own README; read the one you're touching.
 
 | module | what it is | read for |
 |---|---|---|
@@ -67,11 +67,19 @@ Seven projects. Each has its own README; read the one you're touching.
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator | changing the patcher or device type |
 | [`visuals/`](visuals/README.md) | a VJ rig: Link peer, bridge client, WebGL2 renderer | visuals, the clock, or a second kind of client |
+| [`chart/`](chart/README.md) | what the band reads: a read-only view of the playing song, on a phone | the section list, the LAN binding, or a client with no dependencies |
 
 `visuals/` is the first thing to take rule 5 up on its offer of "a second kind of client":
 it follows the bridge, perturbs nothing, and needs no browser open anywhere else. It is a
 separate process because Ableton Link is a native addon and the bridge's Node lives inside
 Max, and because it is meant to run on a different machine entirely.
+
+`chart/` is the second, and it is separate for a different reason: its clients are other
+people's phones. The device binds `127.0.0.1` on purpose, so putting a chart on the band's
+wifi without also putting *every write in the protocol* there means something read-only in
+between. It holds one bridge connection however many people are looking, sends Server-Sent
+Events rather than a socket because a phone has nothing to say back, and installs nothing
+at all — Node's own `WebSocket` client and `node:http` are the whole runtime.
 
 `core/` and `widgets/` are the same rule on two axes, and between them they are what keeps
 a DAW of our own possible: domain logic that has never heard of a transport, and controls
@@ -115,6 +123,7 @@ bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
 bridge/public/                           vite build output
 bridge/SessionBridge.amxd  .maxpat       device + debug patcher
 visuals/dist/                            the renderer — `npm run build:visuals`
+chart/dist/                              the band's page — `npm run build:chart`
 ```
 
 `visuals/` is not part of `npm run build`, deliberately: the device must build on a machine

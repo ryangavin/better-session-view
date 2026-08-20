@@ -233,6 +233,36 @@ declare namespace BSV {
   }
 
   /**
+   * What one scene's own name states, over and above the song it belongs to.
+   *
+   * Every field is absent rather than empty when the name doesn't say, for the
+   * reason `SongEntry` gives about -1: a field that can be missing and encodes
+   * it as `''` is a bug waiting to look like data. A scene that states nothing
+   * has no entry at all.
+   *
+   * **This is the mapping at scene resolution, and it is here so that it is
+   * read once.** `derive()` already reads all three off the name; `SetModel`
+   * used to discard them, which left every client that wanted a scene's role
+   * writing a regex of its own — the bridge for Push, the grid, the visuals
+   * rig, and each answer free to drift from the naming convention the moment it
+   * changed. A client asking what a scene is now gets told.
+   */
+  interface SceneFacts {
+    /** The `[role]` tag, in the case the set spells it. */
+    role?: string;
+    /**
+     * The musical key this scene states, which its song may not.
+     *
+     * A song whose scenes disagree renders `SongEntry.key` as the collection
+     * `Bm / D`, so a client showing where a song modulates has to read the
+     * scenes — this is that reading, done once.
+     */
+    key?: string;
+    /** The bpm label this scene states. Same story as `key`. */
+    bpm?: string;
+  }
+
+  /**
    * What this app understands the set to be — the derived layer, held by the
    * bridge and shipped whole.
    *
@@ -262,6 +292,15 @@ declare namespace BSV {
      * a numeric key and what every consumer has to cope with anyway.
      */
     songByScene: Record<string, string>;
+    /**
+     * Scene index → what that scene's own name states. Absent for a scene that
+     * states nothing, so this is normally far smaller than the set.
+     *
+     * Keyed the same way and for the same reason as `songByScene`: it crosses
+     * the wire as JSON, and `JSON.stringify` writes a numeric key as a string
+     * whatever the map was.
+     */
+    factsByScene: Record<string, SceneFacts>;
     /** Scene indexes whose names match no pattern at all. */
     unmapped: number[];
   }

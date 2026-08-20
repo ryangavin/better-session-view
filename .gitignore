@@ -17,6 +17,8 @@ bridge/roles.json.tmp
 visuals/scheme.json
 # generated: the renderer's vite build output, served by the visuals server
 visuals/dist/
+# generated: the chart's vite build output, served by the chart server
+chart/dist/
 # the user manual — its own repo (…wiki.git), cloned here so it edits alongside the code
 wiki/
 .DS_Store

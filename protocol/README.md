@@ -130,6 +130,15 @@ over the same names. It rides on a `delta` too, but only when that delta moved a
 row — the coarse-grained rule cuts both ways, and a song list re-sent on every clip edit
 would be the chatty version of it.
 
+**`SetModel.factsByScene` is that same idea at scene resolution.** `derive()` reads a
+scene's role, key and bpm off its name; the model used to carry only what those aggregated
+*to* — the song — so a client wanting a single scene's role had to re-read the name it came
+from. Three of them did, each with a private regex against a convention it did not own.
+Every field is absent rather than empty and a scene stating nothing has no entry, so a set
+named only at the song level pays nothing for it. It is what lets a reader print a fact
+where it is true: a song that modulates has no single key to put in a header, and the
+sections have to carry it.
+
 **Master is not an ordinary track.** Live exposes it at `Song.master_track`, outside
 `Song.tracks`, so `Snapshot.masterColor` carries its RGB separately for the heading over
 the Master section, which fills from it exactly as a track header fills from
