@@ -341,6 +341,17 @@ declare namespace BSV {
     instrument: string;
     /** Empty for an audio clip, which has no notes to read at all. */
     notes: ClipNote[];
+    /**
+     * Why the notes could not be read. **Absent on success**, and absent for an
+     * audio clip, which has no notes rather than unreadable ones.
+     *
+     * Exists because the alternative is indistinguishable from silence. An
+     * empty note list is the right failure — it draws no chart rather than a
+     * wrong one — but "this clip has no chords in it" and "this read did not
+     * work" look identical to every reader, and only one of them is a bug. The
+     * Max window says the same thing; this is the half a client can act on.
+     */
+    problem?: string;
   }
 
   interface Palette {

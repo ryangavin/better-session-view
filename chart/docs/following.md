@@ -85,6 +85,25 @@ taken here was to put the per-scene facts on the wire instead of finding a way t
 the names — the mapping being read exactly once is the better property anyway, and it is
 the one `SetModel` exists for.
 
+## One address, in dev too
+
+The server serves `chart/dist`, so an edit to the page shows up only after a rebuild —
+which looks exactly like hot reload being broken, because the address anybody reaches for
+is this one. It is the address the server prints, and the address that makes sense on a
+phone.
+
+So `BSV_CHART_UI` points it at the Vite dev server and every page request is proxied there,
+**including the HMR websocket** through the same port. Without the socket the page would
+load from here, look right, and never update — the same failure arriving by a different
+route. `npm run dev` sets it; unset, which is how it ships, nothing is proxied.
+
+The proxy falls back to `dist` when nothing answers, and that is not padding: `npm run dev`
+starts this and Vite together under `concurrently`, so for the first moment of a session
+there is nothing on the other end.
+
+`dev:chart` runs under `node --watch`, so editing anything in `server/` restarts it. SSE
+survives that on its own — `EventSource` reconnects, and the frames are re-sent on connect.
+
 ## Binding the LAN
 
 `0.0.0.0` here, where the device binds `127.0.0.1`. The device's client is a browser on the

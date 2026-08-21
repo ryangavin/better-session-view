@@ -37,6 +37,21 @@ const HOST = process.env.BSV_CHART_HOST ?? '0.0.0.0';
 const PORT = Number(process.env.BSV_CHART_PORT) || CHART_PORT;
 const BRIDGE = process.env.BSV_BRIDGE_WS ?? 'ws://127.0.0.1:17800/ws';
 const ROOT = path.resolve(here, '../dist');
+/**
+ * The Vite dev server to hand the page off to, when there is one.
+ *
+ * **One address, in both modes**, and that is the point rather than a
+ * convenience. This module's whole premise is that somebody reads a URL out to
+ * the room; a second URL that behaves differently undermines it, and the one
+ * anybody reaches for is this server's — which serves `chart/dist` and so shows
+ * an edit only after a rebuild. Working on the page then looks exactly like
+ * hot reload being broken.
+ *
+ * So `npm run dev` points this at Vite and every page request is proxied there,
+ * HMR socket included. Unset — which is how it ships — nothing is proxied and
+ * `dist` is served as before.
+ */
+const DEV_UI = process.env.BSV_CHART_UI ?? '';
 
 /**
  * Binding every interface rather than loopback, unlike the device.
@@ -183,6 +198,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (DEV_UI) return toDevServer(req, res);
+
   let rel = url.pathname === '/' ? '/index.html' : url.pathname;
   // Every unknown path is the app, because the chart is a single page.
   const file = path.join(ROOT, rel);
@@ -201,6 +218,67 @@ const server = http.createServer((req, res) => {
     'cache-control': 'no-store',
   });
   res.end(fs.readFileSync(target));
+});
+
+/**
+ * Hand one page request to the dev server, and serve `dist` if it isn't up.
+ *
+ * The fallback is not defensive padding: `npm run dev` starts this and Vite
+ * together under `concurrently`, so for the first moment of a dev session there
+ * is nothing on the other end. Answering that with a stack trace would make
+ * every session start with an error that resolves itself.
+ */
+function toDevServer(req: http.IncomingMessage, res: http.ServerResponse): void {
+  const target = new URL(DEV_UI);
+  const proxied = http.request(
+    {
+      host: target.hostname,
+      port: target.port,
+      path: req.url,
+      method: req.method,
+      headers: { ...req.headers, host: target.host },
+    },
+    (answer) => {
+      res.writeHead(answer.statusCode ?? 502, answer.headers);
+      answer.pipe(res);
+    },
+  );
+  proxied.on('error', () => {
+    res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end(`The dev server at ${DEV_UI} is not up yet. Reload in a moment.`);
+  });
+  req.pipe(proxied);
+}
+
+/**
+ * Vite's HMR socket, through the same port as the page.
+ *
+ * Without this the page loads from here and its hot-reload client tries to
+ * connect back to this port, where nothing is listening — so the page is
+ * served, looks right, and never updates. Which is the failure this whole
+ * arrangement exists to remove, arriving by a different route.
+ */
+server.on('upgrade', (req, socket, head) => {
+  if (!DEV_UI) return;
+  const target = new URL(DEV_UI);
+  const up = http.request({
+    host: target.hostname,
+    port: target.port,
+    path: req.url,
+    method: req.method,
+    headers: { ...req.headers, host: target.host },
+  });
+  up.on('upgrade', (answer, upstream, upstreamHead) => {
+    const lines = Object.entries(answer.headers)
+      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+      .join('\r\n');
+    socket.write(`HTTP/1.1 101 Switching Protocols\r\n${lines}\r\n\r\n`);
+    if (upstreamHead.length) socket.unshift(upstreamHead);
+    upstream.pipe(socket).pipe(upstream);
+  });
+  up.on('error', () => socket.destroy());
+  if (head.length) up.write(head);
+  up.end();
 });
 
 /**
@@ -347,6 +425,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 server.listen(PORT, HOST, () => {
   console.log(`chart: bridge ${BRIDGE}`);
   for (const at of reachableAt()) console.log(`chart: ${at}`);
+  if (DEV_UI) console.log(`chart: page from ${DEV_UI} — hot reload through this port`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

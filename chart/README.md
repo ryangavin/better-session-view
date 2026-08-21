@@ -33,10 +33,12 @@ the bridge, and this reads them off `SetModel`.
 ## Running it
 
 ```sh
-npm run dev                # everything, this included: server on :18000, page on :5573
-npm run dev:chart          # the server alone: bridge client + host, :18000
-npm run dev:chart-ui       # the page with HMR, :5573, proxying /events to the server
-npm run build:chart        # the page into chart/dist, which the server serves
+npm run dev                # everything, this included. Use :18000 — it proxies the page
+                           # from Vite, HMR socket and all, so one address works in dev too
+npm run dev:chart          # the server alone, :18000, under node --watch
+npm run dev:chart-ui       # the page alone with HMR, :5573
+npm run build:chart        # the page into chart/dist, which the server serves when
+                           # BSV_CHART_UI is unset — which is how it ships
 ```
 
 The server prints every address a phone can reach it on. Whoever is running Live reads one
@@ -47,6 +49,7 @@ out; everyone else types it once and adds it to their home screen.
 | server | 18000 | `BSV_CHART_PORT`, `BSV_CHART_HOST` |
 | page (dev) | UI + 400 | `BSV_CHART_UI_PORT` |
 | bridge it follows | `ws://127.0.0.1:17800/ws` | `BSV_BRIDGE_WS` |
+| the page, in dev | `chart/dist` unless set | `BSV_CHART_UI` |
 
 Working on it without Ableton is the same harness the visuals rig uses:
 
