@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { hex } from '../../core/src/color.ts';
 import {
   degreeColor,
+  degreeName,
   degreeOf,
   isBlackKey,
   noteName,
-  pitchName,
 } from '../../core/src/chords.ts';
 import {
   formatSecondsLeft,
@@ -297,14 +297,16 @@ const LABEL_AT = 4.5;
  * disagree with the clip, and a chart the bass player has to double-check
  * against Live is one they will stop reading.
  *
- * **Real pitches over a fixed keyboard**, two octaves up from a five-string's
- * low B. Twelve pitch-class rows read well for chord shapes and badly for a
- * bass line, where an octave jump is the gesture and folding every one of them
- * away draws a straight line through the middle of it.
+ * **One octave, from the E a four-string's bottom string is tuned to.** Two
+ * octaves of real pitches drew an honest picture of a part and spent most of a
+ * phone screen on the gap between the two notes furthest apart in it. What is
+ * read off a chart is which note comes next, and that is the same note in any
+ * octave.
  *
  * The window comes off the wire rather than being decided here, so every phone
- * in the room is looking at the same keyboard — and a part wider than two
- * octaves arrives already folded into it.
+ * in the room is looking at the same keyboard — and every note arrives already
+ * folded into it, with the one that had to come *up* from under the low E
+ * marked, because that is a fact about the part rather than about the layout.
  *
  * **Colour is the degree and the text is the note.** A block's hue says what the
  * note is doing in the key — root, fifth, flat seventh — and the letter on it
@@ -369,13 +371,9 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
             {/* Every white key, so a note can be read off its row without
                 counting up from the nearest C. The black keys stay blank: their
                 names are the two-character ones, and the pattern beside them
-                already says which is which. The Cs keep their octave, since
-                that is the only thing telling two of them apart. */}
-            {isBlackKey(pitch)
-              ? ''
-              : pitch % 12 === 0
-                ? pitchName(pitch, line.flats)
-                : noteName(pitch, line.flats)}
+                already says which is which. No octave numbers, because the roll
+                is one octave and which one it is is not a fact anybody plays. */}
+            {isBlackKey(pitch) ? '' : noteName(pitch, line.flats)}
           </span>
         ))}
       </div>
@@ -406,7 +404,7 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
           return (
             <div
               key={`${note.from}:${note.pitch}`}
-              className={`note ${at === 0 ? 'tonic' : ''}`}
+              className={`note ${at === 0 ? 'tonic' : ''} ${note.below ? 'below' : ''}`}
               style={{
                 left: `${(note.from / span) * 100}%`,
                 width: `${width}%`,
@@ -417,7 +415,9 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
                 // the colours would still look deliberate.
                 backgroundColor: at === null ? hex(line.color) : degreeColor(at),
               }}
-              title={pitchName(note.pitch, line.flats)}
+              title={`${noteName(note.pitch, line.flats)}${at === null ? '' : ` · ${degreeName(at)}`}${
+                note.below ? ' · below low E' : ''
+              }`}
             >
               {width >= LABEL_AT ? noteName(note.pitch, line.flats) : ''}
             </div>

@@ -74,15 +74,25 @@ export interface BasslineNote {
   /** Beats from the loop's start, exclusive. Clipped to the loop's end. */
   to: number;
   /**
-   * MIDI note number, 60 being the C Live calls C3 — and the note the roll
-   * *draws*, which is what Live holds unless the part spans more than the
-   * keyboard, in which case it has been dropped whole octaves to fit.
+   * The note the roll **draws**, always inside `low`–`high`.
    *
-   * Silently, and that is the decision: a bass player needs to know which notes
-   * are valid, and a chart that annotates its own compromises is talking about
-   * itself.
+   * A pitch class in practice, since that range is one octave: what Live holds,
+   * moved by whole octaves until it is on the keyboard. Which octave a note was
+   * written in is not a thing a bass player reads off a chart — the next note is
+   * the same note wherever it was typed — so it goes, with one exception below.
    */
   pitch: number;
+  /**
+   * Set when the note was written **under the low E of a four-string**.
+   *
+   * The one thing the octave is still worth saying, and only in this direction.
+   * A note under the low E has to come up to be drawn, and a four-string has to
+   * play it up there too — so this is not the roll apologising for its own
+   * layout, it is the chart saying *this line was written for five strings, and
+   * here is how you get away with it on four*. A note folded down from above
+   * carries nothing, because anybody can play it where it is drawn.
+   */
+  below?: boolean;
 }
 
 /**
@@ -122,15 +132,14 @@ export interface ChartBassline {
    */
   beatsPerBar: number;
   /**
-   * The lowest and highest MIDI note the roll draws, inclusive.
+   * The lowest and highest MIDI note the roll draws, inclusive — twelve rows.
    *
-   * **Two octaves, sitting on the part's own low note**, and decided here rather
-   * than on the phone. Always two, so a row is the same height in every song and
-   * a fifth is the same distance up the screen; but *where* those two octaves
-   * are follows the material, because the octave a bass part is written at is a
-   * fact about somebody's rig rather than about music, and a fixed window
-   * anchored on the theoretical low B left real parts hanging off the middle
-   * line.
+   * **One octave, starting on the E a four-string's bottom string is tuned to.**
+   * Which octave that E is in cannot be a constant, because the octave a part is
+   * written at is a fact about somebody's rig rather than about music, so it is
+   * measured off the part: the E nearest its lowest note. It is on the wire
+   * rather than assumed on the phone so that `below` and the row a note sits on
+   * are decided against the same reference.
    */
   low: number;
   high: number;

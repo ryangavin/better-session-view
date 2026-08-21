@@ -17,8 +17,13 @@ import type { SetState } from './bridge.ts';
 /** Which track carries the bass. Named, because nothing else in a set says. */
 const BASS = /bass/i;
 
-/** How much of the keyboard the roll shows. Two octaves is a bass. */
-const OCTAVES = 2;
+/**
+ * The open E of a four-string, as a pitch class.
+ *
+ * The bottom of the roll and the line the marker is drawn against — everything
+ * below it is the fifth string.
+ */
+const LOW_E = 4;
 
 /** Beats to the bar, from a clip's own signature. Live counts in quarter notes. */
 function beatsPerBar(clip: BSV.PlayingClip): number {
@@ -69,41 +74,45 @@ function bassPart(set: SetState): Part | null {
 }
 
 /**
- * The stretch of keyboard to draw: two octaves, sitting on the part's low note.
+ * Where the octave the roll draws starts: the E nearest the part's low note.
  *
- * **The part decides where the window is, not the other way round.** The low B
- * of a five-string is a fact about an instrument and not about a set — clips get
- * written an octave up, plugins transpose, and a roll anchored on the
- * theoretical note drew a real part hanging off the middle line with the bottom
- * half empty. Anchoring on the lowest note played means the roll always fills,
- * whatever the material is doing.
+ * **A four-string's open E, in whatever octave the part is written in.** Which
+ * octave that is cannot be a constant — clips get written up, plugins
+ * transpose, and a fixed floor was wrong twice before this — so it is measured
+ * off the material. The E nearest the lowest note played is that E: a part
+ * bottoming out on the open A picks the E a fourth below it, and one bottoming
+ * out on a low D picks the E two semitones *above*, which is the answer that
+ * says the D is under the E rather than a seventh over it.
  *
- * Two octaves stays fixed, so what changes between songs is where the window
- * *is* and never how tall a row is. A note above the window is folded down into
- * it, silently: what a bass player needs from a chart is which notes are valid,
- * and being told that one of them was moved to fit is the chart talking about
- * itself.
+ * A tie — a lowest note exactly six semitones between two Es — takes the lower,
+ * so nothing gets marked as needing a fifth string on the strength of a
+ * coin toss.
  */
-function keyboard(notes: readonly BSV.ClipNote[]): { low: number; high: number } {
-  let low = notes[0]!.pitch;
-  for (const note of notes) if (note.pitch < low) low = note.pitch;
-  return { low, high: low + 12 * OCTAVES };
+function lowE(lowest: number): number {
+  const below = lowest - (((lowest - LOW_E) % 12) + 12) % 12;
+  const above = below + 12;
+  return lowest - below <= above - lowest ? below : above;
 }
 
 /**
- * A note dropped by whole octaves until it is on the keyboard.
+ * A note brought into the octave the roll draws.
  *
- * Whole octaves rather than a clamp to the edge, because a clamp changes what
- * the note *is*, and a run of clamps would flatten a line into a bar along the
- * top of the roll. An octave keeps the note name, which is the part being read.
+ * **One octave, so every note is a pitch class in the end.** Two octaves of real
+ * pitches drew an honest picture of a part and spent most of a phone screen on
+ * the empty space between the two notes furthest apart in it. What a bass player
+ * reads off a chart is which note comes next, and that is the same note in any
+ * octave.
  *
- * Only ever downwards: the window sits on the lowest note, so nothing can fall
- * off the bottom of it.
+ * `below` is the one thing the octave is still worth saying, and only in one
+ * direction. A note **under the low E has to come up** to be drawn, and a
+ * four-string has to play it up there too — so the mark is not the roll
+ * apologising for its own layout, it is the chart saying *this line was written
+ * for five strings, and here is how you get away with it on four*. A note folded
+ * *down* from above carries nothing, because anybody can play it where it is
+ * drawn.
  */
-function fold(pitch: number, high: number): number {
-  let at = pitch;
-  while (at > high) at -= 12;
-  return at;
+function fold(pitch: number, low: number): { pitch: number; below: boolean } {
+  return { pitch: low + ((((pitch - low) % 12) + 12) % 12), below: pitch < low };
 }
 
 /**
@@ -146,12 +155,19 @@ export function buildBassline(set: SetState): ChartBassline | null {
   // looks like a bug where no roll looks like no roll.
   if (sounding.length === 0) return null;
 
-  const { low, high } = keyboard(sounding);
-  const notes: BasslineNote[] = sounding.map((note) => ({
-    from: note.start - from,
-    to: Math.min(to, note.start + note.duration) - from,
-    pitch: fold(note.pitch, high),
-  }));
+  let lowest = sounding[0]!.pitch;
+  for (const note of sounding) if (note.pitch < lowest) lowest = note.pitch;
+  const low = lowE(lowest);
+
+  const notes: BasslineNote[] = sounding.map((note) => {
+    const on = fold(note.pitch, low);
+    return {
+      from: note.start - from,
+      to: Math.min(to, note.start + note.duration) - from,
+      pitch: on.pitch,
+      ...(on.below ? { below: true } : {}),
+    };
+  });
   notes.sort((a, b) => a.from - b.from || a.pitch - b.pitch);
 
   return {
@@ -162,7 +178,7 @@ export function buildBassline(set: SetState): ChartBassline | null {
     to,
     beatsPerBar: beatsPerBar(clip),
     low,
-    high,
+    high: low + 11,
     // Both from the key the set already states: the gutter reads Bb where the
     // scene names say Bb, and the degrees are counted from the note the song is
     // actually in rather than from whatever the bass player's lowest note was.
@@ -217,6 +233,8 @@ export function playingClips(set: SetState): Array<{ t: number; s: number }> {
 /** What would make a phone redraw the roll, ignoring where the playhead is. */
 export function basslineShape(line: ChartBassline | null): string {
   if (!line) return '';
-  const notes = line.notes.map((note) => `${note.from}:${note.to}:${note.pitch}`).join(',');
+  const notes = line.notes
+    .map((note) => `${note.from}:${note.to}:${note.pitch}${note.below ? 'v' : ''}`)
+    .join(',');
   return `${line.t}|${line.from}|${line.to}|${line.low}|${line.high}|${line.flats}|${line.root}|${notes}`;
 }

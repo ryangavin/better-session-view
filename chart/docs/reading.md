@@ -217,34 +217,42 @@ Times go on the wire **relative to the loop's start**, because that is what the 
 drawn from, and doing the subtraction once on the server beats doing it per note on the
 oldest phone in the room.
 
-### The keyboard is two octaves, sitting on the part
+### The keyboard is one octave, from the low E
 
-**Two octaves, anchored on the lowest note in the loop.** Real pitches, not the twelve
-pitch-class rows this used to fold everything into, and always the same twenty-five rows —
-what changes between songs is where the window *is*, never how tall a row is.
+**Twelve rows, starting on the E a four-string's bottom string is tuned to.** Every note is
+folded into it, which makes them pitch classes in the end.
 
-Pitch classes read well for chord shapes and badly for a bass line. An octave jump *is* the
-gesture in a bass part, and folding every one of them away draws a straight line through the
-middle of it; so does a walk-up that crosses a C.
+It was two octaves of real pitches first, and that drew an honest picture of a part while
+spending most of a phone screen on the gap between the two notes furthest apart in it. What
+gets read off a chart is which note comes next, and that is the same note in any octave.
 
-The anchor was a **fixed floor first, and twice wrong**: a five-string's low B at 23, then at
-35 when a real set turned out to put it there. That is the tell. The octave a bass part is
-written at is a fact about somebody's rig — the instrument, the clip, a plugin transposing —
-and not about music, so no constant is ever going to be right for every set. Anchoring on
-the lowest note played is right for all of them, and it means the roll always fills from the
-bottom instead of hanging off the middle line with dead space underneath.
+Which octave the E is in **cannot be a constant.** That was learned the hard way: a fixed
+floor was written at a five-string's nominal low B, then moved an octave when a real set put
+it somewhere else, and the second failure is what showed the first was the wrong shape of
+answer. The octave a bass part is written at is a fact about somebody's rig — the instrument,
+the clip, a plugin transposing — so the reference is measured off the part instead. It is the
+**E nearest the part's lowest note**: a part bottoming out on the open A takes the E a fourth
+below it, and one bottoming out on a low D takes the E two semitones *above*, which is the
+answer that says the D is under the E rather than a seventh over it. A tie takes the lower E,
+so nothing is marked as needing a fifth string on a coin toss.
 
-A part wider than two octaves is folded down into the window by whole octaves — never
-clamped to the edge, which would change what the note is and flatten a run into a bar along
-the top. **The fold is silent.** There is no mark on the note and no flag on the wire: what a
-bass player needs from a chart is which notes are valid, and a chart that annotates its own
-compromises is talking about itself. It was marked at first, with a fade, which also taught
-the second half of the rule — **nothing on this roll varies a note's opacity**, because a
-piano roll that dims a note reads as velocity to everybody who has used one, and this roll
-does not draw velocity at all.
+Folding is by whole octaves and never a clamp to the edge, which would change what the note
+is and flatten a run into a bar along the top of the roll.
 
-The window is decided on the server and sent rather than worked out on the phone, so the
-musical judgement stays in one place.
+### The one thing the octave is still worth saying
+
+A note written **under the low E** gets a small dot, and nothing else does.
+
+That is not the roll apologising for its own layout. A four-string cannot reach the note, so
+it has to be played up where the roll draws it, and the dot is the chart saying *this line
+was written for five strings, and here is how you get away with it on four*. A note folded
+*down* from above carries nothing, because anybody can play it where it is drawn.
+
+The mark had a wider job once — every folded note carried it, drawn as a fade — and both
+halves of that were wrong. Marking a fold that costs the player nothing is a chart talking
+about itself, and **nothing on this roll varies a note's opacity**, because a piano roll that
+dims a note reads as velocity to everybody who has used one. This roll does not draw velocity
+at all.
 
 ### Colour is the degree, text is the note
 
@@ -273,11 +281,11 @@ is actually drawn at. A block too narrow to label is still the right colour in t
 and the gutter is what names it.
 
 **Every white key is labelled** in that gutter, not only the Cs. Ableton labels the Cs
-because its roll scrolls and spans the whole keyboard; this one is twenty-five rows read
-across a dark stage, and counting up from the nearest C is exactly the work a chart exists to
-remove. The black keys stay blank — their names are the
-two-character ones, and the pattern beside them already says which is which. The Cs keep
-their octave, since that is the only thing telling two of them apart.
+because its roll scrolls and spans the whole keyboard; this one is twelve rows read across a
+dark stage, and counting up from the nearest C is exactly the work a chart exists to remove.
+The black keys stay blank — their names are the two-character ones, and the pattern beside
+them already says which is which. **No octave numbers**, because the roll is one octave and
+which one it is is not a fact anybody plays.
 
 ### Reading it
 
