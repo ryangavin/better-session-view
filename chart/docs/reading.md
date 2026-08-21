@@ -154,13 +154,45 @@ with controls parked somewhere else.
 What a phone may send, and what stops it being a way to wreck a set, is in
 [following the bridge](following.md).
 
+## The chord chart
+
+**The only thing here that is inferred rather than read.** A set states its songs, keys and
+roles in scene names and states its progressions nowhere, so the harmony is worked out from
+the MIDI of the clips that are sounding — `core/src/chords.ts` does that, and owns every
+musical decision along with the tests for them. This file decides only *what to feed it*,
+which turns out to be most of the difficulty.
+
+**Every playing MIDI clip except percussion, merged.** Merging is what makes the answer
+good: a bass line alone spells nothing, an arpeggio alone is one note at a time, and put
+together they are a chord with a root under it — and the root is the only thing separating
+Am7 from C6. Excluding drums is not fastidiousness; a kick and snare at C1 and D1 turn
+`Am | F | C | G` into `Am6 | F6 | C | Gmaj7`, which is measured rather than feared.
+
+**The timeline is the longest harmony loop**, because that is the period the progression
+actually has. A two-bar bass figure under an eight-bar chord cycle would otherwise report
+the cycle four times, each cut off a quarter of the way through. The frame names that
+track, so the phone lights the current cell from a loop it is already being told about
+rather than needing a clock of its own.
+
+Notes are a **read, not a watch** — the LOM has no event for a clip's contents that would
+help — so the ask goes out when the *playing clips change*, which is exactly when the
+harmony can have changed and never while a loop merely goes round. The cost is the one
+staleness in the whole client: editing the MIDI of a clip that is already running does not
+update the chart until it is relaunched. Noticing would mean re-reading every playing clip
+on a timer, and a chart that lags an edit by one relaunch is the better trade.
+
+It draws nothing rather than drawing blanks. A song with no readable harmony — audio only,
+drums only, a bare melody — clears the chart instead of showing a row of dashes, because an
+empty chart looks like a bug and no chart looks like no chart.
+
 ## Not built
 
-**Chord progressions.** The thing this is ultimately for, and the only part with nowhere to
-live yet: no scene name, device parameter or clip property currently holds the changes. The
-convention question comes before the code — whether they belong in a track of their own
-whose clip names carry the bars, or in set-owned device state keyed by song. Both keep the
-`.als` the complete record, which is the property that must not be given up.
+**A progression the set actually states.** Everything above is inference, and inference is
+the fallback rather than the goal: a set that *wrote its changes down* would need none of
+it and could never be wrong. The convention question comes before the code — whether they
+belong in a track of their own whose clip names carry the bars, or in set-owned device state
+keyed by song. Both keep the `.als` the complete record, which is the property that must not
+be given up. Until then this reads what is there.
 
 **When the loops line up.** Each wheel says where its own loop is; nothing says when the
 long one comes round, which is the question "when do I drop" actually asks. The arithmetic

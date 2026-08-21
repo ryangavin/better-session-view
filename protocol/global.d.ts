@@ -305,6 +305,44 @@ declare namespace BSV {
     unmapped: number[];
   }
 
+  /**
+   * One note in a MIDI clip, as `Clip.get_all_notes_extended` reports it.
+   *
+   * Three fields of the nine Live offers. The rest — velocity, probability,
+   * release velocity — say how a note *sounds*, and nothing that reads these is
+   * asking that; a chord is spelled by which pitches are held and for how long.
+   * Muted notes are dropped in `lom.ts` rather than carried with a flag, since
+   * a note that does not sound is not part of the harmony.
+   */
+  interface ClipNote {
+    /** MIDI note number, 0–127, 60 is C3. */
+    pitch: number;
+    /** Beats from the start of the clip. */
+    start: number;
+    /** Length in beats. */
+    duration: number;
+  }
+
+  /**
+   * One clip's notes, and what the track plays them through.
+   *
+   * `instrument` rides along rather than being a second request, and that is
+   * the coarse-grained rule rather than a shortcut: `lom.ts` is already at that
+   * track to read the clip, and a reader that has to ask "is this drums?"
+   * separately would send one message per playing track every time a scene
+   * fired. It is the raw `Device.class_name` — `DrumGroupDevice`, `Operator`,
+   * `PluginDevice` — because deciding what a class *means* belongs in `core/`
+   * where it can be tested, not on the wire.
+   */
+  interface ClipNotes {
+    t: number;
+    s: number;
+    /** `Device.class_name` of the track's first instrument; `''` when it has none. */
+    instrument: string;
+    /** Empty for an audio clip, which has no notes to read at all. */
+    notes: ClipNote[];
+  }
+
   interface Palette {
     count: number;
     colors: number[];
@@ -1083,6 +1121,17 @@ declare namespace BSV {
     | { id?: number; type: 'watchStatus'; on: boolean }
     | { id?: number; type: 'watchSends'; on: boolean }
     | { id?: number; type: 'watchTransport'; on: boolean }
+    /**
+     * Read the notes of some clips. A **read**, like `devices`, not a watch.
+     *
+     * Every clip asked for in one message, because the caller wants the harmony
+     * of a whole scene and one-message-per-clip is precisely the chatty shape
+     * the coarse-grained rule exists to prevent. A slot holding no clip, or an
+     * audio clip, comes back with an empty note list rather than being absent —
+     * "this clip has no notes" and "you did not ask about this clip" must not
+     * look the same to a reader deciding whether the harmony is knowable.
+     */
+    | { id?: number; type: 'clipNotes'; clips: Array<{ t: number; s: number }> }
     | { id?: number; type: 'ping' };
 
   type RequestType = Request['type'];
@@ -1166,6 +1215,7 @@ declare namespace BSV {
         undoStep: boolean;
       }
     | { type: 'palette'; id?: number; count: number; colors: number[] }
+    | { type: 'clipNotes'; id?: number; clips: ClipNotes[] }
     | { type: 'setConfigSaved'; id?: number; defaultArtist: string; roleCount: number }
     | { type: 'allowedColorsSaved'; id?: number; colors: number[] | null }
     /** The state restored from the device, and every later persisted revision. */

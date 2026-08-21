@@ -17,6 +17,7 @@ const TERMINAL = {
   move: 'moved',
   moveClips: 'clipsMoved',
   palette: 'palette',
+  clipNotes: 'clipNotes',
   saveSetConfig: 'setConfigSaved',
   saveAllowedColors: 'allowedColorsSaved',
   ping: 'pong',

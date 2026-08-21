@@ -66,6 +66,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `selectScene` `{ s }` | select and reveal one exact scene in Live's Session View |
 | `selectTrack` `{ t }` | select one exact track, so Live's device view follows the device-chain footer |
 | `devices` `{ t }` | read one track's device chain — shells only. A read rather than a watch; see the type's own note |
+| `clipNotes` `{ clips }` | the notes of some clips — a **read**, like `devices` |
 | `ping` | |
 
 | server → client | terminal for |
@@ -76,6 +77,7 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `moved` | `move` |
 | `palette` | `palette` |
 | `trackDevices` | `devices` |
+| `clipNotes` | `clipNotes` |
 | `setConfigSaved` | `saveSetConfig` |
 | `allowedColorsSaved` | `saveAllowedColors` |
 | `pong` | `ping` |
@@ -243,6 +245,34 @@ Arm decides what an *empty* slot does — `ClipSlot.fire()` triggers that slot's
 button on an unarmed track and starts recording on an armed one — so every empty cell in
 the grid draws a different button depending on it. The mixer's copy is observed only
 while its footer is open; this watcher is never off, because the grid never closes.
+
+## `clipNotes`
+
+Reading the notes of clips, so a client can work out what harmony is sounding. **A read,
+not a watch** — the bridge holds nothing about notes and never will, because which clips
+anybody cares about is a function of what a client is asking rather than of the set.
+
+**One message for every clip asked about**, because the caller wants the harmony of a whole
+scene and one message per clip is exactly the chatty shape the coarse-grained rule exists to
+prevent. A slot holding nothing, and an audio clip, both come back with an empty note list
+rather than being absent from the answer: "no notes here" and "you did not ask about this"
+must not look the same to a reader deciding whether the harmony is knowable at all.
+
+**`instrument` rides along with the notes**, and that is the same rule rather than an
+exception to it. `lom.ts` is already at that track to read the clip; a reader that had to
+ask "is this drums?" separately would send one more message per playing track every time a
+scene fired. It is the raw `Device.class_name` — deciding what a class *means* belongs in
+`core/`, where it can be tested, not on the wire.
+
+`ClipNote` carries three of the nine fields Live offers. The other six say how a note
+*sounds*; a chord is spelled by which pitches are held and for how long. **Muted notes are
+dropped in `lom.ts`** rather than travelling with a flag, so nothing downstream can forget
+that a silent note is not part of the harmony.
+
+This is the **only dict-returning LOM call in the project**. `Clip.get_all_notes_extended`
+hands `[v8]` a dictionary name to wrap, and every other shape is reported to the Max window
+with what it actually was. A clip that cannot be read comes back empty, which draws no
+chart — visible and harmless, as against a chart of chords nobody is playing.
 
 ## `moveClips`
 

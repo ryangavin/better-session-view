@@ -33,6 +33,7 @@ export const TEMPO_PATH = '/tempo';
  */
 export const CHART_EVENT = 'chart';
 export const LOOPS_EVENT = 'loops';
+export const PROGRESSION_EVENT = 'progression';
 
 /** The most a single nudge may move the tempo, in BPM. */
 export const NUDGE = 1;
@@ -64,6 +65,43 @@ export interface LoopTrack {
   inSeconds: boolean;
   signatureNumerator: number;
   signatureDenominator: number;
+}
+
+/** One stretch of the loop that spells one chord, as the phone draws it. */
+export interface ProgressionCell {
+  /** Beats from the reference clip's start, inclusive. */
+  from: number;
+  /** Beats from the reference clip's start, exclusive. */
+  to: number;
+  /** `Am7`, `F`, `G/B` — or null where the notes spelled nothing. */
+  symbol: string | null;
+}
+
+/**
+ * The chord progression of what is playing.
+ *
+ * **The only thing the chart infers rather than reads.** Every other fact comes
+ * out of the set — scene names state the song, the key, the role — but a set
+ * states its progressions nowhere, so this is worked out from the MIDI of the
+ * clips that are sounding. It can therefore be wrong in a way nothing else here
+ * can, and a cell it could not spell is null rather than its best guess.
+ *
+ * Sent on its own event, because it changes when the clips change and not when
+ * the playhead moves.
+ */
+export interface ChartProgression {
+  /**
+   * The track whose loop the cell times are measured against — the longest
+   * harmony loop playing, since that is the period the progression has.
+   *
+   * The phone already knows where that track's playhead is, from the loops
+   * frame, so this is how it lights the current cell without being told.
+   */
+  t: number;
+  /** The reference clip's loop, in beats from its own start. */
+  from: number;
+  to: number;
+  cells: ProgressionCell[];
 }
 
 /**

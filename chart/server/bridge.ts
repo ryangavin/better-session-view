@@ -42,6 +42,17 @@ export interface SetState {
    * far more silent tracks than sounding ones.
    */
   status: BSV.PlayingClip[];
+  /**
+   * The notes of the clips currently playing, keyed `t:s`.
+   *
+   * A **read**, asked for when the playing clips change and kept until they
+   * change again. Nothing observes notes — the LOM has no event for a clip's
+   * contents that would help here — so this is the one piece of state that goes
+   * stale if somebody edits the MIDI of a clip that is already running. The
+   * cost of noticing would be re-reading every playing clip on a timer, and a
+   * chord chart that lags an edit by one relaunch is a better trade.
+   */
+  notes: Map<string, BSV.ClipNotes>;
 }
 
 export function emptySet(): SetState {
@@ -56,6 +67,7 @@ export function emptySet(): SetState {
     rolling: false,
     play: [],
     status: [],
+    notes: new Map(),
   };
 }
 
@@ -78,6 +90,11 @@ export interface BridgeLink {
    * actually took. Returns what it asked for, for the log.
    */
   nudgeTempo(by: number): number | null;
+  /**
+   * Ask for the notes of these clips. Fire-and-forget: the answer lands in
+   * `state.notes` and `onChange` fires, like everything else here.
+   */
+  readNotes(clips: Array<{ t: number; s: number }>): void;
   close(): void;
 }
 
@@ -192,6 +209,16 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
       case 'transportState':
         state.tempo = event.state.tempo;
         return true;
+      case 'clipNotes': {
+        // Replaced wholesale rather than merged. The ask is always "the clips
+        // playing now", so anything held that is not in the answer is a clip
+        // that stopped — and an upsert would leave its notes behind to be read
+        // as harmony that is no longer sounding.
+        const held = new Map<string, BSV.ClipNotes>();
+        for (const clip of event.clips) held.set(`${clip.t}:${clip.s}`, clip);
+        state.notes = held;
+        return true;
+      }
       case 'clipStatus':
         state.status = event.frame.tracks;
         // **Not a change.** Positions move twenty times a second and are read
@@ -248,6 +275,7 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
       state.rev = -1;
       state.play = [];
       state.status = [];
+      state.notes = new Map();
       state.rolling = false;
       armedFor = -1;
       if (asking) {
@@ -274,6 +302,10 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
       if (want < MIN_TEMPO || want > MAX_TEMPO) return null;
       send({ type: 'setTransport', patch: { tempo: want } });
       return want;
+    },
+    readNotes(clips) {
+      if (!state.lomReady || clips.length === 0) return;
+      send({ type: 'clipNotes', clips });
     },
     close() {
       closed = true;

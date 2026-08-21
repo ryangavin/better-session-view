@@ -253,6 +253,36 @@ body {
   color: var(--ink-quiet);
 }
 
+.chords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--edge);
+  margin-top: 0.3rem;
+}
+
+.chord {
+  flex: 1 1 4rem;
+  min-width: 3.4rem;
+  padding: 0.55rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  background: var(--panel);
+  color: var(--ink-quiet);
+  font-size: clamp(1.05rem, 4.8vw, 1.45rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+.chord.here {
+  background: color-mix(in srgb, var(--live) 18%, var(--panel));
+  border-color: color-mix(in srgb, var(--live) 55%, transparent);
+  color: var(--ink);
+}
+
 .quiet {
   font-size: clamp(1rem, 4.5vw, 1.3rem);
   color: var(--ink-quiet);

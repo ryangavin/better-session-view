@@ -11,9 +11,11 @@ import {
   LOOPS_EVENT,
   LOOPS_PATH_LENGTH,
   NUDGE,
+  PROGRESSION_EVENT,
   TEMPO_PATH,
   type Chart,
   type ChartLoops,
+  type ChartProgression,
   type ChartSong,
   type LoopTrack,
 } from '../protocol.ts';
@@ -268,6 +270,80 @@ function Wheel({
 }
 
 /**
+ * The chord chart, lit at whichever cell the reference loop is inside.
+ *
+ * The cells are static between clip changes, so React draws them once; the
+ * animation frame only moves which one is lit, by the same extrapolation that
+ * turns the wheels. Nothing is recomputed per frame beyond a comparison.
+ *
+ * **This is the one thing on the page that is inferred rather than read**, and
+ * it is drawn a little quieter than the facts around it for that reason. A cell
+ * the notes did not spell shows a dash rather than a guess.
+ */
+function Progression({
+  progression,
+  anchor,
+}: {
+  progression: ChartProgression;
+  anchor: Anchor | null;
+}) {
+  const cells = useRef(new Map<number, HTMLLIElement>());
+  const held = useRef<{ progression: ChartProgression; anchor: Anchor | null }>({
+    progression,
+    anchor,
+  });
+  held.current = { progression, anchor };
+
+  useEffect(() => {
+    let frame = 0;
+    let lit = -1;
+    const draw = () => {
+      frame = requestAnimationFrame(draw);
+      const now = held.current;
+      const loops = now.anchor?.loops;
+      const track = loops?.tracks.find((row) => row.t === now.progression.t);
+      let at = -1;
+      if (loops && track) {
+        const ms = loops.rolling ? performance.now() - now.anchor!.at : 0;
+        const clip = advance(track, loops.tempo, ms);
+        const span = now.progression.to - now.progression.from;
+        if (span > 0) {
+          const into =
+            now.progression.from +
+            (((clip.position - now.progression.from) % span) + span) % span;
+          at = now.progression.cells.findIndex((cell) => into >= cell.from && into < cell.to);
+        }
+      }
+      if (at === lit) return;
+      // Only the two rows that changed are touched, however many cells there
+      // are — the same reason the wheels are written to rather than re-rendered.
+      cells.current.get(lit)?.classList.remove('here');
+      cells.current.get(at)?.classList.add('here');
+      lit = at;
+    };
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return (
+    <ol className="chords">
+      {progression.cells.map((cell, i) => (
+        <li
+          key={cell.from}
+          className="chord"
+          ref={(el) => {
+            if (el) cells.current.set(i, el);
+            else cells.current.delete(i);
+          }}
+        >
+          {cell.symbol ?? '–'}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
  * Every playing track's loop, turning.
  *
  * React owns which rows exist; the animation frame owns what is written in
@@ -333,6 +409,7 @@ function Loops({ anchor }: { anchor: Anchor | null }) {
 export function App() {
   const [chart, setChart] = useState<Chart | null>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const [chords, setChords] = useState<ChartProgression | null>(null);
   const [linked, setLinked] = useState(false);
   useAwake();
 
@@ -360,6 +437,9 @@ export function App() {
     // Stamped on arrival with the browser's own monotonic clock, so nothing
     // here depends on the two machines agreeing about the time.
     take<ChartLoops>(LOOPS_EVENT, (loops) => setAnchor({ loops, at: performance.now() }));
+    // Null is a real value here: a song whose harmony cannot be read has to be
+    // able to clear the chart the song before it left on screen.
+    take<ChartProgression | null>(PROGRESSION_EVENT, setChords);
 
     return () => source.close();
   }, []);
@@ -418,6 +498,8 @@ export function App() {
       <Tempo tempo={chart?.tempo ?? 0} labelled={labelled} live={ready} onNudge={nudge} />
 
       <Loops anchor={anchor} />
+
+      {chords && <Progression progression={chords} anchor={anchor} />}
 
       {/* Somebody dropped a scene into the set that the naming convention does
           not cover. Saying so is more use than drawing nothing. */}
