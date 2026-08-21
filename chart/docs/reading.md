@@ -46,12 +46,21 @@ you are about to play, so the fallback chain ends somewhere that always answers.
 
 **A fact is printed once, as high up as it is true.**
 
-A song whose scenes agree on the key states it in the heading, and no row repeats it —
-`Bm` down every row is noise hiding the one row worth seeing. A song that *modulates* has
-no single key to state: `SongEntry.key` renders the disagreement as the collection
-`Bm / D`. So the heading drops it and **every** section states its own, which is what makes
-the row that changes visible against the rows that did not. bpm works identically, and a
-song that speeds up is the ordinary case for it rather than an error.
+A song whose scenes agree on the key states it in the heading. A song that *modulates* has
+no single key to state — `SongEntry.key` renders the disagreement as the collection
+`Bm / D` — so the heading takes the key of the **section actually playing** instead, which
+is the more useful answer on a stage anyway: what you need is the key of the part you are
+in, not the set of keys the song visits.
+
+bpm needs no equivalent, because the big number is Live's own tempo and is therefore
+always the tempo of what is sounding right now. The song's *labelled* bpm appears beneath
+it only when the two disagree, which is the same rule applied to a fact with two sources
+rather than two levels.
+
+The payload still carries this per section, and the section list still computes it. That
+matters even while nothing draws the list: `now.key` is populated by exactly the rule that
+fills the rows, so the heading's fallback is not a special case bolted on — it is the same
+question asked of one section instead of all of them.
 
 `ChartSong.key` and `.bpm` are therefore **narrower than their `SongEntry` counterparts**:
 `''` where the song has more than one. That is a deliberate departure from how the grid
@@ -62,6 +71,18 @@ chart is a reading surface, where a song that modulates has not gone wrong.
 The per-scene facts come from **`SetModel.factsByScene`**, which exists for this. `derive()`
 always read a scene's role, key and bpm off its name; the model used to discard them, which
 left every client that wanted them writing a regex of its own.
+
+## The section list is computed and not drawn
+
+`chart.ts` still builds `song.sections`, and nothing renders it. Squeezed into a rail
+beside the tempo it was too small to read and too wide to spare, and what it cost was the
+room the two things you act on need — the tempo, and how far round each loop is.
+
+It is kept in the payload rather than removed because the projection is the tested,
+documented part and the display was the part that did not earn its space; putting it back
+is a component, not a redesign. The one thing that had to move with it is the key, above.
+**If it stays unread it should come out**, protocol and tests together — a payload field
+nothing has read for a while is one nobody will trust when they do.
 
 ## Colour
 
@@ -98,7 +119,8 @@ A single "offline" would send someone to the wrong one.
 
 ## The wheels
 
-One per track with something playing in it, in **track order** — not sorted by loop length.
+The bottom half, and the reason the section list is not competing for it. One per track
+with something playing in it, in **track order** — not sorted by loop length.
 The longest loop is the structural one and the temptation is to float it to the top, but
 these are read at a glance against a stage where the tracks are in Live's order, and a list
 that reorders itself whenever a clip changes is one nobody can find anything in twice.

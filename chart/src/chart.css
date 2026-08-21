@@ -73,11 +73,19 @@ body {
   text-wrap: balance;
 }
 
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.3rem 1.25rem;
+  margin-top: 0.2rem;
+}
+
 .vitals {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 1.5rem;
-  margin-top: 0.15rem;
 }
 
 .vital {
@@ -115,21 +123,14 @@ body {
   margin-right: 0.6rem;
 }
 
-.middle {
-  display: grid;
-  grid-template-columns: 1fr minmax(6.5rem, 8.5rem);
-  gap: 0.75rem;
-  align-items: start;
-}
-
 .deck {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  align-items: stretch;
   gap: 0.5rem;
-  padding: 0.75rem 0.6rem;
+  padding: 0.5rem;
   border: 1px solid var(--edge);
-  border-radius: 1rem;
+  border-radius: 1.1rem;
   background: var(--panel);
 }
 
@@ -137,15 +138,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(3.4rem, 17vw, 4.6rem);
-  height: clamp(3.4rem, 17vw, 4.6rem);
+  min-height: clamp(4.5rem, 22vw, 6.5rem);
   border: 1px solid var(--edge);
-  border-radius: 0.9rem;
+  border-radius: 0.85rem;
   background: var(--raised);
   color: var(--ink);
   font-family: inherit;
-  font-size: clamp(1.9rem, 9vw, 2.5rem);
-  font-weight: 600;
+  font-size: clamp(2.4rem, 12vw, 3.4rem);
+  font-weight: 500;
   line-height: 1;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -173,9 +173,9 @@ body {
 }
 
 .bpm {
-  font-size: clamp(3rem, 15vw, 4.5rem);
+  font-size: clamp(3.6rem, 19vw, 5.5rem);
   font-weight: 800;
-  line-height: 0.95;
+  line-height: 0.9;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
@@ -187,82 +187,27 @@ body {
   color: var(--pending);
 }
 
-.rail {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  list-style: none;
-}
-
-.section {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.4rem;
-  border: 1px solid transparent;
-  border-radius: 0.4rem;
-  background: var(--panel);
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
-  color: var(--ink-quiet);
-}
-
-.section.playing {
-  background: color-mix(in srgb, var(--live) 16%, var(--panel));
-  border-color: color-mix(in srgb, var(--live) 50%, transparent);
-  color: var(--ink);
-  font-weight: 700;
-}
-
-.section.queued {
-  border-color: color-mix(in srgb, var(--pending) 55%, transparent);
-  color: var(--ink);
-  animation: waiting 1.6s ease-in-out infinite;
-}
-
-.edge {
-  flex: none;
-  width: 0.2rem;
-  align-self: stretch;
-  min-height: 0.9rem;
-  border-radius: 0.2rem;
-  background: var(--edge);
-}
-
-.label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.states {
-  flex: none;
-  color: var(--pending);
-  font-size: 0.9em;
-  font-weight: 700;
-}
-
 .loops {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
-  gap: 0.6rem 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 0.9rem;
   list-style: none;
-  padding-top: 0.2rem;
+  padding-top: 0.4rem;
 }
 
 .loop {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
-  min-width: 0;
+  gap: 0.35rem;
+  width: clamp(4.2rem, 20vw, 6rem);
 }
 
 .wheel {
   position: relative;
   display: block;
-  width: clamp(3.4rem, 16vw, 4.5rem);
+  width: 100%;
   aspect-ratio: 1;
 }
 
@@ -291,7 +236,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.8rem, 3.6vw, 1rem);
+  font-size: clamp(0.95rem, 4.4vw, 1.25rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
@@ -302,7 +247,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-quiet);
@@ -313,14 +258,3 @@ body {
   color: var(--ink-quiet);
 }
 
-@keyframes waiting {
-  50% {
-    opacity: 0.45;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .section.queued {
-    animation: none;
-  }
-}

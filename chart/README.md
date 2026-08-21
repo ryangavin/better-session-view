@@ -1,8 +1,8 @@
 # chart/
 
 What the band reads. A one-screen view of the song the set is playing — its name, its key,
-its tempo, its sections, and where every playing loop has got to — served to everyone's
-phone, with no dependencies and nothing to install.
+its tempo with a button either side of it, and where every playing loop has got to — served
+to everyone's phone, with no dependencies and nothing to install.
 
 ```
 Live ─ SessionBridge :17800 ─WS─> chart server :18000 ─SSE─> phones
@@ -23,12 +23,11 @@ Live ─ SessionBridge :17800 ─WS─> chart server :18000 ─SSE─> phones
 **A chart states each fact once, as high up as it is true.**
 
 A song in one key states it in the heading. A song that modulates cannot — so the heading
-says nothing about key and every section states its own, which is what makes the section
-that changes visible. bpm behaves identically, and so does the tempo: the big number is
-what Live is running at, and the name's claim appears only when the two disagree.
-Everything else here follows from wanting that to be true without anybody typing it twice:
-the facts are read out of the scene names once, by the bridge, and this reads them off
-`SetModel`.
+takes the key of the section actually playing, which is the useful answer on a stage. The
+tempo works the same way: the big number is what Live is running at, and the song name's
+claim appears only when the two disagree. Everything else here follows from wanting that to
+be true without anybody typing it twice: the facts are read out of the scene names once, by
+the bridge, and this reads them off `SetModel`.
 
 ## Running it
 

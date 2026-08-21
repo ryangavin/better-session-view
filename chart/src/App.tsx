@@ -14,7 +14,6 @@ import {
   TEMPO_PATH,
   type Chart,
   type ChartLoops,
-  type ChartSection,
   type ChartSong,
   type LoopTrack,
 } from '../protocol.ts';
@@ -29,6 +28,13 @@ import {
  * step, and being told sixty times a second would put the network in the
  * animation loop. It is given a position and the moment it arrived, and it
  * advances that itself — the same trade `visuals` makes with the Link anchor.
+ *
+ * **The section list is not drawn**, though the payload still carries it and
+ * `chart.ts` still works it out. Squeezed into a rail beside the tempo it was
+ * too small to read and too wide to spare, and what it cost was the room the
+ * two things you actually act on need — the tempo, and how far round each loop
+ * is. It is a component's worth of work to put back when there is somewhere for
+ * it to go; see `docs/reading.md`.
  */
 
 /** What the top line says, in the order the answers stop being reassuring. */
@@ -78,13 +84,21 @@ function useAwake(): void {
   }, []);
 }
 
-/** The song's key, which is the one fact the tempo readout does not carry. */
-function Vitals({ song }: { song: ChartSong }) {
-  if (!song.key) return null;
+/**
+ * The key, which is the one fact the tempo readout does not carry.
+ *
+ * Resolved in `keyNow` below rather than taken off the song, because a song
+ * that modulates has no single key and says so with `''`. The rule is still
+ * "state it once, as high up as it is true" — what changed when the section
+ * list came off the screen is where the lower place is. It used to be the row
+ * for each section; it is now the section actually playing.
+ */
+function Vitals({ musicalKey }: { musicalKey: string }) {
+  if (!musicalKey) return null;
   return (
     <p className="vitals">
       <span className="vital">
-        <span className="value">{song.key}</span>
+        <span className="value">{musicalKey}</span>
         <span className="of">key</span>
       </span>
     </p>
@@ -158,28 +172,6 @@ function Tempo({
         +
       </button>
     </div>
-  );
-}
-
-/** The song's sections, down the side, current one lit. */
-function Rail({ sections }: { sections: ChartSection[] }) {
-  return (
-    <ol className="rail">
-      {sections.map((section) => {
-        const mark = section.playing ? 'playing' : section.queued ? 'queued' : 'idle';
-        return (
-          <li key={section.s} className={`section ${mark}`}>
-            <span
-              className="edge"
-              style={section.color === null ? undefined : { background: hex(section.color) }}
-            />
-            <span className="label">{section.label}</span>
-            {section.bpm && <span className="states">{section.bpm}</span>}
-            {section.key && <span className="states">{section.key}</span>}
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 
@@ -388,6 +380,12 @@ export function App() {
   const next = chart?.next ?? null;
   const ready = chart?.ready === true;
 
+  // The song's, when its scenes agree on one. When they do not, the song has
+  // nothing to state and the section playing does — which is the more useful
+  // answer anyway: what matters on stage is the key of the part you are in, not
+  // the set of keys the song visits.
+  const keyNow = song?.key || now?.key || '';
+
   // Only when it disagrees with what Live is doing. When they match, the big
   // number already says it.
   const named = song?.bpm ? Number(song.bpm) : Number.NaN;
@@ -407,19 +405,17 @@ export function App() {
         <h1 className="song">
           {song?.name ?? now?.label ?? next?.label ?? 'Nothing playing'}
         </h1>
-        {song && <Vitals song={song} />}
-        {song && <Credits song={song} />}
+        {/* The key and the credits share a line: one is two characters wide and
+            the other is quiet, so stacking them spent height on nothing. */}
+        {song && (
+          <div className="facts">
+            <Vitals musicalKey={keyNow} />
+            <Credits song={song} />
+          </div>
+        )}
       </section>
 
-      <section className="middle">
-        <Tempo
-          tempo={chart?.tempo ?? 0}
-          labelled={labelled}
-          live={ready}
-          onNudge={nudge}
-        />
-        {song && song.sections.length > 0 && <Rail sections={song.sections} />}
-      </section>
+      <Tempo tempo={chart?.tempo ?? 0} labelled={labelled} live={ready} onNudge={nudge} />
 
       <Loops anchor={anchor} />
 
