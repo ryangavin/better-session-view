@@ -75,6 +75,25 @@ export interface ProgressionCell {
   to: number;
   /** `Am7`, `F`, `G/B` — or null where the notes spelled nothing. */
   symbol: string | null;
+  /**
+   * The root's pitch class, 0–11 with C at 0. Null with the symbol.
+   *
+   * A **position**, where `symbol` is a label. Drawing a bass line needs
+   * somewhere to put the block, and working that back out of the text `Bb`
+   * would mean re-parsing a name the server just finished spelling.
+   */
+  root: number | null;
+  /**
+   * The chord's pitch classes, root first then ascending. Empty with the
+   * symbol.
+   *
+   * What the chord *is*, as against what it is called — and the template's
+   * tones rather than the pitches anybody played, because a voicing spread over
+   * three octaves with the third doubled is the same chord. Drawing it
+   * literally would be a transcription rather than something to read at a
+   * glance.
+   */
+  tones: number[];
 }
 
 /**
@@ -101,6 +120,17 @@ export interface ChartProgression {
   /** The reference clip's loop, in beats from its own start. */
   from: number;
   to: number;
+  /**
+   * Beats to the bar, from the reference clip's own signature.
+   *
+   * On the wire because the phone draws bar lines. A grid whose bars were
+   * assumed to be four beats would put them in the wrong place for every song
+   * that isn't in four, and a chord chart with the bar lines wrong is worse
+   * than one with none.
+   */
+  beatsPerBar: number;
+  /** Whether the chart is spelled with flats, so a keyboard's rows agree with it. */
+  flats: boolean;
   cells: ProgressionCell[];
 }
 

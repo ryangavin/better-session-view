@@ -2,8 +2,8 @@
 
 What the band reads. A one-screen view of the song the set is playing — its name, its key,
 its tempo with a button either side of it, where every playing loop has got to, and the
-chord progression read out of the MIDI — served to everyone's phone, with no dependencies
-and nothing to install.
+chord progression read out of the MIDI as a piano roll you can flip between chords and the
+bass line — served to everyone's phone, with no dependencies and nothing to install.
 
 ```
 Live ─ SessionBridge :17800 ─WS─> chart server :18000 ─SSE─> phones

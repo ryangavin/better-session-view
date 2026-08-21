@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { hex } from '../../core/src/color.ts';
+import { isBlackKey, noteName } from '../../core/src/chords.ts';
 import {
   formatSecondsLeft,
   loopBars,
@@ -18,6 +19,7 @@ import {
   type ChartProgression,
   type ChartSong,
   type LoopTrack,
+  type ProgressionCell,
 } from '../protocol.ts';
 
 /**
@@ -270,24 +272,67 @@ function Wheel({
 }
 
 /**
- * The chord chart, lit at whichever cell the reference loop is inside.
+ * The cell the reference loop is inside, for the heading beside the toggle.
  *
- * The cells are static between clip changes, so React draws them once; the
- * animation frame only moves which one is lit, by the same extrapolation that
- * turns the wheels. Nothing is recomputed per frame beyond a comparison.
- *
- * **This is the one thing on the page that is inferred rather than read**, and
- * it is drawn a little quieter than the facts around it for that reason. A cell
- * the notes did not spell shows a dash rather than a guess.
+ * Recomputed per render rather than per frame — the symbol changes at most once
+ * a bar, and it is the roll's playhead that has to be smooth, not this.
  */
-function Progression({
+function here(progression: ChartProgression, anchor: Anchor | null): ProgressionCell | null {
+  const track = anchor?.loops.tracks.find((row) => row.t === progression.t);
+  if (!anchor || !track) return null;
+  const span = progression.to - progression.from;
+  if (!(span > 0)) return null;
+  const ms = anchor.loops.rolling ? performance.now() - anchor.at : 0;
+  const clip = advance(track, anchor.loops.tempo, ms);
+  const into = (((clip.position - progression.from) % span) + span) % span;
+  return progression.cells.find((cell) => into >= cell.from && into < cell.to) ?? null;
+}
+
+/** Which of the two things the roll draws. Kept per phone. */
+type Mode = 'chords' | 'bass';
+
+const MODE_KEY = 'chart.mode';
+
+function storedMode(): Mode {
+  try {
+    return localStorage.getItem(MODE_KEY) === 'bass' ? 'bass' : 'chords';
+  } catch {
+    // Private browsing, or storage turned off. The default is fine.
+    return 'chords';
+  }
+}
+
+/** Twelve rows, high to low, the way a keyboard is drawn. */
+const ROWS = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+
+/**
+ * The progression as a piano roll.
+ *
+ * A strip of chord symbols said *what* and threw away *when*, which is half of
+ * what somebody about to play needs — a chord that changes on the third beat of
+ * the second bar looks identical to one that changes on the downbeat. So time
+ * runs left to right against real bar lines, and pitch runs up the side.
+ *
+ * **Pitch classes rather than pitches.** Twelve rows, not the four octaves a
+ * real voicing spans: the chart is a chart rather than a transcription, and a
+ * roll that drew the actual octaves would be mostly empty space at a size where
+ * space is the scarce thing. The rows stay put whatever is playing, which is
+ * what makes the shape of a progression readable at a glance.
+ *
+ * **Chords or bass**, per phone. The bass player wants one line — the root, with
+ * its timing — and the keys player wants the tones. It is the same data drawn
+ * twice rather than two charts.
+ */
+function PianoRoll({
   progression,
   anchor,
+  mode,
 }: {
   progression: ChartProgression;
   anchor: Anchor | null;
+  mode: Mode;
 }) {
-  const cells = useRef(new Map<number, HTMLLIElement>());
+  const head = useRef<HTMLDivElement | null>(null);
   const held = useRef<{ progression: ChartProgression; anchor: Anchor | null }>({
     progression,
     anchor,
@@ -296,50 +341,92 @@ function Progression({
 
   useEffect(() => {
     let frame = 0;
-    let lit = -1;
     const draw = () => {
       frame = requestAnimationFrame(draw);
+      const bar = head.current;
+      if (!bar) return;
       const now = held.current;
       const loops = now.anchor?.loops;
       const track = loops?.tracks.find((row) => row.t === now.progression.t);
-      let at = -1;
-      if (loops && track) {
-        const ms = loops.rolling ? performance.now() - now.anchor!.at : 0;
-        const clip = advance(track, loops.tempo, ms);
-        const span = now.progression.to - now.progression.from;
-        if (span > 0) {
-          const into =
-            now.progression.from +
-            (((clip.position - now.progression.from) % span) + span) % span;
-          at = now.progression.cells.findIndex((cell) => into >= cell.from && into < cell.to);
-        }
+      if (!loops || !track) {
+        bar.style.opacity = '0';
+        return;
       }
-      if (at === lit) return;
-      // Only the two rows that changed are touched, however many cells there
-      // are — the same reason the wheels are written to rather than re-rendered.
-      cells.current.get(lit)?.classList.remove('here');
-      cells.current.get(at)?.classList.add('here');
-      lit = at;
+      const span = now.progression.to - now.progression.from;
+      if (!(span > 0)) return;
+      const ms = loops.rolling ? performance.now() - now.anchor!.at : 0;
+      const clip = advance(track, loops.tempo, ms);
+      const into = (((clip.position - now.progression.from) % span) + span) % span;
+      bar.style.opacity = '1';
+      // Transform rather than `left`, so the playhead moves without asking the
+      // browser to lay the grid out again sixty times a second.
+      //
+      // **The element is the full width of the grid**, marked by its left
+      // border, because a percentage translate resolves against the element's
+      // own width rather than its parent's. A two-pixel bar translated 75% moves
+      // a pixel and a half — which looks exactly like a playhead that is stuck
+      // at the start, and is the sort of wrong that reads as "not implemented".
+      bar.style.transform = `translateX(${(into / span) * 100}%)`;
     };
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  const span = progression.to - progression.from;
+  if (!(span > 0)) return null;
+  const bars = Math.max(1, Math.round(span / progression.beatsPerBar));
+
   return (
-    <ol className="chords">
-      {progression.cells.map((cell, i) => (
-        <li
-          key={cell.from}
-          className="chord"
-          ref={(el) => {
-            if (el) cells.current.set(i, el);
-            else cells.current.delete(i);
-          }}
-        >
-          {cell.symbol ?? '–'}
-        </li>
-      ))}
-    </ol>
+    <div className="roll">
+      <div className="keys">
+        {ROWS.map((pc) => (
+          <span key={pc} className={`key ${isBlackKey(pc) ? 'black' : 'white'}`}>
+            {noteName(pc, progression.flats)}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid">
+        {ROWS.map((pc) => (
+          <div key={pc} className={`lane ${isBlackKey(pc) ? 'black' : 'white'}`} />
+        ))}
+
+        {/* One line per bar after the first, so the grid reads in bars rather
+            than as an undivided stretch of time. */}
+        {Array.from({ length: bars - 1 }, (_, i) => (
+          <div key={i} className="barline" style={{ left: `${((i + 1) / bars) * 100}%` }} />
+        ))}
+
+        {progression.cells.flatMap((cell) => {
+          const pitches = mode === 'bass' ? (cell.root === null ? [] : [cell.root]) : cell.tones;
+          const left = ((cell.from - progression.from) / span) * 100;
+          const width = ((cell.to - cell.from) / span) * 100;
+          return pitches.map((pc) => (
+            <div
+              key={`${cell.from}:${pc}`}
+              className={`note ${pc === cell.root ? 'root' : ''}`}
+              style={{
+                left: `${left}%`,
+                width: `${width}%`,
+                top: `${(ROWS.indexOf(pc) / ROWS.length) * 100}%`,
+                height: `${100 / ROWS.length}%`,
+              }}
+              // The symbol is on the block rather than in a legend, so the two
+              // readings of the same chord never drift apart on screen.
+              title={cell.symbol ?? ''}
+            />
+          ));
+        })}
+
+        <div className="playhead" ref={head} />
+      </div>
+
+      <ol className="bars">
+        {Array.from({ length: bars }, (_, i) => (
+          <li key={i}>{i + 1}</li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -410,6 +497,7 @@ export function App() {
   const [chart, setChart] = useState<Chart | null>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [chords, setChords] = useState<ChartProgression | null>(null);
+  const [mode, setMode] = useState<Mode>(storedMode);
   const [linked, setLinked] = useState(false);
   useAwake();
 
@@ -442,6 +530,15 @@ export function App() {
     take<ChartProgression | null>(PROGRESSION_EVENT, setChords);
 
     return () => source.close();
+  }, []);
+
+  const pickMode = useCallback((next: Mode) => {
+    setMode(next);
+    try {
+      localStorage.setItem(MODE_KEY, next);
+    } catch {
+      // Nothing to do; the choice just won't survive a reload.
+    }
   }, []);
 
   const nudge = useCallback((by: number) => {
@@ -499,7 +596,24 @@ export function App() {
 
       <Loops anchor={anchor} />
 
-      {chords && <Progression progression={chords} anchor={anchor} />}
+      {chords && (
+        <section className="chart-roll">
+          <div className="modes">
+            {(['chords', 'bass'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={`mode ${mode === option ? 'on' : ''}`}
+                onPointerDown={() => pickMode(option)}
+              >
+                {option}
+              </button>
+            ))}
+            <span className="playing-chord">{here(chords, anchor)?.symbol ?? ''}</span>
+          </div>
+          <PianoRoll progression={chords} anchor={anchor} mode={mode} />
+        </section>
+      )}
 
       {/* Somebody dropped a scene into the set that the naming convention does
           not cover. Saying so is more use than drawing nothing. */}

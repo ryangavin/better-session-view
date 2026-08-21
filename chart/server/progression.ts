@@ -77,14 +77,16 @@ export function buildProgression(set: SetState): ChartProgression | null {
   if (!(to > from)) return null;
 
   const song = songOf(set);
+  const flats = spellsFlat(song);
+  const perBarBeats = beatsPerBar(longest);
   const segments = readProgression(notes, {
     from,
     to,
-    beatsPerBar: beatsPerBar(longest),
+    beatsPerBar: perBarBeats,
     perBar: 2,
     // Spelled to match the key the set already states, so the chart reads Bb
     // where the scene names say Bb.
-    flats: spellsFlat(song),
+    flats,
   });
 
   // Every window blank means the notes spelled nothing anywhere — a melody with
@@ -96,8 +98,10 @@ export function buildProgression(set: SetState): ChartProgression | null {
     from: segment.from,
     to: segment.to,
     symbol: segment.symbol,
+    root: segment.rootClass,
+    tones: segment.tones,
   }));
-  return { t: longest.t, from, to, cells };
+  return { t: longest.t, from, to, beatsPerBar: perBarBeats, flats, cells };
 }
 
 /** The key the set states for what is playing, for spelling only. */

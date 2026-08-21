@@ -185,6 +185,30 @@ It draws nothing rather than drawing blanks. A song with no readable harmony —
 drums only, a bare melody — clears the chart instead of showing a row of dashes, because an
 empty chart looks like a bug and no chart looks like no chart.
 
+### It is a piano roll, not a row of symbols
+
+It was a row of symbols first, and that threw away half of what somebody about to play
+needs: a chord changing on the third beat of the second bar looked identical to one
+changing on the downbeat. So time runs left to right against real bar lines — drawn from
+the reference clip's own signature, because a grid that assumed four beats to the bar would
+put them in the wrong place for every song that isn't in four — and pitch runs up the side.
+
+**Twelve pitch-class rows, not the four octaves a voicing actually spans.** The chart is a
+chart rather than a transcription: a roll drawing real octaves would be mostly empty at a
+size where space is the scarce thing, and the rows would move about between songs. Fixed
+rows are what make the *shape* of a progression readable at a glance, and the keyboard down
+the side is what makes them legible without counting.
+
+**Chords or bass, chosen per phone** and remembered there. The same data drawn twice rather
+than two charts: chord mode draws the tones, bass mode draws the root alone with the same
+timing. The bass player wants one line and the keys player wants the harmony, and neither
+should have to read past the other's.
+
+The playhead is extrapolated from the loops anchor like everything else that moves, and it
+spans the grid with its left border rather than being a two-pixel bar — a percentage
+translate resolves against the element's own width, so a thin one moves a pixel and a half
+across the whole loop, which looks exactly like a playhead that was never wired up.
+
 ## Not built
 
 **A progression the set actually states.** Everything above is inference, and inference is
