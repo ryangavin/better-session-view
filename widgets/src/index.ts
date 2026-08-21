@@ -57,7 +57,7 @@ export {
   type GraphNodeProps,
   type GraphProps,
 } from './chrome/Graph.js';
-export { GraphContext, type GraphSurface, type PortSide } from './chrome/graphContext.js';
+export { GraphContext, portKey, type GraphSurface, type PortSide } from './chrome/graphContext.js';
 export { Port, type PortProps } from './chrome/Port.js';
 export { Rack, type RackProps } from './chrome/Rack.js';
 export { Row, type RowProps } from './chrome/Row.js';

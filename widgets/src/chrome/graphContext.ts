@@ -9,6 +9,23 @@ import { createContext, type PointerEvent } from 'react';
 export type PortSide = 'in' | 'out';
 
 /**
+ * A port's address on the canvas, which is its id **and** the side it is on.
+ *
+ * A cord names two port ids and nothing else, so within a cord an id is
+ * unambiguous: `from` is an outlet and `to` is an inlet, always. On the canvas
+ * it is not. A host is free to call a node's colour inlet and its colour outlet
+ * both `hue1/c` — they are different ports on different sides and no cord can
+ * confuse them — and a graph that filed elements by id alone would keep one of
+ * the two and draw every cord that landed on the inlet at the outlet instead.
+ *
+ * So geometry is keyed by both. It is the weakest contract that works: ids have
+ * to be unique **per side**, not across the canvas.
+ */
+export function portKey(id: string, side: PortSide): string {
+  return `${side} ${id}`;
+}
+
+/**
  * What a `Port` and a `GraphNode` need from the surface they are drawn on.
  *
  * It is a context rather than props because a port is nested arbitrarily deep
@@ -36,8 +53,8 @@ export interface GraphSurface {
    */
   armCord(id: string, side: PortSide): void;
   /** The pointer entered or left a port, so it can show it would be landed on. */
-  hoverPort(id: string | null): void;
-  /** The port a cord is being drawn from, or null. */
+  hoverPort(id: string | null, side?: PortSide): void;
+  /** The port a cord is being drawn from, as a `portKey`, or null. */
   cordFrom: string | null;
   /**
    * The side a port must be on to take the cord in flight, or null when none
@@ -46,7 +63,7 @@ export interface GraphSurface {
    * can say so is what stops half the gesture reading as broken.
    */
   cordWants: PortSide | null;
-  /** The port under the pointer, or null. */
+  /** The port under the pointer, as a `portKey`, or null. */
   cordOver: string | null;
   /**
    * The current scale, as a function rather than a value so that zooming

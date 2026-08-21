@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, type KeyboardEvent, type PointerEvent } from 'react';
-import { GraphContext, type PortSide } from './graphContext.js';
+import { GraphContext, portKey, type PortSide } from './graphContext.js';
 import './chrome.css';
 
 /**
@@ -16,8 +16,13 @@ import './chrome.css';
  */
 export interface PortProps {
   /**
-   * Unique across the whole graph, not just this node — a cord names two of
-   * these and nothing else, so they are the graph's only addresses.
+   * Unique **for this side** across the whole graph — a cord names two of these
+   * and nothing else, so they are the graph's only addresses.
+   *
+   * Per side rather than outright, because a node's colour inlet and its colour
+   * outlet are both honestly called `c` and a host should not have to spell one
+   * of them differently to say so. A cord is unambiguous either way: its `from`
+   * is an outlet and its `to` an inlet. See [`portKey`](./graphContext.ts).
    */
   id: string;
   side: PortSide;
@@ -35,6 +40,8 @@ export function Port({ id, side, label, kind, connected, disabled, className }: 
   const graph = useContext(GraphContext);
   const ref = useRef<HTMLButtonElement | null>(null);
   const register = graph?.register;
+  /** This port's address, which is the only thing the graph files it under. */
+  const at = portKey(id, side);
 
   useEffect(() => {
     if (!register) return;
@@ -65,7 +72,7 @@ export function Port({ id, side, label, kind, connected, disabled, className }: 
    * The port the cord left is neither; it already carries `data-pending`.
    */
   const reach =
-    !disabled && graph?.cordWants && id !== graph.cordFrom
+    !disabled && graph?.cordWants && at !== graph.cordFrom
       ? graph.cordWants === side
         ? 'open'
         : 'shut'
@@ -80,14 +87,14 @@ export function Port({ id, side, label, kind, connected, disabled, className }: 
         data-side={side}
         {...(kind === undefined ? {} : { 'data-kind': kind })}
         {...(connected ? { 'data-connected': '' } : {})}
-        {...(graph?.cordFrom === id ? { 'data-pending': '' } : {})}
-        {...(graph?.cordOver === id ? { 'data-over': '' } : {})}
+        {...(graph?.cordFrom === at ? { 'data-pending': '' } : {})}
+        {...(graph?.cordOver === at ? { 'data-over': '' } : {})}
         {...(reach === undefined ? {} : { 'data-reach': reach })}
         disabled={disabled}
         aria-label={label ?? id}
         title={label}
         onPointerDown={down}
-        onPointerEnter={() => graph?.hoverPort(id)}
+        onPointerEnter={() => graph?.hoverPort(id, side)}
         onPointerLeave={() => graph?.hoverPort(null)}
         onKeyDown={key}
       />

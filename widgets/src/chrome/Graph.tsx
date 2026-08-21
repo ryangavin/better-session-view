@@ -11,7 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
-import { GraphContext, type GraphSurface, type PortSide } from './graphContext.js';
+import { GraphContext, portKey, type GraphSurface, type PortSide } from './graphContext.js';
 import './chrome.css';
 
 /**
@@ -76,9 +76,13 @@ interface Spot {
   x: number;
   y: number;
   side: PortSide;
+  /** The host's id for the port, which is what a cord is reported in. */
+  id: string;
 }
 
 interface Drawing {
+  /** Where it is filed, which is [id and side](./graphContext.ts). */
+  at: string;
   id: string;
   side: PortSide;
   /** Where the free end is, in graph coordinates. */
@@ -136,8 +140,11 @@ export function Graph({
    * Refs rather than state, because re-rendering every node whenever one of
    * them moved a pixel is precisely the cost being avoided — and only this
    * component ever draws from the geometry.
+   *
+   * Filed by [`portKey`](./graphContext.ts) rather than by id, because a port's
+   * id is only unique down one side of a node.
    */
-  const elements = useRef(new Map<string, { side: PortSide; el: HTMLElement }>());
+  const elements = useRef(new Map<string, { id: string; side: PortSide; el: HTMLElement }>());
   const spots = useRef(new Map<string, Spot>());
   const sizes = useRef<ResizeObserver | null>(null);
   const [, redraw] = useState(0);
@@ -158,15 +165,16 @@ export function Graph({
     const k = now.current.view.k;
     const next = new Map<string, Spot>();
     let changed = elements.current.size !== spots.current.size;
-    for (const [id, { side, el }] of elements.current) {
+    for (const [at, { id, side, el }] of elements.current) {
       const box = el.getBoundingClientRect();
       const spot: Spot = {
         x: (box.left + box.width / 2 - origin.left) / k,
         y: (box.top + box.height / 2 - origin.top) / k,
         side,
+        id,
       };
-      next.set(id, spot);
-      const was = spots.current.get(id);
+      next.set(at, spot);
+      const was = spots.current.get(at);
       if (!was || Math.abs(was.x - spot.x) > 0.01 || Math.abs(was.y - spot.y) > 0.01) changed = true;
     }
     spots.current = next;
@@ -182,17 +190,18 @@ export function Graph({
 
   const register = useCallback(
     (id: string, side: PortSide, el: HTMLElement | null) => {
-      const held = elements.current.get(id);
+      const at = portKey(id, side);
+      const held = elements.current.get(at);
       if (held) {
         sizes.current?.unobserve(held.el);
-        elements.current.delete(id);
+        elements.current.delete(at);
       }
       if (el) {
         // A port moves when its faceplate resizes, when a font lands, or when
         // a host swaps a face — and none of those re-render this component.
         // Watching the elements is the only thing that catches all three.
         sizes.current ??= new ResizeObserver(() => measure());
-        elements.current.set(id, { side, el });
+        elements.current.set(at, { id, side, el });
         sizes.current.observe(el);
       }
       measure();
@@ -218,34 +227,39 @@ export function Graph({
    * hand moved. A drop on the same side is refused; that is the sides rule,
    * and it is the only one here.
    */
-  const land = useCallback((targetId: string | null) => {
+  const land = useCallback((target: string | null) => {
     const held = now.current.drawing;
     setDrawing(null);
-    if (!held || !targetId || targetId === held.id) return;
-    const target = spots.current.get(targetId);
-    if (!target || target.side !== opposite(held.side)) return;
-    const [from, to] = held.side === 'out' ? [held.id, targetId] : [targetId, held.id];
+    if (!held || !target || target === held.at) return;
+    const spot = spots.current.get(target);
+    if (!spot || spot.side !== opposite(held.side)) return;
+    const [from, to] = held.side === 'out' ? [held.id, spot.id] : [spot.id, held.id];
     now.current.onConnect?.(from, to);
   }, []);
 
   const startCord = useCallback(
     (id: string, side: PortSide, e: ReactPointerEvent<HTMLElement>) => {
-      setDrawing({ id, side, ...toGraph(e.clientX, e.clientY) });
+      setDrawing({ at: portKey(id, side), id, side, ...toGraph(e.clientX, e.clientY) });
     },
     [toGraph],
   );
 
   const armCord = useCallback(
     (id: string, side: PortSide) => {
+      const at = portKey(id, side);
       if (now.current.drawing) {
-        land(id);
+        land(at);
         return;
       }
-      const spot = spots.current.get(id);
-      setDrawing({ id, side, x: spot?.x ?? 0, y: spot?.y ?? 0 });
+      const spot = spots.current.get(at);
+      setDrawing({ at, id, side, x: spot?.x ?? 0, y: spot?.y ?? 0 });
     },
     [land],
   );
+
+  const hoverPort = useCallback((id: string | null, side?: PortSide) => {
+    setOver(id !== null && side ? portKey(id, side) : null);
+  }, []);
 
   /** While a cord is out, the whole document is somewhere it can be let go. */
   const drawingOut = drawing !== null;
@@ -309,19 +323,23 @@ export function Graph({
       register,
       startCord,
       armCord,
-      hoverPort: setOver,
-      cordFrom: drawing?.id ?? null,
+      hoverPort,
+      cordFrom: drawing?.at ?? null,
       cordWants: wants,
       cordOver: over,
       scale: () => now.current.view.k,
       moveNode: (id, x, y) => now.current.onMove?.(id, x, y),
     }),
-    [register, startCord, armCord, drawing?.id, wants, over],
+    [register, startCord, armCord, hoverPort, drawing?.at, wants, over],
   );
 
+  // A cord's ends are named by side and not looked up: `from` is an outlet and
+  // `to` is an inlet, which is the whole of what `GraphCord` promises. Reading
+  // that promise here is what lets a node call its colour inlet and its colour
+  // outlet the same thing.
   const drawn = (cords ?? []).flatMap((cord) => {
-    const a = spots.current.get(cord.from);
-    const b = spots.current.get(cord.to);
+    const a = spots.current.get(portKey(cord.from, 'out'));
+    const b = spots.current.get(portKey(cord.to, 'in'));
     return a && b ? [{ cord, d: cordPath(a, b) }] : [];
   });
 
@@ -333,12 +351,12 @@ export function Graph({
    * instead and the bezier bulges backwards and then flips at the moment it
    * connects.
    */
-  const anchor = drawing ? spots.current.get(drawing.id) : undefined;
+  const anchor = drawing ? spots.current.get(drawing.at) : undefined;
   const loose =
     drawing && anchor
       ? drawing.side === 'out'
-        ? cordPath(anchor, { x: drawing.x, y: drawing.y, side: 'in' })
-        : cordPath({ x: drawing.x, y: drawing.y, side: 'out' }, anchor)
+        ? cordPath(anchor, { x: drawing.x, y: drawing.y, side: 'in', id: '' })
+        : cordPath({ x: drawing.x, y: drawing.y, side: 'out', id: '' }, anchor)
       : null;
 
   return (
