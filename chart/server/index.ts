@@ -251,37 +251,6 @@ function toDevServer(req: http.IncomingMessage, res: http.ServerResponse): void 
 }
 
 /**
- * Vite's HMR socket, through the same port as the page.
- *
- * Without this the page loads from here and its hot-reload client tries to
- * connect back to this port, where nothing is listening — so the page is
- * served, looks right, and never updates. Which is the failure this whole
- * arrangement exists to remove, arriving by a different route.
- */
-server.on('upgrade', (req, socket, head) => {
-  if (!DEV_UI) return;
-  const target = new URL(DEV_UI);
-  const up = http.request({
-    host: target.hostname,
-    port: target.port,
-    path: req.url,
-    method: req.method,
-    headers: { ...req.headers, host: target.host },
-  });
-  up.on('upgrade', (answer, upstream, upstreamHead) => {
-    const lines = Object.entries(answer.headers)
-      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
-      .join('\r\n');
-    socket.write(`HTTP/1.1 101 Switching Protocols\r\n${lines}\r\n\r\n`);
-    if (upstreamHead.length) socket.unshift(upstreamHead);
-    upstream.pipe(socket).pipe(upstream);
-  });
-  up.on('error', () => socket.destroy());
-  if (head.length) up.write(head);
-  up.end();
-});
-
-/**
  * Coalesced, and sent only when it says something different.
  *
  * Every input arrives as an event — a clip fired, a scene renamed, the bridge

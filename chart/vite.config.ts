@@ -29,6 +29,19 @@ export default defineConfig({
   server: {
     port: PORT,
     strictPort: true,
+    /**
+     * Dial this port for hot reload, whatever port served the page.
+     *
+     * The chart server proxies the page through :18000 so there is one address
+     * in dev and in production alike — but Vite's client would then try to open
+     * its socket back to :18000, where nothing speaks it. Naming the port here
+     * sends the client straight to Vite instead, using the page's own hostname,
+     * so it works from a phone on the LAN exactly as it does from localhost.
+     *
+     * Setting it changes nothing when the page is served from Vite directly:
+     * this is already the port the client would have picked.
+     */
+    hmr: { clientPort: PORT },
     // A phone can reach the dev server too, which is the only way to work on
     // this on the thing it is for.
     host: true,
