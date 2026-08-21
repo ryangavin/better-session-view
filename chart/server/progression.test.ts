@@ -31,6 +31,18 @@ function playing(t: number, loopEnd: number, over: Partial<BSV.PlayingClip> = {}
   };
 }
 
+/** A kit: dense, few pitch classes, spread wide, hit rather than held. */
+function kit(beats: number): BSV.ClipNote[] {
+  const notes: BSV.ClipNote[] = [];
+  for (let i = 0; i < beats * 4; i++) {
+    const at = i / 4;
+    notes.push({ pitch: 36, start: at, duration: 0.13 });
+    if (i % 4 === 2) notes.push({ pitch: 38, start: at, duration: 0.13 });
+    notes.push({ pitch: i % 8 === 0 ? 21 : 62, start: at, duration: 0.13 });
+  }
+  return notes;
+}
+
 /** A triad held for a bar, as `Clip.get_all_notes_extended` would report it. */
 function triad(bar: number, pitches: number[]): BSV.ClipNote[] {
   return pitches.map((pitch) => ({ pitch, start: bar * 4, duration: 4 }));
@@ -80,21 +92,29 @@ describe('buildProgression', () => {
   });
 
   it('leaves drums out, which would otherwise misspell every chord', () => {
-    // A kick and a snare are C1 and D1. Merged in they turn this into
-    // Am6 | F6 | C | Gmaj7 — measured, not hypothetical.
-    const drums: BSV.ClipNote[] = [];
-    for (let b = 0; b < 16; b++) {
-      drums.push({ pitch: 36, start: b, duration: 0.25 });
-      if (b % 2 === 1) drums.push({ pitch: 38, start: b, duration: 0.25 });
-    }
     const out = buildProgression(
       setWith([
         { t: 0, name: 'Keys', slot: 4, loopEnd: 16, instrument: 'Operator', notes: AM_F_C_G },
-        { t: 1, name: 'Drums', slot: 4, loopEnd: 16, instrument: 'DrumGroupDevice', notes: drums },
+        { t: 1, name: 'Drums', slot: 4, loopEnd: 16, instrument: 'DrumGroupDevice', notes: kit(16) },
       ]),
     );
 
     expect(symbols(out)).toEqual(['Am', 'F', 'C', 'G']);
+  });
+
+  it('leaves out a drum plugin, which does not say it is one', () => {
+    // The case from a real set: the kit reported `PluginDevice`, exactly like a
+    // synth, and set the length of the chart as well as spoiling its chords.
+    const out = buildProgression(
+      setWith([
+        { t: 0, name: 'Keys', slot: 4, loopEnd: 16, instrument: 'Operator', notes: AM_F_C_G },
+        { t: 1, name: 'Drums', slot: 4, loopEnd: 32, instrument: 'PluginDevice', notes: kit(32) },
+      ]),
+    );
+
+    expect(symbols(out)).toEqual(['Am', 'F', 'C', 'G']);
+    // Timed against the keys, not the longer drum loop.
+    expect(out).toMatchObject({ t: 0, to: 16 });
   });
 
   it('merges the tracks, so a bass under an arpeggio spells more than either', () => {

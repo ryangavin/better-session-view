@@ -1,4 +1,9 @@
-import { isPercussion, readProgression, spellsFlat, type ChordNote } from '../../core/src/chords.ts';
+import {
+  looksPercussive,
+  readProgression,
+  spellsFlat,
+  type ChordNote,
+} from '../../core/src/chords.ts';
 import type { ChartProgression, ProgressionCell } from '../protocol.ts';
 import type { SetState } from './bridge.ts';
 
@@ -43,7 +48,14 @@ function harmonyOf(set: SetState): { clips: BSV.PlayingClip[]; notes: ChordNote[
     if (slot < 0) continue;
     const read = set.notes.get(`${playing.t}:${slot}`);
     if (!read || read.notes.length === 0) continue;
-    if (isPercussion(read.instrument)) continue;
+
+    // Percussion is judged from the notes rather than the device, because a
+    // drum plugin is a `PluginDevice` exactly like a synth is. It needs the
+    // clip's length in bars to know how dense the part is, which is why this
+    // asks the *playing* clip rather than the note list alone.
+    const bars = (playing.loopEnd - playing.loopStart) / beatsPerBar(playing);
+    if (looksPercussive(read.notes, bars, read.instrument)) continue;
+
     clips.push(playing);
     for (const note of read.notes) notes.push(note);
   }

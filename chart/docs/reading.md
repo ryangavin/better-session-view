@@ -168,11 +168,18 @@ together they are a chord with a root under it — and the root is the only thin
 Am7 from C6. Excluding drums is not fastidiousness; a kick and snare at C1 and D1 turn
 `Am | F | C | G` into `Am6 | F6 | C | Gmaj7`, which is measured rather than feared.
 
-**The timeline is the longest harmony loop**, because that is the period the progression
-actually has. A two-bar bass figure under an eight-bar chord cycle would otherwise report
-the cycle four times, each cut off a quarter of the way through. The frame names that
-track, so the phone lights the current cell from a loop it is already being told about
-rather than needing a clock of its own.
+**Percussion is judged from the notes, not the device.** A third-party drum plugin reports
+`PluginDevice` exactly like a synth does, so the class name catches a Drum Rack and misses
+every kit that isn't one. `looksPercussive` in `core/` owns the judgement and the numbers
+behind it.
+
+**The timeline is the longest harmony loop**, trimmed to where the progression repeats. The
+longest loop is the period the changes actually have — a two-bar bass figure under an
+eight-bar chord cycle would otherwise report the cycle four times, each cut off a quarter of
+the way through. Trimming is the other half: a four-bar progression in an eight-bar clip is
+four bars, and drawing it twice wastes half the screen. The frame names that track, so the
+phone lights the current cell from a loop it is already being told about rather than needing
+a clock of its own.
 
 Notes are a **read, not a watch** — the LOM has no event for a clip's contents that would
 help — so the ask goes out when the *playing clips change*, which is exactly when the
