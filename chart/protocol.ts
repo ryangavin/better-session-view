@@ -67,14 +67,26 @@ export interface LoopTrack {
   signatureDenominator: number;
 }
 
-/** One note of the bass part, exactly as Live holds it. */
+/** One note of the bass part, as the roll draws it. */
 export interface BasslineNote {
   /** Beats from the **loop's** start, not the clip's. */
   from: number;
   /** Beats from the loop's start, exclusive. Clipped to the loop's end. */
   to: number;
-  /** MIDI note number, as Live gives it. 60 is the C Live calls C3. */
+  /**
+   * MIDI note number, 60 being the C Live calls C3 — and the note the roll
+   * *draws*, which is the one Live holds unless `folded` says otherwise.
+   */
   pitch: number;
+  /**
+   * Set when the note was moved by whole octaves to fit the roll's keyboard.
+   *
+   * **Absent on every note of a normal bass part**, which is the point: the
+   * keyboard is two octaves because that is where a bass line lives, and a part
+   * that leaves it is rare enough to be worth marking rather than silently
+   * redrawing. The name is still right; the octave is not.
+   */
+  folded?: boolean;
 }
 
 /**
@@ -116,11 +128,12 @@ export interface ChartBassline {
   /**
    * The lowest and highest MIDI note the roll draws, inclusive.
    *
-   * **Decided here rather than on the phone**, because it is a musical
-   * judgement: the floor is a five-string's low B and the default span is two
-   * octaves up from it, which is where a bass part lives. It widens by whole
-   * octaves when a part goes outside, so nothing is ever hidden and the rows
-   * still land on the same note names.
+   * **Fixed, and decided here rather than on the phone**, because it is a
+   * musical judgement: a five-string's low B and two octaves up from it, which
+   * is where a bass line lives. It never moves — a keyboard that resized to fit
+   * would make two songs of the same shape look different, and the whole use of
+   * a fixed one is that a fifth is the same distance up the screen every time.
+   * A note outside it is folded into it rather than the roll growing.
    */
   low: number;
   high: number;

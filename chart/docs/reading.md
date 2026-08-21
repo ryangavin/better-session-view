@@ -198,24 +198,31 @@ oldest phone in the room.
 ### The keyboard is fixed, and it is a bass's
 
 **Two octaves up from a five-string's low B** — 23 to 47, which Live calls B-1 to B1. Real
-pitches, not the twelve pitch-class rows this used to fold everything into.
+pitches, not the twelve pitch-class rows this used to fold everything into, and the same
+twenty-five rows on every phone in the room whatever is playing.
 
 Pitch classes read well for chord shapes and badly for a bass line. An octave jump *is* the
-gesture in a bass part, and folding it away draws a straight line through the middle of it;
-so does a walk-up that crosses a C. The bottom of the range is a five-string's because a
-five-string is what gets played, and a roll that started at a four-string's open E would put
-the notes that most need reading off the bottom of it.
+gesture in a bass part, and folding every one of them away draws a straight line through the
+middle of it; so does a walk-up that crosses a C. The bottom of the range is a five-string's
+because a five-string is what gets played, and a roll starting at a four-string's open E
+would put the notes that most need reading off the bottom of it.
 
-It is a floor rather than a fit. Where the low note of a part *is* moves between songs, and
-rows that moved with it would make two songs of the same shape look different — the point of
-a fixed keyboard is that a fifth is the same distance up the screen every time. When a part
-goes outside, the window **widens by a whole octave**, never by a semitone, so the note names
-still land in the same places and nothing is ever quietly cropped.
+**It never resizes.** A note above or below is moved by whole octaves until it fits, and
+marked as moved. Growing the keyboard to fit was the first version of this and it was wrong
+in a specific way: it makes every other row thinner to accommodate a case that mostly never
+arrives, and it means two songs of the same shape look different — the whole use of a fixed
+keyboard is that a fifth is the same distance up the screen every time.
 
-The window is decided on the server and sent, so every phone in the room is looking at the
-same keyboard. The gutter labels **only the Cs**, the way a piano roll is labelled: every row
-named is unreadable at this height and says nothing the black-and-white pattern beside it
-does not.
+Folding is the least-bad way to be wrong here. Cropping hides something that is being
+played. Clamping to the edge changes what the note *is*, and a run of clamps flattens a line
+into a bar along the top of the roll. An octave is the interval a bass player is least
+surprised to read wrong, because the note name survives it — so the note moves, and it is
+drawn faded and outlined so nobody takes the octave off a note that had one put on it.
+
+The window is decided on the server and sent rather than hardcoded on the phone, so the
+musical judgement stays in one place. The gutter labels **only the Cs**, the way a piano roll
+is labelled: every row named is unreadable at this height and says nothing the
+black-and-white pattern beside it does not.
 
 ### Reading it
 

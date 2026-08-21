@@ -281,12 +281,13 @@ function Wheel({
  * against Live is one they will stop reading.
  *
  * **Real pitches over a fixed keyboard**, two octaves up from a five-string's
- * low B unless the part needs more. Twelve pitch-class rows read well for
- * chord shapes and badly for a bass line, where an octave jump is the gesture
- * and folding it away draws a straight line through the middle of it.
+ * low B. Twelve pitch-class rows read well for chord shapes and badly for a
+ * bass line, where an octave jump is the gesture and folding every one of them
+ * away draws a straight line through the middle of it.
  *
- * The window comes off the wire rather than being fitted here, so every phone
- * in the room is looking at the same keyboard.
+ * The window comes off the wire rather than being decided here, so every phone
+ * in the room is looking at the same keyboard — and a part that leaves it
+ * arrives already folded back into it and marked.
  */
 function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | null }) {
   const head = useRef<HTMLDivElement | null>(null);
@@ -373,7 +374,7 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
         {line.notes.map((note) => (
           <div
             key={`${note.from}:${note.pitch}`}
-            className="note"
+            className={`note ${note.folded ? 'folded' : ''}`}
             style={{
               left: `${(note.from / span) * 100}%`,
               width: `${((note.to - note.from) / span) * 100}%`,
@@ -381,7 +382,7 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
               height: `${100 / rows}%`,
               background: hex(line.color),
             }}
-            title={pitchName(note.pitch, line.flats)}
+            title={`${pitchName(note.pitch, line.flats)}${note.folded ? ' (octave)' : ''}`}
           />
         ))}
 

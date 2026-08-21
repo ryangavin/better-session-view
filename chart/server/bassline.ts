@@ -27,8 +27,11 @@ const BASS = /bass/i;
  */
 const FLOOR = 23;
 
-/** How much of the keyboard the roll shows before it has to widen. */
+/** How much of the keyboard the roll shows. Two octaves is a bass. */
 const OCTAVES = 2;
+
+/** The top of the roll, inclusive — so both edges of it are a B. */
+const CEILING = FLOOR + 12 * OCTAVES;
 
 /** Beats to the bar, from a clip's own signature. Live counts in quarter notes. */
 function beatsPerBar(clip: BSV.PlayingClip): number {
@@ -79,21 +82,24 @@ function bassPart(set: SetState): Part | null {
 }
 
 /**
- * The stretch of keyboard to draw, as a pair of MIDI notes, inclusive.
+ * A note moved by whole octaves until it is on the keyboard.
  *
- * Two octaves up from the low B, widened by whole octaves — never by a
- * semitone — until the part fits. Widening in octaves is what keeps the note
- * names in the gutter landing in the same places whatever is playing, and
- * widening at all is what stops a part that goes high being quietly cropped.
+ * **The keyboard never grows.** A bass part outside two octaves is rare enough
+ * to be worth handling badly on purpose: the alternatives are cropping the note,
+ * which hides something that is being played, or widening the roll, which makes
+ * every other row thinner to accommodate a case that mostly never arrives. An
+ * octave is the interval a bass player is least surprised to read wrong — the
+ * note name is still the note name — so it moves and gets marked.
+ *
+ * Whole octaves rather than a clamp to the edge, because a clamp changes what
+ * the note *is*, and a run of them would flatten a line into a bar along the top
+ * of the roll.
  */
-function keyboard(notes: readonly BasslineNote[]): { low: number; high: number } {
-  let low = FLOOR;
-  let high = FLOOR + 12 * OCTAVES;
-  for (const note of notes) {
-    while (note.pitch < low) low -= 12;
-    while (note.pitch > high) high += 12;
-  }
-  return { low, high };
+function fold(pitch: number): { pitch: number; folded: boolean } {
+  let at = pitch;
+  while (at > CEILING) at -= 12;
+  while (at < FLOOR) at += 12;
+  return { pitch: at, folded: at !== pitch };
 }
 
 /**
@@ -127,7 +133,13 @@ export function buildBassline(set: SetState): ChartBassline | null {
     if (note.start < from || note.start >= to) continue;
     const end = Math.min(to, note.start + note.duration);
     if (!(end > note.start)) continue;
-    notes.push({ from: note.start - from, to: end - from, pitch: note.pitch });
+    const on = fold(note.pitch);
+    notes.push({
+      from: note.start - from,
+      to: end - from,
+      pitch: on.pitch,
+      ...(on.folded ? { folded: true } : {}),
+    });
   }
   // Every note outside the loop bracket. Nothing to draw, and an empty roll
   // looks like a bug where no roll looks like no roll.
@@ -141,7 +153,8 @@ export function buildBassline(set: SetState): ChartBassline | null {
     from,
     to,
     beatsPerBar: beatsPerBar(clip),
-    ...keyboard(notes),
+    low: FLOOR,
+    high: CEILING,
     // Spelled to match the key the set already states, so the gutter reads Bb
     // where the scene names say Bb.
     flats: spellsFlat(keyOf(set)),
@@ -194,6 +207,8 @@ export function playingClips(set: SetState): Array<{ t: number; s: number }> {
 /** What would make a phone redraw the roll, ignoring where the playhead is. */
 export function basslineShape(line: ChartBassline | null): string {
   if (!line) return '';
-  const notes = line.notes.map((note) => `${note.from}:${note.to}:${note.pitch}`).join(',');
+  const notes = line.notes
+    .map((note) => `${note.from}:${note.to}:${note.pitch}${note.folded ? 'f' : ''}`)
+    .join(',');
   return `${line.t}|${line.from}|${line.to}|${line.low}|${line.high}|${line.flats}|${notes}`;
 }
