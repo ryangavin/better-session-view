@@ -17,13 +17,26 @@ import type { SetState } from './bridge.ts';
 /** Which track carries the bass. Named, because nothing else in a set says. */
 const BASS = /bass/i;
 
+/** How much of the keyboard the roll shows. */
+const OCTAVE = 12;
+
 /**
- * The open E of a four-string, as a pitch class.
+ * The open E of a four-string bass, as this set's clips write it.
  *
- * The bottom of the roll and the line the marker is drawn against — everything
- * below it is the fifth string.
+ * **A fact about the rig, and the only one in this file.** Nothing in a clip
+ * says what instrument plays it or how that instrument is tuned, so the one
+ * question a chart cannot answer from the notes is whether a low note is *low*
+ * or merely written low. This set puts a five-string's B at 35, which puts the
+ * E above it here.
+ *
+ * It is a constant because it has to be, and it is safe to be one because of
+ * what depends on it: the dot that says a note needs the fifth string, and
+ * nothing else. The roll's window is measured off the part, so being wrong here
+ * costs an advisory mark rather than the layout — which is the whole reason
+ * the two were separated. Retune or re-record an octave away and this is the
+ * line to change.
  */
-const LOW_E = 4;
+const FOUR_STRING_E = 40;
 
 /** Beats to the bar, from a clip's own signature. Live counts in quarter notes. */
 function beatsPerBar(clip: BSV.PlayingClip): number {
@@ -74,28 +87,7 @@ function bassPart(set: SetState): Part | null {
 }
 
 /**
- * Where the octave the roll draws starts: the E nearest the part's low note.
- *
- * **A four-string's open E, in whatever octave the part is written in.** Which
- * octave that is cannot be a constant — clips get written up, plugins
- * transpose, and a fixed floor was wrong twice before this — so it is measured
- * off the material. The E nearest the lowest note played is that E: a part
- * bottoming out on the open A picks the E a fourth below it, and one bottoming
- * out on a low D picks the E two semitones *above*, which is the answer that
- * says the D is under the E rather than a seventh over it.
- *
- * A tie — a lowest note exactly six semitones between two Es — takes the lower,
- * so nothing gets marked as needing a fifth string on the strength of a
- * coin toss.
- */
-function lowE(lowest: number): number {
-  const below = lowest - (((lowest - LOW_E) % 12) + 12) % 12;
-  const above = below + 12;
-  return lowest - below <= above - lowest ? below : above;
-}
-
-/**
- * A note brought into the octave the roll draws.
+ * A note brought down into the octave the roll draws.
  *
  * **One octave, so every note is a pitch class in the end.** Two octaves of real
  * pitches drew an honest picture of a part and spent most of a phone screen on
@@ -103,16 +95,34 @@ function lowE(lowest: number): number {
  * reads off a chart is which note comes next, and that is the same note in any
  * octave.
  *
- * `below` is the one thing the octave is still worth saying, and only in one
- * direction. A note **under the low E has to come up** to be drawn, and a
- * four-string has to play it up there too — so the mark is not the roll
- * apologising for its own layout, it is the chart saying *this line was written
- * for five strings, and here is how you get away with it on four*. A note folded
- * *down* from above carries nothing, because anybody can play it where it is
- * drawn.
+ * Downwards only, because the window sits on the part's lowest note: a part that
+ * fits inside an octave is drawn exactly as it was played, and a part that does
+ * not has its top wrapped round. Nothing is ever moved *up*, which is what makes
+ * the dot mean something — see `needsFive`.
+ *
+ * Whole octaves rather than a clamp to the edge, because a clamp changes what
+ * the note *is*, and a run of clamps would flatten a line into a bar along the
+ * top of the roll.
  */
-function fold(pitch: number, low: number): { pitch: number; below: boolean } {
-  return { pitch: low + ((((pitch - low) % 12) + 12) % 12), below: pitch < low };
+function fold(pitch: number, low: number): number {
+  return low + ((((pitch - low) % OCTAVE) + OCTAVE) % OCTAVE);
+}
+
+/**
+ * Whether a note is below what a four-string can reach.
+ *
+ * **Measured against the instrument, not against the roll.** This was the roll's
+ * bottom row at first, which read well and was wrong: the window follows the
+ * part, so anchoring the question to it made every song whose lowest note sat
+ * just under a row boundary claim it needed a fifth string. A part in D minor an
+ * octave above the low E marked its D and its Eb — notes anybody can play, on a
+ * bass tuned however they like.
+ *
+ * Whether a note is out of reach is a fact about the bass, so it is asked of a
+ * fixed pitch and the layout is not involved.
+ */
+function needsFive(pitch: number): boolean {
+  return pitch < FOUR_STRING_E;
 }
 
 /**
@@ -155,19 +165,15 @@ export function buildBassline(set: SetState): ChartBassline | null {
   // looks like a bug where no roll looks like no roll.
   if (sounding.length === 0) return null;
 
-  let lowest = sounding[0]!.pitch;
-  for (const note of sounding) if (note.pitch < lowest) lowest = note.pitch;
-  const low = lowE(lowest);
+  let low = sounding[0]!.pitch;
+  for (const note of sounding) if (note.pitch < low) low = note.pitch;
 
-  const notes: BasslineNote[] = sounding.map((note) => {
-    const on = fold(note.pitch, low);
-    return {
-      from: note.start - from,
-      to: Math.min(to, note.start + note.duration) - from,
-      pitch: on.pitch,
-      ...(on.below ? { below: true } : {}),
-    };
-  });
+  const notes: BasslineNote[] = sounding.map((note) => ({
+    from: note.start - from,
+    to: Math.min(to, note.start + note.duration) - from,
+    pitch: fold(note.pitch, low),
+    ...(needsFive(note.pitch) ? { below: true } : {}),
+  }));
   notes.sort((a, b) => a.from - b.from || a.pitch - b.pitch);
 
   return {
@@ -178,7 +184,7 @@ export function buildBassline(set: SetState): ChartBassline | null {
     to,
     beatsPerBar: beatsPerBar(clip),
     low,
-    high: low + 11,
+    high: low + OCTAVE - 1,
     // Both from the key the set already states: the gutter reads Bb where the
     // scene names say Bb, and the degrees are counted from the note the song is
     // actually in rather than from whatever the bass player's lowest note was.

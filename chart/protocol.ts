@@ -83,13 +83,16 @@ export interface BasslineNote {
    */
   pitch: number;
   /**
-   * Set when the note was written **under the low E of a four-string**.
+   * Set when the note is **below what a four-string can reach**.
    *
-   * The one thing the octave is still worth saying, and only in this direction.
-   * A note under the low E has to come up to be drawn, and a four-string has to
-   * play it up there too — so this is not the roll apologising for its own
-   * layout, it is the chart saying *this line was written for five strings, and
-   * here is how you get away with it on four*. A note folded down from above
+   * A fact about the bass, not about this roll: it is measured against a fixed
+   * pitch and has nothing to do with which row the note lands on. Anchoring it
+   * to the roll's bottom row was the first attempt and marked notes anybody can
+   * play, because the row follows the part and the part cannot say which octave
+   * it is in.
+   *
+   * It says *this line was written for five strings, and here is how you get
+   * away with it on four*. A note merely wrapped round the top of the octave
    * carries nothing, because anybody can play it where it is drawn.
    */
   below?: boolean;
@@ -134,12 +137,10 @@ export interface ChartBassline {
   /**
    * The lowest and highest MIDI note the roll draws, inclusive — twelve rows.
    *
-   * **One octave, starting on the E a four-string's bottom string is tuned to.**
-   * Which octave that E is in cannot be a constant, because the octave a part is
-   * written at is a fact about somebody's rig rather than about music, so it is
-   * measured off the part: the E nearest its lowest note. It is on the wire
-   * rather than assumed on the phone so that `below` and the row a note sits on
-   * are decided against the same reference.
+   * **One octave sitting on the part's lowest note**, so a part that fits inside
+   * an octave is drawn exactly where it was played and only a wider one wraps.
+   * On the wire rather than worked out on the phone, so the musical judgement
+   * stays in one place.
    */
   low: number;
   high: number;

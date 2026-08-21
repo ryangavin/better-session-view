@@ -217,42 +217,46 @@ Times go on the wire **relative to the loop's start**, because that is what the 
 drawn from, and doing the subtraction once on the server beats doing it per note on the
 oldest phone in the room.
 
-### The keyboard is one octave, from the low E
+### The keyboard is one octave, sitting on the part
 
-**Twelve rows, starting on the E a four-string's bottom string is tuned to.** Every note is
-folded into it, which makes them pitch classes in the end.
+**Twelve rows, starting on the lowest note in the loop.** A part that fits inside an octave
+is drawn exactly where it was played; one that does not has its top wrapped round, folded by
+whole octaves and never clamped to an edge — a clamp changes what the note is, and a run of
+clamps flattens a line into a bar along the top.
 
 It was two octaves of real pitches first, and that drew an honest picture of a part while
 spending most of a phone screen on the gap between the two notes furthest apart in it. What
 gets read off a chart is which note comes next, and that is the same note in any octave.
 
-Which octave the E is in **cannot be a constant.** That was learned the hard way: a fixed
-floor was written at a five-string's nominal low B, then moved an octave when a real set put
-it somewhere else, and the second failure is what showed the first was the wrong shape of
-answer. The octave a bass part is written at is a fact about somebody's rig — the instrument,
-the clip, a plugin transposing — so the reference is measured off the part instead. It is the
-**E nearest the part's lowest note**: a part bottoming out on the open A takes the E a fourth
-below it, and one bottoming out on a low D takes the E two semitones *above*, which is the
-answer that says the D is under the E rather than a seventh over it. A tie takes the lower E,
-so nothing is marked as needing a fifth string on a coin toss.
+### The dot asks the instrument, not the roll
 
-Folding is by whole octaves and never a clamp to the edge, which would change what the note
-is and flatten a run into a bar along the top of the roll.
+A note **below what a four-string can reach** gets a small dot, and nothing else does. It
+says *this line was written for five strings, and here is how you get away with it on four*.
 
-### The one thing the octave is still worth saying
+The first version anchored the roll's bottom row to an E — a four-string's open E — and drew
+the dot on anything that fell below that row. It read well and it was wrong, because the row
+had to be found from the part and the part cannot say which octave it is in. A line in D
+minor sitting an octave *above* the low E had the window snapped to the E above its lowest
+note, which threw its D and its Eb over the top of the roll and marked them. Notes anybody
+can play, on a bass tuned however they like.
 
-A note written **under the low E** gets a small dot, and nothing else does.
+Whether a note is out of reach is a fact about the **bass**, and the layout has nothing to do
+with it. So the two questions were separated: the window follows the part, and the dot is
+measured against a fixed pitch — the open E of a four-string as this set's clips write it,
+`FOUR_STRING_E` in [`server/bassline.ts`](../server/bassline.ts).
 
-That is not the roll apologising for its own layout. A four-string cannot reach the note, so
-it has to be played up where the roll draws it, and the dot is the chart saying *this line
-was written for five strings, and here is how you get away with it on four*. A note folded
-*down* from above carries nothing, because anybody can play it where it is drawn.
+That is the file's **only rig constant**, and it is safe to be one because of how little
+depends on it. Nothing in a clip says what instrument plays it or how that instrument is
+tuned, so this is the one question a chart cannot answer from the notes; getting it wrong
+costs an advisory mark rather than the layout, which is exactly why the layout was moved off
+it. Retune or re-record an octave away and it is one line to change.
 
-The mark had a wider job once — every folded note carried it, drawn as a fade — and both
-halves of that were wrong. Marking a fold that costs the player nothing is a chart talking
-about itself, and **nothing on this roll varies a note's opacity**, because a piano roll that
-dims a note reads as velocity to everybody who has used one. This roll does not draw velocity
-at all.
+A note wrapped *down* from the top carries nothing, because anybody can play it where it is
+drawn — the user's rule, and the right one: the mark is about the part, not about the roll's
+compromises. An earlier version marked every fold, drawn as a fade, and both halves of that
+were wrong. Marking a fold that costs the player nothing is a chart talking about itself, and
+**nothing on this roll varies a note's opacity**, because a piano roll that dims a note reads
+as velocity to everybody who has used one. This roll does not draw velocity at all.
 
 ### Colour is the degree, text is the note
 
