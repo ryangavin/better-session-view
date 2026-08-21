@@ -298,6 +298,11 @@ const PORTS = PATCH.flatMap((node) => [...node.inlets, ...node.outlets]);
  * The canvas, doing the whole bargain: the graph emits a pair of ids, and this
  * host decides whether the kinds agree and whether the inlet was already taken.
  * Refuse one and watch nothing happen.
+ *
+ * Note there is nothing here about which end was dragged. The graph hands back
+ * the outlet first whichever way round the cord was pulled, so `carries` and
+ * `takes` are always the right way round and the one-cord-per-inlet rule below
+ * still keys off `to`.
  */
 function Patch() {
   const [at, setAt] = useState<Record<string, { x: number; y: number }>>(() =>
@@ -836,13 +841,13 @@ export function Bench() {
         <Section id="Graph">
           <Case
             wide
-            note="The canvas the chain leaves room for. Drag a node by anywhere a control hasn't claimed, drag between two ports to connect, scroll to zoom about the cursor, drag the background to pan. Notes only reach Pitch and signals only reach Size: the graph offers the pair, this page refuses it."
+            note="The canvas the chain leaves room for. Drag a node by anywhere a control hasn't claimed, drag between two ports to connect, scroll to zoom about the cursor, drag the background to pan. A cord pulls from either end — start on Output's In and drop on Shape's Out and you get the same cord as the other way round; the ports that could take it outline themselves while it is out, and the ones on the wrong side dim. Notes only reach Pitch and signals only reach Size: the graph offers the pair, this page refuses it."
           >
             <Patch />
           </Case>
           <Case
             wide
-            note="The same connection without a pointer. Tab to a port, press Enter to arm it, Tab to another and press Enter again. Escape drops the cord. Arrow keys move a node once its title bar has focus, so a patch needs no tab stop of its own."
+            note="The same connection without a pointer, and from either end too: tab to a port, press Enter to arm it, tab to one on the other side and press Enter again. Arming an inlet marks the outlets exactly as arming an outlet marks the inlets. Escape drops the cord. Arrow keys move a node once its title bar has focus, so a patch needs no tab stop of its own."
           >
             <Patch />
           </Case>

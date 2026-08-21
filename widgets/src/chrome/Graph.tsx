@@ -29,8 +29,10 @@ import './chrome.css';
  * `cords` — the same bargain a control makes when it emits a value and lets the
  * host write it. **The one rule the graph does enforce is sides**, because that
  * one is the drawing's own: an outlet connects to an inlet, and a cord between
- * two outlets has no shape. Whether *this* outlet may reach *that* inlet is a
- * question about what they carry, and this module has no idea.
+ * two outlets has no shape. That is a rule about the *cord*, not about the
+ * gesture — a drag runs from either end, and the pair is normalised on its way
+ * out. Whether *this* outlet may reach *that* inlet is a question about what
+ * they carry, and this module has no idea.
  *
  * Pan and zoom are the graph's own, the way a chain's scroll position is the
  * chain's. Nothing has needed to write them yet, and a prop for it can be added
@@ -54,7 +56,10 @@ export interface GraphProps {
    * have to sequence its own state against React's.
    */
   cords?: readonly GraphCord[];
-  /** A cord was dragged between two ports. Outlet first, whichever end started it. */
+  /**
+   * A cord was dragged between two ports. Always outlet first, whichever end
+   * the gesture started at, so a host never has to ask which way it was drawn.
+   */
   onConnect?(from: string, to: string): void;
   /** A node was dragged, or arrow-keyed, to a new position. */
   onMove?(id: string, x: number, y: number): void;
@@ -97,6 +102,9 @@ const NUDGE: Record<string, readonly [number, number]> = {
 const INTERACTIVE = 'button, input, select, textarea, a[href], [role="slider"], [role="radio"]';
 
 const IGNORES_ARROWS = 'input, [role="slider"], [role="radio"], .wdg-port';
+
+/** The end a cord still needs, given the end it already has. */
+const opposite = (side: PortSide): PortSide => (side === 'out' ? 'in' : 'out');
 
 function cordPath(a: Spot, b: Spot): string {
   const reach = Math.max(30, Math.abs(b.x - a.x) * 0.5);
@@ -200,13 +208,22 @@ export function Graph({
     return { x: (clientX - origin.left) / k, y: (clientY - origin.top) / k };
   }, []);
 
-  /** Land a cord, if what it landed on is the other kind of port. */
+  /**
+   * Land a cord, if what it landed on is the end this one is still missing.
+   *
+   * The gesture's order is not the cord's. An inlet reaching for an outlet
+   * makes the same cord as an outlet reaching for an inlet, so the pair is
+   * sorted before the host sees it — `from` is the outlet and `to` the inlet
+   * either way, which is what lets a host wire on it without asking how the
+   * hand moved. A drop on the same side is refused; that is the sides rule,
+   * and it is the only one here.
+   */
   const land = useCallback((targetId: string | null) => {
     const held = now.current.drawing;
     setDrawing(null);
     if (!held || !targetId || targetId === held.id) return;
     const target = spots.current.get(targetId);
-    if (!target || target.side === held.side) return;
+    if (!target || target.side !== opposite(held.side)) return;
     const [from, to] = held.side === 'out' ? [held.id, targetId] : [targetId, held.id];
     now.current.onConnect?.(from, to);
   }, []);
@@ -278,6 +295,15 @@ export function Graph({
     null,
   );
 
+  /**
+   * Which end the cord in flight is still short of, and so which ports could
+   * take it. Ports read it to mark themselves, because a drag from either end
+   * only reads as one feature if it looks like one: an outlet in hand should
+   * light the inlets and an inlet in hand should light the outlets, and a
+   * canvas that lights the same ports both ways looks broken while working.
+   */
+  const wants = drawing ? opposite(drawing.side) : null;
+
   const surface = useMemo<GraphSurface>(
     () => ({
       register,
@@ -285,11 +311,12 @@ export function Graph({
       armCord,
       hoverPort: setOver,
       cordFrom: drawing?.id ?? null,
+      cordWants: wants,
       cordOver: over,
       scale: () => now.current.view.k,
       moveNode: (id, x, y) => now.current.onMove?.(id, x, y),
     }),
-    [register, startCord, armCord, drawing?.id, over],
+    [register, startCord, armCord, drawing?.id, wants, over],
   );
 
   const drawn = (cords ?? []).flatMap((cord) => {
@@ -298,6 +325,14 @@ export function Graph({
     return a && b ? [{ cord, d: cordPath(a, b) }] : [];
   });
 
+  /**
+   * The cord in flight, always drawn outlet-end first — so a drag started at an
+   * inlet puts the *pointer* at the outlet end. `cordPath` throws its control
+   * points out to the right of the first point and in from the left of the
+   * second, which is the shape a landed cord has; anchor it to the inlet
+   * instead and the bezier bulges backwards and then flips at the moment it
+   * connects.
+   */
   const anchor = drawing ? spots.current.get(drawing.id) : undefined;
   const loose =
     drawing && anchor

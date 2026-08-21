@@ -23,7 +23,11 @@ export interface GraphSurface {
    * again with `null` when the port unmounts.
    */
   register(id: string, side: PortSide, element: HTMLElement | null): void;
-  /** The pointer went down on a port: start drawing a cord from it. */
+  /**
+   * The pointer went down on a port: start drawing a cord from it. Either side
+   * may start one — the graph's rule is that a cord has an outlet end and an
+   * inlet end, not that the hand has to set them down in that order.
+   */
   startCord(id: string, side: PortSide, event: PointerEvent<HTMLElement>): void;
   /**
    * The keyboard equivalent, and deliberately a toggle: the first press arms a
@@ -35,6 +39,13 @@ export interface GraphSurface {
   hoverPort(id: string | null): void;
   /** The port a cord is being drawn from, or null. */
   cordFrom: string | null;
+  /**
+   * The side a port must be on to take the cord in flight, or null when none
+   * is out. Because a drag runs from either end, what a port needs to know is
+   * not which end started it but which end is still missing — and a port that
+   * can say so is what stops half the gesture reading as broken.
+   */
+  cordWants: PortSide | null;
   /** The port under the pointer, or null. */
   cordOver: string | null;
   /**

@@ -58,6 +58,19 @@ export function Port({ id, side, label, kind, connected, disabled, className }: 
     graph.armCord(id, side);
   };
 
+  /**
+   * Whether the cord in flight could land here. The graph owns the rule and
+   * only says which side it is short of, so a port never learns that outlets
+   * feed inlets — it compares its own side and marks itself `open` or `shut`.
+   * The port the cord left is neither; it already carries `data-pending`.
+   */
+  const reach =
+    !disabled && graph?.cordWants && id !== graph.cordFrom
+      ? graph.cordWants === side
+        ? 'open'
+        : 'shut'
+      : undefined;
+
   return (
     <span className={`wdg-port-slot${className ? ` ${className}` : ''}`} data-side={side}>
       <button
@@ -69,6 +82,7 @@ export function Port({ id, side, label, kind, connected, disabled, className }: 
         {...(connected ? { 'data-connected': '' } : {})}
         {...(graph?.cordFrom === id ? { 'data-pending': '' } : {})}
         {...(graph?.cordOver === id ? { 'data-over': '' } : {})}
+        {...(reach === undefined ? {} : { 'data-reach': reach })}
         disabled={disabled}
         aria-label={label ?? id}
         title={label}

@@ -402,9 +402,19 @@
   background: var(--wdg-port-ink);
 }
 
-.wdg-port:hover:not(:disabled),
-.wdg-port[data-over] {
+.wdg-port:hover:not(:disabled):not([data-reach='shut']),
+.wdg-port[data-over]:not([data-reach='shut']),
+.wdg-port[data-reach='open'] {
   border-color: var(--wdg-fill);
+}
+
+.wdg-port[data-reach='open'][data-over] {
+  background: var(--wdg-fill);
+}
+
+.wdg-port[data-reach='shut'] {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .wdg-port[data-pending] {

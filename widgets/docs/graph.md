@@ -45,6 +45,38 @@ to an inlet; a cord between two outlets has no shape to draw. Whether *this* out
 reach *that* inlet is about what they carry, and the graph has no idea. So it enforces the
 first and offers the second.
 
+## A cord pulls from either end
+
+The sides rule is about the **cord**, not about the gesture. An outlet has to meet an
+inlet; neither one has to be picked up first. A drag started on an inlet and dropped on an
+outlet makes exactly the cord the reverse drag makes, and the two Enter presses work the
+same way round. A drop on the side the drag started from is refused, and that is the whole
+of the rule.
+
+`onConnect(from, to)` is **normalised before the host sees it**: `from` is always the
+outlet and `to` always the inlet, whichever end the hand started at. So a host wires on the
+pair and never asks how it was drawn — the circuit editor's `wire(from, to)` reads `from`'s
+signal as the one leaving and `to`'s as the one arriving, and would be wrong half the time
+if the graph passed the gesture's order through instead of the cord's.
+
+Two things fall out of that, and both are the difference between the feature working and
+the feature reading as working.
+
+**The cord in flight is drawn outlet-end first either way.** `cordPath` throws its control
+points out to the right of the first point and in from the left of the second, which is the
+shape a landed cord has. A drag from an inlet therefore puts the *pointer* at the outlet end
+and the port at the inlet end. Anchor it the other way round and the bezier bulges backwards
+for the length of the drag, then flips the instant it connects.
+
+**Ports say whether they could take it.** The surface publishes `cordWants` — the side it
+is still short of, and nothing more — and each `Port` compares its own side to that, taking
+`data-reach="open"` or `data-reach="shut"`. The port the cord left carries `data-pending`
+instead and takes neither, and a port under the pointer fills solid only when it is open. So
+an outlet in hand outlines the inlets and dims the outlets, and an inlet in hand does the
+mirror of it. A canvas that highlighted the same ports whichever end you grabbed would look
+broken while working perfectly, which is the failure worth spending an attribute on. `Port`
+still learns nothing from this: not that outlets feed inlets, only which side is wanted.
+
 ## Coordinates
 
 Three nested boxes, and the middle one is the trick.
