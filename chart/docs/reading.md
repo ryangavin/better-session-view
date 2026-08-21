@@ -252,8 +252,10 @@ A block's **hue says what the note is doing in the key** — root, fifth, flat s
 the **letter on it says what to play**. Two different questions, and a bass player asks
 both: one to learn the shape of a song, the other to get through the next bar.
 
-The scheme is a step of a fifth to a step of the colour wheel, root at red, and it lives in
-[`core/src/chords.ts`](../../core/docs/chords.md) with the table and the argument for it.
+The scheme is the rainbow over the seven notes of the scale, with each accidental the blend
+of the two it sits between — 1 red, 3 yellow, 5 blue, 7 violet. It lives in
+[`core/src/chords.ts`](../../core/docs/chords.md) with the table, and with the version that
+went round the circle of fifths first and why it was worse.
 What matters here is that it is **the same twelve colours in every key**: the root of a song
 in Gm is the same red as the root of a song in D, so somebody who has learned the scheme
 reads function without being told the key. The root note also gets a ring round it, because
