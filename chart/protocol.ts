@@ -139,6 +139,15 @@ export interface ChartBassline {
   high: number;
   /** Whether the key names are spelled with flats, from the key the set states. */
   flats: boolean;
+  /**
+   * The pitch class the song's key is built on, or null when the set does not
+   * say — which is what turns the degree colouring off.
+   *
+   * A **root**, not a colour. The phone works the degree of each note out from
+   * it and looks the colour up, because a palette on the wire would be twelve
+   * colours repeated in every frame to say one number.
+   */
+  root: number | null;
   notes: BasslineNote[];
 }
 

@@ -1,4 +1,4 @@
-import { spellsFlat } from '../../core/src/chords.ts';
+import { keyRoot, spellsFlat } from '../../core/src/chords.ts';
 import type { BasslineNote, ChartBassline } from '../protocol.ts';
 import type { SetState } from './bridge.ts';
 
@@ -120,6 +120,7 @@ export function buildBassline(set: SetState): ChartBassline | null {
   if (!part) return null;
 
   const { track, clip } = part;
+  const key = keyOf(set);
   // Unwarped audio measures its loop in seconds, so it has no bars — and it has
   // no notes either, so this is belt and braces rather than a real case.
   if (clip.inSeconds) return null;
@@ -155,9 +156,11 @@ export function buildBassline(set: SetState): ChartBassline | null {
     beatsPerBar: beatsPerBar(clip),
     low: FLOOR,
     high: CEILING,
-    // Spelled to match the key the set already states, so the gutter reads Bb
-    // where the scene names say Bb.
-    flats: spellsFlat(keyOf(set)),
+    // Both from the key the set already states: the gutter reads Bb where the
+    // scene names say Bb, and the degrees are counted from the note the song is
+    // actually in rather than from whatever the bass player's lowest note was.
+    flats: spellsFlat(key),
+    root: keyRoot(key),
     notes,
   };
 }
@@ -210,5 +213,5 @@ export function basslineShape(line: ChartBassline | null): string {
   const notes = line.notes
     .map((note) => `${note.from}:${note.to}:${note.pitch}${note.folded ? 'f' : ''}`)
     .join(',');
-  return `${line.t}|${line.from}|${line.to}|${line.low}|${line.high}|${line.flats}|${notes}`;
+  return `${line.t}|${line.from}|${line.to}|${line.low}|${line.high}|${line.flats}|${line.root}|${notes}`;
 }

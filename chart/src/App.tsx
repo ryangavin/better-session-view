@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { hex } from '../../core/src/color.ts';
-import { isBlackKey, pitchName } from '../../core/src/chords.ts';
+import {
+  degreeColor,
+  degreeOf,
+  isBlackKey,
+  noteName,
+  pitchName,
+} from '../../core/src/chords.ts';
 import {
   formatSecondsLeft,
   loopBars,
@@ -271,6 +277,17 @@ function Wheel({
 }
 
 /**
+ * How wide a note has to be, as a percentage of the roll, before its name fits.
+ *
+ * A phone's grid is around three hundred pixels and two characters want fourteen
+ * of them, so anything under about five percent gets a clipped glyph instead of
+ * a label. The threshold is in percent rather than beats deliberately: the same
+ * eighth note is legible in a four-bar loop and a smear in a sixteen-bar one, so
+ * it is the drawn width that decides and not the duration.
+ */
+const LABEL_AT = 4.5;
+
+/**
  * The bass part, drawn the way Ableton's piano roll draws it.
  *
  * **A copy, not a chart of it.** Time runs left to right against the clip's own
@@ -288,6 +305,11 @@ function Wheel({
  * The window comes off the wire rather than being decided here, so every phone
  * in the room is looking at the same keyboard — and a part that leaves it
  * arrives already folded back into it and marked.
+ *
+ * **Colour is the degree and the text is the note.** A block's hue says what the
+ * note is doing in the key — root, fifth, flat seventh — and the letter on it
+ * says what to play. They are two different questions and a bass player asks
+ * both: one to learn the shape of a song, the other to get through the next bar.
  */
 function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | null }) {
   const head = useRef<HTMLDivElement | null>(null);
@@ -332,6 +354,7 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
 
   const rows = Math.max(1, line.high - line.low + 1);
   const pitches = Array.from({ length: rows }, (_, i) => line.high - i);
+  const degree = (pitch: number) => (line.root === null ? null : degreeOf(pitch, line.root));
   const bars = Math.max(1, Math.round(span / line.beatsPerBar));
   // Beat lines are detail, and detail stops helping once the bars are thin. A
   // sixteen-bar loop on a phone is twenty pixels a bar, where four more lines
@@ -343,10 +366,16 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
       <div className="keys">
         {pitches.map((pitch) => (
           <span key={pitch} className={`key ${isBlackKey(pitch) ? 'black' : 'white'}`}>
-            {/* Only the Cs, the way a piano roll is labelled. Every row named
-                is unreadable at this height and says nothing the keyboard
-                pattern beside it does not already. */}
-            {pitch % 12 === 0 ? pitchName(pitch, line.flats) : ''}
+            {/* Every white key, so a note can be read off its row without
+                counting up from the nearest C. The black keys stay blank: their
+                names are the two-character ones, and the pattern beside them
+                already says which is which. The Cs keep their octave, since
+                that is the only thing telling two of them apart. */}
+            {isBlackKey(pitch)
+              ? ''
+              : pitch % 12 === 0
+                ? pitchName(pitch, line.flats)
+                : noteName(pitch, line.flats)}
           </span>
         ))}
       </div>
@@ -371,20 +400,29 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
           ),
         )}
 
-        {line.notes.map((note) => (
-          <div
-            key={`${note.from}:${note.pitch}`}
-            className={`note ${note.folded ? 'folded' : ''}`}
-            style={{
-              left: `${(note.from / span) * 100}%`,
-              width: `${((note.to - note.from) / span) * 100}%`,
-              top: `${((line.high - note.pitch) / rows) * 100}%`,
-              height: `${100 / rows}%`,
-              background: hex(line.color),
-            }}
-            title={`${pitchName(note.pitch, line.flats)}${note.folded ? ' (octave)' : ''}`}
-          />
-        ))}
+        {line.notes.map((note) => {
+          const at = degree(note.pitch);
+          const width = ((note.to - note.from) / span) * 100;
+          return (
+            <div
+              key={`${note.from}:${note.pitch}`}
+              className={`note ${note.folded ? 'folded' : ''} ${at === 0 ? 'tonic' : ''}`}
+              style={{
+                left: `${(note.from / span) * 100}%`,
+                width: `${width}%`,
+                top: `${((line.high - note.pitch) / rows) * 100}%`,
+                height: `${100 / rows}%`,
+                // The track's colour until the set states a key, because a roll
+                // coloured against a root nobody gave is worse than a plain one:
+                // the colours would still look deliberate.
+                background: at === null ? hex(line.color) : degreeColor(at),
+              }}
+              title={`${pitchName(note.pitch, line.flats)}${note.folded ? ' (octave)' : ''}`}
+            >
+              {width >= LABEL_AT ? noteName(note.pitch, line.flats) : ''}
+            </div>
+          );
+        })}
 
         <div className="playhead" ref={head} />
       </div>

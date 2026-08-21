@@ -224,6 +224,37 @@ musical judgement stays in one place. The gutter labels **only the Cs**, the way
 is labelled: every row named is unreadable at this height and says nothing the
 black-and-white pattern beside it does not.
 
+### Colour is the degree, text is the note
+
+A block's **hue says what the note is doing in the key** — root, fifth, flat seventh — and
+the **letter on it says what to play**. Two different questions, and a bass player asks
+both: one to learn the shape of a song, the other to get through the next bar.
+
+The scheme is a step of a fifth to a step of the colour wheel, root at red, and it lives in
+[`core/src/chords.ts`](../../core/docs/chords.md) with the table and the argument for it.
+What matters here is that it is **the same twelve colours in every key**: the root of a song
+in Gm is the same red as the root of a song in D, so somebody who has learned the scheme
+reads function without being told the key. The root note also gets a ring round it, because
+the root and the fifth are the two most-read degrees and they land a step apart in hue.
+
+The key comes from the set, through `keyRoot`. **A song whose scenes state no key gets no
+colouring** — the roll falls back to the track's own colour in Live. That is deliberate: a
+roll coloured against a root nobody gave is worse than a plain one, because the colours
+would still look deliberate.
+
+Names go on the blocks that are wide enough to hold them, which is about five percent of the
+roll's width. The threshold is in **percent rather than beats**: the same eighth note is
+legible in a four-bar loop and a smear in a sixteen-bar one, so what decides is the width it
+is actually drawn at. A block too narrow to label is still the right colour in the right row,
+and the gutter is what names it.
+
+**Every white key is labelled** in that gutter, not only the Cs. Ableton labels the Cs
+because its roll scrolls and spans the whole keyboard; this one is twenty-five fixed rows
+that somebody reads across a dark stage, and counting up from the nearest C is exactly the
+work a chart exists to remove. The black keys stay blank — their names are the
+two-character ones, and the pattern beside them already says which is which. The Cs keep
+their octave, since that is the only thing telling two of them apart.
+
 ### Reading it
 
 Notes are a **read, not a watch** — the LOM has no event for a clip's contents that would

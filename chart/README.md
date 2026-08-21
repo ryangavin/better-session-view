@@ -2,8 +2,8 @@
 
 What the band reads. A one-screen view of the song the set is playing — its name, its key,
 its tempo with a button either side of it, where every playing loop has got to, and the bass
-part as a piano roll, copied note for note out of the clip — served to everyone's phone,
-with no dependencies and nothing to install.
+part as a piano roll, copied note for note out of the clip and coloured by scale degree —
+served to everyone's phone, with no dependencies and nothing to install.
 
 ```
 Live ─ SessionBridge :17800 ─WS─> chart server :18000 ─SSE─> phones
