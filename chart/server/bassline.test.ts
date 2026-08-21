@@ -66,7 +66,7 @@ function setWith(clips: Clip[]): SetState {
 }
 
 /** A four-bar bass line, one note a bar, as `get_all_notes_extended` reports it. */
-const LINE: BSV.ClipNote[] = [38, 36, 33, 31].map((pitch, bar) => ({
+const LINE: BSV.ClipNote[] = [50, 48, 45, 43].map((pitch, bar) => ({
   pitch,
   start: bar * 4,
   duration: 3.5,
@@ -80,10 +80,10 @@ describe('buildBassline', () => {
 
     expect(out).toMatchObject({ t: 0, name: 'Bass', from: 0, to: 16, beatsPerBar: 4 });
     expect(out?.notes).toEqual([
-      { from: 0, to: 3.5, pitch: 38 },
-      { from: 4, to: 7.5, pitch: 36 },
-      { from: 8, to: 11.5, pitch: 33 },
-      { from: 12, to: 15.5, pitch: 31 },
+      { from: 0, to: 3.5, pitch: 50 },
+      { from: 4, to: 7.5, pitch: 48 },
+      { from: 8, to: 11.5, pitch: 45 },
+      { from: 12, to: 15.5, pitch: 43 },
     ]);
   });
 
@@ -157,40 +157,41 @@ describe('buildBassline', () => {
   it('cuts a note off where the loop does', () => {
     const out = buildBassline(
       setWith([
-        { t: 0, name: 'Bass', slot: 0, loopEnd: 8, notes: [{ pitch: 33, start: 6, duration: 8 }] },
+        { t: 0, name: 'Bass', slot: 0, loopEnd: 8, notes: [{ pitch: 45, start: 6, duration: 8 }] },
       ]),
     );
-    expect(out?.notes).toEqual([{ from: 6, to: 8, pitch: 33 }]);
+    expect(out?.notes).toEqual([{ from: 6, to: 8, pitch: 45 }]);
   });
 
   it('draws two octaves up from a five-string low B, always', () => {
     const out = buildBassline(
       setWith([{ t: 0, name: 'Bass', slot: 0, loopEnd: 16, notes: LINE }]),
     );
-    // B-1 to B1 in Live's naming: the whole of a normal bass part, in the same
-    // rows whatever is playing.
-    expect(out).toMatchObject({ low: 23, high: 47 });
+    // B0 to B2 in Live's naming — where the low B of these clips actually
+    // sounds. The whole of a normal bass part, in the same rows whatever is
+    // playing.
+    expect(out).toMatchObject({ low: 35, high: 59 });
     expect(out?.notes.every((note) => note.folded === undefined)).toBe(true);
   });
 
   it('folds a note that goes off the top into the keyboard, and says so', () => {
     const out = buildBassline(
       setWith([
-        { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 55, start: 0, duration: 1 }] },
+        { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 67, start: 0, duration: 1 }] },
       ]),
     );
 
-    expect(out).toMatchObject({ low: 23, high: 47 });
-    expect(out?.notes).toEqual([{ from: 0, to: 1, pitch: 43, folded: true }]);
+    expect(out).toMatchObject({ low: 35, high: 59 });
+    expect(out?.notes).toEqual([{ from: 0, to: 1, pitch: 55, folded: true }]);
   });
 
   it('folds one that goes off the bottom the other way', () => {
     const out = buildBassline(
       setWith([
-        { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 20, start: 0, duration: 1 }] },
+        { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 32, start: 0, duration: 1 }] },
       ]),
     );
-    expect(out?.notes).toEqual([{ from: 0, to: 1, pitch: 32, folded: true }]);
+    expect(out?.notes).toEqual([{ from: 0, to: 1, pitch: 44, folded: true }]);
   });
 
   it('folds by whole octaves rather than clamping to the edge', () => {
@@ -204,15 +205,15 @@ describe('buildBassline', () => {
           slot: 0,
           loopEnd: 4,
           notes: [
-            { pitch: 60, start: 0, duration: 1 },
-            { pitch: 64, start: 1, duration: 1 },
-            { pitch: 67, start: 2, duration: 1 },
+            { pitch: 72, start: 0, duration: 1 },
+            { pitch: 76, start: 1, duration: 1 },
+            { pitch: 79, start: 2, duration: 1 },
           ],
         },
       ]),
     );
 
-    expect(out?.notes.map((note) => note.pitch)).toEqual([36, 40, 43]);
+    expect(out?.notes.map((note) => note.pitch)).toEqual([48, 52, 55]);
   });
 
   it('leaves the edges of the keyboard alone', () => {
@@ -224,15 +225,15 @@ describe('buildBassline', () => {
           slot: 0,
           loopEnd: 4,
           notes: [
-            { pitch: 23, start: 0, duration: 1 },
-            { pitch: 47, start: 1, duration: 1 },
+            { pitch: 35, start: 0, duration: 1 },
+            { pitch: 59, start: 1, duration: 1 },
           ],
         },
       ]),
     );
     expect(out?.notes).toEqual([
-      { from: 0, to: 1, pitch: 23 },
-      { from: 1, to: 2, pitch: 47 },
+      { from: 0, to: 1, pitch: 35 },
+      { from: 1, to: 2, pitch: 59 },
     ]);
   });
 
@@ -294,14 +295,14 @@ describe('basslineShape', () => {
     const inside = basslineShape(
       buildBassline(
         setWith([
-          { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 43, start: 0, duration: 1 }] },
+          { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 59, start: 0, duration: 1 }] },
         ]),
       ),
     );
     const above = basslineShape(
       buildBassline(
         setWith([
-          { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 55, start: 0, duration: 1 }] },
+          { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 71, start: 0, duration: 1 }] },
         ]),
       ),
     );

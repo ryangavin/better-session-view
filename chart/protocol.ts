@@ -85,6 +85,10 @@ export interface BasslineNote {
    * keyboard is two octaves because that is where a bass line lives, and a part
    * that leaves it is rare enough to be worth marking rather than silently
    * redrawing. The name is still right; the octave is not.
+   *
+   * The roll draws this as a hatch. Never as a fade — a piano roll that dims a
+   * note reads as velocity to anybody who has used one, and this is not
+   * velocity.
    */
   folded?: boolean;
 }

@@ -415,7 +415,10 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
                 // The track's colour until the set states a key, because a roll
                 // coloured against a root nobody gave is worse than a plain one:
                 // the colours would still look deliberate.
-                background: at === null ? hex(line.color) : degreeColor(at),
+                //
+                // `backgroundColor` and not `background`, so the hatch that
+                // marks a folded note can sit on top as a background image.
+                backgroundColor: at === null ? hex(line.color) : degreeColor(at),
               }}
               title={`${pitchName(note.pitch, line.flats)}${note.folded ? ' (octave)' : ''}`}
             >

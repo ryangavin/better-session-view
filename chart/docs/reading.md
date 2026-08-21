@@ -197,9 +197,15 @@ oldest phone in the room.
 
 ### The keyboard is fixed, and it is a bass's
 
-**Two octaves up from a five-string's low B** — 23 to 47, which Live calls B-1 to B1. Real
+**Two octaves up from a five-string's low B** — 35 to 59, which Live calls B0 to B2. Real
 pitches, not the twelve pitch-class rows this used to fold everything into, and the same
 twenty-five rows on every phone in the room whatever is playing.
+
+The floor is **where that B actually sounds, not where the arithmetic says it should**. A
+five-string's low B is nominally 23, an octave below this; the set's own clips put it at 35,
+and a roll floored at 23 drew every part above its middle line with the bottom half empty.
+Which of the instrument, the clips or the plugin carries the octave does not matter to a
+chart — the MIDI is what it draws, so the MIDI is what it was measured against.
 
 Pitch classes read well for chord shapes and badly for a bass line. An octave jump *is* the
 gesture in a bass part, and folding every one of them away draws a straight line through the
@@ -217,7 +223,13 @@ Folding is the least-bad way to be wrong here. Cropping hides something that is 
 played. Clamping to the edge changes what the note *is*, and a run of clamps flattens a line
 into a bar along the top of the roll. An octave is the interval a bass player is least
 surprised to read wrong, because the note name survives it — so the note moves, and it is
-drawn faded and outlined so nobody takes the octave off a note that had one put on it.
+hatched so nobody takes the octave off a note that had one put on it.
+
+The mark is a **hatch and not a fade**, and that is a rule rather than a preference: nothing
+on this roll varies a note's opacity, because a piano roll that dims some notes reads as
+velocity to everybody who has used one. It is not velocity — the roll does not draw velocity
+at all — and a mark that gets read as a different fact than the one it means is worse than
+no mark.
 
 The window is decided on the server and sent rather than hardcoded on the phone, so the
 musical judgement stays in one place. The gutter labels **only the Cs**, the way a piano roll

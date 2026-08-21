@@ -18,14 +18,21 @@ import type { SetState } from './bridge.ts';
 const BASS = /bass/i;
 
 /**
- * The bottom of the roll: the low B of a five-string, which Live calls B-1.
+ * The bottom of the roll: the low B of a five-string, which Live calls B0.
+ *
+ * **Where that B actually sounds, not where the arithmetic says it should.** A
+ * five-string's low B is nominally 23, an octave below this, and reading the
+ * set's own clips is what settled it: the B at the bottom of the parts is 35,
+ * so a roll floored at 23 spends its bottom half empty and draws the whole part
+ * above the middle line. Which of the instrument, the clips or the plugin
+ * carries the octave does not matter to a chart — the MIDI is what it draws.
  *
  * A floor rather than a fit. Where the low note of a part *is* moves between
  * songs, and rows that move with it would make two songs with the same shape
  * look different — the point of a fixed keyboard is that a fifth is the same
  * distance up the screen every time.
  */
-const FLOOR = 23;
+const FLOOR = 35;
 
 /** How much of the keyboard the roll shows. Two octaves is a bass. */
 const OCTAVES = 2;
