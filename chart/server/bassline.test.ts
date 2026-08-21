@@ -163,40 +163,33 @@ describe('buildBassline', () => {
     expect(out?.notes).toEqual([{ from: 6, to: 8, pitch: 45 }]);
   });
 
-  it('draws two octaves up from a five-string low B, always', () => {
+  it('sits the keyboard on the lowest note of the part', () => {
     const out = buildBassline(
       setWith([{ t: 0, name: 'Bass', slot: 0, loopEnd: 16, notes: LINE }]),
     );
-    // B0 to B2 in Live's naming — where the low B of these clips actually
-    // sounds. The whole of a normal bass part, in the same rows whatever is
-    // playing.
-    expect(out).toMatchObject({ low: 35, high: 59 });
-    expect(out?.notes.every((note) => note.folded === undefined)).toBe(true);
+    // LINE bottoms out at 43, so that is the bottom row and two octaves sit on
+    // top of it. Nothing about a five-string's nominal low B comes into it: the
+    // octave a part is written at is a fact about somebody's rig.
+    expect(out).toMatchObject({ low: 43, high: 67 });
   });
 
-  it('folds a note that goes off the top into the keyboard, and says so', () => {
-    const out = buildBassline(
+  it('moves the window with the part, and never resizes it', () => {
+    const down = buildBassline(
       setWith([
-        { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 67, start: 0, duration: 1 }] },
+        { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 28, start: 0, duration: 1 }] },
       ]),
     );
+    expect(down).toMatchObject({ low: 28, high: 52 });
 
-    expect(out).toMatchObject({ low: 35, high: 59 });
-    expect(out?.notes).toEqual([{ from: 0, to: 1, pitch: 55, folded: true }]);
-  });
-
-  it('folds one that goes off the bottom the other way', () => {
-    const out = buildBassline(
+    const up = buildBassline(
       setWith([
-        { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 32, start: 0, duration: 1 }] },
+        { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 52, start: 0, duration: 1 }] },
       ]),
     );
-    expect(out?.notes).toEqual([{ from: 0, to: 1, pitch: 44, folded: true }]);
+    expect(up).toMatchObject({ low: 52, high: 76 });
   });
 
-  it('folds by whole octaves rather than clamping to the edge', () => {
-    // A clamp would change what the note is, and a run of them would flatten a
-    // line into a bar along the top of the roll.
+  it('folds a part wider than the keyboard down into it, silently', () => {
     const out = buildBassline(
       setWith([
         {
@@ -205,15 +198,46 @@ describe('buildBassline', () => {
           slot: 0,
           loopEnd: 4,
           notes: [
-            { pitch: 72, start: 0, duration: 1 },
-            { pitch: 76, start: 1, duration: 1 },
+            { pitch: 40, start: 0, duration: 1 },
+            { pitch: 64, start: 1, duration: 1 },
+            { pitch: 76, start: 2, duration: 1 },
+          ],
+        },
+      ]),
+    );
+
+    // 76 is a semitone over the top; it comes down an octave, and nothing on
+    // the note says so — what a bass player needs is which notes are valid.
+    expect(out).toMatchObject({ low: 40, high: 64 });
+    expect(out?.notes).toEqual([
+      { from: 0, to: 1, pitch: 40 },
+      { from: 1, to: 2, pitch: 64 },
+      { from: 2, to: 3, pitch: 64 },
+    ]);
+  });
+
+  it('folds by whole octaves rather than clamping to the edge', () => {
+    // A clamp would change what the note is, and a run of clamps would flatten
+    // a line into a bar along the top of the roll.
+    const out = buildBassline(
+      setWith([
+        {
+          t: 0,
+          name: 'Bass',
+          slot: 0,
+          loopEnd: 8,
+          notes: [
+            { pitch: 36, start: 0, duration: 1 },
+            { pitch: 74, start: 1, duration: 1 },
             { pitch: 79, start: 2, duration: 1 },
           ],
         },
       ]),
     );
 
-    expect(out?.notes.map((note) => note.pitch)).toEqual([48, 52, 55]);
+    // The keyboard is 36 to 60. Clamping would put both high notes on 60 and
+    // draw a flat bar along the top; folding keeps them a fourth apart.
+    expect(out?.notes.map((note) => note.pitch)).toEqual([36, 50, 55]);
   });
 
   it('leaves the edges of the keyboard alone', () => {
@@ -291,23 +315,27 @@ describe('basslineShape', () => {
     expect(basslineShape(buildBassline(moved))).toBe(basslineShape(buildBassline(still)));
   });
 
-  it('notices a note being folded, which is not the same note', () => {
-    const inside = basslineShape(
-      buildBassline(
-        setWith([
-          { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 59, start: 0, duration: 1 }] },
-        ]),
-      ),
+  it('notices the keyboard moving under an unchanged shape', () => {
+    // The same figure an octave down is the same note pattern and a different
+    // roll, because every row it is drawn on has changed.
+    const here = basslineShape(
+      buildBassline(setWith([{ t: 0, name: 'Bass', slot: 0, loopEnd: 16, notes: LINE }])),
     );
-    const above = basslineShape(
+    const lower = basslineShape(
       buildBassline(
         setWith([
-          { t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: [{ pitch: 71, start: 0, duration: 1 }] },
+          {
+            t: 0,
+            name: 'Bass',
+            slot: 0,
+            loopEnd: 16,
+            notes: LINE.map((note) => ({ ...note, pitch: note.pitch - 12 })),
+          },
         ]),
       ),
     );
 
-    expect(above).not.toBe(inside);
+    expect(lower).not.toBe(here);
   });
 
   it('notices a different part, including one note moving', () => {

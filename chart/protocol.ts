@@ -75,22 +75,14 @@ export interface BasslineNote {
   to: number;
   /**
    * MIDI note number, 60 being the C Live calls C3 — and the note the roll
-   * *draws*, which is the one Live holds unless `folded` says otherwise.
+   * *draws*, which is what Live holds unless the part spans more than the
+   * keyboard, in which case it has been dropped whole octaves to fit.
+   *
+   * Silently, and that is the decision: a bass player needs to know which notes
+   * are valid, and a chart that annotates its own compromises is talking about
+   * itself.
    */
   pitch: number;
-  /**
-   * Set when the note was moved by whole octaves to fit the roll's keyboard.
-   *
-   * **Absent on every note of a normal bass part**, which is the point: the
-   * keyboard is two octaves because that is where a bass line lives, and a part
-   * that leaves it is rare enough to be worth marking rather than silently
-   * redrawing. The name is still right; the octave is not.
-   *
-   * The roll draws this as a hatch. Never as a fade — a piano roll that dims a
-   * note reads as velocity to anybody who has used one, and this is not
-   * velocity.
-   */
-  folded?: boolean;
 }
 
 /**
@@ -132,12 +124,13 @@ export interface ChartBassline {
   /**
    * The lowest and highest MIDI note the roll draws, inclusive.
    *
-   * **Fixed, and decided here rather than on the phone**, because it is a
-   * musical judgement: a five-string's low B and two octaves up from it, which
-   * is where a bass line lives. It never moves — a keyboard that resized to fit
-   * would make two songs of the same shape look different, and the whole use of
-   * a fixed one is that a fifth is the same distance up the screen every time.
-   * A note outside it is folded into it rather than the roll growing.
+   * **Two octaves, sitting on the part's own low note**, and decided here rather
+   * than on the phone. Always two, so a row is the same height in every song and
+   * a fifth is the same distance up the screen; but *where* those two octaves
+   * are follows the material, because the octave a bass part is written at is a
+   * fact about somebody's rig rather than about music, and a fixed window
+   * anchored on the theoretical low B left real parts hanging off the middle
+   * line.
    */
   low: number;
   high: number;

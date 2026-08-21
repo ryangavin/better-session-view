@@ -303,8 +303,8 @@ const LABEL_AT = 4.5;
  * away draws a straight line through the middle of it.
  *
  * The window comes off the wire rather than being decided here, so every phone
- * in the room is looking at the same keyboard — and a part that leaves it
- * arrives already folded back into it and marked.
+ * in the room is looking at the same keyboard — and a part wider than two
+ * octaves arrives already folded into it.
  *
  * **Colour is the degree and the text is the note.** A block's hue says what the
  * note is doing in the key — root, fifth, flat seventh — and the letter on it
@@ -406,7 +406,7 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
           return (
             <div
               key={`${note.from}:${note.pitch}`}
-              className={`note ${note.folded ? 'folded' : ''} ${at === 0 ? 'tonic' : ''}`}
+              className={`note ${at === 0 ? 'tonic' : ''}`}
               style={{
                 left: `${(note.from / span) * 100}%`,
                 width: `${width}%`,
@@ -415,12 +415,9 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
                 // The track's colour until the set states a key, because a roll
                 // coloured against a root nobody gave is worse than a plain one:
                 // the colours would still look deliberate.
-                //
-                // `backgroundColor` and not `background`, so the hatch that
-                // marks a folded note can sit on top as a background image.
                 backgroundColor: at === null ? hex(line.color) : degreeColor(at),
               }}
-              title={`${pitchName(note.pitch, line.flats)}${note.folded ? ' (octave)' : ''}`}
+              title={pitchName(note.pitch, line.flats)}
             >
               {width >= LABEL_AT ? noteName(note.pitch, line.flats) : ''}
             </div>
@@ -439,6 +436,49 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
   );
 }
 
+/** Gap between wheels, in pixels. Kept here because the fit has to subtract it. */
+const SHELF_GAP = 10;
+
+/** Room under each wheel for its track's name. */
+const SHELF_NAME = 15;
+
+/**
+ * How many columns to lay the wheels out in, and how big to draw them.
+ *
+ * **The shelf is a fixed size and the wheels fit themselves into it.** The
+ * alternative — wheels of a set size that wrap when they run out of room — is
+ * what this replaces, and its problem was not that it wrapped: it was that the
+ * shelf grew a line when it did, so firing a scene with one more track in it
+ * moved everything below. On a phone on a music stand, a layout that jumps is a
+ * layout somebody has to re-find mid-song.
+ *
+ * So the wheels take one row while a row's worth of width leaves them bigger
+ * than half the shelf is tall, and two rows after that. That crossover is not a
+ * track count: it falls out of the shelf's own proportions, since a second row
+ * halves the height a wheel can use and doubles the width. Below it, splitting
+ * makes every wheel *smaller* — which is why the obvious "wrap when it gets
+ * tight" rule makes six wheels worse rather than better.
+ */
+function fit(count: number, box: { width: number; height: number } | null): {
+  columns: number;
+  wheel: number;
+} {
+  if (count === 0 || !box || box.width <= 0 || box.height <= 0) {
+    return { columns: Math.max(1, count), wheel: 0 };
+  }
+
+  const across = (columns: number, rows: number) => {
+    const wide = (box.width - SHELF_GAP * (columns - 1)) / columns;
+    const tall = (box.height - SHELF_GAP * (rows - 1)) / rows - SHELF_NAME;
+    return Math.max(0, Math.floor(Math.min(wide, tall)));
+  };
+
+  const one = across(count, 1);
+  const columns = Math.ceil(count / 2);
+  const two = across(columns, 2);
+  return two > one ? { columns, wheel: two } : { columns: count, wheel: one };
+}
+
 /**
  * Every playing track's loop, turning.
  *
@@ -453,6 +493,23 @@ function Loops({ anchor }: { anchor: Anchor | null }) {
   const texts = useRef(new Map<number, HTMLSpanElement>());
   const held = useRef<Anchor | null>(anchor);
   held.current = anchor;
+  const [box, setBox] = useState<{ width: number; height: number } | null>(null);
+  const shelf = useRef<HTMLOListElement | null>(null);
+
+  // Measured rather than guessed, because the answer depends on the shape of
+  // the space and not on the phone: the same six wheels want one row in
+  // landscape and two in a narrow portrait, and a breakpoint written in track
+  // counts would be wrong on one of them.
+  useEffect(() => {
+    const el = shelf.current;
+    if (!el) return;
+    const watch = new ResizeObserver(([entry]) => {
+      const size = entry?.contentRect;
+      if (size) setBox({ width: size.width, height: size.height });
+    });
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, []);
 
   useEffect(() => {
     let frame = 0;
@@ -480,10 +537,23 @@ function Loops({ anchor }: { anchor: Anchor | null }) {
   }, []);
 
   const tracks = anchor?.loops.tracks ?? [];
-  if (tracks.length === 0) return null;
+  const shape = fit(tracks.length, box);
 
+  // The shelf is rendered whatever happens, and holds its height when it is
+  // empty. A block that appears and disappears with the clips would move the
+  // roll under somebody's eyes every time a scene changed, which is the whole
+  // complaint this layout answers.
   return (
-    <ol className="loops">
+    <ol
+      className="loops"
+      ref={shelf}
+      style={
+        {
+          '--columns': shape.columns,
+          '--wheel': `${shape.wheel}px`,
+        } as React.CSSProperties
+      }
+    >
       {tracks.map((track) => (
         <Wheel
           key={track.t}

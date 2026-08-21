@@ -139,6 +139,28 @@ loop. A clip that isn't looping fills once and shows a countdown instead; one be
 recorded into shows its length so far. A group track is left out, because it carries no
 clip of its own and would be a second wheel turning in lockstep with the ones beneath it.
 
+### The shelf is a fixed size and the wheels fit into it
+
+The wheels were a set size that wrapped when they ran out of room, and the problem was not
+the wrapping — it was that the block **grew a line** when it did. Firing a scene with one
+more track in it moved the roll, the tempo and everything else down the screen. On a phone
+on a music stand, a layout that jumps is a layout somebody has to find again mid-song.
+
+So the shelf is a fixed height whatever is playing, including when **nothing** is, and the
+wheels size themselves to fill it. One row while a row's worth of width leaves them bigger
+than half the shelf is tall; two rows after that.
+
+That crossover is **not a track count**. It falls out of the shelf's own proportions: a
+second row halves the height a wheel can use and doubles the width available to it, so
+splitting early makes every wheel *smaller*. On a phone-width shelf it lands at eight, where
+one row gives 36px wheels and two give 40px — and at five, the obvious "wrap when it gets
+tight" rule would have traded 64px wheels for 40px ones.
+
+Which means the shelf is **measured, not guessed**. A `ResizeObserver` on the list feeds its
+width and height into the fit, because the same six wheels want one row in landscape and two
+in a narrow portrait, and a breakpoint written in track counts would be wrong on one of
+them.
+
 ## The tempo, and the two buttons
 
 The big number is what **Live is actually running at**, not what the song's name claims,
@@ -195,46 +217,34 @@ Times go on the wire **relative to the loop's start**, because that is what the 
 drawn from, and doing the subtraction once on the server beats doing it per note on the
 oldest phone in the room.
 
-### The keyboard is fixed, and it is a bass's
+### The keyboard is two octaves, sitting on the part
 
-**Two octaves up from a five-string's low B** — 35 to 59, which Live calls B0 to B2. Real
-pitches, not the twelve pitch-class rows this used to fold everything into, and the same
-twenty-five rows on every phone in the room whatever is playing.
-
-The floor is **where that B actually sounds, not where the arithmetic says it should**. A
-five-string's low B is nominally 23, an octave below this; the set's own clips put it at 35,
-and a roll floored at 23 drew every part above its middle line with the bottom half empty.
-Which of the instrument, the clips or the plugin carries the octave does not matter to a
-chart — the MIDI is what it draws, so the MIDI is what it was measured against.
+**Two octaves, anchored on the lowest note in the loop.** Real pitches, not the twelve
+pitch-class rows this used to fold everything into, and always the same twenty-five rows —
+what changes between songs is where the window *is*, never how tall a row is.
 
 Pitch classes read well for chord shapes and badly for a bass line. An octave jump *is* the
 gesture in a bass part, and folding every one of them away draws a straight line through the
-middle of it; so does a walk-up that crosses a C. The bottom of the range is a five-string's
-because a five-string is what gets played, and a roll starting at a four-string's open E
-would put the notes that most need reading off the bottom of it.
+middle of it; so does a walk-up that crosses a C.
 
-**It never resizes.** A note above or below is moved by whole octaves until it fits, and
-marked as moved. Growing the keyboard to fit was the first version of this and it was wrong
-in a specific way: it makes every other row thinner to accommodate a case that mostly never
-arrives, and it means two songs of the same shape look different — the whole use of a fixed
-keyboard is that a fifth is the same distance up the screen every time.
+The anchor was a **fixed floor first, and twice wrong**: a five-string's low B at 23, then at
+35 when a real set turned out to put it there. That is the tell. The octave a bass part is
+written at is a fact about somebody's rig — the instrument, the clip, a plugin transposing —
+and not about music, so no constant is ever going to be right for every set. Anchoring on
+the lowest note played is right for all of them, and it means the roll always fills from the
+bottom instead of hanging off the middle line with dead space underneath.
 
-Folding is the least-bad way to be wrong here. Cropping hides something that is being
-played. Clamping to the edge changes what the note *is*, and a run of clamps flattens a line
-into a bar along the top of the roll. An octave is the interval a bass player is least
-surprised to read wrong, because the note name survives it — so the note moves, and it is
-hatched so nobody takes the octave off a note that had one put on it.
+A part wider than two octaves is folded down into the window by whole octaves — never
+clamped to the edge, which would change what the note is and flatten a run into a bar along
+the top. **The fold is silent.** There is no mark on the note and no flag on the wire: what a
+bass player needs from a chart is which notes are valid, and a chart that annotates its own
+compromises is talking about itself. It was marked at first, with a fade, which also taught
+the second half of the rule — **nothing on this roll varies a note's opacity**, because a
+piano roll that dims a note reads as velocity to everybody who has used one, and this roll
+does not draw velocity at all.
 
-The mark is a **hatch and not a fade**, and that is a rule rather than a preference: nothing
-on this roll varies a note's opacity, because a piano roll that dims some notes reads as
-velocity to everybody who has used one. It is not velocity — the roll does not draw velocity
-at all — and a mark that gets read as a different fact than the one it means is worse than
-no mark.
-
-The window is decided on the server and sent rather than hardcoded on the phone, so the
-musical judgement stays in one place. The gutter labels **only the Cs**, the way a piano roll
-is labelled: every row named is unreadable at this height and says nothing the
-black-and-white pattern beside it does not.
+The window is decided on the server and sent rather than worked out on the phone, so the
+musical judgement stays in one place.
 
 ### Colour is the degree, text is the note
 
@@ -261,9 +271,9 @@ is actually drawn at. A block too narrow to label is still the right colour in t
 and the gutter is what names it.
 
 **Every white key is labelled** in that gutter, not only the Cs. Ableton labels the Cs
-because its roll scrolls and spans the whole keyboard; this one is twenty-five fixed rows
-that somebody reads across a dark stage, and counting up from the nearest C is exactly the
-work a chart exists to remove. The black keys stay blank — their names are the
+because its roll scrolls and spans the whole keyboard; this one is twenty-five rows read
+across a dark stage, and counting up from the nearest C is exactly the work a chart exists to
+remove. The black keys stay blank — their names are the
 two-character ones, and the pattern beside them already says which is which. The Cs keep
 their octave, since that is the only thing telling two of them apart.
 

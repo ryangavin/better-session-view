@@ -17,28 +17,8 @@ import type { SetState } from './bridge.ts';
 /** Which track carries the bass. Named, because nothing else in a set says. */
 const BASS = /bass/i;
 
-/**
- * The bottom of the roll: the low B of a five-string, which Live calls B0.
- *
- * **Where that B actually sounds, not where the arithmetic says it should.** A
- * five-string's low B is nominally 23, an octave below this, and reading the
- * set's own clips is what settled it: the B at the bottom of the parts is 35,
- * so a roll floored at 23 spends its bottom half empty and draws the whole part
- * above the middle line. Which of the instrument, the clips or the plugin
- * carries the octave does not matter to a chart — the MIDI is what it draws.
- *
- * A floor rather than a fit. Where the low note of a part *is* moves between
- * songs, and rows that move with it would make two songs with the same shape
- * look different — the point of a fixed keyboard is that a fifth is the same
- * distance up the screen every time.
- */
-const FLOOR = 35;
-
 /** How much of the keyboard the roll shows. Two octaves is a bass. */
 const OCTAVES = 2;
-
-/** The top of the roll, inclusive — so both edges of it are a B. */
-const CEILING = FLOOR + 12 * OCTAVES;
 
 /** Beats to the bar, from a clip's own signature. Live counts in quarter notes. */
 function beatsPerBar(clip: BSV.PlayingClip): number {
@@ -89,24 +69,41 @@ function bassPart(set: SetState): Part | null {
 }
 
 /**
- * A note moved by whole octaves until it is on the keyboard.
+ * The stretch of keyboard to draw: two octaves, sitting on the part's low note.
  *
- * **The keyboard never grows.** A bass part outside two octaves is rare enough
- * to be worth handling badly on purpose: the alternatives are cropping the note,
- * which hides something that is being played, or widening the roll, which makes
- * every other row thinner to accommodate a case that mostly never arrives. An
- * octave is the interval a bass player is least surprised to read wrong — the
- * note name is still the note name — so it moves and gets marked.
+ * **The part decides where the window is, not the other way round.** The low B
+ * of a five-string is a fact about an instrument and not about a set — clips get
+ * written an octave up, plugins transpose, and a roll anchored on the
+ * theoretical note drew a real part hanging off the middle line with the bottom
+ * half empty. Anchoring on the lowest note played means the roll always fills,
+ * whatever the material is doing.
+ *
+ * Two octaves stays fixed, so what changes between songs is where the window
+ * *is* and never how tall a row is. A note above the window is folded down into
+ * it, silently: what a bass player needs from a chart is which notes are valid,
+ * and being told that one of them was moved to fit is the chart talking about
+ * itself.
+ */
+function keyboard(notes: readonly BSV.ClipNote[]): { low: number; high: number } {
+  let low = notes[0]!.pitch;
+  for (const note of notes) if (note.pitch < low) low = note.pitch;
+  return { low, high: low + 12 * OCTAVES };
+}
+
+/**
+ * A note dropped by whole octaves until it is on the keyboard.
  *
  * Whole octaves rather than a clamp to the edge, because a clamp changes what
- * the note *is*, and a run of them would flatten a line into a bar along the top
- * of the roll.
+ * the note *is*, and a run of clamps would flatten a line into a bar along the
+ * top of the roll. An octave keeps the note name, which is the part being read.
+ *
+ * Only ever downwards: the window sits on the lowest note, so nothing can fall
+ * off the bottom of it.
  */
-function fold(pitch: number): { pitch: number; folded: boolean } {
+function fold(pitch: number, high: number): number {
   let at = pitch;
-  while (at > CEILING) at -= 12;
-  while (at < FLOOR) at += 12;
-  return { pitch: at, folded: at !== pitch };
+  while (at > high) at -= 12;
+  return at;
 }
 
 /**
@@ -136,22 +133,25 @@ export function buildBassline(set: SetState): ChartBassline | null {
   const to = clip.loopEnd;
   if (!(to > from)) return null;
 
-  const notes: BasslineNote[] = [];
+  // Sounding notes first, at their real pitches, because the window is measured
+  // from them — folding before knowing where the keyboard is would move a note
+  // and then anchor to where it was moved to.
+  const sounding: BSV.ClipNote[] = [];
   for (const note of part.notes) {
     if (note.start < from || note.start >= to) continue;
-    const end = Math.min(to, note.start + note.duration);
-    if (!(end > note.start)) continue;
-    const on = fold(note.pitch);
-    notes.push({
-      from: note.start - from,
-      to: end - from,
-      pitch: on.pitch,
-      ...(on.folded ? { folded: true } : {}),
-    });
+    if (!(Math.min(to, note.start + note.duration) > note.start)) continue;
+    sounding.push(note);
   }
   // Every note outside the loop bracket. Nothing to draw, and an empty roll
   // looks like a bug where no roll looks like no roll.
-  if (notes.length === 0) return null;
+  if (sounding.length === 0) return null;
+
+  const { low, high } = keyboard(sounding);
+  const notes: BasslineNote[] = sounding.map((note) => ({
+    from: note.start - from,
+    to: Math.min(to, note.start + note.duration) - from,
+    pitch: fold(note.pitch, high),
+  }));
   notes.sort((a, b) => a.from - b.from || a.pitch - b.pitch);
 
   return {
@@ -161,8 +161,8 @@ export function buildBassline(set: SetState): ChartBassline | null {
     from,
     to,
     beatsPerBar: beatsPerBar(clip),
-    low: FLOOR,
-    high: CEILING,
+    low,
+    high,
     // Both from the key the set already states: the gutter reads Bb where the
     // scene names say Bb, and the degrees are counted from the note the song is
     // actually in rather than from whatever the bass player's lowest note was.
@@ -217,8 +217,6 @@ export function playingClips(set: SetState): Array<{ t: number; s: number }> {
 /** What would make a phone redraw the roll, ignoring where the playhead is. */
 export function basslineShape(line: ChartBassline | null): string {
   if (!line) return '';
-  const notes = line.notes
-    .map((note) => `${note.from}:${note.to}:${note.pitch}${note.folded ? 'f' : ''}`)
-    .join(',');
+  const notes = line.notes.map((note) => `${note.from}:${note.to}:${note.pitch}`).join(',');
   return `${line.t}|${line.from}|${line.to}|${line.low}|${line.high}|${line.flats}|${line.root}|${notes}`;
 }
