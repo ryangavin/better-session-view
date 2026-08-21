@@ -23,7 +23,7 @@ export const EVENTS_PATH = '/events';
 export const TEMPO_PATH = '/tempo';
 
 /**
- * The two SSE event names, because the two payloads move at different rates.
+ * The SSE event names, because the payloads move at different rates.
  *
  * A chart changes when somebody fires something. Loop positions change
  * continuously, and Live reports them at 20 Hz. Putting both in one message
@@ -33,7 +33,7 @@ export const TEMPO_PATH = '/tempo';
  */
 export const CHART_EVENT = 'chart';
 export const LOOPS_EVENT = 'loops';
-export const PROGRESSION_EVENT = 'progression';
+export const BASSLINE_EVENT = 'bassline';
 
 /** The most a single nudge may move the tempo, in BPM. */
 export const NUDGE = 1;
@@ -67,71 +67,66 @@ export interface LoopTrack {
   signatureDenominator: number;
 }
 
-/** One stretch of the loop that spells one chord, as the phone draws it. */
-export interface ProgressionCell {
-  /** Beats from the reference clip's start, inclusive. */
+/** One note of the bass part, exactly as Live holds it. */
+export interface BasslineNote {
+  /** Beats from the **loop's** start, not the clip's. */
   from: number;
-  /** Beats from the reference clip's start, exclusive. */
+  /** Beats from the loop's start, exclusive. Clipped to the loop's end. */
   to: number;
-  /** `Am7`, `F`, `G/B` — or null where the notes spelled nothing. */
-  symbol: string | null;
-  /**
-   * The root's pitch class, 0–11 with C at 0. Null with the symbol.
-   *
-   * A **position**, where `symbol` is a label. Drawing a bass line needs
-   * somewhere to put the block, and working that back out of the text `Bb`
-   * would mean re-parsing a name the server just finished spelling.
-   */
-  root: number | null;
-  /**
-   * The chord's pitch classes, root first then ascending. Empty with the
-   * symbol.
-   *
-   * What the chord *is*, as against what it is called — and the template's
-   * tones rather than the pitches anybody played, because a voicing spread over
-   * three octaves with the third doubled is the same chord. Drawing it
-   * literally would be a transcription rather than something to read at a
-   * glance.
-   */
-  tones: number[];
+  /** MIDI note number, as Live gives it. 60 is the C Live calls C3. */
+  pitch: number;
 }
 
 /**
- * The chord progression of what is playing.
+ * The bass part, note for note.
  *
- * **The only thing the chart infers rather than reads.** Every other fact comes
- * out of the set — scene names state the song, the key, the role — but a set
- * states its progressions nowhere, so this is worked out from the MIDI of the
- * clips that are sounding. It can therefore be wrong in a way nothing else here
- * can, and a cell it could not spell is null rather than its best guess.
+ * **A copy, not a reading.** An earlier version of this carried inferred chord
+ * symbols worked out from every playing MIDI clip merged together, and the
+ * inference was the part that could be wrong — a melody note landing on a bar
+ * line renamed the chord under it, and quantising a part into windows moved
+ * notes that were played where they were played on purpose. What a bass player
+ * needs is the part, so this is the part: Live's own note list, clipped to the
+ * loop and otherwise untouched.
  *
  * Sent on its own event, because it changes when the clips change and not when
  * the playhead moves.
  */
-export interface ChartProgression {
+export interface ChartBassline {
   /**
-   * The track whose loop the cell times are measured against — the longest
-   * harmony loop playing, since that is the period the progression has.
-   *
-   * The phone already knows where that track's playhead is, from the loops
-   * frame, so this is how it lights the current cell without being told.
+   * The track it came off, so the phone can find that loop's playhead in the
+   * frame it is already being sent rather than keeping a clock of its own.
    */
   t: number;
-  /** The reference clip's loop, in beats from its own start. */
+  /** The track's name, so the page can say what it is showing. */
+  name: string;
+  /** The track's colour as Live renders it. */
+  color: number;
+  /** The clip's loop, in beats from the clip's own start. */
   from: number;
   to: number;
   /**
-   * Beats to the bar, from the reference clip's own signature.
+   * Beats to the bar, from the clip's own signature.
    *
    * On the wire because the phone draws bar lines. A grid whose bars were
    * assumed to be four beats would put them in the wrong place for every song
-   * that isn't in four, and a chord chart with the bar lines wrong is worse
-   * than one with none.
+   * that isn't in four, and a chart with the bar lines wrong is worse than one
+   * with none.
    */
   beatsPerBar: number;
-  /** Whether the chart is spelled with flats, so a keyboard's rows agree with it. */
+  /**
+   * The lowest and highest MIDI note the roll draws, inclusive.
+   *
+   * **Decided here rather than on the phone**, because it is a musical
+   * judgement: the floor is a five-string's low B and the default span is two
+   * octaves up from it, which is where a bass part lives. It widens by whole
+   * octaves when a part goes outside, so nothing is ever hidden and the rows
+   * still land on the same note names.
+   */
+  low: number;
+  high: number;
+  /** Whether the key names are spelled with flats, from the key the set states. */
   flats: boolean;
-  cells: ProgressionCell[];
+  notes: BasslineNote[];
 }
 
 /**

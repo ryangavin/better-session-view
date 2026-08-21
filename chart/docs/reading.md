@@ -154,62 +154,81 @@ with controls parked somewhere else.
 What a phone may send, and what stops it being a way to wreck a set, is in
 [following the bridge](following.md).
 
-## The chord chart
+## The bass roll
 
-**The only thing here that is inferred rather than read.** A set states its songs, keys and
-roles in scene names and states its progressions nowhere, so the harmony is worked out from
-the MIDI of the clips that are sounding — `core/src/chords.ts` does that, and owns every
-musical decision along with the tests for them. This file decides only *what to feed it*,
-which turns out to be most of the difficulty.
+The bottom of the screen is the **bass track's clip, copied**. Time runs left to right
+against the clip's own bar lines, pitch runs up a keyboard, and every note is where it was
+played for as long as it was played. Nothing is worked out.
 
-**Every playing MIDI clip except percussion, merged.** Merging is what makes the answer
-good: a bass line alone spells nothing, an arpeggio alone is one note at a time, and put
-together they are a chord with a root under it — and the root is the only thing separating
-Am7 from C6. Excluding drums is not fastidiousness; a kick and snare at C1 and D1 turn
-`Am | F | C | G` into `Am6 | F6 | C | Gmaj7`, which is measured rather than feared.
+That is a reversal, and it is worth saying what it replaced. This drew a chord progression
+first: every playing MIDI clip merged, drums judged out of it by the shape of their notes,
+the result fitted to chord templates half a bar at a time and trimmed to where the labels
+repeated. Each of those steps was a place the answer could be wrong while nothing was
+broken — a melody note landing on a bar line renamed the chord under it, and quantising into
+windows moved notes that had been played off the grid on purpose. On real material the roll
+and the clip disagreed, and **a chart you have to check against Live is one nobody reads**.
 
-**Percussion is judged from the notes, not the device.** A third-party drum plugin reports
-`PluginDevice` exactly like a synth does, so the class name catches a Drum Rack and misses
-every kit that isn't one. `looksPercussive` in `core/` owns the judgement and the numbers
-behind it.
+The part was written down the whole time. So this reads it.
 
-**The timeline is the longest harmony loop**, trimmed to where the progression repeats. The
-longest loop is the period the changes actually have — a two-bar bass figure under an
-eight-bar chord cycle would otherwise report the cycle four times, each cut off a quarter of
-the way through. Trimming is the other half: a four-bar progression in an eight-bar clip is
-four bars, and drawing it twice wastes half the screen. The frame names that track, so the
-phone lights the current cell from a loop it is already being told about rather than needing
-a clock of its own.
+### Which track is the bass
+
+**The one with `bass` in its name**, case-insensitively, anywhere in it — `Bass`, `SUB BASS
+808`, `bass gtr`. First match in Live's own track order, so a set with `Bass` and `Bass Sub`
+reads the one further left.
+
+A name, rather than a guess from the notes. Lowest average pitch, most sustained, fewest
+simultaneous notes — every version of that picks the wrong track on some song, silently, on
+stage, and leaves nobody anything to fix. A name is a convention this project already uses
+for songs, keys and roles, and it is a thing somebody can correct in a second.
+
+The cost is that a set with no track called bass gets no roll. That is the same shape of
+answer as a scene with no key in its name: the fix is in the set, and it takes a rename.
+
+### The loop, not the clip
+
+Live plays a looping clip's loop bracket and nothing else, so a note before `loopStart` or
+after `loopEnd` is one nobody in the room will hear — drawing it would put material on the
+chart that never sounds. A note starting inside the loop and running past its end is kept
+and cut off there, which is exactly what Live does to it.
+
+Times go on the wire **relative to the loop's start**, because that is what the roll is
+drawn from, and doing the subtraction once on the server beats doing it per note on the
+oldest phone in the room.
+
+### The keyboard is fixed, and it is a bass's
+
+**Two octaves up from a five-string's low B** — 23 to 47, which Live calls B-1 to B1. Real
+pitches, not the twelve pitch-class rows this used to fold everything into.
+
+Pitch classes read well for chord shapes and badly for a bass line. An octave jump *is* the
+gesture in a bass part, and folding it away draws a straight line through the middle of it;
+so does a walk-up that crosses a C. The bottom of the range is a five-string's because a
+five-string is what gets played, and a roll that started at a four-string's open E would put
+the notes that most need reading off the bottom of it.
+
+It is a floor rather than a fit. Where the low note of a part *is* moves between songs, and
+rows that moved with it would make two songs of the same shape look different — the point of
+a fixed keyboard is that a fifth is the same distance up the screen every time. When a part
+goes outside, the window **widens by a whole octave**, never by a semitone, so the note names
+still land in the same places and nothing is ever quietly cropped.
+
+The window is decided on the server and sent, so every phone in the room is looking at the
+same keyboard. The gutter labels **only the Cs**, the way a piano roll is labelled: every row
+named is unreadable at this height and says nothing the black-and-white pattern beside it
+does not.
+
+### Reading it
 
 Notes are a **read, not a watch** — the LOM has no event for a clip's contents that would
-help — so the ask goes out when the *playing clips change*, which is exactly when the
-harmony can have changed and never while a loop merely goes round. The cost is the one
-staleness in the whole client: editing the MIDI of a clip that is already running does not
-update the chart until it is relaunched. Noticing would mean re-reading every playing clip
-on a timer, and a chart that lags an edit by one relaunch is the better trade.
+help — so the ask goes out when the *playing clips change*, which is exactly when the part
+can have changed and never while a loop merely goes round. The cost is the one staleness in
+the whole client: editing the MIDI of a clip that is already running does not update the roll
+until it is relaunched. Noticing would mean re-reading every playing clip on a timer, and a
+roll that lags an edit by one relaunch is the better trade.
 
-It draws nothing rather than drawing blanks. A song with no readable harmony — audio only,
-drums only, a bare melody — clears the chart instead of showing a row of dashes, because an
-empty chart looks like a bug and no chart looks like no chart.
-
-### It is a piano roll, not a row of symbols
-
-It was a row of symbols first, and that threw away half of what somebody about to play
-needs: a chord changing on the third beat of the second bar looked identical to one
-changing on the downbeat. So time runs left to right against real bar lines — drawn from
-the reference clip's own signature, because a grid that assumed four beats to the bar would
-put them in the wrong place for every song that isn't in four — and pitch runs up the side.
-
-**Twelve pitch-class rows, not the four octaves a voicing actually spans.** The chart is a
-chart rather than a transcription: a roll drawing real octaves would be mostly empty at a
-size where space is the scarce thing, and the rows would move about between songs. Fixed
-rows are what make the *shape* of a progression readable at a glance, and the keyboard down
-the side is what makes them legible without counting.
-
-**Chords or bass, chosen per phone** and remembered there. The same data drawn twice rather
-than two charts: chord mode draws the tones, bass mode draws the root alone with the same
-timing. The bass player wants one line and the keys player wants the harmony, and neither
-should have to read past the other's.
+It draws nothing rather than drawing an empty grid. No bass track, no clip in it, an audio
+clip, a loop bracket with no notes inside it — all clear the roll, because an empty roll
+looks like a bug and no roll looks like no roll.
 
 The playhead is extrapolated from the loops anchor like everything else that moves, and it
 spans the grid with its left border rather than being a two-pixel bar — a percentage
@@ -218,12 +237,14 @@ across the whole loop, which looks exactly like a playhead that was never wired 
 
 ## Not built
 
-**A progression the set actually states.** Everything above is inference, and inference is
-the fallback rather than the goal: a set that *wrote its changes down* would need none of
-it and could never be wrong. The convention question comes before the code — whether they
-belong in a track of their own whose clip names carry the bars, or in set-owned device state
-keyed by song. Both keep the `.als` the complete record, which is the property that must not
-be given up. Until then this reads what is there.
+**Chords for everybody who is not the bass player.** The roll is one track, and the keys
+player's question — what is the harmony — is a different one. The inference that used to
+answer it still exists in [`core/src/chords.ts`](../../core/docs/chords.md) with its tests
+and no caller. What it needs before it comes back is somewhere to be *right*: a set that
+wrote its changes down would need no inference at all and could never disagree with itself.
+The convention question comes before the code — whether they belong in a track of their own
+whose clip names carry the bars, or in set-owned device state keyed by song. Both keep the
+`.als` the complete record, which is the property that must not be given up.
 
 **When the loops line up.** Each wheel says where its own loop is; nothing says when the
 long one comes round, which is the question "when do I drop" actually asks. The arithmetic

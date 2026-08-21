@@ -50,7 +50,7 @@ export interface SetState {
    * contents that would help here — so this is the one piece of state that goes
    * stale if somebody edits the MIDI of a clip that is already running. The
    * cost of noticing would be re-reading every playing clip on a timer, and a
-   * chord chart that lags an edit by one relaunch is a better trade.
+   * roll that lags an edit by one relaunch is a better trade.
    */
   notes: Map<string, BSV.ClipNotes>;
 }

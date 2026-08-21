@@ -1,9 +1,9 @@
 # chart/
 
 What the band reads. A one-screen view of the song the set is playing — its name, its key,
-its tempo with a button either side of it, where every playing loop has got to, and the
-chord progression read out of the MIDI as a piano roll you can flip between chords and the
-bass line — served to everyone's phone, with no dependencies and nothing to install.
+its tempo with a button either side of it, where every playing loop has got to, and the bass
+part as a piano roll, copied note for note out of the clip — served to everyone's phone,
+with no dependencies and nothing to install.
 
 ```
 Live ─ SessionBridge :17800 ─WS─> chart server :18000 ─SSE─> phones
@@ -17,7 +17,7 @@ Live ─ SessionBridge :17800 ─WS─> chart server :18000 ─SSE─> phones
 | doc | read it before touching | source |
 |---|---|---|
 | [following the bridge](docs/following.md) | the connection, **re-arming the watches**, the two streams and why a phone extrapolates, the tempo nudge, the LAN binding, and the `core/` import constraint any Node client hits | `server/bridge.ts`, `server/index.ts`, `server/loops.ts` |
-| [reading the set](docs/reading.md) | which scene is "now", which song, where a fact is printed, the wheels, the chord chart, and what is deliberately not built | `server/chart.ts`, `server/loops.ts`, `server/progression.ts`, `protocol.ts` |
+| [reading the set](docs/reading.md) | which scene is "now", which song, where a fact is printed, the wheels, the bass roll, and what is deliberately not built | `server/chart.ts`, `server/loops.ts`, `server/bassline.ts`, `protocol.ts` |
 
 ## The one idea
 
@@ -74,20 +74,24 @@ putting every write in the protocol there means something narrow in between. Rul
 a CLI — should cost nothing and perturb nothing"* — and this is the stage display, now
 with one button on it.
 
-## One inferred thing, and it says so
+## Nothing here is inferred any more
 
-Everything here is read out of the set except the chord chart, which is worked out from the
-MIDI of what is playing because a set states its progressions nowhere. That makes it the one
-part that can be wrong for reasons other than a bug, so it is built to decline: a bar it
-cannot spell shows a dash, and a song it cannot read at all shows no chart rather than a row
-of them. The musical judgement lives in [`core/src/chords.ts`](../core/docs/chords.md) with
-its tests; this module only decides what to feed it.
+The bass roll drew inferred chord symbols first — every playing MIDI clip merged, drums
+judged out by the shape of their notes, the rest fitted to chord templates. It was the one
+part of this client that could be wrong while nothing was broken, and on real material it
+was: a melody note on a bar line renamed the chord under it, and quantising into windows
+moved notes played off the grid on purpose.
+
+The part was written down the whole time, so the roll copies it instead. Every fact on the
+phone is now something the set states — the songs and keys in scene names, the notes in the
+clip. The inference is still in [`core/src/chords.ts`](../core/docs/chords.md) with its
+tests and no caller, for the day the keys player wants a chord chart of their own.
 
 ## What it is for next
 
-The wheels and the chart are the beginning of the real goal rather than the end of it:
+The wheels and the roll are the beginning of the real goal rather than the end of it:
 **anyone on stage should be able to see what is coming without having played the song
-before.** What is still missing is a progression the set *states* rather than one inferred
-from it, and when the long loop comes round — each wheel says where it is, and nothing yet
-says when they line up, which is the question "when do I drop" actually asks. Both are
-argued in [reading the set](docs/reading.md).
+before.** What is still missing is the harmony for everybody who is not the bass player, and
+when the long loop comes round — each wheel says where it is, and nothing yet says when they
+line up, which is the question "when do I drop" actually asks. Both are argued in
+[reading the set](docs/reading.md).

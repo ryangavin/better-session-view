@@ -1,25 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { hex } from '../../core/src/color.ts';
-import { isBlackKey, noteName } from '../../core/src/chords.ts';
+import { isBlackKey, pitchName } from '../../core/src/chords.ts';
 import {
   formatSecondsLeft,
   loopBars,
   trackStatus,
 } from '../../core/src/trackStatus.ts';
 import {
+  BASSLINE_EVENT,
   CHART_EVENT,
   EVENTS_PATH,
   LOOPS_EVENT,
   LOOPS_PATH_LENGTH,
   NUDGE,
-  PROGRESSION_EVENT,
   TEMPO_PATH,
   type Chart,
+  type ChartBassline,
   type ChartLoops,
-  type ChartProgression,
   type ChartSong,
   type LoopTrack,
-  type ProgressionCell,
 } from '../protocol.ts';
 
 /**
@@ -272,72 +271,27 @@ function Wheel({
 }
 
 /**
- * The cell the reference loop is inside, for the heading beside the toggle.
+ * The bass part, drawn the way Ableton's piano roll draws it.
  *
- * Recomputed per render rather than per frame — the symbol changes at most once
- * a bar, and it is the roll's playhead that has to be smooth, not this.
+ * **A copy, not a chart of it.** Time runs left to right against the clip's own
+ * bar lines and pitch runs up the side, and every note is where it was played,
+ * as long as it was played for. Nothing here rounds a note to a window, merges
+ * a run of them or decides what they add up to — the version that did could
+ * disagree with the clip, and a chart the bass player has to double-check
+ * against Live is one they will stop reading.
+ *
+ * **Real pitches over a fixed keyboard**, two octaves up from a five-string's
+ * low B unless the part needs more. Twelve pitch-class rows read well for
+ * chord shapes and badly for a bass line, where an octave jump is the gesture
+ * and folding it away draws a straight line through the middle of it.
+ *
+ * The window comes off the wire rather than being fitted here, so every phone
+ * in the room is looking at the same keyboard.
  */
-function here(progression: ChartProgression, anchor: Anchor | null): ProgressionCell | null {
-  const track = anchor?.loops.tracks.find((row) => row.t === progression.t);
-  if (!anchor || !track) return null;
-  const span = progression.to - progression.from;
-  if (!(span > 0)) return null;
-  const ms = anchor.loops.rolling ? performance.now() - anchor.at : 0;
-  const clip = advance(track, anchor.loops.tempo, ms);
-  const into = (((clip.position - progression.from) % span) + span) % span;
-  return progression.cells.find((cell) => into >= cell.from && into < cell.to) ?? null;
-}
-
-/** Which of the two things the roll draws. Kept per phone. */
-type Mode = 'chords' | 'bass';
-
-const MODE_KEY = 'chart.mode';
-
-function storedMode(): Mode {
-  try {
-    return localStorage.getItem(MODE_KEY) === 'bass' ? 'bass' : 'chords';
-  } catch {
-    // Private browsing, or storage turned off. The default is fine.
-    return 'chords';
-  }
-}
-
-/** Twelve rows, high to low, the way a keyboard is drawn. */
-const ROWS = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
-
-/**
- * The progression as a piano roll.
- *
- * A strip of chord symbols said *what* and threw away *when*, which is half of
- * what somebody about to play needs — a chord that changes on the third beat of
- * the second bar looks identical to one that changes on the downbeat. So time
- * runs left to right against real bar lines, and pitch runs up the side.
- *
- * **Pitch classes rather than pitches.** Twelve rows, not the four octaves a
- * real voicing spans: the chart is a chart rather than a transcription, and a
- * roll that drew the actual octaves would be mostly empty space at a size where
- * space is the scarce thing. The rows stay put whatever is playing, which is
- * what makes the shape of a progression readable at a glance.
- *
- * **Chords or bass**, per phone. The bass player wants one line — the root, with
- * its timing — and the keys player wants the tones. It is the same data drawn
- * twice rather than two charts.
- */
-function PianoRoll({
-  progression,
-  anchor,
-  mode,
-}: {
-  progression: ChartProgression;
-  anchor: Anchor | null;
-  mode: Mode;
-}) {
+function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | null }) {
   const head = useRef<HTMLDivElement | null>(null);
-  const held = useRef<{ progression: ChartProgression; anchor: Anchor | null }>({
-    progression,
-    anchor,
-  });
-  held.current = { progression, anchor };
+  const held = useRef<{ line: ChartBassline; anchor: Anchor | null }>({ line, anchor });
+  held.current = { line, anchor };
 
   useEffect(() => {
     let frame = 0;
@@ -347,16 +301,16 @@ function PianoRoll({
       if (!bar) return;
       const now = held.current;
       const loops = now.anchor?.loops;
-      const track = loops?.tracks.find((row) => row.t === now.progression.t);
+      const track = loops?.tracks.find((row) => row.t === now.line.t);
       if (!loops || !track) {
         bar.style.opacity = '0';
         return;
       }
-      const span = now.progression.to - now.progression.from;
+      const span = now.line.to - now.line.from;
       if (!(span > 0)) return;
       const ms = loops.rolling ? performance.now() - now.anchor!.at : 0;
       const clip = advance(track, loops.tempo, ms);
-      const into = (((clip.position - now.progression.from) % span) + span) % span;
+      const into = (((clip.position - now.line.from) % span) + span) % span;
       bar.style.opacity = '1';
       // Transform rather than `left`, so the playhead moves without asking the
       // browser to lay the grid out again sixty times a second.
@@ -372,51 +326,64 @@ function PianoRoll({
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  const span = progression.to - progression.from;
+  const span = line.to - line.from;
   if (!(span > 0)) return null;
-  const bars = Math.max(1, Math.round(span / progression.beatsPerBar));
+
+  const rows = Math.max(1, line.high - line.low + 1);
+  const pitches = Array.from({ length: rows }, (_, i) => line.high - i);
+  const bars = Math.max(1, Math.round(span / line.beatsPerBar));
+  // Beat lines are detail, and detail stops helping once the bars are thin. A
+  // sixteen-bar loop on a phone is twenty pixels a bar, where four more lines
+  // inside each one is a texture rather than a grid.
+  const beats = bars <= 8 && Number.isInteger(line.beatsPerBar) ? line.beatsPerBar : 0;
 
   return (
-    <div className="roll">
+    <div className="roll" style={{ '--rows': rows } as React.CSSProperties}>
       <div className="keys">
-        {ROWS.map((pc) => (
-          <span key={pc} className={`key ${isBlackKey(pc) ? 'black' : 'white'}`}>
-            {noteName(pc, progression.flats)}
+        {pitches.map((pitch) => (
+          <span key={pitch} className={`key ${isBlackKey(pitch) ? 'black' : 'white'}`}>
+            {/* Only the Cs, the way a piano roll is labelled. Every row named
+                is unreadable at this height and says nothing the keyboard
+                pattern beside it does not already. */}
+            {pitch % 12 === 0 ? pitchName(pitch, line.flats) : ''}
           </span>
         ))}
       </div>
 
       <div className="grid">
-        {ROWS.map((pc) => (
-          <div key={pc} className={`lane ${isBlackKey(pc) ? 'black' : 'white'}`} />
+        {pitches.map((pitch) => (
+          <div
+            key={pitch}
+            className={`lane ${isBlackKey(pitch) ? 'black' : 'white'} ${
+              pitch % 12 === 0 ? 'octave' : ''
+            }`}
+          />
         ))}
 
-        {/* One line per bar after the first, so the grid reads in bars rather
-            than as an undivided stretch of time. */}
         {Array.from({ length: bars - 1 }, (_, i) => (
-          <div key={i} className="barline" style={{ left: `${((i + 1) / bars) * 100}%` }} />
+          <div key={`bar${i}`} className="barline" style={{ left: `${((i + 1) / bars) * 100}%` }} />
         ))}
 
-        {progression.cells.flatMap((cell) => {
-          const pitches = mode === 'bass' ? (cell.root === null ? [] : [cell.root]) : cell.tones;
-          const left = ((cell.from - progression.from) / span) * 100;
-          const width = ((cell.to - cell.from) / span) * 100;
-          return pitches.map((pc) => (
-            <div
-              key={`${cell.from}:${pc}`}
-              className={`note ${pc === cell.root ? 'root' : ''}`}
-              style={{
-                left: `${left}%`,
-                width: `${width}%`,
-                top: `${(ROWS.indexOf(pc) / ROWS.length) * 100}%`,
-                height: `${100 / ROWS.length}%`,
-              }}
-              // The symbol is on the block rather than in a legend, so the two
-              // readings of the same chord never drift apart on screen.
-              title={cell.symbol ?? ''}
-            />
-          ));
-        })}
+        {Array.from({ length: bars * beats }, (_, i) => i).map((i) =>
+          i === 0 || i % beats === 0 ? null : (
+            <div key={`beat${i}`} className="beatline" style={{ left: `${(i / (bars * beats)) * 100}%` }} />
+          ),
+        )}
+
+        {line.notes.map((note) => (
+          <div
+            key={`${note.from}:${note.pitch}`}
+            className="note"
+            style={{
+              left: `${(note.from / span) * 100}%`,
+              width: `${((note.to - note.from) / span) * 100}%`,
+              top: `${((line.high - note.pitch) / rows) * 100}%`,
+              height: `${100 / rows}%`,
+              background: hex(line.color),
+            }}
+            title={pitchName(note.pitch, line.flats)}
+          />
+        ))}
 
         <div className="playhead" ref={head} />
       </div>
@@ -496,8 +463,7 @@ function Loops({ anchor }: { anchor: Anchor | null }) {
 export function App() {
   const [chart, setChart] = useState<Chart | null>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
-  const [chords, setChords] = useState<ChartProgression | null>(null);
-  const [mode, setMode] = useState<Mode>(storedMode);
+  const [bassline, setBassline] = useState<ChartBassline | null>(null);
   const [linked, setLinked] = useState(false);
   useAwake();
 
@@ -525,20 +491,11 @@ export function App() {
     // Stamped on arrival with the browser's own monotonic clock, so nothing
     // here depends on the two machines agreeing about the time.
     take<ChartLoops>(LOOPS_EVENT, (loops) => setAnchor({ loops, at: performance.now() }));
-    // Null is a real value here: a song whose harmony cannot be read has to be
-    // able to clear the chart the song before it left on screen.
-    take<ChartProgression | null>(PROGRESSION_EVENT, setChords);
+    // Null is a real value here: a song with no bass track playing has to be
+    // able to clear the roll the song before it left on screen.
+    take<ChartBassline | null>(BASSLINE_EVENT, setBassline);
 
     return () => source.close();
-  }, []);
-
-  const pickMode = useCallback((next: Mode) => {
-    setMode(next);
-    try {
-      localStorage.setItem(MODE_KEY, next);
-    } catch {
-      // Nothing to do; the choice just won't survive a reload.
-    }
   }, []);
 
   const nudge = useCallback((by: number) => {
@@ -596,22 +553,10 @@ export function App() {
 
       <Loops anchor={anchor} />
 
-      {chords && (
+      {bassline && (
         <section className="chart-roll">
-          <div className="modes">
-            {(['chords', 'bass'] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={`mode ${mode === option ? 'on' : ''}`}
-                onPointerDown={() => pickMode(option)}
-              >
-                {option}
-              </button>
-            ))}
-            <span className="playing-chord">{here(chords, anchor)?.symbol ?? ''}</span>
-          </div>
-          <PianoRoll progression={chords} anchor={anchor} mode={mode} />
+          <p className="reading-from">{bassline.name}</p>
+          <PianoRoll line={bassline} anchor={anchor} />
         </section>
       )}
 

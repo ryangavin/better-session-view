@@ -9,13 +9,13 @@ import {
   EVENTS_PATH,
   LOOPS_EVENT,
   NUDGE,
-  PROGRESSION_EVENT,
+  BASSLINE_EVENT,
   TEMPO_PATH,
 } from '../protocol.ts';
 import { followBridge } from './bridge.ts';
 import { buildChart } from './chart.ts';
 import { buildLoops, loopShape } from './loops.ts';
-import { buildProgression, playingClips, progressionShape } from './progression.ts';
+import { basslineShape, buildBassline, playingClips } from './bassline.ts';
 
 /**
  * The chart server: one bridge client, and a page for everyone else's phone.
@@ -119,8 +119,8 @@ function stream(res: http.ServerResponse): void {
   res.write('retry: 2000\n\n');
   push(res, CHART_EVENT, chartFrame());
   push(res, LOOPS_EVENT, JSON.stringify(buildLoops(bridge.state)));
-  const chords = buildProgression(bridge.state);
-  if (chords) push(res, PROGRESSION_EVENT, JSON.stringify(chords));
+  const line = buildBassline(bridge.state);
+  if (line) push(res, BASSLINE_EVENT, JSON.stringify(line));
   readers.add(res);
   res.on('close', () => readers.delete(res));
 }
@@ -286,7 +286,7 @@ const LOOPS_MS = 500;
 
 let last = '';
 let lastShape = '';
-let lastChords = '';
+let lastBass = '';
 /** The clips whose notes we last asked for, so we ask once per change. */
 let asked = '';
 let sinceBeat = 0;
@@ -330,7 +330,7 @@ setInterval(() => {
 
   // Notes are a read, not a watch, so somebody has to decide when to take one.
   // The answer is "when the playing clips change" — which is exactly when the
-  // harmony can have changed, and never while a loop merely goes round.
+  // part can have changed, and never while a loop merely goes round.
   const wanted = playingClips(bridge.state);
   const wantKey = wanted.map((clip) => `${clip.t}:${clip.s}`).join(',');
   if (wantKey !== asked && bridge.state.lomReady) {
@@ -338,13 +338,13 @@ setInterval(() => {
     bridge.readNotes(wanted);
   }
 
-  const chords = buildProgression(bridge.state);
-  const chordShape = progressionShape(chords);
-  if (chordShape !== lastChords) {
-    lastChords = chordShape;
-    // An empty payload is how a chart goes away — a song with no readable
-    // harmony has to be able to clear the one before it.
-    pushAll(PROGRESSION_EVENT, chords ? JSON.stringify(chords) : 'null');
+  const line = buildBassline(bridge.state);
+  const lineShape = basslineShape(line);
+  if (lineShape !== lastBass) {
+    lastBass = lineShape;
+    // An empty payload is how a roll goes away — a song with no bass track
+    // playing has to be able to clear the one before it.
+    pushAll(BASSLINE_EVENT, line ? JSON.stringify(line) : 'null');
     said = true;
   }
 
