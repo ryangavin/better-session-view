@@ -71,9 +71,15 @@ export interface DeviceProps {
   /**
    * The one fixed-height choice band in a row-aligned face.
    *
-   * Rendered even when empty, so two faces keep the same anatomy. It is used
-   * only when `portRows` is provided; the ordinary chain face remains exactly
-   * the body it has always been.
+   * **Left out entirely when there is nothing to choose.** It used to render
+   * empty so that every face kept the same anatomy, and on a canvas of small
+   * nodes that reads as a band of nothing on the majority of them — the ones
+   * with no mode are also the ones with least to say. A face with no chooser
+   * is not a different anatomy, it is a shorter one; what must not move is a
+   * port, and a band that is absent on every render of that kind moves nothing.
+   *
+   * Used only when `portRows` is provided; the ordinary chain face remains
+   * exactly the body it has always been.
    */
   chooser?: ReactNode;
   /**
@@ -196,8 +202,8 @@ export function Device({
         (rowAligned ? (
           <div className="wdg-device-row-face">
             {screen !== undefined && <div className="wdg-device-screen">{screen}</div>}
-            <div className="wdg-device-outlets">{outlets}</div>
-            <div className="wdg-device-chooser">{chooser}</div>
+            {outlets !== undefined && <div className="wdg-device-outlets">{outlets}</div>}
+            {chooser !== undefined && <div className="wdg-device-chooser">{chooser}</div>}
             {children !== undefined && <div className="wdg-device-body">{children}</div>}
             <div className="wdg-device-port-rows">{portRows}</div>
           </div>
