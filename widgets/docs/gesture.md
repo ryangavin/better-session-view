@@ -46,7 +46,7 @@ written, fine slows the control from wherever it currently is, which is what Liv
 rather than the element's size on purpose — an absolute mapping is unusable on anything
 small, which is the same reason the range inputs were wrong.
 
-**The fine modifier is ⌘ on macOS, Ctrl elsewhere**, which is Live's. `platform.ts`
+**The fine modifier is ⌘ on macOS, Ctrl elsewhere**, which is Vital's — Live's is Shift, and this said so for a while. `platform.ts`
 duplicates the test in `ui/src/lib/keys.ts` rather than importing it, because a widget
 library that needed a host to tell it which key means fine would be a widget library with
 a host. In the app the two happen to be the same key meaning different things in different

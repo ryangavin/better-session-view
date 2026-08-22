@@ -51,7 +51,13 @@ export function Slider({
     onRelease,
     disabled,
     axis: orientation,
-    travel: travel ?? length,
+    // `length` is the drawn extent, and gearing to it is right for a fader
+    // whose size is its own. An `inside` one is stretched to whatever row it
+    // landed in, so `length` describes nothing — 27 of them geared a 140px
+    // control to 27px of drag, which is 4% of the range per pixel and a thumb
+    // running five times ahead of the pointer. Fall through to the hook's own
+    // travel instead, which is the 200px an unsized control assumes.
+    travel: travel ?? (layout === 'inside' ? undefined : length),
     label: label ?? name,
     display,
   });
