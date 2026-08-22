@@ -1,4 +1,5 @@
-import type { KeyboardEvent, ReactNode } from 'react';
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
+import type { WidgetVars } from '../controls/Widget.js';
 import './chrome.css';
 
 /**
@@ -53,14 +54,20 @@ export interface DeviceProps {
   inlets?: ReactNode;
   outlets?: ReactNode;
   /**
-   * Content fixed above the face without contributing to its measured size.
+   * A picture at the top of the face, inside the frame.
    *
-   * A graph preview is the first caller: its picture must be comparable from
-   * one node to the next without making the face below it wider or taller.
-   * The host still owns the content and its size; `Device` only gives it the
-   * anchored layer.
+   * A graph preview is the first caller, and the reason this is a slot rather
+   * than the top of `children` is that it sits **above the outlets** — a face
+   * reads as a screen with its wiring underneath, which is the order every
+   * piece of hardware this borrows from uses.
+   *
+   * It was briefly an overlay floating above the frame, on the argument that
+   * a picture outside the box cannot be resized by the box. That is true and
+   * it was the wrong trade: a node whose picture is not *in* it stops reading
+   * as one thing, and the width it must not depend on is already fixed by the
+   * host. Comparability comes from the fixed width, not from leaving the frame.
    */
-  overlay?: ReactNode;
+  screen?: ReactNode;
   /**
    * The one fixed-height choice band in a row-aligned face.
    *
@@ -80,6 +87,15 @@ export interface DeviceProps {
   portRows?: ReactNode;
   /** The faceplate. */
   children?: ReactNode;
+  /**
+   * Custom properties set on this face, for the host to size its own anatomy.
+   *
+   * How many port rows a face holds open is the host's question, not the
+   * frame's: only the host knows what else the same node could become. Same
+   * typing as a control's, so a device and a widget are configured the same
+   * way.
+   */
+  vars?: WidgetVars;
   className?: string;
   title?: string;
 }
@@ -98,10 +114,11 @@ export function Device({
   headerEnd,
   inlets,
   outlets,
-  overlay,
+  screen,
   chooser,
   portRows,
   children,
+  vars,
   className,
   title,
 }: DeviceProps) {
@@ -125,11 +142,10 @@ export function Device({
       {...(on ? { 'data-on': '' } : {})}
       {...(folded ? { 'data-folded': '' } : {})}
       {...(selected ? { 'data-selected': '' } : {})}
-      {...(overlay !== undefined ? { 'data-overlay': '' } : {})}
       {...(rowAligned ? { 'data-port-layout': 'rows' } : {})}
+      style={vars as CSSProperties | undefined}
       title={title}
     >
-      {overlay !== undefined && <div className="wdg-device-overlay">{overlay}</div>}
       <div className="wdg-device-head" {...select}>
         {onFold && (
           <button
@@ -179,6 +195,7 @@ export function Device({
         // chain's height and stretch chain is exactly what it always was.
         (rowAligned ? (
           <div className="wdg-device-row-face">
+            {screen !== undefined && <div className="wdg-device-screen">{screen}</div>}
             <div className="wdg-device-outlets">{outlets}</div>
             <div className="wdg-device-chooser">{chooser}</div>
             {children !== undefined && <div className="wdg-device-body">{children}</div>}

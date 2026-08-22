@@ -11,20 +11,12 @@
   font-family: var(--wdg-sans);
 }
 
-.wdg-device[data-overlay] {
-  position: relative;
-  overflow: visible;
+.wdg-device-screen {
+  flex: none;
+  padding: var(--wdg-space) var(--wdg-space) 0;
 }
 
-.wdg-device-overlay {
-  position: absolute;
-  right: -1px;
-  bottom: calc(100% + var(--wdg-space));
-  left: -1px;
-  z-index: 1;
-}
-
-.wdg-device-overlay > * {
+.wdg-device-screen > * {
   display: block;
   width: 100%;
 }
@@ -393,7 +385,7 @@
   display: flex;
   flex: none;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: flex-start;
   min-height: calc(var(--wdg-device-outlet-rows, 1) * var(--wdg-port-row-height));
   padding: var(--wdg-space) 2px;

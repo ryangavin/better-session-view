@@ -163,14 +163,19 @@ prints the name once inside itself.
 
 The aligned face always renders its outlet and chooser bands, including when either is
 empty. A host that must not resize as content changes reserves the maximum number of lines
-with `--wdg-device-outlet-rows` and `--wdg-device-port-rows`; each line is
+with `--wdg-device-outlet-rows` and `--wdg-device-port-rows`, passed through `vars`; each line is
 `--wdg-port-row-height`, which defaults to the field height. The widgets module cannot pick
 those counts because it does not know a host's vocabulary.
 
-`overlay` is deliberately not a row. It is absolutely anchored above the frame and
-contributes nothing to its measured width or height. A host owns its content and fixed size;
-`Device` owns only the anchor. This is for a graph preview whose dimensions must not become
-a function of the controls below it, not for ordinary device artwork inside the face.
+`screen` is a picture at the top of the face, above the outlets, inside the frame. It is
+not a row: the host owns its content and its size, and `Device` owns only where it sits.
+It exists for a graph preview whose dimensions must not become a function of the controls
+below it — which is why the host fixes the face's width — not for ordinary device artwork.
+
+It was briefly an overlay anchored *outside* the frame, so that nothing about the face could
+resize it. That worked and was still wrong: a node whose picture floats above it stops
+reading as one object, and comparability was already coming from the fixed width rather than
+from leaving the box. Reserve rows to stop the reflow; do not evict content to do it.
 
 The practical test for the opt-in anatomy is the observer above: wiring a row or changing
 what it shows should leave every port at the same coordinates. A host changing the number

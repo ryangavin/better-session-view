@@ -39,14 +39,14 @@ describe('Device anatomy', () => {
     const html = renderToStaticMarkup(
       h(Device, {
         name: 'Rows',
-        overlay: h('canvas'),
+        screen: h('canvas'),
         chooser: h('select', { 'aria-label': 'Choose' }),
         outlets: h(Port, { id: 'out', side: 'out', label: 'Out' }),
         portRows: h(DevicePortRow, { inlet }, 'depth'),
       }),
     );
     expect(html).toContain('data-port-layout="rows"');
-    expect(html).toContain('wdg-device-overlay');
+    expect(html).toContain('wdg-device-screen');
     expect(html).toContain('wdg-device-outlets');
     expect(html).toContain('wdg-device-chooser');
     expect(html).toContain('wdg-device-port-row');

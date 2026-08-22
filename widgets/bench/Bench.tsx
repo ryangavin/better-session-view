@@ -383,7 +383,7 @@ function RowFace() {
       className="row-face"
       headerAfterName={<span className="row-face-kind">Shape</span>}
       onHotSwap={() => {}}
-      overlay={<div className="row-face-preview">live picture</div>}
+      screen={<div className="row-face-preview">live picture</div>}
       chooser={
         <Select
           items={['One', 'Two']}

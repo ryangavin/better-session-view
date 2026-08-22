@@ -7,6 +7,7 @@
   --wdg-fill-text: #000;
   --wdg-marker: var(--fg, #ececed);
   --wdg-text: var(--ui, #b7b7be);
+  --wdg-text-strong: var(--fg, #ececed);
   --wdg-caption: var(--caption, #5e5e66);
   --wdg-focus: var(--focus, #4a4a52);
   --wdg-well: var(--panel, #111113);
