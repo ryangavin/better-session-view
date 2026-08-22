@@ -5,6 +5,8 @@ import {
   degreeName,
   degreeOf,
   isBlackKey,
+  keyColor,
+  keyRoot,
   noteName,
 } from '../../core/src/chords.ts';
 import {
@@ -94,33 +96,43 @@ function useAwake(): void {
 }
 
 /**
- * The key, which is the one fact the tempo readout does not carry.
+ * What the song is, on one line under its name: the artist, the tag it is filed
+ * under, and the key.
  *
- * Resolved in `keyNow` below rather than taken off the song, because a song
- * that modulates has no single key and says so with `''`. The rule is still
- * "state it once, as high up as it is true" — what changed when the section
- * list came off the screen is where the lower place is. It used to be the row
- * for each section; it is now the section actually playing.
+ * **One line, because the key is two characters.** It had a size of its own and
+ * a caption underneath, which spent a row of a phone screen saying a thing that
+ * fits in the corner of one — and every row here is a row the wheels and the
+ * roll are asking for. The demotion is in size only: the key leads the line in
+ * the colour of the note it is built on, and the credits trail it in quiet ink,
+ * because the key is the only one of the three anybody plays off.
+ *
+ * The colour is `keyColor`, which is absolute where the roll's are relative —
+ * the same key is the same colour in every song, so a set looks the same on
+ * Thursday as it did on Tuesday. A key the parser cannot read a root out of is
+ * printed in plain ink, on the roll's rule: colouring against a root nobody
+ * gave still looks deliberate.
+ *
+ * The key is resolved in `keyNow` below rather than taken off the song, because
+ * a song that modulates has no single key and says so with `''`. The rule is
+ * still "state it once, as high up as it is true" — what changed when the
+ * section list came off the screen is where the lower place is. It used to be
+ * the row for each section; it is now the section actually playing.
  */
-function Vitals({ musicalKey }: { musicalKey: string }) {
-  if (!musicalKey) return null;
+function Facts({ song, musicalKey }: { song: ChartSong; musicalKey: string }) {
+  const filed = [song.artist, song.tag].filter(Boolean);
+  if (!musicalKey && filed.length === 0) return null;
+  const root = keyRoot(musicalKey);
   return (
-    <p className="vitals">
-      <span className="vital">
-        <span className="value">{musicalKey}</span>
-        <span className="of">key</span>
-      </span>
-    </p>
-  );
-}
-
-/** What the song is filed under. Quiet on purpose — nobody plays off it. */
-function Credits({ song }: { song: ChartSong }) {
-  const credits = [song.artist, song.tag].filter(Boolean);
-  if (credits.length === 0) return null;
-  return (
-    <p className="credits">
-      {credits.map((credit) => (
+    <p className="facts">
+      {musicalKey && (
+        <span
+          className="musical-key"
+          style={root === null ? undefined : { color: keyColor(root) }}
+        >
+          {musicalKey}
+        </span>
+      )}
+      {filed.map((credit) => (
         <span key={credit} className="credit">
           {credit}
         </span>
@@ -653,14 +665,7 @@ export function App() {
         <h1 className="song">
           {song?.name ?? now?.label ?? next?.label ?? 'Nothing playing'}
         </h1>
-        {/* The key and the credits share a line: one is two characters wide and
-            the other is quiet, so stacking them spent height on nothing. */}
-        {song && (
-          <div className="facts">
-            <Vitals musicalKey={keyNow} />
-            <Credits song={song} />
-          </div>
-        )}
+        {song && <Facts song={song} musicalKey={keyNow} />}
       </section>
 
       <Tempo tempo={chart?.tempo ?? 0} labelled={labelled} live={ready} onNudge={nudge} />

@@ -93,15 +93,31 @@ scene's colour as nullable, and an uncoloured scene is not the same as one on pa
 The song's colour is `SongEntry.colorIndex` through `LIVE_PALETTE`, and -1 there covers both
 "no colour" and "its scenes disagree". Neither is a colour to paint with.
 
-## Vitals, credits, and the tempo that only sometimes appears
+## One line of facts, and the tempo that only sometimes appears
 
-The key and the bpm are printed large under the song name, apart from the artist and the
-tag. They are not the same kind of fact: those two are what you need to *play* the song,
-and the other two are what it is filed under. Given one glance from a music stand, the
-glance should land on the pair you can act on.
+The artist, the tag and the key share **one line under the song name**, left aligned, with
+the key leading it in the colour of the note it is built on and the credits trailing it in
+quiet ink.
 
-Either can be missing, and that is the section list carrying it — see the rule above. An
-empty vital is a signal rather than a gap.
+That colour is `keyColor`, and it is **absolute where the roll's are relative**. A note on the
+roll is coloured by what it is doing in this song, so every song's root is the same red; the
+key at the top is coloured by which key it *is*, so Gm is the same blue in every song that is
+in it and a set looks the same on Thursday as it did on Tuesday. Two schemes on one screen,
+answering two questions, which is why the key is text and the notes are blocks. A key the
+parser cannot read a root out of is printed in plain ink — the roll's rule, since colouring
+against a root nobody gave still looks deliberate.
+
+The key was printed large with a caption under it once, on the principle that a glance from
+a music stand should land on the fact you can act on. The principle is right; the row was
+not the way to pay for it. A key is two characters, and the row it took is a row the wheels
+and the roll were asking for — weight and colour say the same thing inside a line somebody
+was reading anyway. The artist and the tag are what the song is *filed* under and nobody
+plays off them, so they stay in the quiet ink they were already in and the key is the one
+that is not.
+
+Any of the three can be missing, and the line closes up around it. A song that states no
+key of its own prints the key of the section actually playing, which is the rule above
+finding its lower place now that the section list is off the screen.
 
 Live's **actual** tempo sits in the top line, and appears only when it is not already the
 big number. When the band is playing the song at its label, printing both is the same
