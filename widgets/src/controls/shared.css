@@ -91,15 +91,11 @@
   background: var(--wdg-fill);
   content: '';
   opacity: 0.16;
+  pointer-events: none;
 }
 
 .wdg-widget[data-layout='inside'] .wdg-slider-thumb {
   display: none;
-}
-
-.wdg-widget[data-layout='inside'] > .wdg-caption,
-.wdg-widget[data-layout='inside'] > .wdg-readout {
-  padding-bottom: var(--wdg-strip);
 }
 
 .wdg-widget[data-layout='inside'][data-disabled] > .wdg-caption,

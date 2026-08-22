@@ -79,7 +79,7 @@
 .wdg-slider-horizontal[data-layout='inside'] .wdg-slider-body,
 .wdg-meter[data-layout='inside'] .wdg-meter-horizontal {
   width: 100%;
-  height: var(--wdg-field-height);
+  height: var(--wdg-inside-height, var(--wdg-field-height));
 }
 
 .wdg-slider-vertical .wdg-slider-fill {
