@@ -48,6 +48,13 @@ to an inlet; a cord between two outlets has no shape to draw. Whether *this* out
 reach *that* inlet is about what they carry, and the graph has no idea. So it enforces the
 first and offers the second.
 
+The graph still owns its view when a host needs to **read** the zoom. `viewRef` exposes one
+imperative `scale()` method and no setter: a node-picture renderer can decide that a face is
+too small to animate without lifting the scale into host state. That distinction matters.
+A callback or controlled value updated on every wheel event would re-render every node under
+the graph precisely while the browser is also transforming and remeasuring them; reading a
+ref at draw time adds no render path at all.
+
 ## A cord pulls from either end
 
 The sides rule is about the **cord**, not about the gesture. An outlet has to meet an
@@ -241,8 +248,9 @@ node should be the size of what it holds.
   from here: an inlet that has a cord grows a small `×` beside its port, in the host's own
   `inlets` slot, and the host drops the cord from its own state.
 - **Selecting more than one node**, and moving a selection together.
-- **Driving pan and zoom from outside** — fit-to-content, or restoring a saved view. The
-  props are easy; the question of who owns the view isn't, and there's no caller yet.
+- **Driving pan and zoom from outside** — fit-to-content, or restoring a saved view. A host
+  can read the zoom through `viewRef`, but the graph still owns it; the question of who would
+  own a writable view has no caller yet.
 - **Auto-routing.** Cords are a single cubic with horizontal control points, so they run
   through nodes rather than around them.
 - **Ports on a `Rack`.** A rack composes `Device`, so it inherits the slots, but a rack in

@@ -2,6 +2,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -9,6 +10,7 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
+  type Ref,
   type ReactNode,
 } from 'react';
 import { GraphContext, portKey, type GraphSurface, type PortSide } from './graphContext.js';
@@ -35,8 +37,8 @@ import './chrome.css';
  * they carry, and this module has no idea.
  *
  * Pan and zoom are the graph's own, the way a chain's scroll position is the
- * chain's. Nothing has needed to write them yet, and a prop for it can be added
- * against a real caller rather than an imagined one.
+ * chain's. A host may read the current zoom through `viewRef`, but cannot write
+ * it — publishing a view does not move ownership of it.
  */
 export interface GraphCord {
   /** An outlet's `Port` id. */
@@ -65,11 +67,24 @@ export interface GraphProps {
   onMove?(id: string, x: number, y: number): void;
   /** The empty canvas was pressed, for a host that clears a selection on it. */
   onClearSelection?(): void;
+  /**
+   * An imperative, read-only view of the canvas.
+   *
+   * A ref keeps a host that only needs the scale out of the graph's render
+   * path: wheel zoom updates this component, but does not publish a React value
+   * that would re-render every node under it.
+   */
+  viewRef?: Ref<GraphView>;
   minZoom?: number;
   maxZoom?: number;
   /** Spacing of the background dots, in graph units. */
   grid?: number;
   className?: string;
+}
+
+export interface GraphView {
+  /** The current zoom, read at the moment it is needed. */
+  scale(): number;
 }
 
 interface Spot {
@@ -121,6 +136,7 @@ export function Graph({
   onConnect,
   onMove,
   onClearSelection,
+  viewRef,
   minZoom = 0.25,
   maxZoom = 3,
   grid = 24,
@@ -151,6 +167,8 @@ export function Graph({
 
   /** Current values for the handlers that outlive a render: capture, pointer, document. */
   const now = useRef({ view, drawing, over, onMove, onConnect });
+
+  useImperativeHandle(viewRef, () => ({ scale: () => now.current.view.k }), [viewRef]);
 
   /**
    * Screen rectangles back into graph coordinates.

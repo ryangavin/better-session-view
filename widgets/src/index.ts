@@ -62,6 +62,7 @@ export {
   type GraphCord,
   type GraphNodeProps,
   type GraphProps,
+  type GraphView,
 } from './chrome/Graph.js';
 export { GraphContext, portKey, type GraphSurface, type PortSide } from './chrome/graphContext.js';
 export { Port, type PortProps } from './chrome/Port.js';
