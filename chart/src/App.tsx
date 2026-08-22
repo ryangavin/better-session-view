@@ -48,7 +48,7 @@ import {
  * it to go; see `docs/reading.md`.
  */
 
-/** What the top line says, in the order the answers stop being reassuring. */
+/** What the status dot says, in the order the answers stop being reassuring. */
 function condition(linked: boolean, chart: Chart | null): { text: string; live: boolean } {
   if (!linked || !chart) return { text: 'no chart', live: false };
   if (!chart.connected) return { text: 'no bridge', live: false };
@@ -656,10 +656,12 @@ export function App() {
 
   return (
     <main className="chart">
-      <header className="condition">
-        <span className={`dot ${state.live ? 'on' : 'off'}`} />
-        <span className="what">{state.text}</span>
-      </header>
+      <span
+        className={`status-dot ${state.live ? 'on' : 'off'}`}
+        role="status"
+        aria-label={state.text}
+        title={state.text}
+      />
 
       <section className="head">
         <h1 className="song">

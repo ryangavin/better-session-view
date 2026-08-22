@@ -37,24 +37,18 @@ body {
     calc(env(safe-area-inset-bottom) + 1rem) calc(env(safe-area-inset-left) + 0.9rem);
 }
 
-.condition {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-quiet);
-}
-
-.dot {
-  width: 0.5rem;
-  height: 0.5rem;
+.status-dot {
+  position: fixed;
+  z-index: 1;
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+  right: calc(env(safe-area-inset-right) + 0.9rem);
+  width: 0.6rem;
+  height: 0.6rem;
   border-radius: 50%;
   background: var(--ink-quiet);
 }
 
-.dot.on {
+.status-dot.on {
   background: var(--live);
   box-shadow: 0 0 0.5rem var(--live);
 }
@@ -63,6 +57,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  padding-right: 1.4rem;
 }
 
 .song {
@@ -399,4 +394,3 @@ body {
   font-size: clamp(1rem, 4.5vw, 1.3rem);
   color: var(--ink-quiet);
 }
-

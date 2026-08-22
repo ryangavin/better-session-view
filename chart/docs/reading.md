@@ -126,12 +126,14 @@ somewhere other than the label, or the song has no label to run against and this
 only tempo there is. Both sides are rounded, because a set sitting at 100.02 is sitting at
 100.
 
-## What the rest of the top line says
+## What the status dot says
 
-In the order the answers stop being reassuring: no chart server, no bridge, waiting for
-Live, stopped, live. They are distinct because the fixes are: the chart server is not
-running, the device is not loaded, Live has not finished starting, nobody has pressed play.
-A single "offline" would send someone to the wrong one.
+The dot floats in the top-right corner rather than taking a row away from the chart. It is
+green while Live is rolling and quiet grey otherwise. Its accessible label and browser
+tooltip retain the exact state, in the order the answers stop being reassuring: no chart
+server, no bridge, waiting for Live, stopped, live. Those states stay distinct because the
+fixes are different: the chart server is not running, the device is not loaded, Live has not
+finished starting, or nobody has pressed play.
 
 ## The wheels
 
