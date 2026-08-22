@@ -11,6 +11,24 @@
   font-family: var(--wdg-sans);
 }
 
+.wdg-device[data-overlay] {
+  position: relative;
+  overflow: visible;
+}
+
+.wdg-device-overlay {
+  position: absolute;
+  right: -1px;
+  bottom: calc(100% + var(--wdg-space));
+  left: -1px;
+  z-index: 1;
+}
+
+.wdg-device-overlay > * {
+  display: block;
+  width: 100%;
+}
+
 .wdg-device[data-selected] {
   border-color: var(--wdg-edge-live);
 }
@@ -361,6 +379,90 @@
 
 .wdg-device-main > .wdg-device-body {
   flex: 1;
+}
+
+.wdg-device-row-face {
+  --wdg-port-row-height: var(--wdg-field-height);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.wdg-device-outlets {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  min-height: calc(var(--wdg-device-outlet-rows, 1) * var(--wdg-port-row-height));
+  padding: var(--wdg-space) 2px;
+}
+
+.wdg-device-outlets:empty {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.wdg-device-chooser {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-height: calc(var(--wdg-field-height) + var(--wdg-space) * 2);
+  padding: var(--wdg-space);
+  border-top: 1px solid var(--wdg-edge);
+  border-bottom: 1px solid var(--wdg-edge);
+}
+
+.wdg-device-chooser > .wdg {
+  width: 100%;
+}
+
+.wdg-device-port-rows {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: calc(var(--wdg-device-port-rows, 0) * var(--wdg-port-row-height));
+  padding: var(--wdg-space) 0;
+}
+
+.wdg-device-port-row {
+  display: grid;
+  grid-template-columns:
+    calc(var(--wdg-port-size) + 4px) minmax(0, 1fr)
+    calc(var(--wdg-port-size) + 4px);
+  align-items: center;
+  min-height: var(--wdg-port-row-height);
+}
+
+.wdg-device-row-port {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.wdg-device-row-port[data-side='in'] {
+  justify-content: flex-start;
+  padding-left: 2px;
+}
+
+.wdg-device-row-port[data-side='out'] {
+  justify-content: flex-end;
+  padding-right: 2px;
+}
+
+.wdg-device-row-control {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.wdg-device-row-control > .wdg {
+  width: 100%;
+}
+
+.wdg-device-row-port:empty {
+  padding: 0;
 }
 
 .wdg-device-ports {

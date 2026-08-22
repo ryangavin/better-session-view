@@ -3,7 +3,7 @@ import { FINE_KEY } from '../src/gesture/platform.js';
 import { format } from '../src/param/format.js';
 import { enumParam, type Param, type UnitStyle } from '../src/param/param.js';
 import { Chain } from '../src/chrome/Chain.js';
-import { Device } from '../src/chrome/Device.js';
+import { Device, DevicePortRow } from '../src/chrome/Device.js';
 import { Graph, GraphNode, type GraphCord } from '../src/chrome/Graph.js';
 import { Port } from '../src/chrome/Port.js';
 import { Rack } from '../src/chrome/Rack.js';
@@ -372,6 +372,78 @@ function Patch() {
       </Graph>
       <p className="patch-out">{said}</p>
     </div>
+  );
+}
+
+function RowFace() {
+  const [depth, setDepth] = useState(41);
+  return (
+    <Device
+      name="Ripple"
+      className="row-face"
+      headerAfterName={<span className="row-face-kind">Shape</span>}
+      onHotSwap={() => {}}
+      overlay={<div className="row-face-preview">live picture</div>}
+      chooser={
+        <Select
+          items={['One', 'Two']}
+          index={0}
+          onChange={() => {}}
+          label="Target"
+          width={138}
+        />
+      }
+      outlets={
+        <>
+          <Port id="row-face:point" side="out" label="Point" kind="note" />
+          <Port id="row-face:value" side="out" label="Value" kind="signal" />
+        </>
+      }
+      portRows={
+        <>
+          <DevicePortRow
+            inlet={
+              <Port id="row-face:in" side="in" label="Input" kind="note" showLabel={false} />
+            }
+          >
+            <span className="row-face-label">Input</span>
+          </DevicePortRow>
+          <DevicePortRow
+            inlet={
+              <Port
+                id="row-face:depth"
+                side="in"
+                label="Depth"
+                kind="signal"
+                showLabel={false}
+              />
+            }
+          >
+            <Slider
+              param={DRY_WET}
+              value={depth}
+              onChange={setDepth}
+              name="Depth"
+              orientation="horizontal"
+              layout="inside"
+            />
+          </DevicePortRow>
+          <DevicePortRow
+            inlet={
+              <Port
+                id="row-face:energy"
+                side="in"
+                label="Energy"
+                kind="signal"
+                showLabel={false}
+              />
+            }
+          >
+            <Meter value={0.62} name="Energy" layout="inside" showValue />
+          </DevicePortRow>
+        </>
+      }
+    />
   );
 }
 
@@ -839,6 +911,9 @@ export function Bench() {
         </Section>
 
         <Section id="Graph">
+          <Case note="The opt-in row face: its picture is outside the frame, its chooser and outlet bands stay put, and every inlet dot shares a line with its label, slider or meter. Empty reserved rows keep the frame the same size when its contents change.">
+            <RowFace />
+          </Case>
           <Case
             wide
             note="The canvas the chain leaves room for. Drag a node by anywhere a control hasn't claimed, drag between two ports to connect, scroll to zoom about the cursor, drag the background to pan. A cord pulls from either end — start on Output's In and drop on Shape's Out and you get the same cord as the other way round; the ports that could take it outline themselves while it is out, and the ones on the wrong side dim. Notes only reach Pitch and signals only reach Size: the graph offers the pair, this page refuses it."

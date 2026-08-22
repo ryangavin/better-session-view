@@ -49,6 +49,12 @@ its length: a column of them is readable at a glance without reading a number, w
 the mixer. On its side that advantage is gone. The orientation stays for the shape that
 genuinely wants it, the crossfader, and for hosts we haven't met.
 
+**`layout="inside"` is the compact graph-row shape.** `Widget` lays the caption at the
+leading end and the reading at the trailing end, both over a horizontal body, so the control
+is its own label and one line says the whole parameter. A horizontal `Slider` fills the
+available width in that layout rather than taking its ordinary fixed length. It is a layout
+of the shared frame, not a node-specific control, and `stacked` and `inline` remain unchanged.
+
 **The pad is one pointer and two gestures**, not a new drag. It calls `useParamGesture`
 once per axis and hands both the same pointer events, so each keeps its own component of
 the movement and the fine modifier, the write rate and double-click-to-reset are the ones
@@ -69,6 +75,11 @@ the one that makes a meter a widget rather than a bar the mixer draws: a *hand-d
 signal can be a slider, because you set it and can see where you set it, but a **generated**
 one has no handle to look at. An envelope pulsing on the beat is invisible without a
 display, and you end up guessing at what the picture is reacting to.
+
+It now uses the same `Widget` frame as the value controls. Its existing face is unchanged by
+default; `showValue` adds the rounded 0–100 reading, `display` can replace that text, and
+`layout="inside"` gives a generated signal the same one-line anatomy as a settable slider
+without pretending the meter has a handle.
 
 **`Button` is the one thing here that is not a `live.*` object at all**, and the reason is
 in the first paragraph of this file: the M4L palette is the set for building a *device*, and

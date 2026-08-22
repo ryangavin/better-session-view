@@ -42,6 +42,7 @@ export {
 } from './controls/Widget.js';
 export { Knob, type KnobProps } from './controls/Knob.js';
 export { Slider, type SliderProps } from './controls/Slider.js';
+export { Meter, type MeterProps } from './controls/Meter.js';
 export { NumberField, type NumberFieldProps } from './controls/NumberField.js';
 export { Toggle, type ToggleProps } from './controls/Toggle.js';
 export { Segmented, itemsOf, type SegmentedProps } from './controls/Segmented.js';
@@ -49,7 +50,12 @@ export { Select, type SelectProps } from './controls/Select.js';
 export { Divider, Label, type LabelProps } from './controls/Label.js';
 
 export { Chain, type ChainProps } from './chrome/Chain.js';
-export { Device, type DeviceProps } from './chrome/Device.js';
+export {
+  Device,
+  DevicePortRow,
+  type DevicePortRowProps,
+  type DeviceProps,
+} from './chrome/Device.js';
 export {
   Graph,
   GraphNode,

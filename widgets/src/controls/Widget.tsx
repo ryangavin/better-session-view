@@ -17,8 +17,8 @@ import './controls.css';
  * own geometry. This is a frame, not a base class.
  */
 
-/** Caption above the control, or beside it. */
-export type WidgetLayout = 'stacked' | 'inline';
+/** Caption above the control, beside it, or laid over a horizontal track. */
+export type WidgetLayout = 'stacked' | 'inline' | 'inside';
 
 /**
  * The custom properties a control sets on its own instance.

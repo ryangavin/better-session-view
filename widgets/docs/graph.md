@@ -5,13 +5,16 @@ order stops being a line.
 
 It is a **sibling layout, not a replacement**. [`Chain`](../src/chrome/Chain.tsx) puts its
 children in a row; this puts them where the host says. Neither knows why. The same
-[`Device`](../src/chrome/Device.tsx) hangs off either one, unchanged, which is what the
-chain's "takes children, never a list of devices" rule was buying all along — see *Why the
-chain is a line* in [the catalogue](catalogue.md).
+[`Device`](../src/chrome/Device.tsx) hangs off either one, which is what the chain's "takes
+children, never a list of devices" rule was buying all along — see *Why the chain is a
+line* in [the catalogue](catalogue.md). Its ordinary face stays unchanged in either host;
+a graph may opt into the row-aligned anatomy below when its ports govern controls on the
+face.
 
-Only one thing had to be added to `Device` for it: **ports**. In a strip adjacency *is* the
+The first thing added to `Device` for it was **ports**. In a strip adjacency *is* the
 connection and there is nothing to draw; a graph has to draw it, so a cord needs somewhere
-to end.
+to end. The second was an opt-in row anatomy, after the first host proved that two rails
+centred against a body cannot line a port up with the control it governs.
 
 **Its first host is `visuals/`'s circuit editor**, where a node is one operation in a
 fragment shader — see [circuits](../../visuals/docs/circuit.md). Two things written here
@@ -119,6 +122,53 @@ Three things move a port without re-rendering `Graph`: a faceplate resizing, a f
 landing, and a host swapping a face. A `ResizeObserver` on the registered elements is the
 only thing that catches all three, so there is one, and ports observe into it as they
 register.
+
+## Rails for a device, rows for a patch
+
+The default `Device` anatomy is still three siblings: an inlet rail, the body and an outlet
+rail. That is the right shape for an ordinary device face, where the ports describe the
+whole device rather than one control, and it is the path every chain and rack still takes.
+Passing `inlets` and `outlets` alone selects it.
+
+A face where each port governs one line opts in by passing `portRows`. Each child is a
+[`DevicePortRow`](../src/chrome/Device.tsx), with an `inlet`, an `outlet`, or both, and its
+control as the child:
+
+```tsx
+<Device
+  name="Shape"
+  chooser={<Select items={targets} index={at} onChange={setAt} />}
+  outlets={<Port id="shape/out" side="out" label="Out" />}
+  portRows={
+    <DevicePortRow
+      inlet={<Port id="shape/depth" side="in" label="Depth" showLabel={false} />}
+    >
+      <Slider layout="inside" orientation="horizontal" name="Depth" {...depth} />
+    </DevicePortRow>
+  }
+/>
+```
+
+That is a separate anatomy rather than CSS laid over the old rails. The row is one grid, so
+the dot and the control share a centre by construction. `Port.showLabel={false}` suppresses
+only its printed caption; `label` remains its accessible name and tooltip, while the control
+prints the name once inside itself.
+
+The aligned face always renders its outlet and chooser bands, including when either is
+empty. A host that must not resize as content changes reserves the maximum number of lines
+with `--wdg-device-outlet-rows` and `--wdg-device-port-rows`; each line is
+`--wdg-port-row-height`, which defaults to the field height. The widgets module cannot pick
+those counts because it does not know a host's vocabulary.
+
+`overlay` is deliberately not a row. It is absolutely anchored above the frame and
+contributes nothing to its measured width or height. A host owns its content and fixed size;
+`Device` owns only the anchor. This is for a graph preview whose dimensions must not become
+a function of the controls below it, not for ordinary device artwork inside the face.
+
+The practical test for the opt-in anatomy is the observer above: wiring a row or changing
+what it shows should leave every port at the same coordinates. A host changing the number
+of visible rows without reserving their maximum has chosen to resize the node and will make
+the observer redraw its cords.
 
 **A cord naming a port that isn't mounted is skipped, not dropped.** Nodes mount in their
 own time, and a host shouldn't have to sequence its state against React's.

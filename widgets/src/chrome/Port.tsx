@@ -28,6 +28,8 @@ export interface PortProps {
   side: PortSide;
   /** Shown beside the port, and used as its accessible name. */
   label?: string;
+  /** Keep the accessible name and tooltip without printing a second caption. */
+  showLabel?: boolean;
   /** The host's own vocabulary, surfaced as `data-kind` for it to style. */
   kind?: string;
   /** Whether a cord already lands here. The host knows; the port doesn't. */
@@ -36,7 +38,16 @@ export interface PortProps {
   className?: string;
 }
 
-export function Port({ id, side, label, kind, connected, disabled, className }: PortProps) {
+export function Port({
+  id,
+  side,
+  label,
+  showLabel = true,
+  kind,
+  connected,
+  disabled,
+  className,
+}: PortProps) {
   const graph = useContext(GraphContext);
   const ref = useRef<HTMLButtonElement | null>(null);
   const register = graph?.register;
@@ -98,7 +109,7 @@ export function Port({ id, side, label, kind, connected, disabled, className }: 
         onPointerLeave={() => graph?.hoverPort(null)}
         onKeyDown={key}
       />
-      {label !== undefined && <span className="wdg-port-label">{label}</span>}
+      {showLabel && label !== undefined && <span className="wdg-port-label">{label}</span>}
     </span>
   );
 }

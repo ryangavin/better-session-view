@@ -255,3 +255,31 @@ h2 {
   font-family: ui-monospace, Menlo, monospace;
   font-size: 11px;
 }
+
+.row-face {
+  --wdg-device-outlet-rows: 2;
+  --wdg-device-port-rows: 4;
+  width: 168px;
+  margin-top: 100px;
+}
+
+.row-face-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  border: 1px solid #2c2c31;
+  border-radius: 2px;
+  background: #08080a;
+  color: #5e5e66;
+  font-size: 9px;
+}
+
+.row-face-kind,
+.row-face-label {
+  overflow: hidden;
+  color: #8b8b93;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

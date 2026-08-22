@@ -25,6 +25,45 @@
   gap: var(--wdg-space);
 }
 
+.wdg-widget[data-layout='inside'] {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  gap: 0;
+}
+
+.wdg-widget[data-layout='inside'] > .wdg-caption,
+.wdg-widget[data-layout='inside'] > .wdg-body,
+.wdg-widget[data-layout='inside'] > .wdg-readout {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.wdg-widget[data-layout='inside'] > .wdg-body {
+  width: 100%;
+}
+
+.wdg-widget[data-layout='inside'] > .wdg-caption,
+.wdg-widget[data-layout='inside'] > .wdg-readout {
+  z-index: 1;
+  align-self: center;
+  padding: 0 4px;
+  pointer-events: none;
+}
+
+.wdg-widget[data-layout='inside'] > .wdg-caption {
+  justify-self: start;
+  color: var(--wdg-text);
+  text-align: left;
+}
+
+.wdg-widget[data-layout='inside'] > .wdg-readout {
+  justify-self: end;
+  color: var(--wdg-text);
+  text-align: right;
+}
+
 .wdg-widget > .wdg-body {
   display: flex;
   align-items: center;

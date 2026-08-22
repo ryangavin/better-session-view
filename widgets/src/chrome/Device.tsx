@@ -52,6 +52,32 @@ export interface DeviceProps {
    */
   inlets?: ReactNode;
   outlets?: ReactNode;
+  /**
+   * Content fixed above the face without contributing to its measured size.
+   *
+   * A graph preview is the first caller: its picture must be comparable from
+   * one node to the next without making the face below it wider or taller.
+   * The host still owns the content and its size; `Device` only gives it the
+   * anchored layer.
+   */
+  overlay?: ReactNode;
+  /**
+   * The one fixed-height choice band in a row-aligned face.
+   *
+   * Rendered even when empty, so two faces keep the same anatomy. It is used
+   * only when `portRows` is provided; the ordinary chain face remains exactly
+   * the body it has always been.
+   */
+  chooser?: ReactNode;
+  /**
+   * Opts into a face whose ports and controls share rows.
+   *
+   * Each child should be a `DevicePortRow`. Inlets belong on those rows rather
+   * than in the legacy `inlets` rail; `outlets` move into their own fixed band
+   * at the top right. CSS variables reserve empty outlet and row lines when a
+   * host needs node geometry to stay fixed across face changes.
+   */
+  portRows?: ReactNode;
   /** The faceplate. */
   children?: ReactNode;
   className?: string;
@@ -72,10 +98,14 @@ export function Device({
   headerEnd,
   inlets,
   outlets,
+  overlay,
+  chooser,
+  portRows,
   children,
   className,
   title,
 }: DeviceProps) {
+  const rowAligned = portRows !== undefined;
   const ported = inlets !== undefined || outlets !== undefined;
   const select = onSelect
     ? {
@@ -95,8 +125,11 @@ export function Device({
       {...(on ? { 'data-on': '' } : {})}
       {...(folded ? { 'data-folded': '' } : {})}
       {...(selected ? { 'data-selected': '' } : {})}
+      {...(overlay !== undefined ? { 'data-overlay': '' } : {})}
+      {...(rowAligned ? { 'data-port-layout': 'rows' } : {})}
       title={title}
     >
+      {overlay !== undefined && <div className="wdg-device-overlay">{overlay}</div>}
       <div className="wdg-device-head" {...select}>
         {onFold && (
           <button
@@ -144,7 +177,14 @@ export function Device({
       {!folded &&
         // The body stays the device's only child when there are no ports, so a
         // chain's height and stretch chain is exactly what it always was.
-        (ported ? (
+        (rowAligned ? (
+          <div className="wdg-device-row-face">
+            <div className="wdg-device-outlets">{outlets}</div>
+            <div className="wdg-device-chooser">{chooser}</div>
+            {children !== undefined && <div className="wdg-device-body">{children}</div>}
+            <div className="wdg-device-port-rows">{portRows}</div>
+          </div>
+        ) : ported ? (
           <div className="wdg-device-main">
             <div className="wdg-device-ports" data-side="in">
               {inlets}
@@ -157,6 +197,31 @@ export function Device({
         ) : (
           <div className="wdg-device-body">{children}</div>
         ))}
+    </div>
+  );
+}
+
+export interface DevicePortRowProps {
+  /** A `Port` on the leading edge. */
+  inlet?: ReactNode;
+  /** A `Port` on the trailing edge. */
+  outlet?: ReactNode;
+  /** The control or label governed by the ports on this line. */
+  children?: ReactNode;
+  className?: string;
+}
+
+/** One fixed-height line shared by a port and the control it governs. */
+export function DevicePortRow({ inlet, outlet, children, className }: DevicePortRowProps) {
+  return (
+    <div className={`wdg-device-port-row${className ? ` ${className}` : ''}`}>
+      <div className="wdg-device-row-port" data-side="in">
+        {inlet}
+      </div>
+      <div className="wdg-device-row-control">{children}</div>
+      <div className="wdg-device-row-port" data-side="out">
+        {outlet}
+      </div>
     </div>
   );
 }

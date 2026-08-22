@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { Widget, type WidgetProps } from './Widget.js';
 import './controls.css';
 
 /**
@@ -21,20 +21,20 @@ import './controls.css';
  * answer different questions — where it is now, and how far it has been — and a
  * second translucent fill reads as one louder value rather than two facts.
  */
-export interface MeterProps {
+export interface MeterProps extends Omit<WidgetProps, 'disabled'> {
   /** 0–1. Clamped, because a meter that overshoots its own box is a bug you see. */
   value: number;
   /** 0–1. A hold, drawn as a line across the fill. */
   peak?: number;
   orientation?: 'horizontal' | 'vertical';
-  name?: string;
-  label?: string;
+  /** Authoritative text to show when `showValue` is on. */
+  display?: string;
+  /** Preserve the old meter face by default; row faces opt into the reading. */
+  showValue?: boolean;
   /** In px, across the bar. */
   width?: number;
   /** In px, along it. */
   length?: number;
-  className?: string;
-  title?: string;
 }
 
 const clamp = (v: number) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0);
@@ -45,6 +45,9 @@ export function Meter({
   orientation = 'horizontal',
   name,
   label,
+  layout,
+  display,
+  showValue = false,
   width,
   length,
   className,
@@ -53,18 +56,20 @@ export function Meter({
   const level = clamp(value);
   const held = peak === undefined ? undefined : clamp(peak);
   return (
-    <div
-      className={`wdg wdg-meter${className ? ` ${className}` : ''}`}
-      style={
-        {
-          ...(width === undefined ? {} : { '--wdg-meter-width': `${width}px` }),
-          ...(length === undefined ? {} : { '--wdg-meter-length': `${length}px` }),
-          '--wdg-meter-fill': level,
-          ...(held === undefined ? {} : { '--wdg-meter-peak': held }),
-        } as CSSProperties
-      }
+    <Widget
+      kind="meter"
+      name={name}
+      readout={showValue ? (display ?? String(Math.round(level * 100))) : undefined}
+      layout={layout}
+      className={className}
+      title={title}
+      vars={{
+        ...(width === undefined ? {} : { '--wdg-meter-width': `${width}px` }),
+        ...(length === undefined ? {} : { '--wdg-meter-length': `${length}px` }),
+        '--wdg-meter-fill': level,
+        ...(held === undefined ? {} : { '--wdg-meter-peak': held }),
+      }}
     >
-      {name && <span className="wdg-caption">{name}</span>}
       <div
         className={`wdg-meter-body wdg-body wdg-meter-${orientation}`}
         role="meter"
@@ -72,11 +77,10 @@ export function Meter({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={label ?? name}
-        title={title}
       >
         <i className="wdg-meter-level" />
         {held !== undefined && <i className="wdg-meter-hold" />}
       </div>
-    </div>
+    </Widget>
   );
 }
