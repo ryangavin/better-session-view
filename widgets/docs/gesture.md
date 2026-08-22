@@ -46,6 +46,19 @@ written, fine slows the control from wherever it currently is, which is what Liv
 rather than the element's size on purpose — an absolute mapping is unusable on anything
 small, which is the same reason the range inputs were wrong.
 
+**Shift drags the range instead of the value**, on any control given a `depth` and an
+`onDepth`. Both accrue from wherever the pointer last was, so taking or dropping shift
+halfway through carries on from where the control is rather than jumping — the same
+property that lets the fine modifier be taken late. Shift-double-click takes the depth to
+nothing and leaves the value where it is. A control with no `onDepth` never sees any of
+this, and shift on it does what it always did, which is nothing.
+
+The two modifiers compose: shift is *which number*, fine is *how slowly*, so fine plus
+shift is a slow drag on the range. It is a range drag that is slower again by half to
+start with, because a range runs from one end of the control to the other in **both**
+directions — twice the ground a value covers — and it is the gesture you make once and
+then leave alone.
+
 **The fine modifier is ⌘ on macOS, Ctrl elsewhere**, which is Vital's — Live's is Shift, and this said so for a while. `platform.ts`
 duplicates the test in `ui/src/lib/keys.ts` rather than importing it, because a widget
 library that needed a host to tell it which key means fine would be a widget library with

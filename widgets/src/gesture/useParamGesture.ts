@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
 } from 'react';
 import { format } from '../param/format.js';
@@ -44,10 +45,29 @@ const DEFAULT_TRAVEL = 200;
 /** How much further a fine drag has to go to cover the same ground. */
 const FINE_FACTOR = 10;
 
+/**
+ * How much further a range drag goes than a value drag.
+ *
+ * Slower, because a range runs from one end of the control to the other in
+ * both directions — twice the ground of a value — and because it is the
+ * gesture you make once and then leave alone.
+ */
+const DEPTH_REACH = 1.5;
+
 export interface ParamGestureOptions {
   param: Param;
   /** What the control currently holds. A drag anchors here and then ignores it. */
   value: number;
+  /**
+   * How far something else may carry this control from its value, signed.
+   *
+   * Given together with `onDepth`, holding shift turns the same drag into a
+   * drag on *this* instead — so a range is set with the gesture that sets the
+   * value, on the control the value is set on, rather than in a second place.
+   * Left out, shift does nothing and the control is what it always was.
+   */
+  depth?: number;
+  onDepth?(next: number): void;
   onChange(next: number): void;
   /** The gesture ended — the moment a host can stop preferring its local value. */
   onRelease?(): void;
@@ -76,7 +96,7 @@ export interface ParamSurfaceProps {
   onPointerMove(e: PointerEvent<HTMLElement>): void;
   onPointerUp(e: PointerEvent<HTMLElement>): void;
   onPointerCancel(e: PointerEvent<HTMLElement>): void;
-  onDoubleClick(): void;
+  onDoubleClick(e: MouseEvent<HTMLElement>): void;
   onKeyDown(e: KeyboardEvent<HTMLElement>): void;
 }
 
@@ -96,6 +116,8 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     onChange,
     onRelease,
     disabled = false,
+    depth,
+    onDepth,
     axis = 'vertical',
     anchor = 'value',
     travel = DEFAULT_TRAVEL,
@@ -107,10 +129,16 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
 
   // Every moving part reads through a ref so the handlers stay stable and a
   // drag in flight can't be re-anchored by a re-render underneath it.
-  const latest = useRef({ param, value, onChange, onRelease, disabled });
-  latest.current = { param, value, onChange, onRelease, disabled };
+  const latest = useRef({ param, value, onChange, onRelease, disabled, depth, onDepth });
+  latest.current = { param, value, onChange, onRelease, disabled, depth, onDepth };
 
-  const drag = useRef<{ id: number; x: number; y: number; fraction: number } | null>(null);
+  const drag = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    fraction: number;
+    depth: number;
+  } | null>(null);
   const pending = useRef<number | null>(null);
   const frame = useRef<number | null>(null);
   const sent = useRef(Number.NaN);
@@ -181,7 +209,7 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
         fraction = Math.max(0, Math.min(1, along));
         emit(valueAt(now.param, fraction));
       }
-      drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, fraction };
+      drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, fraction, depth: now.depth ?? 1 };
       setDragging(true);
     },
     [anchor, axis, emit],
@@ -198,8 +226,19 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
       // grab point, so taking the fine modifier mid-drag slows the control from
       // where it is instead of teleporting it.
       const reach = travel * (isFine(e) ? FINE_FACTOR : 1);
+      const now = latest.current;
+      // Shift drags the range instead of the value, on the same control and in
+      // the same direction. Both accrue from wherever the pointer last was, so
+      // taking or dropping shift halfway through a drag carries on from where
+      // the control is rather than jumping — the same property that lets the
+      // fine modifier be taken late.
+      if (e.shiftKey && now.onDepth) {
+        held.depth = Math.max(-1, Math.min(1, held.depth + moved / (reach * DEPTH_REACH)));
+        now.onDepth(held.depth);
+        return;
+      }
       held.fraction = Math.max(0, Math.min(1, held.fraction + moved / reach));
-      emit(valueAt(latest.current.param, held.fraction));
+      emit(valueAt(now.param, held.fraction));
     },
     [axis, emit, travel],
   );
@@ -211,9 +250,16 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     [finish],
   );
 
-  const onDoubleClick = useCallback(() => {
+  const onDoubleClick = useCallback((e: MouseEvent<HTMLElement>) => {
     const now = latest.current;
     if (now.disabled) return;
+    // Shift is the range on the way down, so it is the range on the way back:
+    // shift-double-click takes the depth to nothing and leaves the value alone.
+    if (e.shiftKey && now.onDepth) {
+      now.onDepth(0);
+      finish();
+      return;
+    }
     emit(quantize(now.param, now.param.defaultValue));
     finish();
   }, [emit, finish]);

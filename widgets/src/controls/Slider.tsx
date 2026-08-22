@@ -10,6 +10,15 @@ export interface SliderProps extends WidgetProps {
   value: number;
   onChange(next: number): void;
   onRelease?(): void;
+  /**
+   * How far something else may carry this control, signed, drawn as a span.
+   *
+   * With `onDepth`, holding shift drags this rather than the value. The span
+   * runs from the value in the direction of the sign, so which side of the
+   * mark it sits on *is* the polarity.
+   */
+  depth?: number;
+  onDepth?(next: number): void;
   display?: string;
   /**
    * Which way the track runs, and so which way the drag goes.
@@ -31,6 +40,8 @@ export function Slider({
   value,
   onChange,
   onRelease,
+  depth,
+  onDepth,
   disabled = false,
   display,
   label,
@@ -49,6 +60,8 @@ export function Slider({
     value,
     onChange,
     onRelease,
+    depth,
+    onDepth,
     disabled,
     axis: orientation,
     // `length` is the drawn extent, and gearing to it is right for a fader
@@ -61,6 +74,15 @@ export function Slider({
     label: label ?? name,
     display,
   });
+
+  // Where the range sits on the rail, or nothing to draw when it is a plain
+  // control or its depth is zero.
+  const reach = depth ?? 0;
+  const far = Math.max(0, Math.min(1, gesture.fraction + reach));
+  const span =
+    onDepth === undefined || reach === 0
+      ? null
+      : { at: Math.min(gesture.fraction, far), size: Math.abs(far - gesture.fraction) };
 
   return (
     <Widget
@@ -75,10 +97,19 @@ export function Slider({
       vars={{
         '--wdg-slider-length': `${length}px`,
         ...fillFrom(param, origin, gesture.fraction),
+        // The span as a start and a width, both fractions, so the drawing is
+        // two custom properties and no arithmetic in CSS. Clamped to the rail
+        // because a range carried past the end still reads there, and stored
+        // unclamped so it means something again when the value moves back.
+        ...(span === null
+          ? {}
+          : { '--wdg-span-at': span.at, '--wdg-span-size': span.size }),
       }}
     >
       <div className="wdg-slider-body" {...gesture.props}>
         <span className="wdg-slider-fill" aria-hidden="true" />
+        {span !== null && <span className="wdg-slider-span" aria-hidden="true" />}
+        {span !== null && <span className="wdg-slider-mark" aria-hidden="true" />}
         <span className="wdg-slider-thumb" aria-hidden="true" />
       </div>
     </Widget>

@@ -147,9 +147,9 @@ export function XYPad({
           gx.props.onPointerCancel,
           gy.props.onPointerCancel,
         )}
-        onDoubleClick={() => {
-          gx.props.onDoubleClick();
-          gy.props.onDoubleClick();
+        onDoubleClick={(e) => {
+          gx.props.onDoubleClick(e);
+          gy.props.onDoubleClick(e);
         }}
       >
         {children !== undefined && <div className="wdg-xypad-art">{children}</div>}

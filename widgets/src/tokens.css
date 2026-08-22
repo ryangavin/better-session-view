@@ -28,6 +28,8 @@
   --wdg-field-height: 16px;
   --wdg-track: 14px;
   --wdg-strip: 3px;
+  --wdg-span-height: 2px;
+  --wdg-span-ink: var(--amber, #f0b23c);
   --wdg-groove: var(--surface-sunken, #101012);
   --wdg-knob-size: 34px;
   --wdg-knob-height: 27px;
