@@ -83,17 +83,15 @@ export interface BasslineNote {
    */
   pitch: number;
   /**
-   * Set when the note is **below what a four-string can reach**.
-   *
-   * A fact about the bass, not about this roll: it is measured against a fixed
-   * pitch and has nothing to do with which row the note lands on. Anchoring it
-   * to the roll's bottom row was the first attempt and marked notes anybody can
-   * play, because the row follows the part and the part cannot say which octave
-   * it is in.
+   * Set when the note sounds **below the bottom row**, which is the open E of a
+   * four-string: it is drawn an octave up from where it was played.
    *
    * It says *this line was written for five strings, and here is how you get
-   * away with it on four*. A note merely wrapped round the top of the octave
-   * carries nothing, because anybody can play it where it is drawn.
+   * away with it on four*. A note wrapped round the *top* of the octave carries
+   * nothing and is not marked, because anybody can play it where it is drawn.
+   *
+   * The two facts are one mark because `low` is a pitch the bass states rather
+   * than one the part does — see the note on it.
    */
   below?: boolean;
 }
@@ -137,8 +135,12 @@ export interface ChartBassline {
   /**
    * The lowest and highest MIDI note the roll draws, inclusive — twelve rows.
    *
-   * **One octave sitting on the part's lowest note**, so a part that fits inside
-   * an octave is drawn exactly where it was played and only a wider one wraps.
+   * **`low` is always an E**: a four-string's open E, so the bottom of the roll
+   * is the bottom of the instrument and the rows hold still from song to song.
+   * Which E is read off the part, because a clip can be written an octave out —
+   * downwards only, since a part above the E is playable where it is and a part
+   * below it is playable nowhere. `high` is eleven semitones up.
+   *
    * On the wire rather than worked out on the phone, so the musical judgement
    * stays in one place.
    */

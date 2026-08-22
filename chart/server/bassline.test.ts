@@ -163,18 +163,18 @@ describe('buildBassline', () => {
     expect(out?.notes).toEqual([{ from: 6, to: 8, pitch: 45 }]);
   });
 
-  it('draws one octave, sitting on the part', () => {
+  it('draws one octave, sitting on the open E', () => {
     const out = buildBassline(
       setWith([{ t: 0, name: 'Bass', slot: 0, loopEnd: 16, notes: LINE }]),
     );
-    // LINE bottoms out at 43, so that is the bottom row.
-    expect(out).toMatchObject({ low: 43, high: 54 });
+    // The bottom row is the open E whatever the part does above it.
+    expect(out).toMatchObject({ low: 40, high: 51 });
   });
 
-  it('leaves a part that fits in an octave exactly where it was played', () => {
-    // The bug this replaced: a D minor line an octave above the low E had the
-    // window snapped to the E above its lowest note, which threw the D and the
-    // Eb over the top of the roll and marked them as five-string notes.
+  it('marks nothing in a part that sits above the open E', () => {
+    // The bug this still has to stay fixed: a D minor line an octave above the
+    // low E is a line anybody can play, so the D and the Eb carry no dot even
+    // though they are the lowest notes in it.
     const dminor = [50, 53, 57, 60, 51].map((pitch, i) => ({
       pitch,
       start: i,
@@ -184,12 +184,59 @@ describe('buildBassline', () => {
       setWith([{ t: 0, name: 'Bass', slot: 0, loopEnd: 8, notes: dminor }]),
     );
 
-    expect(out).toMatchObject({ low: 50, high: 61 });
-    expect(out?.notes.map((note) => note.pitch)).toEqual([50, 53, 57, 60, 51]);
+    expect(out).toMatchObject({ low: 40, high: 51 });
+    expect(out?.notes.map((note) => note.pitch)).toEqual([50, 41, 45, 48, 51]);
     expect(out?.notes.some((note) => note.below)).toBe(false);
   });
 
-  it('wraps only the top of a part wider than an octave', () => {
+  it('draws the note under the root an octave up, with the dot', () => {
+    // The reading this is for: a G minor line with a D under the G. The D is
+    // below the open E, so it goes up an octave to be drawn and takes the mark
+    // that says it wants the fifth string.
+    const gminor = [38, 43, 46, 50].map((pitch, i) => ({ pitch, start: i * 4, duration: 4 }));
+    const out = buildBassline(
+      setWith([{ t: 0, name: 'Bass', slot: 0, loopEnd: 16, notes: gminor }]),
+    );
+
+    expect(out).toMatchObject({ low: 40, high: 51 });
+    expect(out?.notes).toEqual([
+      { from: 0, to: 4, pitch: 50, below: true },
+      { from: 4, to: 8, pitch: 43 },
+      { from: 8, to: 12, pitch: 46 },
+      { from: 12, to: 16, pitch: 50 },
+    ]);
+  });
+
+  it('follows the part down when the clip is written below the open E', () => {
+    // A clip an octave out is playable nowhere as written, and measuring it
+    // against a fixed pitch would dot every note in it.
+    const under = [26, 31, 34, 38].map((pitch, i) => ({ pitch, start: i, duration: 1 }));
+    const out = buildBassline(
+      setWith([{ t: 0, name: 'Bass', slot: 0, loopEnd: 8, notes: under }]),
+    );
+
+    expect(out).toMatchObject({ low: 28, high: 39 });
+    expect(out?.notes).toEqual([
+      { from: 0, to: 1, pitch: 38, below: true },
+      { from: 1, to: 2, pitch: 31 },
+      { from: 2, to: 3, pitch: 34 },
+      { from: 3, to: 4, pitch: 38 },
+    ]);
+  });
+
+  it('never follows the part up', () => {
+    // The other direction is a different question: a part written high is a
+    // part playable where it is, so the open E stays where the rig put it.
+    const over = [64, 67, 71].map((pitch, i) => ({ pitch, start: i, duration: 1 }));
+    const out = buildBassline(
+      setWith([{ t: 0, name: 'Bass', slot: 0, loopEnd: 4, notes: over }]),
+    );
+
+    expect(out).toMatchObject({ low: 40, high: 51 });
+    expect(out?.notes.some((note) => note.below)).toBe(false);
+  });
+
+  it('wraps the top of a part wider than an octave', () => {
     const out = buildBassline(
       setWith([
         {
@@ -207,8 +254,8 @@ describe('buildBassline', () => {
       ]),
     );
 
-    expect(out).toMatchObject({ low: 43, high: 54 });
-    expect(out?.notes.map((note) => note.pitch)).toEqual([43, 54, 43, 43]);
+    expect(out).toMatchObject({ low: 40, high: 51 });
+    expect(out?.notes.map((note) => note.pitch)).toEqual([43, 42, 43, 43]);
     expect(out?.notes.some((note) => note.below)).toBe(false);
   });
 
@@ -252,18 +299,19 @@ describe('buildBassline', () => {
       ]),
     );
 
-    // The open E is the line: 35 and 39 are under it, 40 is it.
+    // The open E is the line: 35 and 39 are under it and get drawn an octave
+    // up, 40 is it.
     expect(out?.notes).toEqual([
-      { from: 0, to: 1, pitch: 35, below: true },
-      { from: 1, to: 2, pitch: 39, below: true },
+      { from: 0, to: 1, pitch: 47, below: true },
+      { from: 1, to: 2, pitch: 51, below: true },
       { from: 2, to: 3, pitch: 40 },
       { from: 3, to: 4, pitch: 45 },
     ]);
   });
 
-  it('asks the instrument, not the roll', () => {
+  it('tells two lines of the same shape an octave apart apart', () => {
     // Same shape, same rows, an octave apart. Only the lower one is out of
-    // reach, and the roll's own bottom row cannot tell them apart.
+    // reach, and only its bottom note carries the dot.
     const shape = (at: number) => [at, at + 3, at + 7].map((pitch, i) => ({
       pitch,
       start: i,

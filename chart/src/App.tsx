@@ -297,16 +297,18 @@ const LABEL_AT = 4.5;
  * disagree with the clip, and a chart the bass player has to double-check
  * against Live is one they will stop reading.
  *
- * **One octave, sitting on the part's lowest note.** Two octaves of real pitches
- * drew an honest picture of a part and spent most of a phone screen on the gap
- * between the two notes furthest apart in it. What is read off a chart is which
- * note comes next, and that is the same note in any octave.
+ * **One octave, sitting on the open E.** Twelve rows up from the bottom of a
+ * four-string, which is the same twelve rows every song: the row a note lands on
+ * says what it said last week. Two octaves of real pitches drew an honest
+ * picture of a part and spent most of a phone screen on the gap between the two
+ * notes furthest apart in it. What is read off a chart is which note comes next,
+ * and that is the same note in any octave.
  *
  * The window comes off the wire rather than being decided here, so every phone
  * in the room is looking at the same keyboard, and every note arrives already
- * folded into it. A note the server marked `below` is one a four-string cannot
- * reach — a fact about the bass rather than about this layout, which is why it
- * is asked of a fixed pitch on the server and not of the bottom row here.
+ * folded into it. A note the server marked `below` sounded under that bottom E
+ * and is drawn an octave up: the dot says the four strings ran out, the row says
+ * where to play it anyway.
  *
  * **Colour is the degree and the text is the note.** A block's hue says what the
  * note is doing in the key — root, fifth, flat seventh — and the letter on it
@@ -416,7 +418,7 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
                 backgroundColor: at === null ? hex(line.color) : degreeColor(at),
               }}
               title={`${noteName(note.pitch, line.flats)}${at === null ? '' : ` · ${degreeName(at)}`}${
-                note.below ? ' · needs the fifth string' : ''
+                note.below ? ' · an octave up, needs the fifth string' : ''
               }`}
             >
               {width >= LABEL_AT ? noteName(note.pitch, line.flats) : ''}

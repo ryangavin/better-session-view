@@ -29,12 +29,7 @@ const OCTAVE = 12;
  * or merely written low. This set puts a five-string's B at 35, which puts the
  * E above it here.
  *
- * It is a constant because it has to be, and it is safe to be one because of
- * what depends on it: the dot that says a note needs the fifth string, and
- * nothing else. The roll's window is measured off the part, so being wrong here
- * costs an advisory mark rather than the layout — which is the whole reason
- * the two were separated. Retune or re-record an octave away and this is the
- * line to change.
+ * Retune or re-record an octave away and this is the line to change.
  */
 const FOUR_STRING_E = 40;
 
@@ -87,7 +82,7 @@ function bassPart(set: SetState): Part | null {
 }
 
 /**
- * A note brought down into the octave the roll draws.
+ * A note moved into the octave the roll draws.
  *
  * **One octave, so every note is a pitch class in the end.** Two octaves of real
  * pitches drew an honest picture of a part and spent most of a phone screen on
@@ -95,10 +90,10 @@ function bassPart(set: SetState): Part | null {
  * reads off a chart is which note comes next, and that is the same note in any
  * octave.
  *
- * Downwards only, because the window sits on the part's lowest note: a part that
- * fits inside an octave is drawn exactly as it was played, and a part that does
- * not has its top wrapped round. Nothing is ever moved *up*, which is what makes
- * the dot mean something — see `needsFive`.
+ * Both directions, because the window sits on an E rather than on the part: a
+ * note over the top row comes down, and one under the bottom row goes up.
+ * Only the ones that went up are marked, because they are the ones that cost the
+ * player something — see `needsFive`.
  *
  * Whole octaves rather than a clamp to the edge, because a clamp changes what
  * the note *is*, and a run of clamps would flatten a line into a bar along the
@@ -109,20 +104,49 @@ function fold(pitch: number, low: number): number {
 }
 
 /**
- * Whether a note is below what a four-string can reach.
+ * The E the roll sits on, found from the part.
  *
- * **Measured against the instrument, not against the roll.** This was the roll's
- * bottom row at first, which read well and was wrong: the window follows the
- * part, so anchoring the question to it made every song whose lowest note sat
- * just under a row boundary claim it needed a fifth string. A part in D minor an
- * octave above the low E marked its D and its Eb — notes anybody can play, on a
- * bass tuned however they like.
+ * **The bottom row is an E, every song.** Twelve rows up from a four-string's
+ * open E is the keyboard the player is reading, and it holds still: the row a
+ * note lands on tonight means what it meant last week. The window sat on the
+ * part's lowest note before this, which drew a part that fitted in an octave
+ * exactly where it was played, and moved every row underneath the reader the
+ * moment the bass line changed.
  *
- * Whether a note is out of reach is a fact about the bass, so it is asked of a
- * fixed pitch and the layout is not involved.
+ * **Downwards only.** Clips get written an octave out and the answer has to
+ * survive that, but the two directions are not the same question. A part sitting
+ * above the open E is playable where it is, whichever octave it was typed in —
+ * the fixed pitch is already the useful reading of it. A part sitting entirely
+ * *below* the open E is playable nowhere, and measuring that against a fixed
+ * pitch would mark every note in it: a roll of dots, saying nothing. So the E
+ * follows the part down and never up, and it is the part's **highest** note that
+ * says when to move, because the lowest one is the note under question.
  */
-function needsFive(pitch: number): boolean {
-  return pitch < FOUR_STRING_E;
+function openE(sounding: readonly BSV.ClipNote[]): number {
+  let top = sounding[0]!.pitch;
+  for (const note of sounding) if (note.pitch > top) top = note.pitch;
+  let e = FOUR_STRING_E;
+  while (top < e) e -= OCTAVE;
+  return e;
+}
+
+/**
+ * Whether a note is below what a four-string can reach — which is now the same
+ * question as whether it had to be moved to be drawn.
+ *
+ * **One question, not two.** Asking the roll was wrong while the roll followed
+ * the part: a line in D minor an octave above the low E had its window snapped
+ * to the E above its lowest note, which threw the D and the Eb over the top and
+ * marked them, and those are notes anybody can play. The answer then was to ask
+ * a fixed pitch instead and let the layout disagree with the mark.
+ *
+ * The roll sits on the E itself now, so there is nothing left to disagree: a
+ * note under the bottom row is a note under the open E, and the octave it is
+ * drawn up into is the octave the player has to find it in. The dot says *this
+ * line was written for five strings, and here is where the fourth one ran out*.
+ */
+function needsFive(pitch: number, low: number): boolean {
+  return pitch < low;
 }
 
 /**
@@ -152,9 +176,9 @@ export function buildBassline(set: SetState): ChartBassline | null {
   const to = clip.loopEnd;
   if (!(to > from)) return null;
 
-  // Sounding notes first, at their real pitches, because the window is measured
-  // from them — folding before knowing where the keyboard is would move a note
-  // and then anchor to where it was moved to.
+  // Sounding notes first, at their real pitches, because both the keyboard and
+  // the dot are measured from them — folding first would move a note and then
+  // ask its question of where it was moved to.
   const sounding: BSV.ClipNote[] = [];
   for (const note of part.notes) {
     if (note.start < from || note.start >= to) continue;
@@ -165,14 +189,13 @@ export function buildBassline(set: SetState): ChartBassline | null {
   // looks like a bug where no roll looks like no roll.
   if (sounding.length === 0) return null;
 
-  let low = sounding[0]!.pitch;
-  for (const note of sounding) if (note.pitch < low) low = note.pitch;
+  const low = openE(sounding);
 
   const notes: BasslineNote[] = sounding.map((note) => ({
     from: note.start - from,
     to: Math.min(to, note.start + note.duration) - from,
     pitch: fold(note.pitch, low),
-    ...(needsFive(note.pitch) ? { below: true } : {}),
+    ...(needsFive(note.pitch, low) ? { below: true } : {}),
   }));
   notes.sort((a, b) => a.from - b.from || a.pitch - b.pitch);
 

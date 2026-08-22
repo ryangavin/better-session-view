@@ -217,39 +217,56 @@ Times go on the wire **relative to the loop's start**, because that is what the 
 drawn from, and doing the subtraction once on the server beats doing it per note on the
 oldest phone in the room.
 
-### The keyboard is one octave, sitting on the part
+### The keyboard is one octave, sitting on the open E
 
-**Twelve rows, starting on the lowest note in the loop.** A part that fits inside an octave
-is drawn exactly where it was played; one that does not has its top wrapped round, folded by
-whole octaves and never clamped to an edge — a clamp changes what the note is, and a run of
-clamps flattens a line into a bar along the top.
+**Twelve rows, and the bottom one is an E** — a four-string's open E, the bottom of the
+instrument. Every note in the loop is folded into those rows by whole octaves, up from under
+the bottom row or down from over the top, and never clamped to an edge: a clamp changes what
+the note is, and a run of clamps flattens a line into a bar along the top.
 
-It was two octaves of real pitches first, and that drew an honest picture of a part while
-spending most of a phone screen on the gap between the two notes furthest apart in it. What
-gets read off a chart is which note comes next, and that is the same note in any octave.
+The rows hold still, and that is the point. Somebody reading a song they have never played is
+learning the roll and the song at once, and a keyboard that moves between songs is one they
+have to re-read every time the set moves on. It sat on the **part's lowest note** before
+this, which drew a part that fitted inside an octave exactly where it was played — a real
+property, and worth less than a bottom row that means something. The cost is the other way
+round now: a line whose lowest note is not an E wraps where it used to sit still.
 
-### The dot asks the instrument, not the roll
+It was two octaves of real pitches before that, and that drew an honest picture of a part
+while spending most of a phone screen on the gap between the two notes furthest apart in it.
+What gets read off a chart is which note comes next, and that is the same note in any octave.
 
-A note **below what a four-string can reach** gets a small dot, and nothing else does. It
-says *this line was written for five strings, and here is how you get away with it on four*.
+### Which E, when a clip is written an octave out
 
-The first version anchored the roll's bottom row to an E — a four-string's open E — and drew
-the dot on anything that fell below that row. It read well and it was wrong, because the row
-had to be found from the part and the part cannot say which octave it is in. A line in D
-minor sitting an octave *above* the low E had the window snapped to the E above its lowest
-note, which threw its D and its Eb over the top of the roll and marked them. Notes anybody
-can play, on a bass tuned however they like.
+The pitch is `FOUR_STRING_E` in [`server/bassline.ts`](../server/bassline.ts) — the open E as
+this set's clips write it, and the file's **only rig constant**. Nothing in a clip says what
+instrument plays it or how that instrument is tuned, so this is the one question a chart
+cannot answer from the notes. Retune or re-record and it is one line to change.
 
-Whether a note is out of reach is a fact about the **bass**, and the layout has nothing to do
-with it. So the two questions were separated: the window follows the part, and the dot is
-measured against a fixed pitch — the open E of a four-string as this set's clips write it,
-`FOUR_STRING_E` in [`server/bassline.ts`](../server/bassline.ts).
+Clips do get written an octave out, though, so the answer has to survive it — and the two
+directions are not the same question. A part sitting **above** the open E is playable where
+it is, whichever octave somebody typed it in, so the fixed pitch is already the useful reading
+of it and nothing moves. A part sitting entirely **below** it is playable nowhere as written,
+and reading that against a fixed pitch would mark every note in it: a roll of dots, saying
+nothing. So the E follows the part down and never up.
 
-That is the file's **only rig constant**, and it is safe to be one because of how little
-depends on it. Nothing in a clip says what instrument plays it or how that instrument is
-tuned, so this is the one question a chart cannot answer from the notes; getting it wrong
-costs an advisory mark rather than the layout, which is exactly why the layout was moved off
-it. Retune or re-record an octave away and it is one line to change.
+What says when to move is the part's **highest** note, not its lowest: the lowest note is the
+one under question, and letting it choose the E would be letting every part declare itself in
+range.
+
+### The dot is where the fourth string runs out
+
+A note that sounds **below the bottom row** gets a small dot and is drawn an octave up, where
+it can be reached. It says *this line was written for five strings, and here is how you get
+away with it on four*.
+
+The two questions were separated once, and it is worth saying why they are one again. The
+first version drew the dot on anything below the roll's bottom row while that row was found
+from the part — so a line in D minor an octave *above* the low E had the window snapped to
+the E above its lowest note, which threw its D and its Eb over the top and marked them. Notes
+anybody can play, on a bass tuned however they like. The fix at the time was to ask a fixed
+pitch and let the layout disagree with the mark. The row **is** that fixed pitch now, so
+there is nothing left to disagree: below the bottom row and below the open E are the same
+sentence, and the octave a note is drawn up into is the octave it has to be played in.
 
 A note wrapped *down* from the top carries nothing, because anybody can play it where it is
 drawn — the user's rule, and the right one: the mark is about the part, not about the roll's
