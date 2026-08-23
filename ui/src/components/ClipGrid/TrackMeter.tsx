@@ -18,11 +18,11 @@ import {
   peakDisplay,
 } from '../../lib/meterScale.js';
 import { liveParam } from '../../lib/liveParam.js';
-import { useParamGesture } from '../../../../widgets/src/gesture/useParamGesture.js';
+import { useParamGesture } from '@openflow/widgets/gesture/useParamGesture.ts';
 import {
   readbackTolerance,
   usePendingValue,
-} from '../../../../widgets/src/gesture/usePendingValue.js';
+} from '@openflow/widgets/gesture/usePendingValue.ts';
 import { ControlButton, ControlGroup } from '../Control.js';
 
 interface Props {

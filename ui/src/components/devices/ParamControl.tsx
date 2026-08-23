@@ -1,14 +1,14 @@
 import { type ReactNode } from 'react';
-import { Knob } from '../../../../widgets/src/controls/Knob.js';
-import { NumberField } from '../../../../widgets/src/controls/NumberField.js';
-import { Select } from '../../../../widgets/src/controls/Select.js';
-import { Toggle } from '../../../../widgets/src/controls/Toggle.js';
-import { isSwitch, type Param } from '../../../../widgets/src/param/param.js';
-import type { FillOrigin } from '../../../../widgets/src/controls/fill.js';
+import { Knob } from '@openflow/widgets/controls/Knob.tsx';
+import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
+import { Select } from '@openflow/widgets/controls/Select.tsx';
+import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
+import { isSwitch, type Param } from '@openflow/widgets/param/param.ts';
+import type { FillOrigin } from '@openflow/widgets/controls/fill.ts';
 import {
   readbackTolerance,
   usePendingValue,
-} from '../../../../widgets/src/gesture/usePendingValue.js';
+} from '@openflow/widgets/gesture/usePendingValue.ts';
 import { deviceParam, paramDisabled } from '../../lib/liveParam.js';
 import './devices.css';
 

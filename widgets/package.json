@@ -1,0 +1,19 @@
+{
+  "name": "@openflow/widgets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The controls a DAW is made of: Ableton-shaped widgets and device chrome, in React.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./controls/*": "./src/controls/*",
+    "./chrome/*": "./src/chrome/*",
+    "./param/*": "./src/param/*",
+    "./gesture/*": "./src/gesture/*",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build:types": "tsc -p tsconfig.build.json"
+  }
+}

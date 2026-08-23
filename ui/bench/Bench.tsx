@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Chain } from '../../widgets/src/chrome/Chain.js';
+import { Chain } from '@openflow/widgets/chrome/Chain.tsx';
 import { Faceplate } from '../src/components/devices/Faceplate.js';
 import { Eq8 } from '../src/components/devices/eq8/Eq8.js';
 import { Plugin } from '../src/components/devices/plugin/Plugin.js';

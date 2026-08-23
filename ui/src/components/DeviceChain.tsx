@@ -1,6 +1,6 @@
-import { Chain } from '../../../widgets/src/chrome/Chain.js';
-import { Device } from '../../../widgets/src/chrome/Device.js';
-import { Rack } from '../../../widgets/src/chrome/Rack.js';
+import { Chain } from '@openflow/widgets/chrome/Chain.tsx';
+import { Device } from '@openflow/widgets/chrome/Device.tsx';
+import { Rack } from '@openflow/widgets/chrome/Rack.tsx';
 import { ControlButton } from './Control.js';
 import { Faceplate } from './devices/Faceplate.js';
 import { faceFor } from './devices/faces.js';

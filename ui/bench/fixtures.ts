@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { format } from '../../widgets/src/param/format.js';
+import { format } from '@openflow/widgets/param/format.ts';
 import { deviceParam } from '../src/lib/liveParam.js';
 import { EQ8_BANDS } from '../src/components/devices/eq8/bind.js';
 import type { DeviceFaceProps } from '../src/components/devices/face.js';

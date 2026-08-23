@@ -19,6 +19,11 @@ visuals/scheme.json
 visuals/dist/
 # generated: the chart's vite build output, served by the chart server
 chart/dist/
+# generated: tsc declarations for @openflow/widgets, built by npm run build:widgets
+widgets/dist/
+# the design-system sync toolkit and the bundle it builds — tooling, not source
+widgets/.ds-sync/
+widgets/ds-bundle/
 # the user manual — its own repo (…wiki.git), cloned here so it edits alongside the code
 wiki/
 .DS_Store

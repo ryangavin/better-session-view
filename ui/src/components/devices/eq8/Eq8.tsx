@@ -1,10 +1,10 @@
 import { useMemo, type ReactNode } from 'react';
-import { Device } from '../../../../../widgets/src/chrome/Device.js';
-import { Panel, PanelColumn } from '../../../../../widgets/src/chrome/Panel.js';
-import { NumberField } from '../../../../../widgets/src/controls/NumberField.js';
-import { Select } from '../../../../../widgets/src/controls/Select.js';
-import { Toggle } from '../../../../../widgets/src/controls/Toggle.js';
-import type { Param } from '../../../../../widgets/src/param/param.js';
+import { Device } from '@openflow/widgets/chrome/Device.tsx';
+import { Panel, PanelColumn } from '@openflow/widgets/chrome/Panel.tsx';
+import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
+import { Select } from '@openflow/widgets/controls/Select.tsx';
+import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
+import type { Param } from '@openflow/widgets/param/param.ts';
 import type { DeviceFaceProps } from '../face.js';
 import {
   ParamKnob,

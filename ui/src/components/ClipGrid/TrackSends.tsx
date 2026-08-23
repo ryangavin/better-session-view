@@ -3,11 +3,11 @@ import type { BridgeState } from '../../hooks/useBridge.js';
 import { useMixerStrip, type MixerStore } from '../../hooks/useMixer.js';
 import { compactParameterDisplay } from '../../lib/meterScale.js';
 import { liveParam } from '../../lib/liveParam.js';
-import { useParamGesture } from '../../../../widgets/src/gesture/useParamGesture.js';
+import { useParamGesture } from '@openflow/widgets/gesture/useParamGesture.ts';
 import {
   readbackTolerance,
   usePendingValue,
-} from '../../../../widgets/src/gesture/usePendingValue.js';
+} from '@openflow/widgets/gesture/usePendingValue.ts';
 
 function sendName(index: number): string {
   let name = '';

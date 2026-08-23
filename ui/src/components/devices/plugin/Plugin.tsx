@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Device } from '../../../../../widgets/src/chrome/Device.js';
-import { Select } from '../../../../../widgets/src/controls/Select.js';
-import { XYPad, type PadAxis } from '../../../../../widgets/src/controls/XYPad.js';
-import type { Param } from '../../../../../widgets/src/param/param.js';
+import { Device } from '@openflow/widgets/chrome/Device.tsx';
+import { Select } from '@openflow/widgets/controls/Select.tsx';
+import { XYPad, type PadAxis } from '@openflow/widgets/controls/XYPad.tsx';
+import type { Param } from '@openflow/widgets/param/param.ts';
 import { deviceParam } from '../../../lib/liveParam.js';
 import type { DeviceFaceProps } from '../face.js';
 import './Plugin.css';

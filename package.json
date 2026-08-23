@@ -17,11 +17,13 @@
   "engines": {
     "node": ">=24"
   },
+  "workspaces": ["widgets"],
   "scripts": {
     "build": "npm run build:ui && npm run build:bridge && npm run build:device",
     "build:bridge": "node --disable-warning=ExperimentalWarning tools/build-bridge.ts && tsc -p bridge/tsconfig.v8.json",
     "build:ui": "vite build --config ui/vite.config.ts",
     "build:device": "node --disable-warning=ExperimentalWarning tools/build-device.ts",
+    "build:widgets": "npm run build:types --workspace @openflow/widgets",
     "dev:check-palette": "node --disable-warning=ExperimentalWarning tools/check-palette.ts",
     "dev:diag": "node --disable-warning=ExperimentalWarning tools/diag.ts",
     "dev:lom-scrape": "node --disable-warning=ExperimentalWarning tools/lom-reference.ts",

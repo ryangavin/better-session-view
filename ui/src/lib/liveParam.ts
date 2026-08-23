@@ -1,4 +1,4 @@
-import type { Param } from '../../../widgets/src/param/param.js';
+import type { Param } from '@openflow/widgets/param/param.ts';
 
 /**
  * A Live parameter, read into the widget library's model of one.

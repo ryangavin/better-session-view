@@ -17,8 +17,6 @@
     "vite.config.ts",
     "vite.bench.config.ts",
     "../core/src/**/*.ts",
-    "../widgets/src/**/*.ts",
-    "../widgets/src/**/*.tsx",
     "../protocol/**/*.ts",
     "../protocol/**/*.d.ts"
   ]

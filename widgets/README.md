@@ -38,10 +38,12 @@ src/
     Widget.tsx      the frame every control sits in: caption, control, reading
     Knob.tsx        live.dial
     Slider.tsx      live.slider
+    Meter.tsx       live.meter~, read-only
     NumberField.tsx live.numbox
     Toggle.tsx      live.toggle, and live.button when momentary
     Segmented.tsx   live.tab
     Select.tsx      a compact enum with one member on screen
+    Button.tsx      a plain push, for a verb rather than a parameter
     XYPad.tsx       two parameters on one plane, with a slot for a device's artwork
     Label.tsx       live.comment, and Divider for live.line
     arc.ts          dial geometry
@@ -60,7 +62,8 @@ src/
     Panel.tsx       aligned vertical parameter lanes, through a shared row grid
     chrome.css      their styling, on the same shared parts
   tokens.css        the widget tokens: colour and type from the host, metrics ours
-  index.ts          the barrel — pulls in every stylesheet, so prefer deep imports
+  index.ts          the barrel and the package entry — pulls in every stylesheet,
+                    so prefer deep imports
 bench/              the harness. Dev-only; never built, never shipped
 ```
 
@@ -79,12 +82,36 @@ It has no connection to Live and never will — that's what makes it worth havin
 it costs nothing to leave running in the full dev stack. Nothing in `bench/` is part of a
 build; `npm run build` doesn't touch this module.
 
+## Importing it
+
+This module is the npm package `@openflow/widgets`, wired in as the repo's one workspace, so
+it is reached by name rather than by counting `../` up out of wherever you happen to be:
+
+```ts
+import { Knob } from '@openflow/widgets/controls/Knob.tsx';
+import type { Param } from '@openflow/widgets/param/param.ts';
+import '@openflow/widgets/tokens.css';
+```
+
+**The specifier carries the real TypeScript extension**, because that is the file that is
+actually there — `exports` maps straight onto `src/`, and nothing is compiled in between.
+Vite and `tsc` both consume the source, so there is no build step between this module and
+the app that uses it, and no `dist/` to go stale while you work.
+
+`npm run build:widgets` does exist, but it emits **declarations only** into `dist/`, and it
+is not part of `npm run build`. Nothing imports those — they are there for the design-system
+sync in [`.design-sync/`](.design-sync/config.json), which reads a package's `.d.ts` to
+recover each component's props.
+
 ## Who uses it
 
-`ui/` does, through one adapter: [`ui/src/lib/liveParam.ts`](../ui/src/lib/liveParam.ts)
-turns a `BSV.MixerParameterState` into a `Param`. The mixer's volume, pan and send controls
-are driven by the gesture hooks ([ui/docs/mixer.md](../ui/docs/mixer.md)); the device chain
-draws a track's devices out of the chrome ([ui/docs/device-chain.md](../ui/docs/device-chain.md)).
+`ui/` and `visuals/` both do, each through one adapter.
+[`ui/src/lib/liveParam.ts`](../ui/src/lib/liveParam.ts) turns a `BSV.MixerParameterState`
+into a `Param`, and [`visuals/src/ui/param.ts`](../visuals/src/ui/param.ts) does the same
+for a node's inlet. The mixer's volume, pan and send controls are driven by the gesture
+hooks ([ui/docs/mixer.md](../ui/docs/mixer.md)); the device chain draws a track's devices
+out of the chrome ([ui/docs/device-chain.md](../ui/docs/device-chain.md)); the visuals
+designer draws its node canvas out of `chrome/Graph.tsx` and `chrome/Port.tsx`.
 
 **A whole stock device face is composed there too, and deliberately not here.** Live's EQ
 Eight is [`ui/src/components/devices/eq8/Eq8.tsx`](../ui/src/components/devices/eq8/Eq8.tsx):

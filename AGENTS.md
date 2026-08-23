@@ -11,8 +11,8 @@ most of what's in them is reasoning about a feature you aren't touching.
 |---|---|
 | domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
 | components, hooks, the client | [`ui/README.md`](ui/README.md) — 16 topic docs |
-| a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](widgets/README.md) — 5 topic docs. **Knows nothing about Live, and must stay that way** |
-| a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. Its own server and its own `node_modules`; an ordinary **client** of the bridge |
+| a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](widgets/README.md) — 5 topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way** |
+| a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. `@openflow/visuals`: its own server and its own `node_modules`, deliberately **not** a workspace; an ordinary **client** of the bridge |
 | what the band reads off a phone | [`chart/README.md`](chart/README.md) — 2 topic docs. No dependencies and no `package.json`; a **read-only** client of the bridge, and the only thing here that binds the LAN |
 | anything involving Live | [`bridge/README.md`](bridge/README.md) — 8 topic docs. **Most constraints in this project live here** |
 | "does Live expose X?" | [`bridge/LOM.md`](bridge/LOM.md) — **look it up, don't guess.** Includes where the published docs are wrong |
@@ -77,6 +77,15 @@ work in [Issues](../../issues).
     commit.** The docs are the reason this codebase is navigable; a doc that drifts is
     worse than one that never existed, because it's believed. If a change makes a doc
     wrong, fix the doc — don't append a note saying it's wrong.
+
+12. **`widgets/` is the only npm workspace, and `bridge/`/`visuals/` must not become
+    ones.** Both keep a `node_modules` of their own on purpose:
+    `visuals/tools/build-link.ts` repairs and compiles the Ableton Link native addon at the
+    hard-coded path `visuals/node_modules/@ktamas77/abletonlink`, and `bridge/` is bundled
+    for a Node runtime inside Max that is not ours to pick. Listing either in `workspaces`
+    hoists its dependencies to the root, at which point `postinstall` fails with
+    "abletonlink is not installed". `widgets/` is safe to hoist only because it has no
+    dependencies at all — it is a workspace so that `@openflow/widgets` resolves by name.
 
 ## Before you claim something works
 
