@@ -27,13 +27,13 @@ export interface SetState {
   rev: number;
   /** Live's tempo, kept current by `watchTransport`. */
   tempo: number;
-  tracks: BSV.Track[];
-  scenes: BSV.Scene[];
+  tracks: OpenFlow.Track[];
+  scenes: OpenFlow.Scene[];
   /** The mapping, read out of the scene names once — by the bridge, not here. */
-  model: BSV.SetModel | null;
+  model: OpenFlow.SetModel | null;
   /** Live's transport, which is the answer no observer gives on joining. */
   rolling: boolean;
-  play: BSV.TrackPlayState[];
+  play: OpenFlow.TrackPlayState[];
   /**
    * The clip playing in each track, at 20 Hz from Live.
    *
@@ -41,7 +41,7 @@ export interface SetState {
    * is the frame's own convention and the reason it stays small on a set with
    * far more silent tracks than sounding ones.
    */
-  status: BSV.PlayingClip[];
+  status: OpenFlow.PlayingClip[];
   /**
    * The notes of the clips currently playing, keyed `t:s`.
    *
@@ -52,7 +52,7 @@ export interface SetState {
    * cost of noticing would be re-reading every playing clip on a timer, and a
    * roll that lags an edit by one relaunch is a better trade.
    */
-  notes: Map<string, BSV.ClipNotes>;
+  notes: Map<string, OpenFlow.ClipNotes>;
 }
 
 export function emptySet(): SetState {
@@ -118,7 +118,7 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
   let asking: ReturnType<typeof setTimeout> | null = null;
   let closed = false;
 
-  const send = (request: BSV.Request) => {
+  const send = (request: OpenFlow.Request) => {
     if (socket?.readyState === 1) socket.send(JSON.stringify(request));
   };
 
@@ -171,7 +171,7 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
   };
 
   /** Returns whether anything a phone would notice actually moved. */
-  const take = (event: BSV.Event): boolean => {
+  const take = (event: OpenFlow.Event): boolean => {
     switch (event.type) {
       case 'status':
         state.lomReady = event.lomReady;
@@ -214,7 +214,7 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
         // playing now", so anything held that is not in the answer is a clip
         // that stopped — and an upsert would leave its notes behind to be read
         // as harmony that is no longer sounding.
-        const held = new Map<string, BSV.ClipNotes>();
+        const held = new Map<string, OpenFlow.ClipNotes>();
         for (const clip of event.clips) held.set(`${clip.t}:${clip.s}`, clip);
         state.notes = held;
         return true;
@@ -260,9 +260,9 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
     });
 
     ws.addEventListener('message', (message: MessageEvent) => {
-      let event: BSV.Event;
+      let event: OpenFlow.Event;
       try {
-        event = JSON.parse(String(message.data)) as BSV.Event;
+        event = JSON.parse(String(message.data)) as OpenFlow.Event;
       } catch {
         return;
       }

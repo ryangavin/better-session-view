@@ -2,7 +2,7 @@ import { useLayoutEffect, type RefObject } from 'react';
 import {
   viewportColumnLayout,
   type ViewportColumnWidth,
-} from '../lib/columnWidth.js';
+} from '../lib/columnWidth.ts';
 
 function contentWidth(element: HTMLElement): number {
   const style = getComputedStyle(element);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { format, noteName, widestText } from './format.js';
-import { enumParam, type Param } from './param.js';
+import { format, noteName, widestText } from './format.ts';
+import { enumParam, type Param } from './param.ts';
 
 function withUnit(unit: Param['unit'], over: Partial<Param> = {}): Param {
   return { kind: 'float', min: 0, max: 1, defaultValue: 0, unit, ...over };

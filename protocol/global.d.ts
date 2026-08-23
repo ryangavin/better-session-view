@@ -6,7 +6,7 @@
 // a flat CommonJS file outside its own rootDir. Neither can `import`.
 // `protocol/index.ts` re-exports these as normal types for ui/ and core/.
 
-declare namespace BSV {
+declare namespace OpenFlow {
   // --- Live state ------------------------------------------------------
 
   interface Track {

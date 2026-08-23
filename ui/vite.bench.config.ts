@@ -14,8 +14,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // The port follows the UI's the way the widget bench's does, at +200 rather
 // than +100 so the two benches of one worktree can't collide with the UI of
 // the next — worktree ports get picked adjacently.
-const UI_PORT = Number(process.env.BSV_UI_PORT) || 5173;
-const PORT = Number(process.env.BSV_DEVICE_BENCH_PORT) || UI_PORT + 200;
+const UI_PORT = Number(process.env.OPENFLOW_UI_PORT) || 5173;
+const PORT = Number(process.env.OPENFLOW_DEVICE_BENCH_PORT) || UI_PORT + 200;
 
 export default defineConfig({
   root: path.resolve(here, 'bench'),

@@ -1,7 +1,7 @@
 import type { PointerEvent, ReactNode } from 'react';
-import { useParamGesture, type ParamAnchor } from '../gesture/useParamGesture.js';
-import type { Param } from '../param/param.js';
-import { Widget, type WidgetProps } from './Widget.js';
+import { useParamGesture, type ParamAnchor } from '../gesture/useParamGesture.ts';
+import type { Param } from '../param/param.ts';
+import { Widget, type WidgetProps } from './Widget.tsx';
 import './controls.css';
 
 /**

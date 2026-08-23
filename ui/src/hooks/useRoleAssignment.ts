@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { colorOps } from '../../../core/src/ops.js';
+import { colorOps } from '@openflow/core/ops.ts';
 import {
   findRole,
   roleIn,
@@ -7,9 +7,9 @@ import {
   sharedRole,
   type Role,
   type SceneFields,
-} from '../../../core/src/roles.js';
-import type { Anchor } from './useAnchoredPosition.js';
-import type { BridgeState } from './useBridge.js';
+} from '@openflow/core/roles.ts';
+import type { Anchor } from './useAnchoredPosition.ts';
+import type { BridgeState } from './useBridge.ts';
 
 interface Args {
   /** The selected scenes, ascending — see useGridSelection. */
@@ -17,7 +17,7 @@ interface Args {
   selectedScenes: ReadonlySet<number>;
   sceneNames: Map<number, string>;
   scenesForOps: SceneFields[];
-  clipsByScene: Map<number, BSV.Clip[]>;
+  clipsByScene: Map<number, OpenFlow.Clip[]>;
   vocabulary: Role[];
   apply: BridgeState['apply'];
   applyScenes: BridgeState['applyScenes'];
@@ -66,8 +66,8 @@ export function useRoleAssignment({
   // a selection spanning several roles. Passing the scene's own clips as the
   // "before" is what keeps this linear — colorOps needs the previous color, and
   // the clips in hand already carry it.
-  const roleClipOps = useMemo<BSV.ApplyOp[]>(() => {
-    const out: BSV.ApplyOp[] = [];
+  const roleClipOps = useMemo<OpenFlow.ApplyOp[]>(() => {
+    const out: OpenFlow.ApplyOp[] = [];
     for (const [colorIndex, scenes] of roleColorTargets) {
       for (const s of scenes) {
         const cells = clipsByScene.get(s) ?? [];

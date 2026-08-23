@@ -63,10 +63,10 @@ Four env vars, all optional:
 
 | var | default | for |
 |---|---|---|
-| `BSV_UI_PORT` | `5173` | a second UI alongside the first — one per worktree |
-| `BSV_BENCH_PORT` | `BSV_UI_PORT` + 100 | overriding where the widget bench lands |
-| `BSV_DEVICE_BENCH_PORT` | `BSV_UI_PORT` + 200 | the same, for the device bench |
-| `BSV_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
+| `OPENFLOW_UI_PORT` | `5173` | a second UI alongside the first — one per worktree |
+| `OPENFLOW_BENCH_PORT` | `OPENFLOW_UI_PORT` + 100 | overriding where the widget bench lands |
+| `OPENFLOW_DEVICE_BENCH_PORT` | `OPENFLOW_UI_PORT` + 200 | the same, for the device bench |
+| `OPENFLOW_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
 
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next
 free one. That's deliberate: assign the port, don't discover it.

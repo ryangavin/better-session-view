@@ -1,23 +1,23 @@
 import { memo, type DragEvent } from 'react';
 import './Row.css';
-import { hex, inkOn } from '../../../../core/src/color.js';
-import { MIN_TEMPO } from '../../../../core/src/derive.js';
-import { groupSlot } from '../../../../core/src/groupSlot.js';
-import { roleIn, roleKey } from '../../../../core/src/roles.js';
-import { titleOf } from '../../../../core/src/sceneTitle.js';
-import type { Column } from '../../../../core/src/trackColumns.js';
-import { clipKey } from '../../lib/selection.js';
-import { LAUNCH_KEY, mods } from '../../lib/keys.js';
-import { has, type RowMarks } from '../../lib/rowMarks.js';
-import { ControlButton } from '../Control.js';
-import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA } from './constants.js';
-import type { DropEdge } from './dropEdge.js';
-import type { Props } from './ClipGrid.js';
+import { hex, inkOn } from '@openflow/core/color.ts';
+import { MIN_TEMPO } from '@openflow/core/derive.ts';
+import { groupSlot } from '@openflow/core/groupSlot.ts';
+import { roleIn, roleKey } from '@openflow/core/roles.ts';
+import { titleOf } from '@openflow/core/sceneTitle.ts';
+import type { Column } from '@openflow/core/trackColumns.ts';
+import { clipKey } from '../../lib/selection.ts';
+import { LAUNCH_KEY, mods } from '../../lib/keys.ts';
+import { has, type RowMarks } from '../../lib/rowMarks.ts';
+import { ControlButton } from '../Control.tsx';
+import { GROUP_CELL_ALPHA, GROUP_SLOT_ALPHA } from './constants.ts';
+import type { DropEdge } from './dropEdge.ts';
+import type { Props } from './ClipGrid.tsx';
 
 interface RowProps {
-  scene: BSV.Scene;
-  columns: Column<BSV.Track>[];
-  clips: Map<string, BSV.Clip>;
+  scene: OpenFlow.Scene;
+  columns: Column<OpenFlow.Track>[];
+  clips: Map<string, OpenFlow.Clip>;
   selected: ReadonlySet<string>;
   marks: RowMarks;
   /**

@@ -92,7 +92,7 @@ which looks exactly like hot reload being broken, because the address anybody re
 is this one. It is the address the server prints, and the address that makes sense on a
 phone.
 
-So `BSV_CHART_UI` points it at the Vite dev server and every page request is proxied there,
+So `OPENFLOW_CHART_UI` points it at the Vite dev server and every page request is proxied there,
 **including the HMR websocket** through the same port. Without the socket the page would
 load from here, look right, and never update — the same failure arriving by a different
 route. `npm run dev` sets it; unset, which is how it ships, nothing is proxied.
@@ -119,5 +119,5 @@ What is exposed is a song title, a list of sections, where each loop has got to 
 the protocol still never leaves loopback: nothing on the LAN can fire a clip, rename a
 scene, recolour anything or reorder a set. The worst a phone can do is nudge, and the worst
 a determined phone can do is nudge repeatedly, which is visible on every other phone in the
-room while it happens. `BSV_CHART_HOST=127.0.0.1` takes the whole thing back to loopback
+room while it happens. `OPENFLOW_CHART_HOST=127.0.0.1` takes the whole thing back to loopback
 for anyone who wants that.

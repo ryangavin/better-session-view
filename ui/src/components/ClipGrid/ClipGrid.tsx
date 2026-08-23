@@ -1,46 +1,46 @@
 import { useMemo, useRef, type CSSProperties } from 'react';
 import './ClipGrid.css';
-import { hex, inkOn } from '../../../../core/src/color.js';
-import { startsBand, type Column } from '../../../../core/src/trackColumns.js';
-import type { SongHeader, TrackShape } from '../../../../core/src/songRows.js';
-import type { ActiveCell } from '../../../../core/src/gridRange.js';
-import { isLaunchModified, LAUNCH_KEY, type CellClick } from '../../lib/keys.js';
+import { hex, inkOn } from '@openflow/core/color.ts';
+import { startsBand, type Column } from '@openflow/core/trackColumns.ts';
+import type { SongHeader, TrackShape } from '@openflow/core/songRows.ts';
+import type { ActiveCell } from '@openflow/core/gridRange.ts';
+import { isLaunchModified, LAUNCH_KEY, type CellClick } from '../../lib/keys.ts';
 import {
   metricsFor,
   isViewportColumnWidth,
   tableWidth,
   META_COL_W,
   type ColumnWidth,
-} from '../../lib/columnWidth.js';
-import type { BridgeState, PlayState } from '../../hooks/useBridge.js';
-import { useMeters } from '../../hooks/useMeters.js';
-import { useTrackStatus } from '../../hooks/useTrackStatus.js';
-import { useMixer } from '../../hooks/useMixer.js';
-import { useViewportColumnWidth } from '../../hooks/useViewportColumnWidth.js';
-import { armedTracks, marksByScene } from '../../lib/rowMarks.js';
-import type { Anchor } from '../../hooks/useAnchoredPosition.js';
-import { NO_SHAPES, STOP_FIRED } from './constants.js';
+} from '../../lib/columnWidth.ts';
+import type { BridgeState, PlayState } from '../../hooks/useBridge.ts';
+import { useMeters } from '../../hooks/useMeters.ts';
+import { useTrackStatus } from '../../hooks/useTrackStatus.ts';
+import { useMixer } from '../../hooks/useMixer.ts';
+import { useViewportColumnWidth } from '../../hooks/useViewportColumnWidth.ts';
+import { armedTracks, marksByScene } from '../../lib/rowMarks.ts';
+import type { Anchor } from '../../hooks/useAnchoredPosition.ts';
+import { NO_SHAPES, STOP_FIRED } from './constants.ts';
 import {
   IconAddSong,
   IconColorSongs,
   IconGroupFold,
   IconOrderSongs,
   IconStop,
-} from '../Icon.js';
-import { ControlButton, ControlGroup } from '../Control.js';
-import { dropEdgeFor, sceneDropEdge } from './dropEdge.js';
-import { Row } from './Row.js';
-import { SongHeaderRow } from './SongHeaderRow.js';
-import { TrackMeter } from './TrackMeter.js';
-import { TrackStatusDisplay } from './TrackStatus.js';
-import { TrackSends } from './TrackSends.js';
-import { TrackViewControls } from './TrackViewControls.js';
-import { useMeterResize } from './useMeterResize.js';
+} from '../Icon.tsx';
+import { ControlButton, ControlGroup } from '../Control.tsx';
+import { dropEdgeFor, sceneDropEdge } from './dropEdge.ts';
+import { Row } from './Row.tsx';
+import { SongHeaderRow } from './SongHeaderRow.tsx';
+import { TrackMeter } from './TrackMeter.tsx';
+import { TrackStatusDisplay } from './TrackStatus.tsx';
+import { TrackSends } from './TrackSends.tsx';
+import { TrackViewControls } from './TrackViewControls.tsx';
+import { useMeterResize } from './useMeterResize.ts';
 
 export interface Props {
-  snapshot: BSV.Snapshot;
-  columns: Column<BSV.Track>[];
-  clips: Map<string, BSV.Clip>;
+  snapshot: OpenFlow.Snapshot;
+  columns: Column<OpenFlow.Track>[];
+  clips: Map<string, OpenFlow.Clip>;
   selected: ReadonlySet<string>;
   active: ActiveCell | null;
   play: PlayState;

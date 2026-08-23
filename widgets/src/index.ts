@@ -18,8 +18,8 @@ export {
   type Param,
   type ParamKind,
   type UnitStyle,
-} from './param/param.js';
-export { format, noteName, widestText } from './param/format.js';
+} from './param/param.ts';
+export { format, noteName, widestText } from './param/format.ts';
 
 export {
   useParamGesture,
@@ -27,37 +27,37 @@ export {
   type ParamGesture,
   type ParamGestureOptions,
   type ParamSurfaceProps,
-} from './gesture/useParamGesture.js';
-export { usePendingValue, readbackTolerance, type PendingValue } from './gesture/usePendingValue.js';
-export { FINE_KEY, isFine } from './gesture/platform.js';
+} from './gesture/useParamGesture.ts';
+export { usePendingValue, readbackTolerance, type PendingValue } from './gesture/usePendingValue.ts';
+export { FINE_KEY, isFine } from './gesture/platform.ts';
 
-export { defaultOrigin, fillFrom, originFraction, type FillOrigin } from './controls/fill.js';
-export { useReserved } from './controls/reserve.js';
+export { defaultOrigin, fillFrom, originFraction, type FillOrigin } from './controls/fill.ts';
+export { useReserved } from './controls/reserve.ts';
 export {
   Widget,
   type WidgetLayout,
   type WidgetProps,
   type WidgetSlots,
   type WidgetVars,
-} from './controls/Widget.js';
-export { Knob, type KnobProps } from './controls/Knob.js';
-export { Slider, type SliderProps } from './controls/Slider.js';
-export { Meter, type MeterProps } from './controls/Meter.js';
-export { NumberField, type NumberFieldProps } from './controls/NumberField.js';
-export { Toggle, type ToggleProps } from './controls/Toggle.js';
-export { Button, type ButtonProps } from './controls/Button.js';
-export { Segmented, itemsOf, type SegmentedProps } from './controls/Segmented.js';
-export { Select, type SelectProps } from './controls/Select.js';
-export { XYPad, type PadAxis, type XYPadProps } from './controls/XYPad.js';
-export { Divider, Label, type LabelProps } from './controls/Label.js';
+} from './controls/Widget.tsx';
+export { Knob, type KnobProps } from './controls/Knob.tsx';
+export { Slider, type SliderProps } from './controls/Slider.tsx';
+export { Meter, type MeterProps } from './controls/Meter.tsx';
+export { NumberField, type NumberFieldProps } from './controls/NumberField.tsx';
+export { Toggle, type ToggleProps } from './controls/Toggle.tsx';
+export { Button, type ButtonProps } from './controls/Button.tsx';
+export { Segmented, itemsOf, type SegmentedProps } from './controls/Segmented.tsx';
+export { Select, type SelectProps } from './controls/Select.tsx';
+export { XYPad, type PadAxis, type XYPadProps } from './controls/XYPad.tsx';
+export { Divider, Label, type LabelProps } from './controls/Label.tsx';
 
-export { Chain, type ChainProps } from './chrome/Chain.js';
+export { Chain, type ChainProps } from './chrome/Chain.tsx';
 export {
   Device,
   DevicePortRow,
   type DevicePortRowProps,
   type DeviceProps,
-} from './chrome/Device.js';
+} from './chrome/Device.tsx';
 export {
   Graph,
   GraphNode,
@@ -65,9 +65,9 @@ export {
   type GraphNodeProps,
   type GraphProps,
   type GraphView,
-} from './chrome/Graph.js';
-export { GraphContext, portKey, type GraphSurface, type PortSide } from './chrome/graphContext.js';
-export { Port, type PortProps } from './chrome/Port.js';
-export { Rack, type RackProps } from './chrome/Rack.js';
-export { Row, type RowProps } from './chrome/Row.js';
-export { Panel, PanelColumn, type PanelProps, type PanelColumnProps } from './chrome/Panel.js';
+} from './chrome/Graph.tsx';
+export { GraphContext, portKey, type GraphSurface, type PortSide } from './chrome/graphContext.ts';
+export { Port, type PortProps } from './chrome/Port.tsx';
+export { Rack, type RackProps } from './chrome/Rack.tsx';
+export { Row, type RowProps } from './chrome/Row.tsx';
+export { Panel, PanelColumn, type PanelProps, type PanelColumnProps } from './chrome/Panel.tsx';

@@ -5,15 +5,15 @@ import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import type { DeviceFaceProps } from '../face.js';
+import type { DeviceFaceProps } from '../face.ts';
 import {
   ParamKnob,
   ParamNumber,
   ParamSelect,
   ParamSwitch,
   type ParamBinding,
-} from '../ParamControl.js';
-import { bindEq8 } from './bind.js';
+} from '../ParamControl.tsx';
+import { bindEq8 } from './bind.ts';
 import './Eq8.css';
 
 /** The analyzer's own settings, which have no range Live will tell us about. */
@@ -66,7 +66,7 @@ function DownIcon() {
 }
 
 /** Whether a two-state parameter is up. Unmatched reads as on, not as off. */
-function switchedOn(state: BSV.DeviceParameterState | null): boolean {
+function switchedOn(state: OpenFlow.DeviceParameterState | null): boolean {
   if (!state) return true;
   return state.value >= (state.min + state.max) / 2;
 }

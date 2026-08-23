@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
-import { trackStatus, type TrackStatus } from '../../../core/src/trackStatus.js';
-import type { BridgeState } from './useBridge.js';
+import { trackStatus, type TrackStatus } from '@openflow/core/trackStatus.ts';
+import type { BridgeState } from './useBridge.ts';
 
 /**
  * An external store for the clip-status stream, built the same way `MeterStore`
@@ -21,7 +21,7 @@ export class TrackStatusStore {
   /** Live's song tempo; a one-shot's countdown is in beats until this applies. */
   private tempo = 120;
 
-  update = (frame: BSV.ClipStatusFrame): void => {
+  update = (frame: OpenFlow.ClipStatusFrame): void => {
     if (this.listeners.size === 0) return;
     const next = new Map<number, TrackStatus | null>();
     for (const clip of frame.tracks) {

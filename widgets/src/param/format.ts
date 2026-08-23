@@ -12,7 +12,7 @@
  * for how a device parameter reads.
  */
 
-import { clamp, span, type Param } from './param.js';
+import { clamp, span, type Param } from './param.ts';
 
 /** Enough to catch every reading of an int, and every shape of a float's. */
 const SAMPLES = 129;

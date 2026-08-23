@@ -1,35 +1,35 @@
-// Module re-exports of the global BSV namespace, for consumers that can use
+// Module re-exports of the global OpenFlow namespace, for consumers that can use
 // normal imports (ui/, core/). See global.d.ts for why the source of truth is
 // a global namespace.
 
-export type Track = BSV.Track;
-export type Scene = BSV.Scene;
-export type Clip = BSV.Clip;
-export type PlayingClip = BSV.PlayingClip;
-export type ClipStatusFrame = BSV.ClipStatusFrame;
-export type Snapshot = BSV.Snapshot;
-export type Palette = BSV.Palette;
-export type TransportState = BSV.TransportState;
-export type TransportPatch = BSV.TransportPatch;
-export type ApplyOp = BSV.ApplyOp;
-export type SceneOp = BSV.SceneOp;
-export type Role = BSV.Role;
-export type DeviceState = BSV.DeviceState;
-export type ChainDevice = BSV.ChainDevice;
-export type RackChain = BSV.RackChain;
-export type ChainWatch = BSV.ChainWatch;
-export type WatchedChain = BSV.WatchedChain;
-export type ChainState = BSV.ChainState;
-export type DeviceParameterState = BSV.DeviceParameterState;
-export type ChainValueChange = BSV.ChainValueChange;
-export type DeviceTarget = BSV.DeviceTarget;
-export type DevicePatch = BSV.DevicePatch;
-export type ApplyResult = BSV.ApplyResult;
-export type Request = BSV.Request;
-export type RequestType = BSV.RequestType;
-export type Event = BSV.Event;
-export type EventType = BSV.EventType;
-export type EventOf<K extends BSV.EventType> = BSV.EventOf<K>;
+export type Track = OpenFlow.Track;
+export type Scene = OpenFlow.Scene;
+export type Clip = OpenFlow.Clip;
+export type PlayingClip = OpenFlow.PlayingClip;
+export type ClipStatusFrame = OpenFlow.ClipStatusFrame;
+export type Snapshot = OpenFlow.Snapshot;
+export type Palette = OpenFlow.Palette;
+export type TransportState = OpenFlow.TransportState;
+export type TransportPatch = OpenFlow.TransportPatch;
+export type ApplyOp = OpenFlow.ApplyOp;
+export type SceneOp = OpenFlow.SceneOp;
+export type Role = OpenFlow.Role;
+export type DeviceState = OpenFlow.DeviceState;
+export type ChainDevice = OpenFlow.ChainDevice;
+export type RackChain = OpenFlow.RackChain;
+export type ChainWatch = OpenFlow.ChainWatch;
+export type WatchedChain = OpenFlow.WatchedChain;
+export type ChainState = OpenFlow.ChainState;
+export type DeviceParameterState = OpenFlow.DeviceParameterState;
+export type ChainValueChange = OpenFlow.ChainValueChange;
+export type DeviceTarget = OpenFlow.DeviceTarget;
+export type DevicePatch = OpenFlow.DevicePatch;
+export type ApplyResult = OpenFlow.ApplyResult;
+export type Request = OpenFlow.Request;
+export type RequestType = OpenFlow.RequestType;
+export type Event = OpenFlow.Event;
+export type EventType = OpenFlow.EventType;
+export type EventOf<K extends OpenFlow.EventType> = OpenFlow.EventOf<K>;
 
 /** WebSocket path. Namespaced so Vite can proxy it in dev without colliding with `/`. */
 export const WS_PATH = '/ws';

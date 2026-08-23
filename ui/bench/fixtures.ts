@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import { format } from '@openflow/widgets/param/format.ts';
-import { deviceParam } from '../src/lib/liveParam.js';
-import { EQ8_BANDS } from '../src/components/devices/eq8/bind.js';
-import type { DeviceFaceProps } from '../src/components/devices/face.js';
+import { deviceParam } from '../src/lib/liveParam.ts';
+import { EQ8_BANDS } from '../src/components/devices/eq8/bind.ts';
+import type { DeviceFaceProps } from '../src/components/devices/face.ts';
 
 /**
  * A device that behaves like Live without being Live.
@@ -27,9 +27,9 @@ interface Spec {
   items?: string[];
 }
 
-function state(spec: Spec): BSV.DeviceParameterState {
+function state(spec: Spec): OpenFlow.DeviceParameterState {
   const quantized = spec.items !== undefined;
-  const base: BSV.DeviceParameterState = {
+  const base: OpenFlow.DeviceParameterState = {
     name: spec.name,
     value: spec.value,
     min: spec.min,
@@ -83,7 +83,7 @@ export function useFakeDevice(
   name: string,
   shape: Spec[],
 ): DeviceFaceProps {
-  const [device, setDevice] = useState<BSV.ChainDevice>({
+  const [device, setDevice] = useState<OpenFlow.ChainDevice>({
     name,
     className,
     on: true,

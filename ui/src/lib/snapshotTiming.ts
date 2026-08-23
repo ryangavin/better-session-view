@@ -1,7 +1,7 @@
 // The snapshot phase breakdown printed to the browser console, and the
 // error-text helper the log lines share. Pure functions — no React.
 
-import type { WireTiming } from './client.js';
+import type { WireTiming } from './client.ts';
 
 /** Scenes in the full-size set we're actually building for. */
 export const TARGET_SCENES = 848;
@@ -18,7 +18,7 @@ export const TARGET_SCENES = 848;
  * is for.
  */
 export function reportSnapshotTiming(
-  e: BSV.EventOf<'snapshot'>,
+  e: OpenFlow.EventOf<'snapshot'>,
   wire: WireTiming | null,
   commitMs: number,
 ): void {

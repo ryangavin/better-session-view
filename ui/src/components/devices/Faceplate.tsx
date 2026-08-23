@@ -1,4 +1,4 @@
-import { ParamControl } from './ParamControl.js';
+import { ParamControl } from './ParamControl.tsx';
 import './devices.css';
 
 /**
@@ -24,7 +24,7 @@ export function Faceplate({
   parameters,
   onParam,
 }: {
-  parameters: BSV.DeviceParameterState[] | null;
+  parameters: OpenFlow.DeviceParameterState[] | null;
   onParam(p: number, value: number): void;
 }) {
   if (!parameters) return <div className="device-plate device-plate-waiting">opening…</div>;

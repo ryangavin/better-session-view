@@ -3,7 +3,7 @@ import type { Param } from '@openflow/widgets/param/param.ts';
 /**
  * A Live parameter, read into the widget library's model of one.
  *
- * This adapter is the whole boundary. `widgets/` knows nothing about `BSV`,
+ * This adapter is the whole boundary. `widgets/` knows nothing about `OpenFlow`,
  * the bridge or Live — it takes a `Param` and a number — and this is where the
  * app hands it one. Anything Live-specific about a control stops here.
  *
@@ -17,7 +17,7 @@ import type { Param } from '@openflow/widgets/param/param.ts';
 const ABSENT: Param = { kind: 'float', min: 0, max: 1, defaultValue: 0 };
 
 export function liveParam(
-  state: BSV.MixerParameterState | null,
+  state: OpenFlow.MixerParameterState | null,
   bounds?: { min: number; max: number },
 ): Param {
   if (!state) return bounds ? { ...ABSENT, ...bounds } : ABSENT;
@@ -44,7 +44,7 @@ export function liveParam(
  * says so directly. A two-member quantized parameter falls out as a switch
  * through `isSwitch`, which asks about the range and not about this.
  */
-export function deviceParam(state: BSV.DeviceParameterState): Param {
+export function deviceParam(state: OpenFlow.DeviceParameterState): Param {
   if (state.quantized) {
     return {
       // Members make it an enum; without them it is a stepped number, which is
@@ -79,6 +79,6 @@ export function deviceParam(state: BSV.DeviceParameterState): Param {
  * user's to move, and greying it out would misreport a device that is merely
  * switched off.
  */
-export function paramDisabled(state: BSV.DeviceParameterState): boolean {
+export function paramDisabled(state: OpenFlow.DeviceParameterState): boolean {
   return state.state === 2;
 }

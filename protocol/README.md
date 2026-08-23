@@ -4,23 +4,21 @@ The WebSocket wire protocol between the browser and the bridge. Types only — n
 runtime code beyond two constants.
 
 ```
-global.d.ts    the source of truth: a global `BSV` namespace
+global.d.ts    the source of truth: a global `OpenFlow` namespace
 index.ts       module re-exports for consumers that can use imports
 ```
 
 ## Why a global namespace and not a module
 
-Two of the three consumers can't `import`:
-
-- **`bridge/src/lom.ts`** compiles with `module: "none"` so Max's `[v8]` can find its
-  message handlers as top-level globals. TypeScript rejects *any* import under that
-  setting, including `import type`.
-- **`bridge/src/bridge.ts`** emits to a flat file with `rootDir: "src"`. Importing
-  `../../protocol` pulls a file outside `rootDir` and trips TS6059.
+One consumer can't `import` at all: **`bridge/src/lom.ts`** compiles with
+`module: "none"` so Max's `[v8]` can find its message handlers as top-level globals,
+and TypeScript rejects *any* import under that setting, including `import type`.
 
 A `.d.ts` with a top-level `declare namespace` is ambient and costs nothing to
-include, so both get the types for free. `index.ts` re-exports them as ordinary types
-for `ui/` and `core/`, which have no such restriction.
+include, so `lom.ts` gets the types for free — and so does everything else: every
+module that speaks the wire protocol includes `global.d.ts` and uses the namespace
+directly. `index.ts` re-exports the same types as ordinary imports, via
+`@openflow/protocol/index.ts`, for consumers that prefer them named.
 
 **One definition, three consumption styles.** Don't add a second copy.
 

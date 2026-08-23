@@ -155,7 +155,7 @@ is what let this shrink to the size of a row.
 edge, so it moves with the setting exactly as a clip does — which is the point of it being
 a column rather than a chip parked at the end of a metadata strip.
 
-The choice persists to `localStorage` under `bsv.columnWidth`, and `saveColumnWidth`
+The choice persists to `localStorage` under `openflow.columnWidth`, and `saveColumnWidth`
 swallows storage failures — a width that doesn't persist isn't worth failing a render
 over.
 

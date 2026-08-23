@@ -1,4 +1,4 @@
-import { Widget, type WidgetProps } from './Widget.js';
+import { Widget, type WidgetProps } from './Widget.tsx';
 import './controls.css';
 
 /**

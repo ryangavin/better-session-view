@@ -1,23 +1,23 @@
 import { useState, type ReactNode } from 'react';
-import { FINE_KEY } from '../src/gesture/platform.js';
-import { format } from '../src/param/format.js';
-import { enumParam, type Param, type UnitStyle } from '../src/param/param.js';
-import { Chain } from '../src/chrome/Chain.js';
-import { Device, DevicePortRow } from '../src/chrome/Device.js';
-import { Graph, GraphNode, type GraphCord } from '../src/chrome/Graph.js';
-import { Port } from '../src/chrome/Port.js';
-import { Rack } from '../src/chrome/Rack.js';
-import { Row } from '../src/chrome/Row.js';
-import { Button } from '../src/controls/Button.js';
-import { Divider, Label } from '../src/controls/Label.js';
-import { Meter } from '../src/controls/Meter.js';
-import { Knob } from '../src/controls/Knob.js';
-import { NumberField } from '../src/controls/NumberField.js';
-import { Segmented } from '../src/controls/Segmented.js';
-import { Select } from '../src/controls/Select.js';
-import { Slider } from '../src/controls/Slider.js';
-import { Toggle } from '../src/controls/Toggle.js';
-import { XYPad } from '../src/controls/XYPad.js';
+import { FINE_KEY } from '../src/gesture/platform.ts';
+import { format } from '../src/param/format.ts';
+import { enumParam, type Param, type UnitStyle } from '../src/param/param.ts';
+import { Chain } from '../src/chrome/Chain.tsx';
+import { Device, DevicePortRow } from '../src/chrome/Device.tsx';
+import { Graph, GraphNode, type GraphCord } from '../src/chrome/Graph.tsx';
+import { Port } from '../src/chrome/Port.tsx';
+import { Rack } from '../src/chrome/Rack.tsx';
+import { Row } from '../src/chrome/Row.tsx';
+import { Button } from '../src/controls/Button.tsx';
+import { Divider, Label } from '../src/controls/Label.tsx';
+import { Meter } from '../src/controls/Meter.tsx';
+import { Knob } from '../src/controls/Knob.tsx';
+import { NumberField } from '../src/controls/NumberField.tsx';
+import { Segmented } from '../src/controls/Segmented.tsx';
+import { Select } from '../src/controls/Select.tsx';
+import { Slider } from '../src/controls/Slider.tsx';
+import { Toggle } from '../src/controls/Toggle.tsx';
+import { XYPad } from '../src/controls/XYPad.tsx';
 
 const SECTIONS = [
   'Knob', 'Slider', 'Number field', 'Toggle', 'Button', 'Meter', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',

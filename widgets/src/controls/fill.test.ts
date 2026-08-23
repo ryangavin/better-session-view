@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Param } from '../param/param.js';
-import { defaultOrigin, fillFrom } from './fill.js';
+import type { Param } from '../param/param.ts';
+import { defaultOrigin, fillFrom } from './fill.ts';
 
 const pan: Param = { kind: 'float', min: -1, max: 1, defaultValue: 0, unit: 'pan' };
 const gain: Param = { kind: 'float', min: -70, max: 6, defaultValue: 0, unit: 'decibel' };

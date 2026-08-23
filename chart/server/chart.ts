@@ -77,7 +77,7 @@ interface Stated {
 }
 
 /** Live renders no colour for a scene that has none, and neither do we. */
-function colorOf(scene: BSV.Scene | undefined): number | null {
+function colorOf(scene: OpenFlow.Scene | undefined): number | null {
   if (!scene || scene.colorIndex < 0) return null;
   return scene.color;
 }

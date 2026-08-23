@@ -3,8 +3,8 @@ import {
   formatBarsBeats,
   formatSecondsLeft,
   type TrackStatus,
-} from '../../../../core/src/trackStatus.js';
-import { useTrackStatusOf, type TrackStatusStore } from '../../hooks/useTrackStatus.js';
+} from '@openflow/core/trackStatus.ts';
+import { useTrackStatusOf, type TrackStatusStore } from '../../hooks/useTrackStatus.ts';
 
 /** Diameter of the loop pie, in the SVG's own units and in px — drawn 1:1. */
 const PIE = 10;

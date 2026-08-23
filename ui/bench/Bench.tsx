@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { Chain } from '@openflow/widgets/chrome/Chain.tsx';
-import { Faceplate } from '../src/components/devices/Faceplate.js';
-import { Eq8 } from '../src/components/devices/eq8/Eq8.js';
-import { Plugin } from '../src/components/devices/plugin/Plugin.js';
-import { DEVICE_SHAPES, useFakeDevice } from './fixtures.js';
+import { Faceplate } from '../src/components/devices/Faceplate.tsx';
+import { Eq8 } from '../src/components/devices/eq8/Eq8.tsx';
+import { Plugin } from '../src/components/devices/plugin/Plugin.tsx';
+import { DEVICE_SHAPES, useFakeDevice } from './fixtures.ts';
 
 /**
  * Every device face the app draws, with no Live behind them.

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ChainStore, deviceKey } from './chainStore.js';
+import { ChainStore, deviceKey } from './chainStore.ts';
 
-const param = (over: Partial<BSV.DeviceParameterState> = {}): BSV.DeviceParameterState => ({
+const param = (over: Partial<OpenFlow.DeviceParameterState> = {}): OpenFlow.DeviceParameterState => ({
   name: 'Freq',
   value: 100,
   min: 20,
@@ -14,9 +14,9 @@ const param = (over: Partial<BSV.DeviceParameterState> = {}): BSV.DeviceParamete
 });
 
 const state = (
-  parameters: BSV.DeviceParameterState[] | undefined,
+  parameters: OpenFlow.DeviceParameterState[] | undefined,
   path: number[] = [],
-): BSV.ChainState => ({
+): OpenFlow.ChainState => ({
   chains: [
     {
       t: 1,

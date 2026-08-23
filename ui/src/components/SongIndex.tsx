@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
-import { hex, legibleOn } from '../../../core/src/color.js';
-import type { Derivation } from '../../../core/src/derive.js';
-import { songFacts } from '../../../core/src/songRows.js';
+import { hex, legibleOn } from '@openflow/core/color.ts';
+import type { Derivation } from '@openflow/core/derive.ts';
+import { songFacts } from '@openflow/core/songRows.ts';
 import {
   columnTemplate,
   INDEX_FACTS,
@@ -11,10 +11,10 @@ import {
   shownFacts,
   type IndexColumns,
   type IndexFact,
-} from '../lib/songIndexColumns.js';
-import { BAND_CONTRAST, RAIL } from './ClipGrid/constants.js';
-import { ControlButton } from './Control.js';
-import { IconColumns } from './Icon.js';
+} from '../lib/songIndexColumns.ts';
+import { BAND_CONTRAST, RAIL } from './ClipGrid/constants.ts';
+import { ControlButton } from './Control.tsx';
+import { IconColumns } from './Icon.tsx';
 import './SongIndex.css';
 
 interface Props {

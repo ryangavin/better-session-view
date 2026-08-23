@@ -3,9 +3,9 @@ import {
   useOutputMeter,
   type MeterKey,
   type MeterStore,
-} from '../../hooks/useMeters.js';
-import { useMixerStrip, type MixerStore } from '../../hooks/useMixer.js';
-import type { BridgeState } from '../../hooks/useBridge.js';
+} from '../../hooks/useMeters.ts';
+import { useMixerStrip, type MixerStore } from '../../hooks/useMixer.ts';
+import type { BridgeState } from '../../hooks/useBridge.ts';
 import {
   METER_DB_TICKS,
   METER_MAX_DB,
@@ -16,14 +16,14 @@ import {
   meterFraction,
   mixerParameterFraction,
   peakDisplay,
-} from '../../lib/meterScale.js';
-import { liveParam } from '../../lib/liveParam.js';
+} from '../../lib/meterScale.ts';
+import { liveParam } from '../../lib/liveParam.ts';
 import { useParamGesture } from '@openflow/widgets/gesture/useParamGesture.ts';
 import {
   readbackTolerance,
   usePendingValue,
 } from '@openflow/widgets/gesture/usePendingValue.ts';
-import { ControlButton, ControlGroup } from '../Control.js';
+import { ControlButton, ControlGroup } from '../Control.tsx';
 
 interface Props {
   meterKey: MeterKey;
@@ -49,7 +49,7 @@ export function TrackMeter({
   const strip = useMixerStrip(mixer, meterKey);
   const volume = strip?.volume ?? null;
   const pan = strip?.pan ?? null;
-  const target: BSV.MixerTarget =
+  const target: OpenFlow.MixerTarget =
     meterKey === 'master' ? { kind: 'master' } : { kind: 'track', t: meterKey };
   // Where 0 dB sits on this strip's rail. Live reports unity as the volume
   // parameter's default, and the indicator is positioned by that same

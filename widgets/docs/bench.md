@@ -14,17 +14,17 @@ socket, and a Vite server that idles until something asks it for a module.
 
 ## Ports, and the one shared thing that isn't
 
-The bench port follows the UI's rather than being a second thing to assign — `BSV_UI_PORT`
-moves both, and `BSV_BENCH_PORT` overrides it outright. **The offset is 100, not 1**,
+The bench port follows the UI's rather than being a second thing to assign — `OPENFLOW_UI_PORT`
+moves both, and `OPENFLOW_BENCH_PORT` overrides it outright. **The offset is 100, not 1**,
 because worktree ports get picked adjacently: with +1, a worktree on 5174 would put its
 bench on the UI of the worktree on 5175. `strictPort` is on for both, so a genuine
 collision fails loudly rather than drifting.
 
 | | default | |
 |---|---|---|
-| UI | 5173 | `BSV_UI_PORT` |
-| widget bench | UI + 100 | `BSV_BENCH_PORT` |
-| device bench | UI + 200 | `BSV_DEVICE_BENCH_PORT` |
+| UI | 5173 | `OPENFLOW_UI_PORT` |
+| widget bench | UI + 100 | `OPENFLOW_BENCH_PORT` |
+| device bench | UI + 200 | `OPENFLOW_DEVICE_BENCH_PORT` |
 
 The device bench is [`ui/bench/`](../../ui/docs/device-faces.md#the-device-bench) and holds
 the faces, which are composed in the app. Same offset reasoning at +200: a worktree keeps

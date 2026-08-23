@@ -1,5 +1,5 @@
 import type { KeyboardEvent } from 'react';
-import type { Param } from '../param/param.js';
+import type { Param } from '../param/param.ts';
 import './controls.css';
 
 /**

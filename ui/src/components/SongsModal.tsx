@@ -1,7 +1,7 @@
-import type { Derivation, DerivedSong } from '../../../core/src/derive.js';
+import type { Derivation, DerivedSong } from '@openflow/core/derive.ts';
 import './SongsModal.css';
-import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
-import { ControlButton } from './Control.js';
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
+import { ControlButton } from './Control.tsx';
 
 interface Props {
   derivation: Derivation;

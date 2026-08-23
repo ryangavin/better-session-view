@@ -1,8 +1,8 @@
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { Device, DevicePortRow } from './Device.js';
-import { Port } from './Port.js';
+import { Device, DevicePortRow } from './Device.tsx';
+import { Port } from './Port.tsx';
 
 describe('Device anatomy', () => {
   it('keeps the ordinary no-port body as the default', () => {

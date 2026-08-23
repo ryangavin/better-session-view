@@ -1,7 +1,7 @@
 // Values shared by the grid's three components. Colors mirror shared.css
 // tokens; they're duplicated here because legibility math needs numbers.
 
-import type { TrackShape } from '../../../../core/src/songRows.js';
+import type { TrackShape } from '@openflow/core/songRows.ts';
 
 /** --bg. Scene names are painted straight onto it, so legibility is measured against it. */
 export const PANEL = 0x0a0a0b;

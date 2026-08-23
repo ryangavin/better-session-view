@@ -5,7 +5,7 @@ import {
   META_COL_W,
   tableWidth,
   viewportColumnLayout,
-} from './columnWidth.js';
+} from './columnWidth.ts';
 
 describe('column widths', () => {
   afterEach(() => vi.unstubAllGlobals());

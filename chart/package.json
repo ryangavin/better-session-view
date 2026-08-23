@@ -1,0 +1,7 @@
+{
+  "name": "@openflow/chart",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "What the band reads off a phone: a read-only client of the bridge, and the only module that binds the LAN."
+}

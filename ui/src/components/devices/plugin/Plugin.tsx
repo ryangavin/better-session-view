@@ -3,8 +3,8 @@ import { Device } from '@openflow/widgets/chrome/Device.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { XYPad, type PadAxis } from '@openflow/widgets/controls/XYPad.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import { deviceParam } from '../../../lib/liveParam.js';
-import type { DeviceFaceProps } from '../face.js';
+import { deviceParam } from '../../../lib/liveParam.ts';
+import type { DeviceFaceProps } from '../face.ts';
 import './Plugin.css';
 
 const UNASSIGNED = 'none';

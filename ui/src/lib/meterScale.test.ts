@@ -7,7 +7,7 @@ import {
   meterDecibels,
   meterFraction,
   peakDisplay,
-} from './meterScale.js';
+} from './meterScale.ts';
 
 describe('Live meter scale', () => {
   it('uses Live normalized values as positions instead of amplitudes', () => {

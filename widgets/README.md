@@ -3,7 +3,7 @@
 The controls a DAW is made of, built and iterated on outside the app they end up in.
 
 This module exists because the device chain is coming, and after it a DAW of our own. A
-knob written inside `ui/src/components/` would take a `BSV.MixerParameterState` within a
+knob written inside `ui/src/components/` would take an `OpenFlow.MixerParameterState` within a
 week and stop being reusable the moment it did. So the boundary is the point: **`widgets/`
 imports no protocol, no bridge client, no `core/`, and nothing that knows Live exists.** It
 takes a `Param` and a number.
@@ -84,8 +84,9 @@ build; `npm run build` doesn't touch this module.
 
 ## Importing it
 
-This module is the npm package `@openflow/widgets`, wired in as the repo's one workspace, so
-it is reached by name rather than by counting `../` up out of wherever you happen to be:
+This module is the npm package `@openflow/widgets`, an npm workspace like every
+dependency-free module here, so it is reached by name rather than by counting `../` up out
+of wherever you happen to be:
 
 ```ts
 import { Knob } from '@openflow/widgets/controls/Knob.tsx';
@@ -106,7 +107,7 @@ recover each component's props.
 ## Who uses it
 
 `ui/` and `visuals/` both do, each through one adapter.
-[`ui/src/lib/liveParam.ts`](../ui/src/lib/liveParam.ts) turns a `BSV.MixerParameterState`
+[`ui/src/lib/liveParam.ts`](../ui/src/lib/liveParam.ts) turns an `OpenFlow.MixerParameterState`
 into a `Param`, and [`visuals/src/ui/param.ts`](../visuals/src/ui/param.ts) does the same
 for a node's inlet. The mixer's volume, pan and send controls are driven by the gesture
 hooks ([ui/docs/mixer.md](../ui/docs/mixer.md)); the device chain draws a track's devices

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { BridgeState } from './useBridge.js';
+import type { BridgeState } from './useBridge.ts';
 
 /**
  * The bridge as the app consumes it: everything `useBridge` returns, plus the

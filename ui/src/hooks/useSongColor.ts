@@ -1,17 +1,17 @@
 import { useCallback, useMemo } from 'react';
-import { sceneColorOps, type SceneFields } from '../../../core/src/roles.js';
+import { sceneColorOps, type SceneFields } from '@openflow/core/roles.ts';
 import {
   scenesOfSongs,
   songsOfScenes,
   type Derivation,
-} from '../../../core/src/derive.js';
-import type { BridgeState } from './useBridge.js';
+} from '@openflow/core/derive.ts';
+import type { BridgeState } from './useBridge.ts';
 
 interface Args {
   derivation: Derivation;
   /** The selected scenes, ascending — see useGridSelection. */
   sceneList: number[];
-  snapshot: BSV.Snapshot | null;
+  snapshot: OpenFlow.Snapshot | null;
   palette: number[];
   scenesForOps: SceneFields[];
   applyScenes: BridgeState['applyScenes'];

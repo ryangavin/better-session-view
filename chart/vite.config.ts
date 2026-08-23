@@ -11,10 +11,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 //
 // The dev port follows the UI's at +400, continuing the offsets in
 // widgets/docs/bench.md: UI 5173, widget bench +100, device bench +200, visuals
-// +300. A worktree that moves BSV_UI_PORT takes all five with it.
-const UI_PORT = Number(process.env.BSV_UI_PORT) || 5173;
-const PORT = Number(process.env.BSV_CHART_UI_PORT) || UI_PORT + 400;
-const SERVER = process.env.BSV_CHART || 'http://127.0.0.1:18000';
+// +300. A worktree that moves OPENFLOW_UI_PORT takes all five with it.
+const UI_PORT = Number(process.env.OPENFLOW_UI_PORT) || 5173;
+const PORT = Number(process.env.OPENFLOW_CHART_UI_PORT) || UI_PORT + 400;
+const SERVER = process.env.OPENFLOW_CHART || 'http://127.0.0.1:18000';
 
 export default defineConfig({
   root: here,

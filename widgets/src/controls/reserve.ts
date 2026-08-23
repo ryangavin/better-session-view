@@ -1,6 +1,6 @@
 import { useMemo, type CSSProperties } from 'react';
-import { widestText } from '../param/format.js';
-import type { Param } from '../param/param.js';
+import { widestText } from '../param/format.ts';
+import type { Param } from '../param/param.ts';
 
 /**
  * Space for the longest reading the parameter has, held whatever it reads now.

@@ -7,9 +7,9 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from 'react';
-import { format } from '../param/format.js';
-import { clamp, fractionOf, quantize, stepSize, valueAt, type Param } from '../param/param.js';
-import { isFine } from './platform.js';
+import { format } from '../param/format.ts';
+import { clamp, fractionOf, quantize, stepSize, valueAt, type Param } from '../param/param.ts';
+import { isFine } from './platform.ts';
 
 /**
  * The one gesture every continuous control in a DAW shares.

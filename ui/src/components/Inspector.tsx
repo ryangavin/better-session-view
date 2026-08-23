@@ -1,7 +1,7 @@
-import { hex } from '../../../core/src/color.js';
-import { DEFAULT_CLIP_PATTERN, TOKENS, unknownTokens } from '../../../core/src/pattern.js';
-import { ColorSelect } from './ColorSelect.js';
-import { ControlButton } from './Control.js';
+import { hex } from '@openflow/core/color.ts';
+import { DEFAULT_CLIP_PATTERN, TOKENS, unknownTokens } from '@openflow/core/pattern.ts';
+import { ColorSelect } from './ColorSelect.tsx';
+import { ControlButton } from './Control.tsx';
 
 interface Props {
   palette: number[];

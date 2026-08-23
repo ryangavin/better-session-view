@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import './SetConfigModal.css';
-import { hex } from '../../../core/src/color.js';
+import { hex } from '@openflow/core/color.ts';
 import {
   planDefaultArtist,
   type DefaultArtistPlan,
-} from '../../../core/src/defaultArtist.js';
-import type { Derivation } from '../../../core/src/derive.js';
+} from '@openflow/core/defaultArtist.ts';
+import type { Derivation } from '@openflow/core/derive.ts';
 import {
   findRoleProblems,
   MAX_ROLE_LEN,
@@ -13,10 +13,10 @@ import {
   type Role,
   type SceneFields,
   type SceneWriteOp,
-} from '../../../core/src/roles.js';
-import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
-import { SwatchGrid } from './SwatchGrid.js';
-import { ControlButton } from './Control.js';
+} from '@openflow/core/roles.ts';
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
+import { SwatchGrid } from './SwatchGrid.tsx';
+import { ControlButton } from './Control.tsx';
 
 interface Props {
   defaultArtist: string;

@@ -1,18 +1,18 @@
 import { memo, type CSSProperties, type DragEvent } from 'react';
 import './SongHeaderRow.css';
-import { hex, legibleOn } from '../../../../core/src/color.js';
-import { roleKey } from '../../../../core/src/roles.js';
-import type { Column } from '../../../../core/src/trackColumns.js';
+import { hex, legibleOn } from '@openflow/core/color.ts';
+import { roleKey } from '@openflow/core/roles.ts';
+import type { Column } from '@openflow/core/trackColumns.ts';
 import {
   mergeShapes,
   type SongHeader,
   type TrackShape,
-} from '../../../../core/src/songRows.js';
-import { IconGroupFold } from '../Icon.js';
-import { ControlButton } from '../Control.js';
-import { TagChip } from '../TagChip.js';
-import { BAND_CONTRAST, isShape, RAIL, UNTAGGED } from './constants.js';
-import type { DropEdge } from './dropEdge.js';
+} from '@openflow/core/songRows.ts';
+import { IconGroupFold } from '../Icon.tsx';
+import { ControlButton } from '../Control.tsx';
+import { TagChip } from '../TagChip.tsx';
+import { BAND_CONTRAST, isShape, RAIL, UNTAGGED } from './constants.ts';
+import type { DropEdge } from './dropEdge.ts';
 
 /** `CHORUS ×4, JAM1` — what a track plays, for the cell's tooltip. */
 function sections(shape: TrackShape): string {
@@ -23,7 +23,7 @@ function sections(shape: TrackShape): string {
 
 interface SongHeaderRowProps {
   header: SongHeader;
-  columns: Column<BSV.Track>[];
+  columns: Column<OpenFlow.Track>[];
   /** The song's color, or -1 when it has none or its scenes disagree. A number
    *  rather than the palette, so this row stays memoizable on primitives. */
   rgb: number;

@@ -1,12 +1,12 @@
 import { Chain } from '@openflow/widgets/chrome/Chain.tsx';
 import { Device } from '@openflow/widgets/chrome/Device.tsx';
 import { Rack } from '@openflow/widgets/chrome/Rack.tsx';
-import { ControlButton } from './Control.js';
-import { Faceplate } from './devices/Faceplate.js';
-import { faceFor } from './devices/faces.js';
-import type { DeviceFaceProps } from './devices/face.js';
-import { useDeviceParameters } from '../hooks/useDeviceChain.js';
-import type { ChainStore } from '../lib/chainStore.js';
+import { ControlButton } from './Control.tsx';
+import { Faceplate } from './devices/Faceplate.tsx';
+import { faceFor } from './devices/faces.ts';
+import type { DeviceFaceProps } from './devices/face.ts';
+import { useDeviceParameters } from '../hooks/useDeviceChain.ts';
+import type { ChainStore } from '../lib/chainStore.ts';
 import './DeviceChain.css';
 
 /**
@@ -15,7 +15,7 @@ import './DeviceChain.css';
  * This is the first thing in the app drawn out of [`widgets/`](../../../widgets/README.md)
  * rather than its own components, and the boundary holds the way the mixer's
  * faders proved it could: `widgets/` takes a name and two booleans, and knows
- * nothing about `BSV`, the bridge, or Live. The adapting is all here and in
+ * nothing about `OpenFlow`, the bridge, or Live. The adapting is all here and in
  * [`devices/`](./devices/), which is where a device's controls become widgets.
  *
  * **Faces, not just shells.** A device the app has drawn a face for renders it;
@@ -35,16 +35,16 @@ export interface DeviceChainProps {
   t: number;
   /** Its name, for the strip's own label. */
   name: string;
-  devices: BSV.ChainDevice[];
+  devices: OpenFlow.ChainDevice[];
   loading: boolean;
   failed: boolean;
   /** A nested run's devices, or undefined while its subscription is in flight. */
-  runAt(path: readonly number[]): BSV.ChainDevice[] | null | undefined;
+  runAt(path: readonly number[]): OpenFlow.ChainDevice[] | null | undefined;
   chainAt(path: readonly number[], index: number): number;
   onChain(path: readonly number[], index: number, chain: number): void;
   /** Where a face's controls read from — outside React, at gesture rate. */
   store: ChainStore;
-  onDevice(path: readonly number[], index: number, patch: BSV.DevicePatch): void;
+  onDevice(path: readonly number[], index: number, patch: OpenFlow.DevicePatch): void;
   onClose(): void;
 }
 
@@ -101,7 +101,7 @@ function RackShell({
   index,
   context,
 }: {
-  device: BSV.ChainDevice;
+  device: OpenFlow.ChainDevice;
   index: number;
   context: ShellContext;
 }) {
@@ -156,7 +156,7 @@ function PlainShell({
   index,
   context,
 }: {
-  device: BSV.ChainDevice;
+  device: OpenFlow.ChainDevice;
   index: number;
   context: ShellContext;
 }) {
@@ -192,7 +192,7 @@ function DeviceShell({
   index,
   context,
 }: {
-  device: BSV.ChainDevice;
+  device: OpenFlow.ChainDevice;
   index: number;
   context: ShellContext;
 }) {

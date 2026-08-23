@@ -23,8 +23,8 @@ export function deviceKey(t: number, path: readonly number[], i: number): Device
 }
 
 function sameParameter(
-  a: BSV.DeviceParameterState,
-  b: BSV.DeviceParameterState,
+  a: OpenFlow.DeviceParameterState,
+  b: OpenFlow.DeviceParameterState,
 ): boolean {
   return (
     a.value === b.value &&
@@ -43,8 +43,8 @@ function sameParameter(
 }
 
 function sameParameters(
-  a: readonly BSV.DeviceParameterState[] | null,
-  b: readonly BSV.DeviceParameterState[] | null,
+  a: readonly OpenFlow.DeviceParameterState[] | null,
+  b: readonly OpenFlow.DeviceParameterState[] | null,
 ): boolean {
   if (a === b) return true;
   if (!a || !b || a.length !== b.length) return false;
@@ -52,7 +52,7 @@ function sameParameters(
 }
 
 export class ChainStore {
-  private readonly devices = new Map<DeviceKey, BSV.DeviceParameterState[]>();
+  private readonly devices = new Map<DeviceKey, OpenFlow.DeviceParameterState[]>();
   private readonly listeners = new Map<DeviceKey, Set<() => void>>();
 
   /**
@@ -67,8 +67,8 @@ export class ChainStore {
    * watched. It is dropped rather than kept, because holding values nothing is
    * updating is how a knob ends up showing a number from ten minutes ago.
    */
-  update = (state: BSV.ChainState | null): void => {
-    const incoming = new Map<DeviceKey, BSV.DeviceParameterState[]>();
+  update = (state: OpenFlow.ChainState | null): void => {
+    const incoming = new Map<DeviceKey, OpenFlow.DeviceParameterState[]>();
     for (const chain of state?.chains ?? []) {
       for (const [i, device] of (chain.devices ?? []).entries()) {
         if (device.parameters) {
@@ -99,7 +99,7 @@ export class ChainStore {
    * device was re-read into a different shape and a corrected frame is already
    * on its way.
    */
-  apply = (changes: readonly BSV.ChainValueChange[]): void => {
+  apply = (changes: readonly OpenFlow.ChainValueChange[]): void => {
     const touched = new Set<DeviceKey>();
     for (const change of changes) {
       const key = deviceKey(change.t, change.path, change.i);
@@ -115,7 +115,7 @@ export class ChainStore {
     for (const key of touched) this.wake(key);
   };
 
-  parameters = (key: DeviceKey): BSV.DeviceParameterState[] | null =>
+  parameters = (key: DeviceKey): OpenFlow.DeviceParameterState[] | null =>
     this.devices.get(key) ?? null;
 
   subscribe = (key: DeviceKey, listener: () => void): (() => void) => {

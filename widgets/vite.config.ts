@@ -15,8 +15,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 //
 // strictPort for the same reason `ui/` has it: a server that silently drifts to
 // the next free port leaves nothing able to say which URL it ended up on.
-const UI_PORT = Number(process.env.BSV_UI_PORT) || 5173;
-const PORT = Number(process.env.BSV_BENCH_PORT) || UI_PORT + 100;
+const UI_PORT = Number(process.env.OPENFLOW_UI_PORT) || 5173;
+const PORT = Number(process.env.OPENFLOW_BENCH_PORT) || UI_PORT + 100;
 
 export default defineConfig({
   root: path.resolve(here, 'bench'),

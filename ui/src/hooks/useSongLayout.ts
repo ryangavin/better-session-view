@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
-import { derive } from '../../../core/src/derive.js';
-import { SCENE_PATTERNS } from '../../../core/src/namePattern.js';
-import { allSongKeys, blockTrackRoles, songRows } from '../../../core/src/songRows.js';
+import { derive } from '@openflow/core/derive.ts';
+import { SCENE_PATTERNS } from '@openflow/core/namePattern.ts';
+import { allSongKeys, blockTrackRoles, songRows } from '@openflow/core/songRows.ts';
 
 /** Before the first snapshot lands. A constant, so its identity is stable. */
-const NO_SONGS: BSV.SetModel = {
+const NO_SONGS: OpenFlow.SetModel = {
   rev: -1,
   songs: [],
   songByScene: {},
@@ -25,7 +25,7 @@ const NO_SONGS: BSV.SetModel = {
  * **scene** layer — every scene's parsed fields, which is what the scene-level
  * modals work in and what the model deliberately doesn't carry.
  */
-export function useSongLayout(snapshot: BSV.Snapshot | null, model: BSV.SetModel | null) {
+export function useSongLayout(snapshot: OpenFlow.Snapshot | null, model: OpenFlow.SetModel | null) {
   const derivation = useMemo(
     () => derive(snapshot?.scenes ?? [], SCENE_PATTERNS),
     [snapshot],

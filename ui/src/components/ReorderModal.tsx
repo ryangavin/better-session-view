@@ -1,28 +1,28 @@
 import { useMemo, useState, type DragEvent } from 'react';
-import { ControlButton, ControlSelect } from './Control.js';
+import { ControlButton, ControlSelect } from './Control.tsx';
 import './BulkWorkflow.css';
 import './ReorderModal.css';
-import { hex } from '../../../core/src/color.js';
-import { songKey, type Derivation, type DerivedSong } from '../../../core/src/derive.js';
-import { songFacts } from '../../../core/src/songRows.js';
+import { hex } from '@openflow/core/color.ts';
+import { songKey, type Derivation, type DerivedSong } from '@openflow/core/derive.ts';
+import { songFacts } from '@openflow/core/songRows.ts';
 import {
   orderScenes,
   sortSongOrder,
   type SongSortCriterion,
   type SongSortField,
   type SortableSong,
-} from '../../../core/src/songOrder.js';
+} from '@openflow/core/songOrder.ts';
 import {
   describeMove,
   planSceneReorder,
   type SceneMovePlan,
-} from '../../../core/src/sceneMove.js';
-import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
-import { TagChip } from './TagChip.js';
+} from '@openflow/core/sceneMove.ts';
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
+import { TagChip } from './TagChip.tsx';
 
 interface Props {
   derivation: Derivation;
-  snapshot: BSV.Snapshot;
+  snapshot: OpenFlow.Snapshot;
   palette: number[];
   busy: boolean;
   /** Write the new order to Live. The one call in the app with no undo. */

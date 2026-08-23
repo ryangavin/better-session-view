@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { planSceneMove } from '../../../core/src/sceneMove.js';
-import type { BridgeState } from './useBridge.js';
+import { planSceneMove } from '@openflow/core/sceneMove.ts';
+import type { BridgeState } from './useBridge.ts';
 
 /**
  * Drag scenes somewhere else in the set. One gesture, two grips.
@@ -22,7 +22,7 @@ import type { BridgeState } from './useBridge.js';
  * change or a write our own undo reverses.
  */
 export function useSceneDrag(
-  snapshot: BSV.Snapshot | null,
+  snapshot: OpenFlow.Snapshot | null,
   clearSelection: () => void,
   moveScenes: BridgeState['moveScenes'],
 ) {

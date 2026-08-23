@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildLoops, loopShape } from './loops.ts';
 import { emptySet, type SetState } from './bridge.ts';
 
-function track(i: number, name: string, isGroup = false): BSV.Track {
+function track(i: number, name: string, isGroup = false): OpenFlow.Track {
   return {
     i,
     name,
@@ -16,7 +16,7 @@ function track(i: number, name: string, isGroup = false): BSV.Track {
   };
 }
 
-function playing(t: number, over: Partial<BSV.PlayingClip> = {}): BSV.PlayingClip {
+function playing(t: number, over: Partial<OpenFlow.PlayingClip> = {}): OpenFlow.PlayingClip {
   return {
     t,
     position: 0,
@@ -31,7 +31,7 @@ function playing(t: number, over: Partial<BSV.PlayingClip> = {}): BSV.PlayingCli
   };
 }
 
-function setWith(tracks: BSV.Track[], status: BSV.PlayingClip[]): SetState {
+function setWith(tracks: OpenFlow.Track[], status: OpenFlow.PlayingClip[]): SetState {
   const state = emptySet();
   state.connected = true;
   state.lomReady = true;

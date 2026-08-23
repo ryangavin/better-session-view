@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import type { BridgeState } from './useBridge.js';
-import { ChainStore, deviceKey } from '../lib/chainStore.js';
+import type { BridgeState } from './useBridge.ts';
+import { ChainStore, deviceKey } from '../lib/chainStore.ts';
 
 /**
  * Which track's device chain the footer is showing, and what's in it.
@@ -47,11 +47,11 @@ function devicePathKey(path: readonly number[], index: number): string {
  */
 function visibleRuns(
   t: number,
-  chains: readonly BSV.WatchedChain[],
+  chains: readonly OpenFlow.WatchedChain[],
   chainAt: Readonly<Record<string, number>>,
-): BSV.ChainWatch[] {
+): OpenFlow.ChainWatch[] {
   const known = new Map(chains.filter((c) => c.t === t).map((c) => [runKey(c.path), c]));
-  const subs: BSV.ChainWatch[] = [];
+  const subs: OpenFlow.ChainWatch[] = [];
 
   const descend = (path: number[]) => {
     const run = known.get(runKey(path));
@@ -88,13 +88,13 @@ export interface DeviceChainState {
   /** The track being shown, or null when the footer is closed. */
   track: number | null;
   /** The shown track's own device run. Empty until the first push lands. */
-  devices: BSV.ChainDevice[];
+  devices: OpenFlow.ChainDevice[];
   /** Nothing has arrived for the shown track yet. */
   loading: boolean;
   /** The track no longer resolves in Live. Distinct from "no devices". */
   failed: boolean;
   /** One rack's chain devices, or undefined while its subscription is in flight. */
-  runAt: (path: readonly number[]) => BSV.ChainDevice[] | null | undefined;
+  runAt: (path: readonly number[]) => OpenFlow.ChainDevice[] | null | undefined;
   /**
    * Where a faceplate reads its controls from.
    *
@@ -114,7 +114,7 @@ export interface DeviceChainState {
    * it" — there is no separate subscribe, and there is nothing to leak if the
    * user closes the tab mid-gesture.
    */
-  onDevice: (path: readonly number[], index: number, patch: BSV.DevicePatch) => void;
+  onDevice: (path: readonly number[], index: number, patch: OpenFlow.DevicePatch) => void;
   onSelectTrack: (t: number) => void;
   onClose: () => void;
 }
@@ -135,7 +135,7 @@ export function useDeviceChain({
   setDevice: BridgeState['setDevice'];
 }): DeviceChainState {
   const [track, setTrack] = useState<number | null>(null);
-  const [state, setState] = useState<BSV.ChainState | null>(null);
+  const [state, setState] = useState<OpenFlow.ChainState | null>(null);
   const [chosen, setChosen] = useState<Record<string, number>>({});
   const store = useMemo(() => new ChainStore(), []);
 
@@ -167,11 +167,11 @@ export function useDeviceChain({
   const declaration = JSON.stringify(subs);
   useEffect(() => {
     if (!lomReady) return;
-    watchChains(JSON.parse(declaration) as BSV.ChainWatch[]);
+    watchChains(JSON.parse(declaration) as OpenFlow.ChainWatch[]);
   }, [lomReady, watchChains, declaration]);
 
   const byRun = useMemo(() => {
-    const map = new Map<string, BSV.ChainDevice[] | null>();
+    const map = new Map<string, OpenFlow.ChainDevice[] | null>();
     for (const chain of state?.chains ?? []) {
       if (track !== null && chain.t === track) map.set(runKey(chain.path), chain.devices);
     }
@@ -193,7 +193,7 @@ export function useDeviceChain({
   }, []);
 
   const onDevice = useCallback(
-    (path: readonly number[], index: number, patch: BSV.DevicePatch) => {
+    (path: readonly number[], index: number, patch: OpenFlow.DevicePatch) => {
       // Addressed against the track this hook is showing, so a caller can name
       // a device with the run-relative address it was already drawn with.
       if (track === null) return;
@@ -250,7 +250,7 @@ export function useDeviceParameters(
   t: number,
   path: readonly number[],
   index: number,
-): BSV.DeviceParameterState[] | null {
+): OpenFlow.DeviceParameterState[] | null {
   const key = deviceKey(t, path, index);
   const subscribe = useCallback(
     (listener: () => void) => store.subscribe(key, listener),

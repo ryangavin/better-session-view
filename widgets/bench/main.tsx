@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Bench } from './Bench.js';
+import { Bench } from './Bench.tsx';
 import './bench.css';
 
 createRoot(document.getElementById('root')!).render(

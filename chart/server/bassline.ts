@@ -34,7 +34,7 @@ const OCTAVE = 12;
 const FOUR_STRING_E = 40;
 
 /** Beats to the bar, from a clip's own signature. Live counts in quarter notes. */
-function beatsPerBar(clip: BSV.PlayingClip): number {
+function beatsPerBar(clip: OpenFlow.PlayingClip): number {
   const { signatureNumerator: num, signatureDenominator: den } = clip;
   if (!(num > 0) || !(den > 0)) return 4;
   return (num * 4) / den;
@@ -42,9 +42,9 @@ function beatsPerBar(clip: BSV.PlayingClip): number {
 
 /** One track, its playing clip and the notes read out of it. */
 interface Part {
-  track: BSV.Track;
-  clip: BSV.PlayingClip;
-  notes: readonly BSV.ClipNote[];
+  track: OpenFlow.Track;
+  clip: OpenFlow.PlayingClip;
+  notes: readonly OpenFlow.ClipNote[];
 }
 
 /**
@@ -122,7 +122,7 @@ function fold(pitch: number, low: number): number {
  * follows the part down and never up, and it is the part's **highest** note that
  * says when to move, because the lowest one is the note under question.
  */
-function openE(sounding: readonly BSV.ClipNote[]): number {
+function openE(sounding: readonly OpenFlow.ClipNote[]): number {
   let top = sounding[0]!.pitch;
   for (const note of sounding) if (note.pitch > top) top = note.pitch;
   let e = FOUR_STRING_E;
@@ -179,7 +179,7 @@ export function buildBassline(set: SetState): ChartBassline | null {
   // Sounding notes first, at their real pitches, because both the keyboard and
   // the dot are measured from them — folding first would move a note and then
   // ask its question of where it was moved to.
-  const sounding: BSV.ClipNote[] = [];
+  const sounding: OpenFlow.ClipNote[] = [];
   for (const note of part.notes) {
     if (note.start < from || note.start >= to) continue;
     if (!(Math.min(to, note.start + note.duration) > note.start)) continue;

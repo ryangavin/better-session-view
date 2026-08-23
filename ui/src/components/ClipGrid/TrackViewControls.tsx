@@ -1,10 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { COLUMN_WIDTHS, type ColumnWidth } from '../../lib/columnWidth.js';
-import { useAnchoredPosition, type Anchor } from '../../hooks/useAnchoredPosition.js';
-import { useDismissOnScroll } from '../../hooks/useDismissOnScroll.js';
-import { useMenuKeyboard } from '../../hooks/useMenuKeyboard.js';
-import { IconMeter, IconSends } from '../Icon.js';
+import { COLUMN_WIDTHS, type ColumnWidth } from '../../lib/columnWidth.ts';
+import { useAnchoredPosition, type Anchor } from '../../hooks/useAnchoredPosition.ts';
+import { useDismissOnScroll } from '../../hooks/useDismissOnScroll.ts';
+import { useMenuKeyboard } from '../../hooks/useMenuKeyboard.ts';
+import { IconMeter, IconSends } from '../Icon.tsx';
 import './TrackViewControls.css';
 
 /* Two forms, because the trigger and the menu have different room. The trigger

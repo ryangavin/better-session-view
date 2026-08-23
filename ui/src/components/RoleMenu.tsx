@@ -1,11 +1,11 @@
 import { useRef } from 'react';
 import './RoleMenu.css';
-import { hex } from '../../../core/src/color.js';
-import { roleKey, type Role } from '../../../core/src/roles.js';
-import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.js';
-import { useDismissOnScroll } from '../hooks/useDismissOnScroll.js';
-import { useMenuKeyboard } from '../hooks/useMenuKeyboard.js';
-import { ControlButton } from './Control.js';
+import { hex } from '@openflow/core/color.ts';
+import { roleKey, type Role } from '@openflow/core/roles.ts';
+import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.ts';
+import { useDismissOnScroll } from '../hooks/useDismissOnScroll.ts';
+import { useMenuKeyboard } from '../hooks/useMenuKeyboard.ts';
+import { ControlButton } from './Control.tsx';
 
 interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */

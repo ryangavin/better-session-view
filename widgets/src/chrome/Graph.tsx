@@ -13,7 +13,7 @@ import {
   type Ref,
   type ReactNode,
 } from 'react';
-import { GraphContext, portKey, type GraphSurface, type PortSide } from './graphContext.js';
+import { GraphContext, portKey, type GraphSurface, type PortSide } from './graphContext.ts';
 import './chrome.css';
 
 /**

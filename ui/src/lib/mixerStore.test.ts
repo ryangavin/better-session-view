@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MixerStore } from './mixerStore.js';
+import { MixerStore } from './mixerStore.ts';
 
-const parameter = (value: number): BSV.MixerParameterState => ({
+const parameter = (value: number): OpenFlow.MixerParameterState => ({
   value,
   min: 0,
   max: 1,
@@ -10,7 +10,7 @@ const parameter = (value: number): BSV.MixerParameterState => ({
   enabled: true,
 });
 
-const state = (sendValue: number, sendCount = 1): BSV.MixerState => ({
+const state = (sendValue: number, sendCount = 1): OpenFlow.MixerState => ({
   sendCount,
   masterVolume: parameter(0.8),
   masterPan: parameter(0.5),

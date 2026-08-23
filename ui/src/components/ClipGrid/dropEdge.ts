@@ -12,7 +12,7 @@
 // the page. `Row.tsx` and `SongHeaderRow.tsx` are the two files this refactor
 // touches most, so they get to keep their reload-free edit loop.
 
-import type { SongHeader } from '../../../../core/src/songRows.js';
+import type { SongHeader } from '@openflow/core/songRows.ts';
 
 /** Where the indicator sits on a row, if it's the drop target at all. */
 export type DropEdge = '' | 'above' | 'below';

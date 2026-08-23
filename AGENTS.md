@@ -13,7 +13,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 | components, hooks, the client | [`ui/README.md`](ui/README.md) — 16 topic docs |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](widgets/README.md) — 5 topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way** |
 | a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. `@openflow/visuals`: its own server and its own `node_modules`, deliberately **not** a workspace; an ordinary **client** of the bridge |
-| what the band reads off a phone | [`chart/README.md`](chart/README.md) — 2 topic docs. No dependencies and no `package.json`; a **read-only** client of the bridge, and the only thing here that binds the LAN |
+| what the band reads off a phone | [`chart/README.md`](chart/README.md) — 2 topic docs. `@openflow/chart`: no dependencies; a **read-only** client of the bridge, and the only thing here that binds the LAN |
 | anything involving Live | [`bridge/README.md`](bridge/README.md) — 8 topic docs. **Most constraints in this project live here** |
 | "does Live expose X?" | [`bridge/LOM.md`](bridge/LOM.md) — **look it up, don't guess.** Includes where the published docs are wrong |
 | a wire message | [`protocol/README.md`](protocol/README.md) |
@@ -42,7 +42,7 @@ work in [Issues](../../issues).
    else talks to it through the protocol.
 3. **`lom.ts` cannot `import` anything** — it compiles with `module: "none"` so Max's
    `[v8]` finds its handlers as top-level globals. Protocol types come from the global
-   `BSV` namespace. Adding an import breaks the device silently.
+   `OpenFlow` namespace. Adding an import breaks the device silently.
 4. **The bridge protocol is coarse-grained** — one message per operation, never per
    property. A full set is tens of thousands of LOM reads.
 5. **The device holds the set, and no client may change what it knows.** `bridge.js`
@@ -78,14 +78,18 @@ work in [Issues](../../issues).
     worse than one that never existed, because it's believed. If a change makes a doc
     wrong, fix the doc — don't append a note saying it's wrong.
 
-12. **`widgets/` is the only npm workspace, and `bridge/`/`visuals/` must not become
-    ones.** Both keep a `node_modules` of their own on purpose:
-    `visuals/tools/build-link.ts` repairs and compiles the Ableton Link native addon at the
-    hard-coded path `visuals/node_modules/@ktamas77/abletonlink`, and `bridge/` is bundled
-    for a Node runtime inside Max that is not ours to pick. Listing either in `workspaces`
-    hoists its dependencies to the root, at which point `postinstall` fails with
-    "abletonlink is not installed". `widgets/` is safe to hoist only because it has no
-    dependencies at all — it is a workspace so that `@openflow/widgets` resolves by name.
+12. **Every module is an `@openflow/*` package, and the dependency-free ones are npm
+    workspaces — but `bridge/` and `visuals/` must never become workspaces.** Both keep a
+    `node_modules` of their own on purpose: `visuals/tools/build-link.ts` repairs and
+    compiles the Ableton Link native addon at the hard-coded path
+    `visuals/node_modules/@ktamas77/abletonlink`, and `bridge/` is bundled for a Node
+    runtime inside Max that is not ours to pick. Listing either in `workspaces` hoists its
+    dependencies to the root, at which point `postinstall` fails with "abletonlink is not
+    installed". The workspaces — `core`, `protocol`, `widgets`, `ui`, `chart`, `tools` —
+    are safe to hoist only because none of them has dependencies of its own; they are
+    workspaces so the packages resolve by name. Cross-module imports use the package
+    specifier with the real TypeScript extension (`@openflow/core/derive.ts`), and so do
+    imports inside a module (`./param.ts`, never `./param.js`).
 
 ## Before you claim something works
 

@@ -1,7 +1,7 @@
-import { useParamGesture } from '../gesture/useParamGesture.js';
-import type { Param } from '../param/param.js';
-import { defaultOrigin, fillFrom, type FillOrigin } from './fill.js';
-import { Widget, type WidgetProps } from './Widget.js';
+import { useParamGesture } from '../gesture/useParamGesture.ts';
+import type { Param } from '../param/param.ts';
+import { defaultOrigin, fillFrom, type FillOrigin } from './fill.ts';
+import { Widget, type WidgetProps } from './Widget.tsx';
 import './controls.css';
 
 /** `live.slider`. The same gesture as the knob, laid out straight. */

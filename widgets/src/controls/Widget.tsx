@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { Param } from '../param/param.js';
-import { useReserved } from './reserve.js';
+import type { Param } from '../param/param.ts';
+import { useReserved } from './reserve.ts';
 import './controls.css';
 
 /**

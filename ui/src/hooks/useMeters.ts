@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
-import type { BridgeState } from './useBridge.js';
+import type { BridgeState } from './useBridge.ts';
 
 export type MeterKey = number | 'master';
 
@@ -14,7 +14,7 @@ export class MeterStore {
   private readonly levels = new Map<MeterKey, number>();
   private readonly listeners = new Map<MeterKey, Set<() => void>>();
 
-  update = (frame: BSV.MeterFrame): void => {
+  update = (frame: OpenFlow.MeterFrame): void => {
     if (this.listeners.size === 0) return;
     const levels = new Map<MeterKey, number>();
     if (this.listeners.has('master')) levels.set('master', frame.master);

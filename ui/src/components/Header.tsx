@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { BridgeState } from '../hooks/useBridge.js';
+import type { BridgeState } from '../hooks/useBridge.ts';
 import './Header.css';
-import { ControlButton, ControlField, ControlGroup, ControlSelect } from './Control.js';
+import { ControlButton, ControlField, ControlGroup, ControlSelect } from './Control.tsx';
 import {
   IconIndex,
   IconMetronome,
@@ -13,15 +13,15 @@ import {
   IconSync,
   IconScale,
   IconSettings,
-} from './Icon.js';
+} from './Icon.tsx';
 
 interface Props {
   lomReady: boolean;
   busy: boolean;
   isPlaying: boolean;
   songPosition: BridgeState['songPosition'];
-  transport: BSV.TransportState | null;
-  onTransport: (patch: BSV.TransportPatch) => void;
+  transport: OpenFlow.TransportState | null;
+  onTransport: (patch: OpenFlow.TransportPatch) => void;
   showIndex: boolean;
   onToggleIndex: () => void;
   songCount: number;
@@ -201,7 +201,7 @@ export function Header({
   return (
     <header>
       <div className="header-section header-left">
-        <img className="brand-logo" src="/logo-white.png" alt="Better Session View" />
+        <img className="brand-logo" src="/logo-white.png" alt="open[flow]" />
         <ControlGroup className="view-controls" label="Song display" surface="filled">
           <ControlButton
             icon

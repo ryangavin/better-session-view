@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { cellsInBlock, type ActiveCell } from '../../../core/src/gridRange.js';
-import { clipKey } from '../lib/selection.js';
-import type { CellClick } from '../lib/keys.js';
-import type { BridgeState } from './useBridge.js';
+import { cellsInBlock, type ActiveCell } from '@openflow/core/gridRange.ts';
+import { clipKey } from '../lib/selection.ts';
+import type { CellClick } from '../lib/keys.ts';
+import type { BridgeState } from './useBridge.ts';
 
 /** One identity, so clearing an already-empty scene selection changes nothing. */
 const EMPTY_SCENES: ReadonlySet<number> = new Set();

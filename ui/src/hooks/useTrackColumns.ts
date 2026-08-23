@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { buildColumns } from '../../../core/src/trackColumns.js';
-import type { BridgeState } from './useBridge.js';
+import { buildColumns } from '@openflow/core/trackColumns.ts';
+import type { BridgeState } from './useBridge.ts';
 
 /**
  * The rendered column order, and which track groups are folded.
@@ -10,7 +10,7 @@ import type { BridgeState } from './useBridge.js';
  * folded group's members have to be invisible to the arrow keys as well as to
  * the eye.
  */
-export function useTrackColumns(snapshot: BSV.Snapshot | null, setFold: BridgeState['setFold']) {
+export function useTrackColumns(snapshot: OpenFlow.Snapshot | null, setFold: BridgeState['setFold']) {
   /**
    * Read out of the snapshot, never mirrored into state beside it.
    *

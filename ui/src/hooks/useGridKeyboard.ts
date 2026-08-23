@@ -3,9 +3,9 @@ import {
   moveActive,
   type ActiveCell,
   type Direction,
-} from '../../../core/src/gridRange.js';
-import { isLaunchModified, isTypingInto } from '../lib/keys.js';
-import type { BridgeState } from './useBridge.js';
+} from '@openflow/core/gridRange.ts';
+import { isLaunchModified, isTypingInto } from '../lib/keys.ts';
+import type { BridgeState } from './useBridge.ts';
 
 const ARROWS: Record<string, Direction> = {
   ArrowUp: 'up',

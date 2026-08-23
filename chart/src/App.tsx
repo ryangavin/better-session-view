@@ -211,7 +211,7 @@ interface Anchor {
  * — advancing seconds at the beat rate would run a wheel at twice speed on a
  * 120 BPM set and look almost right, which is the worst kind of wrong.
  */
-function advance(track: LoopTrack, tempo: number, ms: number): BSV.PlayingClip {
+function advance(track: LoopTrack, tempo: number, ms: number): OpenFlow.PlayingClip {
   const perSecond = track.inSeconds ? 1 : tempo / 60;
   return {
     t: track.t,
@@ -227,7 +227,7 @@ function advance(track: LoopTrack, tempo: number, ms: number): BSV.PlayingClip {
 }
 
 /** How full to draw one wheel, and what to write in the middle of it. */
-function reading(clip: BSV.PlayingClip, tempo: number): { phase: number; text: string } | null {
+function reading(clip: OpenFlow.PlayingClip, tempo: number): { phase: number; text: string } | null {
   const status = trackStatus(clip, tempo);
   if (!status) return null;
 

@@ -1,15 +1,15 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import type { Derivation } from '../../../core/src/derive.js';
+import type { Derivation } from '@openflow/core/derive.ts';
 import {
   NEW_SONG_SCENES,
   newSongProblems,
   planNewSong,
   type NewSongDraft,
   type NewSongField,
-} from '../../../core/src/newSong.js';
-import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
-import { ColorSelect } from './ColorSelect.js';
-import { ControlButton, ControlSelect } from './Control.js';
+} from '@openflow/core/newSong.ts';
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
+import { ColorSelect } from './ColorSelect.tsx';
+import { ControlButton, ControlSelect } from './Control.tsx';
 import './NewSongModal.css';
 
 interface Props {
@@ -18,7 +18,7 @@ interface Props {
   palette: number[];
   defaultArtist: string;
   busy: boolean;
-  onAdd: (addition: BSV.SceneAddition) => void;
+  onAdd: (addition: OpenFlow.SceneAddition) => void;
   onClose: () => void;
 }
 

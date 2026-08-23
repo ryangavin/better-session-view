@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { mergeVocabulary, roleKey, rolesInUse } from '../../../core/src/roles.js';
+import { mergeVocabulary, roleKey, rolesInUse } from '@openflow/core/roles.ts';
 
 /**
  * The role vocabulary as the UI shows it, and the colors it paints.
@@ -14,8 +14,8 @@ export function useVocabulary({
   palette,
 }: {
   /** The configured vocabulary restored from the bridge device state. */
-  roles: BSV.Role[];
-  snapshot: BSV.Snapshot | null;
+  roles: OpenFlow.Role[];
+  snapshot: OpenFlow.Snapshot | null;
   palette: number[];
 }) {
   /** Roles actually tagged somewhere in the set, in order of first appearance. */

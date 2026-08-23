@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { hex } from '../../../core/src/color.js';
-import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.js';
-import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
-import { useDismissOnScroll } from '../hooks/useDismissOnScroll.js';
-import { SwatchGrid } from './SwatchGrid.js';
-import { ControlButton } from './Control.js';
+import { hex } from '@openflow/core/color.ts';
+import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.ts';
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
+import { useDismissOnScroll } from '../hooks/useDismissOnScroll.ts';
+import { SwatchGrid } from './SwatchGrid.tsx';
+import { ControlButton } from './Control.tsx';
 import './ColorSelect.css';
 
 interface Props {

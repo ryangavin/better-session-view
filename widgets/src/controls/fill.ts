@@ -1,5 +1,5 @@
-import { fractionOf, type Param } from '../param/param.js';
-import type { WidgetVars } from './Widget.js';
+import { fractionOf, type Param } from '../param/param.ts';
+import type { WidgetVars } from './Widget.tsx';
 
 /**
  * Where a value's fill starts and how far it runs.

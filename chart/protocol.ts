@@ -10,7 +10,7 @@
 //
 // Everything is worked out server-side. Nothing on the phone parses a scene
 // name, compiles a pattern or knows that the mapping lives in the names, for
-// the same reason `BSV.SetModel` exists — one reading of the set, not one per
+// the same reason `OpenFlow.SetModel` exists — one reading of the set, not one per
 // device in the room.
 
 /** Where the chart server listens. Bridge 17800, visuals 17900, this 18000. */
@@ -46,7 +46,7 @@ export const LOOPS_PATH_LENGTH = 1;
 
 /** One playing clip, as something to watch go round. */
 export interface LoopTrack {
-  /** Track index, in the same space as `BSV.Snapshot.tracks`. */
+  /** Track index, in the same space as `OpenFlow.Snapshot.tracks`. */
   t: number;
   name: string;
   /** The track's colour as Live renders it. */
@@ -196,7 +196,7 @@ export interface ChartLoops {
  * "VERSE 1" and "VERSE 2" that nothing in the set says.
  */
 export interface ChartSection {
-  /** Scene index, in the same space as `BSV.Snapshot.scenes`. */
+  /** Scene index, in the same space as `OpenFlow.Snapshot.scenes`. */
   s: number;
   /** The `[ROLE]` tag in the scene's name, uppercased, or null when it has none. */
   role: string | null;
@@ -227,7 +227,7 @@ export interface ChartSong {
    * The musical key, and `''` when the song does not have one to state — either
    * the set never said, or its scenes say more than one.
    *
-   * **Deliberately narrower than `BSV.SongEntry.key`**, which renders a
+   * **Deliberately narrower than `OpenFlow.SongEntry.key`**, which renders a
    * disagreement as the collection `Bm / D`. That is the right answer in the
    * grid, where a clash is something to go and fix. Here it is not: this is a
    * reading surface, and a song that modulates has not gone wrong — so the

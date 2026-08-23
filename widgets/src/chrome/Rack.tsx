@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Device, type DeviceProps } from './Device.js';
+import { Device, type DeviceProps } from './Device.tsx';
 import './chrome.css';
 
 /**

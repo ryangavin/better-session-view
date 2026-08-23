@@ -12,8 +12,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // strictPort stays on deliberately: a dev server that silently drifts to the next
 // free port is worse than one that fails, because nothing downstream can then say
 // which URL it ended up on.
-const BRIDGE = process.env.BSV_BRIDGE || 'http://127.0.0.1:17800';
-const PORT = Number(process.env.BSV_UI_PORT) || 5173;
+const BRIDGE = process.env.OPENFLOW_BRIDGE || 'http://127.0.0.1:17800';
+const PORT = Number(process.env.OPENFLOW_UI_PORT) || 5173;
 
 export default defineConfig({
   root: here,

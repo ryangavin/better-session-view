@@ -1,8 +1,8 @@
 import { useCallback, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { useParamGesture } from '../gesture/useParamGesture.js';
-import { clamp, quantize, type Param } from '../param/param.js';
-import { defaultOrigin, fillFrom, type FillOrigin } from './fill.js';
-import { useReserved } from './reserve.js';
+import { useParamGesture } from '../gesture/useParamGesture.ts';
+import { clamp, quantize, type Param } from '../param/param.ts';
+import { defaultOrigin, fillFrom, type FillOrigin } from './fill.ts';
+import { useReserved } from './reserve.ts';
 import './controls.css';
 
 /** `live.numbox`: drag it like a fader, or type into it. */

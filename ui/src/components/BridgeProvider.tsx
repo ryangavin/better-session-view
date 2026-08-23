@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { useBridge } from '../hooks/useBridge.js';
-import { BridgeContext, type BridgeSession } from '../hooks/useBridgeSession.js';
+import { useBridge } from '../hooks/useBridge.ts';
+import { BridgeContext, type BridgeSession } from '../hooks/useBridgeSession.ts';
 
 /**
  * Owns the connection to Live — above the app rather than inside it.

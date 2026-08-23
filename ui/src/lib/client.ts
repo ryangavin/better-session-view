@@ -4,9 +4,9 @@
 // the terminal event for that id. Non-terminal traffic (progress, structural
 // change notifications, reload) goes to subscribers instead.
 
-import { WS_PATH } from '../../../protocol/index.js';
+import { WS_PATH } from '@openflow/protocol/index.ts';
 
-export type BridgeEvent = BSV.Event;
+export type BridgeEvent = OpenFlow.Event;
 type Listener = (event: BridgeEvent) => void;
 
 /** The event that completes each request type. */
@@ -21,15 +21,15 @@ const TERMINAL = {
   saveSetConfig: 'setConfigSaved',
   saveAllowedColors: 'allowedColorsSaved',
   ping: 'pong',
-} as const satisfies Partial<Record<BSV.RequestType, BSV.EventType>>;
+} as const satisfies Partial<Record<OpenFlow.RequestType, OpenFlow.EventType>>;
 
 type Awaitable = keyof typeof TERMINAL;
 
 /** Requests that produce a terminal reply, i.e. everything `request()` accepts. */
-type AwaitableRequest = Extract<BSV.Request, { type: Awaitable }>;
+type AwaitableRequest = Extract<OpenFlow.Request, { type: Awaitable }>;
 
 interface Waiter {
-  expect: BSV.EventType;
+  expect: OpenFlow.EventType;
   resolve: (e: BridgeEvent) => void;
   reject: (e: Error) => void;
   timer: ReturnType<typeof setTimeout>;
@@ -153,7 +153,7 @@ export class BridgeClient {
   }
 
   /** Fire and forget. */
-  send(request: BSV.Request): void {
+  send(request: OpenFlow.Request): void {
     if (this.ws?.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify(request));
   }
@@ -162,12 +162,12 @@ export class BridgeClient {
   request<R extends AwaitableRequest>(
     request: R,
     timeoutMs = 120_000,
-  ): Promise<BSV.EventOf<(typeof TERMINAL)[R['type']]>> {
+  ): Promise<OpenFlow.EventOf<(typeof TERMINAL)[R['type']]>> {
     if (this.ws?.readyState !== WebSocket.OPEN) {
       return Promise.reject(new Error('not connected'));
     }
     const id = this.nextId++;
-    const expect: BSV.EventType = TERMINAL[request.type];
+    const expect: OpenFlow.EventType = TERMINAL[request.type];
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.waiters.delete(id);

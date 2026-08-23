@@ -1,14 +1,14 @@
-import { useParamGesture } from '../gesture/useParamGesture.js';
-import type { Param } from '../param/param.js';
+import { useParamGesture } from '../gesture/useParamGesture.ts';
+import type { Param } from '../param/param.ts';
 import {
   DIAL_VIEWBOX_HEIGHT,
   DIAL_VIEWBOX_TOP,
   dialAngle,
   dialArc,
   dialPoint,
-} from './arc.js';
-import { defaultOrigin, originFraction, type FillOrigin } from './fill.js';
-import { Widget, type WidgetProps } from './Widget.js';
+} from './arc.ts';
+import { defaultOrigin, originFraction, type FillOrigin } from './fill.ts';
+import { Widget, type WidgetProps } from './Widget.tsx';
 import './controls.css';
 
 /** `live.dial`, and the control most of an Ableton device is made of. */

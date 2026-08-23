@@ -1,5 +1,5 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
-import type { WidgetVars } from '../controls/Widget.js';
+import type { WidgetVars } from '../controls/Widget.tsx';
 import './chrome.css';
 
 /**

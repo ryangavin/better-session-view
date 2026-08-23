@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, type KeyboardEvent, type PointerEvent } from 'react';
-import { GraphContext, portKey, type PortSide } from './graphContext.js';
+import { GraphContext, portKey, type PortSide } from './graphContext.ts';
 import './chrome.css';
 
 /**

@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react';
-import type { BridgeState } from '../../hooks/useBridge.js';
-import { useMixerStrip, type MixerStore } from '../../hooks/useMixer.js';
-import { compactParameterDisplay } from '../../lib/meterScale.js';
-import { liveParam } from '../../lib/liveParam.js';
+import type { BridgeState } from '../../hooks/useBridge.ts';
+import { useMixerStrip, type MixerStore } from '../../hooks/useMixer.ts';
+import { compactParameterDisplay } from '../../lib/meterScale.ts';
+import { liveParam } from '../../lib/liveParam.ts';
 import { useParamGesture } from '@openflow/widgets/gesture/useParamGesture.ts';
 import {
   readbackTolerance,
@@ -23,7 +23,7 @@ function SendControl({
   trackLabel,
   onChange,
 }: {
-  parameter: BSV.MixerParameterState | null;
+  parameter: OpenFlow.MixerParameterState | null;
   index: number;
   trackLabel: string;
   onChange: (index: number, value: number) => void;

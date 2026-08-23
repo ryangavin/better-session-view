@@ -1,12 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
-import type { BridgeClient } from '../lib/client.js';
+import type { BridgeClient } from '../lib/client.ts';
 import {
   clearLegacyAllowedColors,
   loadLegacyAllowedColors,
-} from '../lib/allowedColors.js';
-import { errText } from '../lib/snapshotTiming.js';
-import type { Guard } from './useBridge.js';
-import type { Say } from './useLog.js';
+} from '../lib/allowedColors.ts';
+import { errText } from '../lib/snapshotTiming.ts';
+import type { Guard } from './useBridge.ts';
+import type { Say } from './useLog.ts';
 
 /**
  * Set-owned UI configuration restored from the Session Bridge device itself.
@@ -16,7 +16,7 @@ import type { Say } from './useLog.js';
  */
 export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
   const [defaultArtist, setDefaultArtist] = useState('');
-  const [roles, setRoles] = useState<BSV.Role[]>([]);
+  const [roles, setRoles] = useState<OpenFlow.Role[]>([]);
   const [allowedColors, setAllowedColorsState] = useState<number[] | null>(null);
   /**
    * Whether a rename also projects the song's bpm onto its first `Scene.tempo`.
@@ -28,7 +28,7 @@ export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
   const migratingAllowed = useRef(false);
 
   const adoptDeviceState = useCallback(
-    (state: BSV.DeviceState) => {
+    (state: OpenFlow.DeviceState) => {
       // Older bridge builds can still be running while Vite serves this UI.
       setDefaultArtist(state.defaultArtist ?? '');
       setRoles(state.roles);
@@ -60,7 +60,7 @@ export function useDeviceState(client: BridgeClient, guard: Guard, say: Say) {
   );
 
   const saveSetConfig = useCallback(
-    (nextArtist: string, nextRoles: BSV.Role[], nextWriteSceneTempo?: boolean) =>
+    (nextArtist: string, nextRoles: OpenFlow.Role[], nextWriteSceneTempo?: boolean) =>
       guard('set configuration', async () => {
         const e = await client.request({
           type: 'saveSetConfig',

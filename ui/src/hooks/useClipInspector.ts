@@ -1,17 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
-import { colorOps } from '../../../core/src/ops.js';
-import { DEFAULT_CLIP_PATTERN, render } from '../../../core/src/pattern.js';
-import { roleIn } from '../../../core/src/roles.js';
-import { titleOf } from '../../../core/src/sceneTitle.js';
-import { clipKey, parseClipKey } from '../lib/selection.js';
-import type { BridgeState } from './useBridge.js';
+import { colorOps } from '@openflow/core/ops.ts';
+import { DEFAULT_CLIP_PATTERN, render } from '@openflow/core/pattern.ts';
+import { roleIn } from '@openflow/core/roles.ts';
+import { titleOf } from '@openflow/core/sceneTitle.ts';
+import { clipKey, parseClipKey } from '../lib/selection.ts';
+import type { BridgeState } from './useBridge.ts';
 
 interface Args {
   selected: ReadonlySet<string>;
-  clips: Map<string, BSV.Clip>;
+  clips: Map<string, OpenFlow.Clip>;
   trackNames: Map<number, string>;
   sceneNames: Map<number, string>;
-  snapshot: BSV.Snapshot | null;
+  snapshot: OpenFlow.Snapshot | null;
   apply: BridgeState['apply'];
 }
 
@@ -73,7 +73,7 @@ export function useClipInspector({
     [apply, selectedCells, snapshot],
   );
 
-  const nameOps = useMemo<BSV.ApplyOp[]>(() => {
+  const nameOps = useMemo<OpenFlow.ApplyOp[]>(() => {
     if (!pattern.trim()) return [];
     return selectedCells
       .map(({ t, s }, i) => ({ t, s, name: render(pattern, valuesFor(t, s, i + 1)) }))

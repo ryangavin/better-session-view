@@ -123,7 +123,7 @@ export function viewportColumnLayout(
   };
 }
 
-const KEY = 'bsv.columnWidth';
+const KEY = 'openflow.columnWidth';
 
 export function loadColumnWidth(): ColumnWidth {
   try {

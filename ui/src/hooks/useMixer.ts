@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
-import type { BridgeState } from './useBridge.js';
-import type { MeterKey } from './useMeters.js';
-import { MixerStore, type MixerStripState } from '../lib/mixerStore.js';
+import type { BridgeState } from './useBridge.ts';
+import type { MeterKey } from './useMeters.ts';
+import { MixerStore, type MixerStripState } from '../lib/mixerStore.ts';
 
 export { MixerStore };
 export type { MixerStripState };

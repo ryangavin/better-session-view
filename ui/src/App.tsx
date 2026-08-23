@@ -1,46 +1,46 @@
 import { useCallback, useRef, useState } from 'react';
 import './App.css';
-import { ClipGrid } from './components/ClipGrid/ClipGrid.js';
-import { DeviceChain } from './components/DeviceChain.js';
-import { Header } from './components/Header.js';
-import { IconSync } from './components/Icon.js';
-import { Inspector } from './components/Inspector.js';
-import { NewSongModal } from './components/NewSongModal.js';
-import { Rail } from './components/Rail.js';
-import { RecolorModal } from './components/RecolorModal.js';
-import { ReorderModal } from './components/ReorderModal.js';
-import { RoleMenu } from './components/RoleMenu.js';
-import { SetConfigModal } from './components/SetConfigModal.js';
-import { ScenePanel } from './components/ScenePanel.js';
-import { SongIndex } from './components/SongIndex.js';
-import { SongsModal } from './components/SongsModal.js';
-import { StatsBar } from './components/StatsBar.js';
-import { SyncModal } from './components/SyncModal.js';
-import { useBridgeSession } from './hooks/useBridgeSession.js';
-import { useSnapshotLookups } from './hooks/useSnapshotLookups.js';
-import { useTrackColumns } from './hooks/useTrackColumns.js';
-import { useSongLayout } from './hooks/useSongLayout.js';
-import { useRailAndLog } from './hooks/useRailAndLog.js';
-import { useGridSelection } from './hooks/useGridSelection.js';
-import { useGridKeyboard } from './hooks/useGridKeyboard.js';
-import { useSceneDrag } from './hooks/useSceneDrag.js';
-import { clipsFromKeys, useClipDrag } from './hooks/useClipDrag.js';
-import { clipKey } from './lib/selection.js';
-import { useSceneTitles } from './hooks/useSceneTitles.js';
-import { useSongColor } from './hooks/useSongColor.js';
-import { useColorRules } from './hooks/useColorRules.js';
-import { useVocabulary } from './hooks/useVocabulary.js';
-import { useRoleAssignment } from './hooks/useRoleAssignment.js';
-import { useClipInspector } from './hooks/useClipInspector.js';
-import { useDeviceChain } from './hooks/useDeviceChain.js';
+import { ClipGrid } from './components/ClipGrid/ClipGrid.tsx';
+import { DeviceChain } from './components/DeviceChain.tsx';
+import { Header } from './components/Header.tsx';
+import { IconSync } from './components/Icon.tsx';
+import { Inspector } from './components/Inspector.tsx';
+import { NewSongModal } from './components/NewSongModal.tsx';
+import { Rail } from './components/Rail.tsx';
+import { RecolorModal } from './components/RecolorModal.tsx';
+import { ReorderModal } from './components/ReorderModal.tsx';
+import { RoleMenu } from './components/RoleMenu.tsx';
+import { SetConfigModal } from './components/SetConfigModal.tsx';
+import { ScenePanel } from './components/ScenePanel.tsx';
+import { SongIndex } from './components/SongIndex.tsx';
+import { SongsModal } from './components/SongsModal.tsx';
+import { StatsBar } from './components/StatsBar.tsx';
+import { SyncModal } from './components/SyncModal.tsx';
+import { useBridgeSession } from './hooks/useBridgeSession.ts';
+import { useSnapshotLookups } from './hooks/useSnapshotLookups.ts';
+import { useTrackColumns } from './hooks/useTrackColumns.ts';
+import { useSongLayout } from './hooks/useSongLayout.ts';
+import { useRailAndLog } from './hooks/useRailAndLog.ts';
+import { useGridSelection } from './hooks/useGridSelection.ts';
+import { useGridKeyboard } from './hooks/useGridKeyboard.ts';
+import { useSceneDrag } from './hooks/useSceneDrag.ts';
+import { clipsFromKeys, useClipDrag } from './hooks/useClipDrag.ts';
+import { clipKey } from './lib/selection.ts';
+import { useSceneTitles } from './hooks/useSceneTitles.ts';
+import { useSongColor } from './hooks/useSongColor.ts';
+import { useColorRules } from './hooks/useColorRules.ts';
+import { useVocabulary } from './hooks/useVocabulary.ts';
+import { useRoleAssignment } from './hooks/useRoleAssignment.ts';
+import { useClipInspector } from './hooks/useClipInspector.ts';
+import { useDeviceChain } from './hooks/useDeviceChain.ts';
 import {
   loadColumnWidth,
   saveColumnWidth,
   type ColumnWidth,
-} from './lib/columnWidth.js';
-import { DEFAULT_SCENE_PATTERN } from '../../core/src/namePattern.js';
-import { songKey as songKeyOf } from '../../core/src/derive.js';
-import { describeMove } from '../../core/src/sceneMove.js';
+} from './lib/columnWidth.ts';
+import { DEFAULT_SCENE_PATTERN } from '@openflow/core/namePattern.ts';
+import { songKey as songKeyOf } from '@openflow/core/derive.ts';
+import { describeMove } from '@openflow/core/sceneMove.ts';
 
 /**
  * The composition root. Every concern lives in a hook under hooks/; this

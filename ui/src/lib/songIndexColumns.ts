@@ -69,7 +69,7 @@ export function paneWidth(columns: IndexColumns): number {
   return PAD + content + GAP * facts.length;
 }
 
-const KEY = 'bsv.songIndexColumns';
+const KEY = 'openflow.songIndexColumns';
 
 function isColumns(v: unknown): v is IndexColumns {
   if (!v || typeof v !== 'object') return false;

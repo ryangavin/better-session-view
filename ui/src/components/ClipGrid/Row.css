@@ -124,7 +124,7 @@ td.scene-role > .fire.live {
 td.scene-role > .fire.fired {
   background: var(--amber);
   color: var(--bg);
-  animation: bsv-blink 0.5s infinite;
+  animation: openflow-blink 0.5s infinite;
 }
 
 td.scene-role .role-chip {
@@ -178,7 +178,7 @@ td.cell.playing {
 }
 td.cell.fired {
   background-image: linear-gradient(90deg, var(--amber) 0 3px, transparent 3px);
-  animation: bsv-blink 0.5s infinite;
+  animation: openflow-blink 0.5s infinite;
 }
 
 td.cell.has.playing,

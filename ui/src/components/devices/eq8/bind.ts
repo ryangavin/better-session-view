@@ -72,7 +72,7 @@ function emptyBand(): Eq8Band {
 }
 
 export function bindEq8(
-  parameters: readonly BSV.DeviceParameterState[] | null,
+  parameters: readonly OpenFlow.DeviceParameterState[] | null,
 ): Eq8Binding {
   const bands: Eq8Band[] = [];
   for (let i = 0; i < EQ8_BANDS; i++) bands.push(emptyBand());

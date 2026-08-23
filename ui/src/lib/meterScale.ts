@@ -60,7 +60,7 @@ export function meterFraction(
 }
 
 export function mixerParameterFraction(
-  parameter: BSV.MixerParameterState | null,
+  parameter: OpenFlow.MixerParameterState | null,
   value: number,
 ): number {
   if (!parameter) return 0;

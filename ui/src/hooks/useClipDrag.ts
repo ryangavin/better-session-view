@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { planClipMove, type ClipAt } from '../../../core/src/clipMove.js';
-import { parseClipKey } from '../lib/selection.js';
-import type { BridgeState } from './useBridge.js';
+import { planClipMove, type ClipAt } from '@openflow/core/clipMove.ts';
+import { parseClipKey } from '../lib/selection.ts';
+import type { BridgeState } from './useBridge.ts';
 
 /**
  * Drag clips to another place in the grid.
@@ -16,7 +16,7 @@ import type { BridgeState } from './useBridge.js';
  * `planClipMove` needs.
  */
 export function useClipDrag(
-  snapshot: BSV.Snapshot | null,
+  snapshot: OpenFlow.Snapshot | null,
   clearSelection: () => void,
   moveClips: BridgeState['moveClips'],
 ) {

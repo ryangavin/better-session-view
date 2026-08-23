@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ControlButton } from './Control.js';
+import { ControlButton } from './Control.tsx';
 import './Rail.css';
 
 interface Props {

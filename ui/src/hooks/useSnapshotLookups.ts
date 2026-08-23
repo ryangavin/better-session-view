@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { sceneFields } from '../../../core/src/roles.js';
-import { clipKey } from '../lib/selection.js';
+import { sceneFields } from '@openflow/core/roles.ts';
+import { clipKey } from '../lib/selection.ts';
 
 /**
  * Lookup tables over the snapshot — Maps, not `.find()`. Block selection can
@@ -12,7 +12,7 @@ import { clipKey } from '../lib/selection.js';
  * snapshot-scoped identity — a fresh Map per render would re-render all 848
  * scenes.
  */
-export function useSnapshotLookups(snapshot: BSV.Snapshot | null) {
+export function useSnapshotLookups(snapshot: OpenFlow.Snapshot | null) {
   const clips = useMemo(
     () => new Map(snapshot?.clips.map((c) => [clipKey(c.t, c.s), c]) ?? []),
     [snapshot],
@@ -34,7 +34,7 @@ export function useSnapshotLookups(snapshot: BSV.Snapshot | null) {
   const scenesForOps = useMemo(() => sceneFields(snapshot?.scenes ?? []), [snapshot]);
 
   const clipsByScene = useMemo(() => {
-    const m = new Map<number, BSV.Clip[]>();
+    const m = new Map<number, OpenFlow.Clip[]>();
     for (const c of snapshot?.clips ?? []) {
       const list = m.get(c.s);
       if (list) list.push(c);

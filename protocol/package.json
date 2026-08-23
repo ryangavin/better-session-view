@@ -1,0 +1,11 @@
+{
+  "name": "@openflow/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The wire protocol between the bridge and its clients, declared once as a global namespace.",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  }
+}

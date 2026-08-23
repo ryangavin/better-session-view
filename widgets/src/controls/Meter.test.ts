@@ -1,7 +1,7 @@
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { Meter } from './Meter.js';
+import { Meter } from './Meter.tsx';
 
 describe('Meter frame', () => {
   it('preserves the caption-over-meter default without adding a reading', () => {

@@ -9,7 +9,7 @@ import {
   stepSize,
   valueAt,
   type Param,
-} from './param.js';
+} from './param.ts';
 
 const unipolar: Param = { kind: 'float', min: 0, max: 1, defaultValue: 0.85 };
 const bipolar: Param = { kind: 'float', min: -1, max: 1, defaultValue: 0, unit: 'pan' };

@@ -9,7 +9,7 @@ import {
   readbackTolerance,
   usePendingValue,
 } from '@openflow/widgets/gesture/usePendingValue.ts';
-import { deviceParam, paramDisabled } from '../../lib/liveParam.js';
+import { deviceParam, paramDisabled } from '../../lib/liveParam.ts';
 import './devices.css';
 
 /**
@@ -33,7 +33,7 @@ import './devices.css';
 /** What a slot is given: the control Live reports, and where to send a move. */
 export interface ParamBinding {
   /** Null when this face's slot matched no parameter on the device. */
-  state: BSV.DeviceParameterState | null;
+  state: OpenFlow.DeviceParameterState | null;
   onChange(value: number): void;
 }
 

@@ -1,17 +1,17 @@
-import { hex } from '../../../core/src/color.js';
+import { hex } from '@openflow/core/color.ts';
 import './ScenePanel.css';
-import { MIN_TEMPO } from '../../../core/src/derive.js';
-import { roleKey, type Role } from '../../../core/src/roles.js';
+import { MIN_TEMPO } from '@openflow/core/derive.ts';
+import { roleKey, type Role } from '@openflow/core/roles.ts';
 import {
   isBpm,
   isKey,
   isTag,
   splitsAsArtist,
   type TitlePatch,
-} from '../../../core/src/sceneTitle.js';
-import { SUGGESTED_SONG_TAGS } from '../../../core/src/songTags.js';
-import { ColorSelect } from './ColorSelect.js';
-import { ControlButton, ControlSelect } from './Control.js';
+} from '@openflow/core/sceneTitle.ts';
+import { SUGGESTED_SONG_TAGS } from '@openflow/core/songTags.ts';
+import { ColorSelect } from './ColorSelect.tsx';
+import { ControlButton, ControlSelect } from './Control.tsx';
 
 interface Props {
   /** Configured roles plus any tagged in the set — see mergeVocabulary. */

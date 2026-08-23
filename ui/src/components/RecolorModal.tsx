@@ -1,21 +1,21 @@
 import { useMemo, useState } from 'react';
 import './BulkWorkflow.css';
 import './RecolorModal.css';
-import { hex } from '../../../core/src/color.js';
-import { songKey, type Derivation } from '../../../core/src/derive.js';
-import { songFacts } from '../../../core/src/songRows.js';
+import { hex } from '@openflow/core/color.ts';
+import { songKey, type Derivation } from '@openflow/core/derive.ts';
+import { songFacts } from '@openflow/core/songRows.ts';
 import {
   planSongColors,
   type ColorRule,
   type SongColorInput,
-} from '../../../core/src/colorRules.js';
-import { useCloseOnEscape } from '../hooks/useCloseOnEscape.js';
-import { SwatchGrid } from './SwatchGrid.js';
-import { ControlButton, ControlGroup } from './Control.js';
+} from '@openflow/core/colorRules.ts';
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
+import { SwatchGrid } from './SwatchGrid.tsx';
+import { ControlButton, ControlGroup } from './Control.tsx';
 
 interface Props {
   derivation: Derivation;
-  snapshot: BSV.Snapshot;
+  snapshot: OpenFlow.Snapshot;
   palette: number[];
   /** What each song states, for the rule to key on — see useColorRules. */
   songs: SongColorInput[];

@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BridgeClient, type ConnectionState } from '../lib/client.js';
-import { applyOps, inverseOps } from '../../../core/src/ops.js';
+import { BridgeClient, type ConnectionState } from '../lib/client.ts';
+import { applyOps, inverseOps } from '@openflow/core/ops.ts';
 import {
   applySceneOps,
   countUnrevertableColors,
   inverseSceneOps,
   sceneFields,
-} from '../../../core/src/roles.js';
-import type { SceneMovePlan } from '../../../core/src/sceneMove.js';
-import { canApplyDelta, mergeRows, mergeTrackDelta } from '../../../core/src/snapshotDelta.js';
-import { applyClipMove, type ClipMovePlan } from '../../../core/src/clipMove.js';
-import { LIVE_PALETTE } from '../../../core/src/livePalette.js';
-import { derive } from '../../../core/src/derive.js';
-import { SCENE_PATTERNS } from '../../../core/src/namePattern.js';
-import { buildSetModel } from '../../../core/src/setModel.js';
-import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.js';
-import { useLog, type LogLine } from './useLog.js';
-import { useDeviceState } from './useDeviceState.js';
+} from '@openflow/core/roles.ts';
+import type { SceneMovePlan } from '@openflow/core/sceneMove.ts';
+import { canApplyDelta, mergeRows, mergeTrackDelta } from '@openflow/core/snapshotDelta.ts';
+import { applyClipMove, type ClipMovePlan } from '@openflow/core/clipMove.ts';
+import { LIVE_PALETTE } from '@openflow/core/livePalette.ts';
+import { derive } from '@openflow/core/derive.ts';
+import { SCENE_PATTERNS } from '@openflow/core/namePattern.ts';
+import { buildSetModel } from '@openflow/core/setModel.ts';
+import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.ts';
+import { useLog, type LogLine } from './useLog.ts';
+import { useDeviceState } from './useDeviceState.ts';
 
 /**
  * The part of a plan that goes on the wire. `SceneMovePlan` also carries counts
@@ -41,7 +41,7 @@ export type Guard = (label: string, fn: () => Promise<void>) => Promise<void>;
  */
 export interface PlayState {
   isPlaying: boolean;
-  tracks: BSV.TrackPlayState[];
+  tracks: OpenFlow.TrackPlayState[];
 }
 
 const NOT_PLAYING: PlayState = { isPlaying: false, tracks: [] };
@@ -52,20 +52,20 @@ export interface SongPosition {
   sixteenth: number;
 }
 
-export type MeterListener = (frame: BSV.MeterFrame) => void;
-export type ClipStatusListener = (frame: BSV.ClipStatusFrame) => void;
-export type MixerListener = (state: BSV.MixerState | null) => void;
+export type MeterListener = (frame: OpenFlow.MeterFrame) => void;
+export type ClipStatusListener = (frame: OpenFlow.ClipStatusFrame) => void;
+export type MixerListener = (state: OpenFlow.MixerState | null) => void;
 
 /** Null when the LOM went away and every observer behind the chains with it. */
-export type ChainListener = (state: BSV.ChainState | null) => void;
+export type ChainListener = (state: OpenFlow.ChainState | null) => void;
 
-export type ChainValueListener = (changes: readonly BSV.ChainValueChange[]) => void;
+export type ChainValueListener = (changes: readonly OpenFlow.ChainValueChange[]) => void;
 
 /** One write, of either kind or both. Empty arrays rather than optionals so
  *  every count in here is `ops.length + sceneOps.length` with no branching. */
 interface Batch {
-  ops: BSV.ApplyOp[];
-  sceneOps: BSV.SceneOp[];
+  ops: OpenFlow.ApplyOp[];
+  sceneOps: OpenFlow.SceneOp[];
 }
 
 /**
@@ -76,14 +76,14 @@ interface Batch {
  * headers over rows they don't belong to. They are always replaced together.
  */
 interface HeldSet {
-  snapshot: BSV.Snapshot;
-  model: BSV.SetModel;
+  snapshot: OpenFlow.Snapshot;
+  model: OpenFlow.SetModel;
 }
 
 export interface BridgeState {
   connection: ConnectionState;
   lomReady: boolean;
-  snapshot: BSV.Snapshot | null;
+  snapshot: OpenFlow.Snapshot | null;
   /**
    * The songs in the set, as the bridge read them — always describing the
    * `snapshot` beside it. Null until the first one arrives.
@@ -92,11 +92,11 @@ export interface BridgeState {
    * the bridge, for Push and every browser tab together. See
    * `core/docs/setModel.md`, and `reconcile` for the single exception.
    */
-  model: BSV.SetModel | null;
+  model: OpenFlow.SetModel | null;
   palette: number[];
   /** Set-owned configuration restored from the device's Stored Only parameter. */
   defaultArtist: string;
-  roles: BSV.Role[];
+  roles: OpenFlow.Role[];
   allowedColors: number[] | null;
   /**
    * Whether a bpm write also sets `Scene.tempo` on the song's first scene.
@@ -107,7 +107,7 @@ export interface BridgeState {
   writeSceneTempo: boolean;
   play: PlayState;
   /** Live's observed control-bar settings. Null until the watch reports. */
-  transport: BSV.TransportState | null;
+  transport: OpenFlow.TransportState | null;
   /** Live's arrangement position, or null until its observer has reported. */
   songPosition: SongPosition | null;
   progress: { done: number; total: number } | null;
@@ -118,11 +118,11 @@ export interface BridgeState {
   /** 1 when the last write can be reversed, 0 otherwise. */
   undoDepth: number;
   refresh: () => Promise<void>;
-  apply: (ops: BSV.ApplyOp[], label?: string) => Promise<void>;
+  apply: (ops: OpenFlow.ApplyOp[], label?: string) => Promise<void>;
   /** Scene-addressed writes — role tags and scene colors. */
-  applyScenes: (sceneOps: BSV.SceneOp[], label?: string) => Promise<void>;
+  applyScenes: (sceneOps: OpenFlow.SceneOp[], label?: string) => Promise<void>;
   /** Insert and configure blank scenes. Additive, but structural: indexes shift. */
-  addScenes: (addition: BSV.SceneAddition, label?: string) => Promise<void>;
+  addScenes: (addition: OpenFlow.SceneAddition, label?: string) => Promise<void>;
   /**
    * Reorder scenes. **The one write with no undo of ours** — it creates and
    * deletes scenes, and a snapshot can't rebuild a deleted one. Clears the undo
@@ -144,18 +144,18 @@ export interface BridgeState {
    */
   saveSetConfig: (
     defaultArtist: string,
-    roles: BSV.Role[],
+    roles: OpenFlow.Role[],
     writeSceneTempo?: boolean,
   ) => Promise<void>;
   setAllowedColors: (colors: number[] | null) => void;
   undo: () => Promise<void>;
   /** Fire something. No await: the answer you want is `play` changing. */
-  launch: (target: BSV.LaunchTarget) => void;
-  stop: (target: BSV.StopTarget) => void;
+  launch: (target: OpenFlow.LaunchTarget) => void;
+  stop: (target: OpenFlow.StopTarget) => void;
   /** Write a related subset of Live's control-bar state in one operation. */
-  setTransport: (patch: BSV.TransportPatch) => void;
+  setTransport: (patch: OpenFlow.TransportPatch) => void;
   /** Write one mixer strip. Its observed readback updates the panel. */
-  setMixer: (target: BSV.MixerTarget, patch: BSV.MixerPatch) => void;
+  setMixer: (target: OpenFlow.MixerTarget, patch: OpenFlow.MixerPatch) => void;
   /**
    * Write one device: its activator, its fold state, or one of its controls.
    *
@@ -163,7 +163,7 @@ export interface BridgeState {
    * gesture as subscribing to a device's controls — `open` is derived from
    * fold state — so this is how a face gets its parameters at all.
    */
-  setDevice: (target: BSV.DeviceTarget, patch: BSV.DevicePatch) => void;
+  setDevice: (target: OpenFlow.DeviceTarget, patch: OpenFlow.DevicePatch) => void;
   /**
    * Fold or unfold a group track in Live. No await, and no reply — the grid
    * has already moved its own columns. See `setFold` in the protocol.
@@ -183,7 +183,7 @@ export interface BridgeState {
    * so an empty list is how you stop and a dropped socket says the same thing.
    * See [`core/src/chainWatch.ts`](../../../core/docs/chainWatch.md).
    */
-  watchChains: (subs: BSV.ChainWatch[]) => void;
+  watchChains: (subs: OpenFlow.ChainWatch[]) => void;
   /** The watched runs, pushed whenever anything in one of them changes. */
   subscribeChains: (listener: ChainListener) => () => void;
   /**
@@ -232,7 +232,7 @@ export function useBridge(
   const [set, setSet] = useState<HeldSet | null>(null);
   const snapshot = set?.snapshot ?? null;
   const [play, setPlay] = useState<PlayState>(NOT_PLAYING);
-  const [transport, setTransportState] = useState<BSV.TransportState | null>(null);
+  const [transport, setTransportState] = useState<OpenFlow.TransportState | null>(null);
   const [songPosition, setSongPosition] = useState<SongPosition | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -512,7 +512,7 @@ export function useBridge(
   );
 
   const watchChains = useCallback(
-    (subs: BSV.ChainWatch[]) => client.send({ type: 'watchChains', subs }),
+    (subs: OpenFlow.ChainWatch[]) => client.send({ type: 'watchChains', subs }),
     [client],
   );
 
@@ -546,28 +546,28 @@ export function useBridge(
   );
 
   const launch = useCallback(
-    (target: BSV.LaunchTarget) => client.send({ type: 'launch', target }),
+    (target: OpenFlow.LaunchTarget) => client.send({ type: 'launch', target }),
     [client],
   );
 
   const stop = useCallback(
-    (target: BSV.StopTarget) => client.send({ type: 'stop', target }),
+    (target: OpenFlow.StopTarget) => client.send({ type: 'stop', target }),
     [client],
   );
 
   const setTransport = useCallback(
-    (patch: BSV.TransportPatch) => client.send({ type: 'setTransport', patch }),
+    (patch: OpenFlow.TransportPatch) => client.send({ type: 'setTransport', patch }),
     [client],
   );
 
   const setMixer = useCallback(
-    (target: BSV.MixerTarget, patch: BSV.MixerPatch) =>
+    (target: OpenFlow.MixerTarget, patch: OpenFlow.MixerPatch) =>
       client.send({ type: 'setMixer', target, patch }),
     [client],
   );
 
   const setDevice = useCallback(
-    (target: BSV.DeviceTarget, patch: BSV.DevicePatch) =>
+    (target: OpenFlow.DeviceTarget, patch: OpenFlow.DevicePatch) =>
       client.send({ type: 'setDevice', target, patch }),
     [client],
   );
@@ -824,7 +824,7 @@ export function useBridge(
   );
 
   const apply = useCallback(
-    (ops: BSV.ApplyOp[], label = 'apply') => {
+    (ops: OpenFlow.ApplyOp[], label = 'apply') => {
       const before = setRef.current?.snapshot.clips ?? [];
       const back = inverseOps(before, ops);
       return write({ ops, sceneOps: [] }, label, {
@@ -836,7 +836,7 @@ export function useBridge(
   );
 
   const applyScenes = useCallback(
-    (sceneOps: BSV.SceneOp[], label = 'scenes') => {
+    (sceneOps: OpenFlow.SceneOp[], label = 'scenes') => {
       const before = sceneFields(setRef.current?.snapshot.scenes ?? []);
       const back = inverseSceneOps(before, sceneOps);
       // Live gives us no way to write "no color", so a scene that had none
@@ -867,7 +867,7 @@ export function useBridge(
    * reversal because our snapshots deliberately cannot delete scenes.
    */
   const addScenes = useCallback(
-    (addition: BSV.SceneAddition, label = 'add scenes') =>
+    (addition: OpenFlow.SceneAddition, label = 'add scenes') =>
       guard(label, async () => {
         undoRef.current = null;
         setUndoDepth(0);

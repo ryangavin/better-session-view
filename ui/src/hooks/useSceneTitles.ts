@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { mergeSceneOps, songTempoOps, type SceneFields } from '../../../core/src/roles.js';
+import { mergeSceneOps, songTempoOps, type SceneFields } from '@openflow/core/roles.ts';
 import {
   MIN_TEMPO,
   songsOfScenes,
   type Derivation,
   type DerivedSong,
-} from '../../../core/src/derive.js';
+} from '@openflow/core/derive.ts';
 import {
   commonTitle,
   titleOf,
   titleOps,
   type TitlePatch,
-} from '../../../core/src/sceneTitle.js';
-import type { BridgeState } from './useBridge.js';
+} from '@openflow/core/sceneTitle.ts';
+import type { BridgeState } from './useBridge.ts';
 
 interface Args {
   derivation: Derivation;

@@ -1,5 +1,5 @@
-import type { DeviceFace } from './face.js';
-import { Eq8 } from './eq8/Eq8.js';
+import type { DeviceFace } from './face.ts';
+import { Eq8 } from './eq8/Eq8.tsx';
 
 /**
  * Which devices the app has drawn a face for.

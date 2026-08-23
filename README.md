@@ -1,8 +1,8 @@
-# better-session-view
+# open[flow]
 
 [![ci](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml/badge.svg)](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml)
 
-Better Session View is a Max for Live device for managing songs in large Session View
+open[flow] is a Max for Live device for managing songs in large Session View
 sets.
 
 Live gives you clips and scenes, but it doesn't have a concept of a song. If your set has
@@ -14,7 +14,7 @@ That works until you need to rename everything, try a different color system, or
 the running order. Then a small decision becomes a lot of clicking, scrolling, and hoping
 you didn't miss one.
 
-Better Session View opens the set in a local browser grid and lets you work on that
+open[flow] opens the set in a local browser grid and lets you work on that
 structure in groups. It isn't a replacement for Session View. It's a way to do the
 repetitive set-management parts without treating every clip and scene as a separate job.
 
@@ -24,7 +24,7 @@ repetitive set-management parts without treating every clip and scene as a separ
   selection using a pattern.
 - **Apply colors consistently.** Set up rules based on things like key or bpm, preview
   the result, and then write it across the set.
-- **Work with songs, not just scenes.** Better Session View groups related scenes from
+- **Work with songs, not just scenes.** open[flow] groups related scenes from
   their names, so you can manage the song as a whole.
 - **Change the running order.** Drag a song to a new position and all of its scenes move
   with it as a single Live undo step.
@@ -33,21 +33,21 @@ repetitive set-management parts without treating every clip and scene as a separ
 
 ## How it works
 
-Better Session View doesn't create another project file or database to describe your
+open[flow] doesn't create another project file or database to describe your
 set. The relationship between songs and scenes lives in the set itself, using things Live
 already understands: names, colors, and device data. Your `.als` remains the complete
 record of the show.
 
 That also means scene names carry more meaning than they normally would. They're the
-labels you see in Live, but they're also how Better Session View works out which scenes
+labels you see in Live, but they're also how open[flow] works out which scenes
 belong to which song. If a scene name changes in a way that no longer follows your naming
-pattern, Better Session View may understand it differently the next time it reads the
+pattern, open[flow] may understand it differently the next time it reads the
 set.
 
-If you're using Better Session View to manage a set, it's best to use it as the main place
+If you're using open[flow] to manage a set, it's best to use it as the main place
 to relabel songs and change their structure. You can still edit anything you want in Live,
 and moving clips around is fine. Just be aware that changing the names or structure that
-describe a song can affect how Better Session View groups it.
+describe a song can affect how open[flow] groups it.
 
 The device talks directly to the set you have open in Live; it doesn't parse or rewrite
 the `.als` file. Everything runs on your computer, and nothing is downloaded at runtime.
@@ -76,7 +76,7 @@ That's it. The device starts the local server and opens the interface in your br
 If you'd like the longer version, including what each file does, read
 [Installing](https://github.com/ryangavin/better-session-view/wiki/Installing).
 
-## Using Better Session View
+## Using open[flow]
 
 The [user manual](https://github.com/ryangavin/better-session-view/wiki) covers the grid,
 naming patterns, roles, color rules, the running order, and keyboard shortcuts. That's the
@@ -122,12 +122,12 @@ since Live 7, and I regularly use it on stage with my band,
 [Funkadelic Astronaut](https://www.youtube.com/@FunkadelicAstronaut). This project comes
 from both of those parts of my life.
 
-Nearly all of the code in Better Session View was written with Claude and Codex. It was
+Nearly all of the code in open[flow] was written with Claude and Codex. It was
 not vibe coded. I directed the work closely, made the architecture decisions, and
 thoroughly reviewed the final code myself.
 
 For this project, AI was effectively a very fast autocomplete for code I could have
-written by hand. It made the implementation fast enough for Better Session View to exist,
+written by hand. It made the implementation fast enough for open[flow] to exist,
 but the product decisions, engineering judgment, and responsibility for the result are
 mine.
 

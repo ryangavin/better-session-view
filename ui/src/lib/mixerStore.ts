@@ -1,16 +1,16 @@
-import type { MeterKey } from '../hooks/useMeters.js';
+import type { MeterKey } from '../hooks/useMeters.ts';
 
 export type MixerStripState =
-  | ({ kind: 'track' } & BSV.MixerTrackState)
+  | ({ kind: 'track' } & OpenFlow.MixerTrackState)
   | {
       kind: 'master';
-      volume: BSV.MixerParameterState | null;
-      pan: BSV.MixerParameterState | null;
+      volume: OpenFlow.MixerParameterState | null;
+      pan: OpenFlow.MixerParameterState | null;
     };
 
 function sameParameter(
-  a: BSV.MixerParameterState | null,
-  b: BSV.MixerParameterState | null,
+  a: OpenFlow.MixerParameterState | null,
+  b: OpenFlow.MixerParameterState | null,
 ): boolean {
   return (
     a === b ||
@@ -48,7 +48,7 @@ export class MixerStore {
   private readonly strips = new Map<MeterKey, MixerStripState>();
   private readonly listeners = new Map<MeterKey, Set<() => void>>();
 
-  update = (state: BSV.MixerState | null): void => {
+  update = (state: OpenFlow.MixerState | null): void => {
     const incoming = new Map<MeterKey, MixerStripState>();
     if (state) {
       incoming.set('master', {

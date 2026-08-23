@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { bindEq8, EQ8_BANDS } from './bind.js';
+import { bindEq8, EQ8_BANDS } from './bind.ts';
 
-const param = (name: string): BSV.DeviceParameterState => ({
+const param = (name: string): OpenFlow.DeviceParameterState => ({
   name,
   value: 0,
   min: 0,

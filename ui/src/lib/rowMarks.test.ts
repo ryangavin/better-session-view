@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { armedTracks, has, marksByScene } from './rowMarks.js';
-import type { PlayState } from '../hooks/useBridge.js';
+import { armedTracks, has, marksByScene } from './rowMarks.ts';
+import type { PlayState } from '../hooks/useBridge.ts';
 
 const STOP_FIRED = -2;
 
 function playing(
-  tracks: Array<Partial<BSV.TrackPlayState>>,
+  tracks: Array<Partial<OpenFlow.TrackPlayState>>,
   isPlaying = true,
 ): PlayState {
   return {

@@ -115,7 +115,7 @@ to one per display frame. It does not re-read every track under parameter automa
 
 Volume, pan and every send are ordinary parameters dragged the ordinary way, and the way
 is [`widgets/`](../../widgets/README.md)'s: `useParamGesture` for the drag and
-`usePendingValue` for the hold. `lib/liveParam.ts` turns a `BSV.MixerParameterState` into
+`usePendingValue` for the hold. `lib/liveParam.ts` turns an `OpenFlow.MixerParameterState` into
 a `Param` and is the entire boundary — nothing about Live crosses it.
 
 They used to be three `<input type="range">` elements, which was wrong in a way that's

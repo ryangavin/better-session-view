@@ -1,5 +1,5 @@
-import { hex } from '../../../core/src/color.js';
-import { ControlButton } from './Control.js';
+import { hex } from '@openflow/core/color.ts';
+import { ControlButton } from './Control.tsx';
 import './SwatchGrid.css';
 
 interface Props {

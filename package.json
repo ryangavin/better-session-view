@@ -1,5 +1,5 @@
 {
-  "name": "better-session-view",
+  "name": "openflow",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
   "engines": {
     "node": ">=24"
   },
-  "workspaces": ["widgets"],
+  "workspaces": ["core", "protocol", "widgets", "ui", "chart", "tools"],
   "scripts": {
     "build": "npm run build:ui && npm run build:bridge && npm run build:device",
     "build:bridge": "node --disable-warning=ExperimentalWarning tools/build-bridge.ts && tsc -p bridge/tsconfig.v8.json",
@@ -27,7 +27,7 @@
     "dev:check-palette": "node --disable-warning=ExperimentalWarning tools/check-palette.ts",
     "dev:diag": "node --disable-warning=ExperimentalWarning tools/diag.ts",
     "dev:lom-scrape": "node --disable-warning=ExperimentalWarning tools/lom-reference.ts",
-    "dev": "concurrently -k -n bridge,types,lom,ui,bench,devices,visuals,vis-ui,chart,chart-ui -c cyan,blue,magenta,green,yellow,red,white,gray,magentaBright,blueBright \"node --disable-warning=ExperimentalWarning tools/dev-bridge.ts\" \"tsc -p bridge/tsconfig.node.json --noEmit --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config ui/vite.config.ts\" \"vite --config widgets/vite.config.ts\" \"vite --config ui/vite.bench.config.ts\" \"node --disable-warning=ExperimentalWarning visuals/server/index.ts\" \"vite --config visuals/vite.config.ts\" \"BSV_CHART_UI=http://127.0.0.1:5573 node --watch --disable-warning=ExperimentalWarning chart/server/index.ts\" \"vite --config chart/vite.config.ts\"",
+    "dev": "concurrently -k -n bridge,types,lom,ui,bench,devices,visuals,vis-ui,chart,chart-ui -c cyan,blue,magenta,green,yellow,red,white,gray,magentaBright,blueBright \"node --disable-warning=ExperimentalWarning tools/dev-bridge.ts\" \"tsc -p bridge/tsconfig.node.json --noEmit --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config ui/vite.config.ts\" \"vite --config widgets/vite.config.ts\" \"vite --config ui/vite.bench.config.ts\" \"node --disable-warning=ExperimentalWarning visuals/server/index.ts\" \"vite --config visuals/vite.config.ts\" \"OPENFLOW_CHART_UI=http://127.0.0.1:5573 node --watch --disable-warning=ExperimentalWarning chart/server/index.ts\" \"vite --config chart/vite.config.ts\"",
     "dev:ui": "vite --config ui/vite.config.ts",
     "dev:widgets": "vite --config widgets/vite.config.ts",
     "dev:devices": "vite --config ui/vite.bench.config.ts",

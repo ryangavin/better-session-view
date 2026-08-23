@@ -16,7 +16,7 @@ import type { ReactElement } from 'react';
  */
 export interface DeviceFaceProps {
   /** The shell facts: name, `is_active`, `is_collapsed`, and a rack's chains. */
-  device: BSV.ChainDevice;
+  device: OpenFlow.ChainDevice;
   /**
    * Its controls, or null when nothing has read them.
    *
@@ -24,7 +24,7 @@ export interface DeviceFaceProps {
    * draw its body when it is open, but it is mounted either way, so it must
    * hold together with nothing behind it.
    */
-  parameters: BSV.DeviceParameterState[] | null;
+  parameters: OpenFlow.DeviceParameterState[] | null;
   /** Move one control, by its index in `parameters`. */
   onParam(p: number, value: number): void;
   /** `Device.is_active`. */

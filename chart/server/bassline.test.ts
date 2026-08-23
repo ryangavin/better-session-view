@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { basslineShape, buildBassline } from './bassline.ts';
 import { emptySet, type SetState } from './bridge.ts';
 
-function track(i: number, name: string, over: Partial<BSV.Track> = {}): BSV.Track {
+function track(i: number, name: string, over: Partial<OpenFlow.Track> = {}): OpenFlow.Track {
   return {
     i,
     name,
@@ -17,7 +17,7 @@ function track(i: number, name: string, over: Partial<BSV.Track> = {}): BSV.Trac
   };
 }
 
-function playing(t: number, loopEnd: number, over: Partial<BSV.PlayingClip> = {}): BSV.PlayingClip {
+function playing(t: number, loopEnd: number, over: Partial<OpenFlow.PlayingClip> = {}): OpenFlow.PlayingClip {
   return {
     t,
     position: 0,
@@ -37,7 +37,7 @@ interface Clip {
   name: string;
   slot: number;
   loopEnd: number;
-  notes: BSV.ClipNote[];
+  notes: OpenFlow.ClipNote[];
   loopStart?: number;
   instrument?: string;
   isMidi?: boolean;
@@ -66,7 +66,7 @@ function setWith(clips: Clip[]): SetState {
 }
 
 /** A four-bar bass line, one note a bar, as `get_all_notes_extended` reports it. */
-const LINE: BSV.ClipNote[] = [50, 48, 45, 43].map((pitch, bar) => ({
+const LINE: OpenFlow.ClipNote[] = [50, 48, 45, 43].map((pitch, bar) => ({
   pitch,
   start: bar * 4,
   duration: 3.5,

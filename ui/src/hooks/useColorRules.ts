@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from 'react';
-import { songKey, type Derivation } from '../../../core/src/derive.js';
-import { songFacts } from '../../../core/src/songRows.js';
-import type { SongColorInput } from '../../../core/src/colorRules.js';
-import { sceneColorOps, type SceneFields } from '../../../core/src/roles.js';
-import { resolveAllowed } from '../lib/allowedColors.js';
-import type { BridgeState } from './useBridge.js';
+import { songKey, type Derivation } from '@openflow/core/derive.ts';
+import { songFacts } from '@openflow/core/songRows.ts';
+import type { SongColorInput } from '@openflow/core/colorRules.ts';
+import { sceneColorOps, type SceneFields } from '@openflow/core/roles.ts';
+import { resolveAllowed } from '../lib/allowedColors.ts';
+import type { BridgeState } from './useBridge.ts';
 
 interface Args {
   derivation: Derivation;
@@ -68,7 +68,7 @@ export function useColorRules({
    */
   const recolorSongs = useCallback(
     (colors: ReadonlyMap<string, number>) => {
-      const ops: BSV.SceneOp[] = [];
+      const ops: OpenFlow.SceneOp[] = [];
       for (const song of derivation.songs) {
         const index = colors.get(songKey(song.name));
         if (index === undefined) continue;

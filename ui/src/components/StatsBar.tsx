@@ -1,8 +1,8 @@
-import { LAUNCH_KEY } from '../lib/keys.js';
-import type { BridgeState } from '../hooks/useBridge.js';
-import { IconBug, IconGitHub } from './Icon.js';
-import { ControlButton } from './Control.js';
-import { Stat } from './Stat.js';
+import { LAUNCH_KEY } from '../lib/keys.ts';
+import type { BridgeState } from '../hooks/useBridge.ts';
+import { IconBug, IconGitHub } from './Icon.tsx';
+import { ControlButton } from './Control.tsx';
+import { Stat } from './Stat.tsx';
 import './StatsBar.css';
 
 const REPOSITORY_URL = 'https://github.com/ryangavin/better-session-view';
@@ -10,7 +10,7 @@ const REPOSITORY_URL = 'https://github.com/ryangavin/better-session-view';
 interface Props {
   connection: BridgeState['connection'];
   lomReady: boolean;
-  snapshot: BSV.Snapshot | null;
+  snapshot: OpenFlow.Snapshot | null;
   songCount: number;
   unmappedCount: number;
   selectedCount: number;
@@ -91,7 +91,7 @@ export function StatsBar({
         href={REPOSITORY_URL}
         target="_blank"
         rel="noreferrer"
-        aria-label="View Better Session View on GitHub"
+        aria-label="View open[flow] on GitHub"
         title="View source on GitHub"
       >
         <IconGitHub />

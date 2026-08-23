@@ -33,9 +33,9 @@ import { basslineShape, buildBassline, playingClips } from './bassline.ts';
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const HOST = process.env.BSV_CHART_HOST ?? '0.0.0.0';
-const PORT = Number(process.env.BSV_CHART_PORT) || CHART_PORT;
-const BRIDGE = process.env.BSV_BRIDGE_WS ?? 'ws://127.0.0.1:17800/ws';
+const HOST = process.env.OPENFLOW_CHART_HOST ?? '0.0.0.0';
+const PORT = Number(process.env.OPENFLOW_CHART_PORT) || CHART_PORT;
+const BRIDGE = process.env.OPENFLOW_BRIDGE_WS ?? 'ws://127.0.0.1:17800/ws';
 const ROOT = path.resolve(here, '../dist');
 /**
  * The Vite dev server to hand the page off to, when there is one.
@@ -51,7 +51,7 @@ const ROOT = path.resolve(here, '../dist');
  * HMR socket included. Unset — which is how it ships — nothing is proxied and
  * `dist` is served as before.
  */
-const DEV_UI = process.env.BSV_CHART_UI ?? '';
+const DEV_UI = process.env.OPENFLOW_CHART_UI ?? '';
 
 /**
  * Binding every interface rather than loopback, unlike the device.
@@ -63,7 +63,7 @@ const DEV_UI = process.env.BSV_CHART_UI ?? '';
  * a rehearsal or show wifi and not on a hotel network. What is exposed is a
  * song title and a list of sections, and **nothing here can change the set** —
  * there is no request type on the wire to change it with.
- * `BSV_CHART_HOST=127.0.0.1` takes it back for anyone who wants that.
+ * `OPENFLOW_CHART_HOST=127.0.0.1` takes it back for anyone who wants that.
  */
 
 let dirty = true;
@@ -382,7 +382,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
       `chart: port ${PORT} is already in use — something else is on it.\n` +
         `chart: usually a dev:chart or npm run dev left running from an earlier session.\n` +
         `chart: find it with  lsof -nP -iTCP:${PORT} -sTCP:LISTEN\n` +
-        `chart: or run this one elsewhere with  BSV_CHART_PORT=18001 npm run dev:chart`,
+        `chart: or run this one elsewhere with  OPENFLOW_CHART_PORT=18001 npm run dev:chart`,
     );
   } else {
     console.error(`chart: could not listen on ${HOST}:${PORT} — ${err.message}`);
