@@ -45,23 +45,25 @@
   z-index: 1;
   grid-row: 1;
   align-self: center;
-  padding: 0 4px;
-  overflow: hidden;
   white-space: nowrap;
-  text-overflow: ellipsis;
   pointer-events: none;
 }
 
 .wdg-widget[data-layout='inside'] > .wdg-caption {
   grid-column: 1;
   min-width: 0;
+  padding-left: 4px;
+  overflow: hidden;
   color: var(--wdg-text);
   text-align: left;
+  text-overflow: ellipsis;
 }
 
 .wdg-widget[data-layout='inside'] > .wdg-readout {
   grid-column: 2;
-  max-width: 60%;
+  min-width: 0;
+  padding-left: 6px;
+  padding-right: 4px;
   color: var(--wdg-text-strong);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -82,6 +84,32 @@
   opacity: 1;
 }
 
+/*
+ * Amber is the number you set; light is where a cord takes it. One strip
+ * carrying both, because two amber bars stacked read as one thick amber bar
+ * with a step in it.
+ */
+.wdg-slider-span {
+  position: absolute;
+  right: auto;
+  bottom: 0;
+  left: calc(var(--wdg-span-at) * 100%);
+  width: max(2px, calc(var(--wdg-span-size) * 100%));
+  height: var(--wdg-strip);
+  background: var(--wdg-span-ink);
+  opacity: 0.45;
+}
+
+.wdg-slider-live {
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--wdg-live) * 100%);
+  width: 2px;
+  height: var(--wdg-strip);
+  background: var(--wdg-span-ink);
+  transform: translateX(-1px);
+}
+
 .wdg-widget[data-layout='inside'] > .wdg-body::after {
   position: absolute;
   right: 0;
@@ -98,25 +126,7 @@
   display: none;
 }
 
-.wdg-slider-span {
-  position: absolute;
-  right: auto;
-  bottom: var(--wdg-strip);
-  left: calc(var(--wdg-span-at) * 100%);
-  width: max(2px, calc(var(--wdg-span-size) * 100%));
-  height: var(--wdg-span-height);
-  background: var(--wdg-span-ink);
-}
 
-.wdg-slider-mark {
-  position: absolute;
-  bottom: 0;
-  left: calc(var(--wdg-fraction) * 100%);
-  width: 1px;
-  height: calc(var(--wdg-strip) + var(--wdg-span-height));
-  background: var(--wdg-marker);
-  transform: translateX(-0.5px);
-}
 
 .wdg-widget[data-layout='inside'][data-disabled] > .wdg-caption,
 .wdg-widget[data-layout='inside'][data-disabled] > .wdg-readout {

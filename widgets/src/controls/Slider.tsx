@@ -19,6 +19,14 @@ export interface SliderProps extends WidgetProps {
    */
   depth?: number;
   onDepth?(next: number): void;
+  /**
+   * Where the thing driving this control has it right now, 0 to 1.
+   *
+   * Drawn as a bright pip inside the span, so the row answers *where is it*
+   * as well as *how far can it go*. Left out, nothing is drawn — a control
+   * nobody is driving has no such position and inventing one would be a lie.
+   */
+  live?: number;
   display?: string;
   /**
    * Which way the track runs, and so which way the drag goes.
@@ -42,6 +50,7 @@ export function Slider({
   onRelease,
   depth,
   onDepth,
+  live,
   disabled = false,
   display,
   label,
@@ -104,12 +113,13 @@ export function Slider({
         ...(span === null
           ? {}
           : { '--wdg-span-at': span.at, '--wdg-span-size': span.size }),
+        ...(live === undefined ? {} : { '--wdg-live': Math.max(0, Math.min(1, live)) }),
       }}
     >
       <div className="wdg-slider-body" {...gesture.props}>
         <span className="wdg-slider-fill" aria-hidden="true" />
         {span !== null && <span className="wdg-slider-span" aria-hidden="true" />}
-        {span !== null && <span className="wdg-slider-mark" aria-hidden="true" />}
+        {live !== undefined && <span className="wdg-slider-live" aria-hidden="true" />}
         <span className="wdg-slider-thumb" aria-hidden="true" />
       </div>
     </Widget>
