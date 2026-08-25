@@ -54,6 +54,19 @@ nothing. Anything that makes the held state depend on who is connected breaks bo
 reasoning in full, including which watches are the device's and which are a viewport's, is
 in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
+## The graph
+
+The map above, but alive: [gnosis](https://github.com/ryangavin/gnosis) builds a
+graph of domains, files, functions, and call edges from this codebase, runs the
+test suite with every function instrumented, and marks what actually executed —
+solid edges were observed under tests, dashed ones exist only in static analysis.
+It is published at **<https://ryangavin.github.io/better-session-view/>**,
+rebuilt on every push to main by [`graph.yml`](.github/workflows/graph.yml).
+
+Locally, `npm test` refreshes the graph afterwards as a `posttest` step
+(a scan plus a traced test run, ~20s — delete the hook from `package.json` if
+it drags), and `npm run graph:serve` opens it at http://localhost:4400.
+
 ## Modules
 
 Eight projects. Each has its own README; read the one you're touching.

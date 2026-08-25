@@ -17,7 +17,14 @@
   "engines": {
     "node": ">=24"
   },
-  "workspaces": ["core", "protocol", "widgets", "ui", "chart", "tools"],
+  "workspaces": [
+    "core",
+    "protocol",
+    "widgets",
+    "ui",
+    "chart",
+    "tools"
+  ],
   "scripts": {
     "build": "npm run build:ui && npm run build:bridge && npm run build:device",
     "build:bridge": "node --disable-warning=ExperimentalWarning tools/build-bridge.ts && tsc -p bridge/tsconfig.v8.json",
@@ -33,6 +40,10 @@
     "dev:devices": "vite --config ui/vite.bench.config.ts",
     "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p widgets/tsconfig.json && tsc -p ui/tsconfig.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
+    "posttest": "[ -n \"$CI\" ] || npm run graph",
+    "graph": "gnosis scan . && gnosis trace .",
+    "graph:serve": "gnosis serve .",
+    "graph:site": "gnosis scan . && gnosis trace . && gnosis export . --out _site",
     "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link",
     "build:visuals": "vite build --config visuals/vite.config.ts",
     "dev:visuals": "node --disable-warning=ExperimentalWarning visuals/server/index.ts",
@@ -50,6 +61,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.0",
     "esbuild": "^0.28.1",
+    "gnosis": "github:ryangavin/gnosis",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
     "vitest": "^2.1.8"
