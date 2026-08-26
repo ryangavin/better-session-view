@@ -30,6 +30,7 @@
     "build:bridge": "node --disable-warning=ExperimentalWarning tools/build-bridge.ts && tsc -p bridge/tsconfig.v8.json",
     "build:set": "vite build --config set/vite.config.ts",
     "set": "npm run build:set && node --disable-warning=ExperimentalWarning tools/build-electron.ts set && electron set",
+    "qa": "npm run build && npm run pack && npm run install:apps",
     "pack": "npm run pack:set && npm run pack:visuals",
     "pack:set": "npm run build:set && node --disable-warning=ExperimentalWarning tools/build-electron.ts set && node --disable-warning=ExperimentalWarning tools/build-icons.ts set && electron-builder --config electron-builder.yml --project set -c.electronVersion=$(node -p \"require('./node_modules/electron/package.json').version\")",
     "pack:visuals": "npm run build:visuals && node --disable-warning=ExperimentalWarning tools/build-electron.ts visuals && node --disable-warning=ExperimentalWarning tools/build-icons.ts visuals && electron-builder --config electron-builder.yml --project visuals -c.electronVersion=$(node -p \"require('./node_modules/electron/package.json').version\")",
