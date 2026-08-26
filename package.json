@@ -46,6 +46,7 @@
     "graph:site": "gnosis scan . && gnosis trace . && gnosis export . --out _site",
     "graph:update": "npm update gnosis",
     "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link",
+    "show": "node --disable-warning=ExperimentalWarning tools/show.ts",
     "build:visuals": "vite build --config visuals/vite.config.ts",
     "dev:visuals": "node --disable-warning=ExperimentalWarning visuals/server/index.ts",
     "dev:visuals-ui": "vite --config visuals/vite.config.ts",
