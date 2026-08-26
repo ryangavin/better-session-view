@@ -4,9 +4,11 @@ bridge/bridge.js
 bridge/lom.js
 # generated: vite build output, served by the desktop app and inlined into the device
 set/dist/
-# generated: the Electron main and preload, bundled by tools/build-electron.ts
+# generated: the Electron main, preload, server and icon
 set/electron/dist/
 visuals/electron/dist/
+# generated: packaged .app and .dmg — npm run pack
+release/
 # generated: device binary + debug patcher
 bridge/SessionBridge.amxd
 bridge/SessionBridge.maxpat

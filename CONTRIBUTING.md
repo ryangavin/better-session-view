@@ -154,6 +154,7 @@ The apps make their own at launch, which is what keeps them from ever being stal
 set/dist/  set/electron/dist/            `npm run set`
 visuals/dist/  visuals/electron/dist/    `npm run visuals`
 chart/dist/                              the band's page — `npm run build:chart`
+release/                                 packaged .app and .dmg — `npm run pack`
 ```
 
 **`npm run build` builds no front end at all**, and that is the point of the split: the

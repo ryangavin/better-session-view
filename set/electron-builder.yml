@@ -1,0 +1,48 @@
+# set[flow], packaged. `npm run pack:set`.
+#
+# What packaging buys, and it is not distribution: a real bundle identifier, a
+# real name in the menu bar, and an icon of its own. Unpackaged, both apps say
+# "Electron" and share its Dock icon, so ⌘-Tab cannot tell them apart — which is
+# a small thing until you are reaching for one of them mid-set.
+appId: com.openflow.set
+productName: set[flow]
+copyright: © Ryan Gavin
+
+directories:
+  output: ../release/set
+  buildResources: electron/dist
+
+# Everything the app runs is already bundled: the renderer by vite, the main and
+# preload by esbuild. There is nothing to resolve at runtime, so this is the
+# whole of it.
+files:
+  - package.json
+  - dist/**
+  - electron/dist/main.cjs
+  - electron/dist/preload.cjs
+  # Everything the app runs is already inside those bundles, so the dependency
+  # tree electron-builder would otherwise copy in is dead weight — vite has
+  # already inlined React, and esbuild the rest.
+  - '!node_modules/**'
+
+# Plain files rather than an archive. asar is a packaging optimisation that buys
+# nothing here and costs a class of path problem — `app.asar.unpacked`, and fs
+# calls that work only through Electron's patched fs.
+asar: false
+
+mac:
+  category: public.app-category.music
+  icon: electron/dist/icon.icns
+  target:
+    - dmg
+    - dir
+  # Unsigned, deliberately, for now. There are Apple developer keys to hand, and
+  # turning this on needs no file edit:
+  #
+  #   npm run pack:set -- -c.mac.identity="Developer ID Application: NAME (TEAM)"
+  #
+  # Notarising as well wants `hardenedRuntime: true`, an entitlements plist and
+  # `notarize:` here — see `docs/desktop.md`. Until then macOS quarantines the
+  # first launch: open it from the context menu once, or strip the flag with
+  # `xattr -dr com.apple.quarantine`.
+  identity: null

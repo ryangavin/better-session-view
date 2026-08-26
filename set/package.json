@@ -2,6 +2,7 @@
   "name": "@openflow/set",
   "version": "0.1.0",
   "private": true,
+  "author": "Ryan Gavin",
   "type": "module",
   "main": "electron/dist/main.cjs",
   "description": "set[flow]: the session manager — the clip grid, the mixer and the device chain, in React."

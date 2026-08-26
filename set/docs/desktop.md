@@ -23,10 +23,10 @@ shader and every layout in this project would need re-validating against an engi
 never run on. That matters more for visual[flow] than here, but one engine across both apps
 is worth more than either.
 
-**Unpackaged, on purpose.** No `.app`, no electron-builder, no signing identity, no updater
-— the same trade `CONTRIBUTING.md` makes for the device, for the same reason. The cost is
-visible and accepted: the menu bar says *Electron*, the Dock icon is Electron's, and ⌘-Tab
-cannot tell the two apps apart. The window titles can, which is what a person actually reads.
+**Packaged, but not signed and not distributed.** `npm run set` runs it straight out of the
+repo, which is the working loop; `npm run pack:set` makes a real `.app`, which is what gives
+it a name and an icon of its own. No signing identity and no updater yet — the same trade
+`CONTRIBUTING.md` makes for the device, for as long as nobody but its author runs it.
 
 ## A scheme of its own, not `file://`
 
@@ -90,6 +90,37 @@ a module name, so visual[flow] uses the same script.
 It is deliberately **not** part of `npm run build`. That script is what CI enforces and what
 produces the device; it has no business needing an Electron binary. `npm run set` builds what
 it needs at launch, which also means `set/dist` can never be stale.
+
+## Packaging
+
+`npm run pack:set` builds the renderer, the shell, an icon, and a `.app` plus a `.dmg`
+under `release/set/`. `npm run pack` does both apps.
+
+**What packaging is for here, and it is not distribution.** Unpackaged, both apps report
+themselves as *Electron*: the menu bar says it, the Dock shows Electron's icon for both, and
+⌘-Tab cannot tell them apart — a small thing until you are reaching for one of them mid-set.
+A bundle gives each a real identifier, a real name and an icon, and only an `Info.plist` can.
+
+The icons are generated rather than committed: `tools/build-icons.ts` pads the open[flow]
+mark onto a coloured square with `sips` and packs it with `iconutil`. The mark is shared on
+purpose — these are two halves of one thing — and the **colour** is what separates them,
+because at Dock size hue is the only thing anyone actually reads. A shape difference at 32
+pixels is not a difference.
+
+`asar: false`, deliberately. The archive is a packaging optimisation that buys nothing for
+an app nobody downloads, and it costs a whole class of path problem — `app.asar.unpacked`,
+and fs calls that only work through Electron's patched fs.
+
+**Signing is off and switching it on needs no file edit:**
+
+```sh
+npm run pack:set -- -c.mac.identity="Developer ID Application: NAME (TEAM)"
+```
+
+Notarising as well wants `hardenedRuntime: true`, an entitlements plist with
+`com.apple.security.cs.allow-jit`, and a `notarize:` block with an app-specific password or
+an API key. Until any of that, macOS quarantines the first launch — open it from the context
+menu once, or `xattr -dr com.apple.quarantine` the bundle.
 
 ## What has no tests, and why that is correct
 
