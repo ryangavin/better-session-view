@@ -101,6 +101,7 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run set` | the session manager, set[flow] — builds it and opens the window |
 | `npm run visuals` | the VJ rig, visual[flow] — its server and its window |
 | `npm run pack` | both apps as a `.app` and a `.dmg` under `release/` |
+| `npm run install:apps` | copies those into `/Applications` |
 | `npm run dev` | every watcher and dev server at once — set[flow] on :5173, the widget bench on :5273 |
 | `npm run dev:set` | the set[flow] dev server alone, against a device someone else is running |
 | `npm run dev:set-app` | the set[flow] window on a running dev server — hot reload, in the real app |

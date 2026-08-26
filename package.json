@@ -33,6 +33,7 @@
     "pack": "npm run pack:set && npm run pack:visuals",
     "pack:set": "npm run build:set && node --disable-warning=ExperimentalWarning tools/build-electron.ts set && node --disable-warning=ExperimentalWarning tools/build-icons.ts set && electron-builder --config electron-builder.yml --project set -c.electronVersion=$(node -p \"require('./node_modules/electron/package.json').version\")",
     "pack:visuals": "npm run build:visuals && node --disable-warning=ExperimentalWarning tools/build-electron.ts visuals && node --disable-warning=ExperimentalWarning tools/build-icons.ts visuals && electron-builder --config electron-builder.yml --project visuals -c.electronVersion=$(node -p \"require('./node_modules/electron/package.json').version\")",
+    "install:apps": "node --disable-warning=ExperimentalWarning tools/install-apps.ts",
     "build:device": "node --disable-warning=ExperimentalWarning tools/build-device.ts",
     "build:widgets": "npm run build:types --workspace @openflow/widgets",
     "dev:check-palette": "node --disable-warning=ExperimentalWarning tools/check-palette.ts",

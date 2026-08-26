@@ -128,6 +128,14 @@ than that it failed, and retrying it is how you build a loop.
 `npm run pack:set` builds the renderer, the shell, an icon, and a `.app` plus a `.dmg`
 under `release/set/`. `npm run pack` does both apps.
 
+`npm run install:apps` copies what that produced into `/Applications`, and `install:apps set`
+does this one alone. It **replaces** rather than merges — `ditto` into an existing bundle
+leaves an old build's files inside the new one, and the app that launches is then neither
+version — and it refuses while the app is open, because deleting a running bundle is
+permitted and fails later, somewhere confusing. `OPENFLOW_APPS` moves the destination for a
+machine where `/Applications` is not yours to write. It is a step of its own on purpose:
+packing writes a build artifact, installing is a decision about the machine.
+
 **What packaging is for here, and it is not distribution.** Unpackaged, both apps report
 themselves as *Electron*: the menu bar says it, the Dock shows Electron's icon for both, and
 ⌘-Tab cannot tell them apart — a small thing until you are reaching for one of them mid-set.
