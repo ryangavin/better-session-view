@@ -162,6 +162,37 @@ device must build on a machine where the Link addon does not and where no Electr
 has been downloaded, so the thing that ships depends on neither. `npm install` still builds
 the addon, and failing that is a warning rather than an error.
 
+## What `npm ci` prints, and what is left standing
+
+Not silence, and the difference between the lines matters. Each of these has been chased
+to its cause; none is a to-do nobody got to.
+
+**Four deprecation warnings — `inflight`, `glob@7`, `rimraf@2`, `boolean` — are all
+electron-builder's.** Every one traces to `app-builder-lib`: `@electron/asar` pulls old
+`glob` (and `inflight` under it), `@electron/get` pulls `global-agent` for `boolean`, and
+`rimraf` arrives under `electron-builder-squirrel-windows` — a Windows installer target
+that is dead weight here and still a hard dependency of the tree above it. There is no
+version of this we can pick that does not have them, and none of it reaches an app:
+`!node_modules/**` in both `electron-builder.yml` files is why the payload is 4 MB. Pinning
+them through `overrides` would mean forcing a build tool onto internals it was not tested
+against, to quiet a log line. Leave them.
+
+**The audit findings are one chain, and it is vitest's.** `vitest@2` pins `vite@5`, which
+pins `esbuild@0.21.5`, and [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)
+is that esbuild's **dev server** answering cross-origin requests — a localhost server that
+exists for the length of a test run. npm reports it once per package in the chain and rolls
+the top one up as critical, which is what makes five findings out of one bug. The fix is
+vitest 4, two majors, and `npm test` is `gnosis test` rather than bare vitest — so the
+upgrade has to keep the graph instrumentation working too. That is a change worth making
+deliberately, not one to fold into something else.
+
+Everything with a non-breaking fix has been taken; `npm audit fix` is a no-op now.
+
+**One line from the addon compile is expected:** `libtool: warning: 'nothing.o' has no
+symbols`. `nothing.o` is node-addon-api's deliberately empty translation unit, and an empty
+object file is what it is supposed to be. The repairs `build-link.ts` makes are described in
+its own header; a compile that got past them is a compile that worked.
+
 ## Environment this was built against
 
 Nothing here is version-agnostic; the bridge in particular depends on what Live's
