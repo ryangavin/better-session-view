@@ -26,6 +26,29 @@ const PORT = Number(process.env.OPENFLOW_PORT) || DEFAULT_PORT;
 const BRIDGE = process.env.OPENFLOW_BRIDGE_WS ?? `ws://127.0.0.1:${PORT}${WS_PATH}`;
 
 /**
+ * The dev loop, in this window instead of a browser.
+ *
+ * `OPENFLOW_DEV=1` points the window at the vite dev server rather than at the
+ * scheme. It is the only way to get a hot update inside the shell that actually
+ * ships: `set://app` is a file server over a `vite build`, and a build has no hot
+ * anything in it. `OPENFLOW_DEV_URL` names the address outright, for a dev server
+ * somewhere this could not guess.
+ *
+ * The port is the base every dev server here counts from — set[flow] is the one
+ * that sits on it. Restated rather than imported, because a main process cannot
+ * load `vite.config.ts`; this is the same restatement the other four configs
+ * make, and `set/docs/dev-server.md` is where the set of them is written down.
+ */
+const DEV_PORT = Number(process.env.OPENFLOW_PORT_BASE) || 5173;
+const DEV =
+  process.env.OPENFLOW_DEV_URL || (process.env.OPENFLOW_DEV ? `http://localhost:${DEV_PORT}` : '');
+/** Where the window opens, and the only address it is allowed to stay on. */
+const HOME = DEV || `${SCHEME}://app/`;
+
+/** How long to wait before asking a dev server that isn't up yet a second time. */
+const RETRY_MS = 1000;
+
+/**
  * Where this app's own state lives, set **before** anything can read it.
  *
  * An unpackaged Electron app defaults to `~/Library/Application Support/
@@ -120,6 +143,16 @@ function serve(): void {
   });
 }
 
+/**
+ * Whether a URL is still this app.
+ *
+ * Two cases that cannot share one comparison: under the scheme it is the scheme,
+ * and in dev it is the dev server's origin — `set://app` has no origin to compare
+ * against, because a non-special scheme reports `null` for it.
+ */
+const ours = (url: string): boolean =>
+  DEV ? new URL(url).origin === new URL(DEV).origin : new URL(url).protocol === `${SCHEME}:`;
+
 function open(): void {
   const win = new BrowserWindow({
     ...(remembered() ?? { width: 1440, height: 900 }),
@@ -132,9 +165,25 @@ function open(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      additionalArguments: [`--openflow-bridge=${BRIDGE}`],
+      // Nothing in dev, deliberately. `bridgeUrl()` then falls back to the
+      // origin the page came from and vite's `/ws` proxy carries it to the
+      // device — which is what a browser does, and what keeps a worktree
+      // pointed at whatever device its own dev server was configured for
+      // instead of at whatever this process guessed.
+      additionalArguments: [`--openflow-bridge=${DEV ? '' : BRIDGE}`],
     },
   });
+
+  // The page sets its own `<title>`, which wins over the option above — so a dev
+  // window has to say so afterwards, and keep saying it. Two windows that look
+  // identical and talk to different things is the confusion the icons exist to
+  // avoid.
+  if (DEV) {
+    win.on('page-title-updated', (event, title) => {
+      event.preventDefault();
+      win.setTitle(`${title} — dev`);
+    });
+  }
 
   // Every link in the app points somewhere that is not the app — there is one,
   // to the project page. Without this it is a dead click, because Electron
@@ -147,7 +196,7 @@ function open(): void {
   // A single-page app never navigates. Anything that tries is a mis-click or a
   // dragged link, and letting it replace the window is how the app disappears.
   win.webContents.on('will-navigate', (event, url) => {
-    if (new URL(url).protocol !== `${SCHEME}:`) {
+    if (!ours(url)) {
       event.preventDefault();
       void shell.openExternal(url);
     }
@@ -156,14 +205,23 @@ function open(): void {
   // The two lines anyone debugging a blank window needs, and no more. A page
   // that failed to load looks exactly like a page that loaded and drew nothing.
   win.webContents.on('did-finish-load', () => {
-    console.log(`set: ${SCHEME}://app — bridge ${BRIDGE}`);
+    console.log(`set: ${HOME} — bridge ${DEV ? 'through the dev server' : BRIDGE}`);
   });
-  win.webContents.on('did-fail-load', (_event, code, why, url) => {
+  win.webContents.on('did-fail-load', (_event, code, why, url, isMainFrame) => {
     console.error(`set: could not load ${url} — ${why} (${code})`);
+    // Running this before vite has finished booting is the ordinary way in, and
+    // it leaves a window showing a connection error that reads as a broken app.
+    // Keep asking instead. -3 is ERR_ABORTED, which is a load that was replaced
+    // rather than one that failed, and retrying it is how you get a loop.
+    if (DEV && isMainFrame && code !== -3 && !win.isDestroyed()) {
+      setTimeout(() => {
+        if (!win.isDestroyed()) void win.loadURL(HOME);
+      }, RETRY_MS);
+    }
   });
 
   win.on('close', () => remember(win));
-  void win.loadURL(`${SCHEME}://app/`);
+  void win.loadURL(HOME);
 }
 
 void app.whenReady().then(() => {

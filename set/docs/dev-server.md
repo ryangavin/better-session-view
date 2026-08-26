@@ -7,13 +7,20 @@ Running the dev server, and what a hot update costs — why BridgeProvider sits 
 ```sh
 npm run dev            # from repo root — this, the bridge watchers, and the widget bench
 npm run dev:set        # this alone, against a device someone else is running
+npm run dev:set-app    # the desktop shell, pointed at this dev server — HMR in the real window
 npm run set            # the desktop app, on the built output — see docs/desktop.md
 ```
 
-Use **<http://localhost:5173>** for the dev loop. Vite proxies `/ws` through to the device,
-so you get HMR with React Fast Refresh — and, more to the point, a loaded snapshot
+Use **<http://localhost:5173>** for the dev loop — in a browser, or in `npm run dev:set-app`,
+which is the same page inside the window that ships. Vite proxies `/ws` through to the
+device, so you get HMR with React Fast Refresh — and, more to the point, a loaded snapshot
 that survives your edits. A walk is ~950ms of Live's main thread; an edit to a CSS
 variable must not spend it.
+
+`dev:set-app` needs a dev server already running and does not start one; it retries until
+one answers rather than leaving a window on a connection error. What it changes and what it
+deliberately doesn't — the bridge URL, the `localStorage` bucket, the title — is in
+[`desktop.md`](desktop.md).
 
 ### What a hot update costs
 
@@ -60,7 +67,7 @@ next click into the browser spends Live's main thread — coming back to the win
 just re-asks for the set, which is a payload. See `core/src/backstop.ts` for the
 policy and `bridge.ts`'s `backstopTick` for the caller.
 
-Four env vars, all optional:
+Six env vars, all optional:
 
 | var | default | for |
 |---|---|---|
@@ -68,6 +75,8 @@ Four env vars, all optional:
 | `OPENFLOW_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 100 | overriding where the widget bench lands |
 | `OPENFLOW_DEVICE_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 200 | the same, for the device bench |
 | `OPENFLOW_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
+| `OPENFLOW_DEV` | unset | read by the **app**, not by vite: open on the dev server instead of the bundle |
+| `OPENFLOW_DEV_URL` | from `OPENFLOW_PORT_BASE` | the same, at an address this could not have worked out |
 
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next
 free one. That's deliberate: assign the port, don't discover it.

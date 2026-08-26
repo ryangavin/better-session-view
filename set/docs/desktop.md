@@ -91,6 +91,38 @@ It is deliberately **not** part of `npm run build`. That script is what CI enfor
 produces the device; it has no business needing an Electron binary. `npm run set` builds what
 it needs at launch, which also means `set/dist` can never be stale.
 
+## The dev loop, in this window
+
+`npm run set` is a rebuild and a relaunch, which is right for checking what ships and wrong
+for the twenty edits before it. `npm run dev:set-app` opens the same shell on the vite dev
+server instead of on the scheme, so an edit lands in the window that ships with Fast Refresh
+intact — including the connection and the snapshot behind it, which is the whole argument in
+[`dev-server.md`](dev-server.md).
+
+It needs a dev server already up (`npm run dev`, or `npm run dev:set` alone) and starts
+none. `OPENFLOW_DEV=1` is the switch; `OPENFLOW_DEV_URL` names an address instead, for a dev
+server this could not have guessed. The port otherwise comes from `OPENFLOW_PORT_BASE`, so a
+worktree that moved its servers takes the app with it rather than being the one thing left
+behind.
+
+Three things differ from `npm run set`, all of them on purpose:
+
+- **No bridge flag crosses the preload.** `bridgeUrl()` falls back to the origin the page
+  came from, and vite's `/ws` proxy carries it — so the app reaches whatever device its dev
+  server was configured for, rather than whatever this process guessed. It is also what
+  makes several worktrees on one device work here exactly as they do in a browser.
+- **A different `localStorage` bucket**, because `http://localhost:5173` is a different
+  origin from `set://app` and storage is keyed by origin. The same split a browser already
+  has: column widths set in dev are not the ones the real app opens with.
+- **The title says `— dev`.** The page sets its own `<title>`, so the window has to append
+  it after the fact and keep appending it. Two windows that look identical and talk to
+  different things is precisely the confusion the icons exist to end.
+
+A dev server that is not up yet is the ordinary way in, and it leaves a window showing a
+connection error that reads as a broken app, so the window retries on a second rather than
+sitting there. `ERR_ABORTED` is excluded from that — it means a load was replaced rather
+than that it failed, and retrying it is how you build a loop.
+
 ## Packaging
 
 `npm run pack:set` builds the renderer, the shell, an icon, and a `.app` plus a `.dmg`
