@@ -2,7 +2,7 @@
 //
 // Requests carry an id so replies can be correlated; `request()` resolves with
 // the terminal event for that id. Non-terminal traffic (progress, structural
-// change notifications, reload) goes to subscribers instead.
+// change notifications) goes to subscribers instead.
 
 import { bridgeUrl } from './bridgeUrl.ts';
 

@@ -83,15 +83,17 @@ with the app's palette and no connection at all — no provider, no client, no s
 it is the one dev server that says nothing about whether the bridge is up.
 
 Several dev servers can share one device — they all proxy to the same bridge, and
-`BridgeClient` derives its socket URL from `location.host`, so nothing needs telling
-which port it's on. That's the multi-client path, so see
+`bridgeUrl()` falls back to `location.host` when nothing has told it otherwise, so nothing
+needs telling which port it's on. That's the multi-client path, so see
 [`bridge/README.md`](../../bridge/README.md) for what the bridge does and doesn't yet
 guarantee when more than one client is connected.
 
-:17800 serves the built output and stays available for testing what actually ships.
-When you edit `public/` directly, `bridge.js` watches it and pushes a `reload` event;
-`useBridge` calls `location.reload()`. That path only exists for the built output —
-in dev, Vite's HMR wins.
+**:17800 is not a URL any more.** The device serves no page — it answers a browser with one
+sentence and nothing else. To test what actually ships, run `npm run set`, which builds the
+same output the dev server compiles and opens it in the desktop app; the address only ever
+appears now as the thing that app dials. The `reload` event the device used to push when its
+`public/` folder changed went with the folder, so there is one path here rather than two,
+and in dev Vite's HMR was always the one that won.
 
 **Nothing loads from a CDN.** No external fonts, scripts, or stylesheets. This
 eventually runs on stage, where there may be no network. Vite bundles everything;

@@ -26,7 +26,7 @@
     "tools"
   ],
   "scripts": {
-    "build": "npm run build:set && npm run build:bridge && npm run build:device",
+    "build": "npm run build:bridge && npm run build:device",
     "build:bridge": "node --disable-warning=ExperimentalWarning tools/build-bridge.ts && tsc -p bridge/tsconfig.v8.json",
     "build:set": "vite build --config set/vite.config.ts",
     "set": "npm run build:set && node --disable-warning=ExperimentalWarning tools/build-electron.ts set && electron set",

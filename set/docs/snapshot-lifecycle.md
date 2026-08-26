@@ -9,7 +9,7 @@ How the set gets into the app and stays current: the client, the walk, deltas, t
 
 - Requests carry an `id`; `request()` resolves with the **terminal** event for that id,
   per the `TERMINAL` map. Add a row there when you add an awaitable message.
-- Non-terminal traffic (`progress`, `changed`, `reload`, `status`) goes to
+- Non-terminal traffic (`progress`, `changed`, `status`) goes to
   `subscribe()` listeners instead.
 - `error` rejects any pending request with that id.
 - Auto-reconnects after 1s on close, unless we closed it ourselves. All pending

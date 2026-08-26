@@ -1282,7 +1282,6 @@ declare namespace OpenFlow {
      * the coarse-grained rule exists to prevent.
      */
     | { type: 'delta'; data: SnapshotDelta; model?: SetModel }
-    | { type: 'reload' }
     | { type: 'pong'; id?: number }
     | { type: 'error'; id?: number; message: string };
 

@@ -17,10 +17,14 @@ browser ──WebSocket/JSON──> node.script (bridge.js) ──Max msgs──
    :17800 or :5173 in dev        HTTP + WS server         the only LOM code
 ```
 
-The device serves the UI from the same Node process that bridges to Live. That's
-deliberate: the whole app ships as an `.amxd` plus two JS files — no app bundle, no
-code signing, no updater. `bridge.js` is bundled with `ws` and the built UI inlined,
-so there's no `node_modules/` and no `public/` to keep alongside it.
+The device is the WebSocket server and nothing else. It ships as an `.amxd` plus two
+JS files — no app bundle, no code signing, no updater — and `bridge.js` is bundled with
+`ws` so there is no `node_modules/` to keep alongside it.
+
+It used to serve the session manager too, with the built app inlined as base64: 595 kB
+of web app, three quarters of `bridge.js`, parsed inside Live's process on every device
+load. The front ends are desktop apps now — [`set/docs/desktop.md`](set/docs/desktop.md)
+— and what is left here is the one job that has to happen inside Max.
 
 Set-owned configuration lives in a hidden parameter on the bridge device, so Live
 stores it directly in the `.als`. The fixed Live color table is compiled into the app.
@@ -138,7 +142,6 @@ Not in git; `npm run build` recreates all of them.
 
 ```
 bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
-bridge/public/                           vite build output
 bridge/SessionBridge.amxd  .maxpat       device + debug patcher
 visuals/dist/                            the renderer — `npm run build:visuals`
 chart/dist/                              the band's page — `npm run build:chart`

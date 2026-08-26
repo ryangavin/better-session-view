@@ -6,8 +6,6 @@ bridge/lom.js
 set/dist/
 # generated: the Electron main and preload, bundled by tools/build-electron.ts
 set/electron/dist/
-# generated: vite build output (until the device stops serving it)
-bridge/public/
 # generated: device binary + debug patcher
 bridge/SessionBridge.amxd
 bridge/SessionBridge.maxpat

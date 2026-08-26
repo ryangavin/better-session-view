@@ -388,9 +388,6 @@ export function useBridge(
         case 'deviceState':
           adoptDeviceState(event.state);
           break;
-        case 'reload':
-          location.reload();
-          break;
         case 'error':
           say(event.message || 'bridge reported an error with no message', 'error');
           break;

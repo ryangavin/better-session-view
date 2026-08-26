@@ -69,9 +69,10 @@ The current version was built against Ableton Live 12.4.3 Suite.
    JavaScript files from beside itself.
 3. Drag `SessionBridge.amxd` onto any track. It's an inert audio passthrough, so the Master
    track is fine.
-4. Wait for the device to read **No connections**, then click **Open Session Manager**.
+4. Wait for the device to read **No connections**.
+5. Run `npm run set` to open the session manager, which connects to it.
 
-That's it. The device starts the local server and opens the interface in your browser.
+The device bridges Live and nothing else; the interface is an app of its own.
 
 If you'd like the longer version, including what each file does, read
 [Installing](https://github.com/ryangavin/better-session-view/wiki/Installing).
@@ -96,7 +97,8 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 
 | script | does |
 |---|---|
-| `npm run build` | the UI, then a bundled bridge.js with that UI inlined, lom.js, and the device |
+| `npm run build` | a bundled bridge.js, lom.js, and the device |
+| `npm run set` | the session manager, set[flow] — builds it and opens the window |
 | `npm run dev` | three watchers in parallel; UI dev server on :5173, widget bench on :5273 |
 | `npm run dev:set` | the set[flow] dev server alone, against a device someone else is running |
 | `npm run dev:widgets` | the widget bench alone — no device needed |

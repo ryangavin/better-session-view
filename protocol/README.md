@@ -40,7 +40,7 @@ compile error rather than a silent no-op. Keep them that way.
 ## Shape
 
 Requests carry an optional `id`; replies echo it so `client.ts` can correlate them.
-Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
+Unsolicited events (`status`, `changed`, `deviceState`) carry no id.
 
 | client → server | |
 |---|---|
@@ -90,7 +90,6 @@ Unsolicited events (`status`, `changed`, `deviceState`, `reload`) carry no id.
 | `songPosition` | — the Arrangement position crossed a sixteenth |
 | `transportState` | — Live's complete observed control-bar state changed |
 | `deviceState` | — restored or changed set-owned configuration |
-| `reload` | — dev live-reload |
 | `error` | — terminates any pending request, or is broadcast |
 
 The socket lives at **`/ws`**, not `/`, so Vite can proxy it in dev without colliding
