@@ -5,15 +5,15 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// One bridge, many UIs. Each worktree runs its own dev server on its own port and
-// proxies through to the same device, so several UIs share one Live session — which
+// One bridge, many set[flow] dev servers. Each worktree runs its own on its own port
+// and proxies through to the same device, so several share one Live session — which
 // is the multi-client case the bridge is meant to serve anyway.
 //
 // strictPort stays on deliberately: a dev server that silently drifts to the next
 // free port is worse than one that fails, because nothing downstream can then say
 // which URL it ended up on.
 const BRIDGE = process.env.OPENFLOW_BRIDGE || 'http://127.0.0.1:17800';
-const PORT = Number(process.env.OPENFLOW_UI_PORT) || 5173;
+const PORT = Number(process.env.OPENFLOW_SET_PORT) || 5173;
 
 export default defineConfig({
   root: here,
@@ -22,7 +22,7 @@ export default defineConfig({
   // default resolves to the same `node_modules/.vite` for both. Two servers
   // sharing one dep cache re-optimize over each other's work on every start —
   // the config hash differs, so each one decides the cache is stale.
-  cacheDir: path.resolve(here, '../node_modules/.vite/ui'),
+  cacheDir: path.resolve(here, '../node_modules/.vite/set'),
   // Nothing may come from a CDN — this eventually runs on stage.
   build: {
     outDir: path.resolve(here, '../bridge/public'),
@@ -33,7 +33,7 @@ export default defineConfig({
   server: {
     port: PORT,
     strictPort: true,
-    // Dev serves the UI here but the bridge stays authoritative for data.
+    // Dev serves the app here but the bridge stays authoritative for data.
     //
     proxy: {
       '/ws': { target: BRIDGE.replace('http', 'ws'), ws: true },

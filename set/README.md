@@ -1,6 +1,13 @@
-# ui/
+# set[flow]
 
-React 19 + Vite. Builds to `bridge/public/`, which the device serves.
+The session manager of **open[flow]**: the clip grid, the mixer and the device chain,
+in React 19 + Vite.
+
+The directory is `set/` and the package is `@openflow/set`, because the module manages
+the **Live Set** — the same noun `SetModel`, `SetState` and `SetGrid` already use.
+`set[flow]` is what the app calls itself; the paths are what the compiler calls it.
+
+Builds to `bridge/public/`, which the device serves.
 
 ## Where the reasoning lives
 
@@ -139,7 +146,7 @@ an identifier. See [device faces](docs/device-faces.md).
 
 ## The one dependency pointing out of the app
 
-`ui/` reaches into [`widgets/`](../widgets/README.md) for the controls a DAW is made of —
+`set/` reaches into [`widgets/`](../widgets/README.md) for the controls a DAW is made of —
 today just the drag and the local-value hold behind the mixer's volume, pan and sends.
 That direction is one-way: **nothing in `widgets/` may import from here.** `liveParam.ts`
 is the whole boundary, and everything Live-specific about a control stops there.

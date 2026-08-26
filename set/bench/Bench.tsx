@@ -9,7 +9,7 @@ import { DEVICE_SHAPES, useFakeDevice } from './fixtures.ts';
  * Every device face the app draws, with no Live behind them.
  *
  * The widget bench proves the parts; this proves the arrangements. They can't
- * be one page: a face is composed in `ui/` out of `widgets/`, and the widget
+ * be one page: a face is composed in `set/` out of `widgets/`, and the widget
  * bench may import `widgets/src` and nothing else — which is the rule that
  * keeps that module from learning what an EQ Eight is.
  *
@@ -42,7 +42,7 @@ export function Bench() {
       <header>
         <h1>Device bench</h1>
         <p>
-          The faces in <code>ui/src/components/devices/</code>, drawn with the app's palette
+          The faces in <code>set/src/components/devices/</code>, drawn with the app's palette
           and no connection to Live. Each one is fed a fixture that answers like a device:
           moving a control writes the fixture and the face re-reads it, the way a control in
           the app writes Live and waits for the readback.

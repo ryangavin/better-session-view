@@ -30,7 +30,7 @@ directly. `index.ts` re-exports the same types as ordinary imports, via
 3. If it needs the LOM, add a top-level handler function in `bridge/src/lom.ts` and
    an `outlet(0, ...)` reply. Document both in
    [`../bridge/README.md`](../bridge/README.md).
-4. If the UI awaits a reply, add it to `TERMINAL` in `ui/src/lib/client.ts` so
+4. If the UI awaits a reply, add it to `TERMINAL` in `set/src/lib/client.ts` so
    `request()` knows which event completes it.
 5. Add an e2e assertion.
 

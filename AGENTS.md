@@ -10,7 +10,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 | touching | start at |
 |---|---|
 | domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
-| components, hooks, the client | [`ui/README.md`](ui/README.md) — 16 topic docs |
+| the session manager — components, hooks, the client | [`set/README.md`](set/README.md) — 16 topic docs. `@openflow/set`, and **set[flow]** is what it calls itself |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](widgets/README.md) — 5 topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way** |
 | a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. `@openflow/visuals`: its own server and its own `node_modules`, deliberately **not** a workspace; an ordinary **client** of the bridge |
 | what the band reads off a phone | [`chart/README.md`](chart/README.md) — 2 topic docs. `@openflow/chart`: no dependencies; a **read-only** client of the bridge, and the only thing here that binds the LAN |
@@ -23,7 +23,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 
 Two docs are worth reading even when they aren't obviously your topic:
 
-- [`ui/docs/performance.md`](ui/docs/performance.md) — governs **anything reaching a
+- [`set/docs/performance.md`](set/docs/performance.md) — governs **anything reaching a
   memoized row**. A prop that changes identity per render re-renders 848 rows.
 - [`bridge/docs/lom-gotchas.md`](bridge/docs/lom-gotchas.md) — before any `lom.ts` edit.
 
@@ -37,7 +37,7 @@ work in [Issues](../../issues).
    code testable without Ableton running, and what keeps a different backend possible.
    **`widgets/` is the same rule on the other axis** — React, but no protocol, no bridge,
    no `core/`, nothing that knows Live exists. It takes a `Param` and a number, and the
-   one adapter that hands it one is `ui/src/lib/liveParam.ts`.
+   one adapter that hands it one is `set/src/lib/liveParam.ts`.
 2. **`bridge/src/lom.ts` is the only file that touches the Live Object Model.** Everything
    else talks to it through the protocol.
 3. **`lom.ts` cannot `import` anything** — it compiles with `module: "none"` so Max's
@@ -98,7 +98,7 @@ work in [Issues](../../issues).
 
 ```sh
 npm run typecheck    # all seven projects
-npm test             # core/, widgets/param, ui/lib and visuals/ unit tests
+npm test             # core/, widgets/param, set/lib and visuals/ unit tests
 npm run build        # must succeed from a clean tree
 ```
 

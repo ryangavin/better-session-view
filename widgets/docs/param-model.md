@@ -61,7 +61,7 @@ control, the engine owns the text: Live's `str_for_value` *is* the string Live i
 and a second conversion maintained here would eventually disagree with it. So every widget
 takes an optional `display` that wins outright, and `format` runs only when there is
 nothing to defer to — the bench, a preview, an engine of our own. This is why
-`ui/src/lib/liveParam.ts` deliberately sets no `unit`: the app always has Live's string.
+`set/src/lib/liveParam.ts` deliberately sets no `unit`: the app always has Live's string.
 
 Two smaller decisions inside it:
 

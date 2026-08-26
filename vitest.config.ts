@@ -5,8 +5,8 @@ export default defineConfig({
     include: [
       'core/src/**/*.test.ts',
       'widgets/src/**/*.test.ts',
-      'ui/src/lib/**/*.test.ts',
-      'ui/src/components/**/*.test.ts',
+      'set/src/lib/**/*.test.ts',
+      'set/src/components/**/*.test.ts',
       'visuals/**/*.test.ts',
       'chart/**/*.test.ts',
     ],

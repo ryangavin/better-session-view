@@ -87,7 +87,7 @@ export function useSceneDrag(
    * Closing over `movePlan` would give it a new identity every time the drop
    * gap changes — which is every time the pointer crosses a row — and re-render
    * all hundred headers mid-drag. Same reason `active` and `play.isPlaying` are
-   * held in refs; see the note on `Row` in ui/README.md.
+   * held in refs; see the note on `Row` in set/README.md.
    */
   const movePlanRef = useRef(movePlan);
   movePlanRef.current = movePlan;

@@ -60,7 +60,7 @@ directions — twice the ground a value covers — and it is the gesture you mak
 then leave alone.
 
 **The fine modifier is ⌘ on macOS, Ctrl elsewhere**, which is Vital's — Live's is Shift, and this said so for a while. `platform.ts`
-duplicates the test in `ui/src/lib/keys.ts` rather than importing it, because a widget
+duplicates the test in `set/src/lib/keys.ts` rather than importing it, because a widget
 library that needed a host to tell it which key means fine would be a widget library with
 a host. In the app the two happen to be the same key meaning different things in different
 places — ⌘ on a clip makes a sound, ⌘ on a fader means fine — and they never meet, because
@@ -82,7 +82,7 @@ and only one of them can be under the pointer.
 Arrows move by `stepSize`, Page Up/Down by ten of those, Home and End to the ends, and the
 fine modifier applies. Every handled key gets `preventDefault` **and `stopPropagation`**.
 
-That second one is load-bearing in this app. `ui/src/hooks/useGridKeyboard.ts` listens on
+That second one is load-bearing in this app. `set/src/hooks/useGridKeyboard.ts` listens on
 `window` and moves the grid's active cell on the arrow keys; `isTypingInto` exempts real
 form fields, and a `role="slider"` div is not one. Stopping propagation in the widget is
 the right layer for it: a focused control owns its keystroke in any host, not only in one

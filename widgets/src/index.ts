@@ -3,7 +3,7 @@
  *
  * Importing this pulls every control's stylesheet in with it. Anything reaching
  * for the model or the gesture alone — the app's mixer does — should import the
- * file it needs instead, the same way `ui/` reaches into `core/src/`.
+ * file it needs instead, the same way `set/` reaches into `core/src/`.
  */
 
 export {

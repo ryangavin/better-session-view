@@ -1,7 +1,0 @@
-{
-  "name": "@openflow/ui",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "The session manager client the bridge serves: the clip grid, the mixer and the device chain, in React."
-}

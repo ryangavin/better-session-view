@@ -106,7 +106,7 @@ write; remembering what it was pointed at is not yet possible.
 app's palette and **no connection at all** — no provider, no client, no socket.
 
 That works because a face takes a `ChainDevice` and a list of parameters and nothing else,
-so [`ui/bench/fixtures.ts`](../bench/fixtures.ts) can answer like a device without being
+so [`set/bench/fixtures.ts`](../bench/fixtures.ts) can answer like a device without being
 one. It holds the parameters in state, so a control that moves writes the fixture and the
 face re-reads it — the same round trip a control makes through Live, which is the part
 worth rehearsing. A face that only *looked* right with values it owned would hide exactly

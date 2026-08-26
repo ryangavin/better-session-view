@@ -14,7 +14,7 @@ socket, and a Vite server that idles until something asks it for a module.
 
 ## Ports, and the one shared thing that isn't
 
-The bench port follows the UI's rather than being a second thing to assign — `OPENFLOW_UI_PORT`
+The bench port follows set[flow]'s rather than being a second thing to assign — `OPENFLOW_SET_PORT`
 moves both, and `OPENFLOW_BENCH_PORT` overrides it outright. **The offset is 100, not 1**,
 because worktree ports get picked adjacently: with +1, a worktree on 5174 would put its
 bench on the UI of the worktree on 5175. `strictPort` is on for both, so a genuine
@@ -22,11 +22,11 @@ collision fails loudly rather than drifting.
 
 | | default | |
 |---|---|---|
-| UI | 5173 | `OPENFLOW_UI_PORT` |
+| set[flow] | 5173 | `OPENFLOW_SET_PORT` |
 | widget bench | UI + 100 | `OPENFLOW_BENCH_PORT` |
 | device bench | UI + 200 | `OPENFLOW_DEVICE_BENCH_PORT` |
 
-The device bench is [`ui/bench/`](../../ui/docs/device-faces.md#the-device-bench) and holds
+The device bench is [`set/bench/`](../../set/docs/device-faces.md#the-device-bench) and holds
 the faces, which are composed in the app. Same offset reasoning at +200: a worktree keeps
 all three of its servers clear of the next worktree's.
 
@@ -34,7 +34,7 @@ The subtler one: **all three Vite servers must name their own `cacheDir`.** The 
 resolves to the same `node_modules/.vite` for both, and Vite hashes the config into that
 cache's metadata — so two servers sharing it each decide the other's cache is stale and
 re-optimize on every start, which is a browser full of `504 Outdated Optimize Dep` waiting
-to happen. `ui/` uses `node_modules/.vite/ui`, the widget bench uses `node_modules/.vite/bench`, and
+to happen. `set/` uses `node_modules/.vite/set`, the widget bench uses `node_modules/.vite/bench`, and
 the device bench uses `node_modules/.vite/devices`.
 
 ## Why it's here rather than in the app
@@ -58,9 +58,9 @@ where a shell with a faceplate under it stops.
 Composing one means naming a particular device, and a page that reproduces Live's EQ Eight
 is a page that has to be right about Live's EQ Eight — which is a claim this module makes
 about none of them. The face is composed in the app instead, out of these parts:
-[`ui/src/components/devices/eq8/Eq8.tsx`](../../ui/src/components/devices/eq8/Eq8.tsx),
+[`set/src/components/devices/eq8/Eq8.tsx`](../../set/src/components/devices/eq8/Eq8.tsx),
 reasoned about in
-[ui/docs/device-faces.md](../../ui/docs/device-faces.md). What the bench owes it is the
+[set/docs/device-faces.md](../../set/docs/device-faces.md). What the bench owes it is the
 parts: a knob at every taper, a `Panel`'s aligned lanes, a `Device` shell folded and open.
 
 The last section is the point of the whole page: **the model playground**. Change the unit

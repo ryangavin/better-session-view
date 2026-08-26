@@ -1,9 +1,9 @@
 /**
  * The fine-adjustment modifier, which is Live's: ⌘ on macOS, Ctrl elsewhere.
  *
- * The app has its own copy of this test in `ui/src/lib/keys.ts`, where it means
+ * The app has its own copy of this test in `set/src/lib/keys.ts`, where it means
  * "make Live do something". The duplication is deliberate — this module can't
- * import from `ui/`, and a widget library that needed a host to tell it which
+ * import from `set/`, and a widget library that needed a host to tell it which
  * key means fine would be a widget library with a host.
  */
 

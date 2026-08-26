@@ -4,7 +4,7 @@
 // compiled with `module: "none"` (Max's v8 object needs message handlers as
 // top-level globals, so no module wrapper is allowed) and `bridge.ts` emits to
 // a flat CommonJS file outside its own rootDir. Neither can `import`.
-// `protocol/index.ts` re-exports these as normal types for ui/ and core/.
+// `protocol/index.ts` re-exports these as normal types for set/ and core/.
 
 declare namespace OpenFlow {
   // --- Live state ------------------------------------------------------
@@ -1048,7 +1048,7 @@ declare namespace OpenFlow {
      * question here is about behavior visible only with Live open, and the
      * readout has to be somewhere you can watch without leaving Live.
      *
-     * Nothing in `ui/` sends this — `tools/diag.ts` does.
+     * Nothing in `set/` sends this — `tools/diag.ts` does.
      */
     | { id?: number; type: 'diag'; what: string; arg?: number }
     /**

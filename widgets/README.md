@@ -3,7 +3,7 @@
 The controls a DAW is made of, built and iterated on outside the app they end up in.
 
 This module exists because the device chain is coming, and after it a DAW of our own. A
-knob written inside `ui/src/components/` would take an `OpenFlow.MixerParameterState` within a
+knob written inside `set/src/components/` would take an `OpenFlow.MixerParameterState` within a
 week and stop being reusable the moment it did. So the boundary is the point: **`widgets/`
 imports no protocol, no bridge client, no `core/`, and nothing that knows Live exists.** It
 takes a `Param` and a number.
@@ -75,7 +75,7 @@ npm run dev:widgets      # the bench alone, http://localhost:5273
 ```
 
 The faces built *out of* these parts have a bench of their own in the app —
-`npm run dev:devices`, and [ui/docs/device-faces.md](../ui/docs/device-faces.md). This one
+`npm run dev:devices`, and [set/docs/device-faces.md](../set/docs/device-faces.md). This one
 may not import from there, which is what keeps a widget from learning what a device is.
 
 It has no connection to Live and never will — that's what makes it worth having, and why
@@ -106,21 +106,21 @@ recover each component's props.
 
 ## Who uses it
 
-`ui/` and `visuals/` both do, each through one adapter.
-[`ui/src/lib/liveParam.ts`](../ui/src/lib/liveParam.ts) turns an `OpenFlow.MixerParameterState`
+`set/` and `visuals/` both do, each through one adapter.
+[`set/src/lib/liveParam.ts`](../set/src/lib/liveParam.ts) turns an `OpenFlow.MixerParameterState`
 into a `Param`, and [`visuals/src/ui/param.ts`](../visuals/src/ui/param.ts) does the same
 for a node's inlet. The mixer's volume, pan and send controls are driven by the gesture
-hooks ([ui/docs/mixer.md](../ui/docs/mixer.md)); the device chain draws a track's devices
-out of the chrome ([ui/docs/device-chain.md](../ui/docs/device-chain.md)); the visuals
+hooks ([set/docs/mixer.md](../set/docs/mixer.md)); the device chain draws a track's devices
+out of the chrome ([set/docs/device-chain.md](../set/docs/device-chain.md)); the visuals
 designer draws its node canvas out of `chrome/Graph.tsx` and `chrome/Port.tsx`.
 
 **A whole stock device face is composed there too, and deliberately not here.** Live's EQ
-Eight is [`ui/src/components/devices/eq8/Eq8.tsx`](../ui/src/components/devices/eq8/Eq8.tsx):
+Eight is [`set/src/components/devices/eq8/Eq8.tsx`](../set/src/components/devices/eq8/Eq8.tsx):
 the parts are this module's, the arrangement of them is one particular device, and a module
 that knows about no device can't hold one. See
-[ui/docs/device-faces.md](../ui/docs/device-faces.md).
+[set/docs/device-faces.md](../set/docs/device-faces.md).
 
-**Nothing here may import from `ui/`, `bridge/`, `protocol/` or `core/`.** If a widget
+**Nothing here may import from `set/`, `bridge/`, `protocol/` or `core/`.** If a widget
 needs something one of those has, it needs a prop instead.
 
 ## Verifying a change

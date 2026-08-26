@@ -6,7 +6,7 @@ Running the dev server, and what a hot update costs — why BridgeProvider sits 
 
 ```sh
 npm run dev            # from repo root — this, the bridge watchers, and the widget bench
-npm run dev:ui         # this alone, against a device someone else is running
+npm run dev:set        # this alone, against a device someone else is running
 ```
 
 Use **<http://localhost:5173>**, not :17800. Vite proxies `/ws` through to the device,
@@ -63,9 +63,9 @@ Four env vars, all optional:
 
 | var | default | for |
 |---|---|---|
-| `OPENFLOW_UI_PORT` | `5173` | a second UI alongside the first — one per worktree |
-| `OPENFLOW_BENCH_PORT` | `OPENFLOW_UI_PORT` + 100 | overriding where the widget bench lands |
-| `OPENFLOW_DEVICE_BENCH_PORT` | `OPENFLOW_UI_PORT` + 200 | the same, for the device bench |
+| `OPENFLOW_SET_PORT` | `5173` | a second dev server alongside the first — one per worktree |
+| `OPENFLOW_BENCH_PORT` | `OPENFLOW_SET_PORT` + 100 | overriding where the widget bench lands |
+| `OPENFLOW_DEVICE_BENCH_PORT` | `OPENFLOW_SET_PORT` + 200 | the same, for the device bench |
 | `OPENFLOW_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
 
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next
@@ -77,7 +77,7 @@ get picked adjacently — see
 [`widgets/docs/bench.md`](../../widgets/docs/bench.md), which also covers why both Vite
 servers have to name their own `cacheDir` now that they run together.
 
-The device bench is `ui/bench/`, served by `ui/vite.bench.config.ts`. It draws the faces
+The device bench is `set/bench/`, served by `set/vite.bench.config.ts`. It draws the faces
 with the app's palette and no connection at all — no provider, no client, no socket — so
 it is the one dev server that says nothing about whether the bridge is up.
 

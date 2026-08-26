@@ -1,12 +1,12 @@
 # Design system
 
 This file records design choices already implemented in the app. Component details and
-the reasons behind them remain in [`ui/README.md`](ui/README.md).
+the reasons behind them remain in [`set/README.md`](set/README.md).
 
 ## Foundations
 
 - The interface uses dark surfaces. Semantic color tokens live in
-  [`ui/src/shared.css`](ui/src/shared.css): neutral foregrounds and borders, amber for
+  [`set/src/shared.css`](set/src/shared.css): neutral foregrounds and borders, amber for
   selection, active toggles and primary actions, green for playback and success, blue for
   Solo, red for errors, and purple for previews.
 - Neutral text comes from one five-step ramp, described under *Text* below.
@@ -16,10 +16,10 @@ the reasons behind them remain in [`ui/README.md`](ui/README.md).
   and are vertically centered with equal space above and below.
 - The grid uses a 2px gutter. Its metadata column is a constant 108px; Master is a track
   column and takes the track width, so the role painting it moves with the setting.
-  Track width modes are defined in [`ui/src/lib/columnWidth.ts`](ui/src/lib/columnWidth.ts).
+  Track width modes are defined in [`set/src/lib/columnWidth.ts`](set/src/lib/columnWidth.ts).
 - The song index is as wide as the columns it shows and no wider: both its width and its
   grid track list are computed from the same visible-column list in
-  [`ui/src/lib/songIndexColumns.ts`](ui/src/lib/songIndexColumns.ts), so turning a column
+  [`set/src/lib/songIndexColumns.ts`](set/src/lib/songIndexColumns.ts), so turning a column
   off narrows the pane instead of widening the name. Name and artist are `fr` tracks;
   key, BPM and type are fixed. Which columns are on is a browser preference in
   `localStorage`, alongside track width — set-owned configuration goes to the device.
@@ -86,7 +86,7 @@ earns it.
   rather than the type. Every decibel field in the mixer shows whole decibels, so Live's
   `-12.75 dB` reads `-12` and the exact value stays one hover away in the field's title.
   Peak, volume, pan and sends all trim through the same helpers in
-  [`ui/src/lib/meterScale.ts`](ui/src/lib/meterScale.ts), and they trim rather than round,
+  [`set/src/lib/meterScale.ts`](set/src/lib/meterScale.ts), and they trim rather than round,
   so no two of them can disagree about the same signal. With the reading that short, the
   8px mono size those fields share is a choice about weight rather than about room: they
   annotate the meter, and the reading taken at a glance is the bar's own height. Volume

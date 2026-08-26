@@ -1,5 +1,5 @@
 // Module re-exports of the global OpenFlow namespace, for consumers that can use
-// normal imports (ui/, core/). See global.d.ts for why the source of truth is
+// normal imports (set/, core/). See global.d.ts for why the source of truth is
 // a global namespace.
 
 export type Track = OpenFlow.Track;
