@@ -13,8 +13,11 @@ README is an index of topic docs — read the rows that match what you're changi
 ## Architecture
 
 ```
-browser ──WebSocket/JSON──> node.script (bridge.js) ──Max msgs──> v8 (lom.js) ──LOM──> Live
-   :17800 or :5173 in dev        HTTP + WS server         the only LOM code
+set[flow]    ──WS/JSON──┐
+                        ├──> node.script (bridge.js) ──Max msgs──> v8 (lom.js) ──> Live
+visual[flow] ──WS/JSON──┤         :17800, WS only        the only LOM code
+   └─ its own server ───┘
+chart        ──WS/JSON──┘   (read-only, and the only one that binds the LAN)
 ```
 
 The device is the WebSocket server and nothing else. It ships as an `.amxd` plus two
@@ -138,18 +141,25 @@ without one leaves the manual quietly wrong.
 
 ## Generated files
 
-Not in git; `npm run build` recreates all of them.
+Not in git. `npm run build` makes the device:
 
 ```
 bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
 bridge/SessionBridge.amxd  .maxpat       device + debug patcher
-visuals/dist/                            the renderer — `npm run build:visuals`
+```
+
+The apps make their own at launch, which is what keeps them from ever being stale:
+
+```
+set/dist/  set/electron/dist/            `npm run set`
+visuals/dist/  visuals/electron/dist/    `npm run visuals`
 chart/dist/                              the band's page — `npm run build:chart`
 ```
 
-`visuals/` is not part of `npm run build`, deliberately: the device must build on a machine
-where the Link addon does not, so the thing that ships cannot depend on a native compile.
-`npm install` still builds the addon, and failing that is a warning rather than an error.
+**`npm run build` builds no front end at all**, and that is the point of the split: the
+device must build on a machine where the Link addon does not and where no Electron binary
+has been downloaded, so the thing that ships depends on neither. `npm install` still builds
+the addon, and failing that is a warning rather than an error.
 
 ## Environment this was built against
 

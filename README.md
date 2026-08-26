@@ -99,18 +99,18 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 |---|---|
 | `npm run build` | a bundled bridge.js, lom.js, and the device |
 | `npm run set` | the session manager, set[flow] — builds it and opens the window |
-| `npm run dev` | three watchers in parallel; UI dev server on :5173, widget bench on :5273 |
+| `npm run dev` | every watcher and dev server at once — set[flow] on :5173, the widget bench on :5273 |
 | `npm run dev:set` | the set[flow] dev server alone, against a device someone else is running |
 | `npm run dev:widgets` | the widget bench alone — no device needed |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
 | `npm test` | pure `core/` and `set/lib` unit tests |
-| `npm run typecheck` | all five projects |
+| `npm run typecheck` | all ten projects |
 
 A fresh clone needs `npm install && npm run build` before the device exists.
 
 ## Contributing
 
-Start with [CONTRIBUTING.md](CONTRIBUTING.md). It explains how the five modules fit
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). It explains how the eight modules fit
 together, which README to read for each one, and the project rules that aren't obvious
 from the code.
 
