@@ -66,6 +66,8 @@ rebuilt on every push to main by [`graph.yml`](.github/workflows/graph.yml).
 Locally, `npm test` refreshes the graph afterwards as a `posttest` step
 (a scan plus a traced test run, ~20s — delete the hook from `package.json` if
 it drags), and `npm run graph:serve` opens it at http://localhost:4400.
+CI always builds with gnosis' latest main; the local install is pinned by the
+lockfile — `npm run graph:update` catches it up.
 
 ## Modules
 
