@@ -4,7 +4,7 @@
 // the terminal event for that id. Non-terminal traffic (progress, structural
 // change notifications, reload) goes to subscribers instead.
 
-import { WS_PATH } from '@openflow/protocol/index.ts';
+import { bridgeUrl } from './bridgeUrl.ts';
 
 export type BridgeEvent = OpenFlow.Event;
 type Listener = (event: BridgeEvent) => void;
@@ -61,7 +61,7 @@ export class BridgeClient {
   /** Wire cost of the most recent terminal reply. */
   lastWireTiming: WireTiming | null = null;
 
-  constructor(private readonly url = `ws://${location.host}${WS_PATH}`) {}
+  constructor(private readonly url = bridgeUrl()) {}
 
   connect(): void {
     this.closedByUs = false;

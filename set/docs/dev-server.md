@@ -7,9 +7,10 @@ Running the dev server, and what a hot update costs — why BridgeProvider sits 
 ```sh
 npm run dev            # from repo root — this, the bridge watchers, and the widget bench
 npm run dev:set        # this alone, against a device someone else is running
+npm run set            # the desktop app, on the built output — see docs/desktop.md
 ```
 
-Use **<http://localhost:5173>**, not :17800. Vite proxies `/ws` through to the device,
+Use **<http://localhost:5173>** for the dev loop. Vite proxies `/ws` through to the device,
 so you get HMR with React Fast Refresh — and, more to the point, a loaded snapshot
 that survives your edits. A walk is ~950ms of Live's main thread; an edit to a CSS
 variable must not spend it.

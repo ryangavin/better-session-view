@@ -25,7 +25,7 @@ export default defineConfig({
   cacheDir: path.resolve(here, '../node_modules/.vite/set'),
   // Nothing may come from a CDN — this eventually runs on stage.
   build: {
-    outDir: path.resolve(here, '../bridge/public'),
+    outDir: path.resolve(here, 'dist'),
     emptyOutDir: true,
     target: 'es2022',
     sourcemap: true,

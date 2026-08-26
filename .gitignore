@@ -2,7 +2,11 @@ node_modules/
 # generated: tsc output consumed directly by node.script and [v8]
 bridge/bridge.js
 bridge/lom.js
-# generated: vite build output
+# generated: vite build output, served by the desktop app and inlined into the device
+set/dist/
+# generated: the Electron main and preload, bundled by tools/build-electron.ts
+set/electron/dist/
+# generated: vite build output (until the device stops serving it)
 bridge/public/
 # generated: device binary + debug patcher
 bridge/SessionBridge.amxd
