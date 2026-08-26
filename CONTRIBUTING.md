@@ -61,13 +61,16 @@ graph of domains, files, functions, and call edges from this codebase, runs the
 test suite with every function instrumented, and marks what actually executed —
 solid edges were observed under tests, dashed ones exist only in static analysis.
 It is published at **<https://ryangavin.github.io/better-session-view/>**,
-rebuilt on every push to main by [`graph.yml`](.github/workflows/graph.yml).
+rebuilt on every push to main by [`ci.yml`](.github/workflows/ci.yml).
 
-Locally, `npm test` refreshes the graph afterwards as a `posttest` step
-(a scan plus a traced test run, ~20s — delete the hook from `package.json` if
-it drags), and `npm run graph:serve` opens it at http://localhost:4400.
-CI always builds with gnosis' latest main; the local install is pinned by the
-lockfile — `npm run graph:update` catches it up.
+`npm test` *is* the graph build: a gnosis scan, then the suite run once
+through gnosis' instrumentation (`gnosis test`), which overlays what
+actually executed and exits with vitest's status — the tests never run
+twice for the graph's sake. `npm run test:fast` is plain vitest for quick
+iteration, and `npm run graph:serve` opens the graph at
+http://localhost:4400. CI always builds with gnosis' latest main; the
+local install is pinned by the lockfile — `npm run graph:update` catches
+it up.
 
 ## Modules
 
