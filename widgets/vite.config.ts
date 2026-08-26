@@ -15,7 +15,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 //
 // strictPort for the same reason `set/` has it: a server that silently drifts to
 // the next free port leaves nothing able to say which URL it ended up on.
-const SET_PORT = Number(process.env.OPENFLOW_SET_PORT) || 5173;
+const SET_PORT = Number(process.env.OPENFLOW_PORT_BASE) || 5173;
 const PORT = Number(process.env.OPENFLOW_BENCH_PORT) || SET_PORT + 100;
 
 export default defineConfig({

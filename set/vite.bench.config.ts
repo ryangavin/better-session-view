@@ -14,7 +14,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // The port follows set[flow]'s the way the widget bench's does, at +200 rather
 // than +100 so the two benches of one worktree can't collide with the app of
 // the next — worktree ports get picked adjacently.
-const SET_PORT = Number(process.env.OPENFLOW_SET_PORT) || 5173;
+const SET_PORT = Number(process.env.OPENFLOW_PORT_BASE) || 5173;
 const PORT = Number(process.env.OPENFLOW_DEVICE_BENCH_PORT) || SET_PORT + 200;
 
 export default defineConfig({

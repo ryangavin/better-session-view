@@ -64,9 +64,9 @@ Four env vars, all optional:
 
 | var | default | for |
 |---|---|---|
-| `OPENFLOW_SET_PORT` | `5173` | a second dev server alongside the first — one per worktree |
-| `OPENFLOW_BENCH_PORT` | `OPENFLOW_SET_PORT` + 100 | overriding where the widget bench lands |
-| `OPENFLOW_DEVICE_BENCH_PORT` | `OPENFLOW_SET_PORT` + 200 | the same, for the device bench |
+| `OPENFLOW_PORT_BASE` | `5173` | **every** dev server counts from this — one per worktree |
+| `OPENFLOW_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 100 | overriding where the widget bench lands |
+| `OPENFLOW_DEVICE_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 200 | the same, for the device bench |
 | `OPENFLOW_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
 
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next

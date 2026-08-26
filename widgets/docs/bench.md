@@ -14,7 +14,7 @@ socket, and a Vite server that idles until something asks it for a module.
 
 ## Ports, and the one shared thing that isn't
 
-The bench port follows set[flow]'s rather than being a second thing to assign — `OPENFLOW_SET_PORT`
+The bench port counts from the same base every dev server here does — `OPENFLOW_PORT_BASE`
 moves both, and `OPENFLOW_BENCH_PORT` overrides it outright. **The offset is 100, not 1**,
 because worktree ports get picked adjacently: with +1, a worktree on 5174 would put its
 bench on the UI of the worktree on 5175. `strictPort` is on for both, so a genuine
@@ -22,7 +22,7 @@ collision fails loudly rather than drifting.
 
 | | default | |
 |---|---|---|
-| set[flow] | 5173 | `OPENFLOW_SET_PORT` |
+| set[flow] | 5173 | `OPENFLOW_PORT_BASE` (the base itself) |
 | widget bench | UI + 100 | `OPENFLOW_BENCH_PORT` |
 | device bench | UI + 200 | `OPENFLOW_DEVICE_BENCH_PORT` |
 

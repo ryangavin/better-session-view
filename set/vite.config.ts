@@ -13,7 +13,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // free port is worse than one that fails, because nothing downstream can then say
 // which URL it ended up on.
 const BRIDGE = process.env.OPENFLOW_BRIDGE || 'http://127.0.0.1:17800';
-const PORT = Number(process.env.OPENFLOW_SET_PORT) || 5173;
+// The base every dev server in the repo counts from — set[flow] is just the
+// one that sits on it. The widget bench is +100, the device bench +200, the
+// visuals renderer +300 and the chart +400, so one variable moves a whole
+// worktree out of the way of the next.
+const PORT = Number(process.env.OPENFLOW_PORT_BASE) || 5173;
 
 export default defineConfig({
   root: here,

@@ -11,8 +11,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 //
 // The dev port follows set[flow]'s at +400, continuing the offsets in
 // widgets/docs/bench.md: set 5173, widget bench +100, device bench +200, visuals
-// +300. A worktree that moves OPENFLOW_SET_PORT takes all five with it.
-const SET_PORT = Number(process.env.OPENFLOW_SET_PORT) || 5173;
+// +300. A worktree that moves OPENFLOW_PORT_BASE takes all five with it.
+const SET_PORT = Number(process.env.OPENFLOW_PORT_BASE) || 5173;
 const PORT = Number(process.env.OPENFLOW_CHART_UI_PORT) || SET_PORT + 400;
 const SERVER = process.env.OPENFLOW_CHART || 'http://127.0.0.1:18000';
 
