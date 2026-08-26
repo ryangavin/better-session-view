@@ -159,8 +159,17 @@ npm run pack:set -- -c.mac.identity="Developer ID Application: NAME (TEAM)"
 
 Notarising as well wants `hardenedRuntime: true`, an entitlements plist with
 `com.apple.security.cs.allow-jit`, and a `notarize:` block with an app-specific password or
-an API key. Until any of that, macOS quarantines the first launch — open it from the context
-menu once, or `xattr -dr com.apple.quarantine` the bundle.
+an API key.
+
+**None of which stops the app opening here**, because quarantine is set by whatever
+*downloads* a file, and a bundle you built never had one. `npm run install:apps` strips it
+anyway and checks that the strip took, so an installed copy always double-clicks open.
+
+Where the missing signature does bite is a copy that travelled — the `.dmg` on somebody
+else's machine. That is not the usual "unidentified developer" prompt you can right-click
+past: electron-builder rewrote the bundle without re-sealing its resources, so `spctl` reads
+the signature as broken outright (*code has no resources but signature indicates they must
+be present*). Signing is the fix; there isn't a gesture that substitutes for it.
 
 ## What has no tests, and why that is correct
 
