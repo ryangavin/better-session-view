@@ -61,24 +61,6 @@ nothing. Anything that makes the held state depend on who is connected breaks bo
 reasoning in full, including which watches are the device's and which are a viewport's, is
 in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
-## The graph
-
-The map above, but alive: [gnosis](https://github.com/ryangavin/gnosis) builds a
-graph of domains, files, functions, and call edges from this codebase, runs the
-test suite with every function instrumented, and marks what actually executed —
-solid edges were observed under tests, dashed ones exist only in static analysis.
-It is published at **<https://ryangavin.github.io/better-session-view/>**,
-rebuilt on every push to main by [`ci.yml`](.github/workflows/ci.yml).
-
-`npm test` *is* the graph build: a gnosis scan, then the suite run once
-through gnosis' instrumentation (`gnosis test`), which overlays what
-actually executed and exits with vitest's status — the tests never run
-twice for the graph's sake. `npm run test:fast` is plain vitest for quick
-iteration, and `npm run graph:serve` opens the graph at
-http://localhost:4400. CI always builds with gnosis' latest main; the
-local install is pinned by the lockfile — `npm run graph:update` catches
-it up.
-
 ## Modules
 
 Eight projects. Each has its own README; read the one you're touching.
@@ -177,16 +159,12 @@ version of this we can pick that does not have them, and none of it reaches an a
 them through `overrides` would mean forcing a build tool onto internals it was not tested
 against, to quiet a log line. Leave them.
 
-**The audit findings are one chain, and it is vitest's.** `vitest@2` pins `vite@5`, which
-pins `esbuild@0.21.5`, and [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)
-is that esbuild's **dev server** answering cross-origin requests — a localhost server that
-exists for the length of a test run. npm reports it once per package in the chain and rolls
-the top one up as critical, which is what makes five findings out of one bug. The fix is
-vitest 4, two majors, and `npm test` is `gnosis test` rather than bare vitest — so the
-upgrade has to keep the graph instrumentation working too. That is a change worth making
-deliberately, not one to fold into something else.
-
-Everything with a non-breaking fix has been taken; `npm audit fix` is a no-op now.
+**`npm audit` reports nothing**, and the way to keep it that way is to move vite and vitest
+together. They were once five findings that were all one bug — `vitest@2` pinning `vite@5`
+pinning a vulnerable `esbuild`, reported once per package in the chain and rolled up as
+critical at the top. Upgrading the pair cleared all five at once, which is the shape this
+takes every time: an advisory against a bundler reaches the tree through the test runner
+that bundles with it, so the runner is what you upgrade.
 
 **One line from the addon compile is expected:** `libtool: warning: 'nothing.o' has no
 symbols`. `nothing.o` is node-addon-api's deliberately empty translation unit, and an empty

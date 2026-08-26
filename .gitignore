@@ -31,6 +31,4 @@ widgets/.ds-sync/
 widgets/ds-bundle/
 # the user manual — its own repo (…wiki.git), cloned here so it edits alongside the code
 wiki/
-# generated: the gnosis architecture graph as a static site, deployed to Pages by graph.yml
-_site/
 .DS_Store

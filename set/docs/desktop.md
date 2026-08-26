@@ -157,6 +157,6 @@ menu once, or `xattr -dr com.apple.quarantine` the bundle.
 ## What has no tests, and why that is correct
 
 Nothing under `electron/` is reachable from vitest — a main process is not something a test
-runner can enter. The gnosis graph will show these files with no observed edges, and that is
-the honest picture rather than a gap to paper over with a fake test. What *is* testable is
+runner can enter. Zero coverage here is the honest picture rather than a gap to paper over
+with a fake test. What *is* testable is
 the one decision the renderer makes, and `bridgeUrl.test.ts` covers all three of its cases.
