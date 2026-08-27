@@ -61,6 +61,7 @@ Unsolicited events (`status`, `changed`, `deviceState`) carry no id.
 | `watchStatus` `{ on }` | follow the playing clip in each track, for the stop row's status displays |
 | `watchSends` `{ on }` | add/remove per-track send observers while the mixer is open |
 | `watchTransport` `{ on }` | observe tempo, metronome, launch quantization, Arrangement Record and current scale |
+| `watchScenes` `{ on }` | observe every scene's launch button, so a launch is heard as a gesture rather than inferred from what the tracks did |
 | `selectScene` `{ s }` | select and reveal one exact scene in Live's Session View |
 | `selectTrack` `{ t }` | select one exact track, so Live's device view follows the device-chain footer |
 | `devices` `{ t }` | read one track's device chain — shells only. A read rather than a watch; see the type's own note |

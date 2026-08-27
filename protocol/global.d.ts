@@ -1133,6 +1133,20 @@ declare namespace OpenFlow {
     | { id?: number; type: 'watchSends'; on: boolean }
     | { id?: number; type: 'watchTransport'; on: boolean }
     /**
+     * Follow the scene launch buttons, one `Scene.is_triggered` per scene.
+     *
+     * The only way to know a scene was *launched* rather than merely arrived
+     * at. Clip follow actions walk the whole grid to the next row without
+     * anybody pressing anything, and that is indistinguishable from a launch in
+     * `playState` — so a client that needs the gesture, rather than the
+     * movement, asks for this instead of inferring it.
+     *
+     * Costs one observer per scene, so it is its own watch rather than a rider
+     * on `watchPlay`: a client that only draws the grid should not pay for it.
+     * Re-send on a structural change, as with `watchPlay` and a track count.
+     */
+    | { id?: number; type: 'watchScenes'; on: boolean }
+    /**
      * Read the notes of some clips. A **read**, like `devices`, not a watch.
      *
      * Every clip asked for in one message, because the caller wants the harmony
@@ -1270,6 +1284,18 @@ declare namespace OpenFlow {
         sixteenth: number;
       }
     | { type: 'transportState'; state: TransportState }
+    /**
+     * Somebody pressed a scene launch button, and the scene has just started.
+     *
+     * The **landing**, not the press: `Scene.is_triggered` falls when the clips
+     * actually begin, on whatever launch quantisation the set uses, so this
+     * arrives on a downbeat Live chose rather than on the beat a hand moved.
+     * A client wanting the press would need a different event; nothing does.
+     *
+     * Requires `watchScenes`. Never sent for a follow action, which is the
+     * entire point — see the request.
+     */
+    | { type: 'sceneLaunched'; s: number }
     | { type: 'changed'; kind: string }
     /**
      * Someone changed the set in Live and we re-read the affected tracks.
