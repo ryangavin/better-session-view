@@ -141,11 +141,20 @@ themselves as *Electron*: the menu bar says it, the Dock shows Electron's icon f
 ⌘-Tab cannot tell them apart — a small thing until you are reaching for one of them mid-set.
 A bundle gives each a real identifier, a real name and an icon, and only an `Info.plist` can.
 
-The icons are generated rather than committed: `tools/build-icons.ts` pads the open[flow]
-mark onto a coloured square with `sips` and packs it with `iconutil`. The mark is shared on
-purpose — these are two halves of one thing — and the **colour** is what separates them,
-because at Dock size hue is the only thing anyone actually reads. A shape difference at 32
-pixels is not a difference.
+The icons are generated rather than committed: `tools/build-icons.ts` rasterises
+`set/public/mark.svg` with `sips` and packs it with `iconutil`. Each app has a mark of its
+own and they are the same disc — one thing split down the middle, a dot on each side of the
+divide — differing in hue and in what the dots do: this one runs rows of clips into its
+node, visual[flow] throws rays out of it. The shapes are for the 512 and the **colour** is
+for the 32, because at Dock size hue is the only thing anyone actually reads.
+
+Two details are worth knowing before editing a mark. Every tile is rasterised from the SVG
+at that tile's own size rather than resampled down from one big render, so a 16-pixel icon
+is drawn as vector rather than squeezed. And the mark is padded into 824 of 1024 with a
+transparent margin — Apple's grid for a circular icon — because a disc drawn edge to edge
+overhangs every neighbour in the Dock by 7%, which reads as a wrong icon rather than a big
+one. Both numbers assume the mark's disc is 440 of a 512 viewBox; a mark drawn to other
+proportions wants `INSET` in the tool adjusted to match.
 
 `asar: false`, deliberately. The archive is a packaging optimisation that buys nothing for
 an app nobody downloads, and it costs a whole class of path problem — `app.asar.unpacked`,

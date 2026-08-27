@@ -66,11 +66,11 @@ app.setPath('userData', path.join(home, 'set', 'electron'));
 /**
  * A scheme of our own rather than `file://`, and it buys two separate things.
  *
- * The built page asks for `/assets/…` and `/logo-white.png` — root-absolute,
- * because until now a server was serving them. Under `file://` both resolve to
- * the filesystem root and 404; under a scheme with `standard: true` they resolve
- * against the origin and work untouched, so the renderer needs no `base` and dev
- * and desktop stay one build.
+ * The built page asks for `/assets/…`, `/logo-white.png` and `/mark.svg` —
+ * root-absolute, because until now a server was serving them. Under `file://`
+ * they resolve to the filesystem root and 404; under a scheme with
+ * `standard: true` they resolve against the origin and work untouched, so the
+ * renderer needs no `base` and dev and desktop stay one build.
  *
  * And it is a **stable origin**, which is what `localStorage` is keyed by. Column
  * widths, the song index columns and the allowed-colour migration flag all live
