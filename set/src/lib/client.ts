@@ -69,7 +69,13 @@ export class BridgeClient {
     const ws = new WebSocket(this.url);
     this.ws = ws;
 
-    ws.onopen = () => this.setState('open');
+    ws.onopen = () => {
+      // First thing on the socket, so the device's roster lights this app's row
+      // rather than counting it as one more anonymous connection. Nothing waits
+      // on it and nothing is served differently for having sent it.
+      ws.send(JSON.stringify({ type: 'identify', client: 'set' } satisfies OpenFlow.Request));
+      this.setState('open');
+    };
 
     ws.onclose = () => {
       this.lomReady = false;

@@ -1,6 +1,7 @@
 import { useParamGesture } from '../gesture/useParamGesture.ts';
 import type { Param } from '../param/param.ts';
 import { defaultOrigin, fillFrom, type FillOrigin } from './fill.ts';
+import { useWake, WAKE_MARKS } from './wake.ts';
 import { Widget, type WidgetProps } from './Widget.tsx';
 import './controls.css';
 
@@ -22,9 +23,10 @@ export interface SliderProps extends WidgetProps {
   /**
    * Where the thing driving this control has it right now, 0 to 1.
    *
-   * Drawn as a bright pip inside the span, so the row answers *where is it*
-   * as well as *how far can it go*. Left out, nothing is drawn — a control
-   * nobody is driving has no such position and inventing one would be a lie.
+   * Drawn as a mark inside the span with a short trail behind it, so the row
+   * answers *where is it* and *which way is it going* as well as *how far can
+   * it go*. Left out, nothing is drawn — a control nobody is driving has no
+   * such position and inventing one would be a lie.
    */
   live?: number;
   display?: string;
@@ -93,8 +95,20 @@ export function Slider({
       ? null
       : { at: Math.min(gesture.fraction, far), size: Math.abs(far - gesture.fraction) };
 
+  // **No range, no wake.** A driven control whose depth is zero is being
+  // carried nowhere, so the trail would sit on top of the value's own mark and
+  // say that a still row was moving.
+  const wake = useWake({
+    live: span === null ? undefined : live,
+    // Only a row prints its reading inside itself, and the warmth is a thing
+    // that happens to a printed number. A caption-and-readout column has the
+    // reading somewhere else entirely.
+    reading: layout === 'inside' ? gesture.text : undefined,
+  });
+
   return (
     <Widget
+      ref={wake}
       kind="slider"
       param={param}
       name={name}
@@ -112,14 +126,29 @@ export function Slider({
         // unclamped so it means something again when the value moves back.
         ...(span === null
           ? {}
-          : { '--wdg-span-at': span.at, '--wdg-span-size': span.size }),
+          : { '--wdg-span-at': span.at, '--wdg-span-size': span.size, '--wdg-span-reach': far }),
         ...(live === undefined ? {} : { '--wdg-live': Math.max(0, Math.min(1, live)) }),
       }}
     >
       <div className="wdg-slider-body" {...gesture.props}>
-        <span className="wdg-slider-fill" aria-hidden="true" />
+        {/*
+         * A row has no fill, and the reason is the whole of its drawing.
+         *
+         * A fill from zero is the shape of *how much*, and a parameter is a
+         * *where* — so it invents a left-hand side that means nothing, and
+         * then it is the loudest thing on the line while carrying the least.
+         * On a row the value is a mark, and the range is the only filled
+         * shape there is. A fader keeps its fill, because a fader's own
+         * length is what it is saying.
+         */}
+        {layout !== 'inside' && <span className="wdg-slider-fill" aria-hidden="true" />}
         {span !== null && <span className="wdg-slider-span" aria-hidden="true" />}
-        {live !== undefined && <span className="wdg-slider-live" aria-hidden="true" />}
+        {span !== null && <span className="wdg-slider-reach" aria-hidden="true" />}
+        {span !== null &&
+          live !== undefined &&
+          Array.from({ length: WAKE_MARKS }, (_unused, at) => (
+            <span key={at} className="wdg-slider-wake" data-wake={at} aria-hidden="true" />
+          ))}
         <span className="wdg-slider-thumb" aria-hidden="true" />
       </div>
     </Widget>

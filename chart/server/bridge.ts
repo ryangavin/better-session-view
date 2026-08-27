@@ -252,6 +252,9 @@ export function followBridge(url: string, onChange: () => void): BridgeLink {
 
     ws.addEventListener('open', () => {
       state.connected = true;
+      // First, so the device's roster lights chart[flow]'s row rather than
+      // counting one more anonymous connection. Nothing waits on it.
+      send({ type: 'identify', client: 'chart' });
       send({ type: 'snapshot' });
       // Armed now for the common case — a bridge that is already up — and
       // re-armed by `arm` above when it is not, or when the set changes shape.

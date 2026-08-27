@@ -157,7 +157,14 @@ control as the child:
 ```
 
 That is a separate anatomy rather than CSS laid over the old rails. The row is one grid, so
-the dot and the control share a centre by construction. `Port.showLabel={false}` suppresses
+the dot and the control share a centre by construction.
+
+**Every port on the face stands on one vertical line**, and the line is the face's own
+margin — `--wdg-port-inset`, which follows `--wdg-space`, the same inset the screen and
+the chooser keep. The outlet band and the rows under it used to carry insets of their own,
+a couple of pixels apart: not a mistake anyone could name, and enough to stop the face
+reading as a stack of lines through one edge. A host that wants its ports harder against
+the frame moves the token and moves all of them. `Port.showLabel={false}` suppresses
 only its printed caption; `label` remains its accessible name and tooltip, while the control
 prints the name once inside itself.
 

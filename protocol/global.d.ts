@@ -988,6 +988,24 @@ declare namespace OpenFlow {
 
   // --- client -> server ------------------------------------------------
 
+  /**
+   * Which app is on the other end of a socket.
+   *
+   * The device's face lists the suite by name and lights the ones that are
+   * attached, so it has to be told — a socket carries no useful identity of its
+   * own, and the alternatives are all guesses. A browser's `User-Agent` says
+   * "Chrome" for a client that calls itself set[flow], and the two Node clients
+   * have none at all.
+   *
+   * **A name the device does not know is not an error.** `tools/diag.ts`, a
+   * curious browser and a client built after this list was written all count
+   * toward the "more" line instead of taking a row. Adding a kind here means
+   * adding a row to the device face in `tools/build-device.ts`; nothing else
+   * reads it.
+   */
+  type ClientKind = 'set' | 'visual' | 'chart';
+
+
   // `launch`, `stop`, `selectScene`, `setFold`, `setTransport`, `setMixer`, `setDevice`,
   // and the watches
   // deliberately have no terminal reply. What you want back from firing a clip
@@ -1157,6 +1175,16 @@ declare namespace OpenFlow {
      * look the same to a reader deciding whether the harmony is knowable.
      */
     | { id?: number; type: 'clipNotes'; clips: Array<{ t: number; s: number }> }
+    /**
+     * Say which app this is, for the device's face. Send it first, once.
+     *
+     * No reply, and nothing downstream depends on it: a client that never sends
+     * it is served exactly the same as one that does, and only the roster on
+     * the device is poorer for it. It is deliberately not a handshake — rule 5
+     * is that a client connecting changes nothing about what the device knows,
+     * and an identity the device *needed* would be the first crack in that.
+     */
+    | { id?: number; type: 'identify'; client: ClientKind }
     | { id?: number; type: 'ping' };
 
   type RequestType = Request['type'];

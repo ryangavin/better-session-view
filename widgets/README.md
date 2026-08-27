@@ -48,6 +48,7 @@ src/
     Label.tsx       live.comment, and Divider for live.line
     arc.ts          dial geometry
     fill.ts         where a fill starts, shared by all three value controls
+    wake.ts         the trail behind an arriving number, and the warmth in its reading
     reserve.ts      space for the longest reading, so a control never resizes
     shared.css      the parts every control is made of: face, type, states, layout
     controls.css    what's left after that — each control's own geometry

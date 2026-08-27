@@ -28,7 +28,8 @@
   --wdg-field-height: 16px;
   --wdg-track: 14px;
   --wdg-strip: 4px;
-  --wdg-span-ink: var(--fg, #ececed);
+  --wdg-reach-ink: var(--ui, #b7b7be);
+  --wdg-arrival-ink: color-mix(in srgb, var(--amber-hover, #ffc961) 60%, var(--fg, #ececed));
   --wdg-groove: var(--surface-sunken, #101012);
   --wdg-knob-size: 34px;
   --wdg-knob-height: 27px;
@@ -37,6 +38,7 @@
   --wdg-meter-span: 48px;
   --wdg-port-size: 9px;
   --wdg-port-gap: 6px;
+  --wdg-port-inset: var(--wdg-space);
   --wdg-graph-grid: 24px;
   --wdg-graph-x: 0px;
   --wdg-graph-y: 0px;

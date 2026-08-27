@@ -59,13 +59,33 @@
   text-overflow: ellipsis;
 }
 
+/*
+ * The reading is the arriving number, in the caption's own typeface.
+ *
+ * It used to be mono here as it is under a knob, which put two typefaces on
+ * one line for two texts that behave identically — a label at one end and a
+ * number at the other, both laid over the same track. Tabular figures do the
+ * job mono was doing, which is stopping the digits jittering under the pointer.
+ *
+ * `--wdg-heat` is how lately the number changed, and the ink warms with it. A
+ * held signal blinks once per step and a smooth one reads as a steady warmth,
+ * so the row says *this is being driven* without spending a badge or a second
+ * colour on saying it. Nothing sets `--wdg-heat` unless a control has a
+ * reading that arrives, so everything else stays exactly its ordinary ink.
+ */
 .wdg-widget[data-layout='inside'] > .wdg-readout {
   grid-column: 2;
   min-width: 0;
   padding-left: 6px;
   padding-right: 4px;
-  color: var(--wdg-text-strong);
+  color: color-mix(
+    in srgb,
+    var(--wdg-arrival-ink) calc(var(--wdg-heat, 0) * 100%),
+    var(--wdg-text-strong)
+  );
+  font-family: var(--wdg-sans);
   font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
   text-align: right;
 }
 
@@ -75,7 +95,6 @@
   background: var(--wdg-groove, #101012);
 }
 
-.wdg-widget[data-layout='inside'] .wdg-slider-fill,
 .wdg-widget[data-layout='inside'] .wdg-meter-level,
 .wdg-widget[data-layout='inside'] .wdg-meter-hold {
   top: auto;
@@ -84,33 +103,7 @@
   opacity: 1;
 }
 
-/*
- * Amber is the number you set; light is where a cord takes it. One strip
- * carrying both, because two amber bars stacked read as one thick amber bar
- * with a step in it.
- */
-.wdg-slider-span {
-  position: absolute;
-  right: auto;
-  bottom: 0;
-  left: calc(var(--wdg-span-at) * 100%);
-  width: max(2px, calc(var(--wdg-span-size) * 100%));
-  height: var(--wdg-strip);
-  background: var(--wdg-span-ink);
-  opacity: 0.45;
-}
-
-.wdg-slider-live {
-  position: absolute;
-  bottom: 0;
-  left: calc(var(--wdg-live) * 100%);
-  width: 2px;
-  height: var(--wdg-strip);
-  background: var(--wdg-span-ink);
-  transform: translateX(-1px);
-}
-
-.wdg-widget[data-layout='inside'] > .wdg-body::after {
+.wdg-meter[data-layout='inside'] > .wdg-body::after {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -122,8 +115,107 @@
   pointer-events: none;
 }
 
-.wdg-widget[data-layout='inside'] .wdg-slider-thumb {
-  display: none;
+/*
+ * One convention, three inks: **amber is the number you set, light is where
+ * the source has it now, grey is the limit you gave it.**
+ *
+ * All three used to share the 4px strip along the bottom, which made the
+ * amber quantity the loudest shape on the row while it carried the least, and
+ * left the range competing with it for the same 4px. The marks own the whole
+ * height now, and the range is the one filled shape on the track.
+ *
+ * The wash sits **under** the two texts and only the marks come over them, so
+ * a label and a reading stay legible while a mark can still reach 0 and 100.
+ * Every one of these is positioned along the track, so they are the horizontal
+ * drawing; a vertical fader renders none of them.
+ */
+.wdg-slider-span,
+.wdg-slider-reach,
+.wdg-slider-wake {
+  position: absolute;
+  pointer-events: none;
+}
+
+.wdg-slider-horizontal .wdg-slider-span {
+  inset: 0 auto 0 calc(var(--wdg-span-at) * 100%);
+  width: max(2px, calc(var(--wdg-span-size) * 100%));
+  background: var(--wdg-fill);
+  opacity: 0.16;
+}
+
+.wdg-slider-horizontal .wdg-slider-reach,
+.wdg-slider-horizontal .wdg-slider-wake {
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-1px);
+}
+
+.wdg-slider-horizontal .wdg-slider-reach {
+  left: calc(var(--wdg-span-reach) * 100%);
+  background: var(--wdg-reach-ink);
+}
+
+/*
+ * The trail, drawn head first and shorter and fainter behind.
+ *
+ * Each mark chases the one in front of it rather than sampling the source a
+ * moment ago — see [`wake.ts`](./wake.ts) — so what is drawn is always one
+ * number moving. Until the first frame lands they all sit on the live value,
+ * which is a still row rather than a row at zero.
+ */
+.wdg-slider-horizontal .wdg-slider-wake {
+  top: var(--wdg-wake-lift);
+  bottom: var(--wdg-wake-lift);
+  left: calc(var(--wdg-wake-at) * 100%);
+  border-radius: 1px;
+  background: var(--wdg-marker);
+  opacity: var(--wdg-wake-ink);
+}
+
+.wdg-slider-wake[data-wake='0'] {
+  --wdg-wake-at: var(--wdg-wake-0, var(--wdg-live, 0));
+  --wdg-wake-lift: 3px;
+  --wdg-wake-ink: 1;
+}
+
+.wdg-slider-wake[data-wake='1'] {
+  --wdg-wake-at: var(--wdg-wake-1, var(--wdg-live, 0));
+  --wdg-wake-lift: 3px;
+  --wdg-wake-ink: 0.62;
+}
+
+.wdg-slider-wake[data-wake='2'] {
+  --wdg-wake-at: var(--wdg-wake-2, var(--wdg-live, 0));
+  --wdg-wake-lift: 3.5px;
+  --wdg-wake-ink: 0.44;
+}
+
+.wdg-slider-wake[data-wake='3'] {
+  --wdg-wake-at: var(--wdg-wake-3, var(--wdg-live, 0));
+  --wdg-wake-lift: 4px;
+  --wdg-wake-ink: 0.3;
+}
+
+.wdg-slider-wake[data-wake='4'] {
+  --wdg-wake-at: var(--wdg-wake-4, var(--wdg-live, 0));
+  --wdg-wake-lift: 4.5px;
+  --wdg-wake-ink: 0.2;
+}
+
+.wdg-slider-wake[data-wake='5'] {
+  --wdg-wake-at: var(--wdg-wake-5, var(--wdg-live, 0));
+  --wdg-wake-lift: 5px;
+  --wdg-wake-ink: 0.12;
+}
+
+/* The value's own mark, which on a row is the amber one everything else is
+ * measured from. */
+.wdg-slider[data-layout='inside'] .wdg-slider-thumb {
+  z-index: 2;
+  inset: 0 auto 0 calc(var(--wdg-fraction) * 100%);
+  background: var(--wdg-fill);
 }
 
 

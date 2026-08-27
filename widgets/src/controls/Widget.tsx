@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, Ref } from 'react';
 import type { Param } from '../param/param.ts';
 import { useReserved } from './reserve.ts';
 import './controls.css';
@@ -61,6 +61,16 @@ export interface WidgetSlots extends WidgetProps {
    */
   readout?: ReactNode;
   vars?: WidgetVars;
+  /**
+   * The root element, for a control that writes to it between renders.
+   *
+   * A row's wake and the warmth in its reading are drawn on a clock rather
+   * than in a render — see [`wake.ts`](./wake.ts) — and both are custom
+   * properties on this element, which the reading and the control's own body
+   * both sit under. A control that re-rendered to move a mark two pixels
+   * would be the render path a canvas of nodes exists to avoid.
+   */
+  ref?: Ref<HTMLDivElement>;
   /** The control itself: one element, carrying its own gesture and geometry. */
   children: ReactNode;
 }
@@ -73,6 +83,7 @@ export function Widget({
   layout = 'stacked',
   disabled = false,
   vars,
+  ref,
   className,
   title,
   children,
@@ -81,6 +92,7 @@ export function Widget({
 
   return (
     <div
+      ref={ref}
       className={`wdg wdg-widget wdg-${kind}${className ? ` ${className}` : ''}`}
       data-layout={layout}
       {...(disabled ? { 'data-disabled': '' } : {})}

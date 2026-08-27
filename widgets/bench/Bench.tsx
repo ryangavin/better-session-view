@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { FINE_KEY } from '../src/gesture/platform.ts';
 import { format } from '../src/param/format.ts';
 import { enumParam, type Param, type UnitStyle } from '../src/param/param.ts';
@@ -375,10 +375,40 @@ function Patch() {
   );
 }
 
+/**
+ * A source for a driven row, sampled at a **display's** rate and not a
+ * renderer's.
+ *
+ * Ten readings a second is what a host actually hands a control — anything
+ * faster is a number nobody can read changing — and it is the rate the wake
+ * exists to smooth. Held, it is the case that decides the drawing: three
+ * delayed samples of a sample-and-hold sit at three unrelated values, and a
+ * cascade of lags turns the same step into a streak that collapses.
+ */
+function useSignal(held: boolean): number {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setTick((was) => was + 1), 100);
+    return () => window.clearInterval(timer);
+  }, []);
+  const phase = (tick * 0.04) % 1;
+  if (!held) return Math.sin(phase * Math.PI * 2) * 0.5 + 0.5;
+  const step = Math.sin(Math.floor(phase * 4) * 127.1 + 311.7) * 43758.5453;
+  return step - Math.floor(step);
+}
+
 function RowFace() {
   const [depth, setDepth] = useState(41);
+  const [size, setSize] = useState(62);
+  const [reach, setReach] = useState(0.26);
+  const [held, setHeld] = useState(false);
+  const signal = useSignal(held);
   return (
-    <Device
+    <div className="row-face-case">
+      <Toggle on={held} onChange={setHeld} name="Source">
+        {held ? 'hold' : 'smooth'}
+      </Toggle>
+      <Device
       name="Ripple"
       className="row-face"
       headerAfterName={<span className="row-face-kind">Shape</span>}
@@ -431,6 +461,30 @@ function RowFace() {
           <DevicePortRow
             inlet={
               <Port
+                id="row-face:size"
+                side="in"
+                label="Size"
+                kind="signal"
+                showLabel={false}
+                connected
+              />
+            }
+          >
+            <Slider
+              param={DRY_WET}
+              value={size}
+              onChange={setSize}
+              depth={reach}
+              onDepth={setReach}
+              live={signal}
+              name="Size"
+              orientation="horizontal"
+              layout="inside"
+            />
+          </DevicePortRow>
+          <DevicePortRow
+            inlet={
+              <Port
                 id="row-face:energy"
                 side="in"
                 label="Energy"
@@ -443,7 +497,8 @@ function RowFace() {
           </DevicePortRow>
         </>
       }
-    />
+      />
+    </div>
   );
 }
 

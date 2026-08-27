@@ -66,6 +66,7 @@ Unsolicited events (`status`, `changed`, `deviceState`) carry no id.
 | `selectTrack` `{ t }` | select one exact track, so Live's device view follows the device-chain footer |
 | `devices` `{ t }` | read one track's device chain — shells only. A read rather than a watch; see the type's own note |
 | `clipNotes` `{ clips }` | the notes of some clips — a **read**, like `devices` |
+| `identify` `{ client }` | which app this is, for the roster on the device's face |
 | `ping` | |
 
 | server → client | terminal for |
@@ -243,6 +244,21 @@ Arm decides what an *empty* slot does — `ClipSlot.fire()` triggers that slot's
 button on an unarmed track and starts recording on an armed one — so every empty cell in
 the grid draws a different button depending on it. The mixer's copy is observed only
 while its footer is open; this watcher is never off, because the grid never closes.
+
+## `identify`
+
+The one message that changes nothing. A client says which app it is — `set`, `visual` or
+`chart` — and the device lights that row on its face; everything else about how it is
+served is identical whether it sent this or not.
+
+**That is the point rather than an omission.** Rule 5 is that a client connecting,
+disconnecting or reloading changes nothing about what the device knows, and an identity
+the device *needed* would be the first crack in it. So a name the device doesn't
+recognise is not an error either: `tools/diag.ts`, a browser someone pointed at the port
+and a client built after `ClientKind` was written all count toward the face's `plus n
+more` line instead of taking a row.
+
+Send it once, first thing on the socket. It has no reply.
 
 ## `clipNotes`
 

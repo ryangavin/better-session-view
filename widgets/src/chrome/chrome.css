@@ -381,6 +381,16 @@
   min-height: 0;
 }
 
+/*
+ * Every port on a row-aligned face stands on one vertical line, and the line
+ * is the face's own margin — the same one the picture and the chooser keep.
+ *
+ * The band and the rows below it used to carry their own insets, so an outlet
+ * at the top of the face and the inlets under it were two columns a couple of
+ * pixels apart: not a mistake anyone could name, and enough to stop the face
+ * reading as a stack of lines through one edge. One token now, and a host
+ * that wants its ports harder against the frame moves them all at once.
+ */
 .wdg-device-outlets {
   display: flex;
   flex: none;
@@ -388,7 +398,7 @@
   align-items: stretch;
   justify-content: flex-start;
   min-height: calc(var(--wdg-device-outlet-rows, 1) * var(--wdg-port-row-height));
-  padding: var(--wdg-space) 2px;
+  padding: var(--wdg-space) var(--wdg-port-inset);
 }
 
 .wdg-device-outlets:empty {
@@ -421,8 +431,8 @@
 .wdg-device-port-row {
   display: grid;
   grid-template-columns:
-    calc(var(--wdg-port-size) + 4px) minmax(0, 1fr)
-    calc(var(--wdg-port-size) + 4px);
+    calc(var(--wdg-port-inset) + var(--wdg-port-size) + 2px) minmax(0, 1fr)
+    calc(var(--wdg-port-inset) + var(--wdg-port-size) + 2px);
   align-items: center;
   min-height: var(--wdg-port-row-height);
 }
@@ -435,12 +445,12 @@
 
 .wdg-device-row-port[data-side='in'] {
   justify-content: flex-start;
-  padding-left: 2px;
+  padding-left: var(--wdg-port-inset);
 }
 
 .wdg-device-row-port[data-side='out'] {
   justify-content: flex-end;
-  padding-right: 2px;
+  padding-right: var(--wdg-port-inset);
 }
 
 .wdg-device-row-control {

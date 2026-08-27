@@ -11,9 +11,13 @@ Live ─ SessionBridge :17800 ─WS─> chart server :18000 ─SSE─> phones
 
 Everyone in the band opening the chart is **one** client of the bridge, not six. The
 server holds the single WebSocket; the phones get an SSE stream of a projection. That
-matters for two reasons beyond tidiness: the device's Status line counts connected
-clients and would otherwise read whatever the room size is, and every phone joining would
-otherwise be one more socket for the bridge to broadcast every `playState` frame to.
+matters for two reasons beyond tidiness: the device's face would otherwise report the
+room size — five phones on the chart is one `chart[flow]` row lit, not one lit row and
+`plus 4 more` — and every phone joining would otherwise be one more socket for the bridge
+to broadcast every `playState` frame to.
+
+The server sends `identify` as `chart` the moment its socket opens, which is what lights
+that row. Nothing waits on it and nothing is served differently for it.
 
 It obeys rule 5 exactly — `snapshot` without `fresh`, so the device answers from what it
 already holds and Live is not touched. It never sends `observe` or `watchSelection`; those

@@ -178,6 +178,60 @@ which needs saying explicitly now that they aren't its descendants in the shell 
 The containment is still real — it's in the props, where a host passes the selected
 chain's devices as `children`. It just isn't the drawing.
 
+## Why a row has no fill
+
+`layout="inside"` is a control laid into a line — a label at one end, its reading at the
+other, both over the track. It is the shape a node's parameter takes, and until a cord
+could reach one it was an ordinary fader with its caption moved: a fill from zero, and a
+4px strip along the bottom carrying that fill, the range and the live value all at once.
+
+**A fill from zero is the shape of *how much*, and a parameter is a *where*.** It invents
+a left-hand side that means nothing — half full, mostly full, of what? — and then it is
+the loudest thing on the line while carrying the least. Worse, it is the same amber as the
+range, so the two shapes competed for the same 4px and shift-dragging one of them was a
+guess about which had moved. So a row has no fill: the value is a **mark**, and the range
+is the only filled shape on the track. A fader keeps its fill, because a fader's own
+length is what it is saying.
+
+One convention carries the rest of it — **amber is the number you set, light is where the
+source has it now, grey is the limit you gave it** — and the marks own the whole height
+rather than a strip. The range wash sits *under* the label and the reading and only the
+marks come over them, so both texts stay legible while a mark can still reach 0 and 100.
+
+**Nothing is drawn that isn't true.** No `onDepth`, or a depth of zero, and there is no
+range: one amber mark and a groove, which is exactly what an unwired number is. No range
+also means no wake, because a control being carried nowhere has no travel to describe and
+a trail sitting on the value's own mark would say a still row was moving.
+
+### The wake, and the warmth
+
+A row is handed a reading about ten times a second, which is as often as a number can
+change and still be read. At that rate a mark either sits still or jumps, and a jump
+between two positions looks exactly like somebody dragging — so a driven row could not
+say it was being driven. Two things fix it, both in [`wake.ts`](../src/controls/wake.ts),
+and neither is state: they are custom properties written straight onto the element on a
+clock, because a row re-rendering to move a mark two pixels is the render path a canvas
+of nodes exists to avoid.
+
+**The mark grows a tail.** Six marks, each chasing the one in front of it — not six
+delayed samples of the source, which is the obvious way and the one that fails. Delayed
+samples of anything that *holds* a value, a sample-and-hold or a number arriving at ten
+hertz, sit at six unrelated readings, and a row that reads as six other numbers is worse
+than one that reads as none. Chasing, the trail is always between where the number was and
+where it is, in order: a step stretches it into a streak and then collapses it back to a
+point, which is one number moving.
+
+**And the number lights up.** The reading warms to a light amber the moment it changes and
+cools over about a third of a second, so a held signal blinks once per step and a smooth
+one reads as a steady warmth. It is the same rule wired or not — a number that changed is
+a number that arrived, whoever changed it — which is why an unwired row still answers when
+you touch it, and why nothing needed a second colour or a badge to say *this is being
+driven*.
+
+The reading is the **arriving** number and nothing else. It briefly said `62 → 88 %`, the
+range in amber, which is the marks' job and was being said twice; a number that is not
+yours to drag belongs in the readout, and the range belongs on the track.
+
 ## Tier 3 — the bespoke displays
 
 Listed so they aren't forgotten, deliberately last. Each is one device's idea, and none of

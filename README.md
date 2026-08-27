@@ -69,8 +69,9 @@ The current version was built against Ableton Live 12.4.3 Suite.
    JavaScript files from beside itself.
 3. Drag `SessionBridge.amxd` onto any track. It's an inert audio passthrough, so the Master
    track is fine.
-4. Wait for the device to read **No connections**.
-5. Run `npm run set` to open the session manager, which connects to it.
+4. Wait for the device to read **Connected to Live**.
+5. Run `npm run set` to open the session manager — the **set[flow]** dot on the device
+   lights when it attaches.
 
 The device bridges Live and nothing else; the interface is an app of its own.
 
