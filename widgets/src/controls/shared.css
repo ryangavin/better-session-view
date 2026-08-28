@@ -148,12 +148,20 @@
   z-index: 2;
   top: 0;
   bottom: 0;
-  width: 2px;
-  transform: translateX(-1px);
+  /* Centred on the fraction whatever the width is, rather than nudged by half
+   * of one particular width. */
+  transform: translateX(-50%);
 }
 
+/*
+ * The two ends of the range are `--wdg-mark-width`, and the wake is thinner
+ * than both. They are what a shift-drag is moving, so they are the structure
+ * on the track; the trail is the signal running between them, and a trail as
+ * heavy as the bounds it runs between reads as a third handle.
+ */
 .wdg-slider-horizontal .wdg-slider-reach {
   left: calc(var(--wdg-span-reach) * 100%);
+  width: var(--wdg-mark-width);
   background: var(--wdg-reach-ink);
 }
 
@@ -169,6 +177,7 @@
   top: var(--wdg-wake-lift);
   bottom: var(--wdg-wake-lift);
   left: calc(var(--wdg-wake-at) * 100%);
+  width: 2px;
   border-radius: 1px;
   background: var(--wdg-marker);
   opacity: var(--wdg-wake-ink);
@@ -211,10 +220,12 @@
 }
 
 /* The value's own mark, which on a row is the amber one everything else is
- * measured from. */
+ * measured from — and the near end of the range, so it matches the far one. */
 .wdg-slider[data-layout='inside'] .wdg-slider-thumb {
   z-index: 2;
   inset: 0 auto 0 calc(var(--wdg-fraction) * 100%);
+  width: var(--wdg-mark-width);
+  transform: translateX(-50%);
   background: var(--wdg-fill);
 }
 

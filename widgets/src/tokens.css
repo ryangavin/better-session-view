@@ -28,6 +28,7 @@
   --wdg-field-height: 16px;
   --wdg-track: 14px;
   --wdg-strip: 4px;
+  --wdg-mark-width: 3px;
   --wdg-reach-ink: var(--ui, #b7b7be);
   --wdg-arrival-ink: color-mix(in srgb, var(--amber-hover, #ffc961) 60%, var(--fg, #ececed));
   --wdg-groove: var(--surface-sunken, #101012);
