@@ -71,7 +71,7 @@ Everything is on the [latest release](../../releases/latest).
 2. Drag `SessionBridge.amxd` onto any track. It's an inert audio passthrough, so the Master
    track is fine.
 3. Wait for the device to read **Connected to Live**.
-4. Open `set[flow]-<version>-arm64.dmg` and drag the app to Applications. It's signed and
+4. Open `set-flow-<version>-arm64.dmg` and drag the app to Applications. It's signed and
    notarised, so it opens with a double-click.
 5. Launch it. It finds the device by itself, and the **set[flow]** dot on the device lights
    when it attaches.
