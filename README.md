@@ -56,24 +56,29 @@ the `.als` file. Everything runs on your computer, and nothing is downloaded at 
 
 ### What you need
 
-- Ableton Live 12 with Max for Live
-- The three files from the latest release
+- Ableton Live 12 with Max for Live, on Apple silicon
+- The device zip and at least one app, from the latest release
 
 The current version was built against Ableton Live 12.4.3 Suite.
 
 ### Install
 
-1. Download the latest zip from [Releases](../../releases) and unzip it somewhere
-   permanent.
-2. Keep `SessionBridge.amxd`, `bridge.js`, and `lom.js` together. The device loads the two
-   JavaScript files from beside itself.
-3. Drag `SessionBridge.amxd` onto any track. It's an inert audio passthrough, so the Master
-   track is fine.
-4. Wait for the device to read **Connected to Live**.
-5. Run `npm run set` to open the session manager — the **set[flow]** dot on the device
-   lights when it attaches.
+Everything is on the [latest release](../../releases/latest).
 
-The device bridges Live and nothing else; the interface is an app of its own.
+1. Unzip `SessionBridge-<version>.zip` somewhere permanent, and keep
+   `SessionBridge.amxd`, `bridge.js`, and `lom.js` together. The device loads the two
+   JavaScript files from beside itself, so a lone `.amxd` is broken.
+2. Drag `SessionBridge.amxd` onto any track. It's an inert audio passthrough, so the Master
+   track is fine.
+3. Wait for the device to read **Connected to Live**.
+4. Open `set[flow]-<version>-arm64.dmg` and drag the app to Applications. It's signed and
+   notarised, so it opens with a double-click.
+5. Launch it. It finds the device by itself, and the **set[flow]** dot on the device lights
+   when it attaches.
+
+The device bridges Live and nothing else; each interface is an app of its own.
+`visual[flow]`, the VJ rig, is a second `.dmg` on the same release and attaches the same
+way.
 
 If you'd like the longer version, including what each file does, read
 [Installing](https://github.com/ryangavin/better-session-view/wiki/Installing).

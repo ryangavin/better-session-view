@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "description": "The controls a DAW is made of: Ableton-shaped widgets and device chrome, in React.",
+  "files": [
+    "src",
+    "dist",
+    "docs"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./controls/*": "./src/controls/*",
