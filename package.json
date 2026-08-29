@@ -48,6 +48,7 @@
     "dev:devices": "vite --config set/vite.bench.config.ts",
     "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p widgets/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
+    "benchmark": "node --disable-warning=ExperimentalWarning tools/benchmark.ts",
     "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link",
     "visuals": "npm run build:visuals && node --disable-warning=ExperimentalWarning tools/build-electron.ts visuals && electron visuals",
     "visuals:browser": "node --disable-warning=ExperimentalWarning tools/visuals.ts",

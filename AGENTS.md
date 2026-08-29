@@ -102,6 +102,7 @@ npm test             # core/, widgets/param, set/lib and visuals/ unit tests
 npm run build        # the device: bridge.js, lom.js, the .amxd. No front end.
 npm run set          # the session manager, in its window
 npm run visuals      # the VJ rig, its server and its window
+npm run benchmark    # every flow's frame cost, with nothing pacing it
 ```
 
 If a change touches the LOM, say plainly that it's unverified rather than implying it

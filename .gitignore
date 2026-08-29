@@ -22,6 +22,7 @@ bridge/roles.json.tmp
 visuals/scheme.json
 # generated: the renderer's vite build output, served by the visuals server
 visuals/dist/
+visuals/bench-dist/
 # generated: the chart's vite build output, served by the chart server
 chart/dist/
 # generated: tsc declarations for @openflow/widgets, built by npm run build:widgets
