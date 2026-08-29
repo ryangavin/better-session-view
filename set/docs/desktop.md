@@ -18,10 +18,15 @@ that the device is no longer a web server, so there is no URL to point a browser
 choice is not "Chrome or Electron", it is "ship a window or ship a server". Electron is the
 only one of those that leaves the device carrying nothing.
 
-Tauri was considered and rejected: on macOS its webview is WKWebView, not Chromium, so every
-shader and every layout in this project would need re-validating against an engine it has
-never run on. That matters more for visual[flow] than here, but one engine across both apps
-is worth more than either.
+Tauri was considered and rejected, though not for the reason first written down here. The
+original argument was shader portability, and it does not hold: Safari and Chrome both reach
+the GPU through ANGLE onto Metal, so GLSL crossing between them is a re-test rather than a
+re-validation. What does hold is that **Tauri's macOS webview is WKWebView**, and
+visual[flow] draws its show *inside* the webview — so moving would put a projector in a
+renderer with fewer levers and lose the anti-throttling switches it depends on. This app
+would survive the move; that one would not, and one engine across both is worth more than
+either. `visuals/docs/engine.md` works through the whole trade, including what would have to
+change before the shell is worth revisiting.
 
 **Packaged, but not signed and not distributed.** `npm run set` runs it straight out of the
 repo, which is the working loop; `npm run pack:set` makes a real `.app`, which is what gives
