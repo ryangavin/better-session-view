@@ -51,6 +51,18 @@ carries the definition of each. No rule invents its own gray, and text recedes b
 the next step down rather than by growing an `opacity`, which is reserved for a whole
 control being disabled.
 
+Scrollbars are chrome, not a component, so `shared.css` styles them once for every
+container that scrolls. The thumb is a pill inset inside a transparent border with
+`background-clip: padding-box`, which is what keeps a 10px hit target from reading as a
+10px stripe against the content beside it: `--scroll-size` is the footprint the layout
+pays for and `--scroll-inset` is how much of it is padding, so the visible thumb is 4px at
+rest and thickens to 6px under the pointer without the column reflowing. Its three states
+come from the neutral ramp — `--idle` at rest, `--focus` on hover, `--detail` while
+dragging — because a scrollbar at rest is exactly the control the ramp's `--idle` step
+describes. `visuals/src/ui/console.css` carries the same rules and the same two tokens
+scoped to `.console`, which is the one place the two apps are deliberately duplicated
+rather than shared, since neither imports the other's CSS.
+
 `--col-w` and `--meta-col-w` are the exception: `:root` carries fallbacks, but `ClipGrid`
 sets both on the table element from `columnWidth.ts`, which stays the one place the grid
 states a width. Only `--col-w` moves with the S/M/L/Auto/8/16 setting, and it sizes the

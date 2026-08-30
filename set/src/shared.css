@@ -65,6 +65,8 @@
      and one bottom edge rather than five. Segmented groups carry the border on
      the group, so their buttons are 2px shorter and come out the same. */
   --ctl-h: 22px;
+  --scroll-size: 10px;
+  --scroll-inset: 3px;
 }
 
 * {
@@ -235,24 +237,31 @@ input[type='text']:focus {
   border: 1px solid var(--caption);
 }
 
-/* Compact, stage-legible scrollbars everywhere the app scrolls. Firefox only
-   exposes `thin`; Chromium/WebKit lets us hold the exact 5px footprint. The
-   thumb is deliberately brighter than a panel border so it stays findable on
-   every dark surface without giving the transparent track its own stripe. */
-* {
+:root {
   scrollbar-width: thin;
-  scrollbar-color: var(--detail) transparent;
+  scrollbar-color: var(--idle) transparent;
 }
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: var(--scroll-size);
+  height: var(--scroll-size);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--detail);
+  border: var(--scroll-inset) solid transparent;
   border-radius: var(--radius-pill);
+  background: var(--idle);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  border-width: calc(var(--scroll-inset) - 1px);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--amber-muted);
+  background: var(--focus);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:active {
+  background: var(--detail);
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-track,
 ::-webkit-scrollbar-corner {
