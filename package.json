@@ -39,6 +39,7 @@
     "build:device": "node --disable-warning=ExperimentalWarning tools/build-device.ts",
     "build:widgets": "npm run build:types --workspace @openflow/widgets",
     "dev:check-palette": "node --disable-warning=ExperimentalWarning tools/check-palette.ts",
+    "dev:check-singletons": "node --disable-warning=ExperimentalWarning tools/check-singletons.ts",
     "dev:diag": "node --disable-warning=ExperimentalWarning tools/diag.ts",
     "dev:lom-scrape": "node --disable-warning=ExperimentalWarning tools/lom-reference.ts",
     "dev": "concurrently -k -n bridge,types,lom,set,bench,devices,vis-app,vis-ui,chart,chart-ui -c cyan,blue,magenta,green,yellow,red,white,gray,magentaBright,blueBright \"node --disable-warning=ExperimentalWarning tools/dev-bridge.ts\" \"tsc -p bridge/tsconfig.node.json --noEmit --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config set/vite.config.ts\" \"vite --config widgets/vite.config.ts\" \"vite --config set/vite.bench.config.ts\" \"npm run dev:visuals-app\" \"vite --config visuals/vite.config.ts\" \"OPENFLOW_CHART_UI=http://127.0.0.1:5573 node --watch --disable-warning=ExperimentalWarning chart/server/index.ts\" \"vite --config chart/vite.config.ts\"",
@@ -49,7 +50,7 @@
     "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p widgets/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
     "benchmark": "node --disable-warning=ExperimentalWarning tools/benchmark.ts",
-    "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link",
+    "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link && cd .. && npm run dev:check-singletons",
     "visuals": "npm run build:visuals && node --disable-warning=ExperimentalWarning tools/build-electron.ts visuals && electron visuals",
     "visuals:browser": "node --disable-warning=ExperimentalWarning tools/visuals.ts",
     "build:visuals": "vite build --config visuals/vite.config.ts",
@@ -62,6 +63,7 @@
     "dev:chart-ui": "vite --config chart/vite.config.ts"
   },
   "devDependencies": {
+    "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
@@ -76,6 +78,8 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
+    "@xyflow/react": "^12.11.5",
+    "d3-hierarchy": "^3.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   }

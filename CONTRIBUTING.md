@@ -149,6 +149,19 @@ the addon, and failing that is a warning rather than an error.
 Not silence, and the difference between the lines matters. Each of these has been chased
 to its cause; none is a to-do nobody got to.
 
+**`bridge/` and `visuals/` keep their own `node_modules`, and neither may hold a second
+React.** The first ships beside Live with no dependency tree at all; the second has the
+native Ableton Link addon and `!node_modules/**` in its `electron-builder.yml`. Both are
+right. What neither can hold is a package that only works as one copy — install anything
+with a React peer dependency into `visuals/` and npm will satisfy that peer *there*, giving
+the tree two module registries and every `useContext` under the second one a null
+dispatcher. The error surfaces from library code nowhere near the install.
+
+The split is by side, not by folder: the UI is bundled by the root toolchain, so React,
+React Flow and `d3-hierarchy` are root dependencies, while `visuals/package.json` holds the
+server and Electron side — Link, `ws`, `zod`, the MCP SDK. `npm run dev:check-singletons`
+enforces it and runs on `postinstall`.
+
 **Four deprecation warnings — `inflight`, `glob@7`, `rimraf@2`, `boolean` — are all
 electron-builder's.** Every one traces to `app-builder-lib`: `@electron/asar` pulls old
 `glob` (and `inflight` under it), `@electron/get` pulls `global-agent` for `boolean`, and
