@@ -15,7 +15,7 @@
     "url": "https://github.com/ryangavin/better-session-view/issues"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "workspaces": [
     "core",
@@ -70,11 +70,11 @@
   "devDependencies": {
     "@testing-library/react": "^16.3.3",
     "@types/d3-hierarchy": "^3.1.7",
-    "@types/node": "^22.10.2",
+    "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@types/ws": "^8.5.13",
-    "@vitejs/plugin-react": "^6.1.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^4.1.11",
     "@vitest/ui": "^4.1.11",
     "concurrently": "^10.0.5",

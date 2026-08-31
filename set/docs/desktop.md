@@ -89,7 +89,7 @@ only worth having if what crosses it stays this small.
 
 `tools/build-electron.ts` esbuilds `main.ts` and `preload.ts` to **CommonJS** in
 `electron/dist/`. Both halves of that are forced: Electron's bundled Node does not strip
-types the way Node 24 on your PATH does, and a `sandbox: true` preload must be CJS. It takes
+types the way Node 26 on your PATH does, and a `sandbox: true` preload must be CJS. It takes
 a module name, so visual[flow] uses the same script.
 
 It is deliberately **not** part of `npm run build`. That script is what CI enforces and what
