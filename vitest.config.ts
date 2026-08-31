@@ -1,16 +1,21 @@
 import { defineConfig } from 'vitest/config';
 
+// One project per module, so a run can be read — or taken — a module at a
+// time: `npm test -- --project=visuals`, and a named group in the report
+// rather than seventy-eight files in one list.
+const module = (name: string, include: string[]) => ({
+  test: { name, include, environment: 'node' as const },
+});
+
 export default defineConfig({
   test: {
-    include: [
-      'core/src/**/*.test.ts',
-      'widgets/src/**/*.test.ts',
-      'set/src/lib/**/*.test.ts',
-      'set/src/components/**/*.test.ts',
-      'visuals/**/*.test.ts',
-      'chart/**/*.test.ts',
+    projects: [
+      module('core', ['core/src/**/*.test.ts']),
+      module('widgets', ['widgets/src/**/*.test.ts']),
+      module('set', ['set/src/lib/**/*.test.ts', 'set/src/components/**/*.test.ts']),
+      module('visuals', ['visuals/**/*.test.ts']),
+      module('chart', ['chart/**/*.test.ts']),
     ],
-    environment: 'node',
     // Where `--reporter=html` lands. The reporter copies the coverage report
     // in beside itself, so report/ is the whole publishable site.
     outputFile: { html: 'report/index.html' },

@@ -98,7 +98,7 @@ work in [Issues](../../issues).
 
 ```sh
 npm run typecheck     # all ten projects
-npm test              # core/, widgets/param, set/lib and visuals/ unit tests
+npm test              # every module's unit tests; --project=visuals for one
 npm run test:coverage # the same tests, and what they reach — report/index.html
 npm run build         # the device: bridge.js, lom.js, the .amxd. No front end.
 npm run set           # the session manager, in its window
