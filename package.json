@@ -40,6 +40,7 @@
     "build:widgets": "npm run build:types --workspace @openflow/widgets",
     "dev:check-palette": "node --disable-warning=ExperimentalWarning tools/check-palette.ts",
     "dev:check-singletons": "node --disable-warning=ExperimentalWarning tools/check-singletons.ts",
+    "dev:mutate": "node --disable-warning=ExperimentalWarning tools/mutate.ts",
     "dev:record": "node --disable-warning=ExperimentalWarning tools/record-session.ts",
     "dev:diag": "node --disable-warning=ExperimentalWarning tools/diag.ts",
     "dev:responses": "node --disable-warning=ExperimentalWarning visuals/tools/responses-report.ts",
