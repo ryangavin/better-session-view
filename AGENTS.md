@@ -99,7 +99,7 @@ work in [Issues](../../issues).
 ```sh
 npm run typecheck     # all ten projects
 npm test              # core/, widgets/param, set/lib and visuals/ unit tests
-npm run test:coverage # the same tests, and what they reach — coverage/index.html
+npm run test:coverage # the same tests, and what they reach — report/index.html
 npm run build         # the device: bridge.js, lom.js, the .amxd. No front end.
 npm run set           # the session manager, in its window
 npm run visuals       # the VJ rig, its server and its window

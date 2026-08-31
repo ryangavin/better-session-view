@@ -11,8 +11,14 @@ export default defineConfig({
       'chart/**/*.test.ts',
     ],
     environment: 'node',
+    // Where `--reporter=html` lands. The reporter copies the coverage report
+    // in beside itself, so report/ is the whole publishable site.
+    outputFile: { html: 'report/index.html' },
     coverage: {
       provider: 'v8',
+      // Off by default, which means a failing run writes no report at all —
+      // and a failing run is when the report is most worth having.
+      reportOnFailure: true,
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
       // Spelled out rather than inferred from what the tests imported: a file
