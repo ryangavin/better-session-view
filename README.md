@@ -1,6 +1,6 @@
 # open[flow]
 
-[![ci](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml/badge.svg)](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml)
+[![ci](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml/badge.svg)](https://github.com/ryangavin/better-session-view/actions/workflows/ci.yml) [![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fryangavin.github.io%2Fbetter-session-view%2Fcoverage%2Fbadge.json)](https://ryangavin.github.io/better-session-view/coverage/)
 
 open[flow] is a Max for Live device for managing songs in large Session View
 sets.
@@ -117,7 +117,7 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run dev:widgets` | the widget bench alone — no device needed |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
 | `npm test` | pure `core/` and `set/lib` unit tests |
-| `npm run test:coverage` | the same run with V8 coverage — a table in the terminal, a browsable report in `coverage/` |
+| `npm run test:coverage` | the same run with V8 coverage — a table in the terminal, a browsable report in `coverage/`. CI publishes the same report to [ryangavin.github.io/better-session-view/coverage](https://ryangavin.github.io/better-session-view/coverage/) |
 | `npm run typecheck` | all ten projects |
 
 A fresh clone needs `npm install && npm run build` before the device exists.
