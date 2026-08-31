@@ -12,6 +12,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "test/**/*.ts",
     "bench/**/*.ts",
     "bench/**/*.tsx",
     "vite.config.ts",
