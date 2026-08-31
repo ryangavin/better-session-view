@@ -33,3 +33,5 @@ widgets/ds-bundle/
 # the user manual — its own repo (…wiki.git), cloned here so it edits alongside the code
 wiki/
 .DS_Store
+# generated: vitest coverage report — npm run test:coverage
+coverage/
