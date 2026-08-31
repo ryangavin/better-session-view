@@ -100,6 +100,8 @@ work in [Issues](../../issues).
 npm run typecheck     # all ten projects
 npm test              # every module's unit tests; --project=visuals for one
 npm run test:coverage # the same tests, and what they reach — report/index.html
+npm run dev:mutate -- <file>   # would its spec notice the file changing? see .claude/skills/set-spec
+npm run dev:record -- <name>   # a real session into set/test/corpus/ — needs Live
 npm run build         # the device: bridge.js, lom.js, the .amxd. No front end.
 npm run set           # the session manager, in its window
 npm run visuals       # the VJ rig, its server and its window
