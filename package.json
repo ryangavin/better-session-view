@@ -67,6 +67,7 @@
     "dev:chart-ui": "vite --config chart/vite.config.ts"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
@@ -79,6 +80,7 @@
     "electron": "44.0.0",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.28.1",
+    "happy-dom": "^20.12.0",
     "typescript": "^5.7.2",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
