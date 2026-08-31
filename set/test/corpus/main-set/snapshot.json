@@ -1,28 +1,28 @@
 {
-  "recordedAt": "2026-08-31T05:51:42.223Z",
+  "recordedAt": "2026-08-31T07:06:12.056Z",
   "bridge": "ws://127.0.0.1:17800/ws",
   "event": {
     "type": "snapshot",
     "id": 1,
-    "dictMs": 10,
+    "dictMs": 11,
     "hostMs": 6,
     "data": {
-      "rev": 2,
-      "ms": 1804,
+      "rev": 98,
+      "ms": 5612,
       "timings": {
-        "tracks": 32,
-        "scenes": 90,
-        "slots": 1509,
-        "clips": 173,
-        "slotsScanned": 7072,
-        "elapsed": 1844,
+        "tracks": 37,
+        "scenes": 193,
+        "slots": 4983,
+        "clips": 399,
+        "slotsScanned": 8432,
+        "elapsed": 5695,
         "restarts": 0
       },
       "tempo": 127,
       "masterColor": 3947580,
-      "trackCount": 30,
+      "trackCount": 36,
       "sceneCount": 272,
-      "clipCount": 387,
+      "clipCount": 454,
       "tracks": [
         {
           "i": 0,
@@ -268,6 +268,72 @@
         },
         {
           "i": 22,
+          "name": "Stems",
+          "color": 16249980,
+          "colorIndex": 3,
+          "isMidi": 0,
+          "isGroup": 1,
+          "isGrouped": 1,
+          "groupIndex": 16,
+          "isFolded": 0
+        },
+        {
+          "i": 23,
+          "name": "Vocals Gm VERSE Song",
+          "color": 16749734,
+          "colorIndex": 0,
+          "isMidi": 0,
+          "isGroup": 0,
+          "isGrouped": 1,
+          "groupIndex": 22,
+          "isFolded": 0
+        },
+        {
+          "i": 24,
+          "name": "Drums Gm VERSE Song",
+          "color": 16249980,
+          "colorIndex": 3,
+          "isMidi": 0,
+          "isGroup": 0,
+          "isGrouped": 1,
+          "groupIndex": 22,
+          "isFolded": 0
+        },
+        {
+          "i": 25,
+          "name": "Bass Gm VERSE Song",
+          "color": 6094824,
+          "colorIndex": 7,
+          "isMidi": 0,
+          "isGroup": 0,
+          "isGrouped": 1,
+          "groupIndex": 22,
+          "isFolded": 0
+        },
+        {
+          "i": 26,
+          "name": "Others Gm VERSE Song",
+          "color": 8912743,
+          "colorIndex": 18,
+          "isMidi": 0,
+          "isGroup": 0,
+          "isGrouped": 1,
+          "groupIndex": 22,
+          "isFolded": 0
+        },
+        {
+          "i": 27,
+          "name": "28-Audio",
+          "color": 16726484,
+          "colorIndex": 26,
+          "isMidi": 0,
+          "isGroup": 0,
+          "isGrouped": 1,
+          "groupIndex": 16,
+          "isFolded": 0
+        },
+        {
+          "i": 28,
           "name": "Sample",
           "color": 16249980,
           "colorIndex": 3,
@@ -278,7 +344,7 @@
           "isFolded": 0
         },
         {
-          "i": 23,
+          "i": 29,
           "name": "Guitar",
           "color": 16773172,
           "colorIndex": 17,
@@ -289,7 +355,7 @@
           "isFolded": 0
         },
         {
-          "i": 24,
+          "i": 30,
           "name": "Practice",
           "color": 16777215,
           "colorIndex": 13,
@@ -300,58 +366,58 @@
           "isFolded": 0
         },
         {
-          "i": 25,
+          "i": 31,
           "name": "Drums",
           "color": 16777215,
           "colorIndex": 13,
           "isMidi": 1,
           "isGroup": 0,
           "isGrouped": 1,
-          "groupIndex": 24,
+          "groupIndex": 30,
           "isFolded": 0
         },
         {
-          "i": 26,
+          "i": 32,
           "name": "Bass",
           "color": 16777215,
           "colorIndex": 13,
           "isMidi": 1,
           "isGroup": 0,
           "isGrouped": 1,
-          "groupIndex": 24,
+          "groupIndex": 30,
           "isFolded": 0
         },
         {
-          "i": 27,
+          "i": 33,
           "name": "Sub Bass",
           "color": 16777215,
           "colorIndex": 13,
           "isMidi": 1,
           "isGroup": 0,
           "isGrouped": 1,
-          "groupIndex": 24,
+          "groupIndex": 30,
           "isFolded": 0
         },
         {
-          "i": 28,
-          "name": "29-Kontakt 8",
+          "i": 34,
+          "name": "35-Kontakt 8",
           "color": 16777215,
           "colorIndex": 13,
           "isMidi": 1,
           "isGroup": 0,
           "isGrouped": 1,
-          "groupIndex": 24,
+          "groupIndex": 30,
           "isFolded": 0
         },
         {
-          "i": 29,
+          "i": 35,
           "name": "Patterns",
           "color": 16777215,
           "colorIndex": 13,
           "isMidi": 1,
           "isGroup": 0,
           "isGrouped": 1,
-          "groupIndex": 24,
+          "groupIndex": 30,
           "isFolded": 0
         }
       ],
@@ -5055,7 +5121,493 @@
           "isMidi": 0
         },
         {
+          "t": 23,
+          "s": 24,
+          "name": "Vocals Gm INTRO Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 120,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 25,
+          "name": "Vocals Gm VERSE Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 292,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 26,
+          "name": "Vocals Gm BUILD Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 136,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 27,
+          "name": "Vocals Gm Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 32,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 32,
+          "name": "Vocals Bm INTRO Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 96,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 33,
+          "name": "Vocals Bm VERSE Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 96,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 34,
+          "name": "Vocals Bm BUILD Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 136,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 35,
+          "name": "Vocals Bm CHORUS Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 160,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 36,
+          "name": "Vocals Bm JAM1 Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 37,
+          "name": "Vocals Bm JAM1 Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 38,
+          "name": "Vocals Bm JAM1 Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 23,
+          "s": 39,
+          "name": "Vocals Bm JAM1 Song",
+          "colorIndex": 0,
+          "color": 16749734,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 24,
+          "name": "Drums Gm INTRO Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 120,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 25,
+          "name": "Drums Gm VERSE Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 292,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 26,
+          "name": "Drums Gm BUILD Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 136,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 27,
+          "name": "Drums Gm Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 32,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 32,
+          "name": "Drums Bm INTRO Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 96,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 33,
+          "name": "Drums Bm VERSE Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 96,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 34,
+          "name": "Drums Bm BUILD Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 136,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 35,
+          "name": "Drums Bm CHORUS Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 160,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 36,
+          "name": "Drums Bm JAM1 Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 37,
+          "name": "Drums Bm JAM1 Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 38,
+          "name": "Drums Bm JAM1 Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 24,
+          "s": 39,
+          "name": "Drums Bm JAM1 Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
           "t": 25,
+          "s": 24,
+          "name": "Bass Gm INTRO Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 120,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 25,
+          "name": "Bass Gm VERSE Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 292,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 26,
+          "name": "Bass Gm BUILD Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 136,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 27,
+          "name": "Bass Gm Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 32,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 32,
+          "name": "Bass Bm INTRO Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 96,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 33,
+          "name": "Bass Bm VERSE Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 96,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 34,
+          "name": "Bass Bm BUILD Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 136,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 35,
+          "name": "Bass Bm CHORUS Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 160,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 36,
+          "name": "Bass Bm JAM1 Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 37,
+          "name": "Bass Bm JAM1 Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 38,
+          "name": "Bass Bm JAM1 Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 25,
+          "s": 39,
+          "name": "Bass Bm JAM1 Song",
+          "colorIndex": 7,
+          "color": 6094824,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 24,
+          "name": "Others Gm INTRO Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 120,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 25,
+          "name": "Others Gm VERSE Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 292,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 26,
+          "name": "Others Gm BUILD Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 136,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 27,
+          "name": "Others Gm Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 32,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 32,
+          "name": "Others Bm INTRO Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 96,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 33,
+          "name": "Others Bm VERSE Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 96,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 34,
+          "name": "Others Bm BUILD Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 136,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 35,
+          "name": "Others Bm CHORUS Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 160,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 36,
+          "name": "Others Bm JAM1 Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 37,
+          "name": "Others Bm JAM1 Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 38,
+          "name": "Others Bm JAM1 Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 26,
+          "s": 39,
+          "name": "Others Bm JAM1 Song",
+          "colorIndex": 18,
+          "color": 8912743,
+          "length": 16,
+          "isMidi": 0
+        },
+        {
+          "t": 31,
+          "s": 24,
+          "name": "MIDI Drums Gm INTRO Song",
+          "colorIndex": 3,
+          "color": 16249980,
+          "length": 120,
+          "isMidi": 1
+        },
+        {
+          "t": 31,
+          "s": 27,
+          "name": "",
+          "colorIndex": 13,
+          "color": 16777215,
+          "length": 4,
+          "isMidi": 1
+        },
+        {
+          "t": 31,
+          "s": 32,
+          "name": "",
+          "colorIndex": 13,
+          "color": 16777215,
+          "length": 96,
+          "isMidi": 1
+        },
+        {
+          "t": 31,
+          "s": 33,
+          "name": "Bm JAM1 Drums",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 96,
+          "isMidi": 1
+        },
+        {
+          "t": 31,
+          "s": 34,
+          "name": "Bm JAM1 Drums",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 136,
+          "isMidi": 1
+        },
+        {
+          "t": 31,
+          "s": 35,
+          "name": "Bm JAM1 Drums",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 160,
+          "isMidi": 1
+        },
+        {
+          "t": 31,
           "s": 36,
           "name": "Bm JAM1 Drums",
           "colorIndex": 26,
@@ -5064,7 +5616,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 37,
           "name": "Bm JAM1 Drums",
           "colorIndex": 26,
@@ -5073,7 +5625,25 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
+          "s": 38,
+          "name": "Bm JAM1 Drums",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 4,
+          "isMidi": 1
+        },
+        {
+          "t": 31,
+          "s": 39,
+          "name": "Bm JAM1 Drums",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 4,
+          "isMidi": 1
+        },
+        {
+          "t": 31,
           "s": 48,
           "name": "Am INTRO Drums",
           "colorIndex": 13,
@@ -5082,7 +5652,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 49,
           "name": "Am VERSE Drums",
           "colorIndex": 17,
@@ -5091,7 +5661,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 50,
           "name": "Am CHORUS Drums",
           "colorIndex": 5,
@@ -5100,7 +5670,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 51,
           "name": "Am VERSE Drums",
           "colorIndex": 17,
@@ -5109,7 +5679,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 52,
           "name": "Am CHORUS Drums",
           "colorIndex": 5,
@@ -5118,7 +5688,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 53,
           "name": "Am JAM1 Drums",
           "colorIndex": 26,
@@ -5127,7 +5697,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 54,
           "name": "Am JAM1 Drums",
           "colorIndex": 26,
@@ -5136,7 +5706,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 57,
           "name": "Em CHORUS Drums",
           "colorIndex": 5,
@@ -5145,7 +5715,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 60,
           "name": "Em CHORUS Drums",
           "colorIndex": 5,
@@ -5154,7 +5724,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 62,
           "name": "Em ENDING Drums",
           "colorIndex": 14,
@@ -5163,7 +5733,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 63,
           "name": "Em JAM1 Drums",
           "colorIndex": 26,
@@ -5172,7 +5742,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 64,
           "name": "Am PRACTICE Drums",
           "colorIndex": 69,
@@ -5181,7 +5751,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 65,
           "name": "Am INTRO Drums",
           "colorIndex": 13,
@@ -5190,7 +5760,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 66,
           "name": "Am CHORUS Drums",
           "colorIndex": 5,
@@ -5199,7 +5769,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 67,
           "name": "Am JAM1 Drums",
           "colorIndex": 26,
@@ -5208,7 +5778,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 68,
           "name": "Am JAM2 Drums",
           "colorIndex": 24,
@@ -5217,7 +5787,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 69,
           "name": "Am JAM2 Drums",
           "colorIndex": 24,
@@ -5226,7 +5796,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 70,
           "name": "Am CHORUS Drums",
           "colorIndex": 5,
@@ -5235,7 +5805,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 71,
           "name": "Am ENDING Drums",
           "colorIndex": 14,
@@ -5244,7 +5814,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 72,
           "name": "Gm PRACTICE Drums",
           "colorIndex": 69,
@@ -5253,7 +5823,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 73,
           "name": "Gm PRACTICE Drums",
           "colorIndex": 69,
@@ -5262,7 +5832,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 74,
           "name": "Gm PRACTICE Drums",
           "colorIndex": 69,
@@ -5271,7 +5841,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 75,
           "name": "Gm JAM1 Drums",
           "colorIndex": 26,
@@ -5280,7 +5850,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 76,
           "name": "Gm JAM1 Drums",
           "colorIndex": 26,
@@ -5289,7 +5859,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 77,
           "name": "Gm JAM2 Drums",
           "colorIndex": 24,
@@ -5298,7 +5868,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 78,
           "name": "Gm PRACTICE Drums",
           "colorIndex": 69,
@@ -5307,7 +5877,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 79,
           "name": "Gm PRACTICE Drums",
           "colorIndex": 69,
@@ -5316,7 +5886,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 80,
           "name": "Gm INTRO Drums",
           "colorIndex": 13,
@@ -5325,7 +5895,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 81,
           "name": "Gm CHORUS Drums",
           "colorIndex": 5,
@@ -5334,7 +5904,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 82,
           "name": "Gm JAM1 Drums",
           "colorIndex": 26,
@@ -5343,7 +5913,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 83,
           "name": "Gm JAM1 Drums",
           "colorIndex": 26,
@@ -5352,7 +5922,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 84,
           "name": "Gm JAM2 Drums",
           "colorIndex": 24,
@@ -5361,7 +5931,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 85,
           "name": "Gm JAM2 Drums",
           "colorIndex": 24,
@@ -5370,7 +5940,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 86,
           "name": "Gm ENDING Drums",
           "colorIndex": 14,
@@ -5379,7 +5949,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 136,
           "name": "Dm INTRO Drums",
           "colorIndex": 13,
@@ -5388,7 +5958,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 137,
           "name": "Dm VERSE Drums",
           "colorIndex": 17,
@@ -5397,7 +5967,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 138,
           "name": "Dm CHORUS Drums",
           "colorIndex": 5,
@@ -5406,7 +5976,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 240,
           "name": "Drums",
           "colorIndex": 13,
@@ -5415,7 +5985,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 241,
           "name": "Drums",
           "colorIndex": 13,
@@ -5424,7 +5994,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 242,
           "name": "Drums",
           "colorIndex": 13,
@@ -5433,7 +6003,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 243,
           "name": "Drums",
           "colorIndex": 13,
@@ -5442,7 +6012,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 244,
           "name": "Drums",
           "colorIndex": 13,
@@ -5451,7 +6021,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 245,
           "name": "Drums",
           "colorIndex": 13,
@@ -5460,7 +6030,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 246,
           "name": "Drums",
           "colorIndex": 13,
@@ -5469,7 +6039,7 @@
           "isMidi": 1
         },
         {
-          "t": 25,
+          "t": 31,
           "s": 247,
           "name": "Drums",
           "colorIndex": 13,
@@ -5478,7 +6048,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 9,
           "name": "VERSE Bass",
           "colorIndex": 17,
@@ -5487,7 +6057,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 10,
           "name": "CHORUS Bass",
           "colorIndex": 5,
@@ -5496,7 +6066,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 13,
           "name": "JAM2 Bass",
           "colorIndex": 24,
@@ -5505,7 +6075,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 16,
           "name": "Bass 35",
           "colorIndex": 13,
@@ -5514,7 +6084,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 17,
           "name": "Bass 35",
           "colorIndex": 13,
@@ -5523,7 +6093,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 18,
           "name": "Bass 35",
           "colorIndex": 13,
@@ -5532,7 +6102,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 19,
           "name": "Bass 35",
           "colorIndex": 13,
@@ -5541,7 +6111,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 20,
           "name": "Bass 35",
           "colorIndex": 13,
@@ -5550,7 +6120,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 21,
           "name": "Bass 35",
           "colorIndex": 13,
@@ -5559,7 +6129,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 25,
           "name": "Bass 37",
           "colorIndex": 13,
@@ -5568,52 +6138,61 @@
           "isMidi": 1
         },
         {
-          "t": 26,
-          "s": 27,
-          "name": "Bass 36",
+          "t": 32,
+          "s": 26,
+          "name": "Bass 37",
           "colorIndex": 13,
           "color": 16777215,
           "length": 4,
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
+          "s": 27,
+          "name": "Bass 37",
+          "colorIndex": 13,
+          "color": 16777215,
+          "length": 4,
+          "isMidi": 1
+        },
+        {
+          "t": 32,
           "s": 32,
           "name": "Bass 29",
           "colorIndex": 13,
           "color": 16777215,
-          "length": 32,
+          "length": 96,
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 33,
           "name": "Bass 29",
           "colorIndex": 13,
           "color": 16777215,
-          "length": 32,
+          "length": 96,
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 34,
           "name": "Bass 29",
           "colorIndex": 13,
           "color": 16777215,
-          "length": 32,
+          "length": 136,
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 35,
-          "name": "Bass 29",
-          "colorIndex": 13,
-          "color": 16777215,
-          "length": 32,
+          "name": "Bm JAM1 Bass",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 160,
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 36,
           "name": "Bm JAM1 Bass",
           "colorIndex": 26,
@@ -5622,7 +6201,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 37,
           "name": "Bm JAM1 Bass",
           "colorIndex": 26,
@@ -5631,7 +6210,25 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
+          "s": 38,
+          "name": "Bm JAM1 Bass",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 8,
+          "isMidi": 1
+        },
+        {
+          "t": 32,
+          "s": 39,
+          "name": "Bm JAM1 Bass",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 8,
+          "isMidi": 1
+        },
+        {
+          "t": 32,
           "s": 48,
           "name": "Am INTRO Bass",
           "colorIndex": 13,
@@ -5640,7 +6237,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 49,
           "name": "Am VERSE Bass",
           "colorIndex": 17,
@@ -5649,7 +6246,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 50,
           "name": "Am CHORUS Bass",
           "colorIndex": 5,
@@ -5658,7 +6255,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 51,
           "name": "Am VERSE Bass",
           "colorIndex": 17,
@@ -5667,7 +6264,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 52,
           "name": "Am CHORUS Bass",
           "colorIndex": 5,
@@ -5676,7 +6273,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 53,
           "name": "Am JAM1 Bass",
           "colorIndex": 26,
@@ -5685,7 +6282,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 54,
           "name": "Am JAM1 Bass",
           "colorIndex": 26,
@@ -5694,7 +6291,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 57,
           "name": "Em CHORUS Bass",
           "colorIndex": 5,
@@ -5703,7 +6300,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 60,
           "name": "Em CHORUS Bass",
           "colorIndex": 5,
@@ -5712,7 +6309,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 62,
           "name": "Em ENDING Bass",
           "colorIndex": 14,
@@ -5721,7 +6318,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 63,
           "name": "Em JAM1 Bass",
           "colorIndex": 26,
@@ -5730,7 +6327,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 64,
           "name": "Am PRACTICE Bass",
           "colorIndex": 69,
@@ -5739,7 +6336,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 65,
           "name": "Am INTRO Bass",
           "colorIndex": 13,
@@ -5748,7 +6345,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 66,
           "name": "Am CHORUS Bass",
           "colorIndex": 5,
@@ -5757,7 +6354,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 67,
           "name": "Am JAM1 Bass",
           "colorIndex": 26,
@@ -5766,7 +6363,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 68,
           "name": "Am JAM2 Bass",
           "colorIndex": 24,
@@ -5775,7 +6372,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 69,
           "name": "Am JAM2 Bass",
           "colorIndex": 24,
@@ -5784,7 +6381,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 70,
           "name": "Am CHORUS Bass",
           "colorIndex": 5,
@@ -5793,7 +6390,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 71,
           "name": "Am ENDING Bass",
           "colorIndex": 14,
@@ -5802,7 +6399,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 80,
           "name": "Gm INTRO Bass",
           "colorIndex": 13,
@@ -5811,7 +6408,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 81,
           "name": "Gm CHORUS Bass",
           "colorIndex": 5,
@@ -5820,7 +6417,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 82,
           "name": "Gm JAM1 Bass",
           "colorIndex": 26,
@@ -5829,7 +6426,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 83,
           "name": "Gm JAM1 Bass",
           "colorIndex": 26,
@@ -5838,7 +6435,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 84,
           "name": "Gm JAM2 Bass",
           "colorIndex": 24,
@@ -5847,7 +6444,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 85,
           "name": "Gm JAM2 Bass",
           "colorIndex": 24,
@@ -5856,7 +6453,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 86,
           "name": "Gm ENDING Bass",
           "colorIndex": 14,
@@ -5865,7 +6462,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 89,
           "name": "C# INTRO Bass",
           "colorIndex": 13,
@@ -5874,7 +6471,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 90,
           "name": "C# VERSE Bass",
           "colorIndex": 17,
@@ -5883,7 +6480,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 91,
           "name": "C# CHORUS Bass",
           "colorIndex": 5,
@@ -5892,7 +6489,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 92,
           "name": "C# ENDING Bass",
           "colorIndex": 14,
@@ -5901,7 +6498,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 93,
           "name": "C# JAM1 Bass",
           "colorIndex": 26,
@@ -5910,7 +6507,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 136,
           "name": "Dm INTRO Bass",
           "colorIndex": 13,
@@ -5919,7 +6516,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 137,
           "name": "Dm VERSE Bass",
           "colorIndex": 17,
@@ -5928,7 +6525,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 138,
           "name": "Dm CHORUS Bass",
           "colorIndex": 5,
@@ -5937,7 +6534,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 235,
           "name": "Bass",
           "colorIndex": 69,
@@ -5946,7 +6543,7 @@
           "isMidi": 1
         },
         {
-          "t": 26,
+          "t": 32,
           "s": 236,
           "name": "Bass",
           "colorIndex": 69,
@@ -5955,7 +6552,79 @@
           "isMidi": 1
         },
         {
-          "t": 27,
+          "t": 33,
+          "s": 32,
+          "name": "Bass 29",
+          "colorIndex": 13,
+          "color": 16777215,
+          "length": 96,
+          "isMidi": 1
+        },
+        {
+          "t": 33,
+          "s": 33,
+          "name": "Bass 29",
+          "colorIndex": 13,
+          "color": 16777215,
+          "length": 96,
+          "isMidi": 1
+        },
+        {
+          "t": 33,
+          "s": 34,
+          "name": "Bass 29",
+          "colorIndex": 13,
+          "color": 16777215,
+          "length": 136,
+          "isMidi": 1
+        },
+        {
+          "t": 33,
+          "s": 35,
+          "name": "Bm JAM1 Bass",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 160,
+          "isMidi": 1
+        },
+        {
+          "t": 33,
+          "s": 36,
+          "name": "Bm JAM1 Bass",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 8,
+          "isMidi": 1
+        },
+        {
+          "t": 33,
+          "s": 37,
+          "name": "Bm JAM1 Bass",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 8,
+          "isMidi": 1
+        },
+        {
+          "t": 33,
+          "s": 38,
+          "name": "Bm JAM1 Bass",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 8,
+          "isMidi": 1
+        },
+        {
+          "t": 33,
+          "s": 39,
+          "name": "Bm JAM1 Bass",
+          "colorIndex": 26,
+          "color": 16726484,
+          "length": 8,
+          "isMidi": 1
+        },
+        {
+          "t": 33,
           "s": 48,
           "name": "Am INTRO Sub Bass",
           "colorIndex": 13,
@@ -5964,7 +6633,7 @@
           "isMidi": 1
         },
         {
-          "t": 27,
+          "t": 33,
           "s": 49,
           "name": "Am VERSE Sub Bass",
           "colorIndex": 17,
@@ -5973,7 +6642,7 @@
           "isMidi": 1
         },
         {
-          "t": 27,
+          "t": 33,
           "s": 50,
           "name": "Am CHORUS Sub Bass",
           "colorIndex": 5,
@@ -5982,7 +6651,7 @@
           "isMidi": 1
         },
         {
-          "t": 27,
+          "t": 33,
           "s": 51,
           "name": "Am VERSE Sub Bass",
           "colorIndex": 17,
@@ -5991,7 +6660,7 @@
           "isMidi": 1
         },
         {
-          "t": 27,
+          "t": 33,
           "s": 52,
           "name": "Am CHORUS Sub Bass",
           "colorIndex": 5,
@@ -6000,7 +6669,7 @@
           "isMidi": 1
         },
         {
-          "t": 27,
+          "t": 33,
           "s": 53,
           "name": "Am JAM1 Sub Bass",
           "colorIndex": 26,
@@ -6009,7 +6678,7 @@
           "isMidi": 1
         },
         {
-          "t": 27,
+          "t": 33,
           "s": 54,
           "name": "Am JAM1 Sub Bass",
           "colorIndex": 26,
@@ -6020,7 +6689,7 @@
       ]
     },
     "model": {
-      "rev": 2,
+      "rev": 97,
       "songs": [
         {
           "songKey": "locked out",

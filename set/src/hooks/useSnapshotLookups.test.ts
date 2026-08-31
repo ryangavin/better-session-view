@@ -53,14 +53,22 @@ describe('clipsByScene', () => {
   });
 
   it('holds a bucket only for scenes that have clips', () => {
-    // 177 of the 272 scenes. A scene with no clips is absent rather than
-    // present and empty, which is what lets the grid ask the Map instead of
-    // asking whether the answer is meaningful.
-    expect(lookups().clipsByScene.size).toBe(177);
+    // 177 of the 272 scenes, and unchanged across two recordings. A scene with
+    // no clips is absent rather than present and empty, which is what lets the
+    // grid ask the Map instead of asking whether the answer is meaningful.
+    expect(lookups().clipsByScene.size).toBe(new Set(set.clips.map((c) => c.s)).size);
+    expect(lookups().clipsByScene.size).toBeLessThan(set.sceneCount);
   });
 
-  it("keeps a scene's clips together across tracks", () => {
-    expect(lookups().clipsByScene.get(48)?.map((c) => c.t)).toEqual([4, 10, 17, 21, 25, 26, 27]);
+  it("keeps a scene's clips together, in track order", () => {
+    // Derived from the snapshot rather than written out, because the tracks a
+    // scene has clips on is the first thing a re-recording changes — six new
+    // tracks moved this row from 25,26,27 to 31,32,33. The claim is the
+    // grouping and the order, and neither of those moves with the set.
+    const scene = 48;
+    const expected = set.clips.filter((c) => c.s === scene).map((c) => c.t);
+    expect(expected.length).toBeGreaterThan(1);
+    expect(lookups().clipsByScene.get(scene)?.map((c) => c.t)).toEqual(expected);
   });
 });
 

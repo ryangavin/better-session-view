@@ -940,7 +940,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [
               {
@@ -1066,7 +1066,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [
               {
@@ -1203,22 +1203,211 @@
           }
         ],
         [
+          23,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              }
+            ],
+            "untagged": 1,
+            "scenes": 4,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": null
+              },
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        [
+          24,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              }
+            ],
+            "untagged": 1,
+            "scenes": 4,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": null
+              },
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        [
+          25,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              }
+            ],
+            "untagged": 1,
+            "scenes": 4,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": null
+              },
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        [
           26,
           {
             "roles": [
               {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
                 "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              }
+            ],
+            "untagged": 1,
+            "scenes": 4,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": null
+              },
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        [
+          31,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
                 "scenes": 1
               }
             ],
             "untagged": 1,
             "scenes": 2,
             "slots": [
+              {
+                "role": "INTRO"
+              },
+              null,
+              null,
+              {
+                "role": null
+              },
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        [
+          32,
+          {
+            "roles": [
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              }
+            ],
+            "untagged": 1,
+            "scenes": 3,
+            "slots": [
               null,
               {
                 "role": "VERSE"
               },
-              null,
+              {
+                "role": "BUILD"
+              },
               {
                 "role": null
               },
@@ -1429,29 +1618,167 @@
           }
         ],
         [
+          23,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              },
+              {
+                "name": "CHORUS",
+                "scenes": 1
+              },
+              {
+                "name": "JAM1",
+                "scenes": 4
+              }
+            ],
+            "untagged": 0,
+            "scenes": 8,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": "CHORUS"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              }
+            ]
+          }
+        ],
+        [
+          24,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              },
+              {
+                "name": "CHORUS",
+                "scenes": 1
+              },
+              {
+                "name": "JAM1",
+                "scenes": 4
+              }
+            ],
+            "untagged": 0,
+            "scenes": 8,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": "CHORUS"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              }
+            ]
+          }
+        ],
+        [
           25,
           {
             "roles": [
               {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              },
+              {
+                "name": "CHORUS",
+                "scenes": 1
+              },
+              {
                 "name": "JAM1",
-                "scenes": 2
+                "scenes": 4
               }
             ],
             "untagged": 0,
-            "scenes": 2,
+            "scenes": 8,
             "slots": [
-              null,
-              null,
-              null,
-              null,
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": "CHORUS"
+              },
+              {
+                "role": "JAM1"
+              },
               {
                 "role": "JAM1"
               },
               {
                 "role": "JAM1"
               },
-              null,
-              null
+              {
+                "role": "JAM1"
+              }
             ]
           }
         ],
@@ -1477,11 +1804,11 @@
               },
               {
                 "name": "JAM1",
-                "scenes": 2
+                "scenes": 4
               }
             ],
             "untagged": 0,
-            "scenes": 6,
+            "scenes": 8,
             "slots": [
               {
                 "role": "INTRO"
@@ -1501,8 +1828,177 @@
               {
                 "role": "JAM1"
               },
-              null,
-              null
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              }
+            ]
+          }
+        ],
+        [
+          31,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              },
+              {
+                "name": "CHORUS",
+                "scenes": 1
+              },
+              {
+                "name": "JAM1",
+                "scenes": 4
+              }
+            ],
+            "untagged": 0,
+            "scenes": 8,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": "CHORUS"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              }
+            ]
+          }
+        ],
+        [
+          32,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              },
+              {
+                "name": "CHORUS",
+                "scenes": 1
+              },
+              {
+                "name": "JAM1",
+                "scenes": 4
+              }
+            ],
+            "untagged": 0,
+            "scenes": 8,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": "CHORUS"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              }
+            ]
+          }
+        ],
+        [
+          33,
+          {
+            "roles": [
+              {
+                "name": "INTRO",
+                "scenes": 1
+              },
+              {
+                "name": "VERSE",
+                "scenes": 1
+              },
+              {
+                "name": "BUILD",
+                "scenes": 1
+              },
+              {
+                "name": "CHORUS",
+                "scenes": 1
+              },
+              {
+                "name": "JAM1",
+                "scenes": 4
+              }
+            ],
+            "untagged": 0,
+            "scenes": 8,
+            "slots": [
+              {
+                "role": "INTRO"
+              },
+              {
+                "role": "VERSE"
+              },
+              {
+                "role": "BUILD"
+              },
+              {
+                "role": "CHORUS"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              },
+              {
+                "role": "JAM1"
+              }
             ]
           }
         ]
@@ -1746,7 +2242,7 @@
           }
         ],
         [
-          25,
+          31,
           {
             "roles": [
               {
@@ -1795,7 +2291,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [
               {
@@ -1844,7 +2340,7 @@
           }
         ],
         [
-          27,
+          33,
           {
             "roles": [
               {
@@ -2082,7 +2578,7 @@
           }
         ],
         [
-          25,
+          31,
           {
             "roles": [
               {
@@ -2121,7 +2617,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [
               {
@@ -2372,7 +2868,7 @@
           }
         ],
         [
-          25,
+          31,
           {
             "roles": [
               {
@@ -2431,7 +2927,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [
               {
@@ -2617,7 +3113,7 @@
           }
         ],
         [
-          25,
+          31,
           {
             "roles": [
               {
@@ -2850,7 +3346,7 @@
           }
         ],
         [
-          25,
+          31,
           {
             "roles": [
               {
@@ -2903,7 +3399,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [
               {
@@ -3122,7 +3618,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [
               {
@@ -3570,7 +4066,7 @@
       136,
       [
         [
-          25,
+          31,
           {
             "roles": [
               {
@@ -3607,7 +4103,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [
               {
@@ -4577,7 +5073,7 @@
           }
         ],
         [
-          26,
+          32,
           {
             "roles": [],
             "untagged": 2,
@@ -4680,7 +5176,7 @@
           }
         ],
         [
-          25,
+          31,
           {
             "roles": [],
             "untagged": 8,
