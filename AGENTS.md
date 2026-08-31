@@ -40,8 +40,8 @@ work in [Issues](../../issues).
    one adapter that hands it one is `set/src/lib/liveParam.ts`.
 2. **`bridge/src/lom.ts` is the only file that touches the Live Object Model.** Everything
    else talks to it through the protocol.
-3. **`lom.ts` cannot `import` anything** — it compiles with `module: "none"` so Max's
-   `[v8]` finds its handlers as top-level globals. Protocol types come from the global
+3. **`lom.ts` cannot `import` anything** — it compiles as a script, not a module, so
+   Max's `[v8]` finds its handlers as top-level globals. Protocol types come from the global
    `OpenFlow` namespace. Adding an import breaks the device silently.
 4. **The bridge protocol is coarse-grained** — one message per operation, never per
    property. A full set is tens of thousands of LOM reads.

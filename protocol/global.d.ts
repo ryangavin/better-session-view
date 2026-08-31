@@ -1,9 +1,9 @@
 // Single source of truth for the wire protocol.
 //
-// Declared as a GLOBAL namespace rather than a module on purpose: `lom.js` is
-// compiled with `module: "none"` (Max's v8 object needs message handlers as
-// top-level globals, so no module wrapper is allowed) and `bridge.ts` emits to
-// a flat CommonJS file outside its own rootDir. Neither can `import`.
+// Declared as a GLOBAL namespace rather than a module on purpose: `lom.js`
+// compiles as a script (Max's v8 object needs message handlers as top-level
+// globals, so no module wrapper is allowed) and `bridge.ts` emits to a flat
+// CommonJS file outside its own rootDir. Neither can `import`.
 // `protocol/index.ts` re-exports these as normal types for set/ and core/.
 
 declare namespace OpenFlow {
