@@ -109,7 +109,7 @@ recover each component's props.
 
 `set/` and `visuals/` both do, each through one adapter.
 [`set/src/lib/liveParam.ts`](../set/src/lib/liveParam.ts) turns an `OpenFlow.MixerParameterState`
-into a `Param`, and [`visuals/src/ui/param.ts`](../visuals/src/ui/param.ts) does the same
+into a `Param`, and [`visuals/client/ui/param.ts`](../visuals/client/ui/param.ts) does the same
 for a node's inlet. The mixer's volume, pan and send controls are driven by the gesture
 hooks ([set/docs/mixer.md](../set/docs/mixer.md)); the device chain draws a track's devices
 out of the chrome ([set/docs/device-chain.md](../set/docs/device-chain.md)); the visuals

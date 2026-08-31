@@ -59,7 +59,7 @@ pays for and `--scroll-inset` is how much of it is padding, so the visible thumb
 rest and thickens to 6px under the pointer without the column reflowing. Its three states
 come from the neutral ramp — `--idle` at rest, `--focus` on hover, `--detail` while
 dragging — because a scrollbar at rest is exactly the control the ramp's `--idle` step
-describes. `visuals/src/ui/console.css` carries the same rules and the same two tokens
+describes. `visuals/client/ui/console.css` carries the same rules and the same two tokens
 scoped to `.console`, which is the one place the two apps are deliberately duplicated
 rather than shared, since neither imports the other's CSS.
 

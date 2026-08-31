@@ -3,9 +3,20 @@ import { defineConfig } from 'vitest/config';
 // One project per module, so a run can be read — or taken — a module at a
 // time: `npm test -- --project=visuals`, and a named group in the report
 // rather than seventy-eight files in one list.
-const module = (name: string, include: string[]) => ({
-  test: { name, include, environment: 'node' as const },
+const module = (name: string, include: string[], exclude?: string[]) => ({
+  test: { name, include, exclude, environment: 'node' as const },
 });
+
+// visuals is three: the renderer, the server, and the modules both are built
+// on. The third is what is left rather than a list, so a test in a directory
+// nobody has thought of yet still runs — vitest's own exclude defaults go with
+// it, since naming one replaces them all.
+const VISUALS_SHARED = [
+  'visuals/client/**',
+  'visuals/server/**',
+  '**/node_modules/**',
+  '**/dist/**',
+];
 
 export default defineConfig({
   test: {
@@ -13,7 +24,9 @@ export default defineConfig({
       module('core', ['core/src/**/*.test.ts']),
       module('widgets', ['widgets/src/**/*.test.ts']),
       module('set', ['set/src/lib/**/*.test.ts', 'set/src/components/**/*.test.ts']),
-      module('visuals', ['visuals/**/*.test.ts']),
+      module('visuals', ['visuals/**/*.test.ts'], VISUALS_SHARED),
+      module('visuals/client', ['visuals/client/**/*.test.ts']),
+      module('visuals/server', ['visuals/server/**/*.test.ts']),
       module('chart', ['chart/**/*.test.ts']),
     ],
     // Where `--reporter=html` lands. The reporter copies the coverage report
@@ -33,7 +46,7 @@ export default defineConfig({
         'core/src/**/*.{ts,tsx}',
         'widgets/src/**/*.{ts,tsx}',
         'set/src/**/*.{ts,tsx}',
-        'visuals/src/**/*.{ts,tsx}',
+        'visuals/client/**/*.{ts,tsx}',
         'visuals/server/**/*.{ts,tsx}',
         'chart/src/**/*.{ts,tsx}',
         'chart/server/**/*.{ts,tsx}',
