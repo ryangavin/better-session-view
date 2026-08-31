@@ -9,5 +9,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "server", "../protocol/global.d.ts"]
+  "include": ["src", "server", "../protocol/global.d.ts", "../types/assets.d.ts"]
 }

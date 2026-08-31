@@ -17,6 +17,7 @@
     "bench/**/*.tsx",
     "vite.config.ts",
     "vite.bench.config.ts",
-    "../protocol/global.d.ts"
+    "../protocol/global.d.ts",
+    "../types/assets.d.ts"
   ]
 }

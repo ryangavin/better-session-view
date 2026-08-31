@@ -9,5 +9,12 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "bench/**/*.ts", "bench/**/*.tsx", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "bench/**/*.ts",
+    "bench/**/*.tsx",
+    "vite.config.ts",
+    "../types/assets.d.ts"
+  ]
 }

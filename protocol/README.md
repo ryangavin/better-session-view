@@ -10,9 +10,10 @@ index.ts       module re-exports for consumers that can use imports
 
 ## Why a global namespace and not a module
 
-One consumer can't `import` at all: **`bridge/src/lom.ts`** compiles with
-`module: "none"` so Max's `[v8]` can find its message handlers as top-level globals,
-and TypeScript rejects *any* import under that setting, including `import type`.
+One consumer can't `import` at all: **`bridge/src/lom.ts`** compiles as a script
+rather than a module, so Max's `[v8]` can find its message handlers as top-level
+globals. A single `import` — `import type` included — would make it a module, put a
+wrapper around the emit and hide every handler.
 
 A `.d.ts` with a top-level `declare namespace` is ambient and costs nothing to
 include, so `lom.ts` gets the types for free — and so does everything else: every
