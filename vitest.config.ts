@@ -23,7 +23,11 @@ export default defineConfig({
     projects: [
       module('core', ['core/src/**/*.test.ts']),
       module('widgets', ['widgets/src/**/*.test.ts']),
-      module('set', ['set/src/lib/**/*.test.ts', 'set/src/components/**/*.test.ts']),
+      module('set', [
+        'set/src/lib/**/*.test.ts',
+        'set/src/components/**/*.test.ts',
+        'set/src/hooks/**/*.test.ts',
+      ]),
       module('visuals', ['visuals/**/*.test.ts'], VISUALS_SHARED),
       module('visuals/client', ['visuals/client/**/*.test.ts']),
       module('visuals/server', ['visuals/server/**/*.test.ts']),
