@@ -117,6 +117,7 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run dev:widgets` | the widget bench alone — no device needed |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
 | `npm test` | pure `core/` and `set/lib` unit tests |
+| `npm run test:coverage` | the same run with V8 coverage — a table in the terminal, a browsable report in `coverage/` |
 | `npm run typecheck` | all ten projects |
 
 A fresh clone needs `npm install && npm run build` before the device exists.

@@ -13,18 +13,21 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html', 'lcov'],
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
+      // Spelled out rather than inferred from what the tests imported: a file
+      // nobody imports is the interesting case, and it should read 0% rather
+      // than go missing.
       include: [
-        'core/src/**/*.ts',
-        'widgets/src/**/*.ts',
-        'set/src/**/*.ts',
-        'visuals/src/**/*.ts',
-        'visuals/server/**/*.ts',
-        'chart/src/**/*.ts',
-        'chart/server/**/*.ts',
+        'core/src/**/*.{ts,tsx}',
+        'widgets/src/**/*.{ts,tsx}',
+        'set/src/**/*.{ts,tsx}',
+        'visuals/src/**/*.{ts,tsx}',
+        'visuals/server/**/*.{ts,tsx}',
+        'chart/src/**/*.{ts,tsx}',
+        'chart/server/**/*.{ts,tsx}',
       ],
-      exclude: ['**/*.test.ts', '**/*.d.ts'],
+      exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts'],
     },
   },
 });
