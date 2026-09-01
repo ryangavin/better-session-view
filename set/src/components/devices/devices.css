@@ -14,6 +14,7 @@
   padding: 0 10px;
   color: var(--wdg-caption);
   font-family: var(--wdg-sans);
+  font-variation-settings: var(--sans-axes);
   font-size: 10px;
 }
 

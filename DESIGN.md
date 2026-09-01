@@ -15,8 +15,16 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   [`set/src/shared.css`](set/src/shared.css) imports it and adds what is only set[flow]'s:
   the stacking tiers and the grid column widths.
 - Neutral text comes from one five-step ramp, described under *Text* below.
-- The sans stack starts with IBM Plex Sans. The mono stack starts with IBM Plex Mono and
-  is used for compact labels, facts and grid headings.
+- **One typeface, two cuts.** Both stacks start with Recursive, a variable font bundled
+  at [`widgets/src/type.css`](widgets/src/type.css) — the only place in the repo that
+  names a family. `--mono` is used for compact labels, facts and grid headings; `--sans`
+  for prose. They are the same font: the difference is the `MONO` axis, carried in
+  `--mono-axes` and `--sans-axes`, because a custom axis cannot ride inside a
+  `font-family` and `@font-face` can only pin the registered ones. So a rule that reaches
+  for `var(--sans)` pairs it with `var(--sans-axes)`; everything else inherits the
+  monospaced cut from the root. `CASL` is held at 0.38 for both, which is the warmth.
+  The font is self-hosted rather than pulled from a CDN, because these are desktop apps
+  and one of them runs a show.
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
   and are vertically centered with equal space above and below. Both are in the palette,
   so a control is the same height in every app here.

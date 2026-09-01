@@ -1,3 +1,4 @@
+@import '@openflow/widgets/type.css';
 * {
   box-sizing: border-box;
 }
@@ -6,7 +7,8 @@ body {
   margin: 0;
   background: var(--bg, #0a0a0b);
   color: var(--fg, #ececed);
-  font-family: var(--sans, system-ui, -apple-system, sans-serif);
+  font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -70,7 +72,7 @@ h2 {
 }
 
 code {
-  font-family: var(--mono, ui-monospace, Menlo, monospace);
+  font-family: var(--mono);
   font-size: 11px;
   color: var(--ui, #b7b7be);
 }

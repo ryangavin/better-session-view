@@ -1,3 +1,5 @@
+@import './type.css';
+
 :root {
   --bg: #0a0a0b;
   --panel: #111113;
@@ -28,8 +30,6 @@
   --surface-cell-muted: #131316;
   --shadow-edge: rgba(0, 0, 0, 0.6);
 
-  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
 
   --radius-xs: 2px;
   --radius-sm: 3px;

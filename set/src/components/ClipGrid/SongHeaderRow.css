@@ -75,6 +75,7 @@ tr.song-row button.song {
   flex: 1 1 auto;
   min-width: 0;
   font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
   font-size: 12px;
   line-height: var(--song-name-line);
   font-weight: 600;

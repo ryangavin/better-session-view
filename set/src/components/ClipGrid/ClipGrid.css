@@ -444,6 +444,7 @@ table.grid tfoot tr.sends-row td {
 
 .mixer-send-label {
   font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
   font-size: 10px;
   line-height: 1;
   text-align: center;

@@ -93,6 +93,7 @@
   background: var(--surface-control);
   color: var(--ui);
   font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
   font-size: 10px;
   outline: none;
 }

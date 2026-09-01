@@ -1,0 +1,72 @@
+/*
+ * The suite's typeface, and the two tokens every module reads for it.
+ *
+ * This file exists because `--mono` and `--sans` were declared in four places
+ * that had drifted into agreeing by accident, and because what they named —
+ * `'IBM Plex Mono'` — was never loaded. There is no `@font-face` anywhere in
+ * this repo's history and no font file in it, so every app fell through to
+ * `ui-monospace` and rendered in SF Mono. The token was aspirational.
+ *
+ * **Recursive, and why one family covers both.** It is a variable font with a
+ * `MONO` axis, so the monospaced and proportional cuts are the same typeface at
+ * two settings rather than two unrelated families that have to be made to look
+ * related. `CASL` is its second axis — the warmth — and it is held at 0.38 for
+ * both, which is what keeps a dense grid of timecodes from reading as a
+ * terminal.
+ *
+ * **Why the axes are a separate token.** `MONO` and `CASL` are custom axes, and
+ * `@font-face` can only pin the registered ones (`wght`, `wdth`, `slnt`) through
+ * its descriptors. So they cannot ride along inside `--mono` — a family name is
+ * all a `font-family` can carry. `font-variation-settings` below sets the
+ * monospaced cut once on the root and lets it inherit; the handful of places
+ * that want the proportional cut pair `var(--sans)` with `var(--sans-axes)`.
+ * Neither list mentions `wght`, so `font-weight` keeps working normally.
+ *
+ * **Self-hosted, not a CDN.** These are Electron apps and one of them runs a
+ * show. A `fonts.googleapis.com` link would render the whole suite in the
+ * fallback the first time a laptop is offline on a stage.
+ */
+/*
+ * Declared here rather than by importing the package's own stylesheet, for two
+ * reasons. It ships seven unicode subsets and this suite renders Latin, so that
+ * import cost every app 682 kB to use 305 kB of it. And its faces are
+ * `font-display: swap`, which is right for a webfont over a network and wrong
+ * for a file sitting inside the bundle — it flashes the fallback on every cold
+ * start. `block` waits for a font that is already on disk.
+ *
+ * `woff2-variations` rather than plain `woff2`, and a `font-weight` range
+ * rather than a number: both are what tell the engine this one file answers for
+ * every weight from 300 to 1000.
+ */
+@font-face {
+  font-family: 'Recursive Variable';
+  font-style: normal;
+  font-weight: 300 1000;
+  font-display: block;
+  src: url('@fontsource-variable/recursive/files/recursive-latin-full-normal.woff2')
+    format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Recursive Variable';
+  font-style: normal;
+  font-weight: 300 1000;
+  font-display: block;
+  src: url('@fontsource-variable/recursive/files/recursive-latin-ext-full-normal.woff2')
+    format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --mono: 'Recursive Variable', ui-monospace, Menlo, monospace;
+  --sans: 'Recursive Variable', system-ui, -apple-system, sans-serif;
+
+  --mono-axes: 'MONO' 1, 'CASL' 0.38;
+  --sans-axes: 'MONO' 0, 'CASL' 0.38;
+
+  font-variation-settings: var(--mono-axes);
+}

@@ -2,6 +2,7 @@
 
 .control-button {
   font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
   font-size: 12px;
   padding: 6px 12px;
   border: 1px solid var(--bd3);

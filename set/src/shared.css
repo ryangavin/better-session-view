@@ -33,6 +33,7 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
   height: 100vh;
   overflow: hidden;
 

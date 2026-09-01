@@ -16,7 +16,8 @@
     "./param/*": "./src/param/*",
     "./gesture/*": "./src/gesture/*",
     "./palette.css": "./src/palette.css",
-    "./tokens.css": "./src/tokens.css"
+    "./tokens.css": "./src/tokens.css",
+    "./type.css": "./src/type.css"
   },
   "types": "dist/index.d.ts",
   "scripts": {

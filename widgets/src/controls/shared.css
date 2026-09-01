@@ -84,6 +84,7 @@
     var(--wdg-text-strong)
   );
   font-family: var(--wdg-sans);
+  font-variation-settings: var(--sans-axes);
   font-variant-numeric: tabular-nums;
   letter-spacing: normal;
   text-align: right;
@@ -272,6 +273,7 @@
 .wdg-caption,
 .wdg-label {
   font-family: var(--wdg-sans);
+  font-variation-settings: var(--sans-axes);
   font-size: 9px;
   line-height: 1.2;
   color: var(--wdg-caption);
@@ -292,6 +294,7 @@
 .wdg-select-body,
 .wdg-button-body {
   font-family: var(--wdg-sans);
+  font-variation-settings: var(--sans-axes);
   font-size: 10px;
   cursor: pointer;
 }

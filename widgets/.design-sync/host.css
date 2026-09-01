@@ -25,8 +25,6 @@
   --surface-cell-muted: #131316;
   --surface-song-hover: #141418;
   --shadow-edge: rgba(0, 0, 0, 0.6);
-  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   --radius-xs: 2px;
   --radius-sm: 3px;
   --radius-md: 4px;
@@ -43,4 +41,5 @@ html body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
 }

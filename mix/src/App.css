@@ -9,6 +9,7 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;

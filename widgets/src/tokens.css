@@ -21,8 +21,8 @@
   --wdg-plate-selected: var(--bd, #262629);
   --wdg-radius: var(--radius-xs, 2px);
   --wdg-plate-radius: var(--radius-md, 4px);
-  --wdg-mono: var(--mono, 'IBM Plex Mono', ui-monospace, Menlo, monospace);
-  --wdg-sans: var(--sans, 'IBM Plex Sans', system-ui, -apple-system, sans-serif);
+  --wdg-mono: var(--mono);
+  --wdg-sans: var(--sans);
 
   --wdg-height: 17px;
   --wdg-field-height: 16px;

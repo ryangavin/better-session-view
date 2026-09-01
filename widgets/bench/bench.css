@@ -1,3 +1,4 @@
+@import '../src/type.css';
 * {
   box-sizing: border-box;
 }
@@ -6,7 +7,8 @@ body {
   margin: 0;
   background: #0a0a0b;
   color: #ececed;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -27,8 +29,6 @@ select {
   --ui: #b7b7be;
   --caption: #5e5e66;
   --radius-xs: 2px;
-  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
 }
 
 header {
@@ -60,7 +60,7 @@ kbd {
   border-radius: 3px;
   background: #151517;
   color: #b7b7be;
-  font-family: ui-monospace, Menlo, monospace;
+  font-family: var(--mono);
   font-size: 11px;
 }
 
@@ -104,7 +104,7 @@ h2 {
   margin: 0 0 14px;
   color: #b7b7be;
   font-size: 11px;
-  font-family: ui-monospace, Menlo, monospace;
+  font-family: var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -193,7 +193,7 @@ h2 {
   border-radius: 3px;
   background: #151517;
   color: #ececed;
-  font-family: ui-monospace, Menlo, monospace;
+  font-family: var(--mono);
   font-size: 11px;
 }
 
@@ -212,7 +212,7 @@ h2 {
   grid-template-columns: max-content 1fr;
   gap: 4px 12px;
   margin: 0;
-  font-family: ui-monospace, Menlo, monospace;
+  font-family: var(--mono);
   font-size: 11px;
 }
 
@@ -252,7 +252,7 @@ h2 {
 .patch-out {
   margin: 8px 0 0;
   color: #8b8b93;
-  font-family: ui-monospace, Menlo, monospace;
+  font-family: var(--mono);
   font-size: 11px;
 }
 
