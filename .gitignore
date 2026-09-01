@@ -37,3 +37,4 @@ coverage/
 report/
 visuals/frames-dist/
 visuals/frames-out/
+widgets/bench/dist/
