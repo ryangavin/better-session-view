@@ -207,6 +207,22 @@ lane that disagreed with the waveforms would be worse than no warp lane, because
 look like the grid was wrong. They are taken from the **drums** where there are drums,
 which is most of the argument for fitting a grid after separating rather than before.
 
+**Both strips rule from one ladder**, `grid.ts`, so the strip that judges the grid and
+the strip the grid is judged against cannot disagree about where a beat is. The spacing
+is *chosen* rather than computed: every rung is a musical division — sixteen bars down to
+a sixty-fourth note — so whichever survives at a given zoom, the lines drawn are lines
+somebody could play to. Doubling a pixel gap instead would put lines on three-and-a-bit
+beats, which is a ruler for nothing.
+
+It picks the finest rung that keeps lines sixteen pixels apart, which is set by how the
+ladder lands rather than by how thin a line is: the rungs are quarters of each other
+above a beat and halves below, so a division lives between sixteen and sixty-four pixels
+for the whole of its life. A song wide is four-bar lines, thirty bars is bars, eight is
+beats, two is sixteenths, and one kick drum wide is whatever fits under it. Ranking is by
+what a line *is* rather than by where it falls in the current step, so a bar line stays a
+bar line while the grid thins around it — and the lanes draw the four ranks in four
+weights, while the warp lane, being 24px of strip, says it in height instead.
+
 Their bar positions are the grid's claim rather than a property of the audio, so changing
 the tempo walks them off the lines or onto them. That is the lane doing its job.
 

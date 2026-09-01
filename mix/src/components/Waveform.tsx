@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Peak } from '../audio.ts';
+import { rankOf, ruleEvery, TICKS_PER_BAR, type Rank } from '../grid.ts';
 import type { Span } from '../zoom.ts';
 
 /**
@@ -95,6 +96,21 @@ const PER_PIXEL = 2;
 /** How far apart samples have to be before each one is drawn as a point. */
 const DOT = 4;
 
+/**
+ * What each kind of grid line is drawn in.
+ *
+ * Four weights rather than two, because there are four things to tell apart
+ * once the grid subdivides — and the hierarchy is what lets you read the ruling
+ * without counting it. Ranked by `grid.ts` from what a line *is*, so a bar line
+ * stays a bar line as the grid thins around it.
+ */
+const RULE: Record<Rank, string> = {
+  phrase: '#1f1f23',
+  bar: '#1a1a1e',
+  beat: '#151518',
+  sub: '#111114',
+};
+
 const WHOLE: Span = { from: 0, to: 1 };
 
 /** Which of the three drawings a lane is showing. */
@@ -166,28 +182,23 @@ export function Waveform({
       const xOf = (fraction: number) => fraction * track - left;
 
       if (bars) {
-        // Every bar, and the fourth one brighter. A grid that treats all bars
-        // alike is a ruler you have to count along.
-        //
-        // Thinned when the bars get closer than four pixels, which a real
-        // track reaches easily — a four-minute song at 128 is 128 bars, and a
-        // line every three pixels is not a grid, it is a fill. Stepping in
-        // powers of four keeps whichever lines survive on musical boundaries,
-        // and measuring against the zoomed width is what makes zooming in
-        // *return* the lines it thinned.
-        let step = 1;
-        while ((step / bars) * track < 4 && step < bars) step *= 4;
-        // Only the bars on screen, snapped down to the step so which lines are
-        // bright does not change as the view moves under them. Neither end is
-        // clamped to the track: zoomed out past the lane there is time on
-        // screen that is not in the song, and the grid carries on through it —
-        // what says it is outside is the shading over it, not a gap in the
-        // ruling.
-        const start = Math.floor((from * bars) / step) * step;
-        const end = Math.ceil(to * bars);
-        for (let b = start; b <= end; b += step) {
-          const x = Math.round(xOf(b / bars)) + 0.5;
-          ctx.strokeStyle = b % (step * 4) === 0 ? '#1f1f23' : '#151518';
+        // As fine as there is room for, from bars down to sixty-fourths —
+        // `grid.ts` picks the rung and says what each line is. Measuring
+        // against the *zoomed* width is what makes zooming in hand back the
+        // divisions it thinned: a song wide is bars, a bar wide is beats, and a
+        // kick drum wide is whatever fits under it.
+        const ticks = bars * TICKS_PER_BAR;
+        const step = ruleEvery(track / ticks);
+        // Snapped down to the step so which lines are bright does not change as
+        // the view moves under them. Neither end is clamped to the track:
+        // zoomed out past the lane there is time on screen that is not in the
+        // song, and the grid carries on through it — what says it is outside is
+        // the shading over it, not a gap in the ruling.
+        const start = Math.floor((from * ticks) / step) * step;
+        const end = Math.ceil(to * ticks);
+        for (let t = start; t <= end; t += step) {
+          const x = Math.round(xOf(t / ticks)) + 0.5;
+          ctx.strokeStyle = RULE[rankOf(t)];
           ctx.beginPath();
           ctx.moveTo(x, 0);
           ctx.lineTo(x, tall);

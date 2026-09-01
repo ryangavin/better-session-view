@@ -150,10 +150,12 @@ for fitting a grid **after** separating rather than before: the thing a grid
 lines up with is the percussion, and here it arrives on its own track with the
 pads and the vocal already taken off it.
 
-Both grids thin themselves. A four-minute track at 128 is 128 bars and 512
-beats; a line every three pixels is not a grid, it is a fill. They step in
-powers of four so whatever survives stays on a musical boundary — and they
-measure against the *zoomed* width, so zooming in gives the thinned lines back.
+Both grids thin themselves, from one ladder in `grid.ts` — every rung a musical
+division, from sixteen bars down to a sixty-fourth note. A four-minute track at
+128 is 128 bars and 512 beats; a line every three pixels is not a grid, it is a
+fill. Whatever survives stays on a musical boundary, and it measures against the
+*zoomed* width, so zooming in hands back the divisions it thinned: bars, then
+beats, then sixteenths, each appearing where there is room for it.
 That is what makes a grid judgeable: the ticks either side of one bar line are
 the same pixel at whole-track width.
 

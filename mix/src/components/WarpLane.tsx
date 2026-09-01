@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { rankOf, ruleEvery, TICKS_PER_BAR } from '../grid.ts';
 import type { Span } from '../zoom.ts';
 /**
  * An onset placed in bar space, which is the grid's claim about it rather than
@@ -81,25 +82,27 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       const left = from * track;
       const xOf = (fraction: number) => fraction * track - left;
 
-      // Beats where beats fit, bars where they do not, and every fourth bar
-      // once even those are crowding. A real track is a hundred-odd bars, and
-      // five hundred beat lines across nine hundred pixels is not a grid — it
-      // is a grey wash with a tick rate. Stepping in fours keeps whatever
-      // survives on a musical boundary rather than on an arbitrary one, and
-      // measuring against the zoomed width is what gives the beats back as you
-      // zoom in — which is the only view a grid can actually be judged in.
-      const beats = bars * 4;
-      let step = 1;
-      while ((step / beats) * track < 3 && step < beats) step *= 4;
-      // Not clamped to the track at either end: zoomed out, there is time on
-      // screen that is not in the song, and the grid runs through it.
-      const first = Math.floor((from * beats) / step) * step;
-      const last = Math.ceil(to * beats);
-      for (let b = first; b <= last; b += step) {
-        const x = Math.round(xOf(b / beats)) + 0.5;
-        const isBar = b % 4 === 0;
-        ctx.fillStyle = isBar ? barLine : beat;
-        ctx.fillRect(x, isBar ? 0 : height * 0.55, 1, isBar ? height : height * 0.45);
+      // The same ruling the lanes use — `grid.ts` — so the strip that judges
+      // the grid and the strip the grid is judged *against* cannot disagree
+      // about where a beat is. Bars run the full height, beats most of it, and
+      // anything finer a short tick: height is what separates them here, rather
+      // than a third colour in a 24px strip.
+      //
+      // It thins the same way, too. Five hundred beat lines across nine hundred
+      // pixels is not a grid, it is a grey wash with a tick rate — and not
+      // clamped to the track at either end, because zoomed out there is time on
+      // screen that is not in the song and the grid runs through it.
+      const ticks = bars * TICKS_PER_BAR;
+      const step = ruleEvery(track / ticks);
+      const first = Math.floor((from * ticks) / step) * step;
+      const last = Math.ceil(to * ticks);
+      for (let t = first; t <= last; t += step) {
+        const x = Math.round(xOf(t / ticks)) + 0.5;
+        const rank = rankOf(t);
+        const whole = rank === 'phrase' || rank === 'bar';
+        ctx.fillStyle = whole ? barLine : beat;
+        const tall = whole ? height : rank === 'beat' ? height * 0.45 : height * 0.26;
+        ctx.fillRect(x, height - tall, 1, tall);
       }
 
       for (const onset of onsets) {
