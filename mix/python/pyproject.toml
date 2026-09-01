@@ -1,8 +1,9 @@
-# The environment mix[flow] separates in, and the file the shipped app builds from.
+# The environment mix[flow] runs its Python workers in, and the file the shipped
+# app builds from.
 #
 # This is **not** `demucs/pyproject.toml`. That folder is a research spike with
 # its own extras, its own scratch scripts and its own reasons to churn; this is
-# the four dependencies `separate.py` actually imports, pinned, and it travels
+# what `separate.py` and `transcribe.py` actually import, pinned, and it travels
 # inside the `.app`. `mix/docs/demucs.md` has why the environment is built on the
 # machine that runs it rather than shipped inside the bundle.
 #
@@ -12,7 +13,7 @@
 [project]
 name = "mixflow-engine"
 version = "0.1.0"
-description = "The Python side of mix[flow]: Demucs v4, and nothing else."
+description = "The Python side of mix[flow]: Demucs v4 and torchcrepe, and nothing else."
 # Pinned to a minor version rather than left open. `>=3.13` would let uv install
 # whatever is newest the day somebody first presses Generate, and torch supports
 # a Python version some months after it ships — which would make the first run
@@ -28,6 +29,13 @@ dependencies = [
     # What `save_audio` writes the float32 stems through.
     "soundfile",
     "numpy",
+    # `transcribe.py`'s pitch tracker — a PyTorch port of CREPE, which is why it is
+    # in this file rather than a separate one: it runs on the same torch already
+    # pinned above, MPS included, instead of pulling in a second ML runtime the
+    # way a TensorFlow-based alternative would. `mix/docs/transcribe.md` has why.
+    "torchcrepe>=0.0.24",
+    # What `transcribe.py` writes `bass.mid` through.
+    "pretty-midi>=0.2.11.post0",
 ]
 
 [tool.uv]

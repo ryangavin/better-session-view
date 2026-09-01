@@ -77,6 +77,21 @@ export interface Failed {
 
 export type Outcome = Finished | Failed;
 
+export interface TuningString { name: string; pitch: number }
+export interface TranscribeProgress { done: number; stage: string; seconds: number | null }
+export interface Transcribed {
+  ok: true;
+  trackId: string;
+  model: string;
+  where: string;
+  midi: string;
+  tab: string;
+  sidecar: { noteCount: number; pitchedCount: number; mutedCount: number; voicedFraction: number };
+  tuning: readonly TuningString[];
+  reused: boolean;
+}
+export type TranscribeOutcome = Transcribed | Failed;
+
 /** One track in the library. Every path is relative to the library root. */
 export interface Track {
   id: string;
@@ -121,6 +136,18 @@ interface Bridge {
     cancel(trackId?: string): Promise<void>;
     onProgress(hear: (at: { trackId: string; progress: Progress }) => void): () => void;
     onFinished(hear: (outcome: Outcome) => void): () => void;
+  };
+  transcribe: {
+    busy(): Promise<string | null>;
+    run(ask: {
+      trackId: string;
+      tuning: readonly TuningString[];
+      bars: { origin: number; across: number } | null;
+    }): Promise<TranscribeOutcome>;
+    cancel(trackId?: string): Promise<void>;
+    reveal(trackId: string): Promise<void>;
+    onProgress(hear: (at: { trackId: string; progress: TranscribeProgress }) => void): () => void;
+    onFinished(hear: (outcome: TranscribeOutcome) => void): () => void;
   };
 }
 

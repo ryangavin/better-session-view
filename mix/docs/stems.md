@@ -114,9 +114,10 @@ per model, so auditioning a second model does not destroy the first.
 
 ## Three rules the runner keeps
 
-**One at a time.** Two separations interleaved are both of them slower and they
-fight over one GPU. The app already refuses a second instance; this is the other
-half.
+**One torch job at a time.** Two separations interleaved are both of them slower and
+fight over one GPU; pitch transcription uses that same GPU too. `electron/work.ts`
+owns one lease shared by both runners. The app already refuses a second instance;
+this is the other half. [`transcribe.md`](transcribe.md) has the other client.
 
 **Nothing partial lands in the library.** The worker writes into
 `<model>.writing` beside the destination, and it is renamed into place only once
@@ -126,12 +127,12 @@ believe. The scratch is a neighbour rather than a temp directory so the rename
 is within one filesystem and therefore atomic, which is the same reasoning
 `manifest.ts` uses for the index itself.
 
-**Cancelling kills the child.** `SIGTERM` first, which Python turns into an
+**Cancelling kills the named child.** `SIGTERM` first, which Python turns into an
 exception that unwinds torch cleanly, then `SIGKILL` if it is still there four
 seconds later, and `stopAll` on `before-quit`. An orphaned separation holds the
 GPU and there is nothing left in the window that could stop it. A cancel names
-its track, because one arriving late — after the job it meant finished and the
-next one started — must not kill somebody else's work.
+its track and kind, because one arriving late — after the job it meant finished
+and the next kind started — must not kill somebody else's work.
 
 ## What it costs, measured through this engine
 

@@ -48,9 +48,9 @@ export function Idle({ mix, ready }: { mix: Mix; ready: Ready | null }) {
 
         {setup && (
           <p className="mf-page-note">
-            The first separation on this machine installs the engine as well — about
-            220 MB of Python, once. It stays installed, and the model itself is another
-            84 MB the first time you use one.
+            The first local job on this machine installs the Python engine as well —
+            several hundred megabytes, once. It stays installed, and each separation
+            model downloads its own checkpoint the first time you use it.
           </p>
         )}
 
@@ -90,15 +90,15 @@ export function Idle({ mix, ready }: { mix: Mix; ready: Ready | null }) {
             onPress={() => void mix.separate()}
             tone="normal"
             className="mf-primary"
-            disabled={!chosen || mix.runningId !== null}
+            disabled={!chosen || mix.engineBusy}
           >
             Generate stems
           </Button>
           <span className="mf-estimate">
             {!chosen
               ? 'separation needs the app around this page'
-              : mix.runningId !== null
-                ? 'one at a time — something else is separating'
+              : mix.engineBusy
+                ? 'one at a time — the local engine is already working'
                 : wait === null
                   ? `${chosen.speed} — length not read yet`
                   : `${duration(song.seconds)} at ${chosen.speed} · ${wait}`}

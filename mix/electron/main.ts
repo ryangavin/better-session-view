@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import { APPS } from '@openflow/desktop/apps.ts';
 import { devUrl } from '@openflow/desktop/dev.ts';
@@ -12,9 +12,18 @@ import { MODELS } from './models.ts';
 import { recordStems } from './manifest.ts';
 import { busy, cancel, separate, stopAll, type Outcome } from './separate.ts';
 import type { Progress } from './job.ts';
+import {
+  cancelTranscription,
+  transcribe,
+  transcribing,
+  type TranscribeOutcome,
+} from './transcribe.ts';
+import { TAB_FILE, transcriptionAt, type TranscribeProgress } from './transcribeJob.ts';
+import type { Tuning } from '../src/tab.ts';
+import type { Bars } from '../src/warp.ts';
 
 /**
- * mix[flow]: a mix in, four parts out.
+ * mix[flow]: a mix in, its parts out — and the bass written down.
  *
  * Stem separation, run locally — the model is Demucs v4, and the environment it
  * runs in is built on first use by `runtime.ts` rather than shipped inside the
@@ -24,8 +33,7 @@ import type { Progress } from './job.ts';
  * own build over, the dev loop, the navigation policy, the updater — is
  * `@openflow/desktop`. What is left here is what only mix[flow] does: it owns a
  * library on disk, it asks whether this machine can separate anything, and it
- * refuses to run twice, because two copies would fight over one GPU and over
- * one manifest.
+ * refuses to run two local-engine jobs, because they would fight over one GPU.
  */
 
 const MIX = APPS.mix;
@@ -135,7 +143,43 @@ if (only(app)) {
     },
   );
 
-  // A separation is a child process holding the GPU, and quitting the window
+  ipcMain.handle('openflow:transcribing', () => transcribing());
+  ipcMain.handle('openflow:transcribe-cancel', (_event, trackId?: string) => cancelTranscription(trackId));
+  ipcMain.handle(
+    'openflow:transcribe',
+    async (_event, ask: { trackId: string; tuning: Tuning; bars: Bars | null }): Promise<TranscribeOutcome> => {
+      const library = await load();
+      const track = library.tracks.find((candidate) => candidate.id === ask.trackId);
+      if (!library.root || !track?.stems || !track.model || !track.sources.includes('bass')) {
+        return { ok: false, trackId: ask.trackId, says: 'this track has no bass stem', cancelled: false };
+      }
+      const outcome = await transcribe(
+        {
+          root: library.root,
+          runtime: RUNTIME,
+          trackId: track.id,
+          model: track.model,
+          stems: track.stems,
+          tuning: ask.tuning,
+          bars: ask.bars,
+        },
+        {
+          progress: (trackId: string, progress: TranscribeProgress) =>
+            push('openflow:transcribe-progress', { trackId, progress }),
+        },
+      );
+      push('openflow:transcribe-finished', outcome);
+      return outcome;
+    },
+  );
+  ipcMain.handle('openflow:transcribe-reveal', async (_event, trackId: string) => {
+    const library = await load();
+    const track = library.tracks.find((candidate) => candidate.id === trackId);
+    if (!library.root || !track?.model) return;
+    shell.showItemInFolder(path.join(library.root, transcriptionAt(track.id, track.model), TAB_FILE));
+  });
+
+  // Local work is a child process holding the GPU, and quitting the window
   // that started it is not a reason for it to carry on. Same lesson as
   // `desktop/docs/server.md` records about a server.
   app.on('before-quit', stopAll);

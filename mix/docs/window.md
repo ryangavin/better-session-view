@@ -111,6 +111,13 @@ measures the box it was given instead — how tall a stem is depends on how many
 there are and how tall the window is, which is a question CSS answers better than a
 component can. Once the lanes reach 46px the list scrolls rather than going below it.
 
+**The bass lane owns transcription because the input is the bass stem.** A compact
+overlay asks for an explicit low-to-high tuning and runs beside the waveform; it does
+not add an app-wide mode or a seventh lane. While it runs, the overlay carries its stage
+and Cancel. When it finishes, it reports pitched notes and explicit `x` attacks, then
+offers Reveal and a cheap rerun for another tuning. The worker and tab rules are in
+[`transcribe.md`](transcribe.md).
+
 ## There is a lane per stem the model made, and no others
 
 A four-source model folds guitar and piano back into Other. The lanes used to draw all
@@ -326,6 +333,7 @@ countable from.
 | a stem's level | `Slider`, horizontal, with a length |
 | per-source progress | `Meter` |
 | the tempo, on the header beside Auto-warp | `NumberField`, unfilled |
+| bass tuning | a native text input — there is no generic text-field widget yet |
 | the waveform | **not a widget.** `components/Waveform.tsx` |
 
 **The fader takes a `length`, not `layout="inside"`,** and the difference is not

@@ -1,4 +1,4 @@
-# Where separation comes from
+# Where the local engine comes from
 
 `mix/electron/runtime.ts`, `mix/python/pyproject.toml` and `mix/tools/prepare.ts`.
 
@@ -15,6 +15,10 @@ has to promise — from `demucs/README.md`, 20 seconds of audio:
 At 4.9× a four-minute track is under a minute, and at 0.6× it is seven. Both are long
 enough that a job is something you start and come back to, which is the shape the UI has
 to take — not a spinner.
+
+The same environment also runs the torchcrepe bass pitch worker. It shares torch and MPS
+with Demucs rather than installing a second ML runtime; [`transcribe.md`](transcribe.md)
+has why that tracker and what it emits.
 
 ## The packaging question, and the answer
 
@@ -42,7 +46,7 @@ turned around completely, because it is the *frozen* answer that has the signing
 | | ships | first run | what has to be signed |
 |---|---|---|---|
 | user's workspace | nothing | they install `uv` and a Python project | nothing |
-| **`uv` + a lock** | **+42 MB** | **~220 MB: the wheels and a Python** | **one extra Mach-O** |
+| **`uv` + a lock** | **+42 MB** | **the locked wheels and a Python, several hundred MB** | **one extra Mach-O** |
 | frozen per arch | ~1 GB per dmg | weights only | every `.so` in a frozen tree, under the hardened runtime |
 
 A venv or a PyInstaller tree *inside* the bundle is thousands of Mach-Os that each need a
@@ -61,6 +65,7 @@ The bundle carries three things it did not compile:
 mix[flow].app/Contents/Resources/app/
   bin/uv              the pinned binary — mix/tools/prepare.ts fetched and checked it
   python/separate.py  the worker, which is ours
+  python/transcribe.py  the bass pitch worker, also ours
   python/pyproject.toml, uv.lock    what the engine is
 ```
 
@@ -73,20 +78,18 @@ and builds the rest under `~/Library/Application Support/mix[flow]/runtime/`:
   built.json   what was built, and from what
 ```
 
-One directory, so the answer to *make it do all that again* is delete this folder. First
-run: about 220 MB down and about 620 MB on disk. A model checkpoint is a further 84 MB
+One directory, so the answer to *make it do all that again* is delete this folder. The
+current development venv is 961 MB with both workers' locked dependencies. A Demucs model checkpoint is a further 84 MB
 the first time you use one, and `htdemucs_ft` is four of them — they arrive during the
 *loading the model* stage a job already reports.
 
-**`du` will say 1.2 GB and be wrong.** The uv cache holds a copy of everything the venv
-does, and on APFS those are clones rather than copies: deleting the whole 578 MB cache
-after an install returns **9 MB** of actual disk. Measured, because it is the difference
-between keeping the cache and pruning it, and pruning it would make the next lock change
-re-download a gigabyte to reclaim nothing.
+**`du` double-counts the cache.** The uv cache holds the files the venv links or clones
+from; on APFS those are not a second physical copy. Keeping the cache makes a later lock
+change cheap, while pruning it reports a large logical saving and returns little disk.
 
 **`mix/python/pyproject.toml` is not `demucs/pyproject.toml`.** The latter is a research
 spike with extras this app does not run, and it is explicitly not part of open[flow].
-This one is the four dependencies `separate.py` imports, locked. `uv sync --frozen`
+This one is the dependencies the two shipped workers import, locked. `uv sync --frozen`
 installs exactly what was resolved and consults the network for nothing else, so two
 machines that set themselves up a year apart get the same engine.
 
@@ -96,8 +99,8 @@ universal build is wanted, torch's macOS x86 wheels are the thing to check first
 
 ## The stamp is what makes an update cheap
 
-`built.json` holds a hash of the lock and the uv that built it — the same idea as a
-separation's cache key in `job.ts`. A new version of the app with an unchanged lock finds
+`built.json` holds a hash of the lock and the uv that built it — the same idea as the
+cache keys in `job.ts` and `transcribeJob.ts`. A new version of the app with an unchanged lock finds
 its engine already there and starts separating; one with a changed lock rebuilds, without
 anybody deciding it should. It is written **only on success**, so a cancelled or crashed
 setup is simply not built rather than half-trusted.
@@ -134,7 +137,7 @@ and two summaries. Those per-package lines are the good ones, and they are why t
 minute of a first run reads `downloading torch · 111.2MiB` rather than sitting on a stage
 that gives no sign of moving.
 
-## What a job runs
+## What jobs run
 
 The command is not the demucs CLI, because that reports progress as a tqdm bar — the
 worker goes through `demucs.api` and prints JSON. What runs is:
@@ -144,9 +147,17 @@ worker goes through `demucs.api` and prints JSON. What runs is:
     --input <track> --out <scratch> --model <checkpoint>
 ```
 
+Bass transcription uses the same environment and stdout contract:
+
+```sh
+<bundle>/bin/uv run --project <runtime>/env --quiet python <bundle>/python/transcribe.py \
+    --input <bass-stem> --out <scratch>
+```
+
 `OPENFLOW_DEMUCS` still names a project, and now means one thing: *use this environment
-and skip the setup*. It is how you point mix[flow] at the `demucs/` research workspace,
-and it is a development convenience — a packaged app never sees it, because a
+and skip the setup*. That project must contain the dependencies for whichever worker is
+being run; `mix/python/` is the ordinary choice now that the environment owns both. It
+is a development convenience — a packaged app never sees it, because a
 Finder-launched `.app` does not inherit a shell environment. That was true before this
 change too, and is most of why the old arrangement could not have shipped.
 
@@ -168,10 +179,8 @@ shipped lock:
 
 | | |
 |---|---|
-| `uv sync --frozen`, cold cache | 9.8 s, on a fast connection — 32 packages |
-| the same, warm | 4.5 s |
-| what it downloads | ~220 MB: 190 MB of wheels, of which torch is 111 MB, plus 16 MB of Python |
-| on disk | 572 MB of `.venv` and 48 MB of CPython. The 578 MB cache beside them costs 9 MB |
+| locked environment | 58 packages; cold download not remeasured after adding transcription |
+| development `.venv`, both workers | 961 MB |
 | a 20-second clip through `htdemucs` | 2.45 s wall, **8.19× realtime**, on `mps` |
 | residual | −34.4 dB |
 

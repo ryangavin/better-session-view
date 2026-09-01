@@ -24,8 +24,12 @@ import {
   type Library,
   type Model,
   type Progress,
+  type Transcribed,
+  type TranscribeOutcome,
+  type TranscribeProgress,
   type Track,
 } from './openflow.ts';
+import { parseTuning } from './tab.ts';
 
 /**
  * Everything the window knows, in one hook.
@@ -188,6 +192,13 @@ export function useMix() {
   const [job, setJob] = useState<Job | null>(null);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  /** Deliberately empty: the instrument decides its tuning, never the app. */
+  const [tuningText, setTuningText] = useState('');
+  const tuning = useMemo(() => parseTuning(tuningText), [tuningText]);
+  const [transcribeJob, setTranscribeJob] = useState<TranscribeProgress | null>(null);
+  const [transcribingId, setTranscribingId] = useState<string | null>(null);
+  const [transcription, setTranscription] = useState<Transcribed | null>(null);
+  const [transcribeProblem, setTranscribeProblem] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [manual, setManual] = useState<Manual | null>(null);
   const [anchors, setAnchors] = useState<Anchor[]>([]);
@@ -347,6 +358,9 @@ export function useMix() {
     void bridge.separate.busy().then((id) => {
       if (id) setRunningId(id);
     });
+    void bridge.transcribe.busy().then((id) => {
+      if (id) setTranscribingId(id);
+    });
   }, []);
 
   const chooseFolder = useCallback(async () => {
@@ -432,6 +446,27 @@ export function useMix() {
       offFinished();
     };
   }, [refresh]);
+
+  /** Bass transcription is another view onto the same one-worker GPU queue. */
+  useEffect(() => {
+    const bridge = openflow();
+    if (!bridge) return;
+    const finish = (outcome: TranscribeOutcome) => {
+      setTranscribeJob(null);
+      setTranscribingId(null);
+      setTranscription(outcome.ok ? outcome : null);
+      setTranscribeProblem(outcome.ok || outcome.cancelled ? null : outcome.says);
+    };
+    const offProgress = bridge.transcribe.onProgress(({ trackId, progress }) => {
+      setTranscribingId(trackId);
+      setTranscribeJob(progress);
+    });
+    const offFinished = bridge.transcribe.onFinished(finish);
+    return () => {
+      offProgress();
+      offFinished();
+    };
+  }, []);
 
   /**
    * Load the stems, decode them, and draw them.
@@ -603,6 +638,8 @@ export function useMix() {
       setManual(null);
       setDetected(null);
       setFitFailed(false);
+      setTranscription(null);
+      setTranscribeProblem(null);
       const known = forTrack(held.current, id);
       setPosition(known.at ?? 0);
       setLevel(known.levels ? { ...levels(), ...known.levels } : levels());
@@ -676,6 +713,48 @@ export function useMix() {
     setRunningId(null);
     if (id) void openflow()?.separate.cancel(id);
   }, [runningId]);
+
+  /**
+   * Infer the bass once, then lay the cached notes onto this instrument.
+   *
+   * Only an automatically fitted grid is handed over. A typed tempo without a
+   * measured phase can look exact while being a sixteenth late for the whole
+   * song; in that case the tab keeps exact onset times instead.
+   */
+  const transcribeBass = useCallback(async () => {
+    const bridge = openflow();
+    if (!bridge || !song) return;
+    if (!tuning) {
+      setTranscribeProblem('enter the bass tuning, low string first');
+      return;
+    }
+    setTranscribeProblem(null);
+    setTranscription(null);
+    setTranscribingId(song.id);
+    setTranscribeJob({ done: 0, stage: 'loading the pitch model', seconds: null });
+    const outcome = await bridge.transcribe.run({
+      trackId: song.id,
+      tuning,
+      bars: bpmAuto ? grid : null,
+    });
+    // The runner normally announces this as an event. Early refusals cannot,
+    // so the invocation's answer is also applied; doing it twice is harmless.
+    setTranscribeJob(null);
+    setTranscribingId(null);
+    setTranscription(outcome.ok ? outcome : null);
+    setTranscribeProblem(outcome.ok || outcome.cancelled ? null : outcome.says);
+  }, [song, tuning, bpmAuto, grid]);
+
+  const cancelTranscription = useCallback(() => {
+    const id = transcribingId;
+    setTranscribeJob(null);
+    setTranscribingId(null);
+    if (id) void openflow()?.transcribe.cancel(id);
+  }, [transcribingId]);
+
+  const revealTranscription = useCallback(() => {
+    if (song) void openflow()?.transcribe.reveal(song.id);
+  }, [song]);
 
   // ── The transport ────────────────────────────────────────────────────────
 
@@ -1081,6 +1160,17 @@ export function useMix() {
     problem,
     separate,
     cancel,
+    tuningText,
+    setTuningText,
+    tuning,
+    transcribeJob,
+    transcribingId,
+    transcription,
+    transcribeProblem,
+    transcribeBass,
+    cancelTranscription,
+    revealTranscription,
+    engineBusy: runningId !== null || transcribingId !== null,
     exporting,
     setExporting,
     manual,

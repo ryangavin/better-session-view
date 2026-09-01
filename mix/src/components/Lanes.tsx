@@ -255,6 +255,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                 label="Separate again"
                 title="Separate this song again, with a different model"
                 width={26}
+                disabled={mix.engineBusy}
               >
                 {again}
               </Button>
@@ -351,6 +352,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                 <span className="mf-lane-db">{trim(own.volume)}</span>
               </div>
               <div className="mf-lane-draw">
+                {stem.id === 'bass' && <BassTranscription mix={mix} />}
                 {/* Drawn whether or not its audio has arrived. The lane, its
                     controls and its grid are known the moment the manifest says
                     which stems the model made; only the waveform has to be
@@ -389,6 +391,85 @@ export function Lanes({ mix }: { mix: Mix }) {
           />
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The only instrument-specific action in the stem lanes.
+ *
+ * Tuning is required and starts empty. A placeholder teaches the spelling but
+ * is not a value: assuming four-string standard tuning would make a perfectly
+ * tidy, confidently wrong tab for a five-string or a detuned instrument.
+ */
+function BassTranscription({ mix }: { mix: Mix }) {
+  const song = mix.song;
+  if (!song) return null;
+  const ownJob = mix.transcribingId === song.id;
+  const done = mix.transcription?.trackId === song.id ? mix.transcription : null;
+  const invalid = mix.tuningText.trim() !== '' && mix.tuning === null;
+  const blocked = mix.runningId !== null || (mix.transcribingId !== null && !ownJob);
+
+  return (
+    <div className="mf-transcribe" onDoubleClick={(event) => event.stopPropagation()}>
+      <label className="mf-transcribe-tuning">
+        <span>tuning</span>
+        <input
+          value={mix.tuningText}
+          onChange={(event) => mix.setTuningText(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && mix.tuning && !mix.engineBusy) void mix.transcribeBass();
+          }}
+          placeholder="E1 A1 D2 G2"
+          title="Open strings from low to high, with octaves — for example E1 A1 D2 G2 or B0 E1 A1 D2 G2"
+          aria-label="Bass tuning, low string first"
+          aria-invalid={invalid || undefined}
+          spellCheck={false}
+        />
+      </label>
+
+      {ownJob ? (
+        <>
+          <span className="mf-transcribe-status" title={mix.transcribeJob?.stage}>
+            {mix.transcribeJob?.stage ?? 'transcribing'}
+          </span>
+          <Button onPress={mix.cancelTranscription}>Cancel</Button>
+        </>
+      ) : done ? (
+        <>
+          <span className="mf-transcribe-status">
+            {done.sidecar.pitchedCount} notes · {done.sidecar.mutedCount} x
+          </span>
+          <Button onPress={mix.revealTranscription}>Reveal</Button>
+          <Button
+            onPress={() => void mix.transcribeBass()}
+            disabled={!mix.tuning || blocked}
+            title="Reuse the detected notes and write tab for this tuning"
+          >
+            Again
+          </Button>
+        </>
+      ) : (
+        <Button
+          onPress={() => void mix.transcribeBass()}
+          disabled={!mix.tuning || blocked}
+          title={
+            !mix.tuning
+              ? 'Enter open strings from low to high, with octaves'
+              : blocked
+                ? 'The local engine is already working'
+                : 'Detect bass notes, write MIDI, and make tab for this tuning'
+          }
+        >
+          Transcribe
+        </Button>
+      )}
+
+      {mix.transcribeProblem && (
+        <span className="mf-transcribe-problem" title={mix.transcribeProblem}>
+          {mix.transcribeProblem}
+        </span>
+      )}
     </div>
   );
 }

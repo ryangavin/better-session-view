@@ -258,6 +258,76 @@ font-variation-settings: var(--mono-axes);
   height: 100%;
 }
 
+.mf-transcribe {
+  position: absolute;
+  z-index: calc(var(--layer-playhead) + 1);
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100% - 16px);
+  padding: 3px 4px 3px 7px;
+  border: 1px solid var(--bd);
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--surface-lane-head) 92%, transparent);
+  box-shadow: 0 2px 9px color-mix(in srgb, var(--bg) 45%, transparent);
+}
+
+.mf-transcribe-tuning {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  color: var(--caption);
+}
+
+.mf-transcribe-tuning input {
+  box-sizing: border-box;
+  width: 108px;
+  height: 21px;
+  padding: 0 5px;
+  border: 1px solid var(--bd-strong);
+  border-radius: 2px;
+  outline: none;
+  background: var(--surface-cell-muted);
+  color: var(--ui);
+  font: inherit;
+}
+
+.mf-transcribe-tuning input:focus {
+  border-color: var(--amber);
+}
+
+.mf-transcribe-tuning input[aria-invalid='true'] {
+  border-color: var(--red);
+}
+
+.mf-transcribe-status {
+  min-width: 0;
+  max-width: 170px;
+  overflow: hidden;
+  color: var(--detail);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mf-transcribe-problem {
+  min-width: 0;
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--red);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+}
+
 .mf-lane-none {
   position: absolute;
   top: 50%;

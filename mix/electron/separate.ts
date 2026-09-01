@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import {
@@ -17,6 +17,15 @@ import {
 } from './job.ts';
 import { modelOf } from './models.ts';
 import { places, prepare, uvPath, worker } from './runtime.ts';
+import {
+  busyWork,
+  cancelWork,
+  claim,
+  hold,
+  release,
+  stopAllWork,
+  wasCancelled,
+} from './work.ts';
 
 /**
  * The runner: one child process, one job at a time, and a way to stop it.
@@ -53,9 +62,6 @@ import { places, prepare, uvPath, worker } from './runtime.ts';
  * the grounds that somebody who set the variable has an environment.
  */
 const project = (runtime: string): string => process.env.OPENFLOW_DEMUCS ?? places(runtime).env;
-
-/** How long a terminated child gets to unwind before it is killed outright. */
-const GRACE_MS = 4000;
 
 export interface Request {
   /** The library root. Absolute, and the only absolute path a job holds. */
@@ -112,17 +118,8 @@ export interface Watcher {
   progress(trackId: string, progress: Progress): void;
 }
 
-interface Running {
-  trackId: string;
-  child: ChildProcess | null;
-  cancelled: boolean;
-  scratch: string;
-}
-
-let running: Running | null = null;
-
 /** Whether anything is separating, and what. The window's Generate button reads this. */
-export const busy = (): string | null => running?.trackId ?? null;
+export const busy = (): string | null => busyWork('separate');
 
 /**
  * Stop the job in flight, if it is the one named.
@@ -132,19 +129,11 @@ export const busy = (): string | null => running?.trackId ?? null;
  * would otherwise kill somebody else's work.
  */
 export function cancel(trackId?: string): void {
-  if (!running) return;
-  if (trackId && running.trackId !== trackId) return;
-  running.cancelled = true;
-  const child = running.child;
-  if (!child || child.exitCode !== null) return;
-  child.kill('SIGTERM');
-  setTimeout(() => {
-    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
-  }, GRACE_MS);
+  cancelWork(trackId, 'separate');
 }
 
 /** Everything down, for `before-quit`. A job must not outlive the window that started it. */
-export const stopAll = (): void => cancel();
+export const stopAll = (): void => stopAllWork();
 
 /**
  * Separate one track.
@@ -163,7 +152,8 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
     cancelled,
   });
 
-  if (running) return fail(`already separating ${running.trackId}`);
+  const occupied = busyWork();
+  if (occupied) return fail(`another job is already using the engine for ${occupied}`);
 
   const model = modelOf(request.model);
   if (!model) return fail(`no model called ${request.model}`);
@@ -202,11 +192,16 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
   // at the end is within one filesystem and therefore atomic — and so a
   // half-finished job is visibly a half-finished job in the library folder
   // rather than a gigabyte hiding in /var.
+  const lease = claim('separate', trackId);
+  if (!lease) return fail('another job took the engine');
   const scratch = path.join(root, `${where}.writing`);
-  await fsp.rm(scratch, { recursive: true, force: true });
-  await fsp.mkdir(scratch, { recursive: true });
-
-  running = { trackId, child: null, cancelled: false, scratch };
+  try {
+    await fsp.rm(scratch, { recursive: true, force: true });
+    await fsp.mkdir(scratch, { recursive: true });
+  } catch (why) {
+    release(lease);
+    return fail(`could not prepare the stems — ${(why as Error).message}`);
+  }
   let progress = starting();
   watch.progress(trackId, progress);
 
@@ -222,17 +217,17 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
           watch.progress(trackId, progress);
         },
         hold: (child) => {
-          if (running) running.child = child;
+          hold(lease, child);
         },
       });
     } catch (why) {
-      const stopped = running?.cancelled ?? false;
-      running = null;
+      const stopped = wasCancelled(lease);
+      release(lease);
       await fsp.rm(scratch, { recursive: true, force: true });
       return fail(stopped ? 'cancelled' : (why as Error).message, stopped);
     }
-    if (running?.cancelled) {
-      running = null;
+    if (wasCancelled(lease)) {
+      release(lease);
       await fsp.rm(scratch, { recursive: true, force: true });
       return fail('cancelled', true);
     }
@@ -259,7 +254,7 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
       ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
-    if (running) running.child = child;
+    hold(lease, child);
 
     let done: Extract<Event, { event: 'done' }> | null = null;
     let said: string | null = null;
@@ -296,7 +291,7 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
     );
 
     child.on('close', (code, signal) => {
-      if (running?.cancelled) {
+      if (wasCancelled(lease)) {
         resolve(fail('cancelled', true));
         return;
       }
@@ -342,13 +337,13 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
       await fsp.rename(scratch, path.join(root, where));
     } catch (why) {
       await fsp.rm(scratch, { recursive: true, force: true });
-      running = null;
+      release(lease);
       return fail(`could not write the stems — ${(why as Error).message}`);
     }
   } else {
     await fsp.rm(scratch, { recursive: true, force: true });
   }
 
-  running = null;
+  release(lease);
   return outcome;
 }

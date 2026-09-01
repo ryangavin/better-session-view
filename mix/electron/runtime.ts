@@ -29,9 +29,10 @@ import path from 'node:path';
  *     so a Homebrew Python being upgraded underneath cannot break the engine.
  *     Nobody is asked to install anything.
  *
- * The first run downloads about 220 MB and puts about 620 MB on disk. Model checkpoints are a separate 84 MB each and arrive
- * on first use of a model, into torch's own cache — the *loading the model*
- * stage a job already reports.
+ * The locked environment is several hundred megabytes and the current development
+ * venv is 961 MB with both separation and transcription dependencies. Model
+ * checkpoints are separate and arrive on first use of a model, into torch's own
+ * cache — the *loading the model* stage a job already reports.
  *
  * **No `electron` import**, so this is reachable from a test. The one thing it
  * cannot know is where Application Support is; `main.ts` knows that and passes
@@ -54,8 +55,9 @@ export const uvPath = (): string => {
   return fs.existsSync(own) ? own : 'uv';
 };
 
-/** The worker, which is ours. Only the environment it runs inside is built. */
-export const worker = (): string => inside('python', 'separate.py');
+/** A worker, which is ours. Only the environment it runs inside is built. */
+export const worker = (name: 'separate.py' | 'transcribe.py' = 'separate.py'): string =>
+  inside('python', name);
 
 /**
  * What ships: the project the environment is built from, and its lock.
