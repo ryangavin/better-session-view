@@ -54,25 +54,17 @@ the window to say rather than something to fail on. `ENOENT` from a machine that
 never installed `uv` arrives as an `error` event rather than an exit code, so both are
 handled.
 
-## What a job will look like
+## What a job is
 
-The command is settled even though the plumbing is not:
+Built, and its own document: [`stems.md`](stems.md). The command is not the
+demucs CLI, because that reports progress as a tqdm bar — the worker goes
+through `demucs.api` and prints JSON. What runs is:
 
 ```sh
-uv run --project <workspace> demucs -d mps -n htdemucs -o <out> <input>
+uv run --project <workspace> --quiet python mix/python/separate.py \
+    --input <track> --out <scratch> --model <checkpoint>
 ```
 
-What has to be true around it, and none of it is written yet:
-
-- **Progress.** Demucs writes a progress bar to stderr. A bar is not a number, so it has
-  to be parsed, and a job that reports nothing for seven minutes is indistinguishable
-  from a hung one.
-- **Cancellation.** A job is minutes of GPU, and stopping one has to actually stop the
-  child rather than orphan it — the same lesson `desktop/docs/server.md` records about
-  `before-quit`.
-- **One at a time.** Two separations interleaved are both of them slower. The app already
-  refuses a second instance for this reason; a queue inside one instance is the other
-  half.
-- **Where the stems go.** Demucs writes `<out>/<model>/<track>/{drums,bass,vocals,other}`.
-  Whether that is the app's own directory or one the user picked is a question about how
-  the stems get *used*, which is the next app over.
+The worker is **ours** and lives in `mix/python/`; only the environment it runs
+inside is the workspace's. That is the seam this whole file is about: whichever
+of the three answers above wins, it changes `--project` and nothing else.

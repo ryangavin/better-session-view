@@ -1,9 +1,9 @@
 # mix[flow], packaged. `npm run pack:mix`.
 #
 # The shape is `desktop/electron-builder.base.yml`; this is what is only true of
-# this app — which, for now, is its name. What it will need and does not have
-# yet is a decision about where demucs comes from in a bundle: see
-# `docs/demucs.md`.
+# this app — its name, and the one file it runs that neither vite nor esbuild
+# produced. What it still needs and does not have is a decision about where the
+# Python *environment* comes from in a bundle: see `docs/demucs.md`.
 extends: ../desktop/electron-builder.base.yml
 
 appId: com.openflow.mix
@@ -12,6 +12,12 @@ productName: mix[flow]
 # The download name, which is not the app name — see the base config for why the
 # brackets cannot survive into a filename.
 artifactName: mix-flow-${version}-${arch}.${ext}
+
+# The separation worker, which is ours and is Python — so nothing bundles it and
+# it has to be copied in whole. The environment it runs inside is a different
+# question and an open one; this is only the script.
+files:
+  - python/**
 
 directories:
   output: ../release/mix

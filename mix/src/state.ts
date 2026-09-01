@@ -1,6 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BARS, MODELS, STEMS, modelOf, slicesFor, type Slice } from './mock.ts';
-import { openflow, workingBpm, type Library, type Track } from './openflow.ts';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BARS, STEMS, slicesFor, type Slice } from './mock.ts';
+import {
+  openflow,
+  workingBpm,
+  type Library,
+  type Model,
+  type Outcome,
+  type Progress,
+  type Track,
+} from './openflow.ts';
 
 /**
  * Everything the window knows, in one hook.
@@ -11,8 +19,10 @@ import { openflow, workingBpm, type Library, type Track } from './openflow.ts';
  * the ceremony before the thing it protects would be cargo.
  *
  * The library here is **real** — a folder on disk, read through the context
- * bridge. What is still simulated is exactly one thing, the separation, and it
- * is marked. Everything else is real state doing its real job.
+ * bridge — and so is the separation: a model, a child process, stems written
+ * into the library and recorded in its manifest. What is still invented is the
+ * *drawing* of the audio, in `peaks.ts`, because nothing here has decoded the
+ * stems that were written. That is marked where it happens.
  */
 
 export type Phase = 'empty' | 'idle' | 'running' | 'ready';
@@ -24,11 +34,8 @@ export interface Level {
   soloed: boolean;
 }
 
-export interface Job {
-  done: number;
-  stage: string;
-  perStem: Record<string, number>;
-}
+/** A separation in flight, as the main process reports it. */
+export type Job = Progress;
 
 /**
  * Setting the grid by hand, which is two clicks and then a nudge.
@@ -54,10 +61,6 @@ const REST: Level = { volume: 0.8, muted: false, soloed: false };
 const levels = (): Record<string, Level> =>
   Object.fromEntries(STEMS.map((s) => [s.id, { ...REST }]));
 
-/** How often the fake job ticks, and how much of it a tick is worth. */
-const TICK_MS = 90;
-const PER_TICK = 0.006;
-
 const NOTHING: Library = { root: null, tracks: [] };
 
 export function useMix() {
@@ -65,6 +68,7 @@ export function useMix() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [models, setModels] = useState<Model[]>([]);
   const [model, setModel] = useState('htdemucs_ft');
   const [level, setLevel] = useState<Record<string, Level>>(levels);
   const [slices, setSlices] = useState<Slice[]>(() => slicesFor(8));
@@ -76,36 +80,55 @@ export function useMix() {
   const [loop, setLoop] = useState(true);
   const [bar, setBar] = useState(0);
   const [job, setJob] = useState<Job | null>(null);
+  /** The track being separated, which is not always the track being looked at. */
+  const [runningId, setRunningId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [manual, setManual] = useState<Manual | null>(null);
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [note, setNote] = useState<string | null>(null);
+  /** Why the last separation did not produce stems. Cleared by starting another. */
+  const [problem, setProblem] = useState<string | null>(null);
 
-  /**
-   * Simulated separations, held here and **never written to the manifest**.
-   *
-   * The job in this file is a stand-in for a parser that does not exist yet, so
-   * recording its result in the user's library would be writing a lie into a
-   * file they own. It lives for as long as the window does, which is exactly as
-   * long as the pretence is useful.
-   */
-  const [pretend, setPretend] = useState<Record<string, { model: string; sources: string[] }>>({});
-
-  const tracks = useMemo(
-    () =>
-      library.tracks.map((t) => {
-        const faked = pretend[t.id];
-        return faked ? { ...t, model: faked.model, sources: faked.sources } : t;
-      }),
-    [library.tracks, pretend],
-  );
+  const tracks = library.tracks;
 
   const song = useMemo(
     () => tracks.find((t) => t.id === selected) ?? null,
     [tracks, selected],
   );
 
-  const phase: Phase = !song ? 'empty' : job ? 'running' : song.sources.length ? 'ready' : 'idle';
+  /** The model about to be run, or null before the registry has been asked for. */
+  const chosenModel = useMemo(
+    () => models.find((m) => m.id === model) ?? null,
+    [models, model],
+  );
+
+  /**
+   * What to call a model a track was separated with.
+   *
+   * Falls back to the raw id rather than to a friendlier lie: a library carried
+   * from a newer build can name a model this one does not have, and "htdemucs_x"
+   * is a better answer there than the name of a different model.
+   */
+  const labelOf = useCallback(
+    (id: string | null): string => (id ? (models.find((m) => m.id === id)?.label ?? id) : ''),
+    [models],
+  );
+
+  /**
+   * Running is a state of *this* track, not of the app.
+   *
+   * A separation takes minutes and there is no reason to be held on one page
+   * while it runs — so looking at another song shows that song's own state, and
+   * coming back shows the bar again. The header says what is separating from
+   * anywhere.
+   */
+  const phase: Phase = !song
+    ? 'empty'
+    : job && runningId === song.id
+      ? 'running'
+      : song.sources.length
+        ? 'ready'
+        : 'idle';
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -131,6 +154,27 @@ export function useMix() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  /**
+   * The models this build will run, asked for rather than restated.
+   *
+   * Without an app around the page there are none, and the window says so —
+   * the alternative is a second copy of the registry here that a browser
+   * session would offer and no job could honour.
+   *
+   * `busy` covers one real case: reloading the renderer during a `vite`
+   * session does not stop the main process, so a job started before the reload
+   * is still running and still reporting. Asking on mount is what reattaches
+   * the window to it instead of showing an idle page over a running GPU.
+   */
+  useEffect(() => {
+    const bridge = openflow();
+    if (!bridge) return;
+    void bridge.separate.models().then(setModels);
+    void bridge.separate.busy().then((id) => {
+      if (id) setRunningId(id);
+    });
+  }, []);
 
   const chooseFolder = useCallback(async () => {
     const bridge = openflow();
@@ -182,48 +226,43 @@ export function useMix() {
     [level, song],
   );
 
-  // The one simulated thing in this file. A real run reports progress by
-  // parsing demucs's stderr, which is a bar rather than a number — see
-  // mix/docs/demucs.md — so this stands in for a parser that does not exist.
+  /**
+   * The separation, as it happens.
+   *
+   * Progress arrives as an event rather than as the resolution of a promise,
+   * because it arrives hundreds of times over minutes and there is nothing to
+   * reply to. Both listeners are mounted once, for the window rather than for
+   * the page showing the job — a separation takes minutes and there is no
+   * reason to be held on one track while it runs, so the track it belongs to is
+   * kept beside it and `phase` is what decides who draws a bar.
+   *
+   * `finished` refreshes the library rather than patching state, because by then
+   * the manifest on disk is the truth — the main process wrote it — and a second
+   * copy of that truth held here is the thing that would go stale.
+   */
   useEffect(() => {
-    if (!job) return;
-    const sources = modelOf(model).sources;
-    const timer = setInterval(() => {
-      setJob((was) => {
-        if (!was) return was;
-        const done = was.done + PER_TICK;
-        if (done >= 1) return null;
-        const perStem = Object.fromEntries(
-          sources.map((id, i) => {
-            const from = (i / sources.length) * 0.7;
-            return [id, Math.max(0, Math.min(1, (done - from) / 0.3))];
-          }),
-        );
-        const stage =
-          done < 0.12
-            ? 'loading the model'
-            : done < 0.2
-              ? 'reading the file'
-              : done < 0.94
-                ? `separating · ${sources.length} sources`
-                : 'writing stems';
-        return { done, stage, perStem };
-      });
-    }, TICK_MS);
-    return () => clearInterval(timer);
-  }, [job === null, model]);
-
-  // When it finishes, the track has stems — in this window only.
-  const wasRunning = useRef(false);
-  useEffect(() => {
-    if (wasRunning.current && !job && selected) {
-      setPretend((was) => ({
-        ...was,
-        [selected]: { model, sources: [...modelOf(model).sources] },
-      }));
-    }
-    wasRunning.current = job !== null;
-  }, [job, selected, model]);
+    const bridge = openflow();
+    if (!bridge) return;
+    const offProgress = bridge.separate.onProgress(({ trackId, progress }) => {
+      // One job at a time is the runner's rule, so the job that reports is the
+      // job that is running — there is no second one this could be confused
+      // with. Which *track* it belongs to still matters, because the window can
+      // be moved to another song while it runs.
+      setRunningId(trackId);
+      setJob(progress);
+    });
+    const offFinished = bridge.separate.onFinished((outcome) => {
+      setJob(null);
+      setRunningId(null);
+      if (!outcome.ok) setProblem(outcome.cancelled ? null : outcome.says);
+      else setProblem(null);
+      void refresh();
+    });
+    return () => {
+      offProgress();
+      offFinished();
+    };
+  }, [refresh]);
 
   // The playhead, on the wall clock. It is not driving audio and does not
   // pretend to: the bar it reports is what a preview would be at, and the only
@@ -261,11 +300,39 @@ export function useMix() {
     [tracks],
   );
 
-  const separate = useCallback(() => {
-    setJob({ done: 0, stage: 'loading the model', perStem: {} });
-  }, []);
+  /**
+   * Start one.
+   *
+   * The promise this awaits resolves at the *end* of the job, minutes later,
+   * and is not what draws the bar — the progress listener above is. What it is
+   * for is the case where the job never started at all: no library, no model,
+   * no `uv`. Those come back as an outcome rather than as a rejection, so they
+   * land in the same place every other reason a track has no stems does.
+   */
+  const separate = useCallback(async () => {
+    const bridge = openflow();
+    if (!bridge || !song) return;
+    setProblem(null);
+    setRunningId(song.id);
+    setJob({ done: 0, stage: 'loading the model', sources: [], perStem: null, written: [], seconds: null });
+    const outcome = await bridge.separate.run({ trackId: song.id, file: song.file, model });
+    if (!outcome.ok && !outcome.cancelled) setProblem(outcome.says);
+  }, [song, model]);
 
-  const cancel = useCallback(() => setJob(null), []);
+  /**
+   * Stop it, naming the track.
+   *
+   * Named because a cancel that arrives after the job it meant has finished
+   * would otherwise kill the next one. The main process checks the name too;
+   * this is the half that stops the window drawing a bar for something it has
+   * already asked to end.
+   */
+  const cancel = useCallback(() => {
+    const id = runningId;
+    setJob(null);
+    setRunningId(null);
+    if (id) void openflow()?.separate.cancel(id);
+  }, [runningId]);
 
   const autoWarp = useCallback(() => {
     setAnchors([
@@ -362,7 +429,9 @@ export function useMix() {
     setQuery,
     model,
     setModel,
-    models: MODELS,
+    models,
+    chosenModel,
+    labelOf,
     level,
     adjust,
     audible,
@@ -385,6 +454,8 @@ export function useMix() {
     bar,
     stop,
     job,
+    runningId,
+    problem,
     separate,
     cancel,
     exporting,

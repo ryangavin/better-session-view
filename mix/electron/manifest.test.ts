@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { AUDIO, MANIFEST, addFiles, empty, read, tidy, write } from './manifest.ts';
+import { AUDIO, MANIFEST, addFiles, empty, read, recordStems, tidy, write } from './manifest.ts';
 
 /**
  * This is the file that owns a person's library, so it is the one that gets
@@ -79,6 +79,7 @@ describe('writing', () => {
       added: '2026-09-01T00:00:00.000Z',
       model: null,
       sources: [],
+      stems: null,
     });
     await write(root, manifest);
     expect(await read(root)).toEqual(manifest);
@@ -175,5 +176,84 @@ describe('tidy', () => {
     expect(tidy('...')).toBe('track');
     expect(tidy('   ')).toBe('track');
     expect(tidy('.hidden')).toBe('hidden');
+  });
+});
+
+describe('recording a separation', () => {
+  /** One imported track, which is what a separation is always run against. */
+  const imported = async (): Promise<string> => {
+    await addFiles(root, [await drop('song.wav')]);
+    return (await read(root)).tracks[0].id;
+  };
+
+  it('records where the stems are and what made them, together', async () => {
+    const id = await imported();
+    await recordStems(root, id, {
+      model: 'htdemucs_ft',
+      sources: ['drums', 'bass', 'other', 'vocals'],
+      stems: `stems/${id}/htdemucs_ft`,
+    });
+    const track = (await read(root)).tracks[0];
+    expect(track.model).toBe('htdemucs_ft');
+    expect(track.stems).toBe(`stems/${id}/htdemucs_ft`);
+    expect(track.sources).toEqual(['drums', 'bass', 'other', 'vocals']);
+  });
+
+  it('keeps the stem path relative, because a library travels', async () => {
+    const id = await imported();
+    await recordStems(root, id, { model: 'htdemucs', sources: ['vocals'], stems: `stems/${id}/htdemucs` });
+    const track = (await read(root)).tracks[0];
+    expect(path.isAbsolute(track.stems!)).toBe(false);
+    expect(track.stems).not.toContain('..');
+    expect(track.stems).not.toContain('\\');
+  });
+
+  it('fills in the length the separator measured, since nothing else had', async () => {
+    const id = await imported();
+    expect((await read(root)).tracks[0].seconds).toBeNull();
+    await recordStems(root, id, {
+      model: 'htdemucs',
+      sources: ['vocals'],
+      stems: 's',
+      seconds: 240.43,
+    });
+    expect((await read(root)).tracks[0].seconds).toBe(240);
+  });
+
+  it('does not overwrite a length something else already established', async () => {
+    const id = await imported();
+    const manifest = await read(root);
+    manifest.tracks[0].seconds = 187;
+    await write(root, manifest);
+    await recordStems(root, id, { model: 'htdemucs', sources: [], stems: 's', seconds: 240.43 });
+    expect((await read(root)).tracks[0].seconds).toBe(187);
+  });
+
+  it('leaves the other tracks alone', async () => {
+    await addFiles(root, [await drop('one.wav'), await drop('two.wav')]);
+    const [first, second] = (await read(root)).tracks;
+    await recordStems(root, first.id, { model: 'htdemucs', sources: ['vocals'], stems: 's' });
+    expect((await read(root)).tracks[1]).toEqual(second);
+  });
+
+  it('writes nothing for a track somebody deleted while it was separating', async () => {
+    await imported();
+    const before = await read(root);
+    await recordStems(root, 'a-track-that-is-gone', {
+      model: 'htdemucs',
+      sources: ['vocals'],
+      stems: 's',
+    });
+    expect(await read(root)).toEqual(before);
+  });
+
+  it('replaces the previous separation rather than accumulating them', async () => {
+    const id = await imported();
+    await recordStems(root, id, { model: 'htdemucs', sources: ['vocals', 'other'], stems: 'a' });
+    await recordStems(root, id, { model: 'htdemucs_6s', sources: ['piano'], stems: 'b' });
+    const tracks = (await read(root)).tracks;
+    expect(tracks).toHaveLength(1);
+    expect(tracks[0].model).toBe('htdemucs_6s');
+    expect(tracks[0].stems).toBe('b');
   });
 });

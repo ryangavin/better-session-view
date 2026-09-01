@@ -1,26 +1,25 @@
 import { Button } from '@openflow/widgets/controls/Button.tsx';
-import { STEMS, modelOf } from '../mock.ts';
-import { duration } from '../openflow.ts';
+import { STEMS } from '../mock.ts';
+import { duration, estimate, roughly } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './Idle.css';
 
 /**
- * What a track with no stems on disk shows: the three models, what each one
- * trades away, and one button.
+ * What a track with no stems on disk shows: the models this build will actually
+ * run, what each one trades away, and one button.
  *
  * The cards say the trade rather than the score. A model's SDR figure is not
  * something you can act on standing at a laptop; "the piano bleeds badly" is.
+ *
+ * The list comes from the main process rather than from a constant here, so
+ * what is offered and what a job runs are one registry. Without an app around
+ * the page there is nothing to offer and the page says so — which is honest, and
+ * is what a `vite` session in a browser tab gets.
  */
 export function Idle({ mix }: { mix: Mix }) {
   const song = mix.song;
-  const chosen = modelOf(mix.model);
-  const factor = Number(chosen.speed.replace(/[^\d.]/g, '')) || 1;
-  // A duration nobody has measured cannot be turned into an estimate, and a
-  // made-up "about 4 min" is worse than admitting the length is not known yet.
-  const estimate =
-    song?.seconds == null
-      ? null
-      : Math.max(1, Math.round(song.seconds / 60 / factor));
+  const chosen = mix.chosenModel;
+  const wait = roughly(estimate(chosen, song?.seconds ?? null));
 
   if (!song) return null;
 
@@ -34,6 +33,8 @@ export function Idle({ mix }: { mix: Mix }) {
           splits guitar and piano out of the residual; a four-source one folds them back
           into Other.
         </p>
+
+        {mix.problem && <p className="mf-page-problem">{mix.problem}</p>}
 
         <div className="mf-models">
           {mix.models.map((model) => (
@@ -67,13 +68,22 @@ export function Idle({ mix }: { mix: Mix }) {
         </div>
 
         <div className="mf-page-actions">
-          <Button onPress={mix.separate} tone="normal" className="mf-primary">
+          <Button
+            onPress={() => void mix.separate()}
+            tone="normal"
+            className="mf-primary"
+            disabled={!chosen || mix.runningId !== null}
+          >
             Generate stems
           </Button>
           <span className="mf-estimate">
-            {estimate === null
-              ? `${chosen.speed} — length not read yet`
-              : `${duration(song.seconds)} at ${chosen.speed} · about ${estimate} min`}
+            {!chosen
+              ? 'separation needs the app around this page'
+              : mix.runningId !== null
+                ? 'one at a time — something else is separating'
+                : wait === null
+                  ? `${chosen.speed} — length not read yet`
+                  : `${duration(song.seconds)} at ${chosen.speed} · ${wait}`}
           </span>
         </div>
       </div>

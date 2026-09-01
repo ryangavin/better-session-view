@@ -3,7 +3,7 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Slider } from '@openflow/widgets/controls/Slider.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import { BARS, STEMS, modelOf } from '../mock.ts';
+import { BARS, STEMS } from '../mock.ts';
 import { onsetsFor, peaksFor } from '../peaks.ts';
 import type { Mix } from '../state.ts';
 import { Waveform } from './Waveform.tsx';
@@ -98,7 +98,7 @@ export function Lanes({ mix }: { mix: Mix }) {
           </div>
           <div className="mf-band-bottom">
             <span className="mf-band-audible">{mix.audibleLine}</span>
-            <span className="mf-band-model">{modelOf(song.model ?? '').label}</span>
+            <span className="mf-band-model">{mix.labelOf(song.model)}</span>
           </div>
         </div>
 

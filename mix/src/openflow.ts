@@ -13,6 +13,60 @@ export interface Ready {
   workspace: string;
 }
 
+/** A model this build will run. The main process owns the list; this is its shape. */
+export interface Model {
+  id: string;
+  label: string;
+  engine: string;
+  checkpoint: string;
+  sources: string[];
+  realtime: number;
+  load: number;
+  speed: string;
+  blurb: string;
+  needs: string[];
+}
+
+/** What a separation in flight looks like from here. */
+export interface Progress {
+  done: number;
+  stage: string;
+  sources: string[];
+  /** Null where the model produces every source in one pass, which is most of them. */
+  perStem: Record<string, number> | null;
+  written: string[];
+  seconds: number | null;
+}
+
+export interface Finished {
+  ok: true;
+  trackId: string;
+  model: string;
+  sources: string[];
+  stems: string;
+  /** Everything the run measured — the residual most of all. */
+  sidecar: {
+    residual: number;
+    seconds: number;
+    wall: number;
+    samplerate: number;
+    channels: number;
+    device: string;
+    stems: { source: string; file: string; rms: number }[];
+  };
+  /** The work was skipped: an identical separation was already on disk. */
+  reused: boolean;
+}
+
+export interface Failed {
+  ok: false;
+  trackId: string;
+  says: string;
+  cancelled: boolean;
+}
+
+export type Outcome = Finished | Failed;
+
 /** One track in the library. Every path is relative to the library root. */
 export interface Track {
   id: string;
@@ -26,6 +80,8 @@ export interface Track {
   added: string;
   model: string | null;
   sources: string[];
+  /** `stems/<id>/<model>`, relative to the root, or null until one exists. */
+  stems: string | null;
 }
 
 export interface Library {
@@ -46,6 +102,14 @@ interface Bridge {
     choose(): Promise<Library>;
     add(files?: string[]): Promise<Imported>;
     reveal(): Promise<void>;
+  };
+  separate: {
+    models(): Promise<Model[]>;
+    busy(): Promise<string | null>;
+    run(ask: { trackId: string; file: string; model: string }): Promise<Outcome>;
+    cancel(trackId?: string): Promise<void>;
+    onProgress(hear: (at: { trackId: string; progress: Progress }) => void): () => void;
+    onFinished(hear: (outcome: Outcome) => void): () => void;
   };
 }
 
@@ -76,3 +140,22 @@ export const facts = (track: Track): string => {
 
 /** The tempo to work in. Undetected means 120 and a grid bar that says so. */
 export const workingBpm = (track: Track | null): number => track?.bpm ?? 120;
+
+/**
+ * How long a separation will take, in seconds, or null when the length is not known.
+ *
+ * The same two terms `mix/electron/job.ts` uses, restated here for the same
+ * reason the types are: this side is a separate compilation. A fixed cost for
+ * starting Python and reading the checkpoints, then a rate — because a
+ * twenty-second clip is mostly the first and a ten-minute track is mostly the
+ * second, and one multiplier covering both is wrong at one end.
+ */
+export const estimate = (model: Model | null, seconds: number | null): number | null =>
+  model && seconds !== null ? Math.round(model.load + seconds / model.realtime) : null;
+
+/** `about 2 min`, or `about 40 sec`. Rounded, because it is an estimate. */
+export const roughly = (seconds: number | null): string | null => {
+  if (seconds === null) return null;
+  if (seconds < 90) return `about ${Math.max(10, Math.round(seconds / 10) * 10)} sec`;
+  return `about ${Math.round(seconds / 60)} min`;
+};

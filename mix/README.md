@@ -10,12 +10,13 @@ npm run mix          # the app, on what is built
 npm run pack:mix     # a .app and a .dmg under release/mix/
 ```
 
-**The library is real; the audio is not.** Tracks live in a folder you pick, copied there
-on import, indexed by a manifest that makes the folder portable —
-[`docs/library.md`](docs/library.md). The waveforms are invented and the separation is a
-timer standing in for a parser. The library, the waveforms and the slices are invented in
-`src/mock.ts` and `src/peaks.ts`, and nothing separates anything yet — the one honest fact
-on screen is the demucs probe in the status bar.
+**The library and the separation are real; the drawing of the audio is not.** Tracks live
+in a folder you pick, copied there on import, indexed by a manifest that makes the folder
+portable — [`docs/library.md`](docs/library.md). Pressing Generate runs Demucs against the
+file and writes float32 stems into that same folder with a sidecar describing them —
+[`docs/stems.md`](docs/stems.md). What is still invented is the *waveforms*: nothing has
+decoded the stems for the window yet, so `src/peaks.ts` draws an envelope with the shape of
+real audio instead of the audio that was written. The slices are invented too.
 
 **This is an index. Read the row you're changing.**
 
@@ -23,19 +24,24 @@ on screen is the demucs probe in the status bar.
 |---|---|
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
 | the layout, the colours, or which control is a widget | [`docs/window.md`](docs/window.md) — `src/` |
-| where the model comes from, and what a job will look like | [`docs/demucs.md`](docs/demucs.md) — `electron/demucs.ts` |
+| separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
+| where the Python environment comes from, and the probe | [`docs/demucs.md`](docs/demucs.md) — `electron/demucs.ts` |
 | the window, packaging, or anything shared with the other apps | [`desktop/README.md`](../desktop/README.md) — there is no mix[flow] version of it, and that is the point |
 
 ## What is actually here
 
 | file | |
 |---|---|
-| `electron/main.ts` | 50 lines. Two of them are this app's: it asks about demucs, and it refuses to run twice |
+| `electron/main.ts` | the window, the library's four calls, and separation's five |
 | `electron/demucs.ts` | the readiness probe, and the open question behind it |
 | `electron/manifest.ts` | the library on disk. No electron import, so it is testable — and tested |
 | `electron/library.ts` | the dialogs, and where the folder is right now |
-| `electron/preload.ts` | one function across the context bridge |
-| `src/mock.ts`, `src/peaks.ts` | the sources and models, and the invented audio |
+| `electron/models.ts` | which models will run, what they emit, what they cost |
+| `electron/job.ts` | what a separation is: the cache key, the sidecar, the progress. Tested |
+| `electron/separate.ts` | the child process, one at a time, and cancelling it |
+| `python/separate.py` | the worker. Talks JSON, writes stems that sum |
+| `electron/preload.ts` | the context bridge |
+| `src/mock.ts`, `src/peaks.ts` | how a source is drawn, and the invented waveforms |
 | `src/state.ts` | everything the window knows, in one hook |
 | `src/components/` | the header, the library, the three states, the lanes and the warp lane |
 

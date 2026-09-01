@@ -46,6 +46,12 @@ async function writeRoot(root: string): Promise<void> {
   await fs.writeFile(settingsFile(), `${JSON.stringify({ library: root }, null, 2)}\n`);
 }
 
+/**
+ * Where the library is, for the parts of this app that work in the folder
+ * rather than on the index — which is separation, and nothing else so far.
+ */
+export const root = (): Promise<string | null> => readRoot();
+
 export async function load(): Promise<Library> {
   const root = await readRoot();
   if (!root) return { root: null, tracks: [] };

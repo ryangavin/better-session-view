@@ -1,13 +1,16 @@
 /**
- * What a source is, what the models are, and what a slice is.
+ * What a source looks like on screen, and what a slice is.
  *
- * This used to hold an invented library too, and does not any more: the library
- * is a real folder on disk now, read through `electron/library.ts`. What is
- * left here is domain rather than mock — six sources demucs actually emits,
- * three models it actually ships, and the shape of a slice.
+ * This used to hold an invented library, and then the model list, and holds
+ * neither now: the library is a real folder read through `electron/library.ts`,
+ * and the models are `electron/models.ts`, answered over the bridge so that
+ * what the window offers and what a job actually runs cannot drift apart. What
+ * is left is presentation — an ink and a glyph per source — and the shape of a
+ * slice.
  *
  * The audio is still invented, in `peaks.ts`, because nothing has decoded a
- * file yet.
+ * file for the *window* yet. The separator decodes one, and the stems it writes
+ * are real; drawing them is the next piece.
  */
 
 export interface Stem {
@@ -29,8 +32,8 @@ export interface Stem {
  * Demucs's own six sources, in the order it emits them.
  *
  * Guitar and piano are only separated by a six-source model; a four-source one
- * folds both back into Other, which is why `Model.sources` is a list rather
- * than a count.
+ * folds both back into Other, which is why a model declares the sources it emits
+ * rather than a count.
  */
 export const STEMS: readonly Stem[] = [
   { id: 'vocals', name: 'Vocals', ink: 'var(--stem-vocals)', glyph: 'V' },
@@ -42,47 +45,6 @@ export const STEMS: readonly Stem[] = [
 ];
 
 export const stemOf = (id: string): Stem => STEMS.find((s) => s.id === id) ?? STEMS[5];
-
-const FOUR = ['vocals', 'drums', 'bass', 'other'];
-const SIX = STEMS.map((s) => s.id);
-
-export interface Model {
-  id: string;
-  label: string;
-  sources: readonly string[];
-  /** Against the clock, from `demucs/README.md`'s bench on this machine. */
-  speed: string;
-  blurb: string;
-}
-
-export const MODELS: readonly Model[] = [
-  {
-    id: 'htdemucs_ft',
-    label: 'demucs ft · 6',
-    sources: SIX,
-    speed: '~0.6× realtime',
-    blurb:
-      'Four fine-tuned checkpoints, one per source. The cleanest vocal of the three, and the one to leave running while you do something else.',
-  },
-  {
-    id: 'htdemucs',
-    label: 'demucs · 4',
-    sources: FOUR,
-    speed: '~4.9× realtime',
-    blurb:
-      'Base Demucs, one transformer pass. Fast enough to audition a whole crate; guitar and piano stay folded into Other.',
-  },
-  {
-    id: 'htdemucs_6s',
-    label: 'demucs · 6',
-    sources: SIX,
-    speed: '~2.5× realtime',
-    blurb:
-      'Adds guitar and piano to the base model. The guitar is usable; the piano bleeds badly and is worth checking before you trust it.',
-  },
-];
-
-export const modelOf = (id: string): Model => MODELS.find((m) => m.id === id) ?? MODELS[0];
 
 /**
  * A slice is a span of bars with a name — what becomes one Session row when the

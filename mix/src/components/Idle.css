@@ -34,6 +34,15 @@
   text-wrap: pretty;
 }
 
+.mf-page-problem {
+  margin: 12px 0 0;
+  max-width: 520px;
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
 .mf-models {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

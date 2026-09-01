@@ -40,6 +40,16 @@ export interface Track {
   /** Which model produced the stems on disk, and which sources it produced. */
   model: string | null;
   sources: string[];
+  /**
+   * Where those stems are, relative to the root — `stems/<id>/<model>`.
+   *
+   * Relative like everything else here, and separate from `model` because the
+   * two answer different questions: `model` is what produced them and this is
+   * where to find them. A sidecar in that directory holds the rest, including
+   * the source hash it was made from, so a stale stem folder can be recognised
+   * as stale rather than believed.
+   */
+  stems: string | null;
 }
 
 export interface Manifest {
@@ -71,7 +81,15 @@ export async function read(root: string): Promise<Manifest> {
   const held = JSON.parse(text) as Manifest;
   if (held.openflow !== 'mix-library') throw new Error(`${MANIFEST} is not a mix[flow] library`);
   if (!Array.isArray(held.tracks)) throw new Error(`${MANIFEST} has no track list`);
-  return { ...held, version: held.version ?? FORMAT };
+  // A field added after a library was written reads as `undefined`, and a
+  // `Track` that claims `stems: string | null` while holding `undefined` is a
+  // type that lies. Filling it here rather than at every use is what keeps the
+  // rest of this app from having to know which version wrote the file.
+  return {
+    ...held,
+    version: held.version ?? FORMAT,
+    tracks: held.tracks.map((track) => ({ ...track, stems: track.stems ?? null })),
+  };
 }
 
 /**
@@ -121,6 +139,39 @@ export interface Added {
 }
 
 /**
+ * Record a finished separation against one track.
+ *
+ * Read, change one track, write the whole thing back — the same atomic write
+ * every other change here uses, because two facts have to land together or
+ * neither should: where the stems are, and which model made them. A manifest
+ * naming a model with no directory beside it is the one state the window cannot
+ * render honestly.
+ *
+ * `seconds` arrives from the separation because the separator is the first
+ * thing in this app that has actually decoded the file. Until then a track's
+ * length is null and is drawn as unknown rather than as zero; after one, it is
+ * measured rather than estimated.
+ */
+export async function recordStems(
+  root: string,
+  id: string,
+  found: { model: string; sources: string[]; stems: string; seconds?: number | null },
+): Promise<Manifest> {
+  const manifest = await read(root);
+  const track = manifest.tracks.find((t) => t.id === id);
+  // A track deleted from the library while its separation was running. The
+  // stems are on disk and orphaned, which is untidy; writing a row back for a
+  // track somebody removed would be worse.
+  if (!track) return manifest;
+  track.model = found.model;
+  track.sources = found.sources;
+  track.stems = found.stems;
+  if (found.seconds != null && track.seconds == null) track.seconds = Math.round(found.seconds);
+  await write(root, manifest);
+  return manifest;
+}
+
+/**
  * Copy files in, and record them.
  *
  * The manifest is written **once**, after every copy has either worked or
@@ -165,6 +216,7 @@ export async function addFiles(root: string, files: readonly string[]): Promise<
         added: new Date().toISOString(),
         model: null,
         sources: [],
+        stems: null,
       });
       added += 1;
     } catch (why) {

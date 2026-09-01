@@ -58,10 +58,12 @@ export default defineConfig({
         'set/src/**/*.{ts,tsx}',
         'mix/src/**/*.{ts,tsx}',
         // Not the whole of electron/: main.ts and library.ts import electron,
-        // which only exists inside a main process. The manifest is the part
-        // that owns a person's library, and it is the part with no electron in
-        // it precisely so it can be reached from here.
+        // which only exists inside a main process. These three are the parts
+        // that own a person's library and what gets written into it, and they
+        // have no electron in them precisely so they can be reached from here.
         'mix/electron/manifest.ts',
+        'mix/electron/job.ts',
+        'mix/electron/models.ts',
         'visuals/client/**/*.{ts,tsx}',
         'visuals/server/**/*.{ts,tsx}',
         'chart/src/**/*.{ts,tsx}',

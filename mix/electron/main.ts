@@ -7,7 +7,11 @@ import { state } from '@openflow/desktop/state.ts';
 import { updates } from '@openflow/desktop/update.ts';
 import { lifecycle, only, open } from '@openflow/desktop/window.ts';
 import { ready } from './demucs.ts';
-import { add, choose, load, reveal } from './library.ts';
+import { add, choose, load, reveal, root } from './library.ts';
+import { MODELS } from './models.ts';
+import { recordStems } from './manifest.ts';
+import { busy, cancel, separate, stopAll, type Outcome } from './separate.ts';
+import type { Progress } from './job.ts';
 
 /**
  * mix[flow]: a mix in, four parts out.
@@ -56,6 +60,57 @@ if (only(app)) {
   ipcMain.handle('openflow:library-choose', () => choose(window_()));
   ipcMain.handle('openflow:library-add', (_event, files?: string[]) => add(window_(), files));
   ipcMain.handle('openflow:library-reveal', () => reveal());
+
+  // Separation. The registry is answered rather than restated in the renderer,
+  // so what the window offers and what a job will actually run are one list.
+  ipcMain.handle('openflow:models', () => MODELS);
+  ipcMain.handle('openflow:separating', () => busy());
+  ipcMain.handle('openflow:separate-cancel', (_event, trackId?: string) => cancel(trackId));
+
+  /**
+   * Progress goes out as an event rather than back as a return value, because
+   * it arrives hundreds of times across minutes and there is nothing to reply
+   * to. `invoke` resolves once, at the end, with the outcome.
+   */
+  const push = (channel: string, payload: unknown): void => {
+    const win = window_();
+    if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
+  };
+
+  ipcMain.handle(
+    'openflow:separate',
+    async (_event, ask: { trackId: string; file: string; model: string }): Promise<Outcome> => {
+      const where = await root();
+      if (!where) {
+        return { ok: false, trackId: ask.trackId, says: 'no library folder chosen', cancelled: false };
+      }
+      const outcome = await separate(
+        { root: where, trackId: ask.trackId, file: ask.file, model: ask.model },
+        {
+          progress: (trackId: string, progress: Progress) =>
+            push('openflow:separate-progress', { trackId, progress }),
+          finished: (done: Outcome) => push('openflow:separate-finished', done),
+        },
+      );
+      // The manifest is written here rather than inside the runner: the runner
+      // owns a child process and a directory, and the library is the one thing
+      // in this app that must not be written by two owners.
+      if (outcome.ok) {
+        await recordStems(where, outcome.trackId, {
+          model: outcome.model,
+          sources: outcome.sources,
+          stems: outcome.stems,
+          seconds: outcome.sidecar.seconds,
+        });
+      }
+      return outcome;
+    },
+  );
+
+  // A separation is a child process holding the GPU, and quitting the window
+  // that started it is not a reason for it to carry on. Same lesson as
+  // `desktop/docs/server.md` records about a server.
+  app.on('before-quit', stopAll);
 
   void app.whenReady().then(() => {
     serve(MIX, DIST);
