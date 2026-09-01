@@ -102,6 +102,7 @@ interface Bridge {
     choose(): Promise<Library>;
     add(files?: string[]): Promise<Imported>;
     reveal(): Promise<void>;
+    base(): Promise<string>;
   };
   separate: {
     models(): Promise<Model[]>;

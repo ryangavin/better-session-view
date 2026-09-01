@@ -72,9 +72,11 @@ fraction, and it is why the band above the lanes carries a head of its own — i
 the mix summary and the two buttons that change it, and it exists as much to reserve
 that column as to say anything.
 
-Six lanes at 46px is the density that lets you *see* an arrangement — the eight-bar
-sections in `peaks.ts` are visible as blocks, and a fill in the last bar of eight is a
-single darker column you can point at.
+Six lanes at 46px is the density that lets you *see* an arrangement — a breakdown is a
+block where the drums stop, and a fill is a darker column you can point at. Clicking any
+lane moves the head there: a waveform is what you are looking at when you decide where to
+listen from, and reaching back up to a strip at the top to act on it is the sort of gap
+that makes a window feel like a diagram of a DAW rather than one.
 
 ## The grid, and the two ways of setting it
 
@@ -86,10 +88,14 @@ grid is right; when they walk off them it is not. A tempo a fraction out does no
 wrong at bar 2 and is unmistakable by bar 60, which is why this is full width rather than
 a detail view.
 
-`onsetsFor()` derives those ticks from the same peaks the lanes draw, which is not a
-shortcut — it is how detection works, and it means a tick always lines up with the
-transient below it. A warp lane that disagreed with the waveforms would be worse than no
-warp lane, because it would look like the grid was wrong.
+The ticks come off the same peaks the lanes draw, which is not a shortcut — it is how
+detection works, and it means a tick always lines up with the transient below it. A warp
+lane that disagreed with the waveforms would be worse than no warp lane, because it would
+look like the grid was wrong. They are taken from the **drums** where there are drums,
+which is most of the argument for fitting a grid after separating rather than before.
+
+Their bar positions are the grid's claim rather than a property of the audio, so changing
+the tempo walks them off the lines or onto them. That is the lane doing its job.
 
 **Auto-warp** re-runs detection and pins both ends; a grid pinned at both ends cannot
 drift in the middle by more than the tempo is actually wrong by. **Manual** is two clicks
@@ -154,23 +160,28 @@ colour changes in one place and nothing else has to be read to find out why.
 
 ## What is invented
 
-**The library is not.** It is a folder on disk read through `electron/library.ts` —
-[`library.md`](library.md) — so the rail, the counts and the badge strips are all real.
+**Two things, and neither is the audio any more.**
 
-`peaks.ts` is the audio, because nothing has decoded a file yet, and it is derived from
-an index rather than random so the picture is the same on every launch — which is what
-makes a screenshot worth comparing against the last one. A track imported today has no
-tempo, no key and no length, and the window draws all three as unknown rather than
-inventing them.
+The library is a folder on disk read through `electron/library.ts` —
+[`library.md`](library.md) — so the rail, the counts and the badge strips are real. The
+separation is a child process, and the progress bar is what it reports —
+[`stems.md`](stems.md). The waveforms are the stems that process wrote, decoded, and the
+transport plays those same buffers — [`playback.md`](playback.md) — so the picture and
+the sound cannot disagree, which they could the moment they came from two places.
+
+**The slices are invented**: eight evenly spaced spans with names, because nothing reads
+the audio to place them. They are a ruler rather than a reading of the song, and
+`mock.ts` says so where they are made.
+
+**The tempo is not detected.** `bpmAuto` is a flag with nothing behind it and the grid is
+120 until somebody sets it by hand. The window is honest about this in the only way that
+matters — a track imported today has no tempo, no key and no length until something
+measures one, and all three are drawn as unknown rather than as zero. The onsets
+detection would be fitted to are already computed and already on screen.
 
 The other real fact is in the header: whether this machine could separate anything, which
-comes over the context bridge from `electron/demucs.ts`. A window that
-mocked its own toolchain check would be a window you could not trust about anything.
-
-`state.ts` marks the single simulated behaviour — the job's progress — and everything
-else in it is real state doing its real job, the manual grid included. Replacing the simulation means replacing one
-`useEffect`, because what feeds it is the shape the parser in
-[`demucs.md`](demucs.md) will have to produce.
+comes over the context bridge from `electron/demucs.ts`. A window that mocked its own
+toolchain check would be a window you could not trust about anything.
 
 ## Vocabulary
 

@@ -1,7 +1,6 @@
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
-import { BARS } from '../mock.ts';
 import type { Ready } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './Header.css';
@@ -78,11 +77,17 @@ const crosshair = (
 const SNAP = ['1/1', '1/2', '1/4'];
 
 /** bar.beat.sixteenth, one-based, from a position measured in bars. */
-function position(bar: number): string {
+function position(bar: number, bars: number): string {
   const whole = Math.floor(bar);
   const beat = Math.floor((bar - whole) * 4);
   const sixteenth = Math.floor(((bar - whole) * 4 - beat) * 4);
-  return `${Math.min(whole, BARS - 1) + 1}.${beat + 1}.${sixteenth + 1}`;
+  return `${Math.min(whole, Math.max(0, bars - 1)) + 1}.${beat + 1}.${sixteenth + 1}`;
+}
+
+/** `3:07`, beside the bar count, because a length in bars is a claim and this is not. */
+function clockOf(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 }
 
 export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
@@ -120,19 +125,38 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
             <Button
               onPress={() => mix.setPlaying(!mix.playing)}
               label={mix.playing ? 'Pause' : 'Play'}
-              title={mix.playing ? 'Pause (Space)' : 'Play (Space)'}
+              title={
+                !mix.playable
+                  ? mix.decoding
+                    ? 'Reading the stems'
+                    : 'No stems loaded'
+                  : mix.playing
+                    ? 'Pause (Space)'
+                    : 'Play (Space)'
+              }
               width={26}
+              disabled={!mix.playable}
               className={mix.playing ? 'mf-playing' : undefined}
             >
               {mix.playing ? pause : play}
             </Button>
-            <Button onPress={mix.stop} label="Stop" title="Stop and return to the top" width={26}>
+            <Button
+              onPress={mix.stop}
+              label="Stop"
+              title="Stop and return to the top"
+              width={26}
+              disabled={!mix.playable}
+            >
               {stopMark}
             </Button>
-            <Toggle on={mix.loop} onChange={mix.setLoop} label="Loop" title="Loop the preview" width={26}>
+            <Toggle on={mix.loop} onChange={mix.setLoop} label="Loop" title="Loop the whole track" width={26}>
               {loopMark}
             </Toggle>
-            <span className="mf-clock">{position(mix.bar)}</span>
+            {/* Bars are the grid's claim; the clock is what is true whatever
+                tempo anybody decides on. Both, because a slice is placed in one
+                and heard in the other. */}
+            <span className="mf-clock">{position(mix.bar, mix.bars)}</span>
+            <span className="mf-clock mf-clock-time">{clockOf(mix.position)}</span>
           </div>
 
           <div className="mf-group" role="group" aria-label="Grid">

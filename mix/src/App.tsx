@@ -25,13 +25,15 @@ import './App.css';
  * with stems is the lanes. Nothing here is a tab, because they are states of
  * one track rather than views of it — you do not choose to be separating.
  *
- * **The library and the separation are real; the waveforms are not.** The tracks
- * come from a folder on disk through `electron/library.ts`, and pressing
- * Generate runs Demucs against the file and writes stems back into that folder
- * — `docs/stems.md`. What is still invented is `peaks.ts`, because nothing here
- * has decoded the stems that were written: the lanes draw an envelope with the
- * shape of real audio rather than the audio itself. So are the slices. Which of
- * those is which is marked at every point it matters.
+ * **Nothing on screen is pretend any more except the slices.** The tracks come
+ * from a folder on disk, pressing Generate runs Demucs against the file
+ * (`docs/stems.md`), and the lanes draw — and the transport plays — the stems
+ * that were written (`docs/playback.md`). The slices are still eight evenly
+ * spaced spans with names, because nothing detects an arrangement yet, and
+ * `mock.ts` says so where they are made.
+ *
+ * The window also remembers itself across a reload: the open track, the mix,
+ * the head. `remember.ts` has what is kept and what deliberately is not.
  */
 export function App() {
   const mix = useMix();

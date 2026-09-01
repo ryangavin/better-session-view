@@ -24,7 +24,7 @@ export default defineConfig({
       module('core', ['core/src/**/*.test.ts']),
       module('widgets', ['widgets/src/**/*.test.ts']),
       module('desktop', ['desktop/src/**/*.test.ts']),
-      module('mix', ['mix/electron/**/*.test.ts']),
+      module('mix', ['mix/electron/**/*.test.ts', 'mix/src/**/*.test.ts']),
       module('set', [
         'set/src/lib/**/*.test.ts',
         'set/src/components/**/*.test.ts',
@@ -55,6 +55,7 @@ export default defineConfig({
         // which exists only inside a main process — a coverage run that tried
         // to load them would fail rather than report a zero.
         'desktop/src/apps.ts',
+        'desktop/src/within.ts',
         'set/src/**/*.{ts,tsx}',
         'mix/src/**/*.{ts,tsx}',
         // Not the whole of electron/: main.ts and library.ts import electron,

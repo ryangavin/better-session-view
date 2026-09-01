@@ -3,7 +3,6 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import { BARS } from '../mock.ts';
 import { workingBpm } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './ExportModal.css';
@@ -59,7 +58,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
     ['track', song.artist ? `${song.title} · ${song.artist}` : song.title],
     ['clips', `${mix.slices.length} slices × ${stems} stems = ${mix.slices.length * stems}`],
     ['tempo', `${mix.targetBpm} BPM${mix.bpmAuto ? ' · detected' : ' · set by hand'}`],
-    ['length', `${BARS} bars`],
+    ['length', `${mix.bars} bars · ${Math.round(mix.seconds)}s`],
   ];
 
   return (
@@ -95,7 +94,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
             <span>len</span>
           </div>
           {mix.slices.map((slice, i) => {
-            const next = mix.slices[i + 1]?.bar ?? BARS;
+            const next = mix.slices[i + 1]?.bar ?? mix.bars;
             return (
               <div
                 key={i}

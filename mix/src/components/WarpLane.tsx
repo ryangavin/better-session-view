@@ -1,5 +1,14 @@
 import { useEffect, useRef } from 'react';
-import type { Onset } from '../peaks.ts';
+/**
+ * An onset placed in bar space, which is the grid's claim about it rather than
+ * a property of the audio. `state.ts` does that placing, so these move when the
+ * tempo does — which is the whole point of the lane.
+ */
+interface Onset {
+  at: number;
+  strength: number;
+  downbeat: boolean;
+}
 
 /**
  * Where the grid meets the audio.
@@ -51,8 +60,16 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning }: Warp
       const sure = ink(el, '--green', '#5fbfa8');
       const caption = ink(el, '--caption', '#5e5e66');
 
-      for (let b = 0; b <= bars * 4; b++) {
-        const x = Math.round((b / (bars * 4)) * box.width) + 0.5;
+      // Beats where beats fit, bars where they do not, and every fourth bar
+      // once even those are crowding. A real track is a hundred-odd bars, and
+      // five hundred beat lines across nine hundred pixels is not a grid — it
+      // is a grey wash with a tick rate. Stepping in fours keeps whatever
+      // survives on a musical boundary rather than on an arbitrary one.
+      const beats = bars * 4;
+      let step = 1;
+      while ((step / beats) * box.width < 3 && step < beats) step *= 4;
+      for (let b = 0; b <= beats; b += step) {
+        const x = Math.round((b / beats) * box.width) + 0.5;
         const isBar = b % 4 === 0;
         ctx.fillStyle = isBar ? barLine : beat;
         ctx.fillRect(x, isBar ? 0 : height * 0.55, 1, isBar ? height : height * 0.45);
@@ -71,7 +88,11 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning }: Warp
       // hold a number with air around it. Sixteen numbers in a 24px strip is a
       // grey band, and the point of a number is to be countable from — the
       // slice ruler directly above is what you actually navigate by.
-      const every = 8;
+      // Every eight bars where that is legible, then sixteen, then thirty-two.
+      // A four-minute track has a hundred and change of them and the old fixed
+      // eight would have printed sixteen numbers into a 24px strip.
+      let every = 8;
+      while ((every / bars) * box.width < 34 && every < bars) every *= 2;
       if ((every / bars) * box.width > 34) {
         ctx.font = '500 9px ui-monospace, Menlo, monospace';
         ctx.fillStyle = caption;

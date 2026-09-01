@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BARS, STEMS, slicesFor, type Slice } from './mock.ts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { STEMS, slicesFor, type Slice } from './mock.ts';
+import { decode, LIBRARY, onsetsOf, peaksOf, stemUrl, type Onset, type Peak } from './audio.ts';
+import { REST, Transport, type Level } from './engine.ts';
+import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
 import {
   openflow,
-  workingBpm,
   type Library,
   type Model,
-  type Outcome,
   type Progress,
   type Track,
 } from './openflow.ts';
@@ -18,21 +19,22 @@ import {
  * behind it that a hot update must not drop; this has neither, and inventing
  * the ceremony before the thing it protects would be cargo.
  *
- * The library here is **real** — a folder on disk, read through the context
- * bridge — and so is the separation: a model, a child process, stems written
- * into the library and recorded in its manifest. What is still invented is the
- * *drawing* of the audio, in `peaks.ts`, because nothing here has decoded the
- * stems that were written. That is marked where it happens.
+ * **Nothing here is pretend any more.** The library is a folder on disk. The
+ * separation is a child process. The waveforms are the stems that process
+ * wrote, decoded, and the transport plays those same buffers — so the picture
+ * and the sound cannot disagree, which they could the moment they came from two
+ * places. What is still invented is the *slices*: eight evenly spaced spans
+ * with names, because nothing detects an arrangement yet.
+ *
+ * **The window remembers itself across a reload.** Which track is open, the
+ * mix, where the head was — `remember.ts`. Not the library and not the stems:
+ * those are on disk, and a second copy of the truth is the copy that goes
+ * stale.
  */
 
 export type Phase = 'empty' | 'idle' | 'running' | 'ready';
 
-/** A stem's place in the mix. Not the stem itself, which is `mock.ts`'s. */
-export interface Level {
-  volume: number;
-  muted: boolean;
-  soloed: boolean;
-}
+export type { Level };
 
 /** A separation in flight, as the main process reports it. */
 export type Job = Progress;
@@ -56,38 +58,105 @@ export interface Anchor {
   label: string;
 }
 
-const REST: Level = { volume: 0.8, muted: false, soloed: false };
-
 const levels = (): Record<string, Level> =>
   Object.fromEntries(STEMS.map((s) => [s.id, { ...REST }]));
 
+/**
+ * Columns of peaks per stem.
+ *
+ * Computed once per track rather than per lane width, so a resize is a redraw
+ * and not a re-scan of forty million samples. Enough for better than one column
+ * per pixel on any lane this window can be dragged to.
+ */
+const COLUMNS = 1800;
+
+/** Bars, before anything has been decoded, so the ruler is not zero wide. */
+const BARS_UNKNOWN = 64;
+
 const NOTHING: Library = { root: null, tracks: [] };
 
+/** How long the window sits still before writing what it remembers. */
+const SETTLE_MS = 400;
+
 export function useMix() {
+  const kept = useRef<Session>(recall()).current;
+  /**
+   * What was remembered about the track that was open, read once so the window
+   * comes back *already* holding it.
+   *
+   * Restoring in an effect instead would paint one frame of defaults first — a
+   * visible flash of unity faders and a playhead at zero on top of the mix
+   * somebody actually left. And it was worse than cosmetic: routing the restore
+   * through `select` meant the guard that stops a re-click reloading the open
+   * track also stopped the *first* load, so nothing was restored at all.
+   */
+  const first = kept.selected ? forTrack(kept, kept.selected) : {};
+
   const [library, setLibrary] = useState<Library>(NOTHING);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState<string | null>(kept.selected ?? null);
+  const [query, setQuery] = useState(kept.query ?? '');
   const [models, setModels] = useState<Model[]>([]);
-  const [model, setModel] = useState('htdemucs_ft');
-  const [level, setLevel] = useState<Record<string, Level>>(levels);
-  const [slices, setSlices] = useState<Slice[]>(() => slicesFor(8));
+  const [model, setModel] = useState(kept.model ?? 'htdemucs_ft');
+  const [level, setLevel] = useState<Record<string, Level>>(() =>
+    first.levels ? { ...levels(), ...first.levels } : levels(),
+  );
+  const [slices, setSlices] = useState<Slice[]>(
+    () => first.slices ?? slicesFor(8, BARS_UNKNOWN),
+  );
+  /**
+   * Whether the slices are still the eight the window laid out, untouched.
+   *
+   * An untouched set is a *default* rather than a decision, so it is re-spread
+   * when the bar count settles and it is never written down. Once somebody
+   * renames one it becomes theirs, and from then on it is kept exactly as it is
+   * — including its bar positions, which is why re-spreading has to stop.
+   */
+  const [slicesAuto, setSlicesAuto] = useState(!first.slices);
   const [activeSlice, setActiveSlice] = useState(0);
-  const [snap, setSnap] = useState('1/2');
-  const [targetBpm, setTargetBpm] = useState(120);
-  const [bpmAuto, setBpmAuto] = useState(true);
+  const [snap, setSnap] = useState(kept.snap ?? '1/2');
+  const [targetBpm, setTargetBpm] = useState(first.bpm ?? 120);
+  const [bpmAuto, setBpmAuto] = useState(first.bpmAuto ?? true);
   const [playing, setPlaying] = useState(false);
-  const [loop, setLoop] = useState(true);
-  const [bar, setBar] = useState(0);
+  const [loop, setLoopState] = useState(kept.loop ?? true);
+  /** Seconds from the top of the track. The one position everything else derives from. */
+  const [position, setPosition] = useState(first.at ?? 0);
   const [job, setJob] = useState<Job | null>(null);
-  /** The track being separated, which is not always the track being looked at. */
   const [runningId, setRunningId] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [manual, setManual] = useState<Manual | null>(null);
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [note, setNote] = useState<string | null>(null);
-  /** Why the last separation did not produce stems. Cleared by starting another. */
-  const [problem, setProblem] = useState<string | null>(null);
+
+  /**
+   * The audio graph, made once and kept for the life of the window.
+   *
+   * A ref rather than state because nothing about it belongs in a render: the
+   * audio clock runs whether or not React did anything, and a graph rebuilt on
+   * every render is a click on every render.
+   */
+  const transport = useRef<Transport | null>(null);
+  if (!transport.current) transport.current = new Transport();
+  const audio = transport.current;
+
+  /**
+   * The session as it stands, which is not the same as the session at mount.
+   *
+   * `kept` is what was on disk when the window opened and never changes.
+   * Everything written since lives here, and it is what a track switch reads
+   * from — otherwise going A → B → A inside one session would hand back A's mix
+   * as it was when the window opened, silently discarding everything done to it.
+   */
+  const held = useRef<Session>(kept);
+
+  /** Where the main process says it serves the library from. */
+  const [base, setBase] = useState(LIBRARY);
+  const [peaks, setPeaks] = useState<Record<string, Peak[]>>({});
+  const [duration, setDuration] = useState(0);
+  const [decoding, setDecoding] = useState(false);
+  /** Why there is no sound, when there is none. */
+  const [audioProblem, setAudioProblem] = useState<string | null>(null);
 
   const tracks = library.tracks;
 
@@ -119,8 +188,7 @@ export function useMix() {
    *
    * A separation takes minutes and there is no reason to be held on one page
    * while it runs — so looking at another song shows that song's own state, and
-   * coming back shows the bar again. The header says what is separating from
-   * anywhere.
+   * coming back shows the bar again.
    */
   const phase: Phase = !song
     ? 'empty'
@@ -129,6 +197,34 @@ export function useMix() {
       : song.sources.length
         ? 'ready'
         : 'idle';
+
+  /**
+   * How long the track is, in seconds.
+   *
+   * The decoded audio when there is any, because that is what will actually
+   * play; the manifest's measurement before it has been decoded, so the ruler
+   * is the right width while the stems load rather than snapping to length a
+   * second later.
+   */
+  const seconds = duration || song?.seconds || 0;
+
+  /**
+   * The bar count, which is a *reading* of the audio rather than a property of
+   * it.
+   *
+   * The old window had 64 bars nailed down as a constant, which was fine while
+   * the audio was invented and is not once it is real: a track is however long
+   * it is, and the grid over it is whatever tempo somebody claims. Change the
+   * tempo and this changes with it, which is the whole point of the warp lane
+   * underneath — the ticks stop lining up.
+   */
+  const bars = useMemo(
+    () => (seconds > 0 ? Math.max(1, Math.ceil((seconds * targetBpm) / 240)) : BARS_UNKNOWN),
+    [seconds, targetBpm],
+  );
+
+  /** The head, in bars, for the clock and the playhead. */
+  const bar = seconds > 0 ? (position / seconds) * bars : 0;
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -162,14 +258,16 @@ export function useMix() {
    * the alternative is a second copy of the registry here that a browser
    * session would offer and no job could honour.
    *
-   * `busy` covers one real case: reloading the renderer during a `vite`
-   * session does not stop the main process, so a job started before the reload
-   * is still running and still reporting. Asking on mount is what reattaches
-   * the window to it instead of showing an idle page over a running GPU.
+   * `busy` covers one real case, and it is the one that matters most for
+   * somebody reloading between actions: the renderer restarting does not stop
+   * the main process, so a job started before the reload is still running and
+   * still reporting. Asking on mount is what reattaches the window to it
+   * instead of showing an idle page over a running GPU.
    */
   useEffect(() => {
     const bridge = openflow();
     if (!bridge) return;
+    void bridge.library.base().then(setBase);
     void bridge.separate.models().then(setModels);
     void bridge.separate.busy().then((id) => {
       if (id) setRunningId(id);
@@ -214,6 +312,9 @@ export function useMix() {
    * Solo is exclusive of mute, not of the other solos: any soloed stem plays,
    * and when none is soloed everything unmuted does. That is Live's rule and
    * the only one that behaves when you hold two of them down.
+   *
+   * The same rule decides the gain in `engine.ts`, so what the lane looks like
+   * and what comes out of the speakers are one function.
    */
   const audible = useCallback(
     (id: string): boolean => {
@@ -232,9 +333,7 @@ export function useMix() {
    * Progress arrives as an event rather than as the resolution of a promise,
    * because it arrives hundreds of times over minutes and there is nothing to
    * reply to. Both listeners are mounted once, for the window rather than for
-   * the page showing the job — a separation takes minutes and there is no
-   * reason to be held on one track while it runs, so the track it belongs to is
-   * kept beside it and `phase` is what decides who draws a bar.
+   * the page showing the job.
    *
    * `finished` refreshes the library rather than patching state, because by then
    * the manifest on disk is the truth — the main process wrote it — and a second
@@ -244,18 +343,13 @@ export function useMix() {
     const bridge = openflow();
     if (!bridge) return;
     const offProgress = bridge.separate.onProgress(({ trackId, progress }) => {
-      // One job at a time is the runner's rule, so the job that reports is the
-      // job that is running — there is no second one this could be confused
-      // with. Which *track* it belongs to still matters, because the window can
-      // be moved to another song while it runs.
       setRunningId(trackId);
       setJob(progress);
     });
     const offFinished = bridge.separate.onFinished((outcome) => {
       setJob(null);
       setRunningId(null);
-      if (!outcome.ok) setProblem(outcome.cancelled ? null : outcome.says);
-      else setProblem(null);
+      setProblem(outcome.ok || outcome.cancelled ? null : outcome.says);
       void refresh();
     });
     return () => {
@@ -264,44 +358,166 @@ export function useMix() {
     };
   }, [refresh]);
 
-  // The playhead, on the wall clock. It is not driving audio and does not
-  // pretend to: the bar it reports is what a preview would be at, and the only
-  // thing reading it is a 1px line.
+  /**
+   * Load the stems, decode them, and draw them.
+   *
+   * Keyed on the stem *directory* rather than on the track, so separating the
+   * same song again with another model reloads — the manifest's `stems` path
+   * changes and this notices. `live` guards the whole thing: decoding four
+   * stems takes a moment, and clicking through the library faster than that
+   * would otherwise land an earlier track's audio on a later track's lanes.
+   *
+   * The peaks come off the same `AudioBuffer`s the transport is handed, which
+   * is the entire reason this is one effect and not two. A drawing derived from
+   * anywhere else can disagree with what you hear, and then it looks like the
+   * file is wrong.
+   */
+  const stemsAt = song?.stems ?? null;
+  const sourceList = song?.sources.join(',') ?? '';
+  useEffect(() => {
+    if (!stemsAt || sourceList === '') {
+      audio.clear();
+      setPeaks({});
+      setDuration(0);
+      setAudioProblem(null);
+      setPlaying(false);
+      return;
+    }
+    let live = true;
+    setDecoding(true);
+    setAudioProblem(null);
+    void (async () => {
+      try {
+        const sources = sourceList.split(',');
+        const decoded = await Promise.all(
+          sources.map(async (source) => {
+            const answer = await fetch(stemUrl(base, stemsAt, source));
+            if (!answer.ok) throw new Error(`${source}.wav — ${answer.status}`);
+            return [source, await decode(audio.audio(), await answer.arrayBuffer())] as const;
+          }),
+        );
+        if (!live) return;
+        const buffers = Object.fromEntries(decoded);
+        audio.load(buffers);
+        setDuration(audio.duration);
+        setPeaks(
+          Object.fromEntries(
+            decoded.map(([source, buffer]) => [source, peaksOf(buffer, COLUMNS)]),
+          ),
+        );
+      } catch (why) {
+        if (!live) return;
+        audio.clear();
+        setPeaks({});
+        setDuration(0);
+        setAudioProblem(`could not read the stems — ${(why as Error).message}`);
+      } finally {
+        if (live) setDecoding(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [stemsAt, sourceList, base, audio]);
+
+  /**
+   * The mix, pushed into the graph.
+   *
+   * Every change, because a fader drag is a change per frame and the ramp in
+   * `engine.ts` is what keeps that from clicking. Cheap: it is a comparison per
+   * stem and a scheduled ramp only where something moved.
+   */
+  useEffect(() => {
+    audio.apply(level, song?.sources ?? []);
+  }, [level, song?.sources, audio, peaks]);
+
+  /**
+   * The playhead.
+   *
+   * The position is read off the **audio clock**, not accumulated on the wall
+   * clock: `requestAnimationFrame` misses frames and stops entirely in a
+   * background window, so a counted playhead drifts away from the sound it is
+   * supposed to be pointing at. This asks the graph where it actually is.
+   */
   useEffect(() => {
     if (!playing) return;
-    const beatMs = 60_000 / (targetBpm || 120);
     let raf = 0;
-    let last = performance.now();
-    const step = (now: number) => {
-      const beats = (now - last) / beatMs;
-      last = now;
-      setBar((was) => {
-        const next = was + beats / 4;
-        if (next < BARS) return next;
-        return loop ? 0 : BARS;
-      });
+    const step = () => {
+      if (audio.ended) {
+        audio.stop();
+        setPosition(0);
+        setPlaying(false);
+        return;
+      }
+      setPosition(audio.at());
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [playing, targetBpm, loop]);
+  }, [playing, audio]);
 
+  /**
+   * Open a track.
+   *
+   * The outgoing track is written down **synchronously**, before anything is
+   * replaced. The settled write below would otherwise be cancelled by its own
+   * dependencies changing — the last four hundred milliseconds of work on the
+   * track you just left would be the four hundred that never got saved, which
+   * is the most annoying possible window to lose.
+   */
   const select = useCallback(
     (id: string) => {
+      // Clicking the row that is already open must do nothing. Falling through
+      // would reload the mix from what was last written down, which is up to
+      // four hundred milliseconds behind — so the fader you just moved would
+      // spring back for no visible reason.
+      if (id === selected) return;
+      if (song) {
+        held.current = withTrack(held.current, song.id, {
+          levels: level,
+          slices: slicesAuto ? undefined : slices,
+          at: audio.at(),
+          bpm: targetBpm,
+          bpmAuto,
+        });
+        remember(held.current);
+      }
+      audio.stop();
+      setPlaying(false);
       setSelected(id);
       setAnchors([]);
       setManual(null);
-      setBar(0);
-      setPlaying(false);
+      const known = forTrack(held.current, id);
+      setPosition(known.at ?? 0);
+      setLevel(known.levels ? { ...levels(), ...known.levels } : levels());
+      setSlices(known.slices ?? slicesFor(8, BARS_UNKNOWN));
+      setSlicesAuto(!known.slices);
+      setActiveSlice(0);
       const picked = tracks.find((t) => t.id === id);
-      setTargetBpm(workingBpm(picked ?? null));
-      setBpmAuto(picked?.bpm !== null && picked?.bpm !== undefined);
+      setTargetBpm(known.bpm ?? picked?.bpm ?? 120);
+      setBpmAuto(known.bpmAuto ?? (picked?.bpm != null));
     },
-    [tracks],
+    [tracks, audio, song, selected, level, slices, targetBpm, bpmAuto],
   );
 
   /**
-   * Start one.
+   * Let go of a remembered track the library no longer has.
+   *
+   * The restore above is unconditional — it has to be, because it happens before
+   * the library has been read — so this is the other half: once the folder has
+   * answered and the id is not in it, the window stops claiming a track it
+   * cannot find. Deleting a track and reloading should not leave a name in the
+   * header and empty lanes underneath it.
+   */
+  const checked = useRef(false);
+  useEffect(() => {
+    if (checked.current || loading) return;
+    checked.current = true;
+    if (selected && !tracks.some((t) => t.id === selected)) setSelected(null);
+  }, [loading, tracks, selected]);
+
+  /**
+   * Start a separation.
    *
    * The promise this awaits resolves at the *end* of the job, minutes later,
    * and is not what draws the bar — the progress listener above is. What it is
@@ -314,7 +530,14 @@ export function useMix() {
     if (!bridge || !song) return;
     setProblem(null);
     setRunningId(song.id);
-    setJob({ done: 0, stage: 'loading the model', sources: [], perStem: null, written: [], seconds: null });
+    setJob({
+      done: 0,
+      stage: 'loading the model',
+      sources: [],
+      perStem: null,
+      written: [],
+      seconds: null,
+    });
     const outcome = await bridge.separate.run({ trackId: song.id, file: song.file, model });
     if (!outcome.ok && !outcome.cancelled) setProblem(outcome.says);
   }, [song, model]);
@@ -334,21 +557,71 @@ export function useMix() {
     if (id) void openflow()?.separate.cancel(id);
   }, [runningId]);
 
+  // ── The transport ────────────────────────────────────────────────────────
+
+  const start = useCallback(
+    (on: boolean) => {
+      if (!audio.loaded) return;
+      if (on) audio.play(position);
+      else audio.pause();
+      setPlaying(on);
+      if (!on) setPosition(audio.at());
+    },
+    [audio, position],
+  );
+
+  const stop = useCallback(() => {
+    audio.stop();
+    setPlaying(false);
+    setPosition(0);
+  }, [audio]);
+
+  /** Move the head, in seconds. Playing carries on from there rather than stopping. */
+  const seek = useCallback(
+    (at: number) => {
+      const to = Math.max(0, Math.min(at, seconds));
+      audio.seek(to);
+      setPosition(to);
+    },
+    [audio, seconds],
+  );
+
+  const setLoop = useCallback(
+    (on: boolean) => {
+      audio.setLoop(on);
+      setLoopState(on);
+    },
+    [audio],
+  );
+
+  // The graph is built after the first render, so the remembered loop setting
+  // has to be pushed into it rather than assumed.
+  useEffect(() => {
+    audio.setLoop(loop);
+  }, [audio, loop, peaks]);
+
   const autoWarp = useCallback(() => {
     setAnchors([
       { at: 0, label: '1' },
-      { at: BARS, label: String(BARS + 1) },
+      { at: bars, label: String(bars + 1) },
     ]);
     setManual(null);
-  }, []);
+  }, [bars]);
 
   const startManual = useCallback(() => setManual({ stage: 'first', first: null, late: null }), []);
   const endManual = useCallback(() => setManual(null), []);
 
+  /**
+   * A click in the warp lane: place a grid point, or move the head.
+   *
+   * Outside manual mode it is a scrub, which is what a click on a timeline
+   * means everywhere else and is the reason this is one handler rather than two
+   * overlapping strips.
+   */
   const pin = useCallback(
     (at: number) => {
       if (!manual) {
-        setBar(at);
+        seek(bars > 0 ? (at / bars) * seconds : 0);
         return;
       }
       if (manual.stage === 'first') {
@@ -363,7 +636,7 @@ export function useMix() {
         { at, label: String(Math.max(2, Math.round(at - first) + 1)) },
       ]);
     },
-    [manual],
+    [manual, bars, seconds, seek],
   );
 
   const nudge = useCallback(
@@ -383,14 +656,44 @@ export function useMix() {
 
   const rename = useCallback((index: number, name: string) => {
     setSlices((was) => was.map((s, i) => (i === index ? { ...s, name } : s)));
+    setSlicesAuto(false);
   }, []);
+
+  /**
+   * Re-spread the default slices once the track's real length is known.
+   *
+   * The window has to lay some out before it has decoded anything, and it does
+   * that against a nominal sixty-four bars. A four-minute track at 128 is twice
+   * that, so leaving them alone would bunch all eight into the first half of
+   * the song and read as an arrangement rather than as a ruler.
+   */
+  useEffect(() => {
+    if (!slicesAuto) return;
+    setSlices(slicesFor(8, bars));
+  }, [slicesAuto, bars]);
 
   const resetMix = useCallback(() => setLevel(levels()), []);
 
-  const stop = useCallback(() => {
-    setPlaying(false);
-    setBar(0);
-  }, []);
+  /**
+   * Onsets, from the drums that were just separated.
+   *
+   * A separated mix makes this easier than it is on a mixdown, which is most of
+   * the argument for fitting a grid *after* separating rather than before: the
+   * thing a grid lines up with is the percussion, and here it arrives on its
+   * own track with the pads and the vocal already taken off it.
+   *
+   * The bar positions are the *grid's* claim about those onsets, so they move
+   * when the tempo does — which is what makes the warp lane worth looking at.
+   * A tick that walks off the bar lines is a tempo that is wrong.
+   */
+  const onsets = useMemo(() => {
+    if (seconds <= 0) return [];
+    const found: Onset[] = onsetsOf(peaks, seconds);
+    return found.map((onset) => {
+      const at = (onset.at / seconds) * bars;
+      return { at, strength: onset.strength, downbeat: Math.abs(at - Math.round(at)) < 1 / 32 };
+    });
+  }, [peaks, seconds, bars]);
 
   /** `4/6 audible`, and whether a solo is what is doing it. */
   const audibleLine = useMemo(() => {
@@ -410,6 +713,56 @@ export function useMix() {
       }).length,
     [level],
   );
+
+  /**
+   * Write down what the window is holding.
+   *
+   * Settled rather than immediate, because a fader drag is a change per frame
+   * and `JSON.stringify` of the whole session on each of them is the sort of
+   * thing that makes a fader feel heavy. Four hundred milliseconds after the
+   * last change is well inside the gap before anybody reaches for the reload.
+   *
+   * **The head is not a dependency**, and that is the load-bearing part. It
+   * changes sixty times a second while playing, so depending on it would clear
+   * and reset this timer every frame — meaning nothing would *ever* be written
+   * during playback, which is exactly when somebody is least expecting to lose
+   * their place. It is read from the transport when the timer fires instead, and
+   * `playing` is a dependency so that stopping writes where you stopped.
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      let next: Session = { ...held.current, selected, model, query, snap, loop };
+      if (song) {
+        next = withTrack(next, song.id, {
+          levels: level,
+          // Only when they are somebody's. An untouched set is regenerated from
+          // the bar count, and writing it down would freeze eight defaults laid
+          // out against a length the window had not measured yet.
+          slices: slicesAuto ? undefined : slices,
+          at: audio.at(),
+          bpm: targetBpm,
+          bpmAuto,
+        });
+      }
+      held.current = next;
+      remember(next);
+    }, SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [
+    selected,
+    model,
+    query,
+    snap,
+    loop,
+    song,
+    level,
+    slices,
+    slicesAuto,
+    targetBpm,
+    bpmAuto,
+    playing,
+    audio,
+  ]);
 
   return {
     library,
@@ -448,10 +801,21 @@ export function useMix() {
     bpmAuto,
     setBpmAuto,
     playing,
-    setPlaying,
+    setPlaying: start,
     loop,
     setLoop,
+    /** Seconds. */
+    position,
+    seek,
+    /** Seconds, from the audio if it is decoded and from the manifest if it is not. */
+    seconds,
+    bars,
     bar,
+    peaks,
+    onsets,
+    decoding,
+    audioProblem,
+    playable: audio.loaded,
     stop,
     job,
     runningId,

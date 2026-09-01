@@ -31,6 +31,8 @@ expose({
     /** With no argument, opens a file dialog. With paths, imports those — a drop. */
     add: (files?: string[]): Promise<Imported> => ipcRenderer.invoke('openflow:library-add', files),
     reveal: (): Promise<void> => ipcRenderer.invoke('openflow:library-reveal'),
+    /** Where library files are served from, decided by the process that serves them. */
+    base: (): Promise<string> => ipcRenderer.invoke('openflow:library-base'),
   },
   separate: {
     /** The models this build will actually run, which is the same list a job checks. */

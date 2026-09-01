@@ -28,6 +28,15 @@ import type { Progress } from './job.ts';
  */
 
 const MIX = APPS.mix;
+/**
+ * Where the library is mounted on this app's scheme.
+ *
+ * Named once and answered to the renderer rather than restated there: the
+ * process that decides where files are served from is the process that should
+ * say so, and a page that composed the URL itself would be a second place to
+ * change when this moves.
+ */
+const MOUNT = '/library/';
 /** `mix/dist`, from `mix/electron/dist/main.cjs`. */
 const DIST = path.resolve(__dirname, '..', '..', 'dist');
 
@@ -60,6 +69,7 @@ if (only(app)) {
   ipcMain.handle('openflow:library-choose', () => choose(window_()));
   ipcMain.handle('openflow:library-add', (_event, files?: string[]) => add(window_(), files));
   ipcMain.handle('openflow:library-reveal', () => reveal());
+  ipcMain.handle('openflow:library-base', () => `${MIX.name}://app${MOUNT}`);
 
   // Separation. The registry is answered rather than restated in the renderer,
   // so what the window offers and what a job will actually run are one list.
@@ -113,7 +123,12 @@ if (only(app)) {
   app.on('before-quit', stopAll);
 
   void app.whenReady().then(() => {
-    serve(MIX, DIST);
+    // The build, and the library folder beside it. `mix://app/library/audio/x.wav`
+    // is how the renderer reaches audio a person owns: streamed rather than
+    // copied through IPC, and confined to whichever folder is the library right
+    // now. Under `npm run dev:mix` the page is on vite's origin instead, which
+    // is why the mount answers with an allow-origin header.
+    serve(MIX, DIST, { [MOUNT]: root });
     window();
     updates(MIX);
   });

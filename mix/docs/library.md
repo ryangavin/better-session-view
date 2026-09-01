@@ -80,14 +80,24 @@ not read yet" instead of inventing an estimate.
 Filling those in is the next thing this file needs, and it is two separate jobs: tags are
 a parser, and tempo and key are detection. Neither is here yet.
 
-## What is still simulated, and why it does not touch the folder
+## What separation writes back
 
-The separation is a timer. When it "finishes", the result is held in
-`mix/src/state.ts`'s `pretend` map for as long as the window lives, and is **never
-written to the manifest** — recording a fake separation in a file the user owns would be
-writing a lie into their library. So the flow is complete end to end (import → choose a
-model → watch it run → lanes) while exactly one step of it is pretend, and the pretence
-cannot outlive the window.
+Nothing here is simulated any more. A finished separation records three things against
+the track — the model, the sources, and `stems/<id>/<model>` as a **relative** path like
+everything else in the manifest — and it fills in the track's length, because the
+separator is the first thing in this app that actually decoded the file. Until then a
+length is null and is drawn as unknown rather than as zero.
+
+The write is `recordStems`, and it is the same read-change-write-atomically every other
+change here uses, because two facts have to land together or neither should: where the
+stems are, and which model made them. A manifest naming a model with no directory beside
+it is the one state the window cannot render honestly. The stems themselves, and the
+sidecar that describes them, are [`stems.md`](stems.md).
+
+What is **not** written here is the mix — the faders, the mutes, the slices. Those live
+in `localStorage` on this machine, so carrying the folder elsewhere carries the audio and
+the stems but not the balance. [`playback.md`](playback.md) has why, and what it would
+take to change.
 
 ## Not yet
 

@@ -10,13 +10,15 @@ npm run mix          # the app, on what is built
 npm run pack:mix     # a .app and a .dmg under release/mix/
 ```
 
-**The library and the separation are real; the drawing of the audio is not.** Tracks live
-in a folder you pick, copied there on import, indexed by a manifest that makes the folder
-portable — [`docs/library.md`](docs/library.md). Pressing Generate runs Demucs against the
-file and writes float32 stems into that same folder with a sidecar describing them —
-[`docs/stems.md`](docs/stems.md). What is still invented is the *waveforms*: nothing has
-decoded the stems for the window yet, so `src/peaks.ts` draws an envelope with the shape of
-real audio instead of the audio that was written. The slices are invented too.
+**Everything on screen is real except the slices.** Tracks live in a folder you pick,
+copied there on import, indexed by a manifest that makes the folder portable —
+[`docs/library.md`](docs/library.md). Pressing Generate runs Demucs against the file and
+writes float32 stems into that same folder with a sidecar describing them —
+[`docs/stems.md`](docs/stems.md). Those stems are then decoded, drawn and played:
+the waveforms are the audio, and the faders move it — [`docs/playback.md`](docs/playback.md).
+The window remembers itself across a reload. The slices are still eight evenly spaced
+spans with names, because nothing detects an arrangement yet, and the export button
+closes the dialog.
 
 **This is an index. Read the row you're changing.**
 
@@ -25,6 +27,7 @@ real audio instead of the audio that was written. The slices are invented too.
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
 | the layout, the colours, or which control is a widget | [`docs/window.md`](docs/window.md) — `src/` |
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
+| playback, the mixer, the waveforms, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `remember.ts` |
 | where the Python environment comes from, and the probe | [`docs/demucs.md`](docs/demucs.md) — `electron/demucs.ts` |
 | the window, packaging, or anything shared with the other apps | [`desktop/README.md`](../desktop/README.md) — there is no mix[flow] version of it, and that is the point |
 
@@ -41,7 +44,10 @@ real audio instead of the audio that was written. The slices are invented too.
 | `electron/separate.ts` | the child process, one at a time, and cancelling it |
 | `python/separate.py` | the worker. Talks JSON, writes stems that sum |
 | `electron/preload.ts` | the context bridge |
-| `src/mock.ts`, `src/peaks.ts` | how a source is drawn, and the invented waveforms |
+| `src/audio.ts` | reaching the stems, decoding them, and the peaks that draw them |
+| `src/engine.ts` | the transport and the mixer, which are one Web Audio graph |
+| `src/remember.ts` | what survives a reload, and what deliberately does not |
+| `src/mock.ts` | how a source is drawn, and the one invented thing left |
 | `src/state.ts` | everything the window knows, in one hook |
 | `src/components/` | the header, the library, the three states, the lanes and the warp lane |
 

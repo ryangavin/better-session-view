@@ -1,10 +1,8 @@
-import { useMemo } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Slider } from '@openflow/widgets/controls/Slider.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import { BARS, STEMS } from '../mock.ts';
-import { onsetsFor, peaksFor } from '../peaks.ts';
+import { STEMS } from '../mock.ts';
 import type { Mix } from '../state.ts';
 import { Waveform } from './Waveform.tsx';
 import { WarpLane } from './WarpLane.tsx';
@@ -31,9 +29,6 @@ import './Lanes.css';
  */
 const LEVEL: Param = { kind: 'float', min: 0, max: 1, defaultValue: 0.8, unit: 'percent' };
 
-/** Columns of peaks per lane. Enough to read a sixteenth at this width. */
-const COLUMNS = 900;
-
 /**
  * The fader's drawn length.
  *
@@ -59,14 +54,7 @@ const again = (
 export function Lanes({ mix }: { mix: Mix }) {
   const song = mix.song;
   const sources = song?.sources ?? [];
-  const id = song?.id ?? '';
-
-  const peaks = useMemo(
-    () => Object.fromEntries(sources.map((source) => [source, peaksFor(source, id, BARS, COLUMNS)])),
-    [sources, id],
-  );
-
-  const onsets = useMemo(() => onsetsFor(sources, id, BARS), [sources, id]);
+  const bars = mix.bars;
 
   if (!song) return null;
 
@@ -87,7 +75,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                 Reset
               </Button>
               <Button
-                onPress={mix.separate}
+                onPress={() => void mix.separate()}
                 label="Separate again"
                 title="Separate this song again, with a different model"
                 width={26}
@@ -105,7 +93,7 @@ export function Lanes({ mix }: { mix: Mix }) {
         <div className="mf-band-track">
           <div className="mf-ruler">
             {mix.slices.map((slice, i) => {
-              const next = mix.slices[i + 1]?.bar ?? BARS;
+              const next = mix.slices[i + 1]?.bar ?? bars;
               return (
                 <button
                   key={i}
@@ -113,8 +101,8 @@ export function Lanes({ mix }: { mix: Mix }) {
                   className="mf-slice"
                   data-on={i === mix.activeSlice || undefined}
                   style={{
-                    left: `${(slice.bar / BARS) * 100}%`,
-                    width: `${((next - slice.bar) / BARS) * 100}%`,
+                    left: `${(slice.bar / bars) * 100}%`,
+                    width: `${((next - slice.bar) / bars) * 100}%`,
                   }}
                   onClick={() => mix.setActiveSlice(i)}
                   title={`${slice.name} — bar ${slice.bar + 1}, ${next - slice.bar} bars`}
@@ -126,8 +114,8 @@ export function Lanes({ mix }: { mix: Mix }) {
             })}
           </div>
           <WarpLane
-            onsets={onsets}
-            bars={BARS}
+            onsets={mix.onsets}
+            bars={bars}
             height={24}
             anchors={mix.anchors}
             onPin={mix.pin}
@@ -186,16 +174,23 @@ export function Lanes({ mix }: { mix: Mix }) {
                 <span className="mf-lane-db">{present ? trim(own.volume) : '—'}</span>
               </div>
               <div className="mf-lane-draw">
-                {present ? (
+                {!present ? (
+                  <span className="mf-lane-none">folded into Other by {mix.labelOf(song.model)}</span>
+                ) : mix.peaks[stem.id] ? (
                   <Waveform
-                    peaks={peaks[stem.id] ?? []}
+                    peaks={mix.peaks[stem.id]}
                     ink={`var(--stem-${stem.id})`}
                     quiet={!heard}
                     height={46}
-                    bars={BARS}
+                    bars={bars}
+                    onSeek={(fraction) => mix.seek(fraction * mix.seconds)}
                   />
                 ) : (
-                  <span className="mf-lane-none">folded into Other by {song.model}</span>
+                  // An empty lane and a lane of zeroes look the same and only
+                  // one of them is honest.
+                  <span className="mf-lane-none">
+                    {mix.audioProblem ?? (mix.decoding ? 'reading the stem' : 'no audio loaded')}
+                  </span>
                 )}
               </div>
             </div>
@@ -203,7 +198,11 @@ export function Lanes({ mix }: { mix: Mix }) {
         })}
         <div
           className="mf-playhead"
-          style={{ left: `calc(var(--lane-head) + (100% - var(--lane-head)) * ${mix.bar / BARS})` }}
+          style={{
+            left: `calc(var(--lane-head) + (100% - var(--lane-head)) * ${
+              mix.seconds > 0 ? mix.position / mix.seconds : 0
+            })`,
+          }}
         />
       </div>
     </div>

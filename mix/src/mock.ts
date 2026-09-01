@@ -8,9 +8,9 @@
  * is left is presentation — an ink and a glyph per source — and the shape of a
  * slice.
  *
- * The audio is still invented, in `peaks.ts`, because nothing has decoded a
- * file for the *window* yet. The separator decodes one, and the stems it writes
- * are real; drawing them is the next piece.
+ * The audio is not invented any more: `audio.ts` decodes the stems the
+ * separator wrote and `engine.ts` plays them. What is left in here that is made
+ * up is the slice list, and it is the last of it.
  */
 
 export interface Stem {
@@ -64,10 +64,17 @@ export interface Slice {
 
 const SLICE_NAMES = ['Intro', 'Verse A', 'Build', 'Drop', 'Break', 'Verse B', 'Lift', 'Outro'];
 
-export const BARS = 64;
-
-export const slicesFor = (count: number): Slice[] =>
+/**
+ * `count` evenly spaced slices across `bars`.
+ *
+ * Still invented, and the last invented thing in the window: nothing detects an
+ * arrangement, so this is a ruler with names on it rather than a reading of the
+ * song. It takes the bar count now instead of owning a constant one, because a
+ * track is however long it is — the 64 that used to live here was only ever
+ * true of audio that was made up.
+ */
+export const slicesFor = (count: number, bars: number): Slice[] =>
   Array.from({ length: count }, (_, i) => ({
-    bar: Math.round((i * BARS) / count),
+    bar: Math.round((i * bars) / count),
     name: SLICE_NAMES[i % SLICE_NAMES.length],
   }));

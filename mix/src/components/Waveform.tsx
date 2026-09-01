@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Peak } from '../peaks.ts';
+import type { Peak } from '../audio.ts';
 
 /**
  * A stem's envelope, drawn on a canvas.
@@ -30,13 +30,21 @@ export interface WaveformProps {
   height: number;
   /** Bars, for the beat grid behind it. Left out, nothing is drawn. */
   bars?: number;
+  /**
+   * Clicking the lane moves the head there, as a fraction of the track.
+   *
+   * A fraction rather than a time, because this draws a whole buffer across
+   * whatever width it was given and has no idea how many seconds that is. The
+   * caller knows.
+   */
+  onSeek?(fraction: number): void;
   className?: string;
 }
 
 /** How much of the lane the loudest column is allowed to reach. */
 const HEADROOM = 0.86;
 
-export function Waveform({ peaks, ink, quiet, height, bars, className }: WaveformProps) {
+export function Waveform({ peaks, ink, quiet, height, bars, onSeek, className }: WaveformProps) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -59,9 +67,16 @@ export function Waveform({ peaks, ink, quiet, height, bars, className }: Wavefor
       if (bars) {
         // Every bar, and the fourth one brighter. A grid that treats all bars
         // alike is a ruler you have to count along.
-        for (let b = 0; b <= bars; b++) {
+        //
+        // Thinned when the bars get closer than four pixels, which a real
+        // track reaches easily — a four-minute song at 128 is 128 bars, and a
+        // line every three pixels is not a grid, it is a fill. Stepping in
+        // powers of four keeps whichever lines survive on musical boundaries.
+        let step = 1;
+        while ((step / bars) * box.width < 4 && step < bars) step *= 4;
+        for (let b = 0; b <= bars; b += step) {
           const x = Math.round((b / bars) * box.width) + 0.5;
-          ctx.strokeStyle = b % 4 === 0 ? '#1f1f23' : '#151518';
+          ctx.strokeStyle = b % (step * 4) === 0 ? '#1f1f23' : '#151518';
           ctx.beginPath();
           ctx.moveTo(x, 0);
           ctx.lineTo(x, height);
@@ -91,5 +106,23 @@ export function Waveform({ peaks, ink, quiet, height, bars, className }: Wavefor
     return () => watch.disconnect();
   }, [peaks, ink, quiet, height, bars]);
 
-  return <canvas ref={canvas} className={className} style={{ height }} />;
+  // Every lane is scrubbable, not just the ruler. A waveform is the thing you
+  // are actually looking at when you decide where to listen from, and reaching
+  // back up to a strip at the top to act on it is the sort of gap that makes a
+  // window feel like a diagram of a DAW rather than one.
+  const scrub = onSeek
+    ? (event: React.MouseEvent<HTMLCanvasElement>) => {
+        const box = event.currentTarget.getBoundingClientRect();
+        onSeek(Math.max(0, Math.min(1, (event.clientX - box.left) / box.width)));
+      }
+    : undefined;
+
+  return (
+    <canvas
+      ref={canvas}
+      className={className}
+      style={{ height, cursor: onSeek ? 'text' : undefined }}
+      onClick={scrub}
+    />
+  );
 }
