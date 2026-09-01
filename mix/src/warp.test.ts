@@ -147,15 +147,22 @@ describe('fitting a tempo to the kick', () => {
     expect(driftAt(fitOf(kit(truth))!, truth, 100)).toBeLessThan(DRIFT);
   });
 
-  it('starts the bar on the heaviest quarter, not on the first hit it found', () => {
-    // A recording that begins on beat three. The first strong kick is not a
-    // downbeat, and a fit that anchored on it would rule a grid whose lines are
-    // all right and whose bar numbers are two beats out.
-    const truth: Kit = { bpm: 120, offset: 0.2, from: 2 };
+  it.each([1, 2, 3])('starts the bar on the heaviest quarter, not on beat %i', (from) => {
+    // A recording that begins part-way through a bar. The first strong kick is
+    // not a downbeat, and a fit that anchored on it would rule a grid whose
+    // lines are all right and whose bar numbers are two beats out.
+    const truth: Kit = { bpm: 120, offset: 0.2, from };
     const fit = fitOf(kit(truth))!;
     expect(fit.bpm).toBe(120);
-    // Two beats after the recording starts is the first downbeat in the file.
-    expect(Math.abs(fit.offset - (0.2 + 2 * (60 / 120)))).toBeLessThan(DRIFT);
+    // The first downbeat in the file is however many beats it takes to reach one.
+    const wait = ((4 - from) % 4) * (60 / 120);
+    expect(Math.abs(fit.offset - (0.2 + wait))).toBeLessThan(DRIFT);
+  });
+
+  it('refuses a tempo it is not allowed to claim rather than reporting one', () => {
+    // Sixty is a real reading of this fixture and outside what a fit will say.
+    // Nothing in the rest of the kit promotes it, so there is no answer to give.
+    expect(fitOf(kit({ bpm: 60, offset: 0.2 }))).toBeNull();
   });
 
   it('counts the beat, not the eighths played over it', () => {
@@ -250,7 +257,23 @@ describe('a fit seeded by hand', () => {
     expect(fit.offset).toBeCloseTo(0.4, 1);
   });
 
-  it('refuses to wander off what was measured', () => {
+  it('takes bar 1 from the click even when a louder hit came before it', () => {
+    // Somebody who scrolls to the chorus and marks a downbeat there means that
+    // downbeat. A refinement that reached for the strongest hit near the top of
+    // the file instead would hand back a grid four bars out of phase and would
+    // look, on the lane, exactly right.
+    const clicked = truth.offset + 4 * (240 / truth.bpm);
+    const fit = refitOf(kit(truth), truth.bpm, clicked)!;
+    expect(Math.abs(fit.offset - clicked)).toBeLessThan(DRIFT);
+  });
+
+  it('refuses a refinement that has drifted off what was measured', () => {
+    // Three per cent. Close enough that the alignment converges away from the
+    // seed rather than failing, which is the case the guard exists for.
+    expect(refitOf(kit(truth), 124, 0.4)).toBeNull();
+  });
+
+  it('refuses a seed the alignment cannot hold at all', () => {
     expect(refitOf(kit(truth), 96, 0.4)).toBeNull();
   });
 });
