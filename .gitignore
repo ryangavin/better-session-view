@@ -36,3 +36,5 @@ wiki/
 # generated: vitest coverage report and ui — npm run test:coverage
 coverage/
 report/
+visuals/frames-dist/
+visuals/frames-out/
