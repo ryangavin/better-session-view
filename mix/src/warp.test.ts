@@ -4,11 +4,13 @@ import {
   bandsOf,
   barAt,
   barsOf,
+  bpmText,
   columnsOf,
   countOf,
   fitOf,
   placeOf,
   refitOf,
+  startOf,
   type Heard,
   type Pulse,
 } from './warp.ts';
@@ -134,6 +136,16 @@ describe('fitting a tempo to the kick', () => {
     expect(fit.bpm).toBeLessThan(122.6);
   });
 
+  it('keeps the decimals of a master that runs a twentieth over a whole number', () => {
+    // Every record on hand is a hundred and twenty-eight in the DAW and 128.055
+    // on the master, and rounding it is a third of a beat by the end of the
+    // song. The whole number is tested against the kick, not assumed.
+    const truth: Kit = { bpm: 128.055, offset: 0.25 };
+    const fit = fitOf(kit(truth))!;
+    expect(fit.bpm).not.toBe(128);
+    expect(driftAt(fit, truth, 100)).toBeLessThan(DRIFT);
+  });
+
   it('puts bar 100 within a column of where it belongs', () => {
     // The whole point. A tenth of a per cent is invisible at bar 2 and a beat
     // and a half out by bar 120, which is what the warp lane exists to show.
@@ -257,14 +269,15 @@ describe('a fit seeded by hand', () => {
     expect(fit.offset).toBeCloseTo(0.4, 1);
   });
 
-  it('takes bar 1 from the click even when a louder hit came before it', () => {
-    // Somebody who scrolls to the chorus and marks a downbeat there means that
-    // downbeat. A refinement that reached for the strongest hit near the top of
-    // the file instead would hand back a grid four bars out of phase and would
-    // look, on the lane, exactly right.
-    const clicked = truth.offset + 4 * (240 / truth.bpm);
+  it('puts the click on a bar line and bar 1 at the top of the file', () => {
+    // Somebody who scrolls to the chorus and marks a downbeat there has said
+    // where the bars fall, not which bar that is. The click lands on a bar
+    // line, and bar 1 is the first one in the file — the same as for a fit.
+    const bar = 240 / truth.bpm;
+    const clicked = truth.offset + 4 * bar;
     const fit = refitOf(kit(truth), truth.bpm, clicked)!;
-    expect(Math.abs(fit.offset - clicked)).toBeLessThan(DRIFT);
+    expect(Math.abs(fit.offset - truth.offset)).toBeLessThan(DRIFT);
+    expect(fit.offset).toBeLessThan(bar);
   });
 
   it('refuses a refinement that has drifted off what was measured', () => {
@@ -314,7 +327,20 @@ describe('hearing the kick under the kit', () => {
   });
 });
 
+describe('a tempo somebody reads', () => {
+  it('keeps a whole number whole and a measurement to two decimals', () => {
+    expect(bpmText(128)).toBe('128');
+    expect(bpmText(128.05)).toBe('128.05');
+  });
+});
+
 describe('where the bars fall', () => {
+  it('starts bar 1 at the first downbeat in the file, whichever downbeat was given', () => {
+    const bar = 240 / 128;
+    expect(startOf(0.4 + 4 * bar, 128)).toBeCloseTo(0.4, 6);
+    expect(startOf(0.4, 128)).toBeCloseTo(0.4, 6);
+  });
+
   const grid = barsOf(240, 128, 0.9375);
 
   it('puts the top of the file before bar 1 when the song starts late', () => {

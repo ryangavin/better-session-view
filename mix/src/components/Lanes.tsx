@@ -451,10 +451,10 @@ function ManualBar({ mix }: { mix: Mix }) {
   const later = `${manual.span} bar${manual.span === 1 ? '' : 's'} later`;
   const hint =
     manual.stage === 'first'
-      ? 'Click the downbeat that starts bar 1'
+      ? 'Click any downbeat — the first beat of a bar'
       : manual.stage === 'late'
         ? `Now click the downbeat ${later} — count it out`
-        : `Nudge bar 1 ten milliseconds either way, or click the downbeat ${later} again`;
+        : `Nudge the grid ten milliseconds either way, or click the downbeat ${later} again`;
 
   return (
     <div className="mf-manual">

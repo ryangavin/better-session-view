@@ -1,5 +1,5 @@
 import { energyOf } from './audio.ts';
-import type { Peak } from './audio.ts';
+import type { Onset, Peak } from './audio.ts';
 
 /**
  * Where the bars fall on a file, and how they are fitted to it.
@@ -50,9 +50,25 @@ export const placeOf = (bars: Bars, bar: number): number =>
  */
 export const countOf = (bars: Bars): number => Math.max(1, Math.ceil(bars.origin + bars.across));
 
-/** A tempo, as a number somebody reads. Integers stay integers. */
+/**
+ * A tempo, as a number somebody reads. Integers stay integers, and anything
+ * else keeps both decimals: `128.05` is a measurement, and `128.1` is the same
+ * measurement dressed up as a mistake.
+ */
 export const bpmText = (bpm: number): string =>
-  Number.isInteger(bpm) ? String(bpm) : bpm.toFixed(1);
+  Number.isInteger(bpm) ? String(bpm) : bpm.toFixed(2);
+
+/**
+ * Where bar 1 starts, given where any downbeat falls.
+ *
+ * Bar 1 is the first downbeat in the file, wherever the grid was read from. A
+ * click on the downbeat of the chorus says where the bars fall and nothing
+ * about which bar that is, and the count of bars means what it says.
+ */
+export const startOf = (downbeat: number, bpm: number): number => {
+  const bar = 240 / bpm;
+  return ((downbeat % bar) + bar) % bar;
+};
 
 /** The slowest and fastest tempo a fit will claim. */
 export const SLOWEST = 70;
@@ -478,26 +494,94 @@ function alignOf(hits: Hit[], guess: number, columns: number, phase?: number): L
 }
 
 /**
- * A whole number where the fit is close enough to one to mean it.
+ * A whole number where a hand measurement is close enough to one to mean it.
  *
- * Produced music is written at a whole number and the fit is good to about a
- * hundredth of one, so landing within half a tenth of an integer means the
- * integer *is* the tempo. Wider than that and the rounding would be the biggest
- * error in the grid rather than the smallest.
+ * For the two clicks of the manual path, which are a tempo to three quarters
+ * of a BPM and only ever a seed. A *fit* is not rounded like this: it is asked,
+ * in `wholeOf` below, whether the whole number holds.
  */
-export const snapped = (bpm: number, reach = 0.05): number =>
+export const snapped = (bpm: number, reach: number): number =>
   Math.abs(bpm - Math.round(bpm)) < reach ? Math.round(bpm) : Number(bpm.toFixed(2));
 
-/** The share of the hits landing within an eighth of a beat of a grid line. */
-function agreementOf(hits: Hit[], line: Line): number {
+/**
+ * The share of the hits landing within a window — an eighth of a beat, unless
+ * said otherwise — of a grid line.
+ */
+function agreementOf(hits: Hit[], line: Line, window = line.period / 8): number {
   let all = 0;
   let on = 0;
   for (const hit of hits) {
     all += hit.weight;
     const k = Math.round((hit.at - line.first) / line.period);
-    if (Math.abs(hit.at - (line.first + k * line.period)) <= line.period / 8) on += hit.weight;
+    if (Math.abs(hit.at - (line.first + k * line.period)) <= window) on += hit.weight;
   }
   return all > 0 ? on / all : 0;
+}
+
+/**
+ * How much worse a whole number may score than the fit and still be the tempo.
+ * A few per cent, which is the noise between two grids that are the same grid.
+ */
+const SLACK = 0.03;
+
+/**
+ * The tempo to report: the whole number where the audio agrees the tempo is
+ * one, and two decimals where it does not.
+ *
+ * Produced music is written at whole numbers, and a fit within half a tenth of
+ * one used to be rounded to it. That reach was wider than the truth. Every
+ * record on hand is a hundred and twenty-eight in the DAW and 128.055 on the
+ * master — four hundredths of a per cent fast, which is what a mastering pass
+ * through a converter on its own clock does — and rounding it put the grid a
+ * third of a beat late by the end of the song, on the one strip whose job is
+ * to show that.
+ *
+ * So the whole number is tested rather than assumed. Its grid, at its own best
+ * phase, has to catch as much of the kick within a thirty-second of a beat as
+ * the fitted grid does. A song at 128 scores the same either way — or better,
+ * since the fit is the one carrying the noise — and gets the integer. A song
+ * at 128.055 loses half its kicks to the rounding over four minutes and keeps
+ * its decimals.
+ */
+function wholeOf(hits: Hit[], line: Line, columns: number, per: number): number {
+  const bpm = 60 / (line.period * per);
+  const whole = Math.round(bpm);
+  const period = 60 / (whole * per);
+
+  // The integer grid's best phase: the beats the fit found, with the slope held
+  // at the whole number and only the intercept re-fitted.
+  let w = 0;
+  let sum = 0;
+  for (const beat of under(hits, line, columns, Number.MAX_SAFE_INTEGER)) {
+    w += beat.weight;
+    sum += beat.weight * (beat.at - beat.k * period);
+  }
+  if (w > 0) {
+    // Never narrower than a column and a half: a hit is placed between columns
+    // by a parabola, and the coarse envelope of the drawn peaks cannot say
+    // where within one it fell.
+    const window = Math.max(period / 32, 1.5);
+    const fitted = agreementOf(hits, line, window);
+    const rounded = agreementOf(hits, { first: sum / w, period }, window);
+    if (rounded >= fitted * (1 - SLACK)) return whole;
+  }
+  return Number(bpm.toFixed(2));
+}
+
+/**
+ * The hits a fit listens to, in seconds, for the warp lane to draw.
+ *
+ * The lane and the fit have to be looking at the same thing, or the agreement
+ * beside the tempo is a number about a picture nobody can see. These are the
+ * kick-band rises, placed between columns — a column is twelve milliseconds
+ * and a grid is judged in single ones.
+ */
+export function hitsIn(heard: Heard): Onset[] {
+  const { low } = heard;
+  return hitsOf(riseOf(low.level, low.per)).map((hit) => ({
+    at: hit.at * low.per,
+    strength: hit.weight,
+  }));
 }
 
 /**
@@ -567,7 +651,7 @@ export function fitOf(heard: Heard): Fit | null {
   let downbeat = 0;
   for (let r = 1; r < 4; r++) if (votes[r] > votes[downbeat] * 1.05) downbeat = r;
 
-  const bpm = snapped(60 / (line.period * low.per));
+  const bpm = wholeOf(hits, line, columns, low.per);
   // The pulse was allowed to be an octave slower than any tempo this will
   // claim, so that a kick on one and three could be found at all. Nothing
   // promoted it, so nothing here knows what it is.
@@ -599,6 +683,10 @@ export function fitOf(heard: Heard): Fit | null {
  * It refuses rather than wanders. A refinement that ends up three per cent from
  * what was measured has locked onto something else, and what somebody clicked is
  * a better answer than that.
+ *
+ * Neither click is bar 1. A downbeat is a downbeat wherever it is in the song,
+ * and the one that was clicked says where the bars fall, not which bar it
+ * starts; bar 1 is the first downbeat in the file, as it is for a fit.
  */
 export function refitOf(heard: Heard, bpm: number, offset: number): Fit | null {
   const { low } = heard;
@@ -614,5 +702,10 @@ export function refitOf(heard: Heard, bpm: number, offset: number): Fit | null {
 
   const agreement = agreementOf(hits, line);
   if (agreement < HOPELESS) return null;
-  return { bpm: snapped(found), offset: line.first * low.per, agreement };
+
+  // Bar 1 is the first downbeat in the file, here as in the fit above. The
+  // click said where a downbeat is, not which bar it starts.
+  const bar = line.period * 4;
+  const at = ((line.first % bar) + bar) % bar;
+  return { bpm: wholeOf(hits, line, columns, low.per), offset: at * low.per, agreement };
 }

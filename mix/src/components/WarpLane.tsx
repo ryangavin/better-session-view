@@ -72,7 +72,7 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, box.width, height);
 
-      const beat = ink(el, '--sel', '#1c1c20');
+      const beat = ink(el, '--bd', '#262629');
       const barLine = ink(el, '--idle', '#3a3a41');
       const tick = ink(el, '--detail', '#8b8b93');
       const sure = ink(el, '--green', '#5fbfa8');

@@ -1,15 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STEMS, slicesFor, type Slice } from './mock.ts';
-import {
-  coarser,
-  decode,
-  LIBRARY,
-  onsetsOf,
-  peaksOf,
-  stemUrl,
-  type Onset,
-  type Peak,
-} from './audio.ts';
+import { decode, LIBRARY, peaksOf, stemUrl, type Peak } from './audio.ts';
 import { REST, Transport, type Level } from './engine.ts';
 import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
 import {
@@ -18,8 +9,10 @@ import {
   countOf,
   fitOf,
   hearing,
+  hitsIn,
   refitOf,
   snapped,
+  startOf,
   FASTEST,
   SLOWEST,
   type Bars,
@@ -75,6 +68,12 @@ export type Job = Progress;
  * accuracy that gives up is handed straight back by `refitOf`: the clicks say
  * which beat and which downbeat are meant, and the same least-squares line over
  * every kick in the track sets the tempo from there.
+ *
+ * **Neither click is bar 1.** A downbeat is a downbeat wherever it is in the
+ * song, and somebody who scrolled to the drop and marked one there has said
+ * where the bars fall, not which bar that was. Bar 1 is the first downbeat in
+ * the file, the same as it is for a fit, and the pins are numbered with
+ * whatever bars the clicks turn out to have landed on.
  */
 export interface Manual {
   stage: 'first' | 'late' | 'tune';
@@ -91,6 +90,12 @@ export interface Anchor {
   at: number;
   label: string;
 }
+
+/** A pin on the bar a click landed on, numbered from wherever the grid puts bar 1. */
+const pinAt = (second: number, offset: number, bpm: number): Anchor => {
+  const bar = Math.round(((second - offset) * bpm) / 240);
+  return { at: bar, label: String(bar + 1) };
+};
 
 const levels = (): Record<string, Level> =>
   Object.fromEntries(STEMS.map((s) => [s.id, { ...REST }]));
@@ -109,17 +114,6 @@ const levels = (): Record<string, Level> =>
  * spends the load scanning detail nothing ever draws.
  */
 const COLUMNS = 9000;
-
-/**
- * Columns the onsets are found in, folded down from the ones that are drawn.
- *
- * A different question wants a different resolution. An onset is a *rise* in
- * energy between columns, and at a fifty-millisecond column every hi-hat is a
- * rise — what makes a downbeat findable is a column long enough that only a
- * real hit moves it. This is the resolution detection was fitted at, kept
- * exactly, while the drawing got finer underneath it.
- */
-const DETECT = 1800;
 
 /** Bars, before anything has been decoded, so the ruler is not zero wide. */
 const BARS_UNKNOWN = 64;
@@ -829,12 +823,17 @@ export function useMix() {
         return;
       }
       if (manual.stage === 'first') {
+        // A click on any downbeat. It says where the bars fall and nothing
+        // about which bar this is: bar 1 is the first downbeat in the file,
+        // here as everywhere, and the pin is labelled with whatever bar that
+        // makes the one that was clicked.
+        const placed = startOf(at, targetBpm);
         setManual({ ...manual, stage: 'late', first: at });
-        setOffset(at);
+        setOffset(placed);
         setDetected(null);
         setFitFailed(false);
         setWantFit(false);
-        setAnchors([{ at: 0, label: '1' }]);
+        setAnchors([pinAt(at, placed, targetBpm)]);
         return;
       }
 
@@ -853,20 +852,23 @@ export function useMix() {
       // through every kick in the song is the half it gets right.
       const it = listen();
       const refined = it ? refitOf(it, measured, from) : null;
+      const bpm = refined ? refined.bpm : measured;
+      const placed = refined ? refined.offset : startOf(from, measured);
 
       setManual({ ...manual, stage: 'tune' });
-      setTargetBpm(refined ? refined.bpm : measured);
-      setOffset(refined ? refined.offset : from);
+      setTargetBpm(bpm);
+      setOffset(placed);
       setBpmAuto(false);
       setWantFit(false);
       setFitFailed(false);
       setDetected(refined);
+      const first = pinAt(from, placed, bpm);
       setAnchors([
-        { at: 0, label: '1' },
-        { at: manual.span, label: String(manual.span + 1) },
+        first,
+        { at: first.at + manual.span, label: String(first.at + manual.span + 1) },
       ]);
     },
-    [manual, seconds, seek, listen],
+    [manual, seconds, seek, listen, targetBpm],
   );
 
   /**
@@ -908,33 +910,29 @@ export function useMix() {
   const resetMix = useCallback(() => setLevel(levels()), []);
 
   /**
-   * Onsets, from the drums that were just separated.
+   * The hits the warp lane draws: the ones the fit listened to.
    *
-   * A separated mix makes this easier than it is on a mixdown, which is most of
-   * the argument for fitting a grid *after* separating rather than before: the
-   * thing a grid lines up with is the percussion, and here it arrives on its
-   * own track with the pads and the vocal already taken off it.
+   * The lane and the fit have to be looking at the same thing, or the agreement
+   * beside the tempo is a number about a picture nobody can see. They used to
+   * differ: the fit read the kick band of the separated drums at twelve
+   * milliseconds a column, and the lane drew rises in the drawn peaks folded
+   * down to a hundred and eighty — a tick could sit a sixth of a beat from the
+   * kick it stood for, and zoomed in that is a grid that looks wrong when it is
+   * right. Now the lane draws the fit's own hits, placed to a millisecond.
    *
-   * The bar positions are the *grid's* claim about those onsets, so they move
+   * The bar positions are the *grid's* claim about those hits, so they move
    * when the tempo does — which is what makes the warp lane worth looking at.
    * A tick that walks off the bar lines is a tempo that is wrong.
    */
-  const coarse = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(peaks).map(([source, lane]) => [source, coarser(lane, COLUMNS / DETECT)]),
-      ),
-    [peaks],
-  );
-
   const onsets = useMemo(() => {
     if (seconds <= 0) return [];
-    const found: Onset[] = onsetsOf(coarse, seconds);
-    return found.map((onset) => {
+    const it = listen();
+    if (!it) return [];
+    return hitsIn(it).map((onset) => {
       const at = barAt(grid, onset.at / seconds);
       return { at, strength: onset.strength, downbeat: Math.abs(at - Math.round(at)) < 1 / 32 };
     });
-  }, [coarse, seconds, grid]);
+  }, [listen, seconds, grid]);
 
   /** `4/6 audible`, and whether a solo is what is doing it. */
   const audibleLine = useMemo(() => {

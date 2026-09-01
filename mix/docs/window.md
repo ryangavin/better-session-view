@@ -283,9 +283,11 @@ that was nudged, a tempo typed in — is a decision, and a decision is not re-ta
 behind somebody's back.
 
 **Manual is two clicks a counted span apart, and then a nudge.** It is the other
-half of the feature rather than a fallback: the first click says *this is bar 1* and
-sets the offset, the second says *this is the downbeat four bars later* and the
-tempo follows.
+half of the feature rather than a fallback: the first click says *this is a downbeat*
+and sets where the bars fall, the second says *this is the downbeat four bars later*
+and the tempo follows. Neither click is bar 1 — bar 1 is the first downbeat in the
+file, as it is for a fit, and the pins are numbered with whatever bars the clicks
+landed on.
 
 **It asks for a counted span rather than for the last bar of the song**, and that
 is the whole difference between a control somebody uses and one they do not. Asking
@@ -302,7 +304,7 @@ wrong; the audio supplies the precision, which is the half it gets right. A
 refinement that wanders three per cent off what was measured is refused, and what
 was clicked stands.
 
-The nudge moves bar 1 by ten milliseconds, keeping the tempo — the fix for ticks
+The nudge moves the grid by ten milliseconds, keeping the tempo — the fix for ticks
 sitting evenly *beside* the bar lines rather than drifting off them.
 
 It gets a bar of its own at the top of the lanes because in that mode a click in a

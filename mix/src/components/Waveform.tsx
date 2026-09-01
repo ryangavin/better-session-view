@@ -113,10 +113,10 @@ const DOT = 4;
  * stays a bar line as the grid thins around it.
  */
 const RULE: Record<Rank, string> = {
-  phrase: '#1f1f23',
-  bar: '#1a1a1e',
-  beat: '#151518',
-  sub: '#111114',
+  phrase: '#2b2b30',
+  bar: '#222227',
+  beat: '#1a1a1e',
+  sub: '#141417',
 };
 
 const WHOLE: Span = { from: 0, to: 1 };

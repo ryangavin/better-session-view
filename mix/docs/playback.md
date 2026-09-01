@@ -159,10 +159,13 @@ at bar 2 and is unmistakable by bar 60.
 Onsets come off the drums where there are drums, which is most of the argument
 for fitting a grid **after** separating rather than before: the thing a grid
 lines up with is the percussion, and here it arrives on its own track with the
-pads and the vocal already taken off it. `audio.ts` answers *which lane* once,
-in `energyOf`, and both the ticks that are drawn and the fit that places the bars
-read it — a strip that judged the grid against a different stem from the one the
-grid was fitted to would not be evidence about anything.
+pads and the vocal already taken off it. **The ticks are the fit's own hits** —
+`hitsIn` hands the lane the kick-band rises the fit listened to, placed between
+twelve-millisecond columns — so the agreement beside the tempo is exactly what
+the lane draws, counted. They used to come from rises in the drawn peaks folded
+down to a hundred and eighty columns, which put a tick anywhere within a sixth of
+a beat of the kick it stood for: at song width the same pixel, and zoomed in a
+grid that looked wrong when it was right.
 
 Both grids thin themselves, from one ladder in `grid.ts` — every rung a musical
 division, from sixteen bars down to a sixty-fourth note. A four-minute track at
@@ -297,7 +300,21 @@ alignment and the same least-squares line over every kick in the track sets the
 tempo: the hand supplies the octave and the phase, the audio supplies the
 precision. A refinement that ends up three per cent away from what was measured
 has locked onto something else, and is refused in favour of what somebody
-clicked.
+clicked. Neither click is bar 1: the clicked downbeat says where the bars fall,
+not which bar it starts, and bar 1 is the first downbeat in the file, as it is
+for a fit.
+
+**A whole number is tested, not assumed.** Produced music is written at whole
+numbers, and a fit within half a tenth of one used to be rounded to it. Every
+record on hand is a hundred and twenty-eight in the DAW and 128.055 on the
+master — four hundredths of a per cent fast, which is what a mastering pass
+through a converter on its own clock does — and rounding it put the grid a third
+of a beat late by the end of the song, on the strip whose job is to show that.
+So `wholeOf` asks whether the integer's grid, at its own best phase, catches as
+much of the kick within a thirty-second of a beat as the fitted one does. A song
+at 128 scores the same either way and gets the integer; a song at 128.055 loses
+half its kicks to the rounding and keeps its decimals, and the header shows both
+of them rather than a `128.1` that reads as a mistake.
 
 `warp.test.ts` fixtures are four minutes long and what they assert is the
 *drift* — where the grid puts bar 100 — because a tempo a tenth of a per cent out
