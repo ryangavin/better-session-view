@@ -8,8 +8,6 @@
     <clipPath id="face-mix">
       <rect x="10" y="10" width="492" height="492" rx="105"/>
     </clipPath>
-    <clipPath id="lens-upper"><circle cx="241" cy="128" r="29"/></clipPath>
-    <clipPath id="lens-lower"><circle cx="241" cy="384" r="29"/></clipPath>
   </defs>
 
   <rect x="0" y="0" width="512" height="512" rx="115" fill="#090A0E"/>
@@ -19,19 +17,12 @@
     <path d="M256 0H512V512H256A128 128 0 0 1 256 256A128 128 0 0 0 256 0Z" fill="url(#mix)"/>
   </g>
 
-  <g fill="url(#mix)">
-    <circle cx="241" cy="128" r="29"/>
-    <circle cx="271" cy="128" r="29"/>
+  <g fill="url(#mix)" stroke="#F7F4EB" stroke-width="16">
+    <circle cx="242" cy="128" r="26"/>
+    <circle cx="270" cy="128" r="26"/>
   </g>
-  <g clip-path="url(#lens-upper)">
-    <circle cx="271" cy="128" r="29" fill="#F7F4EB"/>
-  </g>
-
-  <g fill="#F7F4EB">
-    <circle cx="241" cy="384" r="29"/>
-    <circle cx="271" cy="384" r="29"/>
-  </g>
-  <g clip-path="url(#lens-lower)">
-    <circle cx="271" cy="384" r="29" fill="url(#mix)"/>
+  <g fill="#F7F4EB" stroke="url(#mix)" stroke-width="16">
+    <circle cx="270" cy="384" r="26"/>
+    <circle cx="242" cy="384" r="26"/>
   </g>
 </svg>
