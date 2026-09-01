@@ -285,7 +285,7 @@
 .wdg-number-body {
   font-family: var(--wdg-mono);
   font-size: var(--text-label);
-  letter-spacing: -0.04em;
+  letter-spacing: var(--track-tight);
   font-variant-numeric: tabular-nums;
 }
 

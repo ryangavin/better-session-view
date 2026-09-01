@@ -32,7 +32,7 @@ table.grid th {
   font-family: var(--mono);
   font-size: var(--text-label);
   line-height: var(--label-h);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-label);
   color: var(--caption);
   text-transform: uppercase;
   font-weight: var(--weight-normal);
@@ -84,7 +84,7 @@ table.grid th.meta-h .meta-h-title {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 16px;
+  font-size: var(--text-heading);
 }
 table.grid th.meta-h .song-action-groups {
   display: flex;
@@ -183,7 +183,7 @@ td.cell.group > .fire {
   border: none;
   background: none;
   color: var(--idle);
-  font-size: 7px;
+  font-size: var(--text-annot);
   line-height: 18px;
   vertical-align: middle;
 }
@@ -344,9 +344,9 @@ button.stop-clips-button.control-button-on {
 
 .track-status-time {
   font-family: var(--mono);
-  font-size: 8.5px;
+  font-size: var(--text-label);
   line-height: 1;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--track-slight);
   color: var(--green);
   white-space: nowrap;
   overflow: hidden;
@@ -464,7 +464,7 @@ table.grid tfoot tr.sends-row td {
   font-family: var(--mono);
   font-size: var(--text-label);
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--track-tight);
   cursor: ew-resize;
 }
 
@@ -631,7 +631,7 @@ table.grid tfoot tr.sends-row td {
   font-family: var(--mono);
   font-size: var(--text-annot);
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--track-tight);
   white-space: nowrap;
 }
 

@@ -16,7 +16,7 @@
   font-family: var(--mono);
   font-size: var(--text-label);
   line-height: 12px;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-slight);
   text-transform: uppercase;
   vertical-align: 1px;
 }

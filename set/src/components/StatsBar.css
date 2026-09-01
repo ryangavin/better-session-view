@@ -38,9 +38,9 @@
   border: 1px solid var(--bd3);
   border-radius: var(--radius-sm);
   font-family: var(--mono);
-  font-size: 8.5px;
+  font-size: var(--text-label);
   line-height: 1;
-  letter-spacing: 0.09em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -75,14 +75,14 @@
 }
 .stat .k {
   font-family: var(--mono);
-  font-size: 8.5px;
-  letter-spacing: 0.12em;
+  font-size: var(--text-label);
+  letter-spacing: var(--track-caps);
   color: var(--caption);
   text-transform: uppercase;
 }
 .stat .v {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--text-body);
   color: var(--detail);
 }
 .stat .v.warn {

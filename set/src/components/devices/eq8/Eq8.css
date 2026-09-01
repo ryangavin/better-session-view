@@ -48,7 +48,7 @@
 }
 
 .eq8-more {
-  letter-spacing: -1px;
+  letter-spacing: var(--track-tight);
 }
 
 .eq8-panel {

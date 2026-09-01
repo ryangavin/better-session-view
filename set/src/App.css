@@ -39,7 +39,7 @@ main + .stats {
   padding: 60px 20px;
   text-align: center;
   color: var(--detail);
-  font-size: 13px;
+  font-size: var(--text-lead);
   line-height: 1.7;
 }
 .empty-state b {

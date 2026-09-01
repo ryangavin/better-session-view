@@ -42,8 +42,8 @@ header {
 
 h1 {
   margin: 0;
-  font-size: 15px;
-  letter-spacing: 0.02em;
+  font-size: var(--text-heading);
+  letter-spacing: var(--track-slight);
 }
 
 header p {

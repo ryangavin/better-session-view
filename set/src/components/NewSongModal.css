@@ -10,7 +10,7 @@
 .new-song-field > span {
   font-family: var(--mono);
   font-size: var(--text-label);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-label);
   color: var(--caption);
   text-transform: uppercase;
 }

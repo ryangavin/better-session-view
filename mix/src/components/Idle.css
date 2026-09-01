@@ -13,7 +13,7 @@
   margin: 0;
   font-family: var(--mono);
   font-size: var(--text-label);
-  letter-spacing: 0.16em;
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: var(--caption);
 }

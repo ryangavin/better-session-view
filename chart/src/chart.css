@@ -65,7 +65,7 @@ body {
 
 .song {
   font-size: clamp(1.7rem, 8vw, 2.6rem);
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   line-height: 1.03;
   letter-spacing: var(--track-tight);
   text-wrap: balance;
@@ -89,15 +89,15 @@ body {
 }
 
 .musical-key {
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-slight);
   color: var(--ink);
 }
 
 .of {
   font-size: 0.65rem;
   font-weight: var(--weight-strong);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: var(--ink-quiet);
 }
@@ -153,9 +153,9 @@ body {
 
 .bpm {
   font-size: clamp(3.6rem, 19vw, 5.5rem);
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   line-height: 0.9;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--track-tight);
   font-variant-numeric: tabular-nums;
 }
 
@@ -220,7 +220,7 @@ body {
   font-size: calc(var(--wheel, 3rem) * 0.34);
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--track-tight);
 }
 
 .track-name {
@@ -343,7 +343,7 @@ body {
   overflow: hidden;
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 45%);
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: var(--weight-bold);
   line-height: 1;
   letter-spacing: var(--track-tight);
   color: rgb(0 0 0 / 78%);

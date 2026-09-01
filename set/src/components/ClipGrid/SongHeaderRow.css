@@ -80,7 +80,7 @@ tr.song-row button.song {
   line-height: var(--song-name-line);
   font-weight: var(--weight-strong);
   color: var(--fg);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--track-tight);
   padding: 0;
   border: none;
   background: none;
@@ -101,7 +101,7 @@ tr.song-row .song-artist {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: var(--text-control);
   line-height: var(--song-meta-line);
   color: var(--detail);
 }
@@ -110,7 +110,7 @@ tr.song-row .song-artist.clash {
 }
 tr.song-row .part {
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: var(--text-control);
   color: var(--caption);
 }
 tr.song-row .tag-chip.song-tag {
@@ -127,7 +127,7 @@ tr.song-row .facts {
   margin-left: auto;
   padding-left: 8px;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: var(--text-control);
   color: var(--detail);
 }
 tr.song-row .facts .bpm,
@@ -154,7 +154,7 @@ tr.song-row .facts .key.none {
 
 tr.song-row .mixed-color {
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: var(--text-control);
   color: var(--amber);
 }
 tr.song-row .part {
@@ -284,6 +284,6 @@ tr.song-row.drop-below td:first-child {
 
 tr.song-row .drop-note {
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: var(--text-control);
   color: var(--amber);
 }

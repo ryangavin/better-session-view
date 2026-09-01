@@ -9,7 +9,7 @@
   flex: none;
   font-family: var(--mono);
   font-size: var(--text-label);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: var(--caption);
 }
@@ -308,7 +308,7 @@
   flex: none;
   font-family: var(--mono);
   font-size: var(--text-label);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: var(--amber);
   animation: mf-pulse 1.8s ease-in-out infinite;
