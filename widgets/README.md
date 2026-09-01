@@ -107,9 +107,11 @@ Vite and `tsc` both consume the source, so there is no build step between this m
 the app that uses it, and no `dist/` to go stale while you work.
 
 `npm run build:widgets` does exist, but it emits **declarations only** into `dist/`, and it
-is not part of `npm run build`. Nothing imports those — they are there for the design-system
-sync in [`.design-sync/`](.design-sync/config.json), which reads a package's `.d.ts` to
-recover each component's props.
+is not part of `npm run build`. Nothing in this repo imports those — they are there for an
+external design-system sync, which reads a package's `.d.ts` to recover each component's
+props. That sync's config and its copy of the tokens used to live in `.design-sync/` and
+were removed on 2026-09-01: the sync had never completed and will be set up again from
+scratch. The script stays because it is what such a tool needs from us.
 
 ## Who uses it
 
