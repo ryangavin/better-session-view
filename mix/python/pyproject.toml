@@ -1,0 +1,39 @@
+# The environment mix[flow] separates in, and the file the shipped app builds from.
+#
+# This is **not** `demucs/pyproject.toml`. That folder is a research spike with
+# its own extras, its own scratch scripts and its own reasons to churn; this is
+# the four dependencies `separate.py` actually imports, pinned, and it travels
+# inside the `.app`. `mix/docs/demucs.md` has why the environment is built on the
+# machine that runs it rather than shipped inside the bundle.
+#
+# `uv.lock` beside this is the whole point of it: the first run resolves nothing,
+# it installs exactly what was locked here, so two machines that set themselves
+# up a year apart get the same engine.
+[project]
+name = "mixflow-engine"
+version = "0.1.0"
+description = "The Python side of mix[flow]: Demucs v4, and nothing else."
+# Pinned to a minor version rather than left open. `>=3.13` would let uv install
+# whatever is newest the day somebody first presses Generate, and torch supports
+# a Python version some months after it ships — which would make the first run
+# the place that discovered it.
+requires-python = "==3.13.*"
+dependencies = [
+    # Hybrid Transformer Demucs. The checkpoints are not in here — they come from
+    # Hugging Face on first use of a model, into torch's own cache.
+    "demucs==4.1.0",
+    # demucs itself only asks for torch>=2.1; ask for a build with a working MPS
+    # backend, which is the whole reason this is worth running on a laptop.
+    "torch>=2.9",
+    # What `save_audio` writes the float32 stems through.
+    "soundfile",
+    "numpy",
+]
+
+[tool.uv]
+# One architecture, because that is what this project builds: every dmg it has
+# ever produced is arm64, and the release workflow runs on Apple silicon. A
+# resolution for one environment is a smaller lock and a faster first run — and
+# the day a universal build is wanted, torch's macOS x86 wheels are the thing to
+# check before this line is.
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]

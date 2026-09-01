@@ -6,7 +6,7 @@ import { scheme, serve } from '@openflow/desktop/serve.ts';
 import { state } from '@openflow/desktop/state.ts';
 import { updates } from '@openflow/desktop/update.ts';
 import { lifecycle, only, open } from '@openflow/desktop/window.ts';
-import { ready } from './demucs.ts';
+import { ready } from './runtime.ts';
 import { add, choose, load, reveal, root } from './library.ts';
 import { MODELS } from './models.ts';
 import { recordStems } from './manifest.ts';
@@ -16,8 +16,9 @@ import type { Progress } from './job.ts';
 /**
  * mix[flow]: a mix in, four parts out.
  *
- * Stem separation, run locally — the model is Demucs v4, and where it comes
- * from is `demucs.ts`'s open question rather than this file's.
+ * Stem separation, run locally — the model is Demucs v4, and the environment it
+ * runs in is built on first use by `runtime.ts` rather than shipped inside the
+ * bundle.
  *
  * Everything a window is — the frame it remembers, the scheme it serves its
  * own build over, the dev loop, the navigation policy, the updater — is
@@ -40,6 +41,18 @@ const MOUNT = '/library/';
 /** `mix/dist`, from `mix/electron/dist/main.cjs`. */
 const DIST = path.resolve(__dirname, '..', '..', 'dist');
 
+/**
+ * Where the Python engine is built, which is the one path in this app that
+ * belongs to the *machine* rather than to the person.
+ *
+ * Application Support rather than the library folder: the library is theirs and
+ * travels — a folder they might carry to another laptop — and half a gigabyte
+ * of architecture-specific wheels has no business in it. `runtime.ts` is asked
+ * to build it and cannot ask electron for this itself, on purpose, so that it
+ * stays testable.
+ */
+const RUNTIME = path.join(app.getPath('userData'), 'runtime');
+
 const DEV = devUrl(MIX);
 /** Where the window opens, and the only address it is allowed to stay on. */
 const HOME = DEV || `${MIX.name}://app/`;
@@ -59,7 +72,7 @@ const window = (): void => {
  * doing it.
  */
 if (only(app)) {
-  ipcMain.handle('openflow:demucs', () => ready());
+  ipcMain.handle('openflow:demucs', () => ready(RUNTIME));
 
   // The library is the main process's, because it is a folder. Everything the
   // renderer knows about it arrives through these four, and the renderer never
@@ -95,7 +108,7 @@ if (only(app)) {
         return { ok: false, trackId: ask.trackId, says: 'no library folder chosen', cancelled: false };
       }
       const outcome = await separate(
-        { root: where, trackId: ask.trackId, file: ask.file, model: ask.model },
+        { root: where, runtime: RUNTIME, trackId: ask.trackId, file: ask.file, model: ask.model },
         {
           progress: (trackId: string, progress: Progress) =>
             push('openflow:separate-progress', { trackId, progress }),

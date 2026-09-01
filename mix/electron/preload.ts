@@ -1,7 +1,7 @@
 import { ipcRenderer } from 'electron';
 import { expose } from '@openflow/desktop/preload.ts';
 import type { Imported, Library } from './library.ts';
-import type { Ready } from './demucs.ts';
+import type { Ready } from './runtime.ts';
 import type { Model } from './models.ts';
 import type { Progress } from './job.ts';
 import type { Outcome } from './separate.ts';

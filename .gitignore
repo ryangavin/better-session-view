@@ -10,6 +10,9 @@ bridge/lom.js
 */electron/dist/
 # generated: packaged .app and .dmg — npm run pack
 release/
+# fetched, pinned and verified by mix/tools/prepare.ts: the uv that installs the
+# Python engine on a user's machine. A binary, so it is downloaded rather than committed
+mix/bin/
 # generated: device binary + debug patcher
 bridge/SessionBridge.amxd
 bridge/SessionBridge.maxpat

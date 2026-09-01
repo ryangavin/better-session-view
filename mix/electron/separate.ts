@@ -16,6 +16,7 @@ import {
   type Sidecar,
 } from './job.ts';
 import { modelOf } from './models.ts';
+import { places, prepare, uvPath, worker } from './runtime.ts';
 
 /**
  * The runner: one child process, one job at a time, and a way to stop it.
@@ -42,12 +43,16 @@ import { modelOf } from './models.ts';
  *     left in the window that could stop it.
  */
 
-/** `mix/python/separate.py`, from `mix/electron/dist/main.cjs`. */
-const worker = (): string => path.resolve(__dirname, '..', '..', 'python', 'separate.py');
-
-/** `<repo>/demucs`, the same seam `demucs.ts` probes — see `docs/demucs.md`. */
-const workspace = (): string =>
-  process.env.OPENFLOW_DEMUCS ?? path.resolve(__dirname, '..', '..', '..', 'demucs');
+/**
+ * The project `uv run` is given: the environment this app built for itself, or
+ * whatever `OPENFLOW_DEMUCS` names.
+ *
+ * The override is a development convenience and the only way to point mix[flow]
+ * at the `demucs/` research workspace — which has the extras a spike needs and
+ * is explicitly not part of open[flow]. Naming one skips the setup entirely, on
+ * the grounds that somebody who set the variable has an environment.
+ */
+const project = (runtime: string): string => process.env.OPENFLOW_DEMUCS ?? places(runtime).env;
 
 /** How long a terminated child gets to unwind before it is killed outright. */
 const GRACE_MS = 4000;
@@ -55,6 +60,12 @@ const GRACE_MS = 4000;
 export interface Request {
   /** The library root. Absolute, and the only absolute path a job holds. */
   root: string;
+  /**
+   * Where the Python environment lives — Application Support, decided by
+   * `main.ts` because it is the only file here that may ask electron for a
+   * path. Built on the first job that needs it; `runtime.ts` has why.
+   */
+  runtime: string;
   trackId: string;
   /** The track's audio, relative to the root — `audio/…`, as the manifest holds it. */
   file: string;
@@ -190,13 +201,47 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
   let progress = starting();
   watch.progress(trackId, progress);
 
+  // The environment, before anything is asked to run inside it. Ordinarily this
+  // returns immediately; the first time on a machine it is minutes, which is
+  // why it reports through the same progress the job does rather than blocking
+  // silently on a window that says "loading the model".
+  if (!process.env.OPENFLOW_DEMUCS) {
+    try {
+      await prepare(request.runtime, {
+        say: (stage) => {
+          progress = { ...progress, stage };
+          watch.progress(trackId, progress);
+        },
+        hold: (child) => {
+          if (running) running.child = child;
+        },
+      });
+    } catch (why) {
+      const stopped = running?.cancelled ?? false;
+      running = null;
+      await fsp.rm(scratch, { recursive: true, force: true });
+      const done = fail(stopped ? 'cancelled' : (why as Error).message, stopped);
+      watch.finished(done);
+      return done;
+    }
+    if (running?.cancelled) {
+      running = null;
+      await fsp.rm(scratch, { recursive: true, force: true });
+      const done = fail('cancelled', true);
+      watch.finished(done);
+      return done;
+    }
+    progress = { ...progress, stage: starting().stage };
+    watch.progress(trackId, progress);
+  }
+
   const outcome = await new Promise<Outcome>((resolve) => {
     const child = spawn(
-      'uv',
+      uvPath(),
       [
         'run',
         '--project',
-        workspace(),
+        project(request.runtime),
         '--quiet',
         'python',
         worker(),
@@ -238,7 +283,7 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
       noise = `${noise}${chunk.toString()}`.slice(-4000);
     });
 
-    // A machine with no `uv` on the PATH. The probe in `demucs.ts` says so
+    // A machine with no `uv` on the PATH. The probe in `runtime.ts` says so
     // before anybody presses the button, but the PATH can change underneath a
     // running app and this is the only place that would notice.
     child.on('error', (why) =>

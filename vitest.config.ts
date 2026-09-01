@@ -65,6 +65,7 @@ export default defineConfig({
         'mix/electron/manifest.ts',
         'mix/electron/job.ts',
         'mix/electron/models.ts',
+        'mix/electron/runtime.ts',
         'visuals/client/**/*.{ts,tsx}',
         'visuals/server/**/*.{ts,tsx}',
         'chart/src/**/*.{ts,tsx}',

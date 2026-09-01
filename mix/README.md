@@ -10,6 +10,11 @@ npm run mix          # the app, on what is built
 npm run pack:mix     # a .app and a .dmg under release/mix/
 ```
 
+**The app installs its own engine.** Demucs is Python, and none of it ships inside the
+`.app`: the bundle carries `uv` and a lock file, and the first separation on a machine
+builds the environment into Application Support — [`docs/demucs.md`](docs/demucs.md).
+Nobody is asked to install a toolchain, and nothing unsigned goes in the bundle.
+
 **Everything on screen is real except the slices.** Tracks live in a folder you pick,
 copied there on import, indexed by a manifest that makes the folder portable —
 [`docs/library.md`](docs/library.md). Pressing Generate runs Demucs against the file and
@@ -25,10 +30,10 @@ closes the dialog.
 | touching | read |
 |---|---|
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
-| the layout, the colours, or which control is a widget | [`docs/window.md`](docs/window.md) — `src/` |
+| the layout, the colours, which lanes there are, or zooming the timeline | [`docs/window.md`](docs/window.md) — `src/`, and `src/zoom.ts` for the zoom |
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
 | playback, the mixer, the waveforms, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `remember.ts` |
-| where the Python environment comes from, and the probe | [`docs/demucs.md`](docs/demucs.md) — `electron/demucs.ts` |
+| where the Python engine comes from, how it is installed, and the probe | [`docs/demucs.md`](docs/demucs.md) — `electron/runtime.ts`, `python/pyproject.toml`, `tools/prepare.ts` |
 | the window, packaging, or anything shared with the other apps | [`desktop/README.md`](../desktop/README.md) — there is no mix[flow] version of it, and that is the point |
 
 ## What is actually here
@@ -36,18 +41,21 @@ closes the dialog.
 | file | |
 |---|---|
 | `electron/main.ts` | the window, the library's four calls, and separation's five |
-| `electron/demucs.ts` | the readiness probe, and the open question behind it |
+| `electron/runtime.ts` | the Python engine: where it lives, what built it, and the probe. Tested |
 | `electron/manifest.ts` | the library on disk. No electron import, so it is testable — and tested |
 | `electron/library.ts` | the dialogs, and where the folder is right now |
 | `electron/models.ts` | which models will run, what they emit, what they cost |
 | `electron/job.ts` | what a separation is: the cache key, the sidecar, the progress. Tested |
 | `electron/separate.ts` | the child process, one at a time, and cancelling it |
 | `python/separate.py` | the worker. Talks JSON, writes stems that sum |
+| `python/pyproject.toml` | the four dependencies the engine is, and `uv.lock` beside it |
+| `tools/prepare.ts` | fetches the pinned `uv` the bundle carries. `tools/app.ts` runs it |
 | `electron/preload.ts` | the context bridge |
 | `src/audio.ts` | reaching the stems, decoding them, and the peaks that draw them |
 | `src/engine.ts` | the transport and the mixer, which are one Web Audio graph |
 | `src/remember.ts` | what survives a reload, and what deliberately does not |
 | `src/mock.ts` | how a source is drawn, and the one invented thing left |
+| `src/zoom.ts` | how much of the track the lanes show, and which part |
 | `src/state.ts` | everything the window knows, in one hook |
 | `src/components/` | the header, the library, the three states, the lanes and the warp lane |
 

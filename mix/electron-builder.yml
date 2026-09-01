@@ -13,11 +13,20 @@ productName: mix[flow]
 # brackets cannot survive into a filename.
 artifactName: mix-flow-${version}-${arch}.${ext}
 
-# The separation worker, which is ours and is Python — so nothing bundles it and
-# it has to be copied in whole. The environment it runs inside is a different
-# question and an open one; this is only the script.
+# The two things this app runs that neither vite nor esbuild produced.
+#
+# `python/` is the separation worker, which is ours, plus the `pyproject.toml`
+# and `uv.lock` the engine is built from. `bin/uv` is the pinned binary that
+# builds it — fetched and checked by `mix/tools/prepare.ts`, and the reason a
+# packaged app can set itself up on a machine with no toolchain on it.
+# `docs/demucs.md` has the decision behind both.
+#
+# `bin/uv` is a Mach-O, so a signed build signs it along with everything else in
+# the bundle. It is a static Rust binary with no JIT and nothing to load, so the
+# hardened runtime has no argument with it.
 files:
   - python/**
+  - bin/uv
 
 directories:
   output: ../release/mix
