@@ -1,0 +1,30 @@
+[project]
+name = "stem-workspace"
+version = "0.1.0"
+description = "A scratch workspace for Demucs v4 stem separation."
+requires-python = ">=3.13"
+dependencies = [
+    # The current release: Hybrid Transformer Demucs, checkpoints on Hugging Face.
+    "demucs==4.1.0",
+    # demucs itself only asks for torch>=2.1; ask for a build with a working MPS backend.
+    "torch>=2.9",
+    # Reading and writing stems from your own scripts.
+    "soundfile",
+    "numpy",
+]
+
+[project.optional-dependencies]
+# mdx_q / mdx_extra_q, the quantised checkpoints.
+quantized = ["diffq>=0.2.1"]
+# The UVR catalogue — Roformer, SCNet and the rest, which is where the field went after v4.
+# audioread: audio-separator 0.47 imports it without declaring it.
+roformer = ["audio-separator[cpu]>=0.47", "audioread"]
+
+[tool.uv]
+# This is a personal workspace on one machine — resolve for it, not for every platform.
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+
+# To hack on the model code itself, comment out "demucs==4.1.0" above and uncomment:
+# [tool.uv.sources]
+# demucs = { git = "https://github.com/adefossez/demucs", branch = "main" }
+# ...or clone it and point at the checkout: demucs = { path = "upstream", editable = true }

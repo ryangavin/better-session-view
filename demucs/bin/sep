@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Separate one or more tracks. Everything after the flags below is passed to demucs,
+# and a repeated flag wins, so `bin/sep -n htdemucs_ft -d cpu track.wav` overrides both.
+#
+#   bin/sep audio/track.wav                  # 4 stems, default model
+#   bin/sep -n htdemucs_ft audio/track.wav   # 4 passes, slower, a little cleaner
+#   bin/sep -n htdemucs_6s audio/track.wav   # adds guitar and piano
+#   bin/sep --two-stems=vocals audio/*.wav   # vocals + everything else
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Any op Metal is missing runs on the CPU instead of raising.
+export PYTORCH_ENABLE_MPS_FALLBACK=1
+
+exec uv run --project "$root" --quiet demucs -d mps -n htdemucs -o "$root/separated" "$@"

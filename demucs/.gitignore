@@ -1,0 +1,8 @@
+.venv/
+audio/*
+!audio/.gitkeep
+separated/
+models/
+upstream/
+__pycache__/
+truth/*/

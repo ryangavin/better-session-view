@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Pre-download checkpoints from Hugging Face so a later run doesn't stall on the network.
+# With no arguments it fetches the four v4 models; name models to fetch only those.
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+
+models=("$@")
+if [ ${#models[@]} -eq 0 ]; then
+  models=(htdemucs htdemucs_ft htdemucs_6s hdemucs_mmi)
+fi
+
+for m in "${models[@]}"; do
+  echo "==> $m"
+  uv run --project "$root" --quiet python -c "
+from demucs.pretrained import get_model
+import sys
+bag = get_model(sys.argv[1])
+n = len(getattr(bag, 'models', [bag]))
+print(f'  {n} checkpoint(s), sources: {\", \".join(bag.sources)}')
+" "$m"
+done
+
+echo
+echo "Cached in ${HF_HOME:-~/.cache/huggingface}"

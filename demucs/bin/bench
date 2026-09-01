@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Time the same track through several models on the GPU, so you can hear and see what
+# each one costs.  bin/bench audio/track.wav [model ...]
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+export PYTORCH_ENABLE_MPS_FALLBACK=1
+
+track="${1:?usage: bin/bench TRACK [MODEL ...]}"; shift
+models=("$@")
+if [ ${#models[@]} -eq 0 ]; then
+  models=(htdemucs htdemucs_ft htdemucs_6s hdemucs_mmi)
+fi
+
+duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$track")
+printf 'track: %s (%.1fs)\n\n' "$track" "$duration"
+printf '%-14s %10s %10s\n' model wall xrealtime
+
+for m in "${models[@]}"; do
+  start=$(python3 -c 'import time; print(time.time())')
+  uv run --project "$root" --quiet demucs -d mps -n "$m" -o "$root/separated" "$track" >/dev/null 2>&1
+  python3 -c "
+import time, sys
+wall = time.time() - float(sys.argv[1])
+print('%-14s %9.1fs %9.2fx' % (sys.argv[2], wall, float(sys.argv[3]) / wall))
+" "$start" "$m" "$duration"
+done

@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Run one track through every pretrained model, so you can A/B the stems.
+#
+#   bin/preview track.m4a                 # all eight models, full length
+#   bin/preview -s 90 -d 30 track.m4a     # 30 seconds from 1:30 — much faster to audition
+#   bin/preview track.m4a htdemucs mdx_extra
+#
+# Stems are written as 320k mp3 under separated/preview/<track>/<model>/, which is a tenth
+# the size of the wavs and plenty for deciding which model to run properly.
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+export PYTORCH_ENABLE_MPS_FALLBACK=1
+
+start=""
+length=""
+while getopts "s:d:" opt; do
+  case $opt in
+    s) start=$OPTARG ;;
+    d) length=$OPTARG ;;
+    *) echo "usage: bin/preview [-s START] [-d SECONDS] TRACK [MODEL ...]" >&2; exit 2 ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+track="${1:?usage: bin/preview [-s START] [-d SECONDS] TRACK [MODEL ...]}"; shift
+models=("$@")
+if [ ${#models[@]} -eq 0 ]; then
+  models=(htdemucs htdemucs_ft htdemucs_6s hdemucs_mmi mdx mdx_extra mdx_q mdx_extra_q)
+fi
+
+name="$(basename "${track%.*}")"
+out="$root/separated/preview/$name"
+mkdir -p "$out"
+
+# An excerpt is cut once, up front, and every model sees the same seconds.
+source_file="$track"
+if [ -n "$start" ] || [ -n "$length" ]; then
+  source_file="$out/excerpt.wav"
+  ffmpeg -v error -y -i "$track" ${start:+-ss "$start"} ${length:+-t "$length"} \
+    -c:a pcm_s16le "$source_file"
+  echo "excerpt: ${start:-0}s +${length:-end}s"
+fi
+
+duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$source_file")
+case "$duration" in
+  ''|N/A|0*) echo "no audio in $source_file — is -s past the end of the track?" >&2; exit 1 ;;
+esac
+printf '%s (%.1fs) → separated/preview/%s/\n\n' "$name" "$duration" "$name"
+printf '%-14s %8s %10s\n' model wall xrealtime
+
+for m in "${models[@]}"; do
+  began=$(python3 -c 'import time; print(time.time())')
+  if uv run --project "$root" --quiet demucs --mp3 -d mps -n "$m" -o "$out" "$source_file" \
+       >"$out/.$m.log" 2>&1; then
+    python3 -c "
+import time, sys
+wall = time.time() - float(sys.argv[1])
+print('%-14s %7.1fs %9.2fx' % (sys.argv[2], wall, float(sys.argv[3]) / wall))
+" "$began" "$m" "$duration"
+    rm -f "$out/.$m.log"
+  else
+    printf '%-14s %8s  see %s\n' "$m" failed "separated/preview/$name/.$m.log"
+  fi
+done
+
+# demucs nests its output as <model>/<track>/; flatten it to <model>/ for listening.
+for m in "${models[@]}"; do
+  inner="$out/$m/$(basename "${source_file%.*}")"
+  if [ -d "$inner" ]; then
+    mv "$inner"/* "$out/$m/" && rmdir "$inner"
+  fi
+done
