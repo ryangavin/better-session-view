@@ -106,7 +106,7 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run build` | a bundled bridge.js, lom.js, and the device |
 | `npm run set` | the session manager, set[flow] — builds it and opens the window |
 | `npm run visuals` | the VJ rig, visual[flow] — its server and its window |
-| `npm run pack` | both apps as a `.app` and a `.dmg` under `release/` |
+| `npm run pack` | every app as a `.app` and a `.dmg` under `release/` |
 | `npm run install:apps` | copies those into `/Applications` |
 | `npm run install:device` | the device into the Ableton User Library, as `SessionBridge-qa` |
 | `npm run qa` | all of the above at once — built and installed, ready to try. Packs the `.app` alone and unsigned, which is what installing locally needs and about twenty times quicker, and empties `release/` first so what is in there is what it built |

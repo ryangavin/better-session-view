@@ -21,6 +21,7 @@
     "core",
     "protocol",
     "widgets",
+    "desktop",
     "set",
     "chart",
     "tools"
@@ -28,10 +29,11 @@
   "scripts": {
     "build": "npm run build:bridge && npm run build:device",
     "build:bridge": "node --disable-warning=ExperimentalWarning tools/build-bridge.ts && tsc -p bridge/tsconfig.v8.json",
-    "build:set": "vite build --config set/vite.config.ts",
-    "set": "npm run build:set && node --disable-warning=ExperimentalWarning tools/build-electron.ts set && electron set",
+    "app": "node --disable-warning=ExperimentalWarning tools/app.ts",
+    "build:set": "node --disable-warning=ExperimentalWarning tools/app.ts build set",
+    "set": "node --disable-warning=ExperimentalWarning tools/app.ts run set",
     "qa": "export OPENFLOW_QA=1 && rm -rf release && npm run build && npm run pack && npm run install:apps && npm run install:device",
-    "pack": "npm run pack:set && npm run pack:visuals",
+    "pack": "node --disable-warning=ExperimentalWarning tools/app.ts pack",
     "pack:set": "npm run build:set && node --disable-warning=ExperimentalWarning tools/build-electron.ts set && node --disable-warning=ExperimentalWarning tools/build-icons.ts set && electron-builder --config electron-builder.yml --project set -c.electronVersion=$(node -p \"require('./node_modules/electron/package.json').version\") ${OPENFLOW_QA:+-c.mac.target=dir -c.mac.identity=null}",
     "pack:visuals": "npm run build:visuals && node --disable-warning=ExperimentalWarning tools/build-electron.ts visuals && node --disable-warning=ExperimentalWarning tools/build-icons.ts visuals && electron-builder --config electron-builder.yml --project visuals -c.electronVersion=$(node -p \"require('./node_modules/electron/package.json').version\") ${OPENFLOW_QA:+-c.mac.target=dir -c.mac.identity=null}",
     "install:apps": "node --disable-warning=ExperimentalWarning tools/install-apps.ts",
@@ -49,25 +51,26 @@
     "dev:lom-scrape": "node --disable-warning=ExperimentalWarning tools/lom-reference.ts",
     "dev": "concurrently -k -n bridge,types,lom,set,bench,devices,vis-app,vis-ui,chart,chart-ui -c cyan,blue,magenta,green,yellow,red,white,gray,magentaBright,blueBright \"node --disable-warning=ExperimentalWarning tools/dev-bridge.ts\" \"tsc -p bridge/tsconfig.node.json --noEmit --watch --preserveWatchOutput\" \"tsc -p bridge/tsconfig.v8.json --watch --preserveWatchOutput\" \"vite --config set/vite.config.ts\" \"vite --config widgets/vite.config.ts\" \"vite --config set/vite.bench.config.ts\" \"npm run dev:visuals-app\" \"vite --config visuals/vite.config.ts\" \"OPENFLOW_CHART_UI=http://127.0.0.1:5573 node --watch --disable-warning=ExperimentalWarning chart/server/index.ts\" \"vite --config chart/vite.config.ts\"",
     "dev:set": "vite --config set/vite.config.ts",
-    "dev:set-app": "node --disable-warning=ExperimentalWarning tools/build-electron.ts set && OPENFLOW_DEV=1 electron set",
+    "dev:set-app": "node --disable-warning=ExperimentalWarning tools/app.ts dev set",
     "dev:widgets": "vite --config widgets/vite.config.ts",
     "dev:devices": "vite --config set/vite.bench.config.ts",
-    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p widgets/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
+    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p widgets/tsconfig.json && tsc -p desktop/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --reporter=default --reporter=html",
     "benchmark": "node --disable-warning=ExperimentalWarning tools/benchmark.ts",
     "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link && cd .. && npm run dev:check-singletons",
-    "visuals": "npm run build:visuals && node --disable-warning=ExperimentalWarning tools/build-electron.ts visuals && electron visuals",
+    "visuals": "node --disable-warning=ExperimentalWarning tools/app.ts run visuals",
     "visuals:browser": "node --disable-warning=ExperimentalWarning tools/visuals.ts",
-    "build:visuals": "vite build --config visuals/vite.config.ts",
+    "build:visuals": "node --disable-warning=ExperimentalWarning tools/app.ts build visuals",
     "dev:visuals": "node --disable-warning=ExperimentalWarning visuals/server/index.ts",
     "dev:visuals-ui": "vite --config visuals/vite.config.ts",
-    "dev:visuals-app": "node --disable-warning=ExperimentalWarning tools/build-electron.ts visuals && OPENFLOW_DEV=1 electron visuals",
+    "dev:visuals-app": "node --disable-warning=ExperimentalWarning tools/app.ts dev visuals",
     "dev:fake-live": "node --disable-warning=ExperimentalWarning visuals/tools/fake-live.ts",
     "build:chart": "vite build --config chart/vite.config.ts",
     "dev:chart": "node --watch --disable-warning=ExperimentalWarning chart/server/index.ts",
     "dev:chart-ui": "vite --config chart/vite.config.ts",
-    "frames": "node --disable-warning=ExperimentalWarning tools/frames.ts"
+    "frames": "node --disable-warning=ExperimentalWarning tools/frames.ts",
+    "footage:frames": "node --disable-warning=ExperimentalWarning tools/footage-frames.ts"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.3",
@@ -92,6 +95,7 @@
   "dependencies": {
     "@xyflow/react": "^12.11.5",
     "d3-hierarchy": "^3.1.2",
+    "electron-updater": "^6.8.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   }

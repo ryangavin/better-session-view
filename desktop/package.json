@@ -1,0 +1,15 @@
+{
+  "name": "@openflow/desktop",
+  "version": "0.1.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "The Electron main process every app here shares: the window, the scheme, the dev loop, the child server and the updater.",
+  "files": [
+    "src",
+    "docs",
+    "electron-builder.base.yml"
+  ],
+  "exports": {
+    "./*": "./src/*"
+  }
+}

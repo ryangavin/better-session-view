@@ -11,6 +11,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 |---|---|
 | domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
 | the session manager — components, hooks, the client | [`set/README.md`](set/README.md) — 16 topic docs. `@openflow/set`, and **set[flow]** is what it calls itself |
+| an Electron app — its window, its packaging, or adding a new one | [`desktop/README.md`](desktop/README.md) — 6 topic docs. `@openflow/desktop`: the main process set[flow] and visual[flow] share. **Adding an app starts at `desktop/docs/registry.md`** |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](widgets/README.md) — 5 topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way** |
 | a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. `@openflow/visuals`: its own server and its own `node_modules`, deliberately **not** a workspace; an ordinary **client** of the bridge |
 | what the band reads off a phone | [`chart/README.md`](chart/README.md) — 2 topic docs. `@openflow/chart`: no dependencies; a **read-only** client of the bridge, and the only thing here that binds the LAN |
@@ -85,9 +86,10 @@ work in [Issues](../../issues).
     `visuals/node_modules/@ktamas77/abletonlink`, and `bridge/` is bundled for a Node
     runtime inside Max that is not ours to pick. Listing either in `workspaces` hoists its
     dependencies to the root, at which point `postinstall` fails with "abletonlink is not
-    installed". The workspaces — `core`, `protocol`, `widgets`, `ui`, `chart`, `tools` —
+    installed". The workspaces — `core`, `protocol`, `widgets`, `desktop`, `set`, `chart`, `tools` —
     are safe to hoist only because none of them has dependencies of its own; they are
-    workspaces so the packages resolve by name. Cross-module imports use the package
+    workspaces so the packages resolve by name. `desktop/` imports `electron`, but never
+    resolves it: esbuild marks it external, because the runtime provides it. Cross-module imports use the package
     specifier with the real TypeScript extension (`@openflow/core/derive.ts`), and so do
     imports inside a module (`./param.ts`, never `./param.js`).
 
@@ -97,7 +99,7 @@ work in [Issues](../../issues).
 **it's the file to suspect first**. Everything else is checkable:
 
 ```sh
-npm run typecheck     # all ten projects
+npm run typecheck     # every project
 npm test              # every module's unit tests; --project=visuals for one
 npm run test:coverage # the same tests, and what they reach — report/index.html
 npm run dev:mutate -- <file>   # would its spec notice the file changing? see .claude/skills/set-spec
@@ -105,6 +107,7 @@ npm run dev:record -- <name>   # a real session into set/test/corpus/ — needs 
 npm run build         # the device: bridge.js, lom.js, the .amxd. No front end.
 npm run set           # the session manager, in its window
 npm run visuals       # the VJ rig, its server and its window
+npm run app -- pack   # every app as a .app and a .dmg, from desktop/src/apps.ts
 npm run benchmark     # every flow's frame cost, with nothing pacing it
 ```
 

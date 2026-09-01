@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { APPS, uiPort } from '@openflow/desktop/apps.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -13,11 +14,12 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // free port is worse than one that fails, because nothing downstream can then say
 // which URL it ended up on.
 const BRIDGE = process.env.OPENFLOW_BRIDGE || 'http://127.0.0.1:17800';
-// The base every dev server in the repo counts from — set[flow] is just the
-// one that sits on it. The widget bench is +100, the device bench +200, the
-// visuals renderer +300 and the chart +400, so one variable moves a whole
-// worktree out of the way of the next.
-const PORT = Number(process.env.OPENFLOW_PORT_BASE) || 5173;
+// `OPENFLOW_PORT_BASE` is what every dev server in the repo counts from, and
+// each app's offset from it is `desktop/src/apps.ts` — set[flow] is just the one
+// that sits on the base itself. The two benches are still counted here, at +100
+// and +200, because neither is an app. One variable moves a whole worktree out
+// of the way of the next.
+const PORT = uiPort(APPS.set);
 
 export default defineConfig({
   root: here,

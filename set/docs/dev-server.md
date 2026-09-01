@@ -67,16 +67,20 @@ next click into the browser spends Live's main thread — coming back to the win
 just re-asks for the set, which is a payload. See `core/src/backstop.ts` for the
 policy and `bridge.ts`'s `backstopTick` for the caller.
 
-Six env vars, all optional:
+Seven env vars, all optional:
 
 | var | default | for |
 |---|---|---|
 | `OPENFLOW_PORT_BASE` | `5173` | **every** dev server counts from this — one per worktree |
+| `OPENFLOW_SET_UI_PORT` | from `OPENFLOW_PORT_BASE` | moving this one app without moving the base; every app has the same variable under its own name |
 | `OPENFLOW_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 100 | overriding where the widget bench lands |
 | `OPENFLOW_DEVICE_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 200 | the same, for the device bench |
 | `OPENFLOW_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
 | `OPENFLOW_DEV` | unset | read by the **app**, not by vite: open on the dev server instead of the bundle |
 | `OPENFLOW_DEV_URL` | from `OPENFLOW_PORT_BASE` | the same, at an address this could not have worked out |
+
+The offsets themselves are `desktop/src/apps.ts` now, read by the app and by its vite config
+alike — see [`desktop/docs/registry.md`](../../desktop/docs/registry.md).
 
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next
 free one. That's deliberate: assign the port, don't discover it.

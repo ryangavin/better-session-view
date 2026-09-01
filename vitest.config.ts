@@ -23,6 +23,7 @@ export default defineConfig({
     projects: [
       module('core', ['core/src/**/*.test.ts']),
       module('widgets', ['widgets/src/**/*.test.ts']),
+      module('desktop', ['desktop/src/**/*.test.ts']),
       module('set', [
         'set/src/lib/**/*.test.ts',
         'set/src/components/**/*.test.ts',
@@ -49,6 +50,10 @@ export default defineConfig({
       include: [
         'core/src/**/*.{ts,tsx}',
         'widgets/src/**/*.{ts,tsx}',
+        // Only the registry. Everything else in `desktop/` imports `electron`,
+        // which exists only inside a main process — a coverage run that tried
+        // to load them would fail rather than report a zero.
+        'desktop/src/apps.ts',
         'set/src/**/*.{ts,tsx}',
         'visuals/client/**/*.{ts,tsx}',
         'visuals/server/**/*.{ts,tsx}',

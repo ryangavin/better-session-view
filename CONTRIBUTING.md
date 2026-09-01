@@ -63,7 +63,7 @@ in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
 ## Modules
 
-Eight projects. Each has its own README; read the one you're touching.
+Nine projects. Each has its own README; read the one you're touching.
 
 | module | what it is | read for |
 |---|---|---|
@@ -72,7 +72,8 @@ Eight projects. Each has its own README; read the one you're touching.
 | [`widgets/`](widgets/README.md) | DAW controls — React, but no Live | knobs, faders, the parameter model, the bench |
 | [`set/`](set/README.md) | the session manager, **set[flow]** — React 19 + Vite | components, the bridge client, dev server |
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
-| [`tools/`](tools/README.md) | `.amxd` container format, device generator | changing the patcher or device type |
+| [`desktop/`](desktop/README.md) | the Electron main process every app shares | the window, packaging, or adding a new app |
+| [`tools/`](tools/README.md) | `.amxd` container format, device generator, the app driver | changing the patcher, the device type, or how an app is built |
 | [`visuals/`](visuals/README.md) | a VJ rig: Link peer, bridge client, WebGL2 renderer | visuals, the clock, or a second kind of client |
 | [`chart/`](chart/README.md) | what the band reads: a read-only view of the playing song, on a phone | the section list, the LAN binding, or a client with no dependencies |
 
@@ -87,6 +88,15 @@ wifi without also putting *every write in the protocol* there means something re
 between. It holds one bridge connection however many people are looking, sends Server-Sent
 Events rather than a socket because a phone has nothing to say back, and installs nothing
 at all — Node's own `WebSocket` client and `node:http` are the whole runtime.
+
+`desktop/` is the third module that exists to be shared rather than to do something. It
+appeared when the third app did: two apps that each own a whole main process look like
+duplication you can live with, three do not, and the two we had had already drifted —
+set[flow] remembered where its window was and visual[flow] did not, visual[flow] refused a
+second instance and set[flow] did not. An app is now a `main.ts` of about fifty lines saying
+what is only true of it, plus an entry in `desktop/src/apps.ts` that every build tool,
+workflow and vite config reads. It is also where a change that should reach every app —
+an updater, most obviously — is written once.
 
 `core/` and `widgets/` are the same rule on two axes, and between them they are what keeps
 a DAW of our own possible: domain logic that has never heard of a transport, and controls
