@@ -7,32 +7,40 @@ import type { Mix } from '../state.ts';
 import './Header.css';
 
 /**
- * One bar, four groups, in the order a person reads them: what this is, what
- * you are looking at, what you can do to it, and where it goes.
+ * One bar, and the whole problem with it was that eleven things sat on it as
+ * eleven things.
  *
- *   [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ snap ⋯ Auto-warp │ Export
+ *   [demucs] mix[flow] │ Title · Artist ⋯⋯ [▶ ■ ↻ 1.1.1] [snap ⅟₁ ⅟₂ ⅟₄ warp ⊹] [Export]
  *
- * Three things about that are deliberate departures from the mockup, and each
- * one is a thing the mockup was fighting:
+ * **Controls that belong together are one bordered object, not several beside
+ * each other.** The group owns the border and the dividers; its children own
+ * only their content — which is the same `.control-group` idea set[flow] has
+ * carried since its own header got crowded. Three clusters read as three
+ * things. The same controls loose read as nine, which is what a smattering is.
  *
- * **The clock sits with the transport, not with the wordmark.** Between the
- * logo and the buttons it read as part of the brand, and the one control it
- * describes was two groups away.
+ * **Everything on the bar is exactly 22px.** `DESIGN.md` has said so all along
+ * — "header controls share a 22px height" — and this header was not doing it:
+ * `Widget` defaults to a 16px field, so the controls floated at different
+ * optical weights in a 34px bar with no shared edge. One override at the top
+ * of the file fixes every control on it, and that single line is most of what
+ * "no real alignment" was.
  *
- * **Playback and the grid are separated by a rule, and both are hidden unless
- * a track has stems.** Every control was the same 22px outlined pill, so
- * nothing on screen said that play and snap belong to different subsystems —
- * and in the two states where there is nothing to play they were all still
- * there, dead. What is left in an idle header is the wordmark, the title and a
+ * **The clock is inside the transport cluster**, because it is the transport's
+ * reading. Loose between the wordmark and the buttons it read as part of the
+ * brand.
+ *
+ * **Playback and the grid vanish unless the track has stems.** Neither can do
+ * anything in the other two states, and a bar full of dead controls is the
+ * other half of the clutter. An idle header is the wordmark, the title and a
  * disabled Export, which is the honest amount.
  *
- * **Nothing wraps.** The mockup's header is `flex-wrap` over a `min-height`,
- * so a narrow window silently becomes two rows of chrome. Here the title is
- * the only thing that gives, and it gives by ellipsis.
+ * **Nothing wraps.** The mockup is `flex-wrap` over a `min-height`, so a narrow
+ * window silently becomes two rows of chrome. The title is the only thing that
+ * gives, and it gives by ellipsis.
  *
  * The track name is here because the right rail that used to carry it is gone,
- * and a window that never says what is open is a window you can only orient in
- * by looking at which library row is highlighted.
+ * and a window that never says what is open is one you can only orient in by
+ * looking at which library row is highlighted.
  */
 
 const play = (
@@ -87,15 +95,13 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
       {ready && !ready.ok && (
         <span className="mf-broken" title={`${ready.says} — see mix/docs/demucs.md`}>
           <i />
-          no demucs
+          demucs
         </span>
       )}
 
       <div className="mf-mark">
         mix<span>[flow]</span>
       </div>
-
-      <span className="mf-rule" />
 
       <div className="mf-open">
         <span className="mf-open-title">{mix.song.title}</span>
@@ -104,43 +110,34 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
 
       {live && (
         <>
-          <div className="mf-transport">
+          <div className="mf-group" role="group" aria-label="Transport">
             <Button
               onPress={() => mix.setPlaying(!mix.playing)}
               label={mix.playing ? 'Pause' : 'Play'}
               title={mix.playing ? 'Pause (Space)' : 'Play (Space)'}
-              tone="quiet"
               width={26}
               className={mix.playing ? 'mf-playing' : undefined}
             >
               {mix.playing ? pause : play}
             </Button>
-            <Button onPress={mix.stop} label="Stop" title="Stop and return to the top" tone="quiet" width={26}>
+            <Button onPress={mix.stop} label="Stop" title="Stop and return to the top" width={26}>
               {stopMark}
             </Button>
             <Toggle on={mix.loop} onChange={mix.setLoop} label="Loop" title="Loop the preview" width={26}>
               {loopMark}
             </Toggle>
+            <span className="mf-clock">{position(mix.bar)}</span>
           </div>
 
-          <span className="mf-clock">{position(mix.bar)}</span>
-
-          <span className="mf-rule" />
-
-          {/* The label leads rather than caps. `Widget` puts a caption above
-              the control, which in a 34px bar makes this the one thing two
-              rows tall in a line of things one row tall — and a ragged
-              baseline is most of what "messy header" means. */}
-          <span className="mf-cap">snap</span>
-          <Segmented
-            items={SNAP}
-            index={SNAP.indexOf(mix.snap)}
-            onChange={(next) => mix.setSnap(SNAP[next])}
-            label="Snap"
-            title="Where a slice point lands when you drag it"
-          />
-
-          <div className="mf-warp">
+          <div className="mf-group" role="group" aria-label="Grid">
+            <span className="mf-group-label">snap</span>
+            <Segmented
+              items={SNAP}
+              index={SNAP.indexOf(mix.snap)}
+              onChange={(next) => mix.setSnap(SNAP[next])}
+              label="Snap"
+              title="Where a slice point lands when you drag it"
+            />
             <Button
               onPress={mix.autoWarp}
               title="Re-run detection and drop anchors on the two strongest downbeats"
@@ -159,8 +156,6 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
           </div>
         </>
       )}
-
-      <span className="mf-rule" />
 
       <Button
         onPress={() => mix.setExporting(true)}

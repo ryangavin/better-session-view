@@ -13,6 +13,10 @@
   flex: none;
 }
 
+.mf-header .wdg {
+  --wdg-field-height: var(--ctl-h);
+}
+
 .mf-mark {
   font-family: var(--mono);
   font-size: 13px;
@@ -24,18 +28,15 @@
   color: var(--amber);
 }
 
-.mf-rule {
-  width: 1px;
-  height: 16px;
-  background: var(--bd);
-}
-
 .mf-open {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: baseline;
   gap: 7px;
+  padding-left: 4px;
+  margin-left: 4px;
+  border-left: 1px solid var(--bd);
 }
 
 .mf-open-title,
@@ -58,42 +59,75 @@
   color: var(--caption);
 }
 
-.mf-transport {
+.mf-group {
   display: inline-flex;
-  align-items: center;
-  gap: 1px;
+  align-items: stretch;
+  height: var(--ctl-h);
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  background: var(--sel);
+  overflow: hidden;
 }
 
-.mf-transport .mf-playing {
+.mf-group > * {
+  display: flex;
+  align-items: center;
+}
+
+.mf-group > * + * {
+  border-left: 1px solid var(--bd3);
+}
+
+.mf-group .wdg-body {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+.mf-group .wdg-body:not([data-on]) {
+  background: transparent;
+}
+
+.mf-group .wdg-segmented-body button {
+  height: 100%;
+}
+
+.mf-group .mf-playing {
   color: var(--green);
 }
 
+.mf-group-label,
 .mf-clock {
+  padding: 0 8px;
   font-family: var(--mono);
+  color: var(--caption);
+}
+
+.mf-group-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mf-clock {
+  min-width: 62px;
+  justify-content: flex-end;
   font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--ui);
-  min-width: 52px;
-  text-align: right;
-}
-
-.mf-warp {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
 }
 
 .mf-broken {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 8px;
   height: var(--ctl-h);
+  padding: 0 8px;
   border: 1px solid var(--red);
   border-radius: var(--radius-md);
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--red);
 }
@@ -103,12 +137,4 @@
   height: 5px;
   border-radius: var(--radius-pill);
   background: var(--red);
-}
-
-.mf-header .mf-cap {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--caption);
 }
