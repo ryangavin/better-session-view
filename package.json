@@ -1,6 +1,6 @@
 {
   "name": "openflow",
-  "version": "0.1.0",
+  "version": "0.1.0-dev",
   "private": true,
   "type": "module",
   "description": "Session manager for large Ableton Live sets.",
@@ -41,6 +41,7 @@
     "dev:check-palette": "node --disable-warning=ExperimentalWarning tools/check-palette.ts",
     "dev:check-singletons": "node --disable-warning=ExperimentalWarning tools/check-singletons.ts",
     "dev:mutate": "node --disable-warning=ExperimentalWarning tools/mutate.ts",
+    "dev:version": "node --disable-warning=ExperimentalWarning tools/version.ts",
     "dev:record": "node --disable-warning=ExperimentalWarning tools/record-session.ts",
     "dev:diag": "node --disable-warning=ExperimentalWarning tools/diag.ts",
     "dev:responses": "node --disable-warning=ExperimentalWarning visuals/tools/responses-report.ts",
@@ -65,7 +66,8 @@
     "dev:fake-live": "node --disable-warning=ExperimentalWarning visuals/tools/fake-live.ts",
     "build:chart": "vite build --config chart/vite.config.ts",
     "dev:chart": "node --watch --disable-warning=ExperimentalWarning chart/server/index.ts",
-    "dev:chart-ui": "vite --config chart/vite.config.ts"
+    "dev:chart-ui": "vite --config chart/vite.config.ts",
+    "frames": "node --disable-warning=ExperimentalWarning tools/frames.ts"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.3",

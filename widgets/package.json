@@ -1,6 +1,6 @@
 {
   "name": "@openflow/widgets",
-  "version": "0.1.0",
+  "version": "0.1.0-dev",
   "private": true,
   "type": "module",
   "description": "The controls a DAW is made of: Ableton-shaped widgets and device chrome, in React.",
