@@ -42,7 +42,7 @@ export function App() {
   useEffect(() => {
     const bridge = openflow();
     if (!bridge) {
-      setReady({ ok: false, says: 'no app around this page', workspace: '—' });
+      setReady({ ok: false, built: false, says: 'no app around this page', where: '—' });
       return;
     }
     let live = true;
@@ -74,7 +74,7 @@ export function App() {
         <Library mix={mix} />
         <section className="mf-centre">
           {mix.phase === 'empty' && <Empty mix={mix} />}
-          {mix.phase === 'idle' && <Idle mix={mix} />}
+          {mix.phase === 'idle' && <Idle mix={mix} ready={ready} />}
           {mix.phase === 'running' && <Running mix={mix} />}
           {mix.phase === 'ready' && <Lanes mix={mix} />}
         </section>

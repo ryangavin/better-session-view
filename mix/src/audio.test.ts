@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIBRARY, onsetsOf, peaksOf, readWav, stemUrl, type Peak } from './audio.ts';
+import { coarser, LIBRARY, onsetsOf, peaksOf, readWav, stemUrl, type Peak } from './audio.ts';
 
 /**
  * The format contract, from the other end.
@@ -149,6 +149,40 @@ describe('peaks', () => {
   it('draws silence as silence', () => {
     const peaks = peaksOf(buffer([new Array(64).fill(0)]), 8);
     expect(peaks.every((p) => p.min === 0 && p.max === 0)).toBe(true);
+  });
+});
+
+describe('folding peaks down', () => {
+  /**
+   * The claim this rests on: scanning finely and folding is the same drawing
+   * as scanning coarsely. If it were not, the lanes and the onsets would be
+   * reading two different pictures of the same stem — and the warp lane's
+   * whole argument is that a tick always lines up with the transient below it.
+   */
+  it('is the same as having scanned at the coarser count', () => {
+    const samples = Array.from({ length: 3600 }, (_, i) => Math.sin(i / 3) * (i % 97 === 0 ? 1 : 0.2));
+    const fine = peaksOf(buffer([samples]), 900);
+    expect(coarser(fine, 5)).toEqual(peaksOf(buffer([samples]), 180));
+  });
+
+  it('keeps the loudest point of the group, which is the point of folding', () => {
+    const folded = coarser([
+      { min: 0, max: 0.2 },
+      { min: -0.7, max: 0.4 },
+      { min: -0.1, max: 0.1 },
+    ], 3);
+    expect(folded).toEqual([{ min: -0.7, max: 0.4 }]);
+  });
+
+  it('keeps a short last group rather than dropping it', () => {
+    // A track is not a multiple of anything, and losing the tail would lose
+    // the end of the song from the drawing that finds its downbeats.
+    expect(coarser([{ min: 0, max: 1 }, { min: 0, max: 1 }, { min: -1, max: 0 }], 2)).toHaveLength(2);
+  });
+
+  it('hands back the same peaks when there is nothing to fold', () => {
+    const lane = [{ min: -0.5, max: 0.5 }];
+    expect(coarser(lane, 1)).toEqual(lane);
   });
 });
 

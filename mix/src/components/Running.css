@@ -25,11 +25,32 @@
 }
 
 .mf-job-bar {
+  position: relative;
   height: 3px;
   margin-top: 20px;
   border-radius: var(--radius-pill);
   background: var(--sel);
   overflow: hidden;
+}
+
+.mf-job-bar[data-waiting]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 28%;
+  border-radius: inherit;
+  background: var(--amber);
+  opacity: 0.5;
+  animation: mf-crawl 2.2s ease-in-out infinite;
+}
+
+@keyframes mf-crawl {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(360%);
+  }
 }
 
 .mf-job-fill {

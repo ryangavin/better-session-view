@@ -98,8 +98,34 @@ missed entirely depending on where the column landed. Channels are folded by
 widest excursion rather than by averaging, so a hard-panned hat is at its real
 height instead of half of it.
 
-1800 columns per stem, computed once per track rather than per lane width, so a
-resize is a redraw and not a re-scan of forty million samples.
+9000 columns per stem, computed once per track rather than per lane width, so a
+resize — or a zoom — is a redraw and not a re-scan of forty million samples.
+
+**Peaks are a summary, and a summary is only the right drawing while it is
+finer than the screen.** A lane compares how much of the track a pixel is
+holding against how much a column of peaks holds, and once the pixel is holding
+less it draws the *audio* instead: an envelope taken from the samples
+themselves, and past two samples to a pixel, a line through the sample points
+with a dot on each. There is nothing under a sample, which is what makes the
+bottom of the zoom a fact rather than a taste.
+
+The count is what sets the handover, at about ten times a window's width. It is
+a balance either way: fewer columns and the handover comes while a screenful is
+still millions of samples to walk on every wheel tick; more, and the load
+scans detail nothing ever draws.
+
+**The onsets are found at 1800, folded down from those 9000 rather than
+scanned again.** A different question wants a different resolution: an onset is
+a *rise* in energy between columns, and at a fifty-millisecond column every
+hi-hat is a rise. What makes a downbeat findable is a column long enough that
+only a real hit moves it. Folding five into one takes the widest excursion of
+the group, which is exactly what a scan at that count would have produced —
+the boundaries land on the same samples — so the drawing and the detection are
+still one reading of one stem, and `audio.test.ts` holds that equality up.
+
+A lane draws the slice of those columns that is on screen, folded again to
+about two columns per pixel. Zoomed out that is the fold doing what it is for;
+zoomed in it is one column each, drawn wide.
 
 ## The timeline is seconds now, and the bars are a claim about it
 
@@ -120,7 +146,10 @@ pads and the vocal already taken off it.
 
 Both grids thin themselves. A four-minute track at 128 is 128 bars and 512
 beats; a line every three pixels is not a grid, it is a fill. They step in
-powers of four so whatever survives stays on a musical boundary.
+powers of four so whatever survives stays on a musical boundary — and they
+measure against the *zoomed* width, so zooming in gives the thinned lines back.
+That is what makes a grid judgeable: the ticks either side of one bar line are
+the same pixel at whole-track width.
 
 ## The window remembers itself
 

@@ -170,6 +170,35 @@ export function peaksOf(buffer: AudioBuffer, columns: number): Peak[] {
   return out;
 }
 
+/**
+ * The same peaks at a coarser resolution, folded rather than re-scanned.
+ *
+ * `by` columns into one, taking the widest excursion of the group — which is
+ * exactly what `peaksOf` would have produced at that count, because the group
+ * boundaries land on the same samples. It costs a walk of the peaks instead of
+ * a second walk of forty million samples.
+ *
+ * It exists because the drawing and the detection want different resolutions
+ * out of one pass. The lanes zoom, so they are scanned fine enough to hold up
+ * magnified; onsets are rises in energy between columns, and at that resolution
+ * every hi-hat is a rise. `state.ts` scans once for the first and folds down to
+ * the second.
+ */
+export function coarser(peaks: readonly Peak[], by: number): Peak[] {
+  if (by <= 1) return [...peaks];
+  const out: Peak[] = [];
+  for (let i = 0; i < peaks.length; i += by) {
+    let low = 0;
+    let high = 0;
+    for (let p = i; p < Math.min(i + by, peaks.length); p++) {
+      if (peaks[p].min < low) low = peaks[p].min;
+      if (peaks[p].max > high) high = peaks[p].max;
+    }
+    out.push({ min: low, max: high });
+  }
+  return out;
+}
+
 /** A moment the audio got suddenly louder, which is what a grid is fitted to. */
 export interface Onset {
   /** Where it is, in seconds. */

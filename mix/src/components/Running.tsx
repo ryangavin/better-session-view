@@ -38,7 +38,10 @@ export function Running({ mix }: { mix: Mix }) {
         <h2 className="mf-page-title">{mix.song.title}</h2>
         <p className="mf-job-stage">{job.stage}</p>
 
-        <div className="mf-job-bar">
+        {/* Nothing has a percentage yet — the model is loading, or the engine is
+            being installed. A bar sitting at zero reads as stuck, so it paces
+            instead, and the stage line above is what is actually saying. */}
+        <div className="mf-job-bar" data-waiting={job.done === 0 || undefined}>
           <div className="mf-job-fill" style={{ width: `${Math.round(job.done * 100)}%` }} />
         </div>
 

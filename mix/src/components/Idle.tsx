@@ -1,6 +1,6 @@
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS } from '../mock.ts';
-import { duration, estimate, roughly } from '../openflow.ts';
+import { duration, estimate, roughly, type Ready } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './Idle.css';
 
@@ -16,10 +16,20 @@ import './Idle.css';
  * the page there is nothing to offer and the page says so — which is honest, and
  * is what a `vite` session in a browser tab gets.
  */
-export function Idle({ mix }: { mix: Mix }) {
+export function Idle({ mix, ready }: { mix: Mix; ready: Ready | null }) {
   const song = mix.song;
   const chosen = mix.chosenModel;
   const wait = roughly(estimate(chosen, song?.seconds ?? null));
+  /**
+   * Said before the button rather than discovered after it.
+   *
+   * The first separation on a machine also builds the Python engine —
+   * `mix/electron/runtime.ts` — which is a few hundred megabytes and some
+   * minutes. That is fine to do and not fine to do *silently*: a progress bar
+   * that appears without warning is indistinguishable from something being
+   * wrong with the song.
+   */
+  const setup = ready?.ok === true && !ready.built;
 
   if (!song) return null;
 
@@ -35,6 +45,14 @@ export function Idle({ mix }: { mix: Mix }) {
         </p>
 
         {mix.problem && <p className="mf-page-problem">{mix.problem}</p>}
+
+        {setup && (
+          <p className="mf-page-note">
+            The first separation on this machine installs the engine as well — about
+            220 MB of Python, once. It stays installed, and the model itself is another
+            84 MB the first time you use one.
+          </p>
+        )}
 
         <div className="mf-models">
           {mix.models.map((model) => (

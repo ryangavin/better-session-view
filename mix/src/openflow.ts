@@ -7,10 +7,20 @@
  * `npm run typecheck` covers both.
  */
 
+/**
+ * Whether this build can separate, and whether it has the engine yet.
+ *
+ * Two booleans rather than one, because *not built yet* is not a failure — it
+ * is every machine's first run, and the window says what pressing Generate will
+ * do rather than showing something broken. `mix/electron/runtime.ts` has what
+ * gets built and where.
+ */
 export interface Ready {
   ok: boolean;
+  built: boolean;
   says: string;
-  workspace: string;
+  /** The directory the engine lives in, for the tooltip that says where. */
+  where: string;
 }
 
 /** A model this build will run. The main process owns the list; this is its shape. */

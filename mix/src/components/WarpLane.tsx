@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { Span } from '../zoom.ts';
 /**
  * An onset placed in bar space, which is the grid's claim about it rather than
  * a property of the audio. `state.ts` does that placing, so these move when the
@@ -31,13 +32,26 @@ export interface WarpLaneProps {
   onPin?(at: number): void;
   /** Manual mode: the pointer is placing a point rather than scrubbing. */
   pinning?: boolean;
+  /**
+   * Which slice of the track to draw, as fractions — the whole of it by
+   * default, and whatever the lanes are zoomed into otherwise.
+   *
+   * This is the lane the zoom is *for*: a grid a fraction out is unmistakable
+   * at bar 60 and unfixable until you can see the ticks either side of one bar
+   * line, which at whole-track width are the same pixel.
+   */
+  span?: Span;
 }
 
 const ink = (el: HTMLElement, name: string, fallback: string): string =>
   getComputedStyle(el).getPropertyValue(name).trim() || fallback;
 
-export function WarpLane({ onsets, bars, height, anchors, onPin, pinning }: WarpLaneProps) {
+const WHOLE: Span = { from: 0, to: 1 };
+
+export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }: WarpLaneProps) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
+  const from = span?.from ?? WHOLE.from;
+  const to = span?.to ?? WHOLE.to;
 
   useEffect(() => {
     const el = canvas.current;
@@ -60,23 +74,36 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning }: Warp
       const sure = ink(el, '--green', '#5fbfa8');
       const caption = ink(el, '--caption', '#5e5e66');
 
+      // The width the whole track would have at this zoom. Nothing is drawn
+      // that wide: it is what turns a position in the track into an x on a
+      // canvas holding a slice of it.
+      const track = box.width / (to - from);
+      const left = from * track;
+      const xOf = (fraction: number) => fraction * track - left;
+
       // Beats where beats fit, bars where they do not, and every fourth bar
       // once even those are crowding. A real track is a hundred-odd bars, and
       // five hundred beat lines across nine hundred pixels is not a grid — it
       // is a grey wash with a tick rate. Stepping in fours keeps whatever
-      // survives on a musical boundary rather than on an arbitrary one.
+      // survives on a musical boundary rather than on an arbitrary one, and
+      // measuring against the zoomed width is what gives the beats back as you
+      // zoom in — which is the only view a grid can actually be judged in.
       const beats = bars * 4;
       let step = 1;
-      while ((step / beats) * box.width < 3 && step < beats) step *= 4;
-      for (let b = 0; b <= beats; b += step) {
-        const x = Math.round((b / beats) * box.width) + 0.5;
+      while ((step / beats) * track < 3 && step < beats) step *= 4;
+      const first = Math.max(0, Math.floor((from * beats) / step) * step);
+      const last = Math.min(beats, Math.ceil(to * beats));
+      for (let b = first; b <= last; b += step) {
+        const x = Math.round(xOf(b / beats)) + 0.5;
         const isBar = b % 4 === 0;
         ctx.fillStyle = isBar ? barLine : beat;
         ctx.fillRect(x, isBar ? 0 : height * 0.55, 1, isBar ? height : height * 0.45);
       }
 
       for (const onset of onsets) {
-        const x = (onset.at / bars) * box.width;
+        const place = onset.at / bars;
+        if (place < from || place > to) continue;
+        const x = xOf(place);
         ctx.globalAlpha = onset.downbeat ? 0.25 + 0.6 * onset.strength : 0.16 + 0.5 * onset.strength;
         ctx.fillStyle = onset.downbeat ? sure : tick;
         const tall = height * 0.56 * (0.35 + 0.65 * onset.strength);
@@ -92,13 +119,14 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning }: Warp
       // A four-minute track has a hundred and change of them and the old fixed
       // eight would have printed sixteen numbers into a 24px strip.
       let every = 8;
-      while ((every / bars) * box.width < 34 && every < bars) every *= 2;
-      if ((every / bars) * box.width > 34) {
+      while ((every / bars) * track < 34 && every < bars) every *= 2;
+      if ((every / bars) * track > 34) {
         ctx.font = '500 9px ui-monospace, Menlo, monospace';
         ctx.fillStyle = caption;
         ctx.textBaseline = 'top';
-        for (let b = 0; b < bars; b += every) {
-          ctx.fillText(String(b + 1), (b / bars) * box.width + 4, 3);
+        const start = Math.max(0, Math.floor((from * bars) / every) * every);
+        for (let b = start; b < Math.min(bars, to * bars + every); b += every) {
+          ctx.fillText(String(b + 1), xOf(b / bars) + 4, 3);
         }
       }
     };
@@ -107,12 +135,13 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning }: Warp
     const watch = new ResizeObserver(paint);
     watch.observe(el);
     return () => watch.disconnect();
-  }, [onsets, bars, height]);
+  }, [onsets, bars, height, from, to]);
 
   const place = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!onPin) return;
     const box = event.currentTarget.getBoundingClientRect();
-    onPin(((event.clientX - box.left) / box.width) * bars);
+    const across = (event.clientX - box.left) / box.width;
+    onPin((from + across * (to - from)) * bars);
   };
 
   return (
@@ -123,16 +152,24 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning }: Warp
       role="presentation"
     >
       <canvas ref={canvas} style={{ height }} />
-      {anchors.map((anchor, i) => (
-        <span
-          key={i}
-          className="mf-anchor"
-          style={{ left: `${(anchor.at / bars) * 100}%` }}
-          title={`Bar ${anchor.label} is pinned here`}
-        >
-          <i>{anchor.label}</i>
-        </span>
-      ))}
+      {anchors.map((anchor, i) => {
+        // Dropped rather than positioned when it is off screen: zoomed in, a
+        // pin at the far end of the song is a `left` in the millions of per
+        // cent, and the browser is being asked to lay out something nobody can
+        // see.
+        const where = (anchor.at / bars - from) / (to - from);
+        if (where < -0.5 || where > 1.5) return null;
+        return (
+          <span
+            key={i}
+            className="mf-anchor"
+            style={{ left: `${where * 100}%` }}
+            title={`Bar ${anchor.label} is pinned here`}
+          >
+            <i>{anchor.label}</i>
+          </span>
+        );
+      })}
     </div>
   );
 }

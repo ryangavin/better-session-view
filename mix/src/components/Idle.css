@@ -34,6 +34,16 @@
   text-wrap: pretty;
 }
 
+.mf-page-note {
+  margin: 12px 0 0;
+  max-width: 520px;
+  padding-left: 9px;
+  border-left: 1px solid var(--amber);
+  color: var(--detail);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .mf-page-problem {
   margin: 12px 0 0;
   max-width: 520px;

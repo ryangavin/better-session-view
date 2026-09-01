@@ -100,7 +100,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
       {ready && !ready.ok && (
         <span className="mf-broken" title={`${ready.says} — see mix/docs/demucs.md`}>
           <i />
-          demucs
+          engine
         </span>
       )}
 

@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STEMS, slicesFor, type Slice } from './mock.ts';
-import { decode, LIBRARY, onsetsOf, peaksOf, stemUrl, type Onset, type Peak } from './audio.ts';
+import {
+  coarser,
+  decode,
+  LIBRARY,
+  onsetsOf,
+  peaksOf,
+  stemUrl,
+  type Onset,
+  type Peak,
+} from './audio.ts';
 import { REST, Transport, type Level } from './engine.ts';
 import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
 import {
@@ -65,10 +74,27 @@ const levels = (): Record<string, Level> =>
  * Columns of peaks per stem.
  *
  * Computed once per track rather than per lane width, so a resize is a redraw
- * and not a re-scan of forty million samples. Enough for better than one column
- * per pixel on any lane this window can be dragged to.
+ * and not a re-scan of forty million samples.
+ *
+ * The count decides where a lane stops drawing peaks and starts drawing the
+ * audio itself — that happens when a column of them is wider than a pixel,
+ * which at this resolution is around ten times a window's width. It is a
+ * balance rather than a preference: fewer columns hands over early, where a
+ * screenful is still millions of samples to walk on every wheel tick, and more
+ * spends the load scanning detail nothing ever draws.
  */
-const COLUMNS = 1800;
+const COLUMNS = 9000;
+
+/**
+ * Columns the onsets are found in, folded down from the ones that are drawn.
+ *
+ * A different question wants a different resolution. An onset is a *rise* in
+ * energy between columns, and at a fifty-millisecond column every hi-hat is a
+ * rise — what makes a downbeat findable is a column long enough that only a
+ * real hit moves it. This is the resolution detection was fitted at, kept
+ * exactly, while the drawing got finer underneath it.
+ */
+const DETECT = 1800;
 
 /** Bars, before anything has been decoded, so the ruler is not zero wide. */
 const BARS_UNKNOWN = 64;
@@ -421,6 +447,16 @@ export function useMix() {
   }, [stemsAt, sourceList, base, audio]);
 
   /**
+   * One stem's audio, for the lane drawing it.
+   *
+   * The graph is the holder and this is a way through to it, not a second copy
+   * kept beside it — which is the same argument the peaks are computed from
+   * those buffers for. Zoomed past what the peaks can say, a lane draws the
+   * samples themselves, and they have to be the samples that will play.
+   */
+  const audioOf = useCallback((id: string): AudioBuffer | null => audio.stem(id), [audio]);
+
+  /**
    * The mix, pushed into the graph.
    *
    * Every change, because a fader drag is a change per frame and the ramp in
@@ -686,14 +722,22 @@ export function useMix() {
    * when the tempo does — which is what makes the warp lane worth looking at.
    * A tick that walks off the bar lines is a tempo that is wrong.
    */
+  const coarse = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(peaks).map(([source, lane]) => [source, coarser(lane, COLUMNS / DETECT)]),
+      ),
+    [peaks],
+  );
+
   const onsets = useMemo(() => {
     if (seconds <= 0) return [];
-    const found: Onset[] = onsetsOf(peaks, seconds);
+    const found: Onset[] = onsetsOf(coarse, seconds);
     return found.map((onset) => {
       const at = (onset.at / seconds) * bars;
       return { at, strength: onset.strength, downbeat: Math.abs(at - Math.round(at)) < 1 / 32 };
     });
-  }, [peaks, seconds, bars]);
+  }, [coarse, seconds, bars]);
 
   /** `4/6 audible`, and whether a solo is what is doing it. */
   const audibleLine = useMemo(() => {
@@ -705,13 +749,21 @@ export function useMix() {
     return `${heard}/${song.sources.length} audible${soloing ? ' · solo' : ''}`;
   }, [song, level]);
 
+  /**
+   * How many stems have been moved off their resting position.
+   *
+   * Counted over the stems this song *has*, not over the six there could be.
+   * The lanes only draw the sources the model made, so a level left behind by
+   * an earlier separation with a six-source model would otherwise arm Reset
+   * against something nobody can see.
+   */
   const touched = useMemo(
     () =>
-      STEMS.filter((s) => {
-        const own = level[s.id];
+      (song?.sources ?? []).filter((id) => {
+        const own = level[id];
         return own && (own.muted || own.soloed || Math.abs(own.volume - REST.volume) > 0.001);
       }).length,
-    [level],
+    [level, song],
   );
 
   /**
@@ -812,6 +864,9 @@ export function useMix() {
     bars,
     bar,
     peaks,
+    audioOf,
+    /** The graph's sample rate, which is what the stems were resampled to. */
+    rate: audio.rate,
     onsets,
     decoding,
     audioProblem,

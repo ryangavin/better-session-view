@@ -72,11 +72,83 @@ fraction, and it is why the band above the lanes carries a head of its own — i
 the mix summary and the two buttons that change it, and it exists as much to reserve
 that column as to say anything.
 
-Six lanes at 46px is the density that lets you *see* an arrangement — a breakdown is a
+A lane at 46px is the density that lets you *see* an arrangement — a breakdown is a
 block where the drums stop, and a fill is a darker column you can point at. Clicking any
 lane moves the head there: a waveform is what you are looking at when you decide where to
 listen from, and reaching back up to a strip at the top to act on it is the sort of gap
 that makes a window feel like a diagram of a DAW rather than one.
+
+## There is a lane per stem the model made, and no others
+
+A four-source model folds guitar and piano back into Other. The lanes used to draw all
+six regardless, with the two it did not have greyed out and captioned *folded into Other
+by demucs ft · 4* — which was honest, and was still two rows of a screen spent on a
+control nobody can use, on every track, for a fact that does not change while you are
+looking at it.
+
+**The fact belongs to the model, and the model is already on screen** — named on this
+band, and described at the point where somebody chooses it, which is the moment the trade
+is actually being made. Wanting guitar on its own means separating again, and the button
+for that is on the same band.
+
+The one place a *missing* stem is still worth drawing is the library's badge strip, and
+for the opposite reason: there the question is which of a hundred tracks have one, so a
+gap in a fixed six-cell strip is a shape you read without reading.
+
+`Reset` counts against the stems the song has rather than against all six, so a level
+left behind by an earlier separation with a six-source model cannot arm a button against
+something nobody can see.
+
+## Zoom, and why the canvases do not grow
+
+The lanes draw the whole track by default, which is right for finding a breakdown and
+useless for finding a downbeat: four minutes across nine hundred pixels is a quarter of a
+second per pixel, so a kick and the snare after it are the same column.
+
+**⇧-scroll or ⌘-scroll over the lanes zooms** — both, because neither is obviously the
+one, and `ctrl` comes along with them for the platforms where it is the modifier and for
+the trackpad pinch that arrives wearing it. A sideways scroll pans, by the screenful, so
+the gesture means the same thing at every depth. A plain vertical scroll still scrolls
+the lanes, because a window that steals the scroll wheel is a window you cannot scroll.
+
+Three things make it feel like a timeline rather than a picture being resized:
+
+**The zoom is anchored on the pointer.** What is under it stays under it. Zooming about
+the centre is why so many timelines need a pan after every zoom.
+
+**The playhead is followed by the screenful, not by the pixel.** Rolling continuously
+under a stationary head makes the picture unreadable, and the point of zooming in was to
+look at something. It pages when the head leaves the view, and only while something is
+playing — a view somebody has just set by hand is not dragged off by a stopped head.
+
+**The canvases stay the width they are on screen** and draw the slice they were asked
+for. The obvious implementation — a span as wide as the zoom, scrolled — is six canvases
+of a hundred million pixels, which no browser will lay out and none of which anybody is
+looking at. `zoom.ts` holds the two numbers everything on the timeline maps through: how
+far in, and where the left edge is. None of it is written down; where you had scrolled to
+is not something a window owes you back after a reload.
+
+## It goes all the way to the samples
+
+The bottom of the zoom is the point past which magnifying stops revealing, and for audio
+that point is exact: **there is nothing under a sample.** So that is where it stops —
+about a hundred and ninety-two samples across a lane, five pixels apart, drawn as points
+with the line between them.
+
+That makes the ceiling a property of the *track* rather than a number of times, which is
+why `limitOf` takes seconds and a rate. A limit written as a multiple would mean
+something different for every song: sixteen times a four-minute track is fifteen seconds,
+and sixteen times a two-bar loop is a bar. What is fixed is the view at the bottom of it.
+A four-minute track is about fifty thousand times deep, so the wheel curve is set by the
+range it has to cross — a gentler one is a dozen swipes to reach a bottom nobody would
+find.
+
+**Which drawing you are looking at is a measurement, not a setting.**
+[`playback.md`](playback.md) has it: a lane draws peaks while a column of them is finer
+than a pixel, the samples themselves once it is not, and a line through the points once
+there are fewer samples than pixels. The zoom readout says how much of the song is on
+screen — `3:52`, `12s`, `4.4ms` — because at these depths a number of times is arithmetic
+and a length of time is the answer to the question.
 
 ## The grid, and the two ways of setting it
 
@@ -114,6 +186,7 @@ countable from.
 | the model menu | `Select` |
 | the snap group | `Segmented` |
 | play, stop, cancel, export | `Button` |
+| the zoom readout, which presses back to the whole track | `Button` |
 | loop, mute, solo | `Toggle` |
 | a stem's level | `Slider`, horizontal, with a length |
 | per-source progress | `Meter` |

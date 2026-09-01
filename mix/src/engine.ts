@@ -102,6 +102,30 @@ export class Transport {
   }
 
   /**
+   * The samples of one stem, for whoever is drawing it.
+   *
+   * The graph is the holder, and this is how a lane reaches what is in it
+   * rather than a second copy being kept beside it. Zoomed far enough in, a
+   * waveform is not peaks any more — it is the samples themselves, and the
+   * only ones worth drawing are the ones that are going to come out of the
+   * speakers.
+   */
+  stem(id: string): AudioBuffer | null {
+    return this.buffers.get(id) ?? null;
+  }
+
+  /**
+   * The rate everything is at, which is the *context's* and not the file's.
+   *
+   * `decodeAudioData` resamples to it, so a 44.1 kHz stem in a 48 kHz context
+   * is 48 kHz by the time anything can draw it. Zero before the graph has been
+   * built, which is also before there is anything to draw.
+   */
+  get rate(): number {
+    return this.ctx?.sampleRate ?? 0;
+  }
+
+  /**
    * Hand it a decoded set of stems. Replaces whatever was there.
    *
    * Playback stops rather than continuing into a different track's audio, which
