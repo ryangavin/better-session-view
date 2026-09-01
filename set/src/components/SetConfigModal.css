@@ -15,7 +15,7 @@
 }
 .set-config-field > span {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   letter-spacing: 0.1em;
   color: var(--caption);
   text-transform: uppercase;
@@ -67,7 +67,7 @@
   width: 34px;
   flex: none;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--caption);
 }
 .role-row .x {

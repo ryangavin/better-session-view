@@ -44,7 +44,7 @@ main + .stats {
 }
 .empty-state b {
   color: var(--amber);
-  font-weight: 600;
+  font-weight: var(--weight-strong);
 }
 /* A header glyph quoted mid-sentence, so it needs the text's baseline rather
    than the line box's bottom. */
@@ -63,7 +63,7 @@ footer {
   background: var(--rail);
   padding: 8px 16px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
   line-height: 1.7;
 }
 .log-line {

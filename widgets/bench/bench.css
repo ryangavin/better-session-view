@@ -50,7 +50,7 @@ header p {
   max-width: 68ch;
   margin: 6px 0 12px;
   color: #8b8b93;
-  font-size: 12px;
+  font-size: var(--text-lead);
   line-height: 1.55;
 }
 
@@ -61,7 +61,7 @@ kbd {
   background: #151517;
   color: #b7b7be;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-body);
 }
 
 nav {
@@ -79,7 +79,7 @@ nav button {
   background: #151517;
   color: #b7b7be;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--text-body);
   text-decoration: none;
   cursor: pointer;
 }
@@ -103,9 +103,9 @@ section {
 h2 {
   margin: 0 0 14px;
   color: #b7b7be;
-  font-size: 11px;
+  font-size: var(--text-body);
   font-family: var(--mono);
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
 }
 
@@ -150,7 +150,7 @@ h2 {
 .case-note {
   margin: 10px 0 0;
   color: #5e5e66;
-  font-size: 11px;
+  font-size: var(--text-body);
   line-height: 1.45;
 }
 
@@ -182,7 +182,7 @@ h2 {
   align-items: center;
   gap: 6px;
   color: #8b8b93;
-  font-size: 11px;
+  font-size: var(--text-body);
 }
 
 .model-field input,
@@ -194,7 +194,7 @@ h2 {
   background: #151517;
   color: #ececed;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-body);
 }
 
 .model-stage {
@@ -213,7 +213,7 @@ h2 {
   gap: 4px 12px;
   margin: 0;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-body);
 }
 
 .model-out dt {
@@ -253,7 +253,7 @@ h2 {
   margin: 8px 0 0;
   color: #8b8b93;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-body);
 }
 
 .row-face-case {
@@ -278,14 +278,14 @@ h2 {
   border-radius: 2px;
   background: #08080a;
   color: #5e5e66;
-  font-size: 9px;
+  font-size: var(--text-label);
 }
 
 .row-face-kind,
 .row-face-label {
   overflow: hidden;
   color: #8b8b93;
-  font-size: 9px;
+  font-size: var(--text-label);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -35,8 +35,8 @@
   gap: 4px;
   min-width: 0;
   padding: 0 5px;
-  font-size: 9px;
-  letter-spacing: 0.04em;
+  font-size: var(--text-label);
+  letter-spacing: var(--track-slight);
   text-align: left;
 }
 .tvc-width-value {
@@ -92,8 +92,8 @@
   background: transparent;
   color: var(--ui);
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
+  font-size: var(--text-control);
+  letter-spacing: var(--track-slight);
   text-align: left;
   white-space: nowrap;
   cursor: pointer;

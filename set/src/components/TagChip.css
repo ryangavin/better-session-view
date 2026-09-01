@@ -14,7 +14,7 @@
   background: transparent;
   color: var(--tag-chip-color, var(--caption));
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   line-height: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;

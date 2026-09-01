@@ -49,8 +49,8 @@
 }
 .choices button {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-size: var(--text-control);
+  letter-spacing: var(--track-label);
   padding: 5px 10px;
   color: var(--caption);
 }
@@ -59,7 +59,7 @@
   flex-wrap: wrap;
   gap: 4px 14px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
   color: var(--detail);
 }
 .legend-item {
@@ -73,8 +73,8 @@
   background: none;
   padding: 0 0 0 10px;
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-control);
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: var(--amber);
 }

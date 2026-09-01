@@ -89,7 +89,7 @@ header {
   background: transparent;
   color: var(--ui);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
   font-variant-numeric: tabular-nums;
   text-align: right;
   outline: none;
@@ -149,8 +149,8 @@ header {
   background: var(--sel);
   color: var(--ui);
   font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--text-body);
+  font-weight: var(--weight-strong);
   font-variant-numeric: tabular-nums;
 }
 .position-field {

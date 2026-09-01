@@ -2,7 +2,7 @@
 
 .wdg-label-heading {
   font-family: var(--wdg-mono);
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
 }
 

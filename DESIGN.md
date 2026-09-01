@@ -25,6 +25,17 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   monospaced cut from the root. `CASL` is held at 0.38 for both, which is the warmth.
   The font is self-hosted rather than pulled from a CDN, because these are desktop apps
   and one of them runs a show.
+- **Size, weight and tracking are tokens, named for the job.** Seven sizes replace the
+  thirty literal values the stylesheets had grown:
+  [`--text-annot`](widgets/src/type.css) 8px is the readout on a control — a pan value, an
+  EQ status, a node kind; `--text-label` 9px names a thing — chips, field names, column
+  heads; `--text-control` 10px is the text inside operable chrome; `--text-body` 11px is
+  list and table content; `--text-lead` 12px is primary and editable text; `--text-heading`
+  14px and `--text-title` 18px are headings and view titles. Weight is
+  `--weight-normal|medium|strong|bold`, tracking is
+  `--track-tight|none|slight|label|caps`. Every value is one the apps were already using,
+  so adopting a token changed nothing on screen — what it changed is that there is now one
+  file to move them from.
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
   and are vertically centered with equal space above and below. Both are in the palette,
   so a control is the same height in every app here.

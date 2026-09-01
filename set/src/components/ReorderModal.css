@@ -28,7 +28,7 @@
 }
 .order-row .x {
   padding: 1px 6px;
-  font-size: 11px;
+  font-size: var(--text-body);
   border-color: transparent;
   color: var(--caption);
 }
@@ -67,7 +67,7 @@
   flex: none;
   padding: 2px 7px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
 }
 .sort-level {
   padding-left: 8px;
@@ -81,7 +81,7 @@
   flex: none;
   color: var(--caption);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   text-align: right;
   text-transform: uppercase;
 }
@@ -92,7 +92,7 @@
   background: var(--panel);
   color: var(--ui);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
 }
 .sort-level select:first-of-type {
   width: 112px;
@@ -108,7 +108,7 @@
    into one run — or the fact that it can't be taken back. Marked rather than
    shouted: it isn't an error, it's the part that has to have been read. */
 .warn {
-  font-size: 10px;
+  font-size: var(--text-control);
   line-height: 1.5;
   color: var(--ui);
   border-left: 2px solid var(--amber);

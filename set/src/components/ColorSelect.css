@@ -39,8 +39,8 @@
 }
 .color-select-heading {
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-label);
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: var(--caption);
   padding: 0 0 6px;
@@ -52,7 +52,7 @@
   border-color: transparent;
   color: var(--caption);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   text-align: left;
 }
 .color-select-none:hover:not(:disabled) {

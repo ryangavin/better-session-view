@@ -32,7 +32,7 @@ header p {
   max-width: 76ch;
   margin: 6px 0 0;
   color: var(--detail, #8b8b93);
-  font-size: 12px;
+  font-size: var(--text-lead);
   line-height: 1.55;
 }
 
@@ -46,9 +46,9 @@ main {
 h2 {
   margin: 0 0 10px;
   color: var(--ui, #b7b7be);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-size: var(--text-lead);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
 }
 
@@ -67,12 +67,12 @@ h2 {
   max-width: 88ch;
   margin: 8px 0 0;
   color: var(--caption, #8b8b93);
-  font-size: 11px;
+  font-size: var(--text-body);
   line-height: 1.6;
 }
 
 code {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-body);
   color: var(--ui, #b7b7be);
 }

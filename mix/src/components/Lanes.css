@@ -8,7 +8,7 @@
 .mf-cap {
   flex: none;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--caption);
@@ -57,7 +57,7 @@
   flex: 1;
   min-width: 0;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--detail);
   white-space: nowrap;
   overflow: hidden;
@@ -67,7 +67,7 @@
 .mf-band-model {
   flex: none;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--caption);
 }
 
@@ -114,7 +114,7 @@
 
 .mf-slice-num {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--detail);
 }
 
@@ -124,7 +124,7 @@
 
 .mf-slice-name {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--caption);
   white-space: nowrap;
   overflow: hidden;
@@ -166,7 +166,7 @@
   background: var(--amber);
   color: var(--bg);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   font-style: normal;
   line-height: 1.4;
 }
@@ -210,7 +210,7 @@
 .mf-lane-label {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--text-lead);
   color: var(--ui);
   white-space: nowrap;
   overflow: hidden;
@@ -228,7 +228,7 @@
 
 .mf-zoom .wdg-button-body {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
   padding: 0 4px;
 }
 
@@ -236,7 +236,7 @@
   flex: none;
   width: 20px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--detail);
   text-align: right;
 }
@@ -262,7 +262,7 @@
   left: 10px;
   transform: translateY(-50%);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--idle);
 }
 
@@ -307,7 +307,7 @@
 .mf-manual-step {
   flex: none;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--amber);
@@ -318,7 +318,7 @@
   flex: 1;
   min-width: 0;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--ui);
   white-space: nowrap;
   overflow: hidden;

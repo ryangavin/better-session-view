@@ -23,7 +23,7 @@
   flex: none;
   padding: 4px 8px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--text-body);
   color: var(--ui);
   border-bottom: 1px solid var(--bd2);
 }

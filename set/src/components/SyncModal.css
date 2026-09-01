@@ -17,7 +17,7 @@
   justify-content: space-between;
   gap: 16px;
   color: var(--ui);
-  font-size: 12px;
+  font-size: var(--text-lead);
 }
 .sync-percent {
   flex: none;

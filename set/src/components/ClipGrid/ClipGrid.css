@@ -30,12 +30,12 @@ table.grid col.meta-col {
 }
 table.grid th {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   line-height: var(--label-h);
   letter-spacing: 0.1em;
   color: var(--caption);
   text-transform: uppercase;
-  font-weight: 400;
+  font-weight: var(--weight-normal);
   text-align: center;
   padding: var(--header-pad-y) var(--gutter);
   position: sticky;
@@ -63,7 +63,7 @@ table.grid th .th-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 600;
+  font-weight: var(--weight-strong);
 }
 table.grid th.meta-h {
   left: var(--gutter);
@@ -138,7 +138,7 @@ table.grid th.banded:not(.band-start)::before {
 }
 
 table.grid th.group-h {
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-label);
 }
 table.grid th.group-h .th-label {
   flex: 1;
@@ -199,7 +199,7 @@ td.cell.group.fired > .fire {
 td.cell.group > .group-n {
   float: right;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   line-height: 18px;
   color: var(--caption);
 }
@@ -445,7 +445,7 @@ table.grid tfoot tr.sends-row td {
 .mixer-send-label {
   font-family: var(--sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 10px;
+  font-size: var(--text-control);
   line-height: 1;
   text-align: center;
 }
@@ -462,7 +462,7 @@ table.grid tfoot tr.sends-row td {
   border-radius: var(--radius-xs);
   background: var(--surface-control);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   line-height: 1;
   letter-spacing: -0.04em;
   cursor: ew-resize;
@@ -629,7 +629,7 @@ table.grid tfoot tr.sends-row td {
   background: var(--surface-control);
   color: var(--ui);
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: var(--text-annot);
   line-height: 1;
   letter-spacing: -0.04em;
   white-space: nowrap;
@@ -737,14 +737,14 @@ button.mixer-button {
   background: var(--surface-control);
   color: var(--detail);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
   line-height: 1;
-  font-weight: 600;
+  font-weight: var(--weight-strong);
 }
 
 button.mixer-activator {
   height: 26px;
-  font-size: 12px;
+  font-size: var(--text-lead);
 }
 
 button.mixer-button:hover:not(:disabled) {

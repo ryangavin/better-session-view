@@ -8,7 +8,7 @@ td.scene-meta {
   background: var(--bg);
   box-shadow: var(--scene-gutter-plug);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
   color: var(--detail);
   white-space: nowrap;
   padding-left: 10px;
@@ -139,7 +139,7 @@ td.scene-role .role-chip {
   background: none;
   color: inherit;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   line-height: var(--launcher-size);
   letter-spacing: 0.06em;
   text-align: left;
@@ -231,7 +231,7 @@ td.cell.has > .fire {
   border-radius: var(--radius-xs);
   background: rgba(0, 0, 0, 0.25);
   color: inherit;
-  font-size: 9px;
+  font-size: var(--text-label);
 }
 td.cell.has > .fire:hover {
   background: rgba(0, 0, 0, 0.45);
@@ -263,7 +263,7 @@ td.cell.empty > .slot-btn {
   border-radius: var(--radius-xs);
   background: none;
   color: var(--idle);
-  font-size: 9px;
+  font-size: var(--text-label);
 }
 td.cell.empty > .slot-btn:hover {
   color: var(--fg);

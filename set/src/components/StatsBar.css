@@ -2,12 +2,12 @@
    centring itself against a taller box. */
 .keyhint {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--caption);
 }
 .keyhint b {
   color: var(--detail);
-  font-weight: 400;
+  font-weight: var(--weight-normal);
 }
 .stats-log-toggle {
   width: 18px;

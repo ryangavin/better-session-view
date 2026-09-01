@@ -8,7 +8,7 @@
 }
 .field > span {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   letter-spacing: 0.1em;
   color: var(--caption);
   text-transform: uppercase;
@@ -36,7 +36,7 @@
   height: 31px;
   flex: none;
   padding-inline: 8px;
-  font-size: 10px;
+  font-size: var(--text-control);
 }
 /* The song's name and color are two facts about the same song. The name gets
    the row; the color only needs one input-sized swatch beside it. */
@@ -82,7 +82,7 @@
   background: var(--surface-control);
   color: var(--ui);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
 }
 .role-select-control {
   position: relative;
@@ -100,7 +100,7 @@
 .role-select-row .manage-roles {
   flex: none;
   padding: 5px 8px;
-  font-size: 10px;
+  font-size: var(--text-control);
 }
 
 /* The native select keeps role assignment to one compact control and commits

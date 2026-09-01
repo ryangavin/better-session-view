@@ -3,7 +3,7 @@
 .control-button {
   font-family: var(--sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 12px;
+  font-size: var(--text-lead);
   padding: 6px 12px;
   border: 1px solid var(--bd3);
   border-radius: var(--radius-md);
@@ -34,7 +34,7 @@
   border-color: var(--amber);
   background: var(--amber);
   color: var(--bg);
-  font-weight: 600;
+  font-weight: var(--weight-strong);
 }
 .control-button-primary:hover:not(:disabled) {
   border-color: var(--amber-hover);
@@ -107,8 +107,8 @@
   background: var(--sel);
   color: var(--ui);
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
+  font-size: var(--text-control);
+  letter-spacing: var(--track-slight);
   cursor: pointer;
   outline: none;
 }

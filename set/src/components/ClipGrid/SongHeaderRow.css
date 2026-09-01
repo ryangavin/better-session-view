@@ -76,9 +76,9 @@ tr.song-row button.song {
   min-width: 0;
   font-family: var(--sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 12px;
+  font-size: var(--text-lead);
   line-height: var(--song-name-line);
-  font-weight: 600;
+  font-weight: var(--weight-strong);
   color: var(--fg);
   letter-spacing: -0.01em;
   padding: 0;

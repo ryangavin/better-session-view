@@ -274,7 +274,7 @@
 .wdg-label {
   font-family: var(--wdg-sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 9px;
+  font-size: var(--text-label);
   line-height: 1.2;
   color: var(--wdg-caption);
   white-space: nowrap;
@@ -284,7 +284,7 @@
 .wdg-readout,
 .wdg-number-body {
   font-family: var(--wdg-mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
@@ -295,7 +295,7 @@
 .wdg-button-body {
   font-family: var(--wdg-sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 10px;
+  font-size: var(--text-control);
   cursor: pointer;
 }
 

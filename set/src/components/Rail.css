@@ -17,7 +17,7 @@ button.icon {
   background: none;
   border-radius: var(--radius-sm);
   color: var(--caption);
-  font-size: 14px;
+  font-size: var(--text-heading);
   line-height: 16px;
 }
 button.icon:hover {

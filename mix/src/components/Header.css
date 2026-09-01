@@ -20,7 +20,7 @@
 .mf-mark {
   font-family: var(--mono);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: var(--weight-strong);
   color: var(--fg);
 }
 
@@ -48,14 +48,14 @@
 
 .mf-open-title {
   flex: 0 1 auto;
-  font-size: 12px;
+  font-size: var(--text-lead);
   color: var(--fg);
 }
 
 .mf-open-artist {
   flex: 1 1 auto;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--caption);
 }
 
@@ -104,16 +104,16 @@
 }
 
 .mf-group-label {
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-label);
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
 }
 
 .mf-clock {
   min-width: 62px;
   justify-content: flex-end;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: var(--text-body);
+  letter-spacing: var(--track-label);
   color: var(--ui);
 }
 
@@ -126,7 +126,7 @@
   border: 1px solid var(--red);
   border-radius: var(--radius-md);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--text-label);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--red);

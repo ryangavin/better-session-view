@@ -15,7 +15,7 @@
   color: var(--wdg-caption);
   font-family: var(--wdg-sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 10px;
+  font-size: var(--text-control);
 }
 
 .device-param-missing {

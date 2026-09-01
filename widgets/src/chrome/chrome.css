@@ -39,7 +39,7 @@
 
 .wdg-device-name {
   overflow: hidden;
-  font-size: 10px;
+  font-size: var(--text-control);
   line-height: 1;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -250,7 +250,7 @@
   color: var(--wdg-caption);
   font-family: var(--wdg-sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 10px;
+  font-size: var(--text-control);
 }
 
 .wdg-rack {
@@ -329,7 +329,7 @@
   color: var(--wdg-text);
   font-family: var(--wdg-sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 10px;
+  font-size: var(--text-control);
   line-height: 1;
   text-align: left;
   white-space: nowrap;
@@ -544,7 +544,7 @@
   color: var(--wdg-caption);
   font-family: var(--wdg-sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 9px;
+  font-size: var(--text-label);
   line-height: 1;
   white-space: nowrap;
 }

@@ -67,7 +67,7 @@ body {
   font-size: clamp(1.7rem, 8vw, 2.6rem);
   font-weight: 800;
   line-height: 1.03;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--track-tight);
   text-wrap: balance;
 }
 
@@ -77,14 +77,14 @@ body {
   align-items: baseline;
   gap: 0.25rem 0.6rem;
   font-size: clamp(0.85rem, 3.6vw, 1.05rem);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-slight);
   color: var(--ink-quiet);
 }
 
 .facts > * + *::before {
   content: '·';
   margin-right: 0.6rem;
-  font-weight: 400;
+  font-weight: var(--weight-normal);
   color: var(--ink-quiet);
 }
 
@@ -96,7 +96,7 @@ body {
 
 .of {
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: var(--weight-strong);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-quiet);
@@ -124,7 +124,7 @@ body {
   color: var(--ink);
   font-family: inherit;
   font-size: clamp(2.4rem, 12vw, 3.4rem);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   line-height: 1;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -161,7 +161,7 @@ body {
 
 .labelled {
   font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--pending);
 }
@@ -218,7 +218,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: calc(var(--wheel, 3rem) * 0.34);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
@@ -230,7 +230,7 @@ body {
   white-space: nowrap;
   font-size: 0.65rem;
   line-height: 15px;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-slight);
   text-transform: uppercase;
   color: var(--ink-quiet);
 }
@@ -248,8 +248,8 @@ body {
 
 .reading-from {
   font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: var(--ink-quiet);
 }
@@ -280,7 +280,7 @@ body {
   padding-right: 0.2rem;
   overflow: hidden;
   font-size: 0.6rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   line-height: 1;
 }
 
@@ -345,7 +345,7 @@ body {
   font-size: 0.62rem;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--track-tight);
   color: rgb(0 0 0 / 78%);
 }
 

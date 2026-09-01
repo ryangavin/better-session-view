@@ -1,5 +1,5 @@
 .eq8-device .wdg-device-name {
-  font-weight: 600;
+  font-weight: var(--weight-strong);
 }
 
 .eq8-device .wdg-device-body {
@@ -38,7 +38,7 @@
 
 .eq8-status {
   color: var(--wdg-fill);
-  font-size: 8px;
+  font-size: var(--text-annot);
 }
 
 .eq8-save {
@@ -100,7 +100,7 @@
   color: var(--wdg-text);
   font-family: var(--wdg-sans);
   font-variation-settings: var(--sans-axes);
-  font-size: 10px;
+  font-size: var(--text-control);
 }
 
 .eq8-side {

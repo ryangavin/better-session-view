@@ -14,13 +14,13 @@
 }
 
 .device-chain-track {
-  font-size: 11px;
+  font-size: var(--text-body);
   color: var(--fg);
 }
 
 .device-chain-count {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--text-control);
   color: var(--detail);
 }
 

@@ -68,5 +68,38 @@
   --mono-axes: 'MONO' 1, 'CASL' 0.38;
   --sans-axes: 'MONO' 0, 'CASL' 0.38;
 
+  /* ── size, weight and tracking ───────────────────────────────────
+     Named for the job rather than for a position in a ramp: the
+     question at a call site is "what kind of text is this", not "how
+     big is it". The roles below were read off what the apps already
+     do — 8px is the readout on a control, 9px names a thing, 10px is
+     the text inside operable chrome, 11px is list and table content,
+     12px is primary and editable text.
+
+     Every value is one that was already in the stylesheets, so
+     adopting a token never changes what renders. What it changes is
+     that there is now one place to move them from.
+  */
+  --text-annot: 8px;
+  --text-label: 9px;
+  --text-control: 10px;
+  --text-body: 11px;
+  --text-lead: 12px;
+  --text-heading: 14px;
+  --text-title: 18px;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-strong: 600;
+  --weight-bold: 700;
+
+  /* `caps` is the wide tracking uppercase micro-headings need to stay
+     readable; `label` is the gentler version for mixed-case labels. */
+  --track-tight: -0.02em;
+  --track-none: 0;
+  --track-slight: 0.04em;
+  --track-label: 0.08em;
+  --track-caps: 0.14em;
+
   font-variation-settings: var(--mono-axes);
 }

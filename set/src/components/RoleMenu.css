@@ -23,8 +23,8 @@
 }
 .menu-h {
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: var(--text-label);
+  letter-spacing: var(--track-caps);
   text-transform: uppercase;
   color: var(--caption);
   padding: 2px 6px 4px;
@@ -41,7 +41,7 @@
   border: none;
   border-radius: var(--radius-sm);
   padding: 4px 6px;
-  font-size: 11px;
+  font-size: var(--text-body);
   line-height: 15px;
   text-align: left;
 }
@@ -67,7 +67,7 @@
 }
 .menu-item .menu-tick {
   flex: none;
-  font-size: 9px;
+  font-size: var(--text-label);
   color: var(--amber);
 }
 .menu-item.clear {
