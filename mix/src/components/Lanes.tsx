@@ -183,6 +183,17 @@ export function Lanes({ mix }: { mix: Mix }) {
 
   const lanes = STEMS.filter((stem) => sources.includes(stem.id));
   const head = shows(view, at);
+  /**
+   * Where the song starts and ends on screen, which is only interesting when
+   * they are not the edges of it.
+   *
+   * Zoomed out past the track filling the lane, there is time on screen that is
+   * not in the song. The grid keeps ruling it and the warp lane keeps numbering
+   * it — downwards through bar 1 — and this is what says it is outside: a wash
+   * over it, with the song's first and last bar as its border.
+   */
+  const opens = shows(view, 0);
+  const closes = shows(view, 1);
 
   return (
     <div className="mf-lanes" ref={root}>
@@ -197,7 +208,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                 onPress={whole}
                 disabled={view.zoom === 1}
                 label="Show the whole track"
-                title="How much of the song is on screen — press to show all of it. ⇧-scroll or ⌘-scroll over the lanes to zoom, as far in as single samples"
+                title="How much time the lanes are showing — press to fit the song. ⇧-scroll or ⌘-scroll over the lanes to zoom, in as far as single samples and out past the whole song"
                 className="mf-zoom"
                 width={40}
               >
@@ -227,6 +238,7 @@ export function Lanes({ mix }: { mix: Mix }) {
         </div>
 
         <div className="mf-band-track" ref={timeline}>
+          <Outside opens={opens} closes={closes} />
           <div className="mf-ruler">
             {mix.slices.map((slice, i) => {
               const next = mix.slices[i + 1]?.bar ?? bars;
@@ -328,6 +340,7 @@ export function Lanes({ mix }: { mix: Mix }) {
             </div>
           );
         })}
+        <Outside opens={opens} closes={closes} inset />
         {head >= 0 && head <= 1 && (
           <div
             className="mf-playhead"
@@ -336,6 +349,44 @@ export function Lanes({ mix }: { mix: Mix }) {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The wash over the time that is not in the song.
+ *
+ * Two elements rather than something drawn into each canvas: it is one fact
+ * about the view, the lanes and the band are separate scrolling boxes, and a
+ * wash is a rectangle either way. Nothing is drawn at all while the track
+ * fills the lane, which is every view but the ones zoomed out past fit.
+ *
+ * `inset` is for the lane list, where the drawing starts after the head column
+ * — the same arithmetic the playhead does, and the reason both live in the box
+ * that holds the lanes rather than inside a lane.
+ */
+function Outside({ opens, closes, inset }: { opens: number; closes: number; inset?: boolean }) {
+  const across = (place: number): string =>
+    inset ? `calc(var(--lane-head) + (100% - var(--lane-head)) * ${place})` : `${place * 100}%`;
+  const wide = (span: number): string =>
+    inset ? `calc((100% - var(--lane-head)) * ${span})` : `${span * 100}%`;
+
+  return (
+    <>
+      {opens > 0 && (
+        <span
+          className="mf-outside"
+          data-side="before"
+          style={{ left: across(0), width: wide(opens) }}
+        />
+      )}
+      {closes < 1 && (
+        <span
+          className="mf-outside"
+          data-side="after"
+          style={{ left: across(closes), width: wide(1 - closes) }}
+        />
+      )}
+    </>
   );
 }
 

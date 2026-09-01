@@ -3,6 +3,7 @@ import {
   factorOf,
   following,
   limitOf,
+  MIN_ZOOM,
   panned,
   shows,
   spanOf,
@@ -47,8 +48,9 @@ describe('the point under the pointer', () => {
 });
 
 describe('what a view is allowed to be', () => {
-  it('never zooms out past the whole track', () => {
-    expect(zoomedAbout(at(1, 0), 0.5, 0.5, DEEP)).toEqual(WHOLE);
+  it('zooms out past the track filling the lane, and stops', () => {
+    expect(zoomedAbout(at(1, 0), 0.5, 0.5, DEEP).zoom).toBe(0.5);
+    expect(zoomedAbout(at(MIN_ZOOM, 0), 0.5, 0.5, DEEP).zoom).toBe(MIN_ZOOM);
   });
 
   it('stops where the track runs out of samples to show', () => {
@@ -66,10 +68,50 @@ describe('what a view is allowed to be', () => {
     expect(panned(at(4, 0.1), -8).from).toBe(0);
   });
 
-  it('is the whole track again once it is zoomed all the way out', () => {
-    // Zooming out at the right-hand edge has to pull `from` back to zero on the
-    // way, or the last view before whole-track is a window hanging off the end.
-    expect(zoomedAbout(at(4, 0.75), 0.001, 1, DEEP)).toEqual(WHOLE);
+  it('pulls the view back onto the track on the way out', () => {
+    // Zooming out at the right-hand edge has to bring `from` back with it, or
+    // the way out is a window hanging further and further off the end.
+    const view = zoomedAbout(at(4, 0.75), 0.25, 1, DEEP);
+    expect(view.zoom).toBe(1);
+    expect(view.from).toBe(0);
+  });
+});
+
+describe('zoomed out past the lane', () => {
+  /**
+   * Out here the arithmetic changes hands: the window is wider than the song, so
+   * it is the *song* that moves inside the window rather than the window that
+   * moves along the song. What must not happen is the song scrolling out of
+   * sight — there is nothing else on screen to find it by.
+   */
+  it('always shows the whole song, wherever it has been panned', () => {
+    for (const spans of [-4, -1, -0.3, 0, 0.3, 1, 4]) {
+      const view = panned({ zoom: 0.5, from: -0.5 }, spans);
+      const { from, to } = spanOf(view);
+      expect(from).toBeLessThanOrEqual(0);
+      expect(to).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('slides the song between flush left and flush right', () => {
+    expect(panned({ zoom: 0.5, from: -1 }, -4).from).toBe(-1);
+    expect(panned({ zoom: 0.5, from: -1 }, 4).from).toBe(0);
+  });
+
+  it('puts the space outside the track outside 0 and 1', () => {
+    // What the lanes shade and the ruler counts backwards through. A point
+    // before the song starts has to answer as a place on screen, not as clamped
+    // onto the start.
+    const view = { zoom: 0.5, from: -0.5 };
+    expect(shows(view, 0)).toBeCloseTo(0.25, 12);
+    expect(shows(view, 1)).toBeCloseTo(0.75, 12);
+    expect(under(view, 0)).toBeCloseTo(-0.5, 12);
+  });
+
+  it('leaves the head on screen, so nothing follows it anywhere', () => {
+    const view = { zoom: 0.5, from: -0.5 };
+    expect(following(view, 0)).toBe(view);
+    expect(following(view, 1)).toBe(view);
   });
 });
 
@@ -80,7 +122,7 @@ describe('the same view back', () => {
    * hand back a new object and repaint every lane for it.
    */
   it('comes back from a zoom that could not go further', () => {
-    const held = at(1, 0);
+    const held = at(MIN_ZOOM, 0);
     expect(zoomedAbout(held, 0.5, 0.5, DEEP)).toBe(held);
   });
 

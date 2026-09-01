@@ -10,11 +10,21 @@
   --stem-other: var(--detail);
 
   --surface-band: #0c0c0e;
+  /*
+   * Over the lanes, where the view is showing time the song does not reach.
+   *
+   * Lighter than the background rather than darker, which is the opposite of an
+   * arrangement's out-of-bounds and is forced: the window is already nearly
+   * black, so there is nothing darker to go. Translucent, because the grid and
+   * the bar numbers carry on underneath it and are half the point.
+   */
+  --surface-outside: #16161bb3;
   --surface-manual: #17171c;
 
   --rail-left: 258px;
   --lane-head: 204px;
 
+  --layer-outside: 3;
   --layer-playhead: 5;
   --layer-modal: 300;
 }

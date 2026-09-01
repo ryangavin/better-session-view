@@ -91,8 +91,10 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       const beats = bars * 4;
       let step = 1;
       while ((step / beats) * track < 3 && step < beats) step *= 4;
-      const first = Math.max(0, Math.floor((from * beats) / step) * step);
-      const last = Math.min(beats, Math.ceil(to * beats));
+      // Not clamped to the track at either end: zoomed out, there is time on
+      // screen that is not in the song, and the grid runs through it.
+      const first = Math.floor((from * beats) / step) * step;
+      const last = Math.ceil(to * beats);
       for (let b = first; b <= last; b += step) {
         const x = Math.round(xOf(b / beats)) + 0.5;
         const isBar = b % 4 === 0;
@@ -124,8 +126,12 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
         ctx.font = '500 9px ui-monospace, Menlo, monospace';
         ctx.fillStyle = caption;
         ctx.textBaseline = 'top';
-        const start = Math.max(0, Math.floor((from * bars) / every) * every);
-        for (let b = start; b < Math.min(bars, to * bars + every); b += every) {
+        // Counting carries on past both ends of the song, downwards through
+        // bar 1 into 0, -7, -15 — an arrangement's way of saying *before the
+        // start*. It is the numbers that make the shaded region legible as
+        // somewhere rather than as a margin.
+        const start = Math.floor((from * bars) / every) * every;
+        for (let b = start; b < to * bars + every; b += every) {
           ctx.fillText(String(b + 1), xOf(b / bars) + 4, 3);
         }
       }

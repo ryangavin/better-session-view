@@ -17,6 +17,11 @@ import { useCallback, useState } from 'react';
  * pixel canvas per lane, which the browser either refuses outright or keeps in
  * memory six times over.
  *
+ * Zoomed out past the track fitting the lane, the view keeps going: `from` goes
+ * negative and `to` past 1, and what is out there is not part of the song. The
+ * fractions below carry that without a special case — they are a coordinate, not
+ * a proportion of something that exists.
+ *
  * Positions are **fractions of the track** throughout, not seconds and not
  * bars. Seconds belong to the transport and bars are a claim the grid makes;
  * a fraction is the one currency the ruler, the warp lane, six waveforms and
@@ -29,8 +34,20 @@ export interface View {
   from: number;
 }
 
-/** The whole track, which is where every track opens. */
+/** The whole track, edge to edge, which is where every track opens. */
 export const WHOLE: View = { zoom: 1, from: 0 };
+
+/**
+ * How far *out* it goes, past the track filling the lane.
+ *
+ * A quarter, so the song can be a stripe with room either side of it. Fitting
+ * exactly is the obvious floor and it is the wrong one: a shape is easier to
+ * judge with air around it than jammed against both walls, and a song that ends
+ * at the last pixel gives no way to see that it ends. What is outside the track
+ * is drawn as outside — the lanes shade it and the ruler keeps counting bars
+ * through it, downwards past bar 1, the way an arrangement does.
+ */
+export const MIN_ZOOM = 0.25;
 
 /**
  * The narrowest view worth having, in samples across the lane.
@@ -86,7 +103,15 @@ const clamp = (n: number, low: number, high: number): number => Math.min(high, M
  * somebody leans on a scroll wheel at the end of a track.
  */
 const settled = (zoom: number, from: number, was: View): View => {
-  const edge = clamp(from, 0, 1 - 1 / zoom);
+  // `1 - 1/zoom` is where the left edge sits when the *right* edges line up, and
+  // which side of zero it falls on is the whole difference between zoomed in and
+  // zoomed out. Zoomed in it is positive and the range is 0 to it: the window
+  // slides along a track wider than itself. Zoomed out it is negative and the
+  // range is it to 0: the *track* slides within a window wider than itself,
+  // between flush left and flush right, and one of those is always true — which
+  // is why the song cannot be scrolled off screen at all out there.
+  const rest = 1 - 1 / zoom;
+  const edge = clamp(from, Math.min(0, rest), Math.max(0, rest));
   return zoom === was.zoom && edge === was.from ? was : { zoom, from: edge };
 };
 
@@ -99,7 +124,7 @@ const settled = (zoom: number, from: number, was: View): View => {
  * pointing at has left the window by the time it settles.
  */
 export const zoomedAbout = (view: View, factor: number, place: number, limit: number): View => {
-  const zoom = clamp(view.zoom * factor, 1, Math.max(1, limit));
+  const zoom = clamp(view.zoom * factor, MIN_ZOOM, Math.max(1, limit));
   const held = under(view, place);
   return settled(zoom, held - place / zoom, view);
 };

@@ -72,6 +72,7 @@
 }
 
 .mf-band-track {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -249,6 +250,23 @@
   font-family: var(--mono);
   font-size: 9px;
   color: var(--idle);
+}
+
+.mf-outside {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: var(--layer-outside);
+  background: var(--surface-outside);
+  pointer-events: none;
+}
+
+.mf-outside[data-side='before'] {
+  border-right: 1px solid var(--bd);
+}
+
+.mf-outside[data-side='after'] {
+  border-left: 1px solid var(--bd);
 }
 
 .mf-playhead {

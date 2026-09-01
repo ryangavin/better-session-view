@@ -143,12 +143,34 @@ A four-minute track is about fifty thousand times deep, so the wheel curve is se
 range it has to cross — a gentler one is a dozen swipes to reach a bottom nobody would
 find.
 
+## And out past the song
+
+The other end goes past the track filling the lane, to a quarter of it. Fitting exactly
+is the obvious floor and it is the wrong one: a shape is easier to judge with air around
+it than jammed against both walls, and a song that ends on the last pixel gives no way to
+see that it ends.
+
+Out there the arithmetic changes hands. Zoomed in, the window slides along a track wider
+than itself; zoomed out, the *track* slides inside a window wider than it, between flush
+left and flush right. Both are one clamp — `1 - 1/zoom` is where the left edge sits when
+the right edges line up, and which side of zero that falls on is the whole difference. It
+also means the song cannot be scrolled off screen out there, which matters because there
+would be nothing else to find it by.
+
+**What is outside the song is drawn as outside.** The grid keeps ruling it and the warp
+lane keeps numbering it — downwards through bar 1 into 0, −7, −15, the way an arrangement
+does — with a wash over it and the first and last bar as its border. Numbering is what
+makes it read as somewhere rather than as a margin. The wash is *lighter* than the lanes
+rather than darker, which is the opposite of Ableton and is forced: this window is
+already nearly black.
+
 **Which drawing you are looking at is a measurement, not a setting.**
 [`playback.md`](playback.md) has it: a lane draws peaks while a column of them is finer
 than a pixel, the samples themselves once it is not, and a line through the points once
-there are fewer samples than pixels. The zoom readout says how much of the song is on
-screen — `3:52`, `12s`, `4.4ms` — because at these depths a number of times is arithmetic
-and a length of time is the answer to the question.
+there are fewer samples than pixels. The zoom readout says how much *time* the lanes are
+showing — `3:52`, `12s`, `4.4ms`, and more than the song's own length once it is zoomed
+out past fit — because at these depths a number of times is arithmetic and a length of
+time is the answer to the question.
 
 ## The grid, and the two ways of setting it
 

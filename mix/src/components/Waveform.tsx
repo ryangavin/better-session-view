@@ -168,9 +168,13 @@ export function Waveform({
         let step = 1;
         while ((step / bars) * track < 4 && step < bars) step *= 4;
         // Only the bars on screen, snapped down to the step so which lines are
-        // bright does not change as the view moves under them.
+        // bright does not change as the view moves under them. Neither end is
+        // clamped to the track: zoomed out past the lane there is time on
+        // screen that is not in the song, and the grid carries on through it —
+        // what says it is outside is the shading over it, not a gap in the
+        // ruling.
         const start = Math.floor((from * bars) / step) * step;
-        const end = Math.min(bars, Math.ceil(to * bars));
+        const end = Math.ceil(to * bars);
         for (let b = start; b <= end; b += step) {
           const x = Math.round(xOf(b / bars)) + 0.5;
           ctx.strokeStyle = b % (step * 4) === 0 ? '#1f1f23' : '#151518';
