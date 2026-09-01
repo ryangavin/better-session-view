@@ -69,6 +69,14 @@ Not yet: `live.text` (a labelled toggle — `Toggle` with children is most of it
 `live.gain~` (a slider with a meter beside it, now that both halves exist), `live.arrows`,
 `live.drop`.
 
+**And a waveform**, which is the clearest candidate this list has ever had and still has
+only one caller. [`mix/src/components/Waveform.tsx`](../../mix/src/components/Waveform.tsx)
+draws a stem's peaks on a canvas — one min/max pair per column, which is what a peak file
+holds — and knows nothing about Live, a stem or a file. It moves here the day set[flow]
+draws a clip's audio, by the same rule that kept `Meter` out until a second caller
+appeared. Until then it is one app's component, and the cost of being wrong about the
+shape is one app's.
+
 **`Meter` arrived when the second caller did**, which is what this list said would happen.
 The first was a mixer strip. The second is a signal a look is being driven by, and it is
 the one that makes a meter a widget rather than a bar the mixer draws: a *hand-driven*

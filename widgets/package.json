@@ -15,6 +15,7 @@
     "./chrome/*": "./src/chrome/*",
     "./param/*": "./src/param/*",
     "./gesture/*": "./src/gesture/*",
+    "./palette.css": "./src/palette.css",
     "./tokens.css": "./src/tokens.css"
   },
   "types": "dist/index.d.ts",

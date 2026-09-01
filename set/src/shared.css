@@ -1,38 +1,7 @@
+@import '@openflow/widgets/palette.css';
+
 :root {
-  --bg: #0a0a0b;
-  --panel: #111113;
-  --rail: #0e0e10;
-  --sel: #1c1c20;
-  --bd: #262629;
-  --bd2: #232327;
-  --bd3: #2c2c31;
-  /* Text ramp. Five steps, named for the job the text is doing rather than for
-     how bright it is, so picking one is a question about the content and not
-     about the shade. Nothing in the app defines its own neutral ink: every
-     `color` either names one of these or derives from a Live color. Going one
-     step down is how text recedes — reach for opacity only when a whole
-     control is disabled. */
-  --fg: #ececed; /* the thing being read: names, current values, the active control */
-  --ui: #b7b7be; /* ordinary interface text: control faces, headings, row text */
-  --detail: #8b8b93; /* supporting facts: stats, units, flags, annotations */
-  --caption: #5e5e66; /* micro-labels, hints, placeholders, empty states */
-  --idle: #3a3a41; /* a control at rest that shouldn't call attention to itself */
-  --amber: #f0b23c;
-  --amber-muted: #927b51;
-  --red: #d4544f;
-  --green: #5fbfa8;
-  --blue: #4da6d9;
-  --focus: #4a4a52;
-  --amber-hover: #ffc961;
-  --preview: #b58fd6;
-  --surface-control: #151517;
-  --surface-stats: #121214;
-  --surface-cell: #18181b;
-  --surface-cell-muted: #131316;
   --surface-song-hover: #141418;
-  --shadow-edge: rgba(0, 0, 0, 0.6);
-  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
 
   /* Root-level stacking tiers. Values between these anchors belong only to
      the named surface's internal ordering; component-local paint layers can
@@ -46,14 +15,6 @@
   --layer-overlay: 200;
   --layer-modal: 300;
 
-  /* Shape tokens. Component styles never choose their own radii: changing one
-     definition here updates every control in that size family. */
-  --radius-xs: 2px;
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
-  --radius-pill: 999px;
-
   /* Fallbacks only — ClipGrid sets both on the table from lib/columnWidth.ts.
      Kept here so the grid still lays out if it ever renders without them.
      `--col-w` matches the `m` preset and is the only one a width mode moves;
@@ -61,12 +22,6 @@
      any track. */
   --col-w: 74px;
   --meta-col-w: 108px;
-  /* One height for every control in the header, so a row of them has one top
-     and one bottom edge rather than five. Segmented groups carry the border on
-     the group, so their buttons are 2px shorter and come out the same. */
-  --ctl-h: 22px;
-  --scroll-size: 10px;
-  --scroll-inset: 3px;
 }
 
 * {
@@ -237,10 +192,6 @@ input[type='text']:focus {
   border: 1px solid var(--caption);
 }
 
-:root {
-  scrollbar-width: thin;
-  scrollbar-color: var(--idle) transparent;
-}
 ::-webkit-scrollbar {
   width: var(--scroll-size);
   height: var(--scroll-size);

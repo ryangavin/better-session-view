@@ -1,0 +1,79 @@
+.mf-running {
+  max-width: 560px;
+}
+
+.mf-pulse {
+  color: var(--amber);
+  animation: mf-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes mf-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.mf-job-stage {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--detail);
+}
+
+.mf-job-bar {
+  height: 3px;
+  margin-top: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--sel);
+  overflow: hidden;
+}
+
+.mf-job-fill {
+  height: 100%;
+  background: var(--amber);
+  transition: width 90ms linear;
+}
+
+.mf-job-stems {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 20px;
+}
+
+.mf-job-stem {
+  display: grid;
+  grid-template-columns: 82px 1fr 42px;
+  gap: 10px;
+  align-items: center;
+}
+
+.mf-job-name {
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.mf-job-stem .wdg {
+  --wdg-fill: var(--job-ink);
+}
+
+.mf-job-meter {
+  --wdg-meter-thickness: 3px;
+  width: 100%;
+}
+
+.mf-job-meter .wdg-body,
+.mf-job-meter .wdg-meter-body {
+  width: 100%;
+}
+
+.mf-job-pct {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--caption);
+  text-align: right;
+}

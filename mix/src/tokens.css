@@ -1,0 +1,21 @@
+@import '@openflow/widgets/palette.css';
+@import '@openflow/widgets/tokens.css';
+
+:root {
+  --stem-vocals: #e0708f;
+  --stem-drums: #d9825a;
+  --stem-bass: #7a6fd0;
+  --stem-guitar: var(--green);
+  --stem-piano: var(--blue);
+  --stem-other: var(--detail);
+
+  --rail-left: 262px;
+  --rail-right: 288px;
+  --lane-head: 168px;
+  --lane-h: 46px;
+  --lane-h-compact: 34px;
+  --lane-h-tall: 64px;
+
+  --layer-playhead: 5;
+  --layer-modal: 300;
+}

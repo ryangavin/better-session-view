@@ -1,0 +1,45 @@
+.mf-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 10px;
+  background: var(--rail);
+  border-bottom: 1px solid var(--bd);
+}
+
+.mf-mark {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  padding-right: 2px;
+}
+
+.mf-mark span {
+  color: var(--amber);
+}
+
+.mf-header-gap {
+  flex: 1;
+}
+
+.mf-clock {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ui);
+  min-width: 58px;
+  text-align: right;
+}
+
+.mf-transport {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mf-transport .mf-playing {
+  color: var(--green);
+}

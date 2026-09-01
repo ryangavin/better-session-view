@@ -6,14 +6,24 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
 ## Foundations
 
 - The interface uses dark surfaces. Semantic color tokens live in
-  [`set/src/shared.css`](set/src/shared.css): neutral foregrounds and borders, amber for
-  selection, active toggles and primary actions, green for playback and success, blue for
-  Solo, red for errors, and purple for previews.
+  [`widgets/src/palette.css`](widgets/src/palette.css): neutral foregrounds and borders,
+  amber for selection, active toggles and primary actions, green for playback and success,
+  blue for Solo, red for errors, and purple for previews. They sit there rather than in an
+  app because more than one app reads them —
+  [`widgets/src/tokens.css`](widgets/src/tokens.css) was already reading them from the
+  host with fallbacks, and mix[flow] was the second app to need the same table.
+  [`set/src/shared.css`](set/src/shared.css) imports it and adds what is only set[flow]'s:
+  the stacking tiers and the grid column widths.
 - Neutral text comes from one five-step ramp, described under *Text* below.
 - The sans stack starts with IBM Plex Sans. The mono stack starts with IBM Plex Mono and
   is used for compact labels, facts and grid headings.
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
-  and are vertically centered with equal space above and below.
+  and are vertically centered with equal space above and below. Both are in the palette,
+  so a control is the same height in every app here.
+- **An app's own colors are roles, and they stay in that app.** mix[flow] paints six
+  sources and names them `--stem-vocals` and so on rather than by hue, in
+  `mix/src/tokens.css`; three of the six *are* palette accents. A role moves into the
+  palette when a second app needs it, and not before.
 - The grid uses a 2px gutter. Its metadata column is a constant 108px; Master is a track
   column and takes the track width, so the role painting it moves with the setting.
   Track width modes are defined in [`set/src/lib/columnWidth.ts`](set/src/lib/columnWidth.ts).

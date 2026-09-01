@@ -62,7 +62,10 @@ src/
     Row.tsx         controls on one line, in three bands, through a subgrid
     Panel.tsx       aligned vertical parameter lanes, through a shared row grid
     chrome.css      their styling, on the same shared parts
-  tokens.css        the widget tokens: colour and type from the host, metrics ours
+  palette.css       the design language itself: surfaces, the text ramp, the accents,
+                    the type stacks, the radii and the 22px control height. Every app
+                    here imports it; DESIGN.md is what it means
+  tokens.css        the widget tokens: colour and type from the palette, metrics ours
   index.ts          the barrel and the package entry — pulls in every stylesheet,
                     so prefer deep imports
 bench/              the harness. Dev-only; never built, never shipped
@@ -92,8 +95,11 @@ of wherever you happen to be:
 ```ts
 import { Knob } from '@openflow/widgets/controls/Knob.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import '@openflow/widgets/tokens.css';
+import '@openflow/widgets/palette.css';
 ```
+
+Only the palette needs importing by hand: every control pulls `controls.css` in, and that
+pulls `shared.css` and `tokens.css` behind it.
 
 **The specifier carries the real TypeScript extension**, because that is the file that is
 actually there — `exports` maps straight onto `src/`, and nothing is compiled in between.
@@ -107,13 +113,19 @@ recover each component's props.
 
 ## Who uses it
 
-`set/` and `visuals/` both do, each through one adapter.
+`set/`, `visuals/` and `mix/` all do. The first two go through one adapter each;
 [`set/src/lib/liveParam.ts`](../set/src/lib/liveParam.ts) turns an `OpenFlow.MixerParameterState`
 into a `Param`, and [`visuals/client/ui/param.ts`](../visuals/client/ui/param.ts) does the same
 for a node's inlet. The mixer's volume, pan and send controls are driven by the gesture
 hooks ([set/docs/mixer.md](../set/docs/mixer.md)); the device chain draws a track's devices
 out of the chrome ([set/docs/device-chain.md](../set/docs/device-chain.md)); the visuals
 designer draws its node canvas out of `chrome/Graph.tsx` and `chrome/Port.tsx`.
+
+`mix/` needs no adapter, which is the interesting case: it has no Live and no protocol, so
+it writes a `Param` literal where it wants a control and hands it a number. A stem's level
+is a `float` from 0 to 1 and nothing else had to exist for the fader to work — see
+[mix/docs/window.md](../mix/docs/window.md) for which controls it uses and why its fader
+takes a `length` rather than `layout="inside"`.
 
 **A whole stock device face is composed there too, and deliberately not here.** Live's EQ
 Eight is [`set/src/components/devices/eq8/Eq8.tsx`](../set/src/components/devices/eq8/Eq8.tsx):
