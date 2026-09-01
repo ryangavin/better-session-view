@@ -5,7 +5,7 @@
       <stop offset="0.52" stop-color="#10D7C7"/>
       <stop offset="1" stop-color="#1EA7FF"/>
     </linearGradient>
-    <clipPath id="face">
+    <clipPath id="face-set">
       <rect x="10" y="10" width="492" height="492" rx="105"/>
     </clipPath>
   </defs>
@@ -13,18 +13,18 @@
   <rect x="0" y="0" width="512" height="512" rx="115" fill="#090A0E"/>
   <rect x="10" y="10" width="492" height="492" rx="105" fill="#F7F4EB"/>
 
-  <g clip-path="url(#face)">
+  <g clip-path="url(#face-set)">
     <path d="M256 0H512V512H256A128 128 0 0 1 256 256A128 128 0 0 0 256 0Z" fill="url(#set)"/>
 
     <g fill="url(#set)" opacity="0.96">
-      <rect x="0" y="60" width="196" height="32" rx="12"/>
-      <rect x="0" y="122" width="284" height="32" rx="12"/>
-      <rect x="0" y="184" width="240" height="32" rx="12"/>
+      <rect x="0" y="51" width="196" height="30" rx="15"/>
+      <rect x="0" y="113" width="284" height="30" rx="15"/>
+      <rect x="0" y="175" width="240" height="30" rx="15"/>
     </g>
     <g fill="#090A0E" opacity="0.52">
-      <rect x="316" y="296" width="196" height="32" rx="12"/>
-      <rect x="228" y="358" width="284" height="32" rx="12"/>
-      <rect x="272" y="420" width="240" height="32" rx="12"/>
+      <rect x="272" y="307" width="240" height="30" rx="15"/>
+      <rect x="228" y="369" width="284" height="30" rx="15"/>
+      <rect x="316" y="431" width="196" height="30" rx="15"/>
     </g>
   </g>
 
