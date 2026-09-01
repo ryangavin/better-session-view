@@ -113,5 +113,9 @@
   --track-label: 0.08em;
   --track-caps: 0.14em;
 
+  /* The family is set once, here, for the whole suite. It used to be set
+     per app on `body` — and visuals never did, so it inherited the browser
+     default and the axes had no Recursive to apply themselves to. */
+  font-family: var(--mono);
   font-variation-settings: var(--mono-axes);
 }
