@@ -96,10 +96,20 @@ export interface Failed {
 
 export type Outcome = Finished | Failed;
 
-/** Where a job's progress goes. The main process forwards these to the window. */
+/**
+ * Where a job's progress goes. The main process forwards it to the window.
+ *
+ * **Progress only, and that is the point.** The outcome is what this function
+ * *returns*, and it deliberately is not announced from in here as well: the
+ * caller has a manifest to write before the library agrees a separation
+ * happened, and a window told twice — once early by the runner and once by
+ * whoever finished the work — refreshes against the earlier answer. That was a
+ * real bug, and it looked like separation throwing you back to the model list
+ * with a hard reload as the only way to see the stems. One emitter, after the
+ * library is consistent; `main.ts` is it.
+ */
 export interface Watcher {
   progress(trackId: string, progress: Progress): void;
-  finished(outcome: Outcome): void;
 }
 
 interface Running {
@@ -185,7 +195,6 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
       sidecar: already,
       reused: true,
     };
-    watch.finished(done);
     return done;
   }
 
@@ -220,16 +229,12 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
       const stopped = running?.cancelled ?? false;
       running = null;
       await fsp.rm(scratch, { recursive: true, force: true });
-      const done = fail(stopped ? 'cancelled' : (why as Error).message, stopped);
-      watch.finished(done);
-      return done;
+      return fail(stopped ? 'cancelled' : (why as Error).message, stopped);
     }
     if (running?.cancelled) {
       running = null;
       await fsp.rm(scratch, { recursive: true, force: true });
-      const done = fail('cancelled', true);
-      watch.finished(done);
-      return done;
+      return fail('cancelled', true);
     }
     progress = { ...progress, stage: starting().stage };
     watch.progress(trackId, progress);
@@ -338,15 +343,12 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
     } catch (why) {
       await fsp.rm(scratch, { recursive: true, force: true });
       running = null;
-      const broke = fail(`could not write the stems — ${(why as Error).message}`);
-      watch.finished(broke);
-      return broke;
+      return fail(`could not write the stems — ${(why as Error).message}`);
     }
   } else {
     await fsp.rm(scratch, { recursive: true, force: true });
   }
 
   running = null;
-  watch.finished(outcome);
   return outcome;
 }

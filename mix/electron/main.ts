@@ -112,7 +112,6 @@ if (only(app)) {
         {
           progress: (trackId: string, progress: Progress) =>
             push('openflow:separate-progress', { trackId, progress }),
-          finished: (done: Outcome) => push('openflow:separate-finished', done),
         },
       );
       // The manifest is written here rather than inside the runner: the runner
@@ -126,6 +125,12 @@ if (only(app)) {
           seconds: outcome.sidecar.seconds,
         });
       }
+      // **After the manifest, and from one place.** The window answers this by
+      // re-reading the library, so announcing it while the library still says
+      // the track has no stems is announcing the wrong thing — the page went
+      // back to the model list, and only a reload got the lanes. The runner
+      // used to send this itself, one await too early.
+      push('openflow:separate-finished', outcome);
       return outcome;
     },
   );
