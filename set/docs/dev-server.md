@@ -5,9 +5,10 @@ Running the dev server, and what a hot update costs — why BridgeProvider sits 
 ## Dev
 
 ```sh
-npm run dev            # from repo root — this, the bridge watchers, and the widget bench
-npm run dev:set        # this alone, against a device someone else is running
-npm run dev:set-app    # the desktop shell, pointed at this dev server — HMR in the real window
+npm run dev:set        # just this app: its dev server and its window, one command
+npm run dev            # every server in the repo — this, the bridge watchers, the benches
+npm run dev:set-ui     # the dev server alone, against a device someone else is running
+npm run dev:set-app    # the window alone, pointed at a dev server that is already up
 npm run set            # the desktop app, on the built output — see docs/desktop.md
 ```
 
@@ -17,8 +18,9 @@ device, so you get HMR with React Fast Refresh — and, more to the point, a loa
 that survives your edits. A walk is ~950ms of Live's main thread; an edit to a CSS
 variable must not spend it.
 
-`dev:set-app` needs a dev server already running and does not start one; it retries until
-one answers rather than leaving a window on a connection error. What it changes and what it
+`dev:set` starts both and takes both down together. `dev:set-app` needs a dev server
+already running and does not start one; it retries until one answers rather than leaving a
+window on a connection error, which is what makes it safe to run against `npm run dev`. What it changes and what it
 deliberately doesn't — the bridge URL, the `localStorage` bucket, the title — is in
 [`desktop.md`](desktop.md).
 

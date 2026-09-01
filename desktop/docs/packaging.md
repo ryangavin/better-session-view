@@ -11,6 +11,7 @@ npm run app -- electron [app…]   # main, preload, and a server if it has one
 npm run app -- icons [app…]      # the .icns, from that app's own mark
 npm run app -- pack [app…]       # all three, then electron-builder
 npm run app -- run <app>         # build, electron, and open it
+npm run app -- watch <app>       # its dev server and its window, together
 npm run app -- dev <app>         # electron, and open it against a running dev server
 ```
 
@@ -21,13 +22,23 @@ The familiar names are one-line aliases onto this and still work: `npm run set`,
 `npm run visuals`, `npm run pack:set`, `npm run build:visuals`, `npm run dev:set-app`.
 An app with nothing special about it needs none of them.
 
+Each app gets the same three dev scripts, and they are worth telling apart:
+
+| | |
+|---|---|
+| `dev:<app>` | `watch` — the dev server and the window, together. The one to type |
+| `dev:<app>-ui` | vite alone, for a browser or a second window |
+| `dev:<app>-app` | the window alone, against a server `npm run dev` is already running |
+
 Anything that looks like a flag is forwarded to electron-builder, which is what keeps
 `npm run pack:set -- -c.mac.identity="Developer ID Application: NAME (TEAM)"` working.
 
-**`dev` does not start a dev server.** Those are `npm run dev`'s to own, and an app that
-started its own would race it for the port. What it does is rebuild the main process —
-which vite knows nothing about — and open onto whatever is there, retrying until it
-answers.
+**`dev` does not start a dev server; `watch` is the one that does.** The distinction
+exists because `npm run dev` owns every server in the repo, and an app that started its own
+alongside it would race for the port. `dev` rebuilds the main process — which vite knows
+nothing about — and opens onto whatever is there, retrying until it answers. `watch` is
+`dev` with a vite of its own in front of it, under `concurrently -k` so the two live and
+die together.
 
 ## Why the main process is built rather than run
 

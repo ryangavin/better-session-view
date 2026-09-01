@@ -5,8 +5,8 @@
 else, from a file you already have, on a machine you already own.
 
 ```sh
+npm run dev:mix      # working on it: the dev server and the window, one command
 npm run mix          # the app, on what is built
-npm run dev:mix-app  # the same window on the vite dev server — HMR in the real shell
 npm run pack:mix     # a .app and a .dmg under release/mix/
 ```
 

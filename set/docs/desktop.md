@@ -62,7 +62,7 @@ why a flag rather than an environment variable.
 
 `set/src/lib/bridgeUrl.ts` is the only reader, and it falls back to `ws://${location.host}`
 when there is no preload — which is the vite dev server, unchanged, still proxying `/ws`
-through to the device. That fallback is why `npm run dev:set` needed no changes at all.
+through to the device. That fallback is why the browser dev loop needed no changes at all.
 
 Nothing else is exposed. The app speaks one protocol over one socket; `contextIsolation` is
 only worth having if what crosses it stays this small.
@@ -85,8 +85,8 @@ server instead of on the scheme, so an edit lands in the window that ships with 
 intact — including the connection and the snapshot behind it, which is the whole argument in
 [`dev-server.md`](dev-server.md).
 
-It needs a dev server already up (`npm run dev`, or `npm run dev:set` alone) and starts
-none. The switches and the retry are [`window.md`](../../desktop/docs/window.md); the port
+`npm run dev:set` starts both halves together and is the one to type; `dev:set-app` alone
+needs a dev server already up (`npm run dev`, or `npm run dev:set-ui`) and starts none. The switches and the retry are [`window.md`](../../desktop/docs/window.md); the port
 comes from `OPENFLOW_PORT_BASE` plus this app's offset in `desktop/src/apps.ts`, so a
 worktree that moved its servers takes the app with it rather than being the one thing left
 behind.

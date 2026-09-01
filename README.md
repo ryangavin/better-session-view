@@ -112,9 +112,9 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run install:device` | the device into the Ableton User Library, as `SessionBridge-qa` |
 | `npm run qa` | all of the above at once — built and installed, ready to try. Packs the `.app` alone and unsigned, which is what installing locally needs and about twenty times quicker, and empties `release/` first so what is in there is what it built |
 | `npm run dev` | every watcher and dev server at once — set[flow] on :5173, the widget bench on :5273 |
-| `npm run dev:set` | the set[flow] dev server alone, against a device someone else is running |
-| `npm run dev:set-app` | the set[flow] window on a running dev server — hot reload, in the real app |
-| `npm run dev:visuals-app` | the same for visual[flow]; `npm run dev:mix-app` for mix[flow] |
+| `npm run dev:set` | just set[flow]: its dev server and its window, one command, closing either closes both. `npm run dev:visuals` and `npm run dev:mix` are the same for the other two |
+| `npm run dev:set-ui` | the set[flow] dev server alone, against a device someone else is running |
+| `npm run dev:set-app` | the set[flow] window alone, on a dev server that is already up — hot reload, in the real app |
 | `npm run dev:widgets` | the widget bench alone — no device needed |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
 | `npm test` | unit tests, one project per module — `npm test -- --project=core` runs that module alone |
