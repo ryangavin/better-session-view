@@ -36,6 +36,20 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   `--track-tight|none|slight|label|caps`. Every value is one the apps were already using,
   so adopting a token changed nothing on screen — what it changed is that there is now one
   file to move them from.
+- **Shadow is four concepts, not a value per component.** `--ring` and `--ring-out` are
+  the same hairline outline drawn inside and outside the box; `--edge-top`, `--edge-bottom`
+  and `--edge-left` are the drop-target and picked markers; `--shadow-menu` and
+  `--shadow-modal` are the only two elevations, and `--shadow-lift` is the fade above a
+  docked bar. They carry geometry only — the colour is appended at the call site, because
+  a custom property substitutes as text: `box-shadow: var(--ring) var(--amber-muted)`
+  resolves to `inset 0 0 0 1px #927b51`. Without that, a ring would need a token per
+  colour, which is how thirty-six distinct shadows happened.
+- **A stylesheet reaches the tokens by importing the palette, not by re-declaring them.**
+  [`widgets/src/palette.css`](widgets/src/palette.css) is the only definition; it pulls in
+  `type.css` itself, so importing the palette is enough. Re-declaring a token with the same
+  value is drift waiting to happen — visuals and the widget bench each kept a private copy
+  until they didn't. `widgets/` is the exception on purpose: it reads `--wdg-*` aliases so
+  the package still works inside a host that has none of this.
 - Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
   and are vertically centered with equal space above and below. Both are in the palette,
   so a control is the same height in every app here.
