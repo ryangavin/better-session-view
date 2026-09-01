@@ -397,6 +397,13 @@ export function useMix() {
    * is the entire reason this is one effect and not two. A drawing derived from
    * anywhere else can disagree with what you hear, and then it looks like the
    * file is wrong.
+   *
+   * **A lane is drawn the moment its own stem is ready, not when the last one
+   * is.** The lanes and their controls come from the manifest and are on screen
+   * immediately; what arrives here is the drawing inside them, one at a time.
+   * Holding all of them back for a single `setPeaks` made opening a track a
+   * pause and then a jump, and holding the *outgoing* track's drawing on screen
+   * during it was worse — a second of the last song under this song's name.
    */
   const stemsAt = song?.stems ?? null;
   const sourceList = song?.sources.join(',') ?? '';
@@ -412,6 +419,8 @@ export function useMix() {
     let live = true;
     setDecoding(true);
     setAudioProblem(null);
+    // Whatever was drawn belongs to the track that is being left.
+    setPeaks({});
     void (async () => {
       try {
         const sources = sourceList.split(',');
@@ -419,18 +428,21 @@ export function useMix() {
           sources.map(async (source) => {
             const answer = await fetch(stemUrl(base, stemsAt, source));
             if (!answer.ok) throw new Error(`${source}.wav — ${answer.status}`);
-            return [source, await decode(audio.audio(), await answer.arrayBuffer())] as const;
+            const buffer = await decode(audio.audio(), await answer.arrayBuffer());
+            // Drawn now, while its neighbours are still being read.
+            if (live) {
+              const drawn = peaksOf(buffer, COLUMNS);
+              setPeaks((was) => ({ ...was, [source]: drawn }));
+            }
+            return [source, buffer] as const;
           }),
         );
         if (!live) return;
-        const buffers = Object.fromEntries(decoded);
-        audio.load(buffers);
+        // The graph still gets all of them at once: the stems are started in
+        // one call so they play on the same sample, and a transport built from
+        // four separate handovers is four different ideas of where zero is.
+        audio.load(Object.fromEntries(decoded));
         setDuration(audio.duration);
-        setPeaks(
-          Object.fromEntries(
-            decoded.map(([source, buffer]) => [source, peaksOf(buffer, COLUMNS)]),
-          ),
-        );
       } catch (why) {
         if (!live) return;
         audio.clear();

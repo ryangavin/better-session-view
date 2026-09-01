@@ -123,6 +123,12 @@ the group, which is exactly what a scan at that count would have produced —
 the boundaries land on the same samples — so the drawing and the detection are
 still one reading of one stem, and `audio.test.ts` holds that equality up.
 
+Each stem is drawn as soon as *it* is decoded rather than when the last one
+is — the lanes are already on screen, laid out from the manifest, and what
+arrives is the drawing inside them. The transport still gets all of the buffers
+in one handover, because the stems are started in a single call so they play on
+the same sample.
+
 A lane draws the slice of those columns that is on screen, folded again to
 about two columns per pixel. Zoomed out that is the fold doing what it is for;
 zoomed in it is one column each, drawn wide.

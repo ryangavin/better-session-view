@@ -53,13 +53,15 @@ export const MIN_ZOOM = 0.25;
  * The narrowest view worth having, in samples across the lane.
  *
  * The bottom of a zoom is the point past which magnifying stops revealing, and
- * for audio that point is exact: there is nothing under a sample. A hundred and
- * ninety-two of them across a lane is about five pixels apart on a laptop —
- * far enough to see each one as a point with the line running between them,
- * which is the view you want when you are asking what the audio actually did
- * rather than what it looks like it did.
+ * for audio that point is exact: there is nothing under a sample. Sixteen of
+ * them across a lane is a hand's width apart on a laptop — the sample editor's
+ * view, where a point is a value you could nudge rather than a dot in a line.
+ *
+ * It is the last honest stop. Past it the points keep separating and no more
+ * audio arrives, which is the same lie a magnified peak drawing tells at the
+ * other end of this.
  */
-const FINEST = 192;
+const FINEST = 16;
 
 /**
  * How far in a particular track goes, which is not a constant.

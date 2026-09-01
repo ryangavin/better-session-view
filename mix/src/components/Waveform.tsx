@@ -43,7 +43,16 @@ export interface WaveformProps {
   ink: string;
   /** Drawn dimmer, for a stem that is muted or lost to somebody else's solo. */
   quiet?: boolean;
-  height: number;
+  /**
+   * How tall to draw, in px. Left out, it fills whatever box it is given.
+   *
+   * The lanes leave it out: how tall a stem is depends on how many stems the
+   * model made and how tall the window is, and that is a question CSS answers
+   * better than a component can. What is measured either way is the element —
+   * `ResizeObserver` is already watching it for width, and a canvas has to be
+   * told its pixel size in the end regardless.
+   */
+  height?: number;
   /** Bars, for the beat grid behind it. Left out, nothing is drawn. */
   bars?: number;
   /**
@@ -134,16 +143,17 @@ export function Waveform({
 
     const paint = () => {
       const box = el.getBoundingClientRect();
-      if (box.width < 1) return;
+      const tall = height ?? box.height;
+      if (box.width < 1 || tall < 1) return;
       const dpr = window.devicePixelRatio || 1;
       el.width = Math.round(box.width * dpr);
-      el.height = Math.round(height * dpr);
+      el.height = Math.round(tall * dpr);
       const ctx = el.getContext('2d');
       if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, box.width, height);
+      ctx.clearRect(0, 0, box.width, tall);
 
-      const middle = height / 2;
+      const middle = tall / 2;
       const reach = middle * HEADROOM;
       const yOf = (value: number) => middle - value * reach;
 
@@ -180,7 +190,7 @@ export function Waveform({
           ctx.strokeStyle = b % (step * 4) === 0 ? '#1f1f23' : '#151518';
           ctx.beginPath();
           ctx.moveTo(x, 0);
-          ctx.lineTo(x, height);
+          ctx.lineTo(x, tall);
           ctx.stroke();
         }
       }

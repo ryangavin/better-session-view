@@ -174,12 +174,22 @@
 .mf-lane-list {
   flex: 1;
   position: relative;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   min-height: 0;
 }
 
+/*
+ * The lanes share the height, however many of them there are: a four-source
+ * separation gets the room a six-source one would have used rather than four
+ * rows and a hole. 46px is the floor — the density an arrangement is legible
+ * at — and once the lanes hit it the list scrolls instead.
+ */
 .mf-lane {
   display: flex;
+  flex: 1 1 0;
+  min-height: 46px;
   border-bottom: 1px solid var(--surface-cell-muted);
 }
 
@@ -236,17 +246,21 @@
   position: relative;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   border-left: 1px solid var(--bd);
 }
 
 .mf-lane-draw canvas {
   display: block;
   width: 100%;
+  height: 100%;
 }
 
 .mf-lane-none {
-  padding-left: 10px;
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
   font-family: var(--mono);
   font-size: 9px;
   color: var(--idle);

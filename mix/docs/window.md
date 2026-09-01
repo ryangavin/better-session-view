@@ -78,6 +78,13 @@ lane moves the head there: a waveform is what you are looking at when you decide
 listen from, and reaching back up to a strip at the top to act on it is the sort of gap
 that makes a window feel like a diagram of a DAW rather than one.
 
+**46px is the floor, not the height.** The lanes share whatever the window has, so a
+four-source separation gets the room a six-source one would have used rather than four
+rows and a hole underneath them. `Waveform` takes no height when the lanes draw it and
+measures the box it was given instead — how tall a stem is depends on how many stems
+there are and how tall the window is, which is a question CSS answers better than a
+component can. Once the lanes reach 46px the list scrolls rather than going below it.
+
 ## There is a lane per stem the model made, and no others
 
 A four-source model folds guitar and piano back into Other. The lanes used to draw all
@@ -85,6 +92,15 @@ six regardless, with the two it did not have greyed out and captioned *folded in
 by demucs ft · 4* — which was honest, and was still two rows of a screen spent on a
 control nobody can use, on every track, for a fact that does not change while you are
 looking at it.
+
+A lane is on screen the moment the manifest says the model made that stem, which is
+before any audio has been read — so opening a track lays out the right rows immediately
+and fills the drawings in as each stem decodes, rather than showing captions and swapping
+six of them for canvases a second later. The outgoing track's drawings are dropped when
+the new one is chosen, because a second of the last song under this song's name is worse
+than an empty lane. A lane takes its samples only once its own peaks are there:
+`engine.ts` still holds the *previous* track's buffers until the new set is complete, and
+a lane that reached for them would draw the song you just left.
 
 **The fact belongs to the model, and the model is already on screen** — named on this
 band, and described at the point where somebody chooses it, which is the moment the trade
@@ -132,14 +148,17 @@ is not something a window owes you back after a reload.
 
 The bottom of the zoom is the point past which magnifying stops revealing, and for audio
 that point is exact: **there is nothing under a sample.** So that is where it stops —
-about a hundred and ninety-two samples across a lane, five pixels apart, drawn as points
-with the line between them.
+sixteen samples across a lane, a hand's width apart, drawn as points with the line
+between them. That is the sample editor's view, where a point is a value you could nudge
+rather than a dot in a line, and it is the last honest stop: past it the points keep
+separating and no more audio arrives, which is the same lie a magnified peak drawing
+tells at the other end.
 
 That makes the ceiling a property of the *track* rather than a number of times, which is
 why `limitOf` takes seconds and a rate. A limit written as a multiple would mean
 something different for every song: sixteen times a four-minute track is fifteen seconds,
 and sixteen times a two-bar loop is a bar. What is fixed is the view at the bottom of it.
-A four-minute track is about fifty thousand times deep, so the wheel curve is set by the
+A four-minute track is most of a million times deep, so the wheel curve is set by the
 range it has to cross — a gentler one is a dozen swipes to reach a bottom nobody would
 find.
 

@@ -169,13 +169,14 @@ describe('how far in a track goes', () => {
     expect(240 / long).toBeCloseTo(4 / short, 9);
   });
 
-  it('goes deep enough to draw one sample per few pixels', () => {
-    // A lane is around 900px. The point of the limit is that the deepest view
-    // is samples spaced across it, not a magnified picture of an envelope.
+  it('goes deep enough for a sample to be a value rather than a dot', () => {
+    // A lane is around 900px, so a couple of dozen samples across it is the
+    // sample editor's view — points a hand's width apart. The limit is what
+    // that view is; it is not a number of times anybody chose.
     const seconds = 240;
     const onScreen = (seconds / limitOf(seconds, 44100)) * 44100;
-    expect(onScreen).toBeGreaterThan(64);
-    expect(onScreen).toBeLessThan(512);
+    expect(onScreen).toBeGreaterThan(8);
+    expect(onScreen).toBeLessThan(48);
   });
 
   it('never asks a track with no length to zoom', () => {
@@ -203,7 +204,7 @@ describe('the wheel', () => {
     // range would be somewhere nobody ever goes.
     const limit = limitOf(240, 44100);
     const swipes = Math.log(limit) / Math.log(factorOf(-400));
-    expect(swipes).toBeLessThan(6);
+    expect(swipes).toBeLessThan(8);
   });
 });
 
