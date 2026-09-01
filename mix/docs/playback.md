@@ -241,11 +241,7 @@ is visibly wrong by bar 60.
 ### Which octave, and which beat starts the bar
 
 Autocorrelation cannot tell a beat from a half-note — a pulse every 0.47 s
-correlates with itself at 0.94 s just as strongly. Three things settle it, in
-order of how much they know:
-
-**Alternate beats carrying almost nothing are not beats.** The pulse found was a
-subdivision, and the period doubles. This is decided entirely by the low band.
+correlates with itself at 0.94 s just as strongly. Two things settle it:
 
 **A kick on one and three is not a song at half the tempo.** If the pulse comes
 out under 95 BPM, `wide` is asked whether the midpoints between those kicks are
@@ -256,6 +252,15 @@ outright, and it is the whole reason there are two bands rather than one.
 **Otherwise, a preference for the tempo a person would have counted**, eight
 tenths of an octave wide around 125. Steady eighths at the weight of the quarters
 are genuinely ambiguous, and this is what decides them.
+
+There was a third — *alternate beats carrying almost nothing means the pulse is a
+subdivision, so double the period* — and it went because it could not fire. A
+period whose alternate beats are a third of the others correlates about three
+times better at twice that period, and the preference can lean by about two, so
+the autocorrelation had already found the slower one. Removing it changed no
+answer in any fixture built to trigger it. The mutation run is what surfaced it:
+the constant in it could be set to anything without a test noticing, which for a
+threshold means either the spec is not looking or the branch is not reachable.
 
 Then the downbeat: the beats are split four ways and the heaviest quarter starts
 the bar, because the kick is the heaviest thing in most bars of most music this

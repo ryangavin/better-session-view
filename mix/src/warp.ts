@@ -527,27 +527,19 @@ export function fitOf(heard: Heard): Fit | null {
   let line = alignOf(hits, guess, columns);
   if (!line) return null;
 
-  // Alternate beats carrying almost nothing are not beats: what was found was a
-  // subdivision, and the beat is twice as long.
-  for (let again = 0; again < 2; again++) {
-    let even = 0;
-    let odd = 0;
-    for (const one of under(hits, line, columns, Number.MAX_SAFE_INTEGER)) {
-      if (one.k % 2 === 0) even += one.weight;
-      else odd += one.weight;
-    }
-    if (Math.min(even, odd) >= Math.max(even, odd) * 0.35) break;
-    if (60 / (line.period * 2 * low.per) < SLOWEST) break;
-    const slower = alignOf(hits, line.period * 2, columns, line.first + (odd > even ? line.period : 0));
-    if (!slower) break;
-    line = slower;
-  }
-
-  // And a kick on one and three is the whole of the low band's evidence for a
-  // tempo half of what anybody would count. The rest of the kit is what settles
-  // it: if the midpoints between those kicks carry as much as the kicks — the
-  // snare, on two and four — then the beat is twice as fast. This is the one
-  // octave question the audio can answer, and it is why there are two bands.
+  // A kick on one and three is the whole of the low band's evidence for a tempo
+  // half of what anybody would count. The rest of the kit is what settles it: if
+  // the midpoints between those kicks carry as much as the kicks — the snare, on
+  // two and four — then the beat is twice as fast. This is the one octave
+  // question the audio can answer, and it is why there are two bands.
+  //
+  // There is no rule the other way, and there was one. *Alternate beats carrying
+  // nothing means the pulse is a subdivision* is true and turns out to be
+  // unreachable: a period whose alternate beats are a third of the others
+  // correlates about three times better at twice that period, and the
+  // preference above can only lean by about two. The autocorrelation had
+  // already found the slower period every time, and removing the rule changed
+  // no answer in any fixture built to trigger it.
   if (60 / (line.period * low.per) < HALVED) {
     const others = hitsOf(riseOf(wide.level, wide.per));
     const half = line.period / 2;

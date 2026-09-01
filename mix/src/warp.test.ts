@@ -39,6 +39,8 @@ interface Kit {
   hats?: number;
   /** Every kick the same weight, which is four on the floor and no downbeat in it. */
   even?: boolean;
+  /** Which beat of the bar the recording starts on. Zero unless said otherwise. */
+  from?: number;
   seconds?: number;
   columns?: number;
 }
@@ -59,6 +61,7 @@ function kit({
   snares = [],
   hats = 0,
   even = false,
+  from = 0,
   seconds = SECONDS,
   columns = COLUMNS,
 }: Kit): Heard {
@@ -77,7 +80,7 @@ function kit({
 
   for (let k = 0; offset + k * beat < seconds; k++) {
     const at = offset + k * beat;
-    const inBar = ((k % 4) + 4) % 4;
+    const inBar = ((k + from) % 4 + 4) % 4;
     if (kicks.includes(inBar)) {
       const loud = even || inBar === 0 ? 1 : 0.8;
       hit(low, at, loud, 0.06);
@@ -90,9 +93,26 @@ function kit({
   return { low: { level: low, per }, wide: { level: wide, per } };
 }
 
-/** Where the grid puts bar `bars`, against where it belongs. */
+/**
+ * Where the grid puts bar `bars`, in seconds, against where it belongs.
+ *
+ * The only number worth asserting about a tempo. A tenth of a per cent out is
+ * perfect for thirty seconds and a beat and a half late by the end, and every
+ * reading of the BPM itself passes.
+ */
 const driftAt = (found: { bpm: number; offset: number }, truth: Kit, bars: number): number =>
   Math.abs(found.offset + (bars * 240) / found.bpm - (truth.offset + (bars * 240) / truth.bpm));
+
+/**
+ * How far out the grid may be at bar 100, in seconds.
+ *
+ * Fifteen milliseconds, which is roughly a column of the envelope — so this is
+ * *the sub-column placing has to be working*, not merely the tempo being about
+ * right. A hit rounded to its column instead of placed by the parabola through
+ * it, or the least-squares line stopping before it spans the song, and this is
+ * the assertion that goes.
+ */
+const DRIFT = 0.015;
 
 describe('fitting a tempo to the kick', () => {
   it('finds a whole-number tempo and says it is whole', () => {
@@ -114,11 +134,28 @@ describe('fitting a tempo to the kick', () => {
     expect(fit.bpm).toBeLessThan(122.6);
   });
 
-  it('puts bar 100 within a beat of where it belongs', () => {
+  it('puts bar 100 within a column of where it belongs', () => {
     // The whole point. A tenth of a per cent is invisible at bar 2 and a beat
     // and a half out by bar 120, which is what the warp lane exists to show.
     const truth: Kit = { bpm: 126, offset: 0.33 };
-    expect(driftAt(fitOf(kit(truth))!, truth, 100)).toBeLessThan(60 / truth.bpm / 4);
+    expect(driftAt(fitOf(kit(truth))!, truth, 100)).toBeLessThan(DRIFT);
+  });
+
+  it('holds at bar 100 on a tempo that is not a whole number', () => {
+    // Where nothing is snapped and the fit is the only thing carrying it.
+    const truth: Kit = { bpm: 122.5, offset: 0.17 };
+    expect(driftAt(fitOf(kit(truth))!, truth, 100)).toBeLessThan(DRIFT);
+  });
+
+  it('starts the bar on the heaviest quarter, not on the first hit it found', () => {
+    // A recording that begins on beat three. The first strong kick is not a
+    // downbeat, and a fit that anchored on it would rule a grid whose lines are
+    // all right and whose bar numbers are two beats out.
+    const truth: Kit = { bpm: 120, offset: 0.2, from: 2 };
+    const fit = fitOf(kit(truth))!;
+    expect(fit.bpm).toBe(120);
+    // Two beats after the recording starts is the first downbeat in the file.
+    expect(Math.abs(fit.offset - (0.2 + 2 * (60 / 120)))).toBeLessThan(DRIFT);
   });
 
   it('counts the beat, not the eighths played over it', () => {
@@ -205,7 +242,7 @@ describe('a fit seeded by hand', () => {
     const rough = (240 * 4) / (7.5 - 0.02);
     const fit = refitOf(kit(truth), rough, 0.42)!;
     expect(fit.bpm).toBe(128);
-    expect(driftAt(fit, truth, 100)).toBeLessThan(60 / truth.bpm / 4);
+    expect(driftAt(fit, truth, 100)).toBeLessThan(DRIFT);
   });
 
   it('keeps the downbeat that was clicked rather than voting on one', () => {
@@ -242,7 +279,10 @@ describe('hearing the kick under the kit', () => {
     const at = (seconds: number, pulse: Pulse) =>
       pulse.level[Math.round(seconds / pulse.per)] ?? 0;
     // Two seconds in, so the filter has long settled and every hit is the same.
-    expect(at(2.0, heard.low)).toBeGreaterThan(at(2.25, heard.low) * 8);
+    // Both halves are the claim: a slope that takes the snare off by taking
+    // everything off would pass the second assertion and be useless.
+    expect(at(2.0, heard.low)).toBeGreaterThan(at(2.0, heard.wide) * 0.5);
+    expect(at(2.25, heard.low)).toBeLessThan(at(2.25, heard.wide) * 0.1);
     expect(at(2.25, heard.wide)).toBeGreaterThan(at(2.0, heard.wide) * 0.3);
   });
 
