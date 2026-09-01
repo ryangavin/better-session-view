@@ -11,10 +11,10 @@
    grid's is: a border changes the row's height, so every row below it would
    shift each time the pointer crossed a boundary. */
 .order-row.drop-above {
-  box-shadow: inset 0 2px 0 var(--amber);
+  box-shadow: var(--edge-top) var(--amber);
 }
 .order-row.drop-below {
-  box-shadow: inset 0 -2px 0 var(--amber);
+  box-shadow: var(--edge-bottom) var(--amber);
 }
 .order-row .grip {
   color: var(--caption);

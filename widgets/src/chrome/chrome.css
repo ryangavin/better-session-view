@@ -234,7 +234,7 @@
 .wdg-chain-drop {
   flex: none;
   width: 2px;
-  border-radius: 1px;
+  border-radius: var(--radius-xs);
   background: var(--wdg-fill);
 }
 

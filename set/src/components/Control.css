@@ -118,7 +118,7 @@
 }
 .control-select select:focus-visible {
   border-color: var(--amber-muted);
-  box-shadow: 0 0 0 1px var(--amber-muted);
+  box-shadow: var(--ring-out) var(--amber-muted);
 }
 .control-select select:disabled {
   opacity: 0.4;
@@ -142,5 +142,5 @@
   background: transparent;
 }
 .control-group:not(.control-group-bare) > .control-select select:focus-visible {
-  box-shadow: inset 0 0 0 1px var(--amber-muted);
+  box-shadow: var(--ring) var(--amber-muted);
 }

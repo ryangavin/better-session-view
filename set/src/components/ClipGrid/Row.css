@@ -57,7 +57,7 @@ td.scene-meta .scene-key.none {
 td.scene-meta.picked {
   --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--sel);
   background: var(--sel);
-  box-shadow: inset 2px 0 0 var(--amber), var(--scene-gutter-plug);
+  box-shadow: var(--edge-left) var(--amber), var(--scene-gutter-plug);
 }
 
 /* --- the Master column's scene cell -------------------------------- */
@@ -159,16 +159,16 @@ tr.scene-row.dragging td {
 }
 
 tr.scene-row.drop-above td {
-  box-shadow: inset 0 2px 0 var(--amber);
+  box-shadow: var(--edge-top) var(--amber);
 }
 tr.scene-row.drop-below td {
-  box-shadow: inset 0 -2px 0 var(--amber);
+  box-shadow: var(--edge-bottom) var(--amber);
 }
 tr.scene-row.drop-above :is(td.scene-meta, td.scene-role) {
-  box-shadow: inset 0 2px 0 var(--amber), var(--scene-gutter-plug);
+  box-shadow: var(--edge-top) var(--amber), var(--scene-gutter-plug);
 }
 tr.scene-row.drop-below :is(td.scene-meta, td.scene-role) {
-  box-shadow: inset 0 -2px 0 var(--amber), var(--scene-gutter-plug);
+  box-shadow: var(--edge-bottom) var(--amber), var(--scene-gutter-plug);
 }
 
 /* --- play state --------------------------------------------------- */
@@ -214,7 +214,7 @@ td.cell {
 }
 td.cell.sel {
   border-color: var(--amber);
-  box-shadow: 0 0 0 1px rgba(240, 178, 60, 0.5);
+  box-shadow: var(--ring-out) rgba(240, 178, 60, 0.5);
 }
 
 td.cell.has {

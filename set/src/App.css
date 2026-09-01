@@ -30,7 +30,7 @@ main + footer,
 main + .stats {
   position: relative;
   z-index: var(--layer-footer);
-  box-shadow: 0 -8px 14px -4px var(--shadow-edge);
+  box-shadow: var(--shadow-lift);
 }
 
 /* Scoped: `empty` is also a modifier on dots and swatches, and a bare `.empty`

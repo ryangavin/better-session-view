@@ -117,13 +117,11 @@ table.grid th.meta-h .song-action-group {
 /* --- groups ---------------------------------------------------------- */
 
 table.grid th.banded {
-  box-shadow:
-    inset 0 var(--band-w) 0 var(--band),
+  box-shadow: inset 0 var(--band-w) 0 var(--band),
     var(--header-plugs);
 }
 table.grid th.banded:not(.group-h) {
-  box-shadow:
-    inset 0 var(--band-w) 0 var(--band),
+  box-shadow: inset 0 var(--band-w) 0 var(--band),
     inset 0 calc(var(--band-w) + var(--gutter)) 0 var(--bg),
     var(--header-plugs);
 }
@@ -269,8 +267,7 @@ table.grid tfoot tr.stop-row td {
   position: relative;
   padding: 0;
   background: var(--rail);
-  box-shadow:
-    var(--footer-gutter-fill), 0 -8px 14px -4px var(--shadow-edge);
+  box-shadow: var(--footer-gutter-fill), var(--shadow-lift);
   vertical-align: middle;
 }
 

@@ -57,7 +57,7 @@ header p {
 kbd {
   padding: 1px 4px;
   border: 1px solid #2c2c31;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: #151517;
   color: #b7b7be;
   font-family: var(--mono);
@@ -75,7 +75,7 @@ nav a,
 nav button {
   padding: 3px 8px;
   border: 1px solid #2c2c31;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: #151517;
   color: #b7b7be;
   font-family: inherit;
@@ -120,7 +120,7 @@ h2 {
   flex-direction: column;
   padding: 14px;
   border: 1px solid #1f1f23;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   background: #111113;
 }
 
@@ -190,7 +190,7 @@ h2 {
   width: 88px;
   padding: 3px 5px;
   border: 1px solid #2c2c31;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: #151517;
   color: #ececed;
   font-family: var(--mono);
@@ -203,7 +203,7 @@ h2 {
   gap: 28px;
   padding: 20px;
   border: 1px solid #1f1f23;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   background: #111113;
 }
 
@@ -275,7 +275,7 @@ h2 {
   justify-content: center;
   aspect-ratio: 16 / 9;
   border: 1px solid #2c2c31;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   background: #08080a;
   color: #5e5e66;
   font-size: var(--text-label);

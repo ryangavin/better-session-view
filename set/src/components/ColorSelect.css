@@ -35,7 +35,7 @@
   background: var(--panel);
   border: 1px solid var(--bd3);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--shadow-menu);
 }
 .color-select-heading {
   font-family: var(--mono);

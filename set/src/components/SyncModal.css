@@ -9,7 +9,7 @@
 .sync-modal {
   width: 360px;
   overflow: hidden;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-modal);
 }
 .sync-row {
   display: flex;

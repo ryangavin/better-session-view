@@ -58,7 +58,7 @@ h2 {
   gap: 16px;
   padding: 16px;
   border: 1px solid var(--bd, #262629);
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   background: var(--surface-cell, #131315);
   overflow-x: auto;
 }

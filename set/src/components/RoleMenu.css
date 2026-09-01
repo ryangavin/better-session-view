@@ -19,7 +19,7 @@
   gap: 2px;
   /* The one place in the app with a drop shadow. It's the only thing that
      floats over the grid, and it has to read as above it rather than in it. */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--shadow-menu);
 }
 .menu-h {
   font-family: var(--mono);

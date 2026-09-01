@@ -37,6 +37,33 @@
   --radius-lg: 6px;
   --radius-pill: 999px;
 
+  /* ── shadow, as four concepts rather than thirty-six ──────────────
+     These carry the *geometry* only; the colour is appended at the
+     call site, because a custom property substitutes as text:
+
+       box-shadow: var(--ring) var(--amber-muted);
+
+     resolves to `inset 0 0 0 1px #927b51`. That is what lets one token
+     serve every ring in the suite without a token per colour.
+
+     `--ring` outlines inside the box and `--ring-out` outside it — the
+     difference matters where a border-box would clip. The edges are the
+     drop-target and picked markers, and the two drops are the only two
+     elevations there are: a menu sitting on the page, and a modal over
+     everything.
+  */
+  --ring: inset 0 0 0 1px;
+  --ring-out: 0 0 0 1px;
+  --ring-focus: 0 0 0 2px;
+
+  --edge-top: inset 0 2px 0;
+  --edge-bottom: inset 0 -2px 0;
+  --edge-left: inset 2px 0 0;
+
+  --shadow-menu: 0 8px 24px rgb(0 0 0 / 55%);
+  --shadow-modal: 0 18px 52px rgb(0 0 0 / 48%);
+  --shadow-lift: 0 -8px 14px -4px var(--shadow-edge);
+
   --ctl-h: 22px;
   --scroll-size: 10px;
   --scroll-inset: 3px;

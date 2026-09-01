@@ -254,7 +254,7 @@ tr.song-row:hover .role-band {
   opacity: 0.9;
 }
 tr.song-row .role-band.uncolored {
-  box-shadow: inset 0 0 0 1px var(--bd3);
+  box-shadow: var(--ring) var(--bd3);
 }
 
 /* --- rearranging songs -------------------------------------------- */
@@ -270,16 +270,16 @@ tr.song-row.dragging td:first-child {
 }
 
 tr.song-row.drop-above td {
-  box-shadow: inset 0 2px 0 var(--amber);
+  box-shadow: var(--edge-top) var(--amber);
 }
 tr.song-row.drop-below td {
-  box-shadow: inset 0 -2px 0 var(--amber);
+  box-shadow: var(--edge-bottom) var(--amber);
 }
 tr.song-row.drop-above td:first-child {
-  box-shadow: inset 0 2px 0 var(--amber), var(--song-gutter-plug);
+  box-shadow: var(--edge-top) var(--amber), var(--song-gutter-plug);
 }
 tr.song-row.drop-below td:first-child {
-  box-shadow: inset 0 -2px 0 var(--amber), var(--song-gutter-plug);
+  box-shadow: var(--edge-bottom) var(--amber), var(--song-gutter-plug);
 }
 
 tr.song-row .drop-note {
