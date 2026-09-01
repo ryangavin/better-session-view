@@ -13,7 +13,7 @@
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--tag-chip-color, var(--caption));
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   line-height: 12px;
   letter-spacing: var(--track-slight);

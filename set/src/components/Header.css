@@ -89,6 +89,7 @@ header {
   background: transparent;
   color: var(--ui);
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -148,7 +149,7 @@ header {
   border-radius: var(--radius-md);
   background: var(--sel);
   color: var(--ui);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
   font-weight: var(--weight-strong);
   font-variant-numeric: tabular-nums;

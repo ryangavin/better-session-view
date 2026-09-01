@@ -283,7 +283,7 @@
 
 .wdg-readout,
 .wdg-number-body {
-  font-family: var(--wdg-mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-tight);
   font-variant-numeric: tabular-nums;

@@ -39,6 +39,7 @@
 }
 .color-select-heading {
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-caps);
   text-transform: uppercase;
@@ -52,6 +53,7 @@
   border-color: transparent;
   color: var(--caption);
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   text-align: left;
 }

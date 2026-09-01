@@ -1,4 +1,4 @@
-@import '../src/type.css';
+@import '../src/palette.css';
 * {
   box-sizing: border-box;
 }
@@ -20,15 +20,6 @@ select {
 }
 
 .bench.hosted {
-  --surface-control: #151517;
-  --bd3: #2c2c31;
-  --focus: #4a4a52;
-  --idle: #3a3a41;
-  --amber: #f0b23c;
-  --fg: #ececed;
-  --ui: #b7b7be;
-  --caption: #5e5e66;
-  --radius-xs: 2px;
 }
 
 header {
@@ -60,7 +51,7 @@ kbd {
   border-radius: var(--radius-sm);
   background: #151517;
   color: #b7b7be;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
 }
 
@@ -104,7 +95,7 @@ h2 {
   margin: 0 0 14px;
   color: #b7b7be;
   font-size: var(--text-body);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   letter-spacing: var(--track-caps);
   text-transform: uppercase;
 }
@@ -194,6 +185,7 @@ h2 {
   background: #151517;
   color: #ececed;
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
 }
 
@@ -212,7 +204,7 @@ h2 {
   grid-template-columns: max-content 1fr;
   gap: 4px 12px;
   margin: 0;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
 }
 
@@ -252,7 +244,7 @@ h2 {
 .patch-out {
   margin: 8px 0 0;
   color: #8b8b93;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
 }
 

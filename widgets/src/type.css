@@ -65,6 +65,18 @@
   --mono: 'Recursive Variable', ui-monospace, Menlo, monospace;
   --sans: 'Recursive Variable', system-ui, -apple-system, sans-serif;
 
+  /* The cut is selected with `font-variation-settings`, not with
+     `font-family` — both tokens name the same family, so restating the
+     family does nothing but change which fallback would apply if
+     Recursive failed to load. A rule that wants the monospaced cut says
+     `font-variation-settings: var(--mono-axes)` and inherits the family.
+
+     Form controls are the exception: they do not inherit `font-family`
+     at all, so those rules set both.
+
+     This inherits, which is the whole trap: the root sets the mono cut,
+     `body` sets the proportional one for prose, and anything under body
+     is proportional until a rule says otherwise. */
   --mono-axes: 'MONO' 1, 'CASL' 0.38;
   --sans-axes: 'MONO' 0, 'CASL' 0.38;
 

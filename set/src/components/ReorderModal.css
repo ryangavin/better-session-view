@@ -66,7 +66,7 @@
 .sort-builder .sort-icon {
   flex: none;
   padding: 2px 7px;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
 }
 .sort-level {
@@ -80,7 +80,7 @@
   width: 50px;
   flex: none;
   color: var(--caption);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   text-align: right;
   text-transform: uppercase;
@@ -92,6 +92,7 @@
   background: var(--panel);
   color: var(--ui);
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
 }
 .sort-level select:first-of-type {

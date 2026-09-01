@@ -18,7 +18,7 @@
 }
 
 .mf-mark {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-lead);
   font-weight: var(--weight-strong);
   color: var(--fg);
@@ -54,7 +54,7 @@
 
 .mf-open-artist {
   flex: 1 1 auto;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   color: var(--caption);
 }
@@ -99,7 +99,7 @@
 .mf-group-label,
 .mf-clock {
   padding: 0 8px;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   color: var(--caption);
 }
 
@@ -125,7 +125,7 @@
   padding: 0 8px;
   border: 1px solid var(--red);
   border-radius: var(--radius-md);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-label);
   text-transform: uppercase;

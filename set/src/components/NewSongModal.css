@@ -8,7 +8,7 @@
   min-width: 0;
 }
 .new-song-field > span {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-label);
   color: var(--caption);
@@ -36,6 +36,7 @@
   background: var(--surface-control);
   color: var(--ui);
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
 }
 .new-song-field select:focus {

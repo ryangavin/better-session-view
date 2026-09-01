@@ -11,7 +11,7 @@
 table.songs {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
 }
 table.songs th {

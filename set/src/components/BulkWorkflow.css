@@ -22,7 +22,7 @@
   gap: 8px;
   flex: none;
   padding: 4px 8px;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
   color: var(--ui);
   border-bottom: 1px solid var(--bd2);

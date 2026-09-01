@@ -7,7 +7,7 @@ td.scene-meta {
   --scene-gutter-plug: calc(-1 * var(--gutter)) 0 0 var(--bg);
   background: var(--bg);
   box-shadow: var(--scene-gutter-plug);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   color: var(--detail);
   white-space: nowrap;
@@ -35,7 +35,7 @@ td.scene-meta .scene-n:active {
 }
 td.scene-meta .scene-bpm,
 td.scene-meta .scene-key {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   text-align: right;
   overflow: hidden;
@@ -138,7 +138,7 @@ td.scene-role .role-chip {
   border-radius: 0;
   background: none;
   color: inherit;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   line-height: var(--launcher-size);
   letter-spacing: var(--track-slight);
@@ -202,7 +202,7 @@ td.cell {
   border-radius: var(--radius-xs);
   background: var(--surface-cell);
   cursor: pointer;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   line-height: 18px;
   padding: 0 5px;

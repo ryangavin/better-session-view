@@ -100,7 +100,7 @@ tr.song-row .song-artist {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   line-height: var(--song-meta-line);
   color: var(--detail);
@@ -109,7 +109,7 @@ tr.song-row .song-artist.clash {
   color: var(--amber);
 }
 tr.song-row .part {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   color: var(--caption);
 }
@@ -126,7 +126,7 @@ tr.song-row .facts {
   flex: none;
   margin-left: auto;
   padding-left: 8px;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   color: var(--detail);
 }
@@ -153,7 +153,7 @@ tr.song-row .facts .key.none {
 }
 
 tr.song-row .mixed-color {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   color: var(--amber);
 }
@@ -283,7 +283,7 @@ tr.song-row.drop-below td:first-child {
 }
 
 tr.song-row .drop-note {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   color: var(--amber);
 }

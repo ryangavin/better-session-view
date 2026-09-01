@@ -19,7 +19,7 @@
 
 .mf-job-stage {
   margin: 4px 0 0;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   color: var(--detail);
 }
@@ -74,7 +74,7 @@
 }
 
 .mf-job-name {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
 }
 
@@ -93,7 +93,7 @@
 }
 
 .mf-job-pct {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   color: var(--caption);
   text-align: right;

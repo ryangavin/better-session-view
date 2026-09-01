@@ -74,6 +74,7 @@
 .song-index-fields .control-button {
   padding: 2px 7px;
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-slight);
   text-transform: uppercase;
@@ -126,7 +127,7 @@
   flex: none;
   border-bottom: 1px solid var(--bd2);
   color: var(--caption);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-annot);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
@@ -167,7 +168,7 @@
   min-height: 27px;
   padding: 2px 10px 2px 12px;
   color: var(--detail);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   font-variant-numeric: tabular-nums;
 }

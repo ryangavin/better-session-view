@@ -22,7 +22,7 @@
   box-shadow: var(--shadow-menu);
 }
 .menu-h {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-caps);
   text-transform: uppercase;

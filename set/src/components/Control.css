@@ -107,6 +107,7 @@
   background: var(--sel);
   color: var(--ui);
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   letter-spacing: var(--track-slight);
   cursor: pointer;

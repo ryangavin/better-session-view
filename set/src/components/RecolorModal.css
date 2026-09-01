@@ -49,6 +49,7 @@
 }
 .choices button {
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   letter-spacing: var(--track-label);
   padding: 5px 10px;
@@ -58,7 +59,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   color: var(--detail);
 }
@@ -72,7 +73,7 @@
   border: none;
   background: none;
   padding: 0 0 0 10px;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   letter-spacing: var(--track-caps);
   text-transform: uppercase;

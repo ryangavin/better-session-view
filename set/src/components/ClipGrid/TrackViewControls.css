@@ -15,7 +15,7 @@
   border-radius: 0;
   background: var(--rail);
   color: var(--caption);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   cursor: pointer;
 }
 .tvc-width:hover,
@@ -92,6 +92,7 @@
   background: transparent;
   color: var(--ui);
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   letter-spacing: var(--track-slight);
   text-align: left;

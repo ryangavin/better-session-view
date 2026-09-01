@@ -62,7 +62,7 @@ footer {
   border-top: 1px solid var(--bd);
   background: var(--rail);
   padding: 8px 16px;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   line-height: 1.7;
 }

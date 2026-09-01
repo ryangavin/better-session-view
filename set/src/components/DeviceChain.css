@@ -19,7 +19,7 @@
 }
 
 .device-chain-count {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   color: var(--detail);
 }

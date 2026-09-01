@@ -1,7 +1,7 @@
 /* Sits in the stats strip, so it takes that row's baseline rather than
    centring itself against a taller box. */
 .keyhint {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   color: var(--caption);
 }
@@ -37,7 +37,7 @@
   padding: 1px 5px;
   border: 1px solid var(--bd3);
   border-radius: var(--radius-sm);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   line-height: 1;
   letter-spacing: var(--track-label);
@@ -74,14 +74,14 @@
   gap: 5px;
 }
 .stat .k {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-caps);
   color: var(--caption);
   text-transform: uppercase;
 }
 .stat .v {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
   color: var(--detail);
 }

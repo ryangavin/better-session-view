@@ -29,7 +29,7 @@ table.grid col.meta-col {
   width: var(--meta-col-w);
 }
 table.grid th {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   line-height: var(--label-h);
   letter-spacing: var(--track-label);
@@ -196,7 +196,7 @@ td.cell.group.fired > .fire {
 }
 td.cell.group > .group-n {
   float: right;
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   line-height: 18px;
   color: var(--caption);
@@ -340,7 +340,7 @@ button.stop-clips-button.control-button-on {
 }
 
 .track-status-time {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   line-height: 1;
   letter-spacing: var(--track-slight);
@@ -458,7 +458,7 @@ table.grid tfoot tr.sends-row td {
   border: 1px solid var(--bd3);
   border-radius: var(--radius-xs);
   background: var(--surface-control);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   line-height: 1;
   letter-spacing: var(--track-tight);
@@ -625,7 +625,7 @@ table.grid tfoot tr.sends-row td {
   border-radius: var(--radius-xs);
   background: var(--surface-control);
   color: var(--ui);
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-annot);
   line-height: 1;
   letter-spacing: var(--track-tight);
@@ -734,6 +734,7 @@ button.mixer-button {
   background: var(--surface-control);
   color: var(--detail);
   font-family: var(--mono);
+font-variation-settings: var(--mono-axes);
   font-size: var(--text-control);
   line-height: 1;
   font-weight: var(--weight-strong);

@@ -72,7 +72,7 @@ h2 {
 }
 
 code {
-  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
   font-size: var(--text-body);
   color: var(--ui, #b7b7be);
 }
