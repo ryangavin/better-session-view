@@ -1,125 +1,134 @@
 import { useMemo } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
-import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Slider } from '@openflow/widgets/controls/Slider.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import { BARS, STEMS } from '../mock.ts';
-import { peaksFor } from '../peaks.ts';
+import { BARS, STEMS, modelOf } from '../mock.ts';
+import { onsetsFor, peaksFor } from '../peaks.ts';
 import type { Mix } from '../state.ts';
 import { Waveform } from './Waveform.tsx';
+import { WarpLane } from './WarpLane.tsx';
 import './Lanes.css';
 
 /**
- * The separated track: what the grid thinks the tempo is, where the slices
- * fall, and one lane per source.
+ * The separated track: the mix as a whole, where the grid sits, and one lane
+ * per source.
  *
- * The head of every lane is 168px of controls and the rest is the drawing, so
- * the six waveforms share one horizontal scale and a transient in the drums
- * lines up with the one in the bass. That is the only reason the head is a
- * fixed width rather than a fraction.
+ * The head of every row is the same width, so the six waveforms share one
+ * horizontal scale and a transient in the drums lines up with the one in the
+ * bass. That is the only reason it is a fixed width rather than a fraction, and
+ * it is why the band above the lanes carries a head of its own that draws
+ * nothing but the mix summary.
  */
 
 /**
  * A stem's level, as a parameter rather than a number, so the fader is a fader —
  * the drag, the fine modifier and double-click-to-unity all come with it.
  *
- * Deliberately unnamed: `Slider` captions itself from `shortName`, and the head
- * is 168px with the reading already in the row above.
+ * Deliberately unnamed: `Slider` captions itself from `shortName`, and the row
+ * has no room for a caption that would say the same thing as the stem's name
+ * two controls to the left.
  */
-const LEVEL: Param = {
-  kind: 'float',
-  min: 0,
-  max: 1,
-  defaultValue: 0.8,
-  unit: 'percent',
-};
-
-const SNAP = ['1/1', '1/2', '1/4'];
+const LEVEL: Param = { kind: 'float', min: 0, max: 1, defaultValue: 0.8, unit: 'percent' };
 
 /** Columns of peaks per lane. Enough to read a sixteenth at this width. */
 const COLUMNS = 900;
 
 /**
- * The fader's drawn length, which is the head minus its padding and the two
- * buttons.
+ * The fader's drawn length.
  *
  * A number rather than `layout="inside"`, and the difference is not cosmetic:
  * an inside row deliberately has no fill, because a parameter on a node row is
  * a *where* and a fill invents a left-hand side that means nothing. A fader is
- * the case that doc carves out — its own length is what it is saying — so it
- * wants the fill and the gearing that comes with a known length.
+ * the case that doc carves out — its own length is what it is saying.
  */
-const FADER = 96;
+const FADER = 46;
 
 /** Unity is 0.8, so a fader reads as trim either side of where it rests. */
 const trim = (volume: number): string => {
-  const db = (volume - 0.8) * 30;
-  return `${db > 0.05 ? '+' : ''}${db.toFixed(1)} dB`;
+  const db = Math.round((volume - 0.8) * 30);
+  return db === 0 ? '0' : `${db > 0 ? '+' : ''}${db}`;
 };
+
+const again = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+    <path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4h-4" />
+  </svg>
+);
 
 export function Lanes({ mix }: { mix: Mix }) {
   const sources = mix.song.separated;
 
   const peaks = useMemo(
-    () =>
-      Object.fromEntries(
-        sources.map((id) => [id, peaksFor(id, mix.song.id, BARS, COLUMNS)]),
-      ),
+    () => Object.fromEntries(sources.map((id) => [id, peaksFor(id, mix.song.id, BARS, COLUMNS)])),
     [sources, mix.song.id],
   );
 
-  const confident = mix.song.bpm % 2 === 0;
+  const onsets = useMemo(() => onsetsFor(sources, mix.song.id, BARS), [sources, mix.song.id]);
 
   return (
     <div className="mf-lanes">
-      <div className="mf-gridbar">
-        <span className="mf-cap">grid</span>
-        <span className="mf-gridbar-bpm">{mix.song.bpm.toFixed(2)} BPM</span>
-        <span className="mf-gridbar-conf" data-sure={confident || undefined}>
-          {confident ? 'confident' : 'check the downbeat'}
-        </span>
-        <span className="mf-rule" />
-        <span className="mf-gridbar-note">{mix.song.key} · {BARS} bars · {mix.song.format}</span>
-        <div className="mf-gridbar-gap" />
-        <Segmented
-          items={SNAP}
-          index={SNAP.indexOf(mix.snap)}
-          onChange={(next) => mix.setSnap(SNAP[next])}
-          label="Snap"
-          name="snap"
-          title="Where a slice point lands when you drag it"
-        />
-        <Button onPress={() => undefined} tone="quiet" title="Re-run detection and re-anchor the downbeats">
-          auto-warp
-        </Button>
-      </div>
+      {mix.manual && <ManualBar mix={mix} />}
 
-      <div className="mf-ruler">
-        <div className="mf-lane-head mf-ruler-head">
-          <span className="mf-cap">slices</span>
-          <span className="mf-hint">drag an edge</span>
-        </div>
-        <div className="mf-ruler-track">
-          {mix.slices.map((slice, i) => {
-            const next = mix.slices[i + 1]?.bar ?? BARS;
-            return (
-              <button
-                key={i}
-                type="button"
-                className="mf-slice"
-                data-on={i === mix.activeSlice || undefined}
-                style={{
-                  left: `${(slice.bar / BARS) * 100}%`,
-                  width: `${((next - slice.bar) / BARS) * 100}%`,
-                }}
-                onClick={() => mix.setActiveSlice(i)}
+      <div className="mf-band">
+        <div className="mf-head mf-band-head">
+          <div className="mf-band-top">
+            <span className="mf-cap">mix</span>
+            <div className="mf-band-actions">
+              <Button
+                onPress={mix.resetMix}
+                disabled={mix.touched === 0}
+                title="Return every stem to unity, unmuted, unsoloed"
               >
-                <span className="mf-slice-num">{i + 1}</span>
-                <span className="mf-slice-name">{slice.name}</span>
-              </button>
-            );
-          })}
+                Reset
+              </Button>
+              <Button
+                onPress={mix.separate}
+                label="Separate again"
+                title="Separate this song again, with a different model"
+                width={26}
+              >
+                {again}
+              </Button>
+            </div>
+          </div>
+          <div className="mf-band-bottom">
+            <span className="mf-band-audible">{mix.audibleLine}</span>
+            <span className="mf-band-model">{modelOf(mix.song.model).label}</span>
+          </div>
+        </div>
+
+        <div className="mf-band-track">
+          <div className="mf-ruler">
+            {mix.slices.map((slice, i) => {
+              const next = mix.slices[i + 1]?.bar ?? BARS;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className="mf-slice"
+                  data-on={i === mix.activeSlice || undefined}
+                  style={{
+                    left: `${(slice.bar / BARS) * 100}%`,
+                    width: `${((next - slice.bar) / BARS) * 100}%`,
+                  }}
+                  onClick={() => mix.setActiveSlice(i)}
+                  title={`${slice.name} — bar ${slice.bar + 1}, ${next - slice.bar} bars`}
+                >
+                  <span className="mf-slice-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="mf-slice-name">{slice.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          <WarpLane
+            onsets={onsets}
+            bars={BARS}
+            height={24}
+            anchors={mix.anchors}
+            onPin={mix.pin}
+            pinning={mix.manual !== null}
+          />
         </div>
       </div>
 
@@ -135,48 +144,42 @@ export function Lanes({ mix }: { mix: Mix }) {
               data-absent={!present || undefined}
               style={{ '--stem': stem.ink } as never}
             >
-              <div className="mf-lane-head">
-                <div className="mf-lane-name">
-                  <span className="mf-dot" />
-                  <span className="mf-lane-label">{stem.name}</span>
-                  <span className="mf-lane-db">
-                    {present ? trim(own.volume) : '—'}
-                  </span>
-                </div>
-                <div className="mf-lane-controls">
-                  <Toggle
-                    on={present && own.muted}
-                    onChange={(next) => mix.adjust(stem.id, { muted: next })}
-                    disabled={!present}
-                    label={`Mute ${stem.name}`}
-                    title="Mute"
-                    width={20}
-                  >
-                    M
-                  </Toggle>
-                  <Toggle
-                    on={present && own.soloed}
-                    onChange={(next) => mix.adjust(stem.id, { soloed: next })}
-                    disabled={!present}
-                    label={`Solo ${stem.name}`}
-                    title="Solo"
-                    width={20}
-                    className="mf-solo"
-                  >
-                    S
-                  </Toggle>
-                  <Slider
-                    param={LEVEL}
-                    value={own.volume}
-                    onChange={(next) => mix.adjust(stem.id, { volume: next })}
-                    disabled={!present}
-                    orientation="horizontal"
-                    length={FADER}
-                    showValue={false}
-                    label={`${stem.name} level`}
-                    className="mf-fader"
-                  />
-                </div>
+              <div className="mf-head mf-lane-head">
+                <span className="mf-dot" />
+                <span className="mf-lane-label">{stem.name}</span>
+                <Toggle
+                  on={present && own.muted}
+                  onChange={(next) => mix.adjust(stem.id, { muted: next })}
+                  disabled={!present}
+                  label={`Mute ${stem.name}`}
+                  title="Mute"
+                  width={18}
+                >
+                  M
+                </Toggle>
+                <Toggle
+                  on={present && own.soloed}
+                  onChange={(next) => mix.adjust(stem.id, { soloed: next })}
+                  disabled={!present}
+                  label={`Solo ${stem.name}`}
+                  title="Solo"
+                  width={18}
+                  className="mf-solo"
+                >
+                  S
+                </Toggle>
+                <Slider
+                  param={LEVEL}
+                  value={own.volume}
+                  onChange={(next) => mix.adjust(stem.id, { volume: next })}
+                  disabled={!present}
+                  orientation="horizontal"
+                  length={FADER}
+                  showValue={false}
+                  label={`${stem.name} level`}
+                  className="mf-fader"
+                />
+                <span className="mf-lane-db">{present ? trim(own.volume) : '—'}</span>
               </div>
               <div className="mf-lane-draw">
                 {present ? (
@@ -199,6 +202,43 @@ export function Lanes({ mix }: { mix: Mix }) {
           style={{ left: `calc(var(--lane-head) + (100% - var(--lane-head)) * ${mix.bar / BARS})` }}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The bar that appears while the grid is being set by hand.
+ *
+ * It exists because in this mode a click in a lane means something else, and a
+ * mode you cannot see is a mode that surprises you. Amber and pulsing at the
+ * top of the thing whose behaviour changed, with the way out on the same line.
+ */
+function ManualBar({ mix }: { mix: Mix }) {
+  const manual = mix.manual;
+  if (!manual) return null;
+  const step = manual.stage === 'first' ? 'step 1 / 2' : manual.stage === 'late' ? 'step 2 / 2' : 'tune';
+  const hint =
+    manual.stage === 'first'
+      ? 'Click the downbeat that starts bar 1'
+      : manual.stage === 'late'
+        ? 'Click a strong beat near the end'
+        : 'Nudge the reference, or click again where the song pushes';
+
+  return (
+    <div className="mf-manual">
+      <span className="mf-manual-step">{step}</span>
+      <span className="mf-manual-hint">{hint}</span>
+      <div className="mf-manual-nudge">
+        <Button onPress={() => mix.nudge(-1)} label="Earlier" title="Pull the reference 10 ms earlier" width={22}>
+          ◀
+        </Button>
+        <Button onPress={() => mix.nudge(1)} label="Later" title="Push the reference 10 ms later" width={22}>
+          ▶
+        </Button>
+      </div>
+      <Button onPress={mix.endManual} className="mf-primary">
+        Done
+      </Button>
     </div>
   );
 }

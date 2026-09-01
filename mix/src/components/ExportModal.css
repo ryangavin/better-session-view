@@ -10,6 +10,9 @@
 
 .mf-modal {
   width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -67,4 +70,109 @@
 .mf-modal-actions {
   display: flex;
   gap: 8px;
+}
+
+.mf-modal-slices {
+  border: 1px solid var(--bd2);
+  border-radius: var(--radius-md);
+  background: var(--rail);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.mf-modal-slice-head,
+.mf-modal-slice {
+  display: grid;
+  grid-template-columns: 24px 1fr 44px 34px;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 12px;
+}
+
+.mf-modal-slice-head {
+  position: sticky;
+  top: 0;
+  padding: 7px 12px;
+  background: var(--rail);
+  border-bottom: 1px solid var(--bd2);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--caption);
+}
+
+.mf-modal-slice-head span:nth-child(3),
+.mf-modal-slice-head span:nth-child(4) {
+  text-align: right;
+}
+
+.mf-modal-slice {
+  border-bottom: 1px solid var(--surface-cell-muted);
+  cursor: pointer;
+}
+
+.mf-modal-slice:hover {
+  background: var(--surface-cell-muted);
+}
+
+.mf-modal-slice[data-on] {
+  background: var(--sel);
+}
+
+.mf-modal-slice-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--detail);
+}
+
+.mf-modal-slice[data-on] .mf-modal-slice-num {
+  color: var(--amber);
+}
+
+.mf-modal-slice input {
+  width: 100%;
+  height: 22px;
+  padding: 0 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--ui);
+  font-family: var(--sans);
+  font-size: 11px;
+  outline: none;
+}
+
+.mf-modal-slice input:hover {
+  border-color: var(--bd3);
+}
+
+.mf-modal-slice input:focus {
+  border-color: var(--focus);
+  background: var(--surface-control);
+  color: var(--fg);
+}
+
+.mf-modal-slice-fact {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--detail);
+  text-align: right;
+}
+
+.mf-modal-tempo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mf-modal-path {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--caption);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

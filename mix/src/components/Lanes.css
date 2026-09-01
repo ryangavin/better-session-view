@@ -9,85 +9,81 @@
   flex: none;
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--caption);
 }
 
-.mf-rule {
+.mf-head {
   flex: none;
-  width: 1px;
-  height: 14px;
-  background: var(--bd);
+  width: var(--lane-head);
+  padding: 0 9px;
 }
 
-.mf-gridbar {
+.mf-band {
   flex: none;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 32px;
-  padding: 0 10px;
-  background: var(--rail);
+  height: 46px;
+  background: var(--surface-band);
   border-bottom: 1px solid var(--bd);
 }
 
-.mf-gridbar-bpm {
-  flex: none;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--fg);
+.mf-band-head {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
 }
 
-.mf-gridbar-conf {
-  flex: none;
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--amber);
+.mf-band-top,
+.mf-band-bottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
-.mf-gridbar-conf[data-sure] {
-  color: var(--green);
+.mf-band-top .mf-cap {
+  flex: 1;
 }
 
-.mf-gridbar-note {
-  flex: none;
+.mf-band-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mf-band-audible {
+  flex: 1;
+  min-width: 0;
   font-family: var(--mono);
   font-size: 9px;
   color: var(--detail);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.mf-gridbar-gap {
+.mf-band-model {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--caption);
+}
+
+.mf-band-track {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-left: 1px solid var(--bd);
 }
 
 .mf-ruler {
   flex: none;
-  display: flex;
-  height: 28px;
-  background: var(--rail);
-  border-bottom: 1px solid var(--bd);
-}
-
-.mf-lane-head.mf-ruler-head {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 0 9px;
-}
-
-.mf-hint {
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--idle);
-}
-
-.mf-ruler-track {
-  flex: 1;
+  height: 21px;
   position: relative;
-  border-left: 1px solid var(--bd);
-  min-width: 0;
+  border-bottom: 1px solid var(--sel);
 }
 
 .mf-slice {
@@ -96,8 +92,8 @@
   bottom: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding-left: 8px;
+  gap: 5px;
+  padding-left: 6px;
   border: none;
   border-right: 1px solid var(--bd);
   background: transparent;
@@ -133,6 +129,45 @@
   text-overflow: ellipsis;
 }
 
+.mf-warplane {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  cursor: text;
+}
+
+.mf-warplane[data-pinning] {
+  cursor: crosshair;
+}
+
+.mf-warplane canvas {
+  display: block;
+  width: 100%;
+}
+
+.mf-anchor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--amber);
+  pointer-events: none;
+}
+
+.mf-anchor i {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0 3px;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background: var(--amber);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
 .mf-lane-list {
   flex: 1;
   position: relative;
@@ -150,15 +185,6 @@
 }
 
 .mf-lane-head {
-  flex: none;
-  width: var(--lane-head);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 6px 9px;
-}
-
-.mf-lane-name {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -178,33 +204,34 @@
 
 .mf-lane-label {
   flex: 1;
+  min-width: 0;
   font-size: 12px;
   color: var(--ui);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mf-lane[data-absent] .mf-lane-label {
   color: var(--idle);
 }
 
-.mf-lane-db {
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--detail);
-}
-
-.mf-lane-controls {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.mf-lane-controls .mf-fader {
+.mf-lane-head .mf-fader {
   --wdg-fill: var(--stem);
   --wdg-track: 9px;
 }
 
-.mf-lane-controls .mf-solo.wdg-toggle-on {
+.mf-lane-head .mf-solo.wdg-toggle-on {
   --wdg-fill: var(--blue);
+}
+
+.mf-lane-db {
+  flex: none;
+  width: 20px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--detail);
+  text-align: right;
 }
 
 .mf-lane-draw {
@@ -236,4 +263,42 @@
   background: var(--amber);
   pointer-events: none;
   z-index: var(--layer-playhead);
+}
+
+.mf-manual {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 10px;
+  background: var(--surface-manual);
+  border-bottom: 1px solid var(--amber);
+}
+
+.mf-manual-step {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+  animation: mf-pulse 1.8s ease-in-out infinite;
+}
+
+.mf-manual-hint {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ui);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mf-manual-nudge {
+  flex: none;
+  display: inline-flex;
+  gap: 2px;
 }

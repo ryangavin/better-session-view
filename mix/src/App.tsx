@@ -1,29 +1,33 @@
 import { useEffect, useState } from 'react';
-import { Detail } from './components/Detail.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
 import { Header } from './components/Header.tsx';
 import { Idle } from './components/Idle.tsx';
 import { Lanes } from './components/Lanes.tsx';
 import { Library } from './components/Library.tsx';
 import { Running } from './components/Running.tsx';
-import { Status } from './components/Status.tsx';
 import { openflow, type Ready } from './openflow.ts';
 import { useMix } from './state.ts';
 import './App.css';
 
 /**
- * mix[flow]: a library on the left, the open track in the middle, what will be
- * written on the right.
+ * mix[flow]: a library on the left, the open track to the right of it, and one
+ * header across the top that says what is open and what can be done to it.
+ *
+ * The right rail is gone. What it carried has each found a better home — the
+ * track's name is in the header, the mix summary is in the band above the
+ * lanes, and the slice list is in the export dialog, which is the moment you
+ * actually name slices. What is left is two columns instead of three, and a
+ * lane that is nearly two hundred pixels wider for it.
  *
  * The middle is one of three things and never two: a track with no stems is a
  * choice of model, a track being separated is a progress report, and a track
  * with stems is the lanes. Nothing here is a tab, because they are states of
  * one track rather than views of it — you do not choose to be separating.
  *
- * **The lanes are a mockup and say so in the status bar.** The library, the
- * waveforms and the slices are invented in `mock.ts` and `peaks.ts`; the only
- * fact on screen that is real is whether this machine could separate anything,
- * which comes over the context bridge from `electron/demucs.ts`.
+ * **The lanes are a mockup.** The library, the waveforms and the slices are
+ * invented in `mock.ts` and `peaks.ts`; the only fact on screen that is real is
+ * whether this machine could separate anything, which comes over the context
+ * bridge from `electron/demucs.ts` and is silent in the header until it is not.
  */
 export function App() {
   const mix = useMix();
@@ -59,7 +63,7 @@ export function App() {
 
   return (
     <div className="mf-app">
-      <Header mix={mix} />
+      <Header mix={mix} ready={ready} />
       <main className="mf-body">
         <Library mix={mix} />
         <section className="mf-centre">
@@ -67,9 +71,7 @@ export function App() {
           {mix.phase === 'running' && <Running mix={mix} />}
           {mix.phase === 'ready' && <Lanes mix={mix} />}
         </section>
-        <Detail mix={mix} />
       </main>
-      <Status mix={mix} ready={ready} />
       {mix.exporting && <ExportModal mix={mix} />}
     </div>
   );

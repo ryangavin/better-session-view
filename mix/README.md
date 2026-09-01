@@ -10,8 +10,8 @@ npm run mix          # the app, on what is built
 npm run pack:mix     # a .app and a .dmg under release/mix/
 ```
 
-**The window is real; what is in it is a mockup.** The layout, the controls and the
-three states are built. The library, the waveforms and the slices are invented in
+**The window is real; what is in it is a mockup.** The layout, the controls, the three
+states, the grid and the export dialog are built. The library, the waveforms and the slices are invented in
 `src/mock.ts` and `src/peaks.ts`, and nothing separates anything yet — the one honest fact
 on screen is the demucs probe in the status bar.
 
@@ -32,7 +32,7 @@ on screen is the demucs probe in the status bar.
 | `electron/preload.ts` | one function across the context bridge |
 | `src/mock.ts`, `src/peaks.ts` | the invented library and the invented audio |
 | `src/state.ts` | everything the window knows, in one hook |
-| `src/components/` | the header, the two rails, the three states, the lanes |
+| `src/components/` | the header, the library, the three states, the lanes and the warp lane |
 
 Everything else — the frame it remembers, the scheme, the dev loop, the navigation
 policy, the updater, the icon, the packaging — is `@openflow/desktop` and

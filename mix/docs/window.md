@@ -3,9 +3,47 @@
 `mix/src/`. The layout, where the design language comes from, and which controls are
 `@openflow/widgets` rather than this app's.
 
-A library on the left, the open track in the middle, what will be written on the right.
-It came from an interactive mockup that had already read `set/src/shared.css`, so the
-tokens were ours before the layout was — what follows is where it deviated and why.
+A library on the left and the open track to the right of it, under one header. It came
+from an interactive mockup that had already read `set/src/shared.css`, so the tokens were
+ours before the layout was — what follows is where it deviated and why.
+
+**There is no right rail and no status bar**, and neither is a deletion so much as three
+things finding better homes. The track's name is in the header, where a window says what
+is open. The mix summary is in the band above the lanes, beside the buttons that change
+it. The slice list is in the export dialog, which is the moment anyone actually names a
+slice — a list that sat open all session was eight rows of chrome competing with the
+lanes for a job nobody was doing yet. Two columns instead of three buys the lanes nearly
+three hundred pixels, which is what they are for.
+
+## The header
+
+    [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ snap ⋯ Auto-warp │ Export
+
+Four groups, in the order they are read: what this is, what you are looking at, what you
+can do to it, where it goes. Three departures from the mockup, each one a thing the
+mockup was fighting:
+
+**The clock sits with the transport.** Between the wordmark and the buttons it read as
+part of the brand, and the one control it describes was two groups away.
+
+**Playback and the grid are separated by a rule, and both disappear unless the track has
+stems.** Every control was the same 22px outlined pill, so nothing said that play and
+snap belong to different subsystems — and in the two states where there is nothing to
+play they were all still there, dead. An idle header is a wordmark, a title and a
+disabled Export, which is the honest amount.
+
+**Nothing wraps.** The mockup is `flex-wrap` over a `min-height`, so a narrow window
+silently becomes two rows of chrome. Here the title is the only thing that gives, and it
+gives by ellipsis.
+
+One smaller thing worth keeping: `snap` is a leading label rather than a `Widget`
+caption. `Widget` puts captions *above*, which in a 34px bar makes that one control two
+rows tall in a line of things one row tall — and a ragged baseline is most of what
+"messy header" means.
+
+**The demucs probe is silent when it passes.** A green light that is always on is a
+thing you stop seeing; a red chip that appears is not. So there is no indicator at all
+until there is something wrong, and then it is a word.
 
 ## Three states, and never two
 
@@ -26,15 +64,42 @@ you can act on standing at a laptop; "the piano bleeds badly" is. The numbers th
 there — sources, and speed against the clock — are the two that change what you do next,
 and they come from the bench in `demucs/README.md`.
 
-## The lane head is 168px, and that is the whole layout
+## The lane head is 204px, and that is the whole layout
 
-Every lane's drawing starts at the same x, so a transient in the drums lines up with the
+Every row's drawing starts at the same x, so a transient in the drums lines up with the
 one in the bass. That is the only reason the head is a fixed width rather than a
-fraction, and it is why the slice ruler carries a head of its own that draws nothing.
+fraction, and it is why the band above the lanes carries a head of its own — it holds
+the mix summary and the two buttons that change it, and it exists as much to reserve
+that column as to say anything.
 
 Six lanes at 46px is the density that lets you *see* an arrangement — the eight-bar
 sections in `peaks.ts` are visible as blocks, and a fill in the last bar of eight is a
 single darker column you can point at.
+
+## The grid, and the two ways of setting it
+
+The band above the lanes is two strips over one timeline. The **slice ruler** is what you
+navigate by, and the **warp lane** underneath is where the grid meets the audio: bar
+lines are the grid's claim, ticks are what the audio actually did, and green ticks are
+the ones detection believes start a bar. When the green ones sit on the bright lines the
+grid is right; when they walk off them it is not. A tempo a fraction out does not look
+wrong at bar 2 and is unmistakable by bar 60, which is why this is full width rather than
+a detail view.
+
+`onsetsFor()` derives those ticks from the same peaks the lanes draw, which is not a
+shortcut — it is how detection works, and it means a tick always lines up with the
+transient below it. A warp lane that disagreed with the waveforms would be worse than no
+warp lane, because it would look like the grid was wrong.
+
+**Auto-warp** re-runs detection and pins both ends; a grid pinned at both ends cannot
+drift in the middle by more than the tempo is actually wrong by. **Manual** is two clicks
+far apart and then a nudge, and it gets a bar of its own at the top of the lanes because
+in that mode a click in a lane means something else. A mode you cannot see is a mode that
+surprises you.
+
+Bar numbers appear every eight bars, and only when eight bars is wide enough to hold one.
+Sixteen numbers in a 24px strip is a grey band, and the point of a number is to be
+countable from.
 
 ## What is a widget and what is not
 
@@ -46,7 +111,7 @@ single darker column you can point at.
 | loop, mute, solo | `Toggle` |
 | a stem's level | `Slider`, horizontal, with a length |
 | per-source progress | `Meter` |
-| the target tempo | `NumberField` |
+| the target tempo | `NumberField`, unfilled |
 | the waveform | **not a widget.** `components/Waveform.tsx` |
 
 **The fader takes a `length`, not `layout="inside"`,** and the difference is not
@@ -54,6 +119,11 @@ cosmetic. `widgets/docs/catalogue.md` explains that an inside row deliberately h
 fill, because a parameter on a node row is a *where* and a fill invents a left-hand side
 that means nothing. A fader is the case that doc carves out — its own length is what it
 is saying — so it wants the fill, and the drag gearing that comes with a known length.
+
+**The tempo field is `showFill={false}`,** for the same reason the fader is not an
+inside row. `NumberField` draws the value as a bar behind the text by default, which is
+right for a range that means *how much*. A tempo's does not: 124 of 60-to-200 is 46% of
+nothing, and it is the loudest thing in the row while carrying the least.
 
 **`Waveform` is not in `widgets/` yet, and that is the rule rather than an oversight.**
 The catalogue says a control moves into the library when the second caller arrives; that
@@ -93,13 +163,14 @@ anything, which comes over the context bridge from `electron/demucs.ts`. A windo
 mocked its own toolchain check would be a window you could not trust about anything.
 
 `state.ts` marks the single simulated behaviour — the job's progress — and everything
-else in it is real state doing its real job. Replacing the simulation means replacing one
+else in it is real state doing its real job, the manual grid included. Replacing the simulation means replacing one
 `useEffect`, because what feeds it is the shape the parser in
 [`demucs.md`](demucs.md) will have to produce.
 
 ## Vocabulary
 
-**A slice**, not a scene and not a cue. Both already mean something exact in Live: a
+**A slice**, not a scene and not a cue — including in the export dialog, where the
+mockup still called the column *cue*. Both already mean something exact in Live: a
 scene is a row you fire, a cue is a locator in the Arrangement, and this is neither — it
 is a cut this app made in a file it separated. The word has to survive contact with
 set[flow], where the other two are load-bearing.

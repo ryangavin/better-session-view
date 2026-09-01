@@ -9,12 +9,11 @@
   --stem-piano: var(--blue);
   --stem-other: var(--detail);
 
-  --rail-left: 262px;
-  --rail-right: 288px;
-  --lane-head: 168px;
-  --lane-h: 46px;
-  --lane-h-compact: 34px;
-  --lane-h-tall: 64px;
+  --surface-band: #0c0c0e;
+  --surface-manual: #17171c;
+
+  --rail-left: 258px;
+  --lane-head: 204px;
 
   --layer-playhead: 5;
   --layer-modal: 300;

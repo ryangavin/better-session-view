@@ -142,3 +142,46 @@ export function peaksFor(stem: string, song: string, bars: number, columns: numb
   }
   return out;
 }
+
+/** A moment the audio got suddenly louder, which is what a grid is fitted to. */
+export interface Onset {
+  /** Where it is, in bars. */
+  at: number;
+  /** 0 to 1. How much louder, relative to the loudest onset in the track. */
+  strength: number;
+  /** Whether detection thinks this one starts a bar. */
+  downbeat: boolean;
+}
+
+/**
+ * The onset envelope, derived from the same peaks the lanes draw.
+ *
+ * That is not a shortcut, it is how it actually works: detection sums the
+ * sources, differentiates, and keeps the rises. Doing it from the peaks rather
+ * than from a second invented signal means the ticks in the warp lane line up
+ * with the transients in the lanes below it — and a warp lane whose ticks
+ * disagreed with the waveforms would be worse than no warp lane, because it
+ * would look like the grid was wrong.
+ */
+export function onsetsFor(sources: readonly string[], song: string, bars: number): Onset[] {
+  const columns = bars * 16;
+  const summed = new Float32Array(columns);
+  for (const id of sources) {
+    const peaks = peaksFor(id, song, bars, columns);
+    for (let i = 0; i < columns; i++) summed[i] += peaks[i].max;
+  }
+
+  const out: Onset[] = [];
+  let loudest = 0;
+  for (let i = 1; i < columns; i++) {
+    const rise = summed[i] - summed[i - 1];
+    if (rise <= 0.04) continue;
+    const at = (i / columns) * bars;
+    // A sixteenth either side of a bar line is close enough to be one — the
+    // grid is what decides, not the audio.
+    const downbeat = Math.abs(at - Math.round(at)) < 1 / 32;
+    loudest = Math.max(loudest, rise);
+    out.push({ at, strength: rise, downbeat });
+  }
+  return out.map((o) => ({ ...o, strength: Math.min(1, o.strength / (loudest || 1)) }));
+}

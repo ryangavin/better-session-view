@@ -30,6 +30,29 @@ export interface Job {
   perStem: Record<string, number>;
 }
 
+/**
+ * Setting the grid by hand, which is two clicks and then a nudge.
+ *
+ * Detection gets the tempo right and the *phase* wrong often enough that a
+ * manual path is not a fallback so much as the other half of the feature: two
+ * points far apart pin both, and everything between them follows. The stage is
+ * what the bar at the top of the lanes is asking for.
+ */
+export interface Manual {
+  stage: 'first' | 'late' | 'tune';
+  /** Where bar 1 starts, in bars along the untouched timeline. */
+  first: number | null;
+  /** A strong beat near the end, likewise. */
+  late: number | null;
+}
+
+/** A point where the grid is pinned to the audio. */
+export interface Anchor {
+  /** Where it sits, in bars. */
+  at: number;
+  label: string;
+}
+
 const REST: Level = { volume: 0.8, muted: false, soloed: false };
 
 const levels = (): Record<string, Level> =>
@@ -55,8 +78,20 @@ export function useMix() {
   const [bar, setBar] = useState(0);
   const [job, setJob] = useState<Job | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [manual, setManual] = useState<Manual | null>(null);
+  const [anchors, setAnchors] = useState<Anchor[]>([]);
 
   const song = useMemo(() => songs.find((s) => s.id === selected) ?? songs[0], [songs, selected]);
+
+  // A grid belongs to one track. Carrying anchors across a selection would
+  // leave the next song pinned to the last one's downbeats.
+  const select = useCallback((id: string) => {
+    setSelected(id);
+    setAnchors([]);
+    setManual(null);
+    setBar(0);
+    setPlaying(false);
+  }, []);
 
   const phase: Phase = job ? 'running' : song.separated.length ? 'ready' : 'idle';
 
@@ -158,6 +193,61 @@ export function useMix() {
     setJob({ done: 0, stage: 'loading the model', perStem: {} });
   }, []);
 
+  /**
+   * Detection, re-run. The two anchors it drops are the ends rather than
+   * arbitrary points: a grid pinned at both ends cannot drift in the middle by
+   * more than the tempo is actually wrong by.
+   */
+  const autoWarp = useCallback(() => {
+    setAnchors([
+      { at: 0, label: '1' },
+      { at: BARS, label: String(BARS + 1) },
+    ]);
+    setManual(null);
+  }, []);
+
+  const startManual = useCallback(() => setManual({ stage: 'first', first: null, late: null }), []);
+  const endManual = useCallback(() => setManual(null), []);
+
+  /**
+   * A click in a lane means two different things, and which one is the whole
+   * reason the manual mode has a bar of its own saying so: normally it moves
+   * the playhead, and in manual mode it pins whichever point is being asked
+   * for.
+   */
+  const pin = useCallback(
+    (at: number) => {
+      if (!manual) {
+        setBar(at);
+        return;
+      }
+      if (manual.stage === 'first') {
+        setManual({ ...manual, stage: 'late', first: at });
+        setAnchors([{ at, label: '1' }]);
+        return;
+      }
+      const first = manual.first ?? 0;
+      setManual({ ...manual, stage: 'tune', late: at });
+      setAnchors([
+        { at: first, label: '1' },
+        { at, label: String(Math.max(2, Math.round(at - first) + 1)) },
+      ]);
+    },
+    [manual],
+  );
+
+  /** Ten milliseconds either way, which is the resolution a downbeat needs. */
+  const nudge = useCallback(
+    (direction: number) => {
+      setAnchors((was) =>
+        was.map((a, i) =>
+          i === was.length - 1 ? { ...a, at: a.at + (direction * 0.01 * targetBpm) / 240 } : a,
+        ),
+      );
+    },
+    [targetBpm],
+  );
+
   const cancel = useCallback(() => setJob(null), []);
 
   const adjust = useCallback((id: string, change: Partial<Level>) => {
@@ -175,6 +265,15 @@ export function useMix() {
     setBar(0);
   }, []);
 
+  /** `4/6 audible`, and whether a solo is what is doing it. */
+  const audibleLine = useMemo(() => {
+    const sources = song.separated;
+    if (!sources.length) return '';
+    const soloing = sources.some((id) => level[id]?.soloed);
+    const heard = sources.filter((id) => (soloing ? level[id]?.soloed : !level[id]?.muted)).length;
+    return `${heard}/${sources.length} audible${soloing ? ' · solo' : ''}`;
+  }, [song.separated, level]);
+
   const touched = useMemo(
     () =>
       STEMS.filter((s) => {
@@ -191,7 +290,7 @@ export function useMix() {
     song,
     phase,
     selected,
-    select: setSelected,
+    select,
     query,
     setQuery,
     model,
@@ -223,6 +322,14 @@ export function useMix() {
     cancel,
     exporting,
     setExporting,
+    manual,
+    startManual,
+    endManual,
+    anchors,
+    autoWarp,
+    pin,
+    nudge,
+    audibleLine,
   };
 }
 

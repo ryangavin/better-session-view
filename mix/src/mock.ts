@@ -17,8 +17,14 @@ export interface Stem {
   name: string;
   /** The CSS custom property this stem is painted with. */
   ink: string;
-  /** Three letters, for the library's badges. */
-  badge: string;
+  /**
+   * One letter, for the library's badge strip.
+   *
+   * Six three-letter badges is a second line of text on every row; six letters
+   * in a joined strip is a shape you read without reading — which is what a
+   * list of a hundred and thirty tracks needs it to be.
+   */
+  glyph: string;
 }
 
 /**
@@ -29,12 +35,12 @@ export interface Stem {
  * than a count.
  */
 export const STEMS: readonly Stem[] = [
-  { id: 'vocals', name: 'Vocals', ink: 'var(--stem-vocals)', badge: 'VOX' },
-  { id: 'drums', name: 'Drums', ink: 'var(--stem-drums)', badge: 'DRM' },
-  { id: 'bass', name: 'Bass', ink: 'var(--stem-bass)', badge: 'BAS' },
-  { id: 'guitar', name: 'Guitar', ink: 'var(--stem-guitar)', badge: 'GTR' },
-  { id: 'piano', name: 'Piano', ink: 'var(--stem-piano)', badge: 'PNO' },
-  { id: 'other', name: 'Other', ink: 'var(--stem-other)', badge: 'OTH' },
+  { id: 'vocals', name: 'Vocals', ink: 'var(--stem-vocals)', glyph: 'V' },
+  { id: 'drums', name: 'Drums', ink: 'var(--stem-drums)', glyph: 'D' },
+  { id: 'bass', name: 'Bass', ink: 'var(--stem-bass)', glyph: 'B' },
+  { id: 'guitar', name: 'Guitar', ink: 'var(--stem-guitar)', glyph: 'G' },
+  { id: 'piano', name: 'Piano', ink: 'var(--stem-piano)', glyph: 'P' },
+  { id: 'other', name: 'Other', ink: 'var(--stem-other)', glyph: 'O' },
 ];
 
 export const stemOf = (id: string): Stem => STEMS.find((s) => s.id === id) ?? STEMS[5];
