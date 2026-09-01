@@ -107,8 +107,11 @@ Three things differ from `npm run set`, all of them on purpose:
 `npm run pack:set` builds the renderer, the shell, an icon, and a `.app` plus a `.dmg`
 under `release/set/`. `npm run pack` does every app.
 
-`npm run install:apps` copies what that produced into `/Applications`, and `install:apps set`
-does this one alone. It **replaces** rather than merges — `ditto` into an existing bundle
+`npm run install:apps` copies what that produced into `/Applications/open[flow]`, and
+`install:apps set` does this one alone. The folder is so the three arrive as one suite
+rather than as three unrelated icons; installing also clears away the loose copy an earlier
+install left in `/Applications` itself, which would otherwise sit there as a second bundle
+of the same name for Spotlight and the Dock to choose between. It **replaces** rather than merges — `ditto` into an existing bundle
 leaves an old build's files inside the new one, and the app that launches is then neither
 version — and it refuses while the app is open, because deleting a running bundle is
 permitted and fails later, somewhere confusing. `OPENFLOW_APPS` moves the destination for a

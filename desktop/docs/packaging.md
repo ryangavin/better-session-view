@@ -91,8 +91,13 @@ actually reads.
 
 ## Installing
 
-`npm run install:apps` copies whatever is packed into `/Applications`, with
-`OPENFLOW_APPS` for a machine where that is not yours to write. It is deliberately not
+`npm run install:apps` copies whatever is packed into `/Applications/open[flow]`, with
+`OPENFLOW_APPS` for a machine where `/Applications` is not yours to write — it names the
+parent, and the `open[flow]` folder is made inside whatever it points at. The folder is the
+point: three bundles loose among everything else are three unrelated icons, and in one
+place they sort together and the Dock can hold them as a single stack. An install also
+clears out the loose copy an earlier one left directly in `/Applications`, so Spotlight is
+not offering two bundles of the same name. It is deliberately not
 the last step of `pack`: packing writes a build artifact, and putting it where the Dock
 and Spotlight will find it is a separate decision — one you want to make after a set
 rather than in the middle of one.
