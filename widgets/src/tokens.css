@@ -21,8 +21,12 @@
   --wdg-plate-selected: var(--bd, #262629);
   --wdg-radius: var(--radius-xs, 2px);
   --wdg-plate-radius: var(--radius-md, 4px);
-  --wdg-mono: var(--mono);
   --wdg-sans: var(--sans);
+  /* The cut, aliased like everything else here: a widget selects it through
+     the `--wdg-*` layer so an embedding host can redefine it, rather than
+     reaching past this file for the suite's own token. */
+  --wdg-mono-axes: var(--mono-axes);
+  --wdg-sans-axes: var(--sans-axes);
 
   --wdg-height: 17px;
   --wdg-field-height: 16px;

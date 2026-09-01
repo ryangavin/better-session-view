@@ -1,7 +1,7 @@
 @import './shared.css';
 
 .wdg-label-heading {
-  font-variation-settings: var(--mono-axes);
+  font-variation-settings: var(--wdg-mono-axes);
   letter-spacing: var(--track-caps);
   text-transform: uppercase;
 }

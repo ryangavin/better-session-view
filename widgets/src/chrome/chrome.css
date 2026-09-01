@@ -9,7 +9,7 @@
   background: var(--wdg-plate);
   color: var(--wdg-text);
   font-family: var(--wdg-sans);
-  font-variation-settings: var(--sans-axes);
+  font-variation-settings: var(--wdg-sans-axes);
 }
 
 .wdg-device-screen {
@@ -249,7 +249,7 @@
   border-radius: var(--wdg-radius);
   color: var(--wdg-caption);
   font-family: var(--wdg-sans);
-  font-variation-settings: var(--sans-axes);
+  font-variation-settings: var(--wdg-sans-axes);
   font-size: var(--text-control);
 }
 
@@ -328,7 +328,7 @@
   background: transparent;
   color: var(--wdg-text);
   font-family: var(--wdg-sans);
-  font-variation-settings: var(--sans-axes);
+  font-variation-settings: var(--wdg-sans-axes);
   font-size: var(--text-control);
   line-height: 1;
   text-align: left;
@@ -543,7 +543,7 @@
   overflow: hidden;
   color: var(--wdg-caption);
   font-family: var(--wdg-sans);
-  font-variation-settings: var(--sans-axes);
+  font-variation-settings: var(--wdg-sans-axes);
   font-size: var(--text-label);
   line-height: 1;
   white-space: nowrap;

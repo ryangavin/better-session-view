@@ -84,7 +84,7 @@
     var(--wdg-text-strong)
   );
   font-family: var(--wdg-sans);
-  font-variation-settings: var(--sans-axes);
+  font-variation-settings: var(--wdg-sans-axes);
   font-variant-numeric: tabular-nums;
   letter-spacing: normal;
   text-align: right;
@@ -273,7 +273,7 @@
 .wdg-caption,
 .wdg-label {
   font-family: var(--wdg-sans);
-  font-variation-settings: var(--sans-axes);
+  font-variation-settings: var(--wdg-sans-axes);
   font-size: var(--text-label);
   line-height: 1.2;
   color: var(--wdg-caption);
@@ -283,7 +283,7 @@
 
 .wdg-readout,
 .wdg-number-body {
-  font-variation-settings: var(--mono-axes);
+  font-variation-settings: var(--wdg-mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-tight);
   font-variant-numeric: tabular-nums;
@@ -294,7 +294,7 @@
 .wdg-select-body,
 .wdg-button-body {
   font-family: var(--wdg-sans);
-  font-variation-settings: var(--sans-axes);
+  font-variation-settings: var(--wdg-sans-axes);
   font-size: var(--text-control);
   cursor: pointer;
 }
