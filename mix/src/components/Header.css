@@ -117,6 +117,17 @@
   color: var(--ui);
 }
 
+.mf-fit {
+  padding: 0 7px;
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  color: var(--detail);
+}
+
+.mf-fit-none {
+  color: var(--amber-muted);
+}
+
 .mf-broken {
   display: inline-flex;
   align-items: center;

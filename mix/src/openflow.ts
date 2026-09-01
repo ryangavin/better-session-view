@@ -149,9 +149,6 @@ export const facts = (track: Track): string => {
   return [track.key, track.bpm].filter((f) => f !== null).join(' · ');
 };
 
-/** The tempo to work in. Undetected means 120 and a grid bar that says so. */
-export const workingBpm = (track: Track | null): number => track?.bpm ?? 120;
-
 /**
  * How long a separation will take, in seconds, or null when the length is not known.
  *

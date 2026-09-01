@@ -208,21 +208,23 @@ export interface Onset {
 }
 
 /**
- * Onsets, off the drums where there are drums and off everything where there
- * are not.
+ * How loud the track is per column, off the drums where there are drums and off
+ * everything where there are not.
  *
  * A separated mix makes this easier than it is on a mixdown, which is most of
  * the argument for detecting tempo *after* separating rather than before: the
  * thing a grid wants to line up with is the percussion, and here it arrives on
  * its own track with the pads and the vocal already taken off it.
  *
- * Rectified energy per short window, differentiated, and the rises kept. Not a
- * tempo — a tempo is what somebody fits to these.
+ * One function rather than the same three lines in two places, because *which
+ * lane detection listens to* is one decision. The strip that draws the ticks
+ * and the fit that places the bars have to be hearing the same thing, or the
+ * lane stops being evidence about the grid drawn over it.
  */
-export function onsetsOf(peaks: Record<string, readonly Peak[]>, seconds: number): Onset[] {
+export function energyOf(peaks: Record<string, readonly Peak[]>): Float32Array {
   const pick = peaks.drums ?? peaks.bass;
   const from = pick ? [pick] : Object.values(peaks);
-  if (from.length === 0 || from[0].length === 0) return [];
+  if (from.length === 0 || from[0].length === 0) return new Float32Array(0);
 
   const columns = from[0].length;
   const energy = new Float32Array(columns);
@@ -231,6 +233,19 @@ export function onsetsOf(peaks: Record<string, readonly Peak[]>, seconds: number
       energy[i] += Math.max(lane[i].max, -lane[i].min);
     }
   }
+  return energy;
+}
+
+/**
+ * The moments that energy rose.
+ *
+ * Rectified energy per short window, differentiated, and the rises kept. Not a
+ * tempo — a tempo is what `warp.ts` fits to these.
+ */
+export function onsetsOf(peaks: Record<string, readonly Peak[]>, seconds: number): Onset[] {
+  const energy = energyOf(peaks);
+  const columns = energy.length;
+  if (columns === 0) return [];
 
   const out: Onset[] = [];
   let loudest = 0;

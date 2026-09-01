@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Peak } from '../audio.ts';
 import { rankOf, ruleEvery, TICKS_PER_BAR, type Rank } from '../grid.ts';
+import type { Bars } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 
 /**
@@ -54,8 +55,15 @@ export interface WaveformProps {
    * told its pixel size in the end regardless.
    */
   height?: number;
-  /** Bars, for the beat grid behind it. Left out, nothing is drawn. */
-  bars?: number;
+  /**
+   * Where the bars fall on the file, for the grid behind the drawing. Left out,
+   * nothing is ruled.
+   *
+   * A map rather than a count, because a grid has a phase: a song with air in
+   * front of it starts on the second half of bar zero, and a lane told only how
+   * many bars there are can do nothing but start one at the left edge.
+   */
+  bars?: Bars;
   /**
    * Which slice of the track to draw, as fractions. The whole of it by default.
    *
@@ -181,23 +189,28 @@ export function Waveform({
       const left = from * track;
       const xOf = (fraction: number) => fraction * track - left;
 
-      if (bars) {
+      if (bars && bars.across > 0) {
         // As fine as there is room for, from bars down to sixty-fourths —
         // `grid.ts` picks the rung and says what each line is. Measuring
         // against the *zoomed* width is what makes zooming in hand back the
         // divisions it thinned: a song wide is bars, a bar wide is beats, and a
         // kick drum wide is whatever fits under it.
-        const ticks = bars * TICKS_PER_BAR;
+        //
+        // Counted in absolute ticks — bar 1 is tick zero wherever in the file
+        // it falls — so that what a line *is* does not change when the downbeat
+        // moves. `origin` is where the file starts in that counting.
+        const ticks = bars.across * TICKS_PER_BAR;
+        const origin = bars.origin * TICKS_PER_BAR;
         const step = ruleEvery(track / ticks);
         // Snapped down to the step so which lines are bright does not change as
         // the view moves under them. Neither end is clamped to the track:
         // zoomed out past the lane there is time on screen that is not in the
         // song, and the grid carries on through it — what says it is outside is
         // the shading over it, not a gap in the ruling.
-        const start = Math.floor((from * ticks) / step) * step;
-        const end = Math.ceil(to * ticks);
+        const start = Math.floor((from * ticks + origin) / step) * step;
+        const end = Math.ceil(to * ticks + origin);
         for (let t = start; t <= end; t += step) {
-          const x = Math.round(xOf(t / ticks)) + 0.5;
+          const x = Math.round(xOf((t - origin) / ticks)) + 0.5;
           ctx.strokeStyle = RULE[rankOf(t)];
           ctx.beginPath();
           ctx.moveTo(x, 0);

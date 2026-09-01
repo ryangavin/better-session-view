@@ -21,9 +21,11 @@ copied there on import, indexed by a manifest that makes the folder portable —
 writes float32 stems into that same folder with a sidecar describing them —
 [`docs/stems.md`](docs/stems.md). Those stems are then decoded, drawn and played:
 the waveforms are the audio, and the faders move it — [`docs/playback.md`](docs/playback.md).
-The window remembers itself across a reload. The slices are still eight evenly spaced
-spans with names, because nothing detects an arrangement yet, and the export button
-closes the dialog.
+The grid is measured too: `src/warp.ts` fits a tempo and a downbeat to the kick band of
+the separated drums, and a track opens gridded rather than ruled at 120 —
+[`docs/playback.md`](docs/playback.md). The window remembers itself across a reload.
+The slices are still eight evenly spaced spans with names, because nothing detects an
+arrangement yet, and the export button closes the dialog.
 
 **This is an index. Read the row you're changing.**
 
@@ -32,7 +34,7 @@ closes the dialog.
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
 | the layout, the colours, which lanes there are, or zooming the timeline | [`docs/window.md`](docs/window.md) — `src/`, and `src/zoom.ts` for the zoom |
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
-| playback, the mixer, the waveforms, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `remember.ts` |
+| playback, the mixer, the waveforms, the tempo fit, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `warp.ts`, `remember.ts` |
 | where the Python engine comes from, how it is installed, and the probe | [`docs/demucs.md`](docs/demucs.md) — `electron/runtime.ts`, `python/pyproject.toml`, `tools/prepare.ts` |
 | the window, packaging, or anything shared with the other apps | [`desktop/README.md`](../desktop/README.md) — there is no mix[flow] version of it, and that is the point |
 
@@ -56,6 +58,7 @@ closes the dialog.
 | `src/remember.ts` | what survives a reload, and what deliberately does not |
 | `src/mock.ts` | how a source is drawn, and the one invented thing left |
 | `src/zoom.ts` | how much of the track the lanes show, and which part |
+| `src/warp.ts` | where the bars fall, and the tempo and downbeat fitted to the kick. Tested |
 | `src/grid.ts` | how finely the grid rules at that zoom, and what each line is. Tested |
 | `src/state.ts` | everything the window knows, in one hook |
 | `src/components/` | the header, the library, the three states, the lanes and the warp lane |

@@ -33,6 +33,8 @@ export interface Remembered {
   at?: number;
   bpm?: number;
   bpmAuto?: boolean;
+  /** Seconds to the downbeat of bar 1. The other half of a grid. */
+  offset?: number;
 }
 
 export interface Session {

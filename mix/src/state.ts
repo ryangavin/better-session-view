@@ -13,6 +13,20 @@ import {
 import { REST, Transport, type Level } from './engine.ts';
 import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
 import {
+  barAt,
+  barsOf,
+  countOf,
+  fitOf,
+  hearing,
+  refitOf,
+  snapped,
+  FASTEST,
+  SLOWEST,
+  type Bars,
+  type Fit,
+  type Heard,
+} from './warp.ts';
+import {
   openflow,
   type Library,
   type Model,
@@ -51,15 +65,26 @@ export type Job = Progress;
 /**
  * Setting the grid by hand, which is two clicks and then a nudge.
  *
- * Detection gets the tempo right and the *phase* wrong often enough that a
- * manual path is not a fallback so much as the other half of the feature: two
- * points far apart pin both, and everything between them follows.
+ * A fit gets the tempo right and the *phase* wrong often enough that a manual
+ * path is not a fallback so much as the other half of the feature.
+ *
+ * **The two clicks are a counted span, not the two ends of the song.** Asking
+ * for the last downbeat is asking somebody to find bar 97 of a song they have
+ * not gridded yet, which is the one thing a person is worst at and a computer
+ * is best at. Counting *four* is what a person does without thinking. The
+ * accuracy that gives up is handed straight back by `refitOf`: the clicks say
+ * which beat and which downbeat are meant, and the same least-squares line over
+ * every kick in the track sets the tempo from there.
  */
 export interface Manual {
   stage: 'first' | 'late' | 'tune';
+  /** How many bars apart the two clicks are meant to be. */
+  span: number;
   first: number | null;
-  late: number | null;
 }
+
+/** The spans worth counting out. Four is the one nobody has to think about. */
+export const SPANS = [1, 2, 4, 8];
 
 /** A point where the grid is pinned to the audio. */
 export interface Anchor {
@@ -143,6 +168,25 @@ export function useMix() {
   const [snap, setSnap] = useState(kept.snap ?? '1/2');
   const [targetBpm, setTargetBpm] = useState(first.bpm ?? 120);
   const [bpmAuto, setBpmAuto] = useState(first.bpmAuto ?? true);
+  /** Seconds from the top of the file to the downbeat of bar 1. */
+  const [offset, setOffset] = useState(first.offset ?? 0);
+  /** The last fit, kept so the window can say where the tempo on screen came from. */
+  const [detected, setDetected] = useState<Fit | null>(null);
+  /**
+   * That the last attempt found nothing, which is not the same as not having
+   * tried. A button press with no visible answer reads as a broken button.
+   */
+  const [fitFailed, setFitFailed] = useState(false);
+  /**
+   * Whether this track is still owed a fit.
+   *
+   * Set when a track is opened that nothing has been decided about, and cleared
+   * by the first fit. It is what makes the grid arrive with the audio rather
+   * than after a button press: a track opens at its own tempo, not at 120.
+   * Anything remembered — a fit that was nudged, a tempo typed in — is a
+   * decision, and a decision is not re-taken behind somebody's back.
+   */
+  const [wantFit, setWantFit] = useState(first.bpm == null);
   const [playing, setPlaying] = useState(false);
   const [loop, setLoopState] = useState(kept.loop ?? true);
   /** Seconds from the top of the track. The one position everything else derives from. */
@@ -235,22 +279,33 @@ export function useMix() {
   const seconds = duration || song?.seconds || 0;
 
   /**
-   * The bar count, which is a *reading* of the audio rather than a property of
-   * it.
+   * Where the bars fall, which is a *reading* of the audio rather than a
+   * property of it.
    *
-   * The old window had 64 bars nailed down as a constant, which was fine while
-   * the audio was invented and is not once it is real: a track is however long
-   * it is, and the grid over it is whatever tempo somebody claims. Change the
-   * tempo and this changes with it, which is the whole point of the warp lane
-   * underneath — the ticks stop lining up.
+   * Two numbers, not one. A tempo says how long a bar is and the offset says
+   * where the first one starts, and a grid missing either is a grid that cannot
+   * be made right: no tempo fixes a song with a quarter-second of air in front
+   * of it, because every line is that quarter second late for the whole song.
+   * Change either and this changes with it, which is the whole point of the
+   * warp lane underneath — the ticks stop lining up.
    */
-  const bars = useMemo(
-    () => (seconds > 0 ? Math.max(1, Math.ceil((seconds * targetBpm) / 240)) : BARS_UNKNOWN),
-    [seconds, targetBpm],
+  const grid = useMemo<Bars>(
+    () => (seconds > 0 ? barsOf(seconds, targetBpm, offset) : { origin: 0, across: BARS_UNKNOWN }),
+    [seconds, targetBpm, offset],
   );
 
+  /**
+   * How many bars the song holds, counting bar 1 as the first.
+   *
+   * A count, and nothing rules with it — the lanes rule from `grid`. It used to
+   * be both, and being both is what quietly rounded the tempo: a count is a
+   * `ceil`, so a two-hundred-second track at 128 was drawn as 107 bars and
+   * therefore ruled at 128.4.
+   */
+  const bars = useMemo(() => countOf(grid), [grid]);
+
   /** The head, in bars, for the clock and the playhead. */
-  const bar = seconds > 0 ? (position / seconds) * bars : 0;
+  const bar = seconds > 0 ? barAt(grid, position / seconds) : 0;
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -469,6 +524,22 @@ export function useMix() {
   const audioOf = useCallback((id: string): AudioBuffer | null => audio.stem(id), [audio]);
 
   /**
+   * The envelopes a fit is made from, worked out once per track.
+   *
+   * Walking a stem is tens of millions of samples — nothing beside decoding it,
+   * and everything beside a click, which is what the hand path does four times
+   * a minute. Keyed on the buffer itself rather than on the track's id, because
+   * the buffer is what it is made of: a track separated again is a new buffer
+   * under the same id.
+   */
+  const heard = useRef<{ of: unknown; it: Heard | null }>({ of: null, it: null });
+  const listen = useCallback((): Heard | null => {
+    const of = audioOf('drums') ?? audioOf('bass') ?? peaks;
+    if (heard.current.of !== of) heard.current = { of, it: hearing(peaks, seconds, audioOf) };
+    return heard.current.it;
+  }, [audioOf, peaks, seconds]);
+
+  /**
    * The mix, pushed into the graph.
    *
    * Every change, because a fader drag is a change per frame and the ramp in
@@ -527,6 +598,7 @@ export function useMix() {
           at: audio.at(),
           bpm: targetBpm,
           bpmAuto,
+          offset,
         });
         remember(held.current);
       }
@@ -535,6 +607,8 @@ export function useMix() {
       setSelected(id);
       setAnchors([]);
       setManual(null);
+      setDetected(null);
+      setFitFailed(false);
       const known = forTrack(held.current, id);
       setPosition(known.at ?? 0);
       setLevel(known.levels ? { ...levels(), ...known.levels } : levels());
@@ -544,8 +618,12 @@ export function useMix() {
       const picked = tracks.find((t) => t.id === id);
       setTargetBpm(known.bpm ?? picked?.bpm ?? 120);
       setBpmAuto(known.bpmAuto ?? (picked?.bpm != null));
+      setOffset(known.offset ?? 0);
+      // Nothing written down about this track, so its grid is still to be
+      // measured — and it will be, as soon as there are stems to measure.
+      setWantFit(known.bpm == null);
     },
-    [tracks, audio, song, selected, level, slices, targetBpm, bpmAuto],
+    [tracks, audio, song, selected, level, slices, targetBpm, bpmAuto, offset],
   );
 
   /**
@@ -648,16 +726,88 @@ export function useMix() {
     audio.setLoop(loop);
   }, [audio, loop, peaks]);
 
-  const autoWarp = useCallback(() => {
-    setAnchors([
-      { at: 0, label: '1' },
-      { at: bars, label: String(bars + 1) },
-    ]);
-    setManual(null);
-  }, [bars]);
+  /**
+   * Take the grid from the audio: `warp.ts` fits a tempo and a downbeat to the
+   * drums, and both are applied.
+   *
+   * The anchors it drops are bar 1 and the last bar, which is a claim it is now
+   * entitled to make — a straight line fitted to every hit in the song is
+   * pinned at both ends by construction, so it cannot be drifting in the middle
+   * by more than it is wrong at the ends. Before this they were two marks on a
+   * grid nothing had measured.
+   *
+   * A refusal is left visible rather than being turned into a guess. There is
+   * no tempo that is honest about a track with nothing steady in it, and 120
+   * dressed up as a reading is worse than the window saying it could not find
+   * one.
+   */
+  const fit = useCallback(
+    (found: Fit | null) => {
+      setWantFit(false);
+      setDetected(found);
+      setFitFailed(found === null);
+      if (!found) return;
+      setTargetBpm(found.bpm);
+      setOffset(found.offset);
+      setBpmAuto(true);
+      setManual(null);
+      const held = countOf(barsOf(seconds, found.bpm, found.offset));
+      setAnchors([
+        { at: 0, label: '1' },
+        { at: held - 1, label: String(held) },
+      ]);
+    },
+    [seconds],
+  );
 
-  const startManual = useCallback(() => setManual({ stage: 'first', first: null, late: null }), []);
+  const autoWarp = useCallback(() => {
+    const it = listen();
+    fit(it ? fitOf(it) : null);
+  }, [fit, listen]);
+
+  /**
+   * A tempo somebody set, which is a different thing from one that was
+   * measured — so the fit stops being on screen along with it.
+   *
+   * The agreement beside Auto-warp describes the grid the fit produced. Left up
+   * while the tempo is dragged, it would be a percentage about a grid that is
+   * no longer there, which is the one kind of readout worse than none.
+   */
+  const setTempo = useCallback((bpm: number) => {
+    setTargetBpm(bpm);
+    setBpmAuto(false);
+    setDetected(null);
+    setFitFailed(false);
+    setWantFit(false);
+  }, []);
+
+  /**
+   * The fit a freshly opened track gets without being asked.
+   *
+   * It costs a few milliseconds and it is the difference between lanes that
+   * arrive gridded and lanes ruled at 120 over a song at 128 — which is not a
+   * neutral default so much as a wrong answer nobody asked for. It runs once
+   * per track and only where nothing has been decided; `wantFit` is what says
+   * so, and pressing Auto-warp is how you ask for it again.
+   */
+  useEffect(() => {
+    if (!wantFit || decoding || seconds <= 0) return;
+    if (Object.keys(peaks).length === 0) return;
+    const it = listen();
+    fit(it ? fitOf(it) : null);
+  }, [wantFit, decoding, peaks, seconds, fit, listen]);
+
+  const startManual = useCallback(
+    () => setManual((was) => ({ stage: 'first', span: was?.span ?? 4, first: null })),
+    [],
+  );
   const endManual = useCallback(() => setManual(null), []);
+
+  /** How many bars the two clicks are to be apart, changed mid-count if need be. */
+  const setSpan = useCallback(
+    (span: number) => setManual((was) => (was ? { ...was, span } : was)),
+    [],
+  );
 
   /**
    * A click in the warp lane: place a grid point, or move the head.
@@ -665,38 +815,73 @@ export function useMix() {
    * Outside manual mode it is a scrub, which is what a click on a timeline
    * means everywhere else and is the reason this is one handler rather than two
    * overlapping strips.
+   *
+   * It arrives as a fraction of the file rather than as a bar, because a bar is
+   * what the click is *about to change*: reading one off the grid the click is
+   * correcting and then converting it back would put the old grid inside the
+   * new one.
    */
   const pin = useCallback(
-    (at: number) => {
+    (place: number) => {
+      const at = place * seconds;
       if (!manual) {
-        seek(bars > 0 ? (at / bars) * seconds : 0);
+        seek(at);
         return;
       }
       if (manual.stage === 'first') {
         setManual({ ...manual, stage: 'late', first: at });
-        setAnchors([{ at, label: '1' }]);
+        setOffset(at);
+        setDetected(null);
+        setFitFailed(false);
+        setWantFit(false);
+        setAnchors([{ at: 0, label: '1' }]);
         return;
       }
-      const first = manual.first ?? 0;
-      setManual({ ...manual, stage: 'tune', late: at });
+
+      // Two clicks a counted number of bars apart are a tempo. The measurement
+      // is then snapped to a whole number if it is within three quarters of
+      // one — produced music is written at whole numbers, and over four bars a
+      // click twenty milliseconds out is a third of a BPM, so the integer is
+      // very nearly always the better reading of what somebody meant.
+      const from = manual.first ?? 0;
+      if (at <= from + 0.05) return;
+      const measured = snapped((240 * manual.span) / (at - from), 0.75);
+      if (measured < SLOWEST || measured > FASTEST) return;
+
+      // And then the audio is asked to do the precision. What the hand supplied
+      // is the octave and the phase, which is the half a fit gets wrong; a line
+      // through every kick in the song is the half it gets right.
+      const it = listen();
+      const refined = it ? refitOf(it, measured, from) : null;
+
+      setManual({ ...manual, stage: 'tune' });
+      setTargetBpm(refined ? refined.bpm : measured);
+      setOffset(refined ? refined.offset : from);
+      setBpmAuto(false);
+      setWantFit(false);
+      setFitFailed(false);
+      setDetected(refined);
       setAnchors([
-        { at: first, label: '1' },
-        { at, label: String(Math.max(2, Math.round(at - first) + 1)) },
+        { at: 0, label: '1' },
+        { at: manual.span, label: String(manual.span + 1) },
       ]);
     },
-    [manual, bars, seconds, seek],
+    [manual, seconds, seek, listen],
   );
 
-  const nudge = useCallback(
-    (direction: number) => {
-      setAnchors((was) =>
-        was.map((a, i) =>
-          i === was.length - 1 ? { ...a, at: a.at + (direction * 0.01 * targetBpm) / 240 } : a,
-        ),
-      );
-    },
-    [targetBpm],
-  );
+  /**
+   * Move the whole grid ten milliseconds, keeping the tempo.
+   *
+   * The downbeat is the half of a grid that a detector gets wrong while getting
+   * the other half right — a fit locked onto the snare is the right tempo and a
+   * bar line in the wrong place — and this is the fastest way out of that. It
+   * moves bar 1 rather than an anchor, because an anchor that could be dragged
+   * off the grid it is marking would be a second, competing claim.
+   */
+  const nudge = useCallback((direction: number) => {
+    setOffset((was) => was + direction * 0.01);
+    setDetected(null);
+  }, []);
 
   const adjust = useCallback((id: string, change: Partial<Level>) => {
     setLevel((was) => ({ ...was, [id]: { ...(was[id] ?? REST), ...change } }));
@@ -746,10 +931,10 @@ export function useMix() {
     if (seconds <= 0) return [];
     const found: Onset[] = onsetsOf(coarse, seconds);
     return found.map((onset) => {
-      const at = (onset.at / seconds) * bars;
+      const at = barAt(grid, onset.at / seconds);
       return { at, strength: onset.strength, downbeat: Math.abs(at - Math.round(at)) < 1 / 32 };
     });
-  }, [coarse, seconds, bars]);
+  }, [coarse, seconds, grid]);
 
   /** `4/6 audible`, and whether a solo is what is doing it. */
   const audibleLine = useMemo(() => {
@@ -806,6 +991,7 @@ export function useMix() {
           at: audio.at(),
           bpm: targetBpm,
           bpmAuto,
+          offset,
         });
       }
       held.current = next;
@@ -824,6 +1010,7 @@ export function useMix() {
     slicesAuto,
     targetBpm,
     bpmAuto,
+    offset,
     playing,
     audio,
   ]);
@@ -861,9 +1048,14 @@ export function useMix() {
     snap,
     setSnap,
     targetBpm,
-    setTargetBpm,
+    setTempo,
     bpmAuto,
-    setBpmAuto,
+    /** Seconds from the top of the file to the downbeat of bar 1. */
+    offset,
+    /** The last fit, or null where nothing has been measured or the fit failed. */
+    detected,
+    /** The last attempt found nothing steady, as against not having been asked. */
+    fitFailed,
     playing,
     setPlaying: start,
     loop,
@@ -873,6 +1065,8 @@ export function useMix() {
     seek,
     /** Seconds, from the audio if it is decoded and from the manifest if it is not. */
     seconds,
+    /** Where the bars fall on the file. Everything on the timeline maps through it. */
+    grid,
     bars,
     bar,
     peaks,
@@ -894,6 +1088,7 @@ export function useMix() {
     manual,
     startManual,
     endManual,
+    setSpan,
     anchors,
     autoWarp,
     pin,

@@ -10,6 +10,7 @@
   --stem-other: var(--detail);
 
   --surface-band: #0c0c0e;
+  --surface-lane-head: #121215;
   /*
    * Over the lanes, where the view is showing time the song does not reach.
    *

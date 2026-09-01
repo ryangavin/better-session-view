@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { rankOf, ruleEvery, TICKS_PER_BAR } from '../grid.ts';
+import { placeOf, type Bars } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 /**
  * An onset placed in bar space, which is the grid's claim about it rather than
@@ -26,11 +27,13 @@ interface Onset {
  */
 export interface WarpLaneProps {
   onsets: readonly Onset[];
-  bars: number;
+  /** Where the bars fall on the file: bar 1 may be anywhere in it. */
+  bars: Bars;
   height: number;
-  /** Where the user has pinned the grid, in bars. */
+  /** Where the grid is pinned, in bars. */
   anchors: readonly { at: number; label: string }[];
-  onPin?(at: number): void;
+  /** A click, as a fraction of the file. */
+  onPin?(place: number): void;
   /** Manual mode: the pointer is placing a point rather than scrubbing. */
   pinning?: boolean;
   /**
@@ -92,12 +95,14 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       // pixels is not a grid, it is a grey wash with a tick rate — and not
       // clamped to the track at either end, because zoomed out there is time on
       // screen that is not in the song and the grid runs through it.
-      const ticks = bars * TICKS_PER_BAR;
+      if (!(bars.across > 0)) return;
+      const ticks = bars.across * TICKS_PER_BAR;
+      const origin = bars.origin * TICKS_PER_BAR;
       const step = ruleEvery(track / ticks);
-      const first = Math.floor((from * ticks) / step) * step;
-      const last = Math.ceil(to * ticks);
+      const first = Math.floor((from * ticks + origin) / step) * step;
+      const last = Math.ceil(to * ticks + origin);
       for (let t = first; t <= last; t += step) {
-        const x = Math.round(xOf(t / ticks)) + 0.5;
+        const x = Math.round(xOf((t - origin) / ticks)) + 0.5;
         const rank = rankOf(t);
         const whole = rank === 'phrase' || rank === 'bar';
         ctx.fillStyle = whole ? barLine : beat;
@@ -106,7 +111,7 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       }
 
       for (const onset of onsets) {
-        const place = onset.at / bars;
+        const place = placeOf(bars, onset.at);
         if (place < from || place > to) continue;
         const x = xOf(place);
         ctx.globalAlpha = onset.downbeat ? 0.25 + 0.6 * onset.strength : 0.16 + 0.5 * onset.strength;
@@ -124,8 +129,9 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       // A four-minute track has a hundred and change of them and the old fixed
       // eight would have printed sixteen numbers into a 24px strip.
       let every = 8;
-      while ((every / bars) * track < 34 && every < bars) every *= 2;
-      if ((every / bars) * track > 34) {
+      const whole = bars.across;
+      while ((every / whole) * track < 34 && every < whole) every *= 2;
+      if ((every / whole) * track > 34) {
         ctx.font = '500 9px ui-monospace, Menlo, monospace';
         ctx.fillStyle = caption;
         ctx.textBaseline = 'top';
@@ -133,9 +139,9 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
         // bar 1 into 0, -7, -15 — an arrangement's way of saying *before the
         // start*. It is the numbers that make the shaded region legible as
         // somewhere rather than as a margin.
-        const start = Math.floor((from * bars) / every) * every;
-        for (let b = start; b < to * bars + every; b += every) {
-          ctx.fillText(String(b + 1), xOf(b / bars) + 4, 3);
+        const start = Math.floor((from * whole + bars.origin) / every) * every;
+        for (let b = start; b < to * whole + bars.origin + every; b += every) {
+          ctx.fillText(String(b + 1), xOf(placeOf(bars, b)) + 4, 3);
         }
       }
     };
@@ -150,7 +156,7 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
     if (!onPin) return;
     const box = event.currentTarget.getBoundingClientRect();
     const across = (event.clientX - box.left) / box.width;
-    onPin((from + across * (to - from)) * bars);
+    onPin(from + across * (to - from));
   };
 
   return (
@@ -166,7 +172,7 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
         // pin at the far end of the song is a `left` in the millions of per
         // cent, and the browser is being asked to lay out something nobody can
         // see.
-        const where = (anchor.at / bars - from) / (to - from);
+        const where = (placeOf(bars, anchor.at) - from) / (to - from);
         if (where < -0.5 || where > 1.5) return null;
         return (
           <span

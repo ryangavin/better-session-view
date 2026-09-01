@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
+import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Slider } from '@openflow/widgets/controls/Slider.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Peak } from '../audio.ts';
 import { STEMS } from '../mock.ts';
-import type { Mix } from '../state.ts';
+import { SPANS, type Mix } from '../state.ts';
+import { placeOf } from '../warp.ts';
 import { factorOf, limitOf, shows, spanOf, useView } from '../zoom.ts';
 import { Waveform } from './Waveform.tsx';
 import { WarpLane } from './WarpLane.tsx';
@@ -62,18 +64,17 @@ const trim = (volume: number): string => {
 };
 
 /**
- * A wheel's movement in pixels, whatever unit the mouse reported it in.
+ * What one unit of a wheel's movement is worth in pixels.
  *
  * A trackpad sends pixels and most wheels send lines — three of them per
  * detent, which through the zoom curve is a factor of 1.007 and reads as a
  * control that does not work.
  */
-const pixels = (event: WheelEvent): number => {
-  const raw = event.deltaY || event.deltaX;
-  if (event.deltaMode === 1) return raw * 16;
-  if (event.deltaMode === 2) return raw * 400;
-  return raw;
-};
+const unit = (event: WheelEvent): number =>
+  event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1;
+
+/** A wheel's movement in pixels, whichever axis it came down. */
+const pixels = (event: WheelEvent): number => (event.deltaY || event.deltaX) * unit(event);
 
 /**
  * How much of the song is on screen, as a length of time.
@@ -110,7 +111,7 @@ const again = (
 export function Lanes({ mix }: { mix: Mix }) {
   const song = mix.song;
   const sources = song?.sources ?? [];
-  const bars = mix.bars;
+  const grid = mix.grid;
 
   /**
    * How far this song goes, which depends on the song: the bottom of the zoom
@@ -123,6 +124,16 @@ export function Lanes({ mix }: { mix: Mix }) {
 
   /** The whole thing, because the gesture works over the heads as well. */
   const root = useRef<HTMLDivElement | null>(null);
+  /** The lane list, asked one question: has it anywhere of its own to scroll. */
+  const list = useRef<HTMLDivElement | null>(null);
+  /**
+   * How far in the view is, for the wheel handler.
+   *
+   * A ref rather than a dependency: the zoom changes on every wheel tick, and a
+   * listener re-registered on every tick is a listener that misses ticks.
+   */
+  const depth = useRef(view.zoom);
+  depth.current = view.zoom;
   /**
    * The timeline, for geometry only.
    *
@@ -133,7 +144,7 @@ export function Lanes({ mix }: { mix: Mix }) {
   const timeline = useRef<HTMLDivElement | null>(null);
 
   /**
-   * Shift- or ⌘-scroll zooms, and a sideways scroll pans.
+   * Shift- or ⌘-scroll zooms, and everything else moves along the song.
    *
    * A native listener rather than `onWheel`, and that is the whole reason this
    * is an effect: React registers wheel handlers passively, so `preventDefault`
@@ -145,9 +156,17 @@ export function Lanes({ mix }: { mix: Mix }) {
    * with them for free and is worth having twice over — it is the modifier on
    * Windows and Linux, and it is also what a trackpad pinch arrives as.
    *
-   * A plain vertical wheel is left alone. The lane list scrolls, and a window
-   * that hijacks the scroll wheel to do something else is a window you cannot
-   * scroll.
+   * **A plain vertical wheel moves along the song**, scrolling down to go back
+   * and up to go on. Once you are zoomed in far enough for the lanes to be
+   * worth reading, moving along them is the thing you do constantly and a
+   * modifier on every one of those is a modifier held down all day.
+   *
+   * It only takes the wheel where there is somewhere to take it. Fitted or
+   * zoomed out there is nothing to the left or right of what is on screen, so
+   * the wheel goes back to being the page's — and so it does whenever the lane
+   * list has scrolling of its own to do, which is a short window with six
+   * stems in it. A window that hijacks the scroll wheel and leaves you unable
+   * to reach a row is worse than one that never took it.
    */
   useEffect(() => {
     const el = root.current;
@@ -165,8 +184,14 @@ export function Lanes({ mix }: { mix: Mix }) {
       // movement is one window's worth of track, at any zoom.
       if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
         event.preventDefault();
-        panBy(event.deltaX / box.width);
+        panBy((event.deltaX * unit(event)) / box.width);
+        return;
       }
+      if (depth.current <= 1) return;
+      const rows = list.current;
+      if (rows && rows.scrollHeight > rows.clientHeight + 1) return;
+      event.preventDefault();
+      panBy((-event.deltaY * unit(event)) / box.width);
     };
     el.addEventListener('wheel', wheel, { passive: false });
     return () => el.removeEventListener('wheel', wheel);
@@ -245,9 +270,9 @@ export function Lanes({ mix }: { mix: Mix }) {
           <Outside opens={opens} closes={closes} />
           <div className="mf-ruler">
             {mix.slices.map((slice, i) => {
-              const next = mix.slices[i + 1]?.bar ?? bars;
-              const starts = shows(view, slice.bar / bars);
-              const ends = shows(view, next / bars);
+              const next = mix.slices[i + 1]?.bar ?? mix.bars;
+              const starts = shows(view, placeOf(grid, slice.bar));
+              const ends = shows(view, placeOf(grid, next));
               if (ends < -OFF || starts > 1 + OFF) return null;
               const left = Math.max(starts, -OFF);
               return (
@@ -271,7 +296,7 @@ export function Lanes({ mix }: { mix: Mix }) {
           </div>
           <WarpLane
             onsets={mix.onsets}
-            bars={bars}
+            bars={grid}
             height={24}
             anchors={mix.anchors}
             onPin={mix.pin}
@@ -281,14 +306,18 @@ export function Lanes({ mix }: { mix: Mix }) {
         </div>
       </div>
 
-      <div className="mf-lane-list">
+      <div className="mf-lane-list" ref={list}>
         {lanes.map((stem) => {
           const own = mix.level[stem.id];
           const heard = mix.audible(stem.id);
           return (
-            <div key={stem.id} className="mf-lane" style={{ '--stem': stem.ink } as never}>
+            <div
+              key={stem.id}
+              className="mf-lane"
+              data-quiet={!heard || undefined}
+              style={{ '--stem': stem.ink } as never}
+            >
               <div className="mf-head mf-lane-head">
-                <span className="mf-dot" />
                 <span className="mf-lane-label">{stem.name}</span>
                 <Toggle
                   on={own.muted}
@@ -338,7 +367,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                   buffer={mix.peaks[stem.id] ? mix.audioOf(stem.id) : null}
                   ink={`var(--stem-${stem.id})`}
                   quiet={!heard}
-                  bars={bars}
+                  bars={grid}
                   span={span}
                   onSeek={(fraction) => mix.seek(fraction * mix.seconds)}
                 />
@@ -408,21 +437,38 @@ function Outside({ opens, closes, inset }: { opens: number; closes: number; inse
  * It exists because in this mode a click in a lane means something else, and a
  * mode you cannot see is a mode that surprises you. Amber and pulsing at the
  * top of the thing whose behaviour changed, with the way out on the same line.
+ *
+ * **What it asks for is a counted span, not the two ends of the song.** Finding
+ * bar 97 of a song nobody has gridded yet is the one thing a person is worst at;
+ * counting four bars is a thing they do without thinking. The precision that
+ * gives up comes straight back — `state.ts` seeds a fit with the two clicks and
+ * lets a line through every kick in the track set the tempo.
  */
 function ManualBar({ mix }: { mix: Mix }) {
   const manual = mix.manual;
   if (!manual) return null;
   const step = manual.stage === 'first' ? 'step 1 / 2' : manual.stage === 'late' ? 'step 2 / 2' : 'tune';
+  const later = `${manual.span} bar${manual.span === 1 ? '' : 's'} later`;
   const hint =
     manual.stage === 'first'
       ? 'Click the downbeat that starts bar 1'
       : manual.stage === 'late'
-        ? 'Click a strong beat near the end'
-        : 'Nudge the reference, or click again where the song pushes';
+        ? `Now click the downbeat ${later} — count it out`
+        : `Nudge bar 1 ten milliseconds either way, or click the downbeat ${later} again`;
 
   return (
     <div className="mf-manual">
       <span className="mf-manual-step">{step}</span>
+      <span className="mf-manual-count">
+        <span className="mf-cap">count</span>
+        <Segmented
+          items={SPANS.map(String)}
+          index={SPANS.indexOf(manual.span)}
+          onChange={(next) => mix.setSpan(SPANS[next])}
+          label="How many bars to count"
+          title="How many bars apart the two clicks are"
+        />
+      </span>
       <span className="mf-manual-hint">{hint}</span>
       <div className="mf-manual-nudge">
         <Button onPress={() => mix.nudge(-1)} label="Earlier" title="Pull the reference 10 ms earlier" width={22}>

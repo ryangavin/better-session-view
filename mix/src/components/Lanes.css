@@ -180,31 +180,19 @@
   min-height: 0;
 }
 
-/*
- * The lanes share the height, however many of them there are: a four-source
- * separation gets the room a six-source one would have used rather than four
- * rows and a hole. 46px is the floor — the density an arrangement is legible
- * at — and once the lanes hit it the list scrolls instead.
- */
 .mf-lane {
   display: flex;
   flex: 1 1 0;
   min-height: 46px;
-  border-bottom: 1px solid var(--surface-cell-muted);
+  border-bottom: 1px solid var(--bd);
 }
 
 .mf-lane-head {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.mf-dot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--stem);
+  background: var(--surface-lane-head);
+  box-shadow: var(--edge-left) var(--stem);
 }
 
 .mf-lane-label {
@@ -215,6 +203,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mf-lane[data-quiet] .mf-lane-head {
+  box-shadow: var(--edge-left) var(--idle);
+}
+
+.mf-lane[data-quiet] .mf-lane-label {
+  color: var(--caption);
 }
 
 .mf-lane-head .mf-fader {
@@ -249,6 +245,11 @@ font-variation-settings: var(--mono-axes);
   display: flex;
   align-items: stretch;
   border-left: 1px solid var(--bd);
+  background: color-mix(in srgb, var(--stem) 4%, transparent);
+}
+
+.mf-lane[data-quiet] .mf-lane-draw {
+  background: transparent;
 }
 
 .mf-lane-draw canvas {
@@ -313,6 +314,13 @@ font-variation-settings: var(--mono-axes);
   text-transform: uppercase;
   color: var(--amber);
   animation: mf-pulse 1.8s ease-in-out infinite;
+}
+
+.mf-manual-count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .mf-manual-hint {

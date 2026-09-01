@@ -1,8 +1,11 @@
 import { Button } from '@openflow/widgets/controls/Button.tsx';
+import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
+import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Ready } from '../openflow.ts';
 import type { Mix } from '../state.ts';
+import { bpmText, FASTEST, SLOWEST } from '../warp.ts';
 import './Header.css';
 
 /**
@@ -75,6 +78,28 @@ const crosshair = (
 );
 
 const SNAP = ['1/1', '1/2', '1/4'];
+
+/**
+ * The tempo, beside the button that measures it.
+ *
+ * It used to live in the export dialog, which was the only place a tempo could
+ * be seen or changed — a number that rules every line in the window, reachable
+ * only from the thing you press when you have finished. Auto-warp is unusable
+ * without it: the whole feedback from pressing it is a number appearing and the
+ * ticks lining up.
+ *
+ * Unnamed and unfilled, for the reason `widgets/docs/catalogue.md` gives about
+ * fills: 124 of a 70-to-190 range is 45% of nothing, and it would be the
+ * loudest thing on the bar while carrying the least.
+ */
+const TEMPO: Param = {
+  kind: 'float',
+  min: SLOWEST,
+  max: FASTEST,
+  defaultValue: 120,
+  unit: 'custom',
+  customUnit: '%0.1f',
+};
 
 /** bar.beat.sixteenth, one-based, from a position measured in bars. */
 function position(bar: number, bars: number): string {
@@ -168,17 +193,48 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               label="Snap"
               title="Where a slice point lands when you drag it"
             />
+            <span className="mf-group-label">tempo</span>
+            <NumberField
+              param={TEMPO}
+              value={mix.targetBpm}
+              display={bpmText(mix.targetBpm)}
+              onChange={(next) => mix.setTempo(Number(next.toFixed(2)))}
+              editable
+              showFill={false}
+              width={44}
+              label="Tempo"
+              title="The tempo the grid is ruled at. Drag it, or type one in"
+            />
             <Button
               onPress={mix.autoWarp}
-              title="Re-run detection and drop anchors on the two strongest downbeats"
+              title={
+                mix.detected
+                  ? `Fitted ${bpmText(mix.detected.bpm)} BPM to the kick — ${Math.round(
+                      mix.detected.agreement * 100,
+                    )}% of the kicks land on the grid. Press to fit it again`
+                  : 'Fit a tempo and a downbeat to the kick'
+              }
+              disabled={mix.decoding}
             >
               Auto-warp
             </Button>
+            {/* The one number that says whether to believe the grid, next to
+                the button that made it. A fit that found nothing says so
+                rather than leaving a press with no answer. */}
+            {mix.detected ? (
+              <span className="mf-fit" title="How much of the kick lands on a grid line">
+                {Math.round(mix.detected.agreement * 100)}%
+              </span>
+            ) : mix.fitFailed ? (
+              <span className="mf-fit mf-fit-none" title="Nothing steady enough to fit a tempo to">
+                no fit
+              </span>
+            ) : null}
             <Toggle
               on={mix.manual !== null}
               onChange={(on) => (on ? mix.startManual() : mix.endManual())}
               label="Set the grid by hand"
-              title="Set the grid by hand: click the downbeat of bar 1, then a beat late in the song"
+              title="Set the grid by hand: click the downbeat of bar 1, then a downbeat late in the song"
               width={26}
             >
               {crosshair}

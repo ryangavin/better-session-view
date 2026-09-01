@@ -137,18 +137,32 @@ zoomed in it is one column each, drawn wide.
 
 The window used to have `BARS = 64` nailed down as a constant. That was fine
 while the audio was invented and is not once it is real: a track is however long
-it is. Position is seconds; the bar count is
-`ceil(seconds × bpm / 240)` and moves when the tempo does.
+it is. Position is seconds, and where the bars fall is `warp.ts`'s `Bars`: an
+origin and a span, `{ origin: −offset × bpm / 240, across: seconds × bpm / 240 }`.
+Two numbers, because a grid is a tempo **and** a downbeat — no tempo fixes a song
+with a quarter-second of air in front of it, since every line is that quarter
+second late for the whole of it.
+
+**The bar count is not the map, and it used to be.** The lanes drew
+`ceil(seconds × bpm / 240)` bars across the width of the file, which silently
+rounded the tempo: a two-hundred-second track at 128 holds 106.67 bars, was
+drawn as 107, and was therefore ruled at 128.4 BPM. Half a bar of drift by the
+end of the song, coming from the ruler rather than from the audio, on the one
+strip whose whole job is to show drift. The count is now derived from the map —
+`countOf` — and nothing rules with it.
 
 That is what makes the warp lane worth looking at. The ticks are onsets — placed
-in bar space by the *grid*, not by the audio — so changing the tempo walks them
-off the bar lines or onto them. A tempo a fraction out does not look wrong at
-bar 2 and is unmistakable by bar 60.
+in bar space by the *grid*, not by the audio — so changing either number walks
+them off the bar lines or onto them. A tempo a fraction out does not look wrong
+at bar 2 and is unmistakable by bar 60.
 
 Onsets come off the drums where there are drums, which is most of the argument
 for fitting a grid **after** separating rather than before: the thing a grid
 lines up with is the percussion, and here it arrives on its own track with the
-pads and the vocal already taken off it.
+pads and the vocal already taken off it. `audio.ts` answers *which lane* once,
+in `energyOf`, and both the ticks that are drawn and the fit that places the bars
+read it — a strip that judged the grid against a different stem from the one the
+grid was fitted to would not be evidence about anything.
 
 Both grids thin themselves, from one ladder in `grid.ts` — every rung a musical
 division, from sixteen bars down to a sixty-fourth note. A four-minute track at
@@ -158,6 +172,133 @@ fill. Whatever survives stays on a musical boundary, and it measures against the
 beats, then sixteenths, each appearing where there is room for it.
 That is what makes a grid judgeable: the ticks either side of one bar line are
 the same pixel at whole-track width.
+
+## Fitting a grid to the audio
+
+`warp.ts`. Auto-warp is a measurement now rather than a gesture: it hands back a
+tempo, a downbeat and how much of the drumming agrees with them, and the window
+applies all three.
+
+### It listens to the kick
+
+**The tempo comes off the kick band, not off the drums.** A kick is short, loud,
+low and repeated, which is the easiest thing in a mix to measure a period from —
+and taking the snare and the hats off it removes most of what a fit can trip
+over. `bandsOf` walks the drums stem once and comes back with two envelopes:
+`low`, through three one-poles at 120 Hz — eighteen decibels an octave, which
+leaves a kick's forty-to-a-hundred-and-fifty alone and takes twenty off a snare —
+and `wide`, the same stem unfiltered.
+
+One walk, because a stem is tens of millions of samples and two passes over it
+is two passes over it. A column is 512 samples, about twelve milliseconds, and
+what is kept is the *loudest* sample in each — a kick's attack is a couple of
+milliseconds inside that column, and a mean would be a picture of how long the
+hit rang for rather than of when it started. A four-minute stereo stem walks in
+about a hundred milliseconds and fits in fifteen; it is worked out once per
+track and kept.
+
+`wide` exists for exactly one question, below. With no stems decoded — before the
+audio arrives, or in a browser with no app around the page — `columnsOf` falls
+back to the drawn peaks: half the resolution and one band for both.
+
+### Four steps
+
+Each is there because the step before it cannot do the job alone.
+
+**An onset strength, less the strength around it.** The rise in energy per
+column, minus a local mean over four hundred milliseconds. Without the
+subtraction the fit is dominated by whichever section of the song is loudest —
+a chorus out-votes a whole verse, and what is really being fitted is thirty
+seconds of it. What is left is *how much this moment stood out from its
+neighbours*, which means the same thing everywhere in the track.
+
+**Hits, placed between columns.** Local maxima above a floor, positioned by the
+parabola through the peak and its two neighbours. A column is twelve
+milliseconds and a grid is judged in single ones, so rounding every hit to a
+column would put a floor under the accuracy of everything after it.
+
+**A period, from autocorrelation.** Folded to about 24 ms first, since this is
+the one step costing lags times columns and a coarse answer is all it owes.
+Scanned at an eighth of a column against a signal smeared by a column either
+side, because a spike correlated against a spike gives one lag a huge score and
+its neighbours nothing to interpolate from — smeared and scanned finely, the peak
+has a shape. It looks an octave *below* the slowest tempo it will ever claim: a
+kick on one and three is a pulse at half the tempo of the song it is in, and
+refusing to see it is how a fit ends up locked to nothing.
+
+**A line, refitted over twice as much of the song each round.** Least squares
+through the hits the grid found, starting at sixteen beats and doubling until it
+spans the track. It has to grow rather than start wide: a period right to a
+fraction of a per cent is exact enough to match sixteen beats and nowhere near
+exact enough to match five hundred, because a tenth of a per cent is a beat and
+a half of drift by the end of four minutes. Sixteen beats fix the period an order
+better, which reaches thirty-two, and six rounds reach the end. The last two
+rounds are over the whole song, and that is what makes the answer worth having:
+a tempo fitted to every kick in four minutes is good to about a hundredth of a
+BPM, which is the difference between a grid that holds at bar 200 and one that
+is visibly wrong by bar 60.
+
+### Which octave, and which beat starts the bar
+
+Autocorrelation cannot tell a beat from a half-note — a pulse every 0.47 s
+correlates with itself at 0.94 s just as strongly. Three things settle it, in
+order of how much they know:
+
+**Alternate beats carrying almost nothing are not beats.** The pulse found was a
+subdivision, and the period doubles. This is decided entirely by the low band.
+
+**A kick on one and three is not a song at half the tempo.** If the pulse comes
+out under 95 BPM, `wide` is asked whether the midpoints between those kicks are
+as busy as the kicks are — which is the snare, on two and four. If they are, the
+beat is twice as fast. This is the one octave question the audio can answer
+outright, and it is the whole reason there are two bands rather than one.
+
+**Otherwise, a preference for the tempo a person would have counted**, eight
+tenths of an octave wide around 125. Steady eighths at the weight of the quarters
+are genuinely ambiguous, and this is what decides them.
+
+Then the downbeat: the beats are split four ways and the heaviest quarter starts
+the bar, because the kick is the heaviest thing in most bars of most music this
+will meet. **Four on the floor is the case where that says nothing** — four
+identical kicks, any of which would do — so the tie goes to the beat the song
+*starts* on, which is what songs do, and a vote has to carry five per cent more
+to move it. Getting this wrong is a grid whose lines are right and whose bar
+numbers are three beats out, which the first click of the hand path fixes in one
+click. Bar 1 is then the first downbeat *of the file*, so the bar count means what
+it says; everything before it is still ruled and still numbered, downwards.
+
+### What it will not do
+
+The line is straight by construction. That is the right shape for what this app
+is pointed at and the wrong one for a band playing to no click — and the warp
+lane is where you find out which you have, because a fit that cannot hold walks
+off the bar lines, visibly.
+
+**What it reports is checkable.** `agreement` is the share of onset strength
+landing within an eighth of a beat of a grid line — exactly what the warp lane
+draws, counted. A quarter of it is luck, because the window is a quarter of a
+beat wide, so a fit under four-tenths is refused: there is no tempo that is
+honest about a track with nothing steady in it, and 120 dressed up as a reading
+is worse than the window saying it found none.
+
+### Two clicks, and then the same machinery
+
+`refitOf` is the hand path's half of this, and it is what makes counting out four
+bars enough. Two clicks over four bars is fifteen seconds of evidence, and a
+click twenty milliseconds out is a third of a BPM — a bar and a half of drift by
+the end of a song. But it is *exactly* enough to say which beat and which
+downbeat are meant, which is the half a fit gets wrong. So the clicks seed the
+alignment and the same least-squares line over every kick in the track sets the
+tempo: the hand supplies the octave and the phase, the audio supplies the
+precision. A refinement that ends up three per cent away from what was measured
+has locked onto something else, and is refused in favour of what somebody
+clicked.
+
+`warp.test.ts` fixtures are four minutes long and what they assert is the
+*drift* — where the grid puts bar 100 — because a tempo a tenth of a per cent out
+passes every test written against a two-bar loop. One of them renders a 60 Hz
+kick and a 2 kHz snare into real samples and checks that the filter leaves one
+and takes the other.
 
 ## The window remembers itself
 
@@ -207,8 +348,5 @@ should travel, and that is a decision about the manifest.
 
 - **Export.** The dialog says what it would write and the button closes it. An
   Ableton set is its own engine.
-- **Tempo detection.** `bpmAuto` is a flag with nothing behind it; the grid is
-  120 until somebody sets it. The onsets that detection would fit are already
-  computed and drawn.
 - **Slices as an arrangement.** Eight even spans with names, and nothing reads
   the audio to place them.

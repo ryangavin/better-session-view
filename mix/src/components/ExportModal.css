@@ -167,6 +167,13 @@
   gap: 8px;
 }
 
+.mf-modal-warp {
+  flex: none;
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-body);
+  color: var(--ui);
+}
+
 .mf-modal-path {
   flex: 1;
   min-width: 0;

@@ -1,10 +1,7 @@
 import { useEffect } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
-import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
-import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
-import type { Param } from '@openflow/widgets/param/param.ts';
-import { workingBpm } from '../openflow.ts';
 import type { Mix } from '../state.ts';
+import { bpmText } from '../warp.ts';
 import './ExportModal.css';
 
 /**
@@ -20,24 +17,6 @@ import './ExportModal.css';
  * It says the numbers rather than showing a spinner, because the whole cost of
  * getting this wrong is discovering it inside Live.
  */
-
-/**
- * Unnamed for the same reason the fader is: the row already says "warp to".
- *
- * And unfilled. `NumberField` draws the value as a bar behind the text by
- * default, which is right for a parameter whose range is a *how much* — a
- * tempo's is not. 124 of a 60-to-200 range is 46% of nothing, and it is the
- * loudest thing in the row while carrying the least, which is the same
- * argument `widgets/docs/catalogue.md` makes about a fill on a node row.
- */
-const BPM: Param = {
-  kind: 'float',
-  min: 60,
-  max: 200,
-  defaultValue: 120,
-  unit: 'custom',
-  customUnit: '%0.0f BPM',
-};
 
 export function ExportModal({ mix }: { mix: Mix }) {
   const close = () => mix.setExporting(false);
@@ -57,7 +36,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
   const facts: [string, string][] = [
     ['track', song.artist ? `${song.title} · ${song.artist}` : song.title],
     ['clips', `${mix.slices.length} slices × ${stems} stems = ${mix.slices.length * stems}`],
-    ['tempo', `${mix.targetBpm} BPM${mix.bpmAuto ? ' · detected' : ' · set by hand'}`],
+    ['tempo', `${bpmText(mix.targetBpm)} BPM${mix.bpmAuto ? ' · fitted' : ' · set by hand'}`],
     ['length', `${mix.bars} bars · ${Math.round(mix.seconds)}s`],
   ];
 
@@ -116,32 +95,13 @@ export function ExportModal({ mix }: { mix: Mix }) {
           })}
         </div>
 
+        {/* The tempo is not editable from here any more. It is the grid's
+            number rather than the export's — the lanes are ruled with it and
+            the warp lane is how you tell whether it is right — so it lives on
+            the header beside Auto-warp, and this says what will be written. */}
         <div className="mf-modal-tempo">
           <span className="mf-cap">warp to</span>
-          <NumberField
-            param={BPM}
-            value={mix.targetBpm}
-            onChange={(next) => {
-              mix.setTargetBpm(Math.round(next));
-              mix.setBpmAuto(false);
-            }}
-            editable
-            showFill={false}
-            width={72}
-            label="Target tempo"
-          />
-          <Toggle
-            on={mix.bpmAuto}
-            onChange={(next) => {
-              mix.setBpmAuto(next);
-              if (next) mix.setTargetBpm(workingBpm(song));
-            }}
-            label="Use the detected tempo"
-            title="Snap the target back to the detected tempo"
-            width={34}
-          >
-            auto
-          </Toggle>
+          <span className="mf-modal-warp">{bpmText(mix.targetBpm)} BPM</span>
           <span className="mf-modal-path">~/Music/mixflow/{folder}/</span>
         </div>
 

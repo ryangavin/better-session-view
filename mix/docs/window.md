@@ -17,7 +17,7 @@ three hundred pixels, which is what they are for.
 
 ## The header
 
-    [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ snap ⋯ Auto-warp │ Export
+    [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ snap ⋯ tempo 128 Auto-warp 91% ⊹ │ Export
 
 Four groups, in the order they are read: what this is, what you are looking at, what you
 can do to it, where it goes. Three departures from the mockup, each one a thing the
@@ -35,6 +35,14 @@ disabled Export, which is the honest amount.
 **Nothing wraps.** The mockup is `flex-wrap` over a `min-height`, so a narrow window
 silently becomes two rows of chrome. Here the title is the only thing that gives, and it
 gives by ellipsis.
+
+**The tempo is on the bar, beside the button that measures it.** It used to be
+in the export dialog, which made it the one number ruling every line in the
+window and reachable only from the thing you press when you have finished. It is
+also the whole of Auto-warp's feedback: pressing it is a number appearing and the
+ticks lining up, and without the number on screen half of that is missing. Beside
+it is what the fit agreed with — `91%` of the drumming landing on a grid line, or
+`no fit`, so a press always has an answer.
 
 One smaller thing worth keeping: `snap` is a leading label rather than a `Widget`
 caption. `Widget` puts captions *above*, which in a 34px bar makes that one control two
@@ -77,6 +85,24 @@ block where the drums stop, and a fill is a darker column you can point at. Clic
 lane moves the head there: a waveform is what you are looking at when you decide where to
 listen from, and reaching back up to a strip at the top to act on it is the sort of gap
 that makes a window feel like a diagram of a DAW rather than one.
+
+**A lane reads as its own object rather than as a row of a table.** Three things do
+it, and they are the same three a mixer does it with. The separator between lanes is
+`--bd`, the border the rest of the window uses, rather than a shade barely off the
+background — a hairline you have to look for is not separating anything. The head
+column has a surface of its own, so the boundary between a stem's controls and its
+drawing is an edge rather than an alignment. And the head carries the stem's colour
+as a stripe down its left edge, with the drawing behind the waveform tinted four per
+cent of the same — which is what makes the stack scannable at a glance: you find the
+bass lane by its colour, not by counting rows.
+
+The stripe replaced a dot beside the name. Both said the same thing, and the edge of
+the row is where separation is actually read.
+
+**A lane nobody can hear says so.** Muted, or lost to somebody else's solo, and the
+stripe goes to `--idle`, the tint goes, and the name drops to caption grey. The
+waveform was already dimmed; this makes the whole row agree with it, so *what am I
+hearing* is answered by the shape of the stack rather than by reading six toggles.
 
 **46px is the floor, not the height.** The lanes share whatever the window has, so a
 four-source separation gets the room a six-source one would have used rather than four
@@ -124,8 +150,16 @@ second per pixel, so a kick and the snare after it are the same column.
 **⇧-scroll or ⌘-scroll over the lanes zooms** — both, because neither is obviously the
 one, and `ctrl` comes along with them for the platforms where it is the modifier and for
 the trackpad pinch that arrives wearing it. A sideways scroll pans, by the screenful, so
-the gesture means the same thing at every depth. A plain vertical scroll still scrolls
-the lanes, because a window that steals the scroll wheel is a window you cannot scroll.
+the gesture means the same thing at every depth.
+
+**A plain vertical scroll moves along the song**, down to go back and up to go on. Once
+you are zoomed in far enough for the lanes to be worth reading, moving along them is the
+thing you do constantly, and a modifier on every one of those is a modifier held down all
+day. It only takes the wheel where there is somewhere to take it: fitted or zoomed out
+there is nothing either side of what is on screen, so the wheel goes back to being the
+page's — and so it does whenever the lane list has scrolling of its own to do, which is a
+short window with six stems in it. A window that steals the scroll wheel and leaves you
+unable to reach a row is worse than one that never took it.
 
 Three things make it feel like a timeline rather than a picture being resized:
 
@@ -226,11 +260,53 @@ weights, while the warp lane, being 24px of strip, says it in height instead.
 Their bar positions are the grid's claim rather than a property of the audio, so changing
 the tempo walks them off the lines or onto them. That is the lane doing its job.
 
-**Auto-warp** re-runs detection and pins both ends; a grid pinned at both ends cannot
-drift in the middle by more than the tempo is actually wrong by. **Manual** is two clicks
-far apart and then a nudge, and it gets a bar of its own at the top of the lanes because
-in that mode a click in a lane means something else. A mode you cannot see is a mode that
-surprises you.
+**A grid is two numbers, and the window used to have one.** A tempo says how long a
+bar is; an offset says where the first one starts. Bar 1 was the top of the file by
+construction, so a song with a quarter of a second of air in front of it could not
+be gridded at all — every line was that quarter second late, for the whole song, and
+no tempo would have fixed it. `warp.ts` holds both, and `playback.md` has how they
+are fitted.
+
+**Auto-warp fits both to the kick**, and pins bar 1 and the last bar. Not to the
+drums — to the kick band of them, because a kick is short, loud, low and repeated,
+which is the easiest thing in a mix to measure a period from, and a hundred and
+twenty hertz of low-pass takes the snare and the hats off it. It is entitled to
+those pins now: a straight line fitted to every kick in the song is pinned at both
+ends by construction, so it cannot be drifting in the middle by more than it is
+wrong at the ends. Before, they were two marks on a grid nothing had measured.
+
+**It runs on its own when a track is opened that nothing has been decided about**,
+which is what makes it worth having — it costs a few milliseconds, and the
+alternative is lanes ruled at 120 over a song at 128, which is not a neutral
+default so much as a wrong answer nobody asked for. Anything written down — a fit
+that was nudged, a tempo typed in — is a decision, and a decision is not re-taken
+behind somebody's back.
+
+**Manual is two clicks a counted span apart, and then a nudge.** It is the other
+half of the feature rather than a fallback: the first click says *this is bar 1* and
+sets the offset, the second says *this is the downbeat four bars later* and the
+tempo follows.
+
+**It asks for a counted span rather than for the last bar of the song**, and that
+is the whole difference between a control somebody uses and one they do not. Asking
+for the last downbeat is asking somebody to find bar 97 of a song they have not
+gridded yet — the one thing a person is worst at and a machine is best at. Counting
+four is a thing they do without thinking, and the count is on the bar: 1, 2, 4 or 8.
+
+The accuracy that gives up is handed straight back. Four bars is fifteen seconds and
+a click twenty milliseconds out is a third of a BPM, which would be a bar and a half
+of drift by the end — so the two clicks *seed* a fit rather than being the answer,
+and the same least-squares line over every kick in the track sets the tempo from
+there. The hand supplies the octave and the phase, which is the half a fit gets
+wrong; the audio supplies the precision, which is the half it gets right. A
+refinement that wanders three per cent off what was measured is refused, and what
+was clicked stands.
+
+The nudge moves bar 1 by ten milliseconds, keeping the tempo — the fix for ticks
+sitting evenly *beside* the bar lines rather than drifting off them.
+
+It gets a bar of its own at the top of the lanes because in that mode a click in a
+lane means something else. A mode you cannot see is a mode that surprises you.
 
 Bar numbers appear every eight bars, and only when eight bars is wide enough to hold one.
 Sixteen numbers in a 24px strip is a grey band, and the point of a number is to be
@@ -247,7 +323,7 @@ countable from.
 | loop, mute, solo | `Toggle` |
 | a stem's level | `Slider`, horizontal, with a length |
 | per-source progress | `Meter` |
-| the target tempo | `NumberField`, unfilled |
+| the tempo, on the header beside Auto-warp | `NumberField`, unfilled |
 | the waveform | **not a widget.** `components/Waveform.tsx` |
 
 **The fader takes a `length`, not `layout="inside"`,** and the difference is not
@@ -272,8 +348,12 @@ The surfaces, the ramp, the accents, the radii and the 22px control height are
 `@openflow/widgets/palette.css` — shared with set[flow] rather than copied, which is what
 `DESIGN.md` now points at.
 
-What is this app's own is six stem roles in `src/tokens.css`. Three of them *are* palette
-accents, because the mockup had already picked them and they were already right:
+What is this app's own is in `src/tokens.css`: six stem roles, and the four surfaces
+this window has that no other app does — the band, the lane head, the wash over time
+outside the song, and the bar that appears while the grid is being set by hand.
+
+Three of the stem roles *are* palette accents, because the mockup had already picked
+them and they were already right:
 
 | role | |
 |---|---|
@@ -290,7 +370,7 @@ colour changes in one place and nothing else has to be read to find out why.
 
 ## What is invented
 
-**Two things, and neither is the audio any more.**
+**One thing, and it is not the audio and not the grid any more.**
 
 The library is a folder on disk read through `electron/library.ts` —
 [`library.md`](library.md) — so the rail, the counts and the badge strips are real. The
@@ -303,11 +383,10 @@ the sound cannot disagree, which they could the moment they came from two places
 the audio to place them. They are a ruler rather than a reading of the song, and
 `mock.ts` says so where they are made.
 
-**The tempo is not detected.** `bpmAuto` is a flag with nothing behind it and the grid is
-120 until somebody sets it by hand. The window is honest about this in the only way that
-matters — a track imported today has no tempo, no key and no length until something
-measures one, and all three are drawn as unknown rather than as zero. The onsets
-detection would be fitted to are already computed and already on screen.
+**The tempo is measured, and the key is not.** A track imported today has no key
+until something reads for one, and it is drawn as unknown rather than as zero. The
+grid is no longer in that list: `warp.ts` fits one, `playback.md` has how, and what
+it could not fit it declines to invent.
 
 The other real fact is in the header: whether this machine could separate anything, which
 comes over the context bridge from `electron/demucs.ts`. A window that mocked its own
