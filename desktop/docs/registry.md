@@ -84,7 +84,8 @@ number with a variable of its own, and `serverPort()` reads both.
 3. `<name>/vite.config.ts`, with `uiPort(APPS.<name>)` as its port.
 4. `<name>/index.html` and a renderer.
 5. `<name>/package.json` — `"main": "electron/dist/main.cjs"`, and a version, which
-   `npm run dev:version` will then keep in step.
+   `npm run dev:version` will then keep in step. Add it to the root `workspaces` unless
+   it has dependencies of its own, in which case read rule 12 in `AGENTS.md` first.
 6. `<name>/electron-builder.yml` — `extends`, `appId`, `productName`, `artifactName`,
    and the output directory. Four lines and a comment.
 7. `<name>/public/mark.svg`, which is what `build-icons` rasterises the `.icns` from.
@@ -92,5 +93,9 @@ number with a variable of its own, and `serverPort()` reads both.
    `typecheck`.
 9. A `vitest.config.ts` project, if it has tests.
 
-`npm run app -- run <name>` works from step 5. Nothing in `tools/`, and nothing in
-`.github/`, has to be told.
+`npm run app -- run <name>` works from step 5. Nothing in `tools/`, nothing in
+`.github/`, and nothing in `.gitignore` has to be told — the build outputs are globbed
+as `*/dist/` and `*/electron/dist/`.
+
+mix[flow] was the app that proved this: a registry entry, the nine steps above, and
+nothing else in the repo changed except the docs saying it exists.

@@ -2,11 +2,12 @@ node_modules/
 # generated: tsc output consumed directly by node.script and [v8]
 bridge/bridge.js
 bridge/lom.js
-# generated: vite build output, served by the desktop app and inlined into the device
-set/dist/
+# generated: every module's build output — a vite build for the apps and the chart,
+# tsc declarations for @openflow/widgets. Globbed rather than listed, because a new app
+# that is otherwise a registry entry should not need a line here to stop being committed.
+*/dist/
 # generated: the Electron main, preload, server and icon
-set/electron/dist/
-visuals/electron/dist/
+*/electron/dist/
 # generated: packaged .app and .dmg — npm run pack
 release/
 # generated: device binary + debug patcher
@@ -20,13 +21,8 @@ bridge/roles.json
 bridge/roles.json.tmp
 # the show — yours, not the repo's, and rewritten every time a number moves
 visuals/scheme.json
-# generated: the renderer's vite build output, served by the visuals server
-visuals/dist/
+# generated: the benches and the frame captures, which are not named dist/
 visuals/bench-dist/
-# generated: the chart's vite build output, served by the chart server
-chart/dist/
-# generated: tsc declarations for @openflow/widgets, built by npm run build:widgets
-widgets/dist/
 # the design-system sync toolkit and the bundle it builds — tooling, not source
 widgets/.ds-sync/
 widgets/ds-bundle/

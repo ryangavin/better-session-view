@@ -55,6 +55,7 @@ export default defineConfig({
         // to load them would fail rather than report a zero.
         'desktop/src/apps.ts',
         'set/src/**/*.{ts,tsx}',
+        'mix/src/**/*.{ts,tsx}',
         'visuals/client/**/*.{ts,tsx}',
         'visuals/server/**/*.{ts,tsx}',
         'chart/src/**/*.{ts,tsx}',

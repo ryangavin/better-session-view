@@ -1,0 +1,17 @@
+# mix[flow], packaged. `npm run pack:mix`.
+#
+# The shape is `desktop/electron-builder.base.yml`; this is what is only true of
+# this app — which, for now, is its name. What it will need and does not have
+# yet is a decision about where demucs comes from in a bundle: see
+# `docs/demucs.md`.
+extends: ../desktop/electron-builder.base.yml
+
+appId: com.openflow.mix
+productName: mix[flow]
+
+# The download name, which is not the app name — see the base config for why the
+# brackets cannot survive into a filename.
+artifactName: mix-flow-${version}-${arch}.${ext}
+
+directories:
+  output: ../release/mix

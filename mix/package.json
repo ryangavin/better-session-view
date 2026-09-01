@@ -1,0 +1,9 @@
+{
+  "name": "@openflow/mix",
+  "version": "0.1.0-dev",
+  "private": true,
+  "author": "Ryan Gavin",
+  "type": "module",
+  "main": "electron/dist/main.cjs",
+  "description": "mix[flow]: stem separation — a mix in, four parts out."
+}

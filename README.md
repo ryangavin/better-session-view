@@ -106,6 +106,7 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run build` | a bundled bridge.js, lom.js, and the device |
 | `npm run set` | the session manager, set[flow] — builds it and opens the window |
 | `npm run visuals` | the VJ rig, visual[flow] — its server and its window |
+| `npm run mix` | stem separation, mix[flow] — a skeleton; it does not separate anything yet |
 | `npm run pack` | every app as a `.app` and a `.dmg` under `release/` |
 | `npm run install:apps` | copies those into `/Applications` |
 | `npm run install:device` | the device into the Ableton User Library, as `SessionBridge-qa` |
@@ -113,12 +114,12 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run dev` | every watcher and dev server at once — set[flow] on :5173, the widget bench on :5273 |
 | `npm run dev:set` | the set[flow] dev server alone, against a device someone else is running |
 | `npm run dev:set-app` | the set[flow] window on a running dev server — hot reload, in the real app |
-| `npm run dev:visuals-app` | the same for visual[flow] |
+| `npm run dev:visuals-app` | the same for visual[flow]; `npm run dev:mix-app` for mix[flow] |
 | `npm run dev:widgets` | the widget bench alone — no device needed |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
 | `npm test` | unit tests, one project per module — `npm test -- --project=core` runs that module alone |
 | `npm run test:coverage` | the same run with V8 coverage, plus the Vitest report in `report/` — every test with its timing, and the line-by-line coverage under its Coverage tab. CI publishes it to [ryangavin.github.io/better-session-view](https://ryangavin.github.io/better-session-view/) |
-| `npm run typecheck` | all ten projects |
+| `npm run typecheck` | every project |
 
 A fresh clone needs `npm install && npm run build` before the device exists.
 

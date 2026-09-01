@@ -13,6 +13,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 | the session manager — components, hooks, the client | [`set/README.md`](set/README.md) — 16 topic docs. `@openflow/set`, and **set[flow]** is what it calls itself |
 | an Electron app — its window, its packaging, or adding a new one | [`desktop/README.md`](desktop/README.md) — 6 topic docs. `@openflow/desktop`: the main process set[flow] and visual[flow] share. **Adding an app starts at `desktop/docs/registry.md`** |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](widgets/README.md) — 5 topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way** |
+| stem separation, or demucs | [`mix/README.md`](mix/README.md) — 1 topic doc. `@openflow/mix`: **mix[flow]**, and a skeleton — the window opens, nothing separates yet. Talks to no bridge and no server |
 | a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. `@openflow/visuals`: its own server and its own `node_modules`, deliberately **not** a workspace; an ordinary **client** of the bridge |
 | what the band reads off a phone | [`chart/README.md`](chart/README.md) — 2 topic docs. `@openflow/chart`: no dependencies; a **read-only** client of the bridge, and the only thing here that binds the LAN |
 | anything involving Live | [`bridge/README.md`](bridge/README.md) — 8 topic docs. **Most constraints in this project live here** |
@@ -107,6 +108,7 @@ npm run dev:record -- <name>   # a real session into set/test/corpus/ — needs 
 npm run build         # the device: bridge.js, lom.js, the .amxd. No front end.
 npm run set           # the session manager, in its window
 npm run visuals       # the VJ rig, its server and its window
+npm run mix           # stem separation — a skeleton, and the newest app
 npm run app -- pack   # every app as a .app and a .dmg, from desktop/src/apps.ts
 npm run benchmark     # every flow's frame cost, with nothing pacing it
 ```

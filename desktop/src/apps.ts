@@ -62,6 +62,12 @@ export const APPS = {
     background: '#0a0a0b',
     ui: 0,
   },
+  mix: {
+    name: 'mix',
+    title: 'mix[flow]',
+    background: '#0b0a09',
+    ui: 500,
+  },
   visuals: {
     name: 'visuals',
     title: 'visual[flow]',
