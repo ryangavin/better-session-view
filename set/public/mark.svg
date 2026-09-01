@@ -15,19 +15,18 @@
 
   <g clip-path="url(#face-set)">
     <path d="M256 0H512V512H256A128 128 0 0 1 256 256A128 128 0 0 0 256 0Z" fill="url(#set)"/>
-
-    <g fill="url(#set)" opacity="0.96">
-      <rect x="0" y="51" width="196" height="30" rx="15"/>
-      <rect x="0" y="113" width="284" height="30" rx="15"/>
-      <rect x="0" y="175" width="240" height="30" rx="15"/>
-    </g>
-    <g fill="#090A0E" opacity="0.52">
-      <rect x="272" y="307" width="240" height="30" rx="15"/>
-      <rect x="228" y="369" width="284" height="30" rx="15"/>
-      <rect x="316" y="431" width="196" height="30" rx="15"/>
-    </g>
   </g>
 
-  <circle cx="256" cy="128" r="38" fill="url(#set)"/>
-  <circle cx="256" cy="384" r="38" fill="#F7F4EB"/>
+  <g fill="url(#set)">
+    <rect x="216" y="88"  width="34" height="34" rx="10"/>
+    <rect x="262" y="88"  width="34" height="34" rx="10"/>
+    <rect x="216" y="134" width="34" height="34" rx="10"/>
+    <rect x="262" y="134" width="34" height="34" rx="10"/>
+  </g>
+  <g fill="#F7F4EB">
+    <rect x="216" y="344" width="34" height="34" rx="10"/>
+    <rect x="262" y="344" width="34" height="34" rx="10"/>
+    <rect x="216" y="390" width="34" height="34" rx="10"/>
+    <rect x="262" y="390" width="34" height="34" rx="10"/>
+  </g>
 </svg>
