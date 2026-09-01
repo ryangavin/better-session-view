@@ -1,36 +1,77 @@
+import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS } from '../mock.ts';
+import { facts } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './Library.css';
 
 /**
- * Everything on disk, and which of it has stems.
+ * Everything in the library folder, and which of it has stems.
  *
- * The badge strip is the whole point of the rail: six cells that say what a
- * track has been separated into without opening it, and a four-source model
- * leaves two of them dark — which is how you spot the track you separated in a
- * hurry and meant to redo. One letter each rather than three, because six
- * three-letter badges is a second line of text on every row and a hundred and
- * thirty rows of that is a wall.
+ * The badge strip is the point of the rail: six cells that say what a track has
+ * been separated into without opening it, and a four-source model leaves two of
+ * them dark — which is how you spot the one you separated in a hurry and meant
+ * to redo. One letter each rather than three, because six three-letter badges
+ * is a second line of text on every row and a hundred rows of that is a wall.
  *
- * A row is two lines: the title with the strip, and the artist with the two
- * facts you sort by. The tile is the album art it will eventually hold, and
- * until then the initial — which is still enough to find your place in a list
- * you have scrolled.
+ * A row is two lines: the title with the strip, and the artist with the facts
+ * you sort by. On the day a track is imported nothing has read its tags or its
+ * tempo, so the second fact is the file's own type until something better is
+ * known — which is honest, and better than four columns of dashes.
  */
 export function Library({ mix }: { mix: Mix }) {
+  const { library } = mix;
+
   return (
     <aside className="mf-library">
-      <div className="mf-library-filter">
+      <div className="mf-library-top">
         <input
           type="text"
           value={mix.query}
           onChange={(e) => mix.setQuery(e.target.value)}
           placeholder="Filter library"
           aria-label="Filter the library"
+          disabled={!library.root}
         />
+        <Button
+          onPress={() => void mix.importTracks()}
+          disabled={!library.root}
+          title={library.root ? 'Copy tracks into the library folder' : 'Choose a library folder first'}
+        >
+          Import
+        </Button>
       </div>
 
       <div className="mf-library-list">
+        {!library.root && !mix.loading && (
+          <div className="mf-library-blank">
+            <p className="mf-blank-lead">No library yet.</p>
+            <p>
+              Pick a folder. Tracks you import are copied into it beside a manifest, so the
+              whole library moves when the folder does.
+            </p>
+            <Button onPress={() => void mix.chooseFolder()} className="mf-primary">
+              Choose a folder
+            </Button>
+          </div>
+        )}
+
+        {library.problem && (
+          <div className="mf-library-blank">
+            <p className="mf-blank-bad">{library.problem}</p>
+            <Button onPress={() => void mix.chooseFolder()}>Choose another folder</Button>
+          </div>
+        )}
+
+        {library.root && !library.problem && library.tracks.length === 0 && (
+          <div className="mf-library-blank">
+            <p className="mf-blank-lead">Nothing in here yet.</p>
+            <p>Import a few tracks and they will be copied into the folder.</p>
+            <Button onPress={() => void mix.importTracks()} className="mf-primary">
+              Import tracks
+            </Button>
+          </div>
+        )}
+
         {mix.songs.map((song) => (
           <button
             key={song.id}
@@ -45,18 +86,19 @@ export function Library({ mix }: { mix: Mix }) {
             <span className="mf-song-body">
               <span className="mf-song-line">
                 <span className="mf-song-title">{song.title}</span>
-                <StemStrip sources={song.separated} />
+                <StemStrip sources={song.sources} />
               </span>
               <span className="mf-song-line">
-                <span className="mf-song-artist">{song.artist}</span>
-                <span className="mf-song-meta">
-                  {song.key} · {song.bpm}
-                </span>
+                <span className="mf-song-artist">{song.artist ?? 'unknown artist'}</span>
+                <span className="mf-song-meta">{facts(song)}</span>
               </span>
             </span>
           </button>
         ))}
-        {mix.songs.length === 0 && <p className="mf-library-empty">Nothing matches that.</p>}
+
+        {library.tracks.length > 0 && mix.songs.length === 0 && (
+          <p className="mf-library-empty">Nothing matches that.</p>
+        )}
       </div>
 
       <div className="mf-library-foot">
@@ -65,7 +107,19 @@ export function Library({ mix }: { mix: Mix }) {
             ? `${mix.total} indexed`
             : `${mix.songs.length} of ${mix.total}`}
         </span>
-        <span>{mix.withStems} separated</span>
+        {mix.note ? (
+          <span className="mf-library-note">{mix.note}</span>
+        ) : (
+          <button
+            type="button"
+            className="mf-library-where"
+            onClick={mix.reveal}
+            disabled={!library.root}
+            title={library.root ?? 'No library folder'}
+          >
+            {library.root ? library.root.split('/').slice(-1)[0] : '—'}
+          </button>
+        )}
       </div>
     </aside>
   );

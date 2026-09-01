@@ -10,8 +10,10 @@ npm run mix          # the app, on what is built
 npm run pack:mix     # a .app and a .dmg under release/mix/
 ```
 
-**The window is real; what is in it is a mockup.** The layout, the controls, the three
-states, the grid and the export dialog are built. The library, the waveforms and the slices are invented in
+**The library is real; the audio is not.** Tracks live in a folder you pick, copied there
+on import, indexed by a manifest that makes the folder portable —
+[`docs/library.md`](docs/library.md). The waveforms are invented and the separation is a
+timer standing in for a parser. The library, the waveforms and the slices are invented in
 `src/mock.ts` and `src/peaks.ts`, and nothing separates anything yet — the one honest fact
 on screen is the demucs probe in the status bar.
 
@@ -19,6 +21,7 @@ on screen is the demucs probe in the status bar.
 
 | touching | read |
 |---|---|
+| the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
 | the layout, the colours, or which control is a widget | [`docs/window.md`](docs/window.md) — `src/` |
 | where the model comes from, and what a job will look like | [`docs/demucs.md`](docs/demucs.md) — `electron/demucs.ts` |
 | the window, packaging, or anything shared with the other apps | [`desktop/README.md`](../desktop/README.md) — there is no mix[flow] version of it, and that is the point |
@@ -29,8 +32,10 @@ on screen is the demucs probe in the status bar.
 |---|---|
 | `electron/main.ts` | 50 lines. Two of them are this app's: it asks about demucs, and it refuses to run twice |
 | `electron/demucs.ts` | the readiness probe, and the open question behind it |
+| `electron/manifest.ts` | the library on disk. No electron import, so it is testable — and tested |
+| `electron/library.ts` | the dialogs, and where the folder is right now |
 | `electron/preload.ts` | one function across the context bridge |
-| `src/mock.ts`, `src/peaks.ts` | the invented library and the invented audio |
+| `src/mock.ts`, `src/peaks.ts` | the sources and models, and the invented audio |
 | `src/state.ts` | everything the window knows, in one hook |
 | `src/components/` | the header, the library, the three states, the lanes and the warp lane |
 

@@ -1,15 +1,13 @@
 /**
- * The library, the models and the slices — invented, and obviously so.
+ * What a source is, what the models are, and what a slice is.
  *
- * mix[flow] has a window before it has a job runner, which is the right way
- * round: the layout is the thing worth arguing about, and arguing about it
- * against six lorem tracks is faster than arguing about it against a
- * separation that takes four minutes. Every number here is derived from an
- * index rather than random, so the picture is the same on every launch and a
- * screenshot means something.
+ * This used to hold an invented library too, and does not any more: the library
+ * is a real folder on disk now, read through `electron/library.ts`. What is
+ * left here is domain rather than mock — six sources demucs actually emits,
+ * three models it actually ships, and the shape of a slice.
  *
- * When `electron/demucs.ts` grows a job runner this file is what it replaces,
- * and the shapes below are the contract it will have to satisfy.
+ * The audio is still invented, in `peaks.ts`, because nothing has decoded a
+ * file yet.
  */
 
 export interface Stem {
@@ -85,66 +83,6 @@ export const MODELS: readonly Model[] = [
 ];
 
 export const modelOf = (id: string): Model => MODELS.find((m) => m.id === id) ?? MODELS[0];
-
-export interface Song {
-  id: string;
-  title: string;
-  artist: string;
-  bpm: number;
-  key: string;
-  length: string;
-  format: string;
-  /** Which sources are on disk. Empty means nothing has been separated yet. */
-  separated: readonly string[];
-  model: string;
-}
-
-const CATALOGUE: readonly [string, string, number, string][] = [
-  ['Nightcrawler', 'Kaia Reyn', 124, 'F min'],
-  ['Shelter Belt', 'Odd Harvest', 118, 'A min'],
-  ['Copper Wire', 'Vale & Nim', 126, 'C maj'],
-  ['Slow Rotor', 'Petra Kline', 120, 'D min'],
-  ['Grand Palais', 'Sonder Unit', 122, 'G min'],
-  ['Half Light', 'Amara Vex', 128, 'E min'],
-  ['Wax Season', 'The Longwave', 110, 'B♭ maj'],
-  ['Terrazzo', 'Junia', 130, 'F♯ min'],
-  ['Dust Off The Kilns', 'Marek Osei', 116, 'C min'],
-  ['Blue Hour Sequence', 'Nils Auber', 121, 'A maj'],
-  ['Riverine', 'Cove Party', 125, 'D maj'],
-  ['Two Doors Down', 'Halsey Grove', 114, 'E♭ maj'],
-  ['Fever Map', 'Ilse Brandt', 132, 'G min'],
-  ['Loading Bay', 'Quiet Cartel', 127, 'B min'],
-  ['Undertow Radio', 'Sena Mori', 119, 'F maj'],
-  ['Paper Anniversary', 'The Fold', 108, 'A♭ maj'],
-  ['Sodium Lamps', 'Ryde', 129, 'C♯ min'],
-  ['Cold Open', 'Nine Palms', 123, 'E maj'],
-];
-
-/** Which of them already have stems, and by which model. */
-const ON_DISK: Record<number, string> = {
-  0: 'htdemucs_ft',
-  2: 'htdemucs',
-  5: 'htdemucs_ft',
-  9: 'htdemucs_6s',
-  13: 'htdemucs',
-};
-
-const duration = (i: number): string => {
-  const seconds = 168 + ((i * 37) % 120);
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-};
-
-export const LIBRARY: readonly Song[] = CATALOGUE.map(([title, artist, bpm, key], i) => ({
-  id: `song-${i}`,
-  title,
-  artist,
-  bpm,
-  key,
-  length: duration(i),
-  format: i % 3 === 0 ? 'wav' : 'mp3',
-  separated: ON_DISK[i] ? modelOf(ON_DISK[i]).sources : [],
-  model: ON_DISK[i] ?? 'htdemucs_ft',
-}));
 
 /**
  * A slice is a span of bars with a name — what becomes one Session row when the

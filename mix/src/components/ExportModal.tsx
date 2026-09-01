@@ -4,6 +4,7 @@ import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import { BARS } from '../mock.ts';
+import { workingBpm } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './ExportModal.css';
 
@@ -50,10 +51,12 @@ export function ExportModal({ mix }: { mix: Mix }) {
     return () => window.removeEventListener('keydown', key);
   });
 
-  const stems = mix.song.separated.length;
-  const folder = mix.song.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  if (!mix.song) return null;
+  const song = mix.song;
+  const stems = song.sources.length;
+  const folder = song.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const facts: [string, string][] = [
-    ['track', `${mix.song.title} · ${mix.song.artist}`],
+    ['track', song.artist ? `${song.title} · ${song.artist}` : song.title],
     ['clips', `${mix.slices.length} slices × ${stems} stems = ${mix.slices.length * stems}`],
     ['tempo', `${mix.targetBpm} BPM${mix.bpmAuto ? ' · detected' : ' · set by hand'}`],
     ['length', `${BARS} bars`],
@@ -132,7 +135,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
             on={mix.bpmAuto}
             onChange={(next) => {
               mix.setBpmAuto(next);
-              if (next) mix.setTargetBpm(mix.song.bpm);
+              if (next) mix.setTargetBpm(workingBpm(song));
             }}
             label="Use the detected tempo"
             title="Snap the target back to the detected tempo"

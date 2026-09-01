@@ -14,7 +14,7 @@ import './Running.css';
  */
 export function Running({ mix }: { mix: Mix }) {
   const job = mix.job;
-  if (!job) return null;
+  if (!job || !mix.song) return null;
   const sources = modelOf(mix.model).sources;
 
   return (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Empty } from './components/Empty.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
 import { Header } from './components/Header.tsx';
 import { Idle } from './components/Idle.tsx';
@@ -24,10 +25,12 @@ import './App.css';
  * with stems is the lanes. Nothing here is a tab, because they are states of
  * one track rather than views of it — you do not choose to be separating.
  *
- * **The lanes are a mockup.** The library, the waveforms and the slices are
- * invented in `mock.ts` and `peaks.ts`; the only fact on screen that is real is
- * whether this machine could separate anything, which comes over the context
- * bridge from `electron/demucs.ts` and is silent in the header until it is not.
+ * **The library is real and the audio is not.** The tracks come from a folder
+ * on disk through `electron/library.ts`; the waveforms and the slices are
+ * invented in `peaks.ts`, because nothing has decoded a file yet, and the
+ * separation is a timer standing in for a parser. Which of those is which is
+ * marked at every point it matters — most of all in `state.ts`, where a
+ * simulated separation is held in the window and never written to the manifest.
  */
 export function App() {
   const mix = useMix();
@@ -67,6 +70,7 @@ export function App() {
       <main className="mf-body">
         <Library mix={mix} />
         <section className="mf-centre">
+          {mix.phase === 'empty' && <Empty mix={mix} />}
           {mix.phase === 'idle' && <Idle mix={mix} />}
           {mix.phase === 'running' && <Running mix={mix} />}
           {mix.phase === 'ready' && <Lanes mix={mix} />}

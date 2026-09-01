@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BARS, LIBRARY, MODELS, STEMS, modelOf, slicesFor, type Slice, type Song } from './mock.ts';
+import { BARS, MODELS, STEMS, modelOf, slicesFor, type Slice } from './mock.ts';
+import { openflow, workingBpm, type Library, type Track } from './openflow.ts';
 
 /**
  * Everything the window knows, in one hook.
  *
- * One hook rather than a context, because there is one window and one song open
- * in it. `set/` earns its provider by having a socket and a snapshot behind it
- * that a hot update must not drop; this has neither yet, and inventing the
- * ceremony before the thing it protects would be cargo.
+ * One hook rather than a context, because there is one window and one track
+ * open in it. `set/` earns its provider by having a socket and a snapshot
+ * behind it that a hot update must not drop; this has neither, and inventing
+ * the ceremony before the thing it protects would be cargo.
  *
- * What is simulated here is exactly one thing — the separation — and it is
- * marked. Everything else is real state doing its real job.
+ * The library here is **real** — a folder on disk, read through the context
+ * bridge. What is still simulated is exactly one thing, the separation, and it
+ * is marked. Everything else is real state doing its real job.
  */
 
-export type Phase = 'idle' | 'running' | 'ready';
+export type Phase = 'empty' | 'idle' | 'running' | 'ready';
 
 /** A stem's place in the mix. Not the stem itself, which is `mock.ts`'s. */
 export interface Level {
@@ -23,10 +25,8 @@ export interface Level {
 }
 
 export interface Job {
-  /** 0 to 1, over the whole run. */
   done: number;
   stage: string;
-  /** 0 to 1 per source, so the lanes fill in the order the model emits them. */
   perStem: Record<string, number>;
 }
 
@@ -35,20 +35,16 @@ export interface Job {
  *
  * Detection gets the tempo right and the *phase* wrong often enough that a
  * manual path is not a fallback so much as the other half of the feature: two
- * points far apart pin both, and everything between them follows. The stage is
- * what the bar at the top of the lanes is asking for.
+ * points far apart pin both, and everything between them follows.
  */
 export interface Manual {
   stage: 'first' | 'late' | 'tune';
-  /** Where bar 1 starts, in bars along the untouched timeline. */
   first: number | null;
-  /** A strong beat near the end, likewise. */
   late: number | null;
 }
 
 /** A point where the grid is pinned to the audio. */
 export interface Anchor {
-  /** Where it sits, in bars. */
   at: number;
   label: string;
 }
@@ -62,16 +58,19 @@ const levels = (): Record<string, Level> =>
 const TICK_MS = 90;
 const PER_TICK = 0.006;
 
+const NOTHING: Library = { root: null, tracks: [] };
+
 export function useMix() {
-  const [songs, setSongs] = useState<readonly Song[]>(LIBRARY);
-  const [selected, setSelected] = useState(LIBRARY[0].id);
+  const [library, setLibrary] = useState<Library>(NOTHING);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [model, setModel] = useState('htdemucs_ft');
   const [level, setLevel] = useState<Record<string, Level>>(levels);
   const [slices, setSlices] = useState<Slice[]>(() => slicesFor(8));
   const [activeSlice, setActiveSlice] = useState(0);
   const [snap, setSnap] = useState('1/2');
-  const [targetBpm, setTargetBpm] = useState(124);
+  const [targetBpm, setTargetBpm] = useState(120);
   const [bpmAuto, setBpmAuto] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [loop, setLoop] = useState(true);
@@ -80,29 +79,92 @@ export function useMix() {
   const [exporting, setExporting] = useState(false);
   const [manual, setManual] = useState<Manual | null>(null);
   const [anchors, setAnchors] = useState<Anchor[]>([]);
+  const [note, setNote] = useState<string | null>(null);
 
-  const song = useMemo(() => songs.find((s) => s.id === selected) ?? songs[0], [songs, selected]);
+  /**
+   * Simulated separations, held here and **never written to the manifest**.
+   *
+   * The job in this file is a stand-in for a parser that does not exist yet, so
+   * recording its result in the user's library would be writing a lie into a
+   * file they own. It lives for as long as the window does, which is exactly as
+   * long as the pretence is useful.
+   */
+  const [pretend, setPretend] = useState<Record<string, { model: string; sources: string[] }>>({});
 
-  // A grid belongs to one track. Carrying anchors across a selection would
-  // leave the next song pinned to the last one's downbeats.
-  const select = useCallback((id: string) => {
-    setSelected(id);
-    setAnchors([]);
-    setManual(null);
-    setBar(0);
-    setPlaying(false);
-  }, []);
+  const tracks = useMemo(
+    () =>
+      library.tracks.map((t) => {
+        const faked = pretend[t.id];
+        return faked ? { ...t, model: faked.model, sources: faked.sources } : t;
+      }),
+    [library.tracks, pretend],
+  );
 
-  const phase: Phase = job ? 'running' : song.separated.length ? 'ready' : 'idle';
+  const song = useMemo(
+    () => tracks.find((t) => t.id === selected) ?? null,
+    [tracks, selected],
+  );
+
+  const phase: Phase = !song ? 'empty' : job ? 'running' : song.sources.length ? 'ready' : 'idle';
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return songs;
-    return songs.filter(
-      (s) =>
-        s.title.toLowerCase().includes(needle) || s.artist.toLowerCase().includes(needle),
+    if (!needle) return tracks;
+    return tracks.filter(
+      (t) =>
+        t.title.toLowerCase().includes(needle) ||
+        (t.artist ?? '').toLowerCase().includes(needle),
     );
-  }, [songs, query]);
+  }, [tracks, query]);
+
+  /** The library, read once on mount and again after anything that changes it. */
+  const refresh = useCallback(async () => {
+    const bridge = openflow();
+    if (!bridge) {
+      setLoading(false);
+      return;
+    }
+    setLibrary(await bridge.library.read());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const chooseFolder = useCallback(async () => {
+    const bridge = openflow();
+    if (!bridge) return;
+    setLibrary(await bridge.library.choose());
+    setSelected(null);
+    setNote(null);
+  }, []);
+
+  /**
+   * Import, and say what happened.
+   *
+   * A refusal is per file rather than for the batch — dragging a folder in
+   * means a stray `.DS_Store` or a PDF, and one of those must not stop the
+   * eleven WAVs beside it.
+   */
+  const importTracks = useCallback(async (files?: string[]) => {
+    const bridge = openflow();
+    if (!bridge) return;
+    const done = await bridge.library.add(files);
+    setLibrary({ root: done.root, tracks: done.tracks, problem: done.problem });
+    setNote(
+      done.added === 0 && done.refused.length === 0
+        ? null
+        : [
+            done.added > 0 ? `imported ${done.added}` : null,
+            done.refused.length > 0 ? `skipped ${done.refused.length}` : null,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+    );
+  }, []);
+
+  const reveal = useCallback(() => void openflow()?.library.reveal(), []);
 
   /**
    * Solo is exclusive of mute, not of the other solos: any soloed stem plays,
@@ -111,19 +173,18 @@ export function useMix() {
    */
   const audible = useCallback(
     (id: string): boolean => {
-      const soloing = song.separated.some((s) => level[s]?.soloed);
+      if (!song) return false;
+      const soloing = song.sources.some((s) => level[s]?.soloed);
       const own = level[id];
       if (!own) return false;
       return soloing ? own.soloed : !own.muted;
     },
-    [level, song.separated],
+    [level, song],
   );
 
   // The one simulated thing in this file. A real run reports progress by
   // parsing demucs's stderr, which is a bar rather than a number — see
   // mix/docs/demucs.md — so this stands in for a parser that does not exist.
-  const runningRef = useRef(false);
-  runningRef.current = job !== null;
   useEffect(() => {
     if (!job) return;
     const sources = modelOf(model).sources;
@@ -132,7 +193,6 @@ export function useMix() {
         if (!was) return was;
         const done = was.done + PER_TICK;
         if (done >= 1) return null;
-        // Staggered: each source finishes a fifth of the run after the last.
         const perStem = Object.fromEntries(
           sources.map((id, i) => {
             const from = (i / sources.length) * 0.7;
@@ -153,16 +213,14 @@ export function useMix() {
     return () => clearInterval(timer);
   }, [job === null, model]);
 
-  // When it finishes, the song has stems. Marked here rather than in the tick
-  // so the transition happens once and not on whichever tick crossed 1.
+  // When it finishes, the track has stems — in this window only.
   const wasRunning = useRef(false);
   useEffect(() => {
-    if (wasRunning.current && !job) {
-      setSongs((all) =>
-        all.map((s) =>
-          s.id === selected ? { ...s, separated: modelOf(model).sources, model } : s,
-        ),
-      );
+    if (wasRunning.current && !job && selected) {
+      setPretend((was) => ({
+        ...was,
+        [selected]: { model, sources: [...modelOf(model).sources] },
+      }));
     }
     wasRunning.current = job !== null;
   }, [job, selected, model]);
@@ -172,7 +230,7 @@ export function useMix() {
   // thing reading it is a 1px line.
   useEffect(() => {
     if (!playing) return;
-    const beatMs = 60_000 / targetBpm;
+    const beatMs = 60_000 / (targetBpm || 120);
     let raf = 0;
     let last = performance.now();
     const step = (now: number) => {
@@ -189,15 +247,26 @@ export function useMix() {
     return () => cancelAnimationFrame(raf);
   }, [playing, targetBpm, loop]);
 
+  const select = useCallback(
+    (id: string) => {
+      setSelected(id);
+      setAnchors([]);
+      setManual(null);
+      setBar(0);
+      setPlaying(false);
+      const picked = tracks.find((t) => t.id === id);
+      setTargetBpm(workingBpm(picked ?? null));
+      setBpmAuto(picked?.bpm !== null && picked?.bpm !== undefined);
+    },
+    [tracks],
+  );
+
   const separate = useCallback(() => {
     setJob({ done: 0, stage: 'loading the model', perStem: {} });
   }, []);
 
-  /**
-   * Detection, re-run. The two anchors it drops are the ends rather than
-   * arbitrary points: a grid pinned at both ends cannot drift in the middle by
-   * more than the tempo is actually wrong by.
-   */
+  const cancel = useCallback(() => setJob(null), []);
+
   const autoWarp = useCallback(() => {
     setAnchors([
       { at: 0, label: '1' },
@@ -209,12 +278,6 @@ export function useMix() {
   const startManual = useCallback(() => setManual({ stage: 'first', first: null, late: null }), []);
   const endManual = useCallback(() => setManual(null), []);
 
-  /**
-   * A click in a lane means two different things, and which one is the whole
-   * reason the manual mode has a bar of its own saying so: normally it moves
-   * the playhead, and in manual mode it pins whichever point is being asked
-   * for.
-   */
   const pin = useCallback(
     (at: number) => {
       if (!manual) {
@@ -236,7 +299,6 @@ export function useMix() {
     [manual],
   );
 
-  /** Ten milliseconds either way, which is the resolution a downbeat needs. */
   const nudge = useCallback(
     (direction: number) => {
       setAnchors((was) =>
@@ -247,8 +309,6 @@ export function useMix() {
     },
     [targetBpm],
   );
-
-  const cancel = useCallback(() => setJob(null), []);
 
   const adjust = useCallback((id: string, change: Partial<Level>) => {
     setLevel((was) => ({ ...was, [id]: { ...(was[id] ?? REST), ...change } }));
@@ -267,12 +327,13 @@ export function useMix() {
 
   /** `4/6 audible`, and whether a solo is what is doing it. */
   const audibleLine = useMemo(() => {
-    const sources = song.separated;
-    if (!sources.length) return '';
-    const soloing = sources.some((id) => level[id]?.soloed);
-    const heard = sources.filter((id) => (soloing ? level[id]?.soloed : !level[id]?.muted)).length;
-    return `${heard}/${sources.length} audible${soloing ? ' · solo' : ''}`;
-  }, [song.separated, level]);
+    if (!song?.sources.length) return '';
+    const soloing = song.sources.some((id) => level[id]?.soloed);
+    const heard = song.sources.filter((id) =>
+      soloing ? level[id]?.soloed : !level[id]?.muted,
+    ).length;
+    return `${heard}/${song.sources.length} audible${soloing ? ' · solo' : ''}`;
+  }, [song, level]);
 
   const touched = useMemo(
     () =>
@@ -284,9 +345,15 @@ export function useMix() {
   );
 
   return {
+    library,
+    loading,
+    chooseFolder,
+    importTracks,
+    reveal,
+    note,
     songs: shown,
-    total: songs.length,
-    withStems: songs.filter((s) => s.separated.length > 0).length,
+    total: tracks.length,
+    withStems: tracks.filter((t) => t.sources.length > 0).length,
     song,
     phase,
     selected,
@@ -334,3 +401,4 @@ export function useMix() {
 }
 
 export type Mix = ReturnType<typeof useMix>;
+export type { Track };

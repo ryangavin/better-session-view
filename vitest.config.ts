@@ -24,6 +24,7 @@ export default defineConfig({
       module('core', ['core/src/**/*.test.ts']),
       module('widgets', ['widgets/src/**/*.test.ts']),
       module('desktop', ['desktop/src/**/*.test.ts']),
+      module('mix', ['mix/electron/**/*.test.ts']),
       module('set', [
         'set/src/lib/**/*.test.ts',
         'set/src/components/**/*.test.ts',
@@ -56,6 +57,11 @@ export default defineConfig({
         'desktop/src/apps.ts',
         'set/src/**/*.{ts,tsx}',
         'mix/src/**/*.{ts,tsx}',
+        // Not the whole of electron/: main.ts and library.ts import electron,
+        // which only exists inside a main process. The manifest is the part
+        // that owns a person's library, and it is the part with no electron in
+        // it precisely so it can be reached from here.
+        'mix/electron/manifest.ts',
         'visuals/client/**/*.{ts,tsx}',
         'visuals/server/**/*.{ts,tsx}',
         'chart/src/**/*.{ts,tsx}',

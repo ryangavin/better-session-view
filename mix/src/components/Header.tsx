@@ -104,8 +104,14 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
       </div>
 
       <div className="mf-open">
-        <span className="mf-open-title">{mix.song.title}</span>
-        <span className="mf-open-artist">{mix.song.artist}</span>
+        {mix.song ? (
+          <>
+            <span className="mf-open-title">{mix.song.title}</span>
+            <span className="mf-open-artist">{mix.song.artist ?? ''}</span>
+          </>
+        ) : (
+          <span className="mf-open-none">nothing open</span>
+        )}
       </div>
 
       {live && (

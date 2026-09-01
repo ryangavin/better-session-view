@@ -57,14 +57,18 @@ const again = (
 );
 
 export function Lanes({ mix }: { mix: Mix }) {
-  const sources = mix.song.separated;
+  const song = mix.song;
+  const sources = song?.sources ?? [];
+  const id = song?.id ?? '';
 
   const peaks = useMemo(
-    () => Object.fromEntries(sources.map((id) => [id, peaksFor(id, mix.song.id, BARS, COLUMNS)])),
-    [sources, mix.song.id],
+    () => Object.fromEntries(sources.map((source) => [source, peaksFor(source, id, BARS, COLUMNS)])),
+    [sources, id],
   );
 
-  const onsets = useMemo(() => onsetsFor(sources, mix.song.id, BARS), [sources, mix.song.id]);
+  const onsets = useMemo(() => onsetsFor(sources, id, BARS), [sources, id]);
+
+  if (!song) return null;
 
   return (
     <div className="mf-lanes">
@@ -94,7 +98,7 @@ export function Lanes({ mix }: { mix: Mix }) {
           </div>
           <div className="mf-band-bottom">
             <span className="mf-band-audible">{mix.audibleLine}</span>
-            <span className="mf-band-model">{modelOf(mix.song.model).label}</span>
+            <span className="mf-band-model">{modelOf(song.model ?? '').label}</span>
           </div>
         </div>
 
@@ -191,7 +195,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                     bars={BARS}
                   />
                 ) : (
-                  <span className="mf-lane-none">folded into Other by {mix.song.model}</span>
+                  <span className="mf-lane-none">folded into Other by {song.model}</span>
                 )}
               </div>
             </div>

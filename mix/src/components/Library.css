@@ -8,14 +8,22 @@
   border-right: 1px solid var(--bd);
 }
 
-.mf-library-filter {
+.mf-library-top {
   flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 7px 8px;
   border-bottom: 1px solid var(--bd);
 }
 
-.mf-library-filter input {
-  width: 100%;
+.mf-library-top .wdg {
+  --wdg-field-height: 24px;
+}
+
+.mf-library-top input {
+  flex: 1;
+  min-width: 0;
   height: 24px;
   padding: 0 8px;
   background: var(--surface-control);
@@ -27,8 +35,12 @@
   outline: none;
 }
 
-.mf-library-filter input:focus {
+.mf-library-top input:focus {
   border-color: var(--focus);
+}
+
+.mf-library-top input:disabled {
+  opacity: 0.4;
 }
 
 .mf-library-list {
@@ -165,4 +177,57 @@
   padding: 14px 10px;
   font-size: 11px;
   color: var(--caption);
+}
+
+.mf-library-blank {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px 12px;
+}
+
+.mf-library-blank p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--detail);
+  text-wrap: pretty;
+}
+
+.mf-blank-lead {
+  color: var(--fg) !important;
+  font-size: 12px !important;
+}
+
+.mf-blank-bad {
+  color: var(--red) !important;
+  font-family: var(--mono);
+  font-size: 10px !important;
+}
+
+.mf-library-note {
+  color: var(--green);
+}
+
+.mf-library-where {
+  max-width: 150px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--caption);
+  font-family: var(--mono);
+  font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.mf-library-where:hover:not(:disabled) {
+  color: var(--ui);
+}
+
+.mf-library-where:disabled {
+  cursor: default;
 }

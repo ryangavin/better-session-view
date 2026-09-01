@@ -154,12 +154,17 @@ colour changes in one place and nothing else has to be read to find out why.
 
 ## What is invented
 
-Everything except one thing. `mock.ts` is the library, `peaks.ts` is the audio, and both
-are derived from an index rather than random so the picture is the same on every launch —
-which is what makes a screenshot worth comparing against the last one.
+**The library is not.** It is a folder on disk read through `electron/library.ts` —
+[`library.md`](library.md) — so the rail, the counts and the badge strips are all real.
 
-The one real fact on screen is in the status bar: whether this machine could separate
-anything, which comes over the context bridge from `electron/demucs.ts`. A window that
+`peaks.ts` is the audio, because nothing has decoded a file yet, and it is derived from
+an index rather than random so the picture is the same on every launch — which is what
+makes a screenshot worth comparing against the last one. A track imported today has no
+tempo, no key and no length, and the window draws all three as unknown rather than
+inventing them.
+
+The other real fact is in the header: whether this machine could separate anything, which
+comes over the context bridge from `electron/demucs.ts`. A window that
 mocked its own toolchain check would be a window you could not trust about anything.
 
 `state.ts` marks the single simulated behaviour — the job's progress — and everything

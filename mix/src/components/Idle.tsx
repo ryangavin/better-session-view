@@ -1,5 +1,6 @@
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS, modelOf } from '../mock.ts';
+import { duration } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './Idle.css';
 
@@ -11,16 +12,23 @@ import './Idle.css';
  * something you can act on standing at a laptop; "the piano bleeds badly" is.
  */
 export function Idle({ mix }: { mix: Mix }) {
+  const song = mix.song;
   const chosen = modelOf(mix.model);
-  const minutes = Number(mix.song.length.split(':')[0]) + Number(mix.song.length.split(':')[1]) / 60;
   const factor = Number(chosen.speed.replace(/[^\d.]/g, '')) || 1;
-  const estimate = Math.max(1, Math.round(minutes / factor));
+  // A duration nobody has measured cannot be turned into an estimate, and a
+  // made-up "about 4 min" is worse than admitting the length is not known yet.
+  const estimate =
+    song?.seconds == null
+      ? null
+      : Math.max(1, Math.round(song.seconds / 60 / factor));
+
+  if (!song) return null;
 
   return (
     <div className="mf-page">
       <div className="mf-page-body">
         <p className="mf-eyebrow">no stems on disk</p>
-        <h2 className="mf-page-title">{mix.song.title}</h2>
+        <h2 className="mf-page-title">{song.title}</h2>
         <p className="mf-page-blurb">
           Each model trades render time against bleed between sources. A six-source model
           splits guitar and piano out of the residual; a four-source one folds them back
@@ -63,7 +71,9 @@ export function Idle({ mix }: { mix: Mix }) {
             Generate stems
           </Button>
           <span className="mf-estimate">
-            {mix.song.length} at {chosen.speed} · about {estimate} min
+            {estimate === null
+              ? `${chosen.speed} — length not read yet`
+              : `${duration(song.seconds)} at ${chosen.speed} · about ${estimate} min`}
           </span>
         </div>
       </div>
