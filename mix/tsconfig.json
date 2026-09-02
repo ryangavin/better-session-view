@@ -12,6 +12,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "harness/**/*.ts",
     "vite.config.ts",
     "../types/assets.d.ts",
     "../types/signalsmith-stretch.d.ts"

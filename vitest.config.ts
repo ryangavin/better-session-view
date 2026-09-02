@@ -24,7 +24,7 @@ export default defineConfig({
       module('core', ['core/src/**/*.test.ts']),
       module('widgets', ['widgets/src/**/*.test.ts']),
       module('desktop', ['desktop/src/**/*.test.ts']),
-      module('mix', ['mix/electron/**/*.test.ts', 'mix/src/**/*.test.ts']),
+      module('mix', ['mix/electron/**/*.test.ts', 'mix/src/**/*.test.ts', 'mix/harness/**/*.test.ts']),
       module('set', [
         'set/src/lib/**/*.test.ts',
         'set/src/components/**/*.test.ts',
