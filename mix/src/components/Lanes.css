@@ -292,28 +292,11 @@ font-variation-settings: var(--mono-axes);
   white-space: nowrap;
 }
 
-.mf-tab-actions input {
-  box-sizing: border-box;
-  flex: 1;
-  min-width: 0;
-  height: 22px;
-  padding: 0 5px;
-  border: 1px solid var(--bd-strong);
-  border-radius: 2px;
-  outline: none;
-  background: var(--surface-cell-muted);
-  color: var(--ui);
-  font-family: var(--mono);
+.mf-tab-tuning {
+  flex: none;
+  color: var(--caption);
   font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
-}
-
-.mf-tab-actions input:focus {
-  border-color: var(--amber);
-}
-
-.mf-tab-actions input[aria-invalid='true'] {
-  border-color: var(--red);
 }
 
 .mf-tab-draw {

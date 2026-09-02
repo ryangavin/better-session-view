@@ -18,6 +18,14 @@ export interface TuningString {
 
 export type Tuning = readonly TuningString[];
 
+/** The instrument mix[flow] transcribes for: standard four-string bass, EADG. */
+export const STANDARD_BASS: Tuning = [
+  { name: 'E1', pitch: 28 },
+  { name: 'A1', pitch: 33 },
+  { name: 'D2', pitch: 38 },
+  { name: 'G2', pitch: 43 },
+];
+
 export interface FrettedNote extends TranscribedNote {
   string: number;
   fret: number | null;
@@ -30,7 +38,7 @@ const PITCH_CLASS: Record<string, number> = {
   'A#': 10, Bb: 10, B: 11,
 };
 
-/** Parse a required low-to-high tuning such as `E1 A1 D2 G2`. No default exists. */
+/** Parse a named low-to-high tuning for tests and file conversion tools. */
 export function parseTuning(text: string): Tuning | null {
   const words = text.trim().split(/[\s,]+/).filter(Boolean);
   if (words.length < 2 || words.length > 8) return null;

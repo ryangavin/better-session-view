@@ -29,7 +29,7 @@ import {
   type TranscribeProgress,
   type Track,
 } from './openflow.ts';
-import { parseTuning } from './tab.ts';
+import { STANDARD_BASS } from './tab.ts';
 
 /**
  * Everything the window knows, in one hook.
@@ -192,9 +192,6 @@ export function useMix() {
   const [job, setJob] = useState<Job | null>(null);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  /** Deliberately empty: the instrument decides its tuning, never the app. */
-  const [tuningText, setTuningText] = useState('');
-  const tuning = useMemo(() => parseTuning(tuningText), [tuningText]);
   const [transcribeJob, setTranscribeJob] = useState<TranscribeProgress | null>(null);
   const [transcribingId, setTranscribingId] = useState<string | null>(null);
   const [transcription, setTranscription] = useState<Transcribed | null>(null);
@@ -724,17 +721,13 @@ export function useMix() {
   const transcribeBass = useCallback(async () => {
     const bridge = openflow();
     if (!bridge || !song) return;
-    if (!tuning) {
-      setTranscribeProblem('enter the bass tuning, low string first');
-      return;
-    }
     setTranscribeProblem(null);
     setTranscription(null);
     setTranscribingId(song.id);
     setTranscribeJob({ done: 0, stage: 'loading the pitch model', seconds: null });
     const outcome = await bridge.transcribe.run({
       trackId: song.id,
-      tuning,
+      tuning: STANDARD_BASS,
       bars: bpmAuto ? grid : null,
     });
     // The runner normally announces this as an event. Early refusals cannot,
@@ -743,7 +736,7 @@ export function useMix() {
     setTranscribingId(null);
     setTranscription(outcome.ok ? outcome : null);
     setTranscribeProblem(outcome.ok || outcome.cancelled ? null : outcome.says);
-  }, [song, tuning, bpmAuto, grid]);
+  }, [song, bpmAuto, grid]);
 
   const cancelTranscription = useCallback(() => {
     const id = transcribingId;
@@ -1160,9 +1153,6 @@ export function useMix() {
     problem,
     separate,
     cancel,
-    tuningText,
-    setTuningText,
-    tuning,
     transcribeJob,
     transcribingId,
     transcription,

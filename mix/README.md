@@ -67,7 +67,7 @@ arrangement yet, and the export button closes the dialog.
 | `src/mock.ts` | how a source is drawn, and the one invented thing left |
 | `src/zoom.ts` | how much of the track the lanes show, and which part |
 | `src/warp.ts` | where the bars fall, and the tempo and downbeat fitted to the kick. Tested |
-| `src/tab.ts` | explicit tunings, the fret-path search and tab layouts. Tested |
+| `src/tab.ts` | standard EADG bass, the fret-path search and tab layouts. Tested |
 | `src/grid.ts` | how finely the grid rules at that zoom, and what each line is. Tested |
 | `src/state.ts` | everything the window knows, in one hook |
 | `src/components/` | the header, the library, the three states, the lanes and the warp lane |

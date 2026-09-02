@@ -400,18 +400,16 @@ export function Lanes({ mix }: { mix: Mix }) {
 /**
  * A complete transcription lane immediately beneath the audio it came from.
  *
- * Tuning is required and starts empty. A placeholder teaches the spelling but
- * is not a value: assuming four-string standard tuning would make a perfectly
- * tidy, confidently wrong tab for a five-string or a detuned instrument.
+ * The instrument is a standard four-string bass. There is no setup form in the
+ * lane: EADG is part of what this feature means, like the source being Bass.
  */
 function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
   const song = mix.song;
   if (!song) return null;
   const ownJob = mix.transcribingId === song.id;
   const done = mix.transcription?.trackId === song.id ? mix.transcription : null;
-  const invalid = mix.tuningText.trim() !== '' && mix.tuning === null;
   const blocked = mix.runningId !== null || (mix.transcribingId !== null && !ownJob);
-  const strings = done?.tuning.length ?? mix.tuning?.length ?? 4;
+  const strings = done?.tuning.length ?? 4;
   const height = Math.max(84, strings * 18 + 22);
 
   return (
@@ -419,46 +417,28 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
       <div className="mf-head mf-tab-head">
         <div className="mf-tab-headline">
           <span className="mf-lane-label">Tablature</span>
-          {done && (
-            <span className="mf-tab-count">
-              {done.sidecar.pitchedCount} notes · {done.sidecar.mutedCount} x
-            </span>
-          )}
+          <span className="mf-tab-tuning">E · A · D · G</span>
         </div>
+        {done && (
+          <span className="mf-tab-count">
+            {done.sidecar.pitchedCount} notes · {done.sidecar.mutedCount} x
+          </span>
+        )}
         <div className="mf-tab-actions">
-          <input
-            value={mix.tuningText}
-            onChange={(event) => mix.setTuningText(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && mix.tuning && !mix.engineBusy) void mix.transcribeBass();
-            }}
-            placeholder="E1 A1 D2 G2"
-            title="Open strings from low to high, with octaves — for example E1 A1 D2 G2 or B0 E1 A1 D2 G2"
-            aria-label="Bass tuning, low string first"
-            aria-invalid={invalid || undefined}
-            spellCheck={false}
-          />
           {ownJob ? (
             <Button onPress={mix.cancelTranscription}>Cancel</Button>
+          ) : done ? (
+            <Button onPress={mix.revealTranscription}>Reveal files</Button>
           ) : (
             <Button
               onPress={() => void mix.transcribeBass()}
-              disabled={!mix.tuning || blocked}
-              title={
-                !mix.tuning
-                  ? 'Enter open strings from low to high, with octaves'
-                  : blocked
-                    ? 'The local engine is already working'
-                    : done
-                      ? 'Lay the cached notes out for this tuning'
-                      : 'Detect bass notes and draw them as tablature'
-              }
+              disabled={blocked}
+              title={blocked ? 'The local engine is already working' : 'Detect bass notes and draw them as standard EADG tablature'}
             >
-              {done ? 'Again' : 'Transcribe'}
+              Transcribe
             </Button>
           )}
         </div>
-        {done && <Button onPress={mix.revealTranscription}>Reveal files</Button>}
       </div>
       <div className="mf-tab-draw">
         {done ? (
@@ -476,7 +456,7 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
             {mix.transcribeProblem
               ?? (ownJob
                 ? mix.transcribeJob?.stage ?? 'transcribing the bass'
-                : 'Enter the open strings, then transcribe the bass into this lane')}
+                : 'Transcribe the bass into standard four-string tablature')}
           </span>
         )}
       </div>

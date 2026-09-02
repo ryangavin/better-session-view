@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignFrets, parseTuning, renderTab, type TranscribedNote } from './tab.ts';
+import { assignFrets, parseTuning, renderTab, STANDARD_BASS, type TranscribedNote } from './tab.ts';
 
 const note = (pitch: number | null, start: number): TranscribedNote => ({
   pitch,
@@ -11,7 +11,16 @@ const note = (pitch: number | null, start: number): TranscribedNote => ({
 });
 
 describe('bass tuning', () => {
-  it('requires an explicit low-to-high tuning', () => {
+  it('defines the standard four-string instrument', () => {
+    expect(STANDARD_BASS).toEqual([
+      { name: 'E1', pitch: 28 },
+      { name: 'A1', pitch: 33 },
+      { name: 'D2', pitch: 38 },
+      { name: 'G2', pitch: 43 },
+    ]);
+  });
+
+  it('parses named low-to-high tunings for conversion tools', () => {
     expect(parseTuning('')).toBeNull();
     expect(parseTuning('E1')).toBeNull();
     expect(parseTuning('E1 A1 D2 G2')?.map((string) => string.pitch)).toEqual([28, 33, 38, 43]);
@@ -31,10 +40,9 @@ describe('fret assignment', () => {
     expect(placed.map(({ string, fret }) => [string, fret])).toEqual([[2, 2], [2, 4], [3, 0]]);
   });
 
-  it('uses the supplied five-string tuning without exporting it as a default', () => {
-    const tuning = parseTuning('B0 E1 A1 D2 G2')!;
-    expect(assignFrets([note(23, 0)], tuning)[0]).toMatchObject({ string: 0, fret: 0 });
-    expect(assignFrets([note(22, 0)], tuning)[0]).toMatchObject({ unplayable: true });
+  it('uses open E and marks notes below the standard instrument unplayable', () => {
+    expect(assignFrets([note(28, 0)], STANDARD_BASS)[0]).toMatchObject({ string: 0, fret: 0 });
+    expect(assignFrets([note(27, 0)], STANDARD_BASS)[0]).toMatchObject({ unplayable: true });
   });
 });
 

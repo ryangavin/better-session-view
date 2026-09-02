@@ -11,7 +11,7 @@ deliberately different file artifacts:
   paging, grid and click-to-seek are the same ones the waveforms use.
 
 - `bass.mid` is the pitched notes, at their measured times and velocities.
-- `bass.tab.txt` places those notes on an explicitly named instrument. Muted or
+- `bass.tab.txt` places those notes on a standard four-string EADG bass. Muted or
   unpitched attacks are `x`; a pitched note outside that tuning's playable range is `?`.
 
 Neither is written beside the source audio. They live under the portable library:
@@ -73,25 +73,17 @@ being invented as notes.
 
 **CREPE's true floor is C1, 32.70 Hz.** Its 360 pitch bins begin there. Passing a lower
 `fmin` does not extend the model; measured here, it corrupts periodicity across the whole
-file. An open five-string B0 is about 30.87 Hz, just below that floor, and can alias near
-C1. A five-string tuning is valid input and higher notes lay out correctly, but its open
-B is a known weak edge. The sidecar records the exact engine, model, range, hop and
-threshold so a later tracker can invalidate the cache rather than silently changing it.
+file. Standard bass begins at E1, safely above that edge. The sidecar records the exact
+engine, model, range, hop and threshold so a later tracker can invalidate the cache
+rather than silently changing it.
 
-## Tuning is required, low to high
+## The instrument is standard four-string EADG
 
-The bass lane starts with an empty tuning field. It accepts note names with octaves,
-separated by spaces or commas:
+There is no tuning form. Transcribe means one concrete instrument:
 
 ```
 E1 A1 D2 G2
-B0 E1 A1 D2 G2
-Db1 Gb1 B1 E2
 ```
-
-There is no default. Standard four-string tuning is common, not universal, and a tab
-that quietly assumes it is confidently wrong for a five-string, drop tuning, or a
-detuned live instrument. Strings must ascend from low to high.
 
 `src/tab.ts` enumerates every playable string/fret position up to fret 24 and uses a
 dynamic program across the whole phrase. Large hand-position jumps cost most, needless
@@ -116,9 +108,9 @@ measured times; grid choice only changes the text layout.
 - torchcrepe and full-model versions;
 - pitch range, hop, and periodicity threshold.
 
-Tuning and grid are deliberately not in that key. Once pitch inference exists, pressing
-Transcribe again with another tuning or a newly fitted grid rewrites only
-`bass.tab.txt`. MIDI and the detected notes are reused.
+The grid is deliberately not in that key. Once pitch inference exists, laying the same
+notes against a newly fitted grid rewrites only `bass.tab.txt`. MIDI and the detected
+notes are reused.
 
 Fresh work goes into `<model>.writing` and is renamed only after MIDI, sidecar and tab
 all exist. Cancellation or a failed worker cannot land a partial transcription in the
