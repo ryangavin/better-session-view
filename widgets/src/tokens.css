@@ -21,6 +21,9 @@
   --wdg-plate-selected: var(--bd, #262629);
   --wdg-radius: var(--radius-xs, 2px);
   --wdg-plate-radius: var(--radius-md, 4px);
+  --wdg-modal-radius: var(--radius-lg, 6px);
+  --wdg-modal-scrim: rgba(0, 0, 0, 0.6);
+  --wdg-modal-shadow: var(--shadow-modal, 0 24px 64px rgba(0, 0, 0, 0.55));
   --wdg-sans: var(--sans);
   /* The cut, aliased like everything else here: a widget selects it through
      the `--wdg-*` layer so an embedding host can redefine it, rather than
@@ -49,6 +52,7 @@
   --wdg-graph-y: 0px;
   --wdg-gap: 2px;
   --wdg-space: 8px;
+  --wdg-modal-width: 480px;
   --wdg-row-height: 60px;
   --wdg-device-rows: 2;
   --wdg-device-height: calc(

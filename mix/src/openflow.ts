@@ -171,6 +171,10 @@ interface Bridge {
     matches(text: string): Promise<Match[]>;
     artwork(id: string, url: string): Promise<Library>;
   };
+  destination: {
+    read(): Promise<string>;
+    choose(): Promise<string>;
+  };
   separate: {
     models(): Promise<Model[]>;
     busy(): Promise<string | null>;

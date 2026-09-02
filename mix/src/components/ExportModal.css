@@ -1,43 +1,89 @@
-.mf-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: var(--layer-modal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-}
-
-.mf-modal {
-  width: 480px;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 64px);
-  overflow: auto;
+.mf-export-picks {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-modal);
+  gap: 3px;
 }
 
-.mf-modal-title {
-  margin: 0;
-  font-variation-settings: var(--mono-axes);
-  font-size: var(--text-body);
-  letter-spacing: var(--track-caps);
-  text-transform: uppercase;
+.mf-export-what {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mf-pick {
+  --mf-pick-ink: var(--amber);
+  display: grid;
+  grid-template-columns: 10px auto 1fr;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--bd2);
+  border-radius: var(--radius-md);
+  background: var(--rail);
   color: var(--ui);
+  font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
+  font-size: var(--text-body);
+  text-align: left;
+  cursor: pointer;
 }
 
-.mf-modal-blurb {
-  margin: 0;
-  font-size: var(--text-lead);
-  line-height: 1.7;
+.mf-pick:hover:not(:disabled) {
+  border-color: var(--bd3);
+  background: var(--surface-cell-muted);
+}
+
+.mf-pick:focus-visible {
+  outline: none;
+  border-color: var(--focus);
+}
+
+.mf-pick[data-on] {
+  border-color: var(--mf-pick-ink);
+  background: var(--sel);
+  color: var(--fg);
+}
+
+.mf-pick:disabled {
+  cursor: default;
+  color: var(--caption);
+}
+
+.mf-pick-mark {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--idle);
+  border-radius: var(--radius-sm);
+}
+
+.mf-pick[data-on] .mf-pick-mark {
+  border-color: var(--mf-pick-ink);
+  background: var(--mf-pick-ink);
+}
+
+.mf-pick:disabled .mf-pick-mark {
+  border-style: dashed;
+}
+
+.mf-pick-name {
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-control);
+  letter-spacing: var(--track-label);
+}
+
+.mf-pick-blurb {
+  min-width: 0;
+  overflow: hidden;
   color: var(--detail);
-  text-wrap: pretty;
+  font-size: var(--text-label);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+
+.mf-pick:disabled .mf-pick-blurb {
+  color: var(--idle);
 }
 
 .mf-modal-facts {
@@ -65,11 +111,6 @@
 .mf-modal-facts span:last-child {
   color: var(--ui);
   text-align: right;
-}
-
-.mf-modal-actions {
-  display: flex;
-  gap: 8px;
 }
 
 .mf-modal-slices {
@@ -161,22 +202,20 @@
   text-align: right;
 }
 
-.mf-modal-tempo {
-  display: flex;
+.mf-export-where {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
 }
 
-.mf-modal-warp {
-  flex: none;
-  font-variation-settings: var(--mono-axes);
-  font-size: var(--text-body);
-  color: var(--ui);
+.mf-export-where .wdg-button-body {
+  height: var(--ctl-h);
+  padding: 0 14px;
 }
 
 .mf-modal-path {
-  flex: 1;
-  min-width: 0;
+  margin: 0;
   font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   color: var(--caption);

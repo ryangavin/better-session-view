@@ -57,6 +57,12 @@ expose({
     /** Where library files are served from, decided by the process that serves them. */
     base: (): Promise<string> => ipcRenderer.invoke('openflow:library-base'),
   },
+  destination: {
+    /** Where an export would go right now: what was picked, or the default. */
+    read: (): Promise<string> => ipcRenderer.invoke('openflow:destination'),
+    /** Open the folder dialog. Answers with where it is afterwards, picked or not. */
+    choose: (): Promise<string> => ipcRenderer.invoke('openflow:destination-choose'),
+  },
   separate: {
     /** The models this build will actually run, which is the same list a job checks. */
     models: (): Promise<Model[]> => ipcRenderer.invoke('openflow:models'),

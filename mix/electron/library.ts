@@ -1,9 +1,9 @@
 import { app, dialog, shell, type BrowserWindow } from 'electron';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { agrees, fetchArt, inBatches, lookup, lookupWithThumbs, type Match } from './art.ts';
 import { guess, term } from './guess.ts';
 import { addFiles, editTrack, read, type Edits, type Track } from './manifest.ts';
+import { patchSettings, readSettings, settingsIn } from './settings.ts';
 import { addYoutube } from './youtube.ts';
 
 /**
@@ -14,7 +14,8 @@ import { addYoutube } from './youtube.ts';
  * no electron and is tested. What is here is the two things that need a window:
  * the dialogs, and the one machine-specific fact a portable library cannot hold
  * — where the folder is right now. That lives in this app's own state
- * directory, because a library cannot tell you where to find it.
+ * directory — `settings.ts` — because a library cannot tell you where to find
+ * it.
  *
  * Importing **copies**. A library that referenced files where they already sat
  * would break the first time someone tidied their Downloads folder, and the
@@ -40,20 +41,14 @@ export interface Imported extends Library {
   refused: string[];
 }
 
-const settingsFile = (): string => path.join(app.getPath('userData'), 'settings.json');
+const settingsFile = (): string => settingsIn(app.getPath('userData'));
 
-async function readRoot(): Promise<string | null> {
-  try {
-    const held = JSON.parse(await fs.readFile(settingsFile(), 'utf8')) as { library?: string };
-    return held.library ?? null;
-  } catch {
-    return null;
-  }
-}
+const readRoot = async (): Promise<string | null> =>
+  (await readSettings(settingsFile())).library ?? null;
 
-async function writeRoot(root: string): Promise<void> {
-  await fs.writeFile(settingsFile(), `${JSON.stringify({ library: root }, null, 2)}\n`);
-}
+const writeRoot = async (root: string): Promise<void> => {
+  await patchSettings(settingsFile(), { library: root });
+};
 
 /**
  * Where the library is, for the parts of this app that work in the folder

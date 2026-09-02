@@ -5,6 +5,7 @@ import { enumParam, type Param, type UnitStyle } from '../src/param/param.ts';
 import { Chain } from '../src/chrome/Chain.tsx';
 import { Device, DevicePortRow } from '../src/chrome/Device.tsx';
 import { Graph, GraphNode, type GraphCord } from '../src/chrome/Graph.tsx';
+import { Modal } from '../src/chrome/Modal.tsx';
 import { Port } from '../src/chrome/Port.tsx';
 import { Rack } from '../src/chrome/Rack.tsx';
 import { Row } from '../src/chrome/Row.tsx';
@@ -23,6 +24,7 @@ const SECTIONS = [
   'Knob', 'Slider', 'Number field', 'Toggle', 'Button', 'Meter', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',
   'Chain',
   'Graph',
+  'Modal',
   'Model',
 ];
 
@@ -999,10 +1001,50 @@ export function Bench() {
           </Case>
         </Section>
 
+        <Section id="Modal">
+          <Case note="Ask it, and it is over everything: a native dialog, so it sits in the top layer whatever it opened over, focus is trapped inside it and returns to the button afterwards, escape and the scrim both close it. The × is always there because those two ways out are invisible; the row along the bottom is only for what the modal is for, so there is no Cancel saying what the × already says.">
+            <Asking />
+          </Case>
+        </Section>
+
         <Section id="Model">
           <Model />
         </Section>
       </main>
+    </div>
+  );
+}
+
+/** Mounted while the question is being asked, and unmounted once it is answered. */
+function Asking() {
+  const [asking, setAsking] = useState(false);
+  const [answer, setAnswer] = useState('nothing yet');
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <Button onPress={() => setAsking(true)}>Delete take</Button>
+      <span className="case-note" style={{ margin: 0 }}>{answer}</span>
+      {asking && (
+        <Modal
+          title="delete take"
+          onClose={() => setAsking(false)}
+          actions={
+            <Button
+              tone="danger"
+              onPress={() => {
+                setAnswer('deleted');
+                setAsking(false);
+              }}
+            >
+              Delete
+            </Button>
+          }
+        >
+          <p style={{ margin: 0, fontSize: 'var(--text-lead)', lineHeight: 1.7 }}>
+            Take 4 is nine bars long and has never been played back. Deleting it removes the
+            audio from the disk as well as the row from the list.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }

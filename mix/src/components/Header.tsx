@@ -314,7 +314,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
       <Button
         onPress={() => mix.setExporting(true)}
         disabled={!live}
-        title={live ? 'Build an Ableton clip pack from the current slices' : 'Separate the track first'}
+        title={live ? 'Choose what to write out: the stems, and the full track with them' : 'Separate the track first'}
       >
         Export
       </Button>

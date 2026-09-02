@@ -67,6 +67,7 @@ export {
   type GraphView,
 } from './chrome/Graph.tsx';
 export { GraphContext, portKey, type GraphSurface, type PortSide } from './chrome/graphContext.ts';
+export { Modal, type ModalProps } from './chrome/Modal.tsx';
 export { Port, type PortProps } from './chrome/Port.tsx';
 export { Rack, type RackProps } from './chrome/Rack.tsx';
 export { Row, type RowProps } from './chrome/Row.tsx';

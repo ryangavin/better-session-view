@@ -126,6 +126,15 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 | [`Panel`](../src/chrome/Panel.tsx) | Live's panel grid | repeated vertical lanes sharing section heights across the faceplate |
 | [`Graph`](../src/chrome/Graph.tsx) | neither — a DAW of our own | the canvas layout, the cords, pan and zoom. See [the graph](graph.md) |
 | [`Port`](../src/chrome/Port.tsx) | neither | where a cord ends. `Device` grew two slots for them |
+| [`Modal`](../src/chrome/Modal.tsx) | neither — an editor's, not a device's | a `<dialog>`: the top layer, the scrim, the focus trap and escape |
+
+`Modal` is in this tier for the reason `Button` is in the last one: it belongs to the
+vocabulary of an *editor* rather than of a device, and every app had rolled its own — the
+same fixed scrim, the same escape listener, the same `z-index` guess, each getting a
+different corner of it right. It is a native `<dialog>`, so the top layer, the focus trap,
+the return of focus, `aria-modal` and inertness behind it are the browser's rather than
+ours. It opens by being mounted and has no `open` prop, because a shut modal is state the
+DOM was already keeping.
 
 `Row` and `Panel` solve perpendicular alignment problems. A row aligns the caption,
 control and reading *inside* unlike widgets. A panel aligns the sections *between*

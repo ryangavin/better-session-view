@@ -1,5 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
+import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
+import { stemOf } from '../mock.ts';
+import { openflow } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import { bpmText } from '../warp.ts';
 import './ExportModal.css';
@@ -7,64 +10,183 @@ import './ExportModal.css';
 /**
  * What is about to be written, and the last chance to change it.
  *
- * The slice list lives here rather than in a rail, which is where it moved when
- * the rail went. That turns out to be the better home: naming eight slices is
- * something you do once, immediately before writing the pack, and a list that
- * sat open all session was eight rows of chrome competing with the lanes for a
- * job nobody was doing yet. The ruler above the lanes is still where you *see*
- * a slice is in the wrong place; this is where you name it.
+ * Two questions, in the order you actually answer them: *what shape* is coming
+ * out, and then *which parts of the track go in it*. The shape comes first
+ * because it decides what the rest of the sheet is even asking — a folder of
+ * stems is a list of files, a clip pack is a Session grid — and a sheet that
+ * asked about slices before you had said which of the two you wanted was
+ * asking about the wrong one half the time.
  *
- * It says the numbers rather than showing a spinner, because the whole cost of
- * getting this wrong is discovering it inside Live.
+ * **The pack is here and greyed rather than absent.** It is the thing this app
+ * is for; leaving it out until it works would make the export sheet look
+ * finished when it is a third of the way there, and would give a person no
+ * reason to look again. Greyed and unpickable is the whole of how it says so —
+ * a badge beside the name had to be fitted between the name and the line it
+ * describes, and it pushed that line onto a second row. What it was saying
+ * belongs in the tooltip, where the answer to *why can't I press this* is.
+ *
+ * **Writing the files is not wired yet.** The sheet chooses, and Export closes
+ * without a byte hitting the disk — there is no `export` on the bridge to call
+ * (`openflow.ts` is the whole of what the main process offers). The warp is the
+ * same deferral one level down: the stems on disk are at the track's own tempo,
+ * and rendering them at the header's needs the stretcher off the playback path,
+ * so the toggle that will ask for it says `soon` too rather than pretending.
+ *
+ * **Export sits on the same line as where it is going**, at the end of it,
+ * because those two are one sentence: *this much audio, to there*. A row of
+ * buttons along the bottom would have separated the verb from its object by the
+ * height of the sheet, and the other button on it would have been a Cancel
+ * saying exactly what the × in the title bar says.
+ *
+ * **Where it goes is picked, not typed.** The line at the bottom is the real
+ * folder the main process would write into — `destination.ts` — and Change
+ * opens the OS dialog. A text field would have been the page naming a path,
+ * which is the one thing `preload.ts` refuses to let it do, and it would also
+ * have been a person spelling out somewhere that may not exist. Outside a real
+ * window there is no dialog to open, so it says the default and the button is
+ * dead rather than lying.
+ *
+ * The slice list only appears under the pack, which is whose it is: naming
+ * eight slices is what turns them into eight Session rows, and it means nothing
+ * to a folder of four wavs. So it is dormant while the pack is — the code is
+ * kept rather than deleted, because the naming is the part that was already
+ * right.
  */
+
+type Target = 'stems' | 'pack';
+
+/** One selectable line: the target above, a stem below, the same shape for both. */
+function Pick({
+  on,
+  onPick,
+  name,
+  blurb,
+  ink,
+  soon = false,
+}: {
+  on: boolean;
+  onPick(): void;
+  name: string;
+  blurb?: string;
+  ink?: string;
+  /** Not built yet: greyed, unpickable, and it says why when you hover it. */
+  soon?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className="mf-pick"
+      data-on={on || undefined}
+      aria-pressed={on}
+      disabled={soon}
+      title={soon ? 'Coming soon' : undefined}
+      onClick={onPick}
+      style={(ink ? { '--mf-pick-ink': ink } : {}) as CSSProperties}
+    >
+      <span className="mf-pick-mark" />
+      <span className="mf-pick-name">{name}</span>
+      {blurb && <span className="mf-pick-blurb">{blurb}</span>}
+    </button>
+  );
+}
 
 export function ExportModal({ mix }: { mix: Mix }) {
   const close = () => mix.setExporting(false);
+  const sources = mix.song?.sources ?? [];
+  const [target, setTarget] = useState<Target>('stems');
+  const [chosen, setChosen] = useState<string[]>(sources);
+  const [fullTrack, setFullTrack] = useState(false);
+  const [where, setWhere] = useState<string | null>(null);
+  const bridge = openflow();
 
   useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
+    let live = true;
+    void bridge?.destination.read().then((at) => {
+      if (live) setWhere(at);
+    });
+    return () => {
+      live = false;
     };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  });
+  }, [bridge]);
 
   if (!mix.song) return null;
   const song = mix.song;
-  const stems = song.sources.length;
   const folder = song.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const at = `${where ?? '~/Music/mixflow'}/${folder}/`;
+  const files = chosen.length + (fullTrack ? 1 : 0);
+  const parts = [
+    chosen.length ? `${chosen.length} stem${chosen.length === 1 ? '' : 's'}` : '',
+    fullTrack ? 'full track' : '',
+  ].filter(Boolean);
+
   const facts: [string, string][] = [
     ['track', song.artist ? `${song.title} · ${song.artist}` : song.title],
-    ['clips', `${mix.slices.length} slices × ${stems} stems = ${mix.slices.length * stems}`],
+    ['writes', files ? `${files} wav · ${parts.join(' + ')}` : 'nothing chosen'],
     ['tempo', `${bpmText(mix.targetBpm)} BPM${mix.bpmAuto ? ' · fitted' : ' · set by hand'}`],
     ['length', `${mix.bars} bars · ${Math.round(mix.seconds)}s`],
   ];
 
+  const flip = (id: string) =>
+    setChosen((was) => (was.includes(id) ? was.filter((s) => s !== id) : [...was, id]));
+
   return (
-    <div className="mf-scrim" onClick={close} role="presentation">
-      <div
-        className="mf-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Export clip pack"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="mf-modal-title">export clip pack</p>
-        <p className="mf-modal-blurb">
-          One Session row per slice, one track per stem, every clip warped to the target
-          tempo and looped to its own length. The audio is written beside the set, so the
-          pack survives being moved.
-        </p>
+    <Modal
+      title="export"
+      label="Export"
+      className="mf-export"
+      onClose={close}
+    >
+      <div className="mf-export-picks">
+        <Pick
+          on={target === 'stems'}
+          onPick={() => setTarget('stems')}
+          name="stems"
+          blurb="One wav per stem, in a folder named after the track"
+        />
+        <Pick
+          on={target === 'pack'}
+          onPick={() => setTarget('pack')}
+          name="ableton song pack"
+          blurb="A Session row per slice, a track per stem, every clip warped"
+          soon
+        />
+      </div>
 
-        <div className="mf-modal-facts">
-          {facts.map(([k, v]) => (
-            <div key={k}>
-              <span>{k}</span>
-              <span>{v}</span>
-            </div>
-          ))}
+      <div className="mf-export-what">
+        <p className="mf-cap">what goes in</p>
+        <div className="mf-export-picks">
+          {sources.map((id) => {
+            const stem = stemOf(id);
+            return (
+              <Pick
+                key={id}
+                on={chosen.includes(id)}
+                onPick={() => flip(id)}
+                name={stem.name}
+                ink={stem.ink}
+              />
+            );
+          })}
+          <Pick
+            on={fullTrack}
+            onPick={() => setFullTrack(!fullTrack)}
+            name="Full track"
+            blurb="The stems summed back, at the levels on the lanes"
+          />
         </div>
+      </div>
 
+      <div className="mf-export-picks">
+        <Pick
+          on={false}
+          onPick={() => {}}
+          name={`Warp to ${bpmText(mix.targetBpm)} BPM`}
+          blurb="Written at the track's own tempo until this lands"
+          soon
+        />
+      </div>
+
+      {target === 'pack' && (
         <div className="mf-modal-slices">
           <div className="mf-modal-slice-head">
             <span>#</span>
@@ -94,24 +216,33 @@ export function ExportModal({ mix }: { mix: Mix }) {
             );
           })}
         </div>
+      )}
 
-        {/* The tempo is not editable from here any more. It is the grid's
-            number rather than the export's — the lanes are ruled with it and
-            the warp lane is how you tell whether it is right — so it lives on
-            the header beside Auto-warp, and this says what will be written. */}
-        <div className="mf-modal-tempo">
-          <span className="mf-cap">warp to</span>
-          <span className="mf-modal-warp">{bpmText(mix.targetBpm)} BPM</span>
-          <span className="mf-modal-path">~/Music/mixflow/{folder}/</span>
-        </div>
-
-        <div className="mf-modal-actions">
-          <Button onPress={close} className="mf-primary">
-            Write .als
-          </Button>
-          <Button onPress={close}>Cancel</Button>
-        </div>
+      <div className="mf-modal-facts">
+        {facts.map(([k, v]) => (
+          <div key={k}>
+            <span>{k}</span>
+            <span>{v}</span>
+          </div>
+        ))}
       </div>
-    </div>
+
+      <div className="mf-export-where">
+        <span className="mf-cap">to</span>
+        <span className="mf-modal-path" title={at}>
+          {at}
+        </span>
+        <Button
+          onPress={() => void bridge?.destination.choose().then(setWhere)}
+          disabled={!bridge}
+          title={bridge ? 'Choose the folder exports are written into' : 'Only in the app'}
+        >
+          Change…
+        </Button>
+        <Button onPress={close} disabled={!files} className="mf-primary">
+          Export stems
+        </Button>
+      </div>
+    </Modal>
   );
 }

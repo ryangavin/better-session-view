@@ -7,6 +7,7 @@ import { state } from '@openflow/desktop/state.ts';
 import { updates } from '@openflow/desktop/update.ts';
 import { lifecycle, only, open } from '@openflow/desktop/window.ts';
 import { ready } from './runtime.ts';
+import { chooseDestination, destination } from './destination.ts';
 import { add, artwork, choose, edit, load, matches, reveal, root, youtube } from './library.ts';
 import { MODELS } from './models.ts';
 import { recordStems, type Edits } from './manifest.ts';
@@ -103,6 +104,12 @@ if (only(app)) {
     artwork(ask.id, ask.url),
   );
   ipcMain.handle('openflow:library-base', () => `${MIX.name}://app${MOUNT}`);
+
+  // Where an export goes. Outside the library on purpose — `destination.ts` —
+  // and picked with a dialog rather than typed, so the page still never names a
+  // folder the OS did not hand it.
+  ipcMain.handle('openflow:destination', () => destination());
+  ipcMain.handle('openflow:destination-choose', () => chooseDestination(window_()));
 
   // Separation. The registry is answered rather than restated in the renderer,
   // so what the window offers and what a job will actually run are one list.
