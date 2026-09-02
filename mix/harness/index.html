@@ -7,6 +7,7 @@
   </head>
   <body>
     <div id="summary" class="summary">loading…</div>
+    <div id="verdict" class="summary verdict" hidden></div>
 
     <div class="bar">
       <select id="track"></select>
@@ -23,6 +24,24 @@
       <button id="whole">whole song</button>
       <span id="span" class="dim"></span>
       <span id="note" class="dim"></span>
+      <span class="sep"></span>
+      <button id="correct">correct</button>
+    </div>
+
+    <div id="editbar" class="bar edit" hidden>
+      <button id="barBack" title="bar line back one beat">bar line ◂</button>
+      <button id="barFwd" title="bar line on one beat">▸</button>
+      <button id="halve">halve</button>
+      <button id="double">double</button>
+      <span class="sep"></span>
+      <button id="undo">undo</button>
+      <button id="save">save truth</button>
+      <button id="discard">discard</button>
+      <span class="sep"></span>
+      <span id="editNote" class="dim"></span>
+      <span id="editHelp" class="dim"
+        >drag a beat to move · alt-click or delete to remove · double-click empty space to add · arrows nudge</span
+      >
     </div>
 
     <div id="rows" class="rows">

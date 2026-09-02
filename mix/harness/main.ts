@@ -5,10 +5,12 @@
  */
 import { beatAt, tempoAt, countOf, BEATS_PER_BAR } from '../src/warp.ts';
 import type { Beats } from '../src/warp.ts';
-import type { Edit, IndexEntry, Report, Truth } from './types.ts';
+import type { IndexEntry, Report, Truth } from './types.ts';
 import { Audition } from './audio.ts';
 import type { Click } from './audio.ts';
 import * as D from './draw.ts';
+import { double, halve, insertBeat, moveBeat, removeBeat, rotateBar, seedTruth } from './edit.ts';
+import { score } from './score.ts';
 
 const REPORTS = './reports';
 const KEY = 'mix-harness-track';
@@ -26,6 +28,14 @@ let view = { from: 0, to: 60 };
 let cursor = 0;
 let loop: { from: number; to: number } | null = null;
 let hoverCandidate: number | null = null;
+
+let correcting = false;
+/** The truth as it stands on disk, to go back to. */
+let saved: Truth | null = null;
+let undoStack: Truth[] = [];
+let selected: number | null = null;
+let drag: { beat: number; sample: number; snapped: boolean } | null = null;
+let discardArmed = false;
 
 const seconds = (): number => report?.track.seconds ?? 60;
 const rate = (): number => report?.track.rate ?? 44100;
@@ -90,12 +100,19 @@ async function loadTrack(id: string): Promise<void> {
   report = await json<Report>(`${REPORTS}/${id}.json`);
   truth = await json<Truth>(`${REPORTS}/truth/${id}.json`);
   if (!report) throw new Error(`no report for ${id}`);
+  saved = truth ? structuredClone(truth) : null;
+  correcting = false;
+  undoStack = [];
+  selected = null;
+  drag = null;
   scale = D.tempoScale(report.trace.follow, report.beats);
   view = { from: 0, to: report.track.seconds };
   cursor = 0;
   loop = null;
   fillCandidates();
+  chrome();
   summarise();
+  showVerdict();
   render();
 }
 
@@ -156,8 +173,11 @@ function drawRows(): void {
   if (report) D.drawTransients(hits.g, { ...view, width: hits.w, height: hits.h }, report.heard.transients, rate());
 
   const bt = D.fit(rowCanvas('beats'));
-  if (beats) D.drawBeats(bt.g, { ...view, width: bt.w, height: bt.h }, beats, report?.trace.follow);
-  else if (report) note(bt.g, report.trace.follow?.refused ?? report.trace.tempo?.refused ?? 'no beats');
+  if (beats) {
+    bt.g.globalAlpha = correcting ? 0.4 : 1;
+    D.drawBeats(bt.g, { ...view, width: bt.w, height: bt.h }, beats, report?.trace.follow);
+    bt.g.globalAlpha = 1;
+  } else if (report) note(bt.g, report.trace.follow?.refused ?? report.trace.tempo?.refused ?? 'no beats');
 
   const tm = D.fit(rowCanvas('tempo'));
   D.drawTempo(tm.g, { ...view, width: tm.w, height: tm.h }, report?.trace.follow, beats, scale);
@@ -167,6 +187,47 @@ function drawRows(): void {
   if (report?.known && report.fit) D.drawKnownGrid(tr.g, tv, report.known, report.fit.offset, report.track.seconds);
   if (truth) D.drawTruth(tr.g, tv, truth, beats);
   else note(tr.g, report?.known ? 'no truth file — faint grid is the known tempo' : 'no truth file');
+  drawCorrection(tr.g, tv);
+}
+
+/** What only the correcting hand needs: the region it may touch, the beat it holds, where a drag would land. */
+function drawCorrection(g: CanvasRenderingContext2D, v: D.View): void {
+  if (!correcting || !truth) return;
+  const r = truth.beats.rate;
+
+  g.fillStyle = 'rgba(11, 10, 9, 0.72)';
+  const a = D.xOf(v, truth.region.from);
+  const b = D.xOf(v, truth.region.to);
+  if (a > 0) g.fillRect(0, 0, a, v.height);
+  if (b < v.width) g.fillRect(b, 0, v.width - b, v.height);
+
+  if (selected != null && truth.beats.samples[selected] != null) {
+    const x = Math.round(D.xOf(v, truth.beats.samples[selected] / r)) + 0.5;
+    g.strokeStyle = '#ffffff';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(x, 0);
+    g.lineTo(x, v.height);
+    g.stroke();
+    g.lineWidth = 1;
+    g.fillStyle = '#ffffff';
+    g.font = '10px ui-monospace, monospace';
+    g.fillText(`${selected}`, x + 3, v.height - 3);
+  }
+
+  if (drag) {
+    const x = Math.round(D.xOf(v, drag.sample / r)) + 0.5;
+    g.strokeStyle = drag.snapped ? '#ffd93d' : '#8b837a';
+    g.setLineDash([3, 3]);
+    g.beginPath();
+    g.moveTo(x, 0);
+    g.lineTo(x, v.height);
+    g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = g.strokeStyle;
+    g.font = '10px ui-monospace, monospace';
+    g.fillText(`${(drag.sample / r).toFixed(4)}s${drag.snapped ? ' snap' : ''}`, x + 3, 11);
+  }
 }
 
 function note(g: CanvasRenderingContext2D, text: string): void {
@@ -424,10 +485,10 @@ function wireTooltip(): void {
   });
 }
 
-/* ---------- hooks for a later editing step ---------- */
+/* ---------- correcting ---------- */
 
 /** The truth beat under a page x, or null: where an edit would start. */
-export function truthBeatAt(clientX: number): number | null {
+function truthBeatAt(clientX: number): number | null {
   if (!truth) return null;
   const canvas = rowCanvas('truth');
   const box = canvas.getBoundingClientRect();
@@ -444,9 +505,281 @@ export function truthBeatAt(clientX: number): number | null {
   return best;
 }
 
-/** Where an editing step will fold one correction into the truth in hand. */
-export function applyEdit(_edit: Edit): void {
-  throw new Error('editing is not built yet');
+/** How far a dragged beat reaches for a transient to land on, in seconds. */
+const SNAP = 0.03;
+
+/**
+ * The transient a beat should land on, or the raw time when none is close.
+ * A kick or a snare is worth more than a hi-hat here, so a low or mid hit wins
+ * over a high one even when the high one is nearer.
+ */
+function snapAt(at: number, free: boolean): { at: number; snapped: boolean } {
+  if (free || !report) return { at, snapped: false };
+  let best: number | null = null;
+  let bestGap = Infinity;
+  let bestBand = 2;
+  for (const t of report.heard.transients) {
+    const gap = Math.abs(t.at - at);
+    if (gap > SNAP) continue;
+    const band = t.band === 'high' ? 1 : 0;
+    if (band < bestBand || (band === bestBand && gap < bestGap)) {
+      best = t.at;
+      bestGap = gap;
+      bestBand = band;
+    }
+  }
+  return best == null ? { at, snapped: false } : { at: best, snapped: true };
+}
+
+const sampleAt = (at: number): number => Math.round(at * (truth?.beats.rate ?? rate()));
+
+const auditingTruth = (): boolean => el<HTMLInputElement>('input[name="map"]:checked').value === 'truth';
+
+/** Take a corrected truth, keeping the one it replaced for undo. */
+function apply(next: Truth): void {
+  if (!truth || next === truth) return;
+  undoStack.push(structuredClone(truth));
+  truth = next;
+  afterEdit();
+}
+
+function afterEdit(): void {
+  summarise();
+  showVerdict();
+  render();
+  if (deck.playing && auditingTruth()) void play();
+}
+
+function undo(): void {
+  const back = undoStack.pop();
+  if (!back) return;
+  truth = back;
+  selected = null;
+  drag = null;
+  afterEdit();
+}
+
+/** The scorer's read on the truth as it stands, one line, never in the way of an edit. */
+function showVerdict(): void {
+  const box = el<HTMLElement>('#verdict');
+  box.hidden = !correcting;
+  if (!correcting || !report || !truth) return;
+  try {
+    const s = score(report, truth);
+    const flags = [
+      s.octave ? `octave ${s.octave}` : '',
+      s.offBeat ? 'off-beat' : '',
+      s.phase ? `phase ${s.phase > 0 ? '+' : ''}${s.phase}` : '',
+    ].filter(Boolean);
+    box.innerHTML = [
+      `<b>${truth.beats.samples.length} true beats</b>`,
+      `on ${s.counts.on}`,
+      `shifted ${s.counts.shifted}`,
+      `missed ${s.counts.missed}`,
+      `spurious ${s.counts.spurious}`,
+      `F ${s.fMeasure.toFixed(3)}`,
+      `continuity ${s.continuity.toFixed(3)}`,
+      flags.length ? flags.join(' + ') : 'no flags',
+      `${truth.edits.length} edits`,
+    ].join('  ·  ');
+  } catch (error) {
+    box.textContent = `scorer: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+/** The page's furniture for whichever mode it is in. */
+function chrome(): void {
+  document.body.classList.toggle('correcting', correcting);
+  el<HTMLElement>('#editbar').hidden = !correcting;
+  el<HTMLButtonElement>('#correct').classList.toggle('on', correcting);
+  el<HTMLButtonElement>('#correct').textContent = correcting ? 'correcting' : 'correct';
+}
+
+function toggleCorrect(): void {
+  if (correcting) {
+    correcting = false;
+    selected = null;
+    drag = null;
+    chrome();
+    showVerdict();
+    render();
+    return;
+  }
+  if (!report) return;
+  if (truth) loop = { ...truth.region };
+  else if (!loop) {
+    el('#note').textContent = 'pick a region first: shift-drag along the time row';
+    return;
+  } else truth = seedTruth(report, loop);
+  el('#note').textContent = '';
+  correcting = true;
+  undoStack = [];
+  selected = null;
+  drag = null;
+  deck.looping = loop !== null;
+  el<HTMLInputElement>('input[name="map"][value="truth"]').checked = true;
+  chrome();
+  summarise();
+  showVerdict();
+  render();
+  if (deck.playing) void play();
+}
+
+function say(text: string, bad = false): void {
+  const note = el<HTMLElement>('#editNote');
+  note.textContent = text;
+  note.classList.toggle('bad', bad);
+}
+
+async function saveTruth(): Promise<void> {
+  if (!truth || !report) return;
+  try {
+    const put = await fetch(`./truth/${report.track.id}.json`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(truth),
+    });
+    if (!put.ok) {
+      say(`save failed: ${(await put.text()) || put.status}`, true);
+      return;
+    }
+    saved = structuredClone(truth);
+    say(`saved ${truth.beats.samples.length} beats, ${truth.edits.length} edits`);
+  } catch (error) {
+    say(`save failed: ${error instanceof Error ? error.message : String(error)}`, true);
+  }
+}
+
+/** Two clicks rather than a dialog: a browser driving the page cannot answer a confirm(). */
+function discard(): void {
+  const button = el<HTMLButtonElement>('#discard');
+  const disarm = () => {
+    discardArmed = false;
+    button.classList.remove('danger');
+    button.textContent = 'discard';
+  };
+  if (!discardArmed) {
+    discardArmed = true;
+    button.classList.add('danger');
+    button.textContent = 'really discard?';
+    window.setTimeout(() => discardArmed && disarm(), 3000);
+    return;
+  }
+  disarm();
+  truth = saved ? structuredClone(saved) : null;
+  undoStack = [];
+  selected = null;
+  drag = null;
+  if (!truth) correcting = false;
+  else loop = { ...truth.region };
+  chrome();
+  summarise();
+  showVerdict();
+  render();
+  say(saved ? 'back to the saved truth' : 'seeded truth thrown away');
+}
+
+function wireCorrection(): void {
+  const canvas = rowCanvas('truth');
+
+  canvas.addEventListener('pointerdown', (ev) => {
+    if (!correcting || !truth) return;
+    ev.preventDefault();
+    const hit = truthBeatAt(ev.clientX);
+    if (hit != null && ev.altKey) {
+      apply(removeBeat(truth, hit));
+      selected = null;
+      render();
+      return;
+    }
+    if (hit == null) {
+      selected = null;
+      render();
+      return;
+    }
+    selected = hit;
+    canvas.setPointerCapture(ev.pointerId);
+    const startX = ev.clientX;
+    let moved = false;
+
+    const move = (m: PointerEvent) => {
+      if (!truth) return;
+      if (Math.abs(m.clientX - startX) > 2) moved = true;
+      if (!moved) return;
+      const at = D.timeOf(viewOf(1), m.clientX - canvas.getBoundingClientRect().left);
+      const want = snapAt(at, m.altKey);
+      drag = { beat: hit, sample: sampleAt(want.at), snapped: want.snapped };
+      render();
+    };
+    const up = () => {
+      canvas.removeEventListener('pointermove', move);
+      canvas.removeEventListener('pointerup', up);
+      const held = drag;
+      drag = null;
+      if (moved && held && truth) {
+        apply(moveBeat(truth, hit, held.sample));
+        selected = truth.beats.samples.indexOf(held.sample);
+      }
+      render();
+    };
+    canvas.addEventListener('pointermove', move);
+    canvas.addEventListener('pointerup', up);
+  });
+
+  canvas.addEventListener('dblclick', (ev) => {
+    if (!correcting || !truth) return;
+    if (truthBeatAt(ev.clientX) != null) return;
+    const at = D.timeOf(viewOf(1), ev.clientX - canvas.getBoundingClientRect().left);
+    const want = snapAt(at, ev.altKey);
+    const sample = sampleAt(want.at);
+    apply(insertBeat(truth, sample));
+    selected = truth.beats.samples.indexOf(sample);
+    render();
+  });
+
+  el('#correct').addEventListener('click', toggleCorrect);
+  el('#barBack').addEventListener('click', () => truth && apply(rotateBar(truth, -1)));
+  el('#barFwd').addEventListener('click', () => truth && apply(rotateBar(truth, 1)));
+  el('#halve').addEventListener('click', () => truth && apply(halve(truth)));
+  el('#double').addEventListener('click', () => truth && apply(double(truth)));
+  el('#undo').addEventListener('click', undo);
+  el('#save').addEventListener('click', () => void saveTruth());
+  el('#discard').addEventListener('click', discard);
+}
+
+/** Keys that only mean something with a beat in hand. Returns whether the key was taken. */
+function correctionKey(ev: KeyboardEvent): boolean {
+  if (!correcting || !truth) return false;
+  const meta = ev.metaKey || ev.ctrlKey;
+  if (meta && ev.key.toLowerCase() === 'z') {
+    undo();
+    return true;
+  }
+  if (meta && ev.key.toLowerCase() === 's') {
+    void saveTruth();
+    return true;
+  }
+  if (meta) return false;
+  if (ev.key === 'Escape') {
+    selected = null;
+    render();
+    return true;
+  }
+  if (selected == null) return false;
+  if (ev.key === 'Backspace' || ev.key === 'Delete') {
+    apply(removeBeat(truth, selected));
+    selected = null;
+    render();
+    return true;
+  }
+  if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return false;
+  const rate = truth.beats.rate;
+  const by = ev.altKey ? 1 : Math.max(1, Math.round(rate * (ev.shiftKey ? 0.01 : 0.001)));
+  const to = truth.beats.samples[selected] + (ev.key === 'ArrowLeft' ? -by : by);
+  apply(moveBeat(truth, selected, to));
+  selected = truth.beats.samples.indexOf(to);
+  render();
+  return true;
 }
 
 /* ---------- wiring ---------- */
@@ -477,7 +810,12 @@ function wire(): void {
     });
   }
   document.addEventListener('keydown', (ev) => {
-    if (ev.code === 'Space' && !(ev.target instanceof HTMLInputElement)) {
+    if (ev.target instanceof HTMLInputElement) return;
+    if (correctionKey(ev)) {
+      ev.preventDefault();
+      return;
+    }
+    if (ev.code === 'Space') {
       ev.preventDefault();
       toggle();
     }
@@ -485,6 +823,7 @@ function wire(): void {
   window.addEventListener('resize', render);
   wireTime();
   wireTooltip();
+  wireCorrection();
 
   const frame = () => {
     if (deck.playing) drawOverlay();

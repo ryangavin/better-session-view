@@ -10,6 +10,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -110,6 +114,40 @@ button:hover {
 }
 .row[data-row='truth'] {
   height: 64px;
+}
+
+.verdict {
+  color: var(--dim);
+}
+
+.verdict b {
+  color: #ff8ff0;
+}
+
+.correcting .row[data-row='truth'] {
+  height: 96px;
+  cursor: crosshair;
+  border: 1px solid #d05cc0;
+}
+
+button.on {
+  background: #4a2044;
+  border-color: #d05cc0;
+  color: #ffd6f6;
+}
+
+button.danger {
+  background: #4a1a1a;
+  border-color: #ff6a3d;
+  color: #ffd0c0;
+}
+
+#editNote {
+  color: #9ef0b6;
+}
+
+#editNote.bad {
+  color: #ff6a3d;
 }
 
 #overlay {
