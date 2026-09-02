@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>mix warp harness</title>
+    <link rel="stylesheet" href="./harness.css" />
+  </head>
+  <body>
+    <div id="summary" class="summary">loading…</div>
+
+    <div class="bar">
+      <select id="track"></select>
+      <button id="play">play</button>
+      <label><input type="radio" name="map" value="predicted" checked /> predicted</label>
+      <label><input type="radio" name="map" value="truth" /> truth</label>
+      <span class="sep"></span>
+      <label><input type="checkbox" class="stem" value="drums" checked /> drums</label>
+      <label><input type="checkbox" class="stem" value="bass" /> bass</label>
+      <label><input type="checkbox" class="stem" value="other" /> other</label>
+      <label><input type="checkbox" class="stem" value="vocals" /> vocals</label>
+      <span class="sep"></span>
+      <button id="clearLoop">clear loop</button>
+      <button id="whole">whole song</button>
+      <span id="span" class="dim"></span>
+      <span id="note" class="dim"></span>
+    </div>
+
+    <div id="rows" class="rows">
+      <div class="row" data-row="ruler"><span class="label">time</span><canvas></canvas></div>
+      <div class="row" data-row="wave"><span class="label">drums</span><canvas></canvas></div>
+      <div class="row" data-row="hits"><span class="label">transients</span><canvas></canvas></div>
+      <div class="row" data-row="beats"><span class="label">beats</span><canvas></canvas></div>
+      <div class="row" data-row="tempo"><span class="label">tempo</span><canvas></canvas></div>
+      <div class="row" data-row="truth"><span class="label">truth</span><canvas></canvas></div>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="head">autocorrelation</div>
+        <canvas id="acf"></canvas>
+        <div id="chosen" class="text"></div>
+      </div>
+      <div class="panel">
+        <div class="head">phase sweep <select id="cand"></select></div>
+        <canvas id="sweep"></canvas>
+        <div id="sweepText" class="text"></div>
+      </div>
+    </div>
+
+    <div id="tip" class="tip" hidden></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
