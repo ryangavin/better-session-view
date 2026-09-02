@@ -40,11 +40,13 @@ let discardArmed = false;
 const seconds = (): number => report?.track.seconds ?? 60;
 const rate = (): number => report?.track.rate ?? 44100;
 const width = (): number => rowCanvas('ruler').clientWidth || 1;
+/** The narrowest view, in seconds: twenty milliseconds across the width, which is single samples. */
+const NARROWEST = 0.02;
 const viewOf = (h: number): D.View => ({ from: view.from, to: view.to, width: width(), height: h });
 
 function clampView(): void {
   const total = seconds();
-  const span = Math.min(Math.max(view.to - view.from, 2), total);
+  const span = Math.min(Math.max(view.to - view.from, NARROWEST), total);
   let from = Math.min(Math.max(view.from, 0), Math.max(0, total - span));
   if (span >= total) from = 0;
   view = { from, to: from + span };
@@ -309,7 +311,7 @@ function drawPanels(): void {
 function zoom(factor: number, atX: number): void {
   const v = viewOf(1);
   const at = D.timeOf(v, atX);
-  const span = Math.min(Math.max((view.to - view.from) * factor, 2), seconds());
+  const span = Math.min(Math.max((view.to - view.from) * factor, NARROWEST), seconds());
   const share = (at - view.from) / (view.to - view.from);
   view = { from: at - share * span, to: at + (1 - share) * span };
   render();
@@ -327,11 +329,13 @@ function wireTime(): void {
     (ev) => {
       ev.preventDefault();
       const x = ev.clientX - rows.getBoundingClientRect().left;
-      if (ev.shiftKey || Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) {
-        const by = (ev.shiftKey ? ev.deltaY : ev.deltaX) / width();
-        pan(by * (view.to - view.from));
+      // Scroll pans, on either axis, so a zoomed view moves fast; shift or
+      // cmd/ctrl with it zooms about the cursor.
+      if (ev.shiftKey || ev.metaKey || ev.ctrlKey) {
+        zoom(Math.exp((Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX) * 0.002), x);
       } else {
-        zoom(Math.exp(ev.deltaY * 0.002), x);
+        const by = (Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : ev.deltaY) / width();
+        pan(by * (view.to - view.from));
       }
     },
     { passive: false },
