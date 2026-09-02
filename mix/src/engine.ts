@@ -1,6 +1,6 @@
 import { passOf, sourceAt, straight, type Pass } from './schedule.ts';
 import { channelsOf, stretchOf, type Stretch } from './stretch.ts';
-import type { Bars } from './warp.ts';
+import type { Beats } from './warp.ts';
 
 /**
  * The transport and the mixer, which are one thing: a Web Audio graph with one
@@ -117,7 +117,7 @@ export class Transport {
   private via: Via = 'straight';
 
   /** The map, the tempo to play it at, and whether to. */
-  private map: Bars | null = null;
+  private map: Beats | null = null;
   private tempo = 120;
   private warping = false;
 
@@ -253,7 +253,7 @@ export class Transport {
    * Nothing happens at all while the plain sources are playing and would go
    * on playing, which is the common case and the one that must not click.
    */
-  warp(map: Bars | null, tempo: number, on: boolean): void {
+  warp(map: Beats | null, tempo: number, on: boolean): void {
     const before = this.desired();
     const at = this.going && this.ctx ? this.positionAt(this.ctx.currentTime + this.lead()) : 0;
     this.map = map;

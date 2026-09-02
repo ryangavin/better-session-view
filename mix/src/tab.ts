@@ -1,4 +1,4 @@
-import { barAt, type Bars } from './warp.ts';
+import { barAt, type Beats } from './warp.ts';
 
 export interface TranscribedNote {
   start: number;
@@ -167,7 +167,7 @@ function unquantized(notes: readonly FrettedNote[], tuning: Tuning): string[] {
   return lines;
 }
 
-function quantized(notes: readonly FrettedNote[], tuning: Tuning, bars: Bars, seconds: number): string[] {
+function quantized(notes: readonly FrettedNote[], tuning: Tuning, bars: Beats, seconds: number): string[] {
   const bySlot = new Map<number, FrettedNote>();
   for (const note of notes) {
     const slot = Math.round(barAt(bars, note.start / seconds) * 16);
@@ -200,7 +200,7 @@ export function renderTab(args: {
   notes: readonly TranscribedNote[];
   tuning: Tuning;
   seconds: number;
-  bars?: Bars | null;
+  bars?: Beats | null;
 }): string {
   const fretted = assignFrets(args.notes, args.tuning);
   const heading = [

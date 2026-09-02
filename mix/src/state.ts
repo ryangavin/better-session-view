@@ -3,28 +3,9 @@ import { STEMS, slicesFor, type Slice } from './mock.ts';
 import { decode, fileUrl, LIBRARY, peaksOf, stemUrl, type Peak } from './audio.ts';
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
-import {
-  added,
-  barAt,
-  barsOf,
-  countOf,
-  hearing,
-  hitsIn,
-  mapOf,
-  moved,
-  refitOf,
-  removed,
-  shifted,
-  snapped,
-  startOf,
-  tempoAt,
-  FASTEST,
-  SLOWEST,
-  type Bars,
-  type Fit,
-  type Heard,
-  type Marker,
-} from './warp.ts';
+import { barAt, countOf, evenBeats, moved, resampled, shifted, startOf, type Beats } from './warp.ts';
+import { fitOf, refitOf, snapped, FASTEST, SLOWEST, type Fit } from './tempo.ts';
+import { hearing, type Heard } from './transients.ts';
 import {
   openflow,
   type Library,
@@ -39,7 +20,7 @@ import {
   type Track,
 } from './openflow.ts';
 import { STANDARD_BASS } from './tab.ts';
-import { followOf, seedOf, type Follow } from './follow.ts';
+import { followOf, type Follow } from './follow.ts';
 
 /**
  * Everything the window knows, in one hook.
@@ -132,19 +113,17 @@ const COLUMNS = 9000;
 /** Bars, before anything has been decoded, so the ruler is not zero wide. */
 const BARS_UNKNOWN = 64;
 
-/** The map before anything has been decoded: those bars across a nominal file. */
-const UNKNOWN: Bars = mapOf(1, [{ at: 0, bar: 0 }, { at: 1, bar: BARS_UNKNOWN }], 120);
+/** The rate a map is counted in before the graph exists to say. */
+const NOMINAL_RATE = 44100;
+
+/** The map before anything has been decoded: those bars at 120 across a nominal file. */
+const UNKNOWN: Beats = evenBeats(NOMINAL_RATE, BARS_UNKNOWN * 2 * NOMINAL_RATE, 120, 0);
 
 const NOTHING: Library = { root: null, tracks: [] };
 
 /** How long the window sits still before writing what it remembers. */
 const SETTLE_MS = 400;
 
-/** What the snap setting rounds a hand-placed marker to, in bars. */
-const DIVISION: Record<string, number> = { '1/1': 1, '1/2': 0.5, '1/4': 0.25 };
-
-/** How close to a double-click a hit has to be to be the thing that was meant, in beats. */
-const MEANT = 0.15;
 
 export function useMix() {
   const kept = useRef<Session>(recall()).current;
@@ -188,14 +167,16 @@ export function useMix() {
   /** Seconds from the top of the file to the downbeat of bar 1. */
   const [offset, setOffset] = useState(first.offset ?? 0);
   /**
-   * Where the audio is pinned to the grid, once something has pinned it.
+   * Where the beats fall, once something has found them: the map, an anchor
+   * for every beat, and the only source of truth about timing.
    *
-   * Null is the straight line `targetBpm` and `offset` make, which is what a
+   * Null is the even ruling `targetBpm` and `offset` make, which is what a
    * typed tempo rules and what the ruler shows before anything has been
-   * measured. A fit or a hand replaces it with markers, and from then on the
-   * grid is theirs: the tempo field says what *plays*, not where the bars are.
+   * measured. A fit or a hand replaces it, and from then on the grid is the
+   * map's: the tempo field says what *plays*, not where the beats are, and
+   * no tempo is stored anywhere — every one on screen is read off the spacing.
    */
-  const [markers, setMarkers] = useState<readonly Marker[] | null>(first.markers ?? null);
+  const [beats, setBeats] = useState<Beats | null>(first.beats ?? null);
   /** The last fit, kept so the window can say where the tempo on screen came from. */
   const [detected, setDetected] = useState<Fit | Follow | null>(null);
   /**
@@ -348,10 +329,14 @@ export function useMix() {
    * Change either and this changes with it, which is the whole point of the
    * warp lane underneath — the ticks stop lining up.
    */
-  const grid = useMemo<Bars>(() => {
+  const grid = useMemo<Beats>(() => {
     if (!(seconds > 0)) return UNKNOWN;
-    return markers ? mapOf(seconds, markers, targetBpm) : barsOf(seconds, targetBpm, offset);
-  }, [seconds, targetBpm, offset, markers]);
+    const rate = audio.rate || NOMINAL_RATE;
+    const length = Math.round(seconds * rate);
+    return beats ? resampled(beats, rate, length) : evenBeats(rate, length, targetBpm, offset);
+    // `peaks` is here because the graph's rate is only known once something
+    // has been decoded, and decoding is what fills them in.
+  }, [seconds, targetBpm, offset, beats, audio, peaks]);
 
   /**
    * How many bars the song holds, counting bar 1 as the first.
@@ -668,9 +653,11 @@ export function useMix() {
   const heard = useRef<{ of: unknown; it: Heard | null }>({ of: null, it: null });
   const listen = useCallback((): Heard | null => {
     const of = audioOf('drums') ?? audioOf('bass') ?? peaks;
-    if (heard.current.of !== of) heard.current = { of, it: hearing(peaks, seconds, audioOf) };
+    if (heard.current.of !== of) {
+      heard.current = { of, it: hearing(peaks, seconds, audio.rate || NOMINAL_RATE, audioOf) };
+    }
     return heard.current.it;
-  }, [audioOf, peaks, seconds]);
+  }, [audioOf, peaks, seconds, audio]);
 
   /**
    * The mix, pushed into the graph.
@@ -732,7 +719,7 @@ export function useMix() {
           bpm: targetBpm,
           bpmAuto,
           offset,
-          markers: markers ?? undefined,
+          beats: beats ?? undefined,
         });
         remember(held.current);
       }
@@ -755,12 +742,12 @@ export function useMix() {
       setTargetBpm(known.bpm ?? picked?.bpm ?? 120);
       setBpmAuto(known.bpmAuto ?? (picked?.bpm != null));
       setOffset(known.offset ?? 0);
-      setMarkers(known.markers ?? null);
+      setBeats(known.beats ?? null);
       // Nothing written down about this track, so its grid is still to be
       // measured — and it will be, as soon as there are stems to measure.
       setWantFit(known.bpm == null);
     },
-    [tracks, audio, song, selected, level, slices, targetBpm, bpmAuto, offset, markers],
+    [tracks, audio, song, selected, level, slices, targetBpm, bpmAuto, offset, beats],
   );
 
   /**
@@ -913,7 +900,7 @@ export function useMix() {
     const outcome = await bridge.transcribe.run({
       trackId: song.id,
       tuning: STANDARD_BASS,
-      bars: bpmAuto || markers ? grid : null,
+      bars: bpmAuto || beats ? grid : null,
       transpose: 0,
     });
     // The runner normally announces this as an event. Early refusals cannot,
@@ -922,7 +909,7 @@ export function useMix() {
     setTranscribingId(null);
     setTranscription(outcome.ok ? outcome : null);
     setTranscribeProblem(outcome.ok || outcome.cancelled ? null : outcome.says);
-  }, [song, bpmAuto, markers, grid]);
+  }, [song, bpmAuto, beats, grid]);
 
   const transposeBass = useCallback(async (transpose: number) => {
     const bridge = openflow();
@@ -933,7 +920,7 @@ export function useMix() {
     const outcome = await bridge.transcribe.run({
       trackId: song.id,
       tuning: STANDARD_BASS,
-      bars: bpmAuto || markers ? grid : null,
+      bars: bpmAuto || beats ? grid : null,
       transpose,
     });
     if (outcome.ok) setTranscription(outcome);
@@ -941,7 +928,7 @@ export function useMix() {
       setTranscription(before);
       if (!outcome.cancelled) setTranscribeProblem(outcome.says);
     }
-  }, [song, transcription, bpmAuto, markers, grid]);
+  }, [song, transcription, bpmAuto, beats, grid]);
 
   const cancelTranscription = useCallback(() => {
     const id = transcribingId;
@@ -1006,8 +993,8 @@ export function useMix() {
    * eight per cent fast for no reason anybody asked for.
    */
   useEffect(() => {
-    audio.warp(markers ? grid : null, targetBpm, warp && markers !== null);
-  }, [audio, grid, targetBpm, warp, markers, peaks]);
+    audio.warp(beats ? grid : null, targetBpm, warp && beats !== null);
+  }, [audio, grid, targetBpm, warp, beats, peaks]);
 
   useEffect(() => audio.watch(() => setStretching(audio.stretching)), [audio]);
 
@@ -1036,16 +1023,19 @@ export function useMix() {
       if (!found) return;
       setTargetBpm(found.bpm);
       setOffset(found.offset);
-      setMarkers('markers' in found ? found.markers : null);
+      setBeats('beats' in found ? found.beats : null);
       setBpmAuto(true);
       setManual(null);
-      const held = countOf(barsOf(seconds, found.bpm, found.offset));
+      const rate = audio.rate || NOMINAL_RATE;
+      const held = countOf(
+        'beats' in found ? found.beats : evenBeats(rate, Math.round(seconds * rate), found.bpm, found.offset),
+      );
       setAnchors([
         { at: 0, label: '1' },
         { at: held - 1, label: String(held) },
       ]);
     },
-    [seconds],
+    [seconds, audio],
   );
 
   /**
@@ -1057,7 +1047,7 @@ export function useMix() {
   const measure = useCallback((): Fit | Follow | null => {
     const it = listen();
     if (!it) return null;
-    const seed = seedOf(it);
+    const seed = fitOf(it);
     if (!seed) return null;
     return followOf(it, seed) ?? seed;
   }, [listen]);
@@ -1134,9 +1124,9 @@ export function useMix() {
         const placed = startOf(at, targetBpm);
         setManual({ ...manual, stage: 'late', first: at });
         setOffset(placed);
-        // A hand starting over: the markers go, and the grid is the straight
-        // line from this downbeat until the second click says otherwise.
-        setMarkers(null);
+        // A hand starting over: the map goes, and the grid is the even ruling
+        // from this downbeat until the second click says otherwise.
+        setBeats(null);
         setDetected(null);
         setFitFailed(false);
         setWantFit(false);
@@ -1168,7 +1158,7 @@ export function useMix() {
       setManual({ ...manual, stage: 'tune' });
       setTargetBpm(bpm);
       setOffset(placed);
-      setMarkers(followed ? followed.markers : null);
+      setBeats(followed ? followed.beats : null);
       setBpmAuto(false);
       setWantFit(false);
       setFitFailed(false);
@@ -1193,7 +1183,7 @@ export function useMix() {
    */
   const nudge = useCallback((direction: number) => {
     setOffset((was) => was + direction * 0.01);
-    setMarkers((was) => (was ? shifted(was, direction * 0.01) : was));
+    setBeats((was) => (was ? shifted(was, direction * 0.01 * was.rate) : was));
     setDetected(null);
   }, []);
 
@@ -1240,26 +1230,29 @@ export function useMix() {
     if (seconds <= 0) return [];
     const it = listen();
     if (!it) return [];
-    return hitsIn(it).map((onset) => {
-      const at = barAt(grid, onset.at / seconds);
-      return { at, strength: onset.strength, downbeat: Math.abs(at - Math.round(at)) < 1 / 32 };
-    });
+    return it.transients
+      .filter((hit) => hit.band !== 'high')
+      .map((hit) => {
+        const at = barAt(grid, hit.at / seconds);
+        return { at, strength: hit.strength, downbeat: Math.abs(at - Math.round(at)) < 1 / 32 };
+      });
   }, [listen, seconds, grid]);
 
-  /** The same hits, in seconds, for a dragged marker to snap to. */
+  /** The same hits, in seconds, for a dragged anchor to snap to. */
   const hits = useMemo(() => {
     const it = listen();
-    return it ? hitsIn(it).map((hit) => hit.at) : [];
+    return it ? it.transients.filter((hit) => hit.band !== 'high').map((hit) => hit.at) : [];
   }, [listen]);
 
   /**
-   * A hand on the markers, which is the other half of following the kick.
+   * A hand on an anchor, which is the other half of following the beat.
    *
-   * Live's workflow: auto-warp, then fix by hand what it got wrong. Every one
-   * of these starts from the map as drawn — the straight line, where nothing
-   * has pinned the audio yet, becomes the two markers it is made of and one
-   * more — and every one is a decision, so the fit's readout goes and the
-   * grid stops being something that was measured.
+   * Live's workflow: auto-warp, then fix by hand what it got wrong. Dragging a
+   * beat moves that one anchor — its neighbours hold, the two spacings beside
+   * it take up the difference, and nothing further away can tell. It starts
+   * from the map as drawn, so the even ruling of a typed tempo becomes a map
+   * the moment a beat is moved; and it is a decision, so the fit's readout
+   * goes and the grid stops being something that was measured.
    */
   const decided = useCallback(() => {
     setBpmAuto(false);
@@ -1268,66 +1261,27 @@ export function useMix() {
     setWantFit(false);
   }, []);
 
-  /** Drag a marker to another second of the file, keeping its bar. */
-  const moveMarker = useCallback(
-    (index: number, at: number) => {
-      setMarkers((was) => moved(was ?? grid.markers, index, at));
+  /** Drag a beat's anchor to another second of the file. */
+  const moveBeat = useCallback(
+    (beat: number, at: number) => {
+      setBeats((was) => moved(was ?? grid, beat, at * grid.rate));
       decided();
     },
     [grid, decided],
   );
 
   /**
-   * Pin the audio under a double-click to the nearest bar — or half, or beat,
-   * as the snap setting says. The hit nearest the click within a small reach
-   * is what was meant; a double-click a few pixels off a kick is a
-   * double-click on it.
-   */
-  const addMarker = useCallback(
-    (place: number) => {
-      if (manual || seconds <= 0) return;
-      const click = place * seconds;
-      const division = DIVISION[snap] ?? 1;
-      const bar = Math.round(barAt(grid, place) / division) * division;
-      let at = click;
-      let nearest = (60 / tempoAt(grid, bar)) * MEANT;
-      for (const hit of hits) {
-        const gap = Math.abs(hit - click);
-        if (gap < nearest) {
-          nearest = gap;
-          at = hit;
-        }
-      }
-      const was = markers ?? grid.markers;
-      const next = added(was, { at, bar });
-      if (next === was) return;
-      setMarkers(next);
-      decided();
-    },
-    [manual, seconds, snap, grid, hits, markers, decided],
-  );
-
-  /** Let a marker go. Never the last two: one marker is not a map. */
-  const removeMarker = useCallback(
-    (index: number) => {
-      setMarkers((was) => (was ? removed(was, index) : was));
-      decided();
-    },
-    [decided],
-  );
-
-  /**
-   * Let them all go, and start over.
+   * Let the map go, and start over.
    *
-   * Back to the straight line the tempo and the downbeat make, which is where
-   * the pins came from and where a hand can put new ones. The tempo and the
-   * downbeat stay: they are the best straight reading there is, and a ruling
-   * at 120 from the top of the file would be a wrong answer to start over
-   * from. It is a decision, so it is remembered and not re-measured behind
-   * anybody's back; Auto-warp is how you ask for the markers again.
+   * Back to the even ruling the tempo and the downbeat make, which is where the
+   * anchors came from. The tempo and the downbeat stay: they are the best
+   * straight reading there is, and a ruling at 120 from the top of the file
+   * would be a wrong answer to start over from. It is a decision, so it is
+   * remembered and not re-measured behind anybody's back; Auto-warp is how you
+   * ask for the beats again.
    */
-  const clearMarkers = useCallback(() => {
-    setMarkers(null);
+  const clearBeats = useCallback(() => {
+    setBeats(null);
     decided();
   }, [decided]);
 
@@ -1377,7 +1331,7 @@ export function useMix() {
           bpm: targetBpm,
           bpmAuto,
           offset,
-          markers: markers ?? undefined,
+          beats: beats ?? undefined,
         });
       }
       held.current = next;
@@ -1398,7 +1352,6 @@ export function useMix() {
     targetBpm,
     bpmAuto,
     offset,
-    markers,
     playing,
     audio,
   ]);
@@ -1444,8 +1397,8 @@ export function useMix() {
     bpmAuto,
     /** Seconds from the top of the file to the downbeat of bar 1. */
     offset,
-    /** Where the audio is pinned to the grid, or null while the grid is the straight line. */
-    markers,
+    /** The beat map, or null while the grid is the even ruling of a typed tempo. */
+    beats,
     /** The last fit, or null where nothing has been measured or the fit failed. */
     detected,
     /** The last attempt found nothing steady, as against not having been asked. */
@@ -1500,12 +1453,10 @@ export function useMix() {
     autoWarp,
     pin,
     nudge,
-    /** The fit's hits in seconds, and the three things a hand can do to a marker. */
+    /** The hits in seconds, and the two things a hand can do to the map. */
     hits,
-    moveMarker,
-    addMarker,
-    removeMarker,
-    clearMarkers,
+    moveBeat,
+    clearBeats,
     resetup,
     keepStems,
     resetting: setupFor !== null && song?.id === setupFor,

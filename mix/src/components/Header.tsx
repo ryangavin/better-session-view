@@ -5,7 +5,8 @@ import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Ready } from '../openflow.ts';
 import type { Mix } from '../state.ts';
-import { bpmText, rangeText, FASTEST, SLOWEST } from '../warp.ts';
+import { FASTEST, SLOWEST } from '../tempo.ts';
+import { bpmText, rangeText } from '../warp.ts';
 import './Header.css';
 
 /**
@@ -210,13 +211,13 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               width={44}
               label="Tempo"
               title={
-                mix.markers
-                  ? 'The tempo the stems play at with warp on. The grid is where the markers put it'
+                mix.beats
+                  ? 'The tempo the stems play at with warp on. The grid is where the beats are'
                   : 'The tempo the grid is ruled at, until the kick has been followed. Drag it, or type one in'
               }
             />
             {/* Live's warp switch: on, every bar of the record plays in the
-                time this tempo gives a bar. It needs markers to know where
+                time this tempo gives a bar. It needs the beat map to know where
                 the record's bars are, and a stretcher to play them through,
                 and it says which of those it is waiting on. */}
             <Toggle
@@ -224,15 +225,15 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               onChange={mix.setWarp}
               label="Warp"
               title={
-                !mix.markers
-                  ? 'Warp: play the stems stretched to this tempo. Follow the kick first'
+                !mix.beats
+                  ? 'Warp: play the stems stretched to this tempo. Follow the beat first'
                   : mix.stretching === 'failed'
                     ? 'Warp: the stretcher could not be loaded, so the stems play as they were recorded'
                     : mix.stretching === 'loading'
                       ? 'Warp: loading the stretcher'
                       : 'Warp: play every bar of the record in the time this tempo gives it'
               }
-              disabled={!mix.markers || mix.stretching === 'failed'}
+              disabled={!mix.beats || mix.stretching === 'failed'}
               width={38}
             >
               warp
@@ -240,17 +241,17 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
             <Button
               onPress={mix.autoWarp}
               title={
-                mix.detected && 'markers' in mix.detected
-                  ? `Followed the kick through ${mix.detected.markers.length} markers at ${rangeText(
+                mix.detected && 'beats' in mix.detected
+                  ? `Followed the beat through ${mix.detected.beats.samples.length} beats at ${rangeText(
                       mix.grid,
-                    )} BPM — ${Math.round(mix.detected.tracked * 100)}% of the beats found, ${Math.round(
+                    )} BPM — ${Math.round(mix.detected.tracked * 100)}% of them on a hit, ${Math.round(
                       mix.detected.agreement * 100,
-                    )}% of the kicks on the grid. Press to follow it again`
+                    )}% of the kit on the grid. Press to follow it again`
                   : mix.detected
                     ? `Fitted ${bpmText(mix.detected.bpm)} BPM to the kick — ${Math.round(
                         mix.detected.agreement * 100,
                       )}% of the kicks land on the grid. Press to fit it again`
-                    : 'Fit a tempo and a downbeat to the kick, and follow it through the song'
+                    : 'Find the tempo and the downbeat, and follow the beat through the song'
               }
               disabled={mix.decoding}
             >
@@ -261,19 +262,19 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                 where it moved — and how much of the kick sits on a line. A
                 fit that found nothing says so rather than leaving a press
                 with no answer. */}
-            {mix.markers || mix.detected ? (
+            {mix.beats || mix.detected ? (
               <span
                 className="mf-fit"
                 title={
-                  mix.markers && mix.detected
-                    ? 'The tempo the markers follow, and how much of the kick lands on a grid line'
-                    : mix.markers
-                      ? 'The tempo the markers follow, set by hand'
-                      : 'How much of the kick lands on a grid line'
+                  mix.beats && mix.detected
+                    ? 'The tempo the beats run at, read off their spacing, and how much of the kit lands on a grid line'
+                    : mix.beats
+                      ? 'The tempo the beats run at, read off their spacing'
+                      : 'How much of the kit lands on a grid line'
                 }
               >
-                {mix.markers ? rangeText(mix.grid) : ''}
-                {mix.markers && mix.detected ? ' · ' : ''}
+                {mix.beats ? rangeText(mix.grid) : ''}
+                {mix.beats && mix.detected ? ' · ' : ''}
                 {mix.detected ? `${Math.round(mix.detected.agreement * 100)}%` : ''}
               </span>
             ) : mix.fitFailed ? (
@@ -285,15 +286,15 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                 tempo and downbeat to start over from. Beside the button that
                 makes the pins, because it undoes exactly that. */}
             <Button
-              onPress={mix.clearMarkers}
-              label="Clear the markers"
+              onPress={mix.clearBeats}
+              label="Clear the beat map"
               title={
-                mix.markers
-                  ? 'Clear the warp markers: back to a straight grid at this tempo, to start over'
-                  : 'No markers to clear'
+                mix.beats
+                  ? 'Clear the beat map: back to an even grid at this tempo, to start over'
+                  : 'No beat map to clear'
               }
               width={26}
-              disabled={!mix.markers}
+              disabled={!mix.beats}
             >
               {clearMark}
             </Button>

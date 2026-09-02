@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { passOf, sourceAt, straight } from './schedule.ts';
-import { barAt, barsOf, mapOf, placeOf, type Marker } from './warp.ts';
+import { beatAt, beatsOf, evenBeats, sampleOf, type Beats } from './warp.ts';
 
 /**
  * What this protects is the sound and the playhead agreeing.
@@ -11,74 +11,95 @@ import { barAt, barsOf, mapOf, placeOf, type Marker } from './warp.ts';
  * exists to rule out — and nothing in a browser would say so.
  */
 
+const RATE = 48000;
 const SECONDS = 240;
-/** 128 for forty bars, 120 for forty, 132 after. */
-const bent: Marker[] = [
-  { at: 0.5, bar: 0 },
-  { at: 0.5 + 40 * (240 / 128), bar: 40 },
-  { at: 0.5 + 40 * (240 / 128) + 40 * 2, bar: 80 },
-  { at: 0.5 + 40 * (240 / 128) + 40 * 2 + 20 * (240 / 132), bar: 100 },
-];
-const map = mapOf(SECONDS, bent, 132);
+const LENGTH = SECONDS * RATE;
+
+/** 128 for forty bars, 120 for forty, then 132. */
+function bent(): Beats {
+  const samples: number[] = [];
+  let at = 0.5 * RATE;
+  const push = (bpm: number, beats: number) => {
+    for (let i = 0; i < beats; i++) {
+      samples.push(Math.round(at));
+      at += (60 * RATE) / bpm;
+    }
+  };
+  push(128, 160);
+  push(120, 160);
+  push(132, 81);
+  return beatsOf(RATE, LENGTH, 0, samples);
+}
+const map = bent();
+const seconds = (beat: number) => sampleOf(map, beat) / RATE;
 
 describe('the boundaries of a pass', () => {
-  it('reads each segment at the rate that lands the next marker on its bar', () => {
+  it('reads each beat at the rate that lands the next anchor on its beat', () => {
     const pass = passOf(map, 128, 0);
     for (let i = 0; i + 1 < pass.boundaries.length; i++) {
       const a = pass.boundaries[i];
       const b = pass.boundaries[i + 1];
-      expect((b.output - a.output) * a.rate).toBeCloseTo(b.input - a.input, 9);
+      expect((b.output - a.output) * a.rate).toBeCloseTo(b.input - a.input, 6);
     }
   });
 
-  it('is a rate of one everywhere for a straight map at its own tempo', () => {
-    const pass = passOf(barsOf(SECONDS, 128, 0.25), 128, 0);
-    // Two: the top of the file, and bar 1 a quarter-second in. The same rate
-    // either side, which is what makes it straight.
-    expect(pass.boundaries).toHaveLength(2);
-    for (const boundary of pass.boundaries) expect(boundary.rate).toBeCloseTo(1, 9);
-    expect(straight(barsOf(SECONDS, 128, 0.25), 128)).toBe(true);
-    expect(straight(barsOf(SECONDS, 128, 0.25), 127)).toBe(false);
+  it('is a rate of one everywhere for an even map at its own tempo', () => {
+    const even = evenBeats(RATE, LENGTH, 128, 0.25);
+    const pass = passOf(even, 128, 0);
+    for (const boundary of pass.boundaries) expect(boundary.rate).toBeCloseTo(1, 4);
+    expect(straight(even, 128)).toBe(true);
+    expect(straight(even, 127.9)).toBe(false);
     expect(straight(map, 128)).toBe(false);
   });
 
+  it('is still straight with a detector’s scatter on the anchors, and not with a drummer’s', () => {
+    const even = evenBeats(RATE, LENGTH, 128, 0.25);
+    const scattered = { ...even, samples: even.samples.map((s, i) => s + ((i * 7919) % 5 - 2) * 40) };
+    expect(straight(scattered, 128)).toBe(true);
+    const played = { ...even, samples: even.samples.map((s, i) => s + ((i * 7919) % 5 - 2) * 400) };
+    expect(straight(played, 128)).toBe(false);
+  });
+
   it('plays twice as fast at twice the tempo', () => {
-    const pass = passOf(barsOf(SECONDS, 128, 0), 256, 0);
-    expect(pass.boundaries[0].rate).toBeCloseTo(2, 9);
-    expect(pass.length).toBeCloseTo(SECONDS / 2, 9);
+    const pass = passOf(evenBeats(RATE, LENGTH, 128, 0), 256, 0);
+    expect(pass.boundaries[0].rate).toBeCloseTo(2, 6);
+    expect(pass.length).toBeCloseTo(SECONDS / 2, 3);
   });
 
-  it('starts mid-segment at that segment’s rate, with only the markers ahead', () => {
-    const pass = passOf(map, 128, 100);
-    expect(pass.boundaries[0]).toMatchObject({ output: 0, input: 100 });
-    expect(pass.boundaries[0].rate).toBeCloseTo(128 / 120, 9);
-    expect(pass.boundaries.map((b) => b.input)).toEqual([100, bent[2].at, bent[3].at]);
+  it('starts mid-beat at that beat’s rate, with only the anchors ahead', () => {
+    const from = seconds(230.5);
+    const pass = passOf(map, 128, from);
+    expect(pass.boundaries[0]).toMatchObject({ output: 0, input: from });
+    expect(pass.boundaries[0].rate).toBeCloseTo(128 / 120, 3);
+    expect(pass.boundaries[1].input).toBeCloseTo(seconds(231), 6);
   });
 
-  it('lasts as long as the bars left take at the target tempo', () => {
+  it('lasts as long as the beats left take at the target tempo', () => {
     const pass = passOf(map, 120, 0);
-    expect(pass.length).toBeCloseTo(((barAt(map, 1) - barAt(map, 0)) * 240) / 120, 9);
+    expect(pass.length).toBeCloseTo(((beatAt(map, LENGTH) - beatAt(map, 0)) * 60) / 120, 6);
   });
 });
 
 describe('where the sound is', () => {
-  it('inverts the output time at every bar, before bar 1 and past the last marker', () => {
-    const startBar = barAt(map, 0);
-    for (const bar of [startBar, 0, 37.5, 100, 110]) {
-      const elapsed = ((bar - startBar) * 240) / 128;
-      expect(sourceAt(map, 128, 0, elapsed, false)).toBeCloseTo(placeOf(map, bar) * SECONDS, 9);
+  it('inverts the output time at every beat, before bar 1 and past the last anchor', () => {
+    const startBeat = beatAt(map, 0);
+    for (const beat of [startBeat, 0, 150.5, 400, 440]) {
+      const elapsed = ((beat - startBeat) * 60) / 128;
+      expect(sourceAt(map, 128, 0, elapsed, false)).toBeCloseTo(seconds(beat), 6);
     }
   });
 
   it('starts from where the pass started', () => {
-    expect(sourceAt(map, 128, 100, 0, false)).toBeCloseTo(100, 9);
-    expect(sourceAt(map, 128, 100, 1, false)).toBeCloseTo(100 + 128 / 120, 9);
+    const from = seconds(230.5);
+    expect(sourceAt(map, 128, from, 0, false)).toBeCloseTo(from, 9);
+    expect(sourceAt(map, 128, from, 1, false)).toBeCloseTo(from + 128 / 120, 3);
   });
 
-  it('loops back to the top of the file, in bars', () => {
-    const pass = passOf(map, 128, 100);
-    const wrapped = sourceAt(map, 128, 100, pass.length + 1, true);
-    expect(wrapped).toBeCloseTo(sourceAt(map, 128, 0, 1, false), 9);
+  it('loops back to the top of the file, in beats', () => {
+    const from = seconds(230.5);
+    const pass = passOf(map, 128, from);
+    const wrapped = sourceAt(map, 128, from, pass.length + 1, true);
+    expect(wrapped).toBeCloseTo(sourceAt(map, 128, 0, 1, false), 6);
     expect(wrapped).toBeGreaterThan(0);
     expect(wrapped).toBeLessThan(2);
   });

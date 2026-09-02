@@ -23,7 +23,7 @@
  * travel, and that is a decision about the manifest rather than about this.
  */
 
-import type { Marker } from './warp.ts';
+import type { Beats } from './warp.ts';
 
 const KEY = 'mixflow.window.v1';
 
@@ -38,11 +38,11 @@ export interface Remembered {
   /** Seconds to the downbeat of bar 1. The other half of a grid. */
   offset?: number;
   /**
-   * Where the audio is pinned to the grid, once something has pinned it — a
-   * fit, or a hand. Absent, the grid is the straight line `bpm` and `offset`
+   * The beat map — the sample of every beat — once something has found it: a
+   * fit, or a hand. Absent, the grid is the even ruling `bpm` and `offset`
    * make, and the track is still owed a fit.
    */
-  markers?: readonly Marker[];
+  beats?: Beats;
 }
 
 export interface Session {

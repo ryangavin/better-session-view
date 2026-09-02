@@ -20,7 +20,7 @@ import {
 } from './transcribe.ts';
 import { TAB_FILE, transcriptionAt, type TranscribeProgress } from './transcribeJob.ts';
 import type { Tuning } from '../src/tab.ts';
-import type { Bars } from '../src/warp.ts';
+import type { Beats } from '../src/warp.ts';
 import { stopYoutube } from './youtube.ts';
 
 /**
@@ -159,7 +159,7 @@ if (only(app)) {
   ipcMain.handle('openflow:transcribe-cancel', (_event, trackId?: string) => cancelTranscription(trackId));
   ipcMain.handle(
     'openflow:transcribe',
-    async (_event, ask: { trackId: string; tuning: Tuning; bars: Bars | null; transpose: number }): Promise<TranscribeOutcome> => {
+    async (_event, ask: { trackId: string; tuning: Tuning; bars: Beats | null; transpose: number }): Promise<TranscribeOutcome> => {
       const library = await load();
       const track = library.tracks.find((candidate) => candidate.id === ask.trackId);
       if (!library.root || !track?.stems || !track.model || !track.sources.includes('bass')) {

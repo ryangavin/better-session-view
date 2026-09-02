@@ -349,11 +349,9 @@ export function Lanes({ mix }: { mix: Mix }) {
             bars={grid}
             height={24}
             anchors={mix.anchors}
-            markers={mix.markers ?? undefined}
+            pinned={mix.beats ? grid : undefined}
             hits={mix.hits}
-            onMove={mix.moveMarker}
-            onAdd={mix.addMarker}
-            onRemove={mix.removeMarker}
+            onMove={mix.moveBeat}
             onPin={mix.pin}
             pinning={mix.manual !== null}
             span={span}

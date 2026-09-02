@@ -55,15 +55,15 @@ ticks lining up, and without the number on screen half of that is missing. Besid
 it is what the fit agreed with — `91%` of the drumming landing on a grid line, or
 `no fit`, so a press always has an answer.
 
-**Once the kick has been followed the field changes meaning, and `warp` is the
+**Once the beats have been found the field changes meaning, and `warp` is the
 switch that changes it.** The readout beside the button becomes the tempo the
-record actually runs at — `128`, or `126–131` where it moved — because that is
-now the markers' to say, and the field is what the stems *play* at: with warp
-on, every bar of the record in the time this tempo gives a bar, pitch kept.
-Until something has followed the kick the field rules the grid as it always
-did, since a typed tempo is then the only claim there is. The switch sits
-between the two numbers because it is what makes them two, and it says what
-it is waiting on — markers, or the stretcher — rather than doing nothing.
+record actually runs at — `128`, or `126–131` where it moved — read off the
+spacing of the beats and stored nowhere, and the field is what the stems *play*
+at: with warp on, every beat of the record in the time this tempo gives a beat,
+pitch kept. Until the beats have been found the field rules the grid as it
+always did, since a typed tempo is then the only claim there is. The switch sits
+between the two numbers because it is what makes them two, and it says what it
+is waiting on — the beat map, or the stretcher — rather than doing nothing.
 
 One smaller thing worth keeping: `snap` is a leading label rather than a `Widget`
 caption. `Widget` puts captions *above*, which in a 34px bar makes that one control two
@@ -353,24 +353,27 @@ weights, while the warp lane, being 24px of strip, says it in height instead.
 Their bar positions are the grid's claim rather than a property of the audio, so changing
 the tempo walks them off the lines or onto them. That is the lane doing its job.
 
-**A grid is a list of markers, and the window used to hold it as two numbers.** A
-marker pins a second of the file to a bar, the bars are spaced evenly between one
-marker and the next, and the spacing carries on past either end. Two markers are
-the tempo and the downbeat the window used to hold: bar 1 was the top of the file
-by construction, so a song with a quarter of a second of air in front of it could
-not be gridded at all — every line was that quarter second late, for the whole
-song, and no tempo would have fixed it. More markers are a band. `warp.ts` holds
-the map, and `playback.md` has how it is fitted and followed.
+**A grid is the sample of every beat, and the window used to hold it as two
+numbers.** Every beat has an anchor, the bars are drawn straight between one
+anchor and the next, and the spacing carries on past either end. No tempo is
+stored: what the header shows is read off the spacing, and a tempo change is
+nothing but the spacing changing. Before anything has been measured the anchors
+are the even ruling a typed tempo makes — which is the tempo and the downbeat the
+window used to hold, and the downbeat still matters: a song with a quarter of a
+second of air in front of it could not be gridded at all when bar 1 was the top
+of the file. `warp.ts` holds the map, and `playback.md` has how the beats are
+found.
 
-**Auto-warp fits a line to the kick and then follows it**, pinning a bar wherever
-the beat moved. Not to the drums — to the kick band of them, because a kick is
-short, loud, low and repeated, which is the easiest thing in a mix to measure a
-period from, and a hundred and twenty hertz of low-pass takes the snare and the
-hats off it. A record made to a click comes back as two pins, bar 1 and the last
-bar, because every other one lay on the line between them and was dropped; a
-drummer keeps a pin every few bars, and the readout beside the button says the
-range they run at. The pins are the map, not marks on it: drag one and the grid
-bends under the pointer.
+**Auto-warp finds every beat and anchors it.** The drums are heard in three
+bands — kick, snare, hats — each hit placed at the start of its attack to the
+exact sample; the tempo and which pulse is the beat are read off all of them,
+with no lean toward any tempo; and the beats are then found for the whole song
+at once, matched to the hits under a smoothness cost, so a breakdown is counted
+through at the spacing it had and the first kick after it lands on the beat it
+is. The pins on the warp lane are those anchors — every beat when a beat has
+room, else every bar — and they are the map, not marks on it: drag one and the
+grid bends under the pointer. The readout beside the button says the tempo the
+beats run at, and a range where they moved.
 
 **It runs on its own when a track is opened that nothing has been decided about**,
 which is what makes it worth having — it costs a few milliseconds, and the
@@ -405,17 +408,15 @@ The nudge moves the grid by ten milliseconds, keeping the tempo — the fix for 
 sitting evenly *beside* the bar lines rather than drifting off them.
 
 **And then the pins themselves.** Live's workflow is auto-warp, then fix by hand
-what it got wrong, and the pins are where that happens. A pin drags: its second
-of the file moves and its bar stays, which is saying *the audio under the pointer
-is this bar*, and it lands on the nearest kick unless ⌥ is held. A double-click on
-the lane pins the audio under it to the nearest bar — or half, or beat, as `snap`
-says, which is that control's first job — taking the hit nearest the click as the
-thing that was meant. A pin clicked is selected, and Backspace lets it go; never
-the last two, because one marker is not a map. The × beside Auto-warp lets them
-all go — back to a straight grid at the tempo and downbeat there are, which is
-how you start over, and Auto-warp is how you ask for the pins again. Every one of
-these is a decision, so the fit's percentage goes with it and the tempo range
-stays.
+what it got wrong, and the pins are where that happens. There is one gesture: a
+pin drags. Its sample moves and its beat stays, which is saying *the audio under
+the pointer is this beat*; its neighbours hold, the two spacings beside it take
+up the difference, and nothing further away can tell. It lands on the nearest
+kick unless ⌥ is held. Nothing is added or deleted, because every beat already
+has a pin. The × beside Auto-warp lets the whole map go — back to an even grid
+at the tempo and downbeat there are, which is how you start over, and Auto-warp
+is how you ask for the beats again. A drag is a decision, so the fit's
+percentage goes with it and the tempo range stays.
 
 It gets a bar of its own at the top of the lanes because in that mode a click in a
 lane means something else. A mode you cannot see is a mode that surprises you.

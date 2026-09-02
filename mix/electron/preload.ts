@@ -8,7 +8,7 @@ import type { Model } from './models.ts';
 import type { Progress } from './job.ts';
 import type { Outcome } from './separate.ts';
 import type { Tuning } from '../src/tab.ts';
-import type { Bars } from '../src/warp.ts';
+import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
 
@@ -79,7 +79,7 @@ expose({
   },
   transcribe: {
     busy: (): Promise<string | null> => ipcRenderer.invoke('openflow:transcribing'),
-    run: (ask: { trackId: string; tuning: Tuning; bars: Bars | null; transpose: number }): Promise<TranscribeOutcome> =>
+    run: (ask: { trackId: string; tuning: Tuning; bars: Beats | null; transpose: number }): Promise<TranscribeOutcome> =>
       ipcRenderer.invoke('openflow:transcribe', ask),
     cancel: (trackId?: string): Promise<void> => ipcRenderer.invoke('openflow:transcribe-cancel', trackId),
     reveal: (trackId: string): Promise<void> => ipcRenderer.invoke('openflow:transcribe-reveal', trackId),

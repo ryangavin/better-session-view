@@ -12,7 +12,7 @@ import {
   type Tuning,
 } from '../tab.ts';
 import { fretColor } from '../tablature.ts';
-import { barAt, placeOf, type Bars } from '../warp.ts';
+import { barAt, placeOf, type Beats } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 
 export interface TablatureProps {
@@ -20,7 +20,7 @@ export interface TablatureProps {
   tuning: Tuning;
   transpose?: number;
   seconds: number;
-  bars: Bars;
+  bars: Beats;
   span: Span;
   height: number;
   onSeek?(fraction: number): void;

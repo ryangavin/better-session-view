@@ -186,14 +186,17 @@
   user-select: none;
 }
 
-.mf-marker[data-selected] {
-  background: var(--fg);
-  opacity: 1;
+.mf-marker[data-beat] {
+  opacity: 0.45;
 }
 
-.mf-marker[data-selected] i {
-  background: var(--fg);
-  box-shadow: var(--ring-focus);
+.mf-marker[data-bare] i {
+  left: -3px;
+  width: 7px;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  color: transparent;
 }
 
 .mf-anchor i {

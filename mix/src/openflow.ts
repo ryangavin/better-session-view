@@ -184,7 +184,7 @@ interface Bridge {
     run(ask: {
       trackId: string;
       tuning: readonly TuningString[];
-      bars: { seconds: number; markers: readonly { at: number; bar: number }[] } | null;
+      bars: { rate: number; length: number; first: number; samples: readonly number[] } | null;
       transpose: number;
     }): Promise<TranscribeOutcome>;
     cancel(trackId?: string): Promise<void>;

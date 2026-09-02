@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { midiFile } from '../src/midi.ts';
 import { bassTranspose, renderTab, transposeNotes, type Tuning } from '../src/tab.ts';
-import type { Bars } from '../src/warp.ts';
+import type { Beats } from '../src/warp.ts';
 import { hashOf } from './job.ts';
 import { places, prepare, uvPath, worker } from './runtime.ts';
 import {
@@ -34,7 +34,7 @@ export interface TranscribeRequest {
   /** The manifest's relative stem directory; the renderer never supplies a path. */
   stems: string;
   tuning: Tuning;
-  bars: Bars | null;
+  bars: Beats | null;
   /** Semitones, constrained to the octave choices the renderer exposes. */
   transpose: number;
 }
@@ -85,7 +85,7 @@ export async function writeLayouts(
   where: string,
   sidecar: TranscriptionSidecar,
   tuning: Tuning,
-  bars: Bars | null,
+  bars: Beats | null,
   transpose: number,
 ): Promise<TranscriptionSidecar> {
   const corrected = { ...sidecar, transpose: bassTranspose(transpose) };

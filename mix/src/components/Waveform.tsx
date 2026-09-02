@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Peak } from '../audio.ts';
 import { rankOf, rulingOf, shaded, TICKS_PER_BAR, type Rank } from '../grid.ts';
-import { barAt, placeOf, type Bars } from '../warp.ts';
+import { barAt, placeOf, type Beats } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 
 /**
@@ -63,7 +63,7 @@ export interface WaveformProps {
    * front of it starts on the second half of bar zero, and a lane told only how
    * many bars there are can do nothing but start one at the left edge.
    */
-  bars?: Bars;
+  bars?: Beats;
   /**
    * Which slice of the track to draw, as fractions. The whole of it by default.
    *

@@ -90,17 +90,14 @@ describe('per-track memory', () => {
 });
 
 describe('what a track keeps of its grid', () => {
-  it('round-trips the markers with the rest of the track', () => {
-    const markers = [
-      { at: 0.5, bar: 0 },
-      { at: 75.5, bar: 40 },
-    ];
-    remember(withTrack({}, 'a', { bpm: 128, bpmAuto: true, offset: 0.5, markers }));
-    expect(forTrack(recall(), 'a').markers).toEqual(markers);
+  it('round-trips the beat map with the rest of the track', () => {
+    const beats = { rate: 48000, length: 48000 * 240, first: -1, samples: [1000, 23500, 46000, 68500] };
+    remember(withTrack({}, 'a', { bpm: 128, bpmAuto: true, offset: 0.5, beats }));
+    expect(forTrack(recall(), 'a').beats).toEqual(beats);
   });
 
-  it('reads a store from before there were markers as a track still owed a fit', () => {
+  it('reads a store from before there was a map as a track still owed a fit', () => {
     remember(withTrack({}, 'a', { bpm: 128, offset: 0.5 }));
-    expect(forTrack(recall(), 'a').markers).toBeUndefined();
+    expect(forTrack(recall(), 'a').beats).toBeUndefined();
   });
 });

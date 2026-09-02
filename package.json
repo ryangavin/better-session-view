@@ -80,7 +80,8 @@
     "dev:chart-ui": "vite --config chart/vite.config.ts",
     "frames": "node --disable-warning=ExperimentalWarning tools/frames.ts",
     "footage:frames": "node --disable-warning=ExperimentalWarning tools/footage-frames.ts",
-    "demo:mix": "node --disable-warning=ExperimentalWarning tools/mix-demo.ts"
+    "demo:mix": "node --disable-warning=ExperimentalWarning tools/mix-demo.ts",
+    "warp:mix": "node --disable-warning=ExperimentalWarning tools/mix-warp.ts"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.3",

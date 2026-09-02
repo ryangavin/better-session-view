@@ -137,21 +137,28 @@ zoomed in it is one column each, drawn wide.
 
 The window used to have `BARS = 64` nailed down as a constant. That was fine
 while the audio was invented and is not once it is real: a track is however long
-it is. Position is seconds, and where the bars fall is `warp.ts`'s `Bars`: a
-list of **markers**, each pinning a second of the file to a bar, with the bars
-spaced evenly between one marker and the next and the neighbouring spacing
-carried on past either end. That is Live's warp marker exactly, and the `.asd`
-it writes is the same list. A produced track is two of them — the first
-downbeat and the end of the file — which is the tempo and the downbeat the
-window used to hold as two numbers, and holds still: no tempo fixes a song with
-a quarter-second of air in front of it, since every line is that quarter second
-late for the whole of it. A band is a marker wherever the beat moved.
+it is. Position is seconds, and where the beats fall is `warp.ts`'s `Beats`:
+**the sample of every beat**, bar 1's downbeat as beat zero, counted in the rate
+the file was heard at. That is the one source of truth about timing. Between
+two anchors the beats are drawn straight; past either end the neighbouring
+spacing carries on. Nothing else about timing is stored — there is no BPM in the
+map, a tempo is the spacing of two anchors read off on demand, and a tempo
+change is nothing more than the spacing changing. Which is what makes an edit
+local: drag one beat's anchor and its neighbours hold, the two spacings beside
+it take up the difference, and nothing further away can tell.
 
-Everything that draws or quantises goes through `barAt` and `placeOf` and
-nothing does the arithmetic itself, so the lanes, the warp lane and the
-tablature bend at a marker in the same place. The ruling in `grid.ts` is
-measured against the bars on *screen* rather than in the file, so a slow
-section is ruled for the width it actually has.
+Everything that draws, quantises, loops or plays goes through `beatAt` and
+`sampleOf` — or `barAt` and `placeOf`, the same in bars and fractions — and
+nothing does the arithmetic itself, so the lanes, the warp lane, the tablature
+and the stretcher bend at an anchor in the same place. The ruling in `grid.ts`
+is measured against the bars on *screen* rather than in the file, so a slow
+section is ruled for the width it actually has. Samples rather than seconds
+because a sample is exact and a second is a measurement of one, and the rate
+travels with the map so an anchor means one thing on any device.
+
+Before anything has been measured the map is the even ruling a typed tempo
+makes — `evenBeats`, a beat every `60 × rate / bpm` samples — and a typed
+tempo rules the grid. Once the beats have been found it rules only what plays.
 
 **The bar count is not the map, and it used to be.** The lanes drew
 `ceil(seconds × bpm / 240)` bars across the width of the file, which silently
@@ -162,8 +169,8 @@ strip whose whole job is to show drift. The count is now derived from the map �
 `countOf` — and nothing rules with it.
 
 That is what makes the warp lane worth looking at. The ticks are onsets — placed
-in bar space by the *grid*, not by the audio — so changing the tempo or moving
-a marker walks them off the bar lines or onto them. A tempo a fraction out does not look wrong
+in bar space by the *grid*, not by the audio — so moving an anchor walks them
+off the bar lines or onto them. A tempo a fraction out does not look wrong
 at bar 2 and is unmistakable by bar 60.
 
 Onsets come off the drums where there are drums, which is most of the argument
@@ -186,196 +193,172 @@ beats, then sixteenths, each appearing where there is room for it.
 That is what makes a grid judgeable: the ticks either side of one bar line are
 the same pixel at whole-track width.
 
-## Fitting a grid to the audio
+## Finding the beats
 
-`warp.ts`. Auto-warp is a measurement now rather than a gesture: it hands back a
-tempo, a downbeat and how much of the drumming agrees with them, and the window
-applies all three.
+Three files, in the order the work happens: `transients.ts` hears where the
+drums hit, `tempo.ts` reads a tempo and a downbeat off all of them, and
+`follow.ts` finds every beat and anchors it to a sample.
 
-### It listens to the kick
+### Where the drums hit, to the millisecond
 
-**The tempo comes off the kick band, not off the drums.** A kick is short, loud,
-low and repeated, which is the easiest thing in a mix to measure a period from —
-and taking the snare and the hats off it removes most of what a fit can trip
-over. `bandsOf` walks the drums stem once and comes back with two envelopes:
-`low`, through three one-poles at 120 Hz — eighteen decibels an octave, which
-leaves a kick's forty-to-a-hundred-and-fifty alone and takes twenty off a snare —
-and `wide`, the same stem unfiltered.
+The envelope the fit used to listen to was made of twelve-millisecond columns —
+the loudest sample in each, and a hit placed wherever its attack fell inside
+one. On a record made to a click that put the kicks a whole column either side
+of the line. Splitting the columns finer made it worse: a finer envelope of the
+same kind is more wobbles, and every wobble a local maximum. What was missing
+was a detector, not resolution.
 
-One walk, because a stem is tens of millions of samples and two passes over it
-is two passes over it. A column is 512 samples, about twelve milliseconds, and
-what is kept is the *loudest* sample in each — a kick's attack is a couple of
-milliseconds inside that column, and a mean would be a picture of how long the
-hit rang for rather than of when it started. A four-minute stereo stem walks in
-about a hundred milliseconds and fits in fifteen; it is worked out once per
-track and kept.
+`transients.ts` is one: a **rolling window**, not a column. Every sample goes
+through three band filters — the kick under 120 Hz, the snare between 200 and
+2,500, the hats above 4,000 — each band is rectified and followed by an
+envelope with a one-millisecond attack and a thirty-millisecond release, and
+that envelope is read every sixty-four samples. A transient is where the
+envelope *climbs*: the rise in decibels over the last five milliseconds,
+peak-picked against a threshold that follows the local level, no two closer
+than forty milliseconds in one band. The moment reported is where the envelope
+had climbed a fifth of the way — the start of the attack, not its peak — and it
+is then found again to the exact sample by running the band's own filter over
+the few milliseconds around it. The filter's own delay is taken off, four
+milliseconds for the kick band. A hit carries how sharply it rose, in nepers,
+and how loud it got against the band's loudest.
 
-`wide` exists for exactly one question, below. With no stems decoded — before the
-audio arrives, or in a browser with no app around the page — `columnsOf` falls
-back to the drawn peaks: half the resolution and one band for both.
+A kick has a click and a hat has a thump, so one stroke shows up faintly in
+bands it does not belong to. A snare or a hat within six milliseconds of a hit
+twice as loud in another band is that hit's bleed and goes; a kick only if four
+times outdone, because a quiet kick under a loud hat is the commonest thing in
+music. So a hat is a hat and not also a faint snare, and a kick with a hat on
+it is still a kick.
 
-### Four steps
+On the two records in the library whose tempo is known to three decimals the
+kicks now scatter about three milliseconds around the line, from twelve.
 
-Each is there because the step before it cannot do the job alone.
+### Which pulse is the beat, and where it falls
 
-**An onset strength, less the strength around it.** The rise in energy per
-column, minus a local mean over four hundred milliseconds. Without the
-subtraction the fit is dominated by whichever section of the song is loudest —
-a chorus out-votes a whole verse, and what is really being fitted is thirty
-seconds of it. What is left is *how much this moment stood out from its
-neighbours*, which means the same thing everywhere in the track.
+`tempo.ts` answers three questions in order, and the order is what makes each
+answerable.
 
-**Hits, placed between columns.** Local maxima above a floor, positioned by the
-parabola through the peak and its two neighbours. A column is twelve
-milliseconds and a grid is judged in single ones, so rounding every hit to a
-column would put a floor under the accuracy of everything after it.
+**How fast** is where the onset strength — every hit, weighted by band, smeared
+a frame — correlates with itself. Every local maximum of the autocorrelation
+within 70 to 190 BPM that is a third of the strongest is a candidate. There is
+**no lean toward any tempo**: the range is the only prior, and it is a range
+because a tempo outside it is a tempo nobody would count, not because any tempo
+inside it is more likely.
 
-**A period, from autocorrelation.** Folded to about 24 ms first, since this is
-the one step costing lags times columns and a coarse answer is all it owes.
-Scanned at an eighth of a column against a signal smeared by a column either
-side, because a spike correlated against a spike gives one lag a huge score and
-its neighbours nothing to interpolate from — smeared and scanned finely, the peak
-has a shape. It looks an octave *below* the slowest tempo it will ever claim: a
-kick on one and three is a pulse at half the tempo of the song it is in, and
-refusing to see it is how a fit ends up locked to nothing.
+**Which of those is the beat** is the one question correlation cannot answer — a
+kick every beat lines up with itself at twice the period exactly as well — and
+it used to be settled by leaning toward the tempos people dance at. It is
+settled now by what the kit *does*. Two shares, each at the candidate's best
+phase: how much of the kick and snare strength sits *on* its pulses, and how
+many of its pulses have a kick or snare on them, counted only where the kit is
+playing at all. At half the true tempo every other hit falls between the
+pulses and the first share halves; at double it every other pulse is empty and
+the second does. The product is the score. Drum and bass at 174 with a kick on
+one and three and a snare on two and four scores as 174 and not 87, and a slow
+groove at 88 with hats between its beats scores as 88 and not 176, with nothing
+told what to expect.
 
-**A line, refitted over twice as much of the song each round.** Least squares
-through the hits the grid found, starting at sixteen beats and doubling until it
-spans the track. It has to grow rather than start wide: a period right to a
-fraction of a per cent is exact enough to match sixteen beats and nowhere near
-exact enough to match five hundred, because a tenth of a per cent is a beat and
-a half of drift by the end of four minutes. Sixteen beats fix the period an order
-better, which reaches thirty-two, and six rounds reach the end. The last two
-rounds are over the whole song, and that is what makes the answer worth having:
-a tempo fitted to every kick in four minutes is good to about a hundredth of a
-BPM, which is the difference between a grid that holds at bar 200 and one that
-is visibly wrong by bar 60.
+**Where the beat falls** is a search over every millisecond of one period,
+scored by the busiest half-minute of the song rather than by the whole of it:
+the period is known to a frame here, and a frame's error is a third of a
+second by the end of four minutes, wider than the window a hit counts in. The
+busiest stretch rather than the opening, because a record can take a minute
+and a half to bring the drums in. Then least squares through the hits under
+the beats, over twice as much of the song each round until it spans it all —
+sixteen beats fix the period an order better, which reaches thirty-two, and
+six rounds reach the end — which is what makes a tempo good to a hundredth of
+a BPM. Each candidate gets its own line before it is judged, because a line a
+frame out drifts off the very hits it is being judged against. The old fit grew
+its line from the strongest hit in the first two beats, and on two records out
+of five that hit was not the beat.
 
-### Which octave, and which beat starts the bar
+The downbeat is the heaviest quarter by how loud the kick got, voted from the
+first beat in the file; four on the floor says nothing and the tie goes to the
+beat the song starts on. A whole number is tested, not assumed — every record
+on hand is 128 in the DAW and 128.055 on the master. Under four-tenths
+agreement the fit refuses, as before: 120 dressed up as a reading is worse than
+the window saying it found none.
 
-Autocorrelation cannot tell a beat from a half-note — a pulse every 0.47 s
-correlates with itself at 0.94 s just as strongly. Two things settle it:
+### Every beat, anchored
 
-**A kick on one and three is not a song at half the tempo.** If the pulse comes
-out under 95 BPM, `wide` is asked whether the midpoints between those kicks are
-as busy as the kicks are — which is the snare, on two and four. If they are, the
-beat is twice as fast. This is the one octave question the audio can answer
-outright, and it is the whole reason there are two bands rather than one.
+The fit is one straight line, which is the right shape for a record and the
+wrong one for a band. `follow.ts` finds the beats themselves and hands back
+the map: the exact sample of every beat from the top of the file to the end,
+whether or not a drum was struck on it.
 
-**Otherwise, a preference for the tempo a person would have counted**, eight
-tenths of an octave wide around 125. Steady eighths at the weight of the quarters
-are genuinely ambiguous, and this is what decides them.
+**Every beat is a prediction matched to a transient under a smoothness cost,
+and the matching is done for the whole song at once.** A greedy walk grabs the
+syncopated kick inside its window and then has to find its way back; dynamic
+programming asks which sequence of beats, taken together, sits on the most
+onset strength while changing its spacing the least, and reads the answer off
+backwards from the end. Where nothing was struck for sixteen bars the cost of
+changing spacing is all there is, so the beats go on at the spacing they had —
+evenly, which is exactly what a beat in silence is — and the first kick after
+the gap lands on the beat it is.
 
-There was a third — *alternate beats carrying almost nothing means the pulse is a
-subdivision, so double the period* — and it went because it could not fire. A
-period whose alternate beats are a third of the others correlates about three
-times better at twice that period, and the preference can lean by about two, so
-the autocorrelation had already found the slower one. Removing it changed no
-answer in any fixture built to trigger it. The mutation run is what surfaced it:
-the constant in it could be set to anything without a test noticing, which for a
-threshold means either the spec is not looking or the branch is not reachable.
+**The spacing it is held to is local**, read off the song twenty seconds at a
+time within a quarter of the seed's period either way, and the cost is then
+stiff: a beat that lands late by a twentieth of its spacing pays as much as a
+missing kick. A stretch is believed about its own period only when it states
+it clearly — enough hits to correlate, a peak that stands well above the run
+of lags — and not when it is a fill: a build-up roll is eight seconds of hits
+every ninety milliseconds, as periodic as anything in the song and nothing to
+do with its tempo, and it gives itself away by being several times as busy as
+the song usually is. And a period a stretch does state has still to *be* the
+beat: it is judged the way the seed's octave was, by what the kit does on and
+between its pulses over that stretch, against the seed's period over the same
+stretch, and believed only where it looks more like the beat. A stretch that
+says nothing clearly takes the period of the clear stretches either side of it,
+drawn straight between them — not the seed's, because a song with two tempos
+in it has a seed that is one of them.
 
-Then the downbeat: the beats are split four ways and the heaviest quarter starts
-the bar, because the kick is the heaviest thing in most bars of most music this
-will meet. **Four on the floor is the case where that says nothing** — four
-identical kicks, any of which would do — so the tie goes to the beat the song
-*starts* on, which is what songs do, and a vote has to carry five per cent more
-to move it. Getting this wrong is a grid whose lines are right and whose bar
-numbers are three beats out, which the first click of the hand path fixes in one
-click. Bar 1 is then the first downbeat *of the file*, so the bar count means what
-it says; everything before it is still ruled and still numbered, downwards.
+**Then each beat is anchored.** The transient under a found beat is placed to
+the sample, and that is the anchor. A beat with none is placed evenly between
+the anchored beats either side, because that is what the sound did. Bar 1 is
+the first beat in the file on the quarter the kick comes down heaviest on,
+voted over the anchored beats — not the seed's downbeat extrapolated to the top
+of the file, which a tempo change puts anywhere.
 
-### Following the drummer
+**What it reports is checkable.** `agreement` is the share of the kick and
+snare strength within an eighth of a beat of the map, which is what the warp
+lane draws, counted; `tracked` is the share of the beats that had a transient
+under them, because a map anchored to the hits agrees with them by construction
+and the second number is the one that still says something.
 
-The line the fit draws is straight by construction. That is the right shape for
-a record and the wrong one for a band playing to no click, and `follow.ts` is
-the other half: Live's Auto-Warp, which walks the song and drops a warp marker
-on the first beat of each bar where the audio drifted, and since 11.3.10 leaves
-a track made at a fixed tempo as a single straight stretch.
+### Measured on the library
 
-**The seed does the hard half.** Which octave the pulse is in, which beat
-starts the bar and where the first one falls are the questions a tracker gets
-wrong, and the fit has already answered them. What is left is drift, and drift
-is small. So the walk predicts each beat from the last one and a local tempo,
-takes the strongest kick within a fifth of a beat of the prediction — weighted
-by how close it came — and moves the local tempo a little toward what it found,
-never more than a tenth from the seed. A three per cent step at bar 60 is
-inside the window, and the walk never lets go of it.
-
-**Where nothing is found it carries on at the seed's tempo**, not the local
-one. A local tempo is a reading of the last few bars, and a sixteen-bar
-breakdown is long enough for a small error in it to walk the count off the
-beat; the seed is a line through every kick in the song and good to a
-hundredth of a BPM, so the first kick after the gap lands on a bar line. After
-eight misses the window widens to find it again. Where the whole song will not
-hold one line — a real tempo change scores under the fit's floor — the seed is
-fitted to the first three quarters of a minute instead.
-
-**A marker on every downbeat that found a hit**, placed by the line through
-the beats around it rather than by the hit. A hit is placed to a millisecond
-or two and a hand plays to ten, and a marker on every wobble is a playback rate
-that wobbles with it. Then any marker within a column of the line through its
-neighbours is dropped. A record at 128.055 comes back as its two end markers;
-a ritardando keeps a marker every few bars; a drummer's lean is followed and
-a drummer's wobble is not written down as tempo.
-
-**What it reports is checkable.** `agreement` is the share of onset strength
-landing within an eighth of a beat of the map's beats — exactly what the warp
-lane draws, counted — and `tracked` is the share of the beats walked that found
-a hit, because a map pinned to the hits agrees with them by construction and
-the second number is the one that still says something. A quarter of the first
-is luck, because the window is a quarter of a beat wide, so a fit under
-four-tenths is refused: there is no tempo that is honest about a track with
-nothing steady in it, and 120 dressed up as a reading is worse than the window
-saying it found none.
-
-`follow.test.ts` fixtures are four minutes each — a machine, a ritardando, a
-step, a drummer with eight milliseconds of wobble and a per cent of lean, a
-breakdown, a half-time section — and what they assert is where bar 100 lands,
-and for the machine that nothing was pinned at all.
+The fixtures under `src/` are rendered kits, four minutes long — a machine, a
+ritardando, a tempo step, a jump from house to a drop, a drummer with eight
+milliseconds of wobble, a sixteen-bar breakdown, a half-time section — and
+what they assert is the sample of a beat deep in the song. They passed while two
+records out of five were refused, which is why there is also
+`tools/mix-warp.ts`: `npm run warp:mix` runs the whole pipeline on every track
+in the library with a drums stem and prints what came out beside what is known
+to be true, from `tools/mix-warp-truth.json`. A truth is a tempo, and for a
+song that changes tempo, the sections it changes at. The worst eight-bar
+stretch of each track is what it flags, outside the bars around a change.
 
 ### Two clicks, and then the same machinery
 
-`refitOf` is the hand path's half of this, and it is what makes counting out four
-bars enough. Two clicks over four bars is fifteen seconds of evidence, and a
-click twenty milliseconds out is a third of a BPM — a bar and a half of drift by
-the end of a song. But it is *exactly* enough to say which beat and which
+`refitOf` is the hand path's half of this, and it is what makes counting out
+four bars enough. Two clicks over four bars is fifteen seconds of evidence, and
+a click twenty milliseconds out is a third of a BPM — a bar and a half of drift
+by the end of a song. But it is *exactly* enough to say which beat and which
 downbeat are meant, which is the half a fit gets wrong. So the clicks seed the
-alignment and the same least-squares line over every kick in the track sets the
-tempo: the hand supplies the octave and the phase, the audio supplies the
-precision. A refinement that ends up three per cent away from what was measured
-has locked onto something else, and is refused in favour of what somebody
-clicked. Neither click is bar 1: the clicked downbeat says where the bars fall,
-not which bar it starts, and bar 1 is the first downbeat in the file, as it is
-for a fit.
-
-**A whole number is tested, not assumed.** Produced music is written at whole
-numbers, and a fit within half a tenth of one used to be rounded to it. Every
-record on hand is a hundred and twenty-eight in the DAW and 128.055 on the
-master — four hundredths of a per cent fast, which is what a mastering pass
-through a converter on its own clock does — and rounding it put the grid a third
-of a beat late by the end of the song, on the strip whose job is to show that.
-So `wholeOf` asks whether the integer's grid, at its own best phase, catches as
-much of the kick within a thirty-second of a beat as the fitted one does. A song
-at 128 scores the same either way and gets the integer; a song at 128.055 loses
-half its kicks to the rounding and keeps its decimals, and the header shows both
-of them rather than a `128.1` that reads as a mistake.
-
-`warp.test.ts` fixtures are four minutes long and what they assert is the
-*drift* — where the grid puts bar 100 — because a tempo a tenth of a per cent out
-passes every test written against a two-bar loop. One of them renders a 60 Hz
-kick and a 2 kHz snare into real samples and checks that the filter leaves one
-and takes the other.
+line and the same least squares over every hit in the track sets the tempo:
+the hand supplies the octave and the phase, the audio supplies the precision.
+A refinement that ends up three per cent away from what was measured has
+locked onto something else, and is refused in favour of what somebody clicked.
+Then the beats are followed behind it, as they are behind a fit.
 
 ## Playing it warped
 
-With warp on, the stems play at the header's tempo and every bar of the record
-takes the time that tempo gives a bar, whatever it took on the record. That is
+With warp on, the stems play at the header's tempo and every beat of the record
+takes the time that tempo gives a beat, whatever it took on the record. That is
 Live's clip following the Set, and `schedule.ts` is the maths of it with
 nothing of Web Audio inside: a **pass** through the file is a list of
 boundaries — from this output second, read the file from here, this fast — one
-where the pass starts and one at every marker after it, the rate in each
-segment being the target tempo over the segment's own. The playhead is the
+where the pass starts and one at every anchor after it, the rate in each beat
+being the record's seconds for that beat over the target's. The playhead is the
 inverse, worked out from the same map on the audio clock, so the sound and the
 line cannot disagree and both can be tested at a desk.
 
@@ -398,10 +381,12 @@ drops the future and starts again from where the pointer went. The loop is a
 boundary at the end of the pass back to the top, and the head wraps in bar
 space the same way.
 
-**A straight map at its own tempo plays through the plain sources** even with
-warp on. Every rate is one, and a stretcher at a rate of one is not the
-samples. So a produced record with warp on is bit-exact until the tempo field
-moves, and the stretcher only ever works when there is something to stretch.
+**A record at its own tempo plays through the plain sources** even with warp
+on. Its anchors sit within a per cent of even — the detector's scatter on where
+a kick began, not the record moving — and a stretcher at a rate of one is not
+the samples. So a produced record with warp on is bit-exact until the tempo
+field moves by a twentieth of a per cent, and the stretcher only ever works
+when there is something to stretch.
 
 The node holds its own copies of the stems: an `AudioBuffer`'s memory cannot
 be lent to a worklet, and the lanes and the plain sources still need the
@@ -424,8 +409,8 @@ because the app has a scheme rather than `file://`, an opaque origin that
 promises nothing.
 
 Kept: the open track, the model, the search, snap, loop and warp; and per
-track, the mix, the head, the tempo, the markers and any slices somebody has
-actually named. **Not** the
+track, the mix, the head, the tempo it plays at, the beat map and any slices
+somebody has actually named. **Not** the
 library and not the stems — those are on disk and are read back every time,
 because a second copy of the truth is the copy that goes stale.
 
