@@ -2,15 +2,15 @@
 @import '@openflow/widgets/tokens.css';
 
 :root {
-  --stem-vocals: #e0708f;
-  --stem-drums: #d9825a;
-  --stem-bass: #7a6fd0;
-  --stem-guitar: var(--green);
-  --stem-piano: var(--blue);
-  --stem-other: var(--detail);
+  --stem-vocals: #e8574f;
+  --stem-drums: #d6cd4b;
+  --stem-bass: #6d8bf5;
+  --stem-guitar: #56c163;
+  --stem-piano: #c471e0;
+  --stem-other: #35c2cf;
 
   --surface-band: #0c0c0e;
-  --surface-lane-head: #121215;
+  --surface-lane-head: #191920;
   /*
    * Over the lanes, where the view is showing time the song does not reach.
    *
@@ -23,7 +23,7 @@
   --surface-manual: #17171c;
 
   --rail-left: 258px;
-  --lane-head: 204px;
+  --lane-head: 88px;
 
   --layer-outside: 3;
   --layer-playhead: 5;
