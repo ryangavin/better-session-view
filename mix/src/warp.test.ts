@@ -11,6 +11,7 @@ import {
   rangeText,
   resampled,
   sampleOf,
+  renumbered,
   shifted,
   startOf,
   tempoAt,
@@ -170,6 +171,14 @@ describe('editing an anchor', () => {
   it('shifts every anchor the same way', () => {
     const later = shifted(map, 480);
     later.samples.forEach((s, i) => expect(s).toBe(map.samples[i] + 480));
+  });
+
+  it('sets 1.1.1 at a beat without moving any anchor', () => {
+    const counted = renumbered(map, 6);
+    expect(counted.samples).toBe(map.samples);
+    expect(sampleOf(counted, 0)).toBe(sampleOf(map, 6));
+    expect(sampleOf(counted, -6)).toBe(sampleOf(map, 0));
+    expect(beatAt(counted, sampleOf(map, 6))).toBeCloseTo(0, 9);
   });
 });
 

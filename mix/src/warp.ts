@@ -209,6 +209,13 @@ export function moved(beats: Beats, beat: number, sample: number): Beats {
   return { ...beats, samples };
 }
 
+/**
+ * Bar 1 beat 1 set at a beat: Ableton's "set 1.1.1 here". Every anchor stays
+ * exactly where it is; only the count starts somewhere else, so beats before
+ * it go negative rather than going away.
+ */
+export const renumbered = (beats: Beats, beat: number): Beats => ({ ...beats, first: beats.first - beat });
+
 /** Every anchor moved the same way through the file: the nudge. */
 export const shifted = (beats: Beats, samples: number): Beats => ({
   ...beats,

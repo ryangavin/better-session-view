@@ -229,6 +229,16 @@ times outdone, because a quiet kick under a loud hat is the commonest thing in
 music. So a hat is a hat and not also a faint snare, and a kick with a hat on
 it is still a kick.
 
+A stroke is timed by its click. The bands do not climb together: the click at
+the front of a kick or a snare is over in a millisecond, and the thump under it
+takes a few cycles of its fundamental to be heard as having started — sixteen
+milliseconds each at 60 Hz. Judged in its own band a kick is late by that,
+every time, and the harness page showed it: the pin on the red tick, a cyan
+tick a few milliseconds ahead of it. So a kick or a snare with a high-band rise
+inside the fifteen milliseconds before it takes that rise's sample as its own,
+whether the click stood as a hat or was dropped as bleed. The band still says
+which drum; the click says when.
+
 On the two records in the library whose tempo is known to three decimals the
 kicks now scatter about three milliseconds around the line, from twelve.
 
@@ -313,10 +323,12 @@ in it has a seed that is one of them.
 
 **Then each beat is anchored.** The transient under a found beat is placed to
 the sample, and that is the anchor. A beat with none is placed evenly between
-the anchored beats either side, because that is what the sound did. Bar 1 is
-the first beat in the file on the quarter the kick comes down heaviest on,
-voted over the anchored beats — not the seed's downbeat extrapolated to the top
-of the file, which a tempo change puts anywhere.
+the anchored beats either side, because that is what the sound did. Bar 1
+beat 1 is the first beat found, as a clip dropped in Ableton starts at 1.1.1:
+the whole file, the start and every anchor are kept, and where the music's one
+is elsewhere the count is moved rather than the beats — `renumbered` in
+`warp.ts` is Ableton's "set 1.1.1 here". The kick's vote for the heaviest
+quarter is still taken and reported, for whoever moves it.
 
 **What it reports is checkable.** `agreement` is the share of the kick and
 snare strength within an eighth of a beat of the map, which is what the warp

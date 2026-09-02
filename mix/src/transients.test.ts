@@ -221,6 +221,25 @@ describe('to the sample', () => {
     expect(transientsOf(env, RATE)).toEqual([]);
   });
 
+  it('times a kick by the click at the front of it', () => {
+    // The thump of a sixty-hertz kick is heard a few milliseconds after the
+    // stroke; the click is heard at once. A kick with a click is placed at the
+    // click, whether the click stands as a hat of its own or is dropped as
+    // the kick's bleed. A kick with no click keeps its own timing.
+    const out = silence(6);
+    strike(out, 1, 60, 0.05);
+    strike(out, 3, 60, 0.05);
+    hiss(out, 3, 0.002, 0.6);
+    strike(out, 5, 60, 0.05);
+    hiss(out, 5, 0.002, 0.05);
+    const kicks = inBand(out, 'low');
+    expect(kicks).toHaveLength(3);
+    expect(Math.abs(kicks[0].at - 1)).toBeLessThan(0.003);
+    expect(Math.abs(kicks[1].at - 3)).toBeLessThan(0.0005);
+    expect(Math.abs(kicks[2].at - 5)).toBeLessThan(0.0005);
+    expect(kicks[1].band).toBe('low');
+  });
+
   it('drops a hat’s thump from the snare band, and keeps a kick under a hat', () => {
     // A hat thumps a little in the snare band. Beside a real snare, that
     // thump is faint, and goes. A kick struck with a hat is two drums, and

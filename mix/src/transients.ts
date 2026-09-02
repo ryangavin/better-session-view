@@ -33,6 +33,15 @@ import type { Peak } from './audio.ts';
  * what lets the tempo ask what the *snare* did without the hats answering
  * for it — and a kick with a hat on it is still a kick.
  *
+ * **A stroke is timed by its click.** The bands do not climb together: the
+ * click at the front of a kick or a snare is over in a millisecond, and the
+ * thump under it takes a few cycles of its fundamental to be heard as having
+ * started — sixteen milliseconds each at sixty hertz. Judged in its own band
+ * a kick is late by that, every time. So a kick or a snare with a high-band
+ * rise inside the fifteen milliseconds before it takes that rise's sample as
+ * its own, bleed or not: it is the earliest evidence of the same stroke. The
+ * band still says which drum it was; the click says when.
+ *
  * **Three bands, because the beat is not in the kick alone.** The kick band
  * is a hundred and twenty hertz of low-pass, as before; the snare is what is
  * left between two hundred and two and a half thousand; the hats are what is
@@ -105,6 +114,8 @@ const LAG: Record<Band, number> = {
 };
 /** Hits within this of each other across bands are one stroke. */
 const TOGETHER = 0.006;
+/** How far before a kick or a snare the click at the front of the same stroke can land. */
+const CLICK = 0.015;
 /** A snare or hat coinciding with a hit twice as loud in another band is that hit's bleed; a kick has to be four times outdone. */
 const BLEED = 0.5;
 const BLEED_LOW = 0.25;
@@ -451,14 +462,34 @@ export function hearing(
   return fromPeaks(peaks, seconds, rate);
 }
 
+/**
+ * A kick or a snare timed by the click at the front of it, where there is
+ * one: the nearest high-band rise in the moment before, whether or not it
+ * survived as a hit of its own.
+ */
+export function clicked(hit: Transient, clicks: readonly Transient[]): Transient {
+  if (hit.band === 'high') return hit;
+  let best: Transient | null = null;
+  for (const click of clicks) {
+    const before = hit.at - click.at;
+    if (before <= 0 || before > CLICK) continue;
+    if (!best || click.at > best.at) best = click;
+  }
+  return best ? { ...hit, at: best.at, sample: best.sample } : hit;
+}
+
 /** Every stroke in a set of channels, each to the exact sample. */
 export function heardIn(channels: readonly Float32Array[], rate: number): Heard | null {
   const envelopes = envelopesOf(channels, rate);
   if (!envelopes) return null;
-  const transients = transientsOf(envelopes, rate).map((hit) => {
+  const exact = (hit: Transient): Transient => {
     const sample = exactly(channels, rate, hit);
     return { ...hit, at: sample / rate, sample };
-  });
+  };
+  const clicks = transientsIn(envelopes.high, envelopes.per, 'high', rate).map(exact);
+  const transients = transientsOf(envelopes, rate)
+    .map(exact)
+    .map((hit) => clicked(hit, clicks));
   transients.sort((a, b) => a.at - b.at);
   return { seconds: channels[0].length / rate, rate, transients };
 }

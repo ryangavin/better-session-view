@@ -33,8 +33,11 @@ import { beatAt, beatsOf, type Beats } from './warp.ts';
  * is placed to five milliseconds; the transient it was found on is placed to
  * the sample, and that is the anchor. A beat with no transient under it is
  * placed evenly between the anchored beats either side of it, because that is
- * what the sound did. Bar 1 is the first beat in the file on the quarter the
- * kick comes down heaviest on, as the fit decides it too.
+ * what the sound did. Bar 1 beat 1 is the first beat found, as a clip
+ * dropped in Ableton starts at 1.1.1: the whole file, the start, and every
+ * anchor are kept, and where the music's one is elsewhere the count is moved
+ * rather than the beats — `renumbered` in `warp.ts`. The kick's vote for the
+ * heaviest quarter is still taken, and reported, for whoever moves it.
  */
 
 export interface Follow extends Fit {
@@ -354,10 +357,9 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
     for (let j = prev + 1; j < anchored.length; j++) samples[j] = Math.round(anchored[prev]! + (j - prev) * spacing);
   }
 
-  // Which beat is bar 1: the first beat in the file on the heaviest quarter,
-  // voted by how loud the kick got on each of the four. The seed's downbeat is
-  // a line extrapolated to the top of the file, and a song with a tempo change
-  // in it puts that line's downbeat anywhere; the beats themselves know.
+  // The heaviest quarter, voted by how loud the kick got on each of the four
+  // — reported, not acted on: the first beat found is 1.1.1, and the count
+  // moves from there if somebody says so.
   const kicks = heard.transients.filter((t) => t.band === 'low');
   const votes = [0, 0, 0, 0];
   anchored.forEach((sample, i) => {
@@ -367,7 +369,7 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
   });
   let downbeat = 0;
   for (let r = 1; r < 4; r++) if (votes[r] > votes[downbeat] * 1.05) downbeat = r;
-  const beats = beatsOf(heard.rate, Math.round(heard.seconds * heard.rate), -downbeat, samples, seed.bpm);
+  const beats = beatsOf(heard.rate, Math.round(heard.seconds * heard.rate), 0, samples, seed.bpm);
   if (trace) {
     trace.beats = frames.map((frame, i) => ({
       frame,
@@ -388,8 +390,8 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
   }
   return {
     bpm: seed.bpm,
-    // Bar 1's downbeat as the map has it, not as the seed's line extrapolated it.
-    offset: beats.samples[-beats.first] / beats.rate,
+    // 1.1.1 as the map has it: the first beat found.
+    offset: beats.samples[0] / beats.rate,
     beats,
     agreement: agreementOf(hits, beats),
     tracked: found / anchored.length,
