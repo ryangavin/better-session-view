@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Slider } from '@openflow/widgets/controls/Slider.tsx';
@@ -8,7 +8,8 @@ import type { Peak } from '../audio.ts';
 import { STEMS } from '../mock.ts';
 import { SPANS, type Mix } from '../state.ts';
 import { placeOf } from '../warp.ts';
-import { factorOf, limitOf, shows, spanOf, useView } from '../zoom.ts';
+import { factorOf, limitOf, shows, spanOf, useView, type Span } from '../zoom.ts';
+import { Tablature } from './Tablature.tsx';
 import { Waveform } from './Waveform.tsx';
 import { WarpLane } from './WarpLane.tsx';
 import './Lanes.css';
@@ -312,75 +313,76 @@ export function Lanes({ mix }: { mix: Mix }) {
           const own = mix.level[stem.id];
           const heard = mix.audible(stem.id);
           return (
-            <div
-              key={stem.id}
-              className="mf-lane"
-              data-quiet={!heard || undefined}
-              style={{ '--stem': stem.ink } as never}
-            >
-              <div className="mf-head mf-lane-head">
-                <span className="mf-lane-label">{stem.name}</span>
-                <Toggle
-                  on={own.muted}
-                  onChange={(next) => mix.adjust(stem.id, { muted: next })}
-                  label={`Mute ${stem.name}`}
-                  title="Mute"
-                  width={18}
-                >
-                  M
-                </Toggle>
-                <Toggle
-                  on={own.soloed}
-                  onChange={(next) => mix.adjust(stem.id, { soloed: next })}
-                  label={`Solo ${stem.name}`}
-                  title="Solo"
-                  width={18}
-                  className="mf-solo"
-                >
-                  S
-                </Toggle>
-                <Slider
-                  param={LEVEL}
-                  value={own.volume}
-                  onChange={(next) => mix.adjust(stem.id, { volume: next })}
-                  orientation="horizontal"
-                  length={FADER}
-                  showValue={false}
-                  label={`${stem.name} level`}
-                  className="mf-fader"
-                />
-                <span className="mf-lane-db">{trim(own.volume)}</span>
+            <Fragment key={stem.id}>
+              <div
+                className="mf-lane"
+                data-quiet={!heard || undefined}
+                style={{ '--stem': stem.ink } as never}
+              >
+                <div className="mf-head mf-lane-head">
+                  <span className="mf-lane-label">{stem.name}</span>
+                  <Toggle
+                    on={own.muted}
+                    onChange={(next) => mix.adjust(stem.id, { muted: next })}
+                    label={`Mute ${stem.name}`}
+                    title="Mute"
+                    width={18}
+                  >
+                    M
+                  </Toggle>
+                  <Toggle
+                    on={own.soloed}
+                    onChange={(next) => mix.adjust(stem.id, { soloed: next })}
+                    label={`Solo ${stem.name}`}
+                    title="Solo"
+                    width={18}
+                    className="mf-solo"
+                  >
+                    S
+                  </Toggle>
+                  <Slider
+                    param={LEVEL}
+                    value={own.volume}
+                    onChange={(next) => mix.adjust(stem.id, { volume: next })}
+                    orientation="horizontal"
+                    length={FADER}
+                    showValue={false}
+                    label={`${stem.name} level`}
+                    className="mf-fader"
+                  />
+                  <span className="mf-lane-db">{trim(own.volume)}</span>
+                </div>
+                <div className="mf-lane-draw">
+                  {/* Drawn whether or not its audio has arrived. The lane, its
+                      controls and its grid are known the moment the manifest says
+                      which stems the model made; only the waveform has to be
+                      waited for, and it fills in as each stem decodes. Swapping a
+                      caption out for a canvas made opening a track a flicker of
+                      six rows changing shape. */}
+                  <Waveform
+                    peaks={mix.peaks[stem.id] ?? NOTHING}
+                    // The peaks and the samples are the same stem or neither.
+                    // The graph still holds the *last* track's buffers until this
+                    // one has finished decoding, and a lane that took them while
+                    // its own drawing was still empty would draw the song you
+                    // just left, magnified, in this song's lane.
+                    buffer={mix.peaks[stem.id] ? mix.audioOf(stem.id) : null}
+                    ink={`var(--stem-${stem.id})`}
+                    quiet={!heard}
+                    bars={grid}
+                    span={span}
+                    onSeek={(fraction) => mix.seek(fraction * mix.seconds)}
+                  />
+                  {/* An empty lane and a lane of zeroes look the same and only one
+                      of them is honest — but a lane that is still being read is
+                      neither, so it says nothing until it knows. */}
+                  {!mix.peaks[stem.id] && !mix.decoding && (
+                    <span className="mf-lane-none">{mix.audioProblem ?? 'no audio loaded'}</span>
+                  )}
+                </div>
               </div>
-              <div className="mf-lane-draw">
-                {stem.id === 'bass' && <BassTranscription mix={mix} />}
-                {/* Drawn whether or not its audio has arrived. The lane, its
-                    controls and its grid are known the moment the manifest says
-                    which stems the model made; only the waveform has to be
-                    waited for, and it fills in as each stem decodes. Swapping a
-                    caption out for a canvas made opening a track a flicker of
-                    six rows changing shape. */}
-                <Waveform
-                  peaks={mix.peaks[stem.id] ?? NOTHING}
-                  // The peaks and the samples are the same stem or neither.
-                  // The graph still holds the *last* track's buffers until this
-                  // one has finished decoding, and a lane that took them while
-                  // its own drawing was still empty would draw the song you
-                  // just left, magnified, in this song's lane.
-                  buffer={mix.peaks[stem.id] ? mix.audioOf(stem.id) : null}
-                  ink={`var(--stem-${stem.id})`}
-                  quiet={!heard}
-                  bars={grid}
-                  span={span}
-                  onSeek={(fraction) => mix.seek(fraction * mix.seconds)}
-                />
-                {/* An empty lane and a lane of zeroes look the same and only one
-                    of them is honest — but a lane that is still being read is
-                    neither, so it says nothing until it knows. */}
-                {!mix.peaks[stem.id] && !mix.decoding && (
-                  <span className="mf-lane-none">{mix.audioProblem ?? 'no audio loaded'}</span>
-                )}
-              </div>
-            </div>
+              {stem.id === 'bass' && <TablatureLane mix={mix} span={span} />}
+            </Fragment>
           );
         })}
         <Outside opens={opens} closes={closes} inset />
@@ -396,80 +398,88 @@ export function Lanes({ mix }: { mix: Mix }) {
 }
 
 /**
- * The only instrument-specific action in the stem lanes.
+ * A complete transcription lane immediately beneath the audio it came from.
  *
  * Tuning is required and starts empty. A placeholder teaches the spelling but
  * is not a value: assuming four-string standard tuning would make a perfectly
  * tidy, confidently wrong tab for a five-string or a detuned instrument.
  */
-function BassTranscription({ mix }: { mix: Mix }) {
+function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
   const song = mix.song;
   if (!song) return null;
   const ownJob = mix.transcribingId === song.id;
   const done = mix.transcription?.trackId === song.id ? mix.transcription : null;
   const invalid = mix.tuningText.trim() !== '' && mix.tuning === null;
   const blocked = mix.runningId !== null || (mix.transcribingId !== null && !ownJob);
+  const strings = done?.tuning.length ?? mix.tuning?.length ?? 4;
+  const height = Math.max(84, strings * 18 + 22);
 
   return (
-    <div className="mf-transcribe" onDoubleClick={(event) => event.stopPropagation()}>
-      <label className="mf-transcribe-tuning">
-        <span>tuning</span>
-        <input
-          value={mix.tuningText}
-          onChange={(event) => mix.setTuningText(event.currentTarget.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && mix.tuning && !mix.engineBusy) void mix.transcribeBass();
-          }}
-          placeholder="E1 A1 D2 G2"
-          title="Open strings from low to high, with octaves — for example E1 A1 D2 G2 or B0 E1 A1 D2 G2"
-          aria-label="Bass tuning, low string first"
-          aria-invalid={invalid || undefined}
-          spellCheck={false}
-        />
-      </label>
-
-      {ownJob ? (
-        <>
-          <span className="mf-transcribe-status" title={mix.transcribeJob?.stage}>
-            {mix.transcribeJob?.stage ?? 'transcribing'}
+    <div className="mf-lane mf-tab-lane" style={{ '--tab-height': `${height}px` } as never}>
+      <div className="mf-head mf-tab-head">
+        <div className="mf-tab-headline">
+          <span className="mf-lane-label">Tablature</span>
+          {done && (
+            <span className="mf-tab-count">
+              {done.sidecar.pitchedCount} notes · {done.sidecar.mutedCount} x
+            </span>
+          )}
+        </div>
+        <div className="mf-tab-actions">
+          <input
+            value={mix.tuningText}
+            onChange={(event) => mix.setTuningText(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && mix.tuning && !mix.engineBusy) void mix.transcribeBass();
+            }}
+            placeholder="E1 A1 D2 G2"
+            title="Open strings from low to high, with octaves — for example E1 A1 D2 G2 or B0 E1 A1 D2 G2"
+            aria-label="Bass tuning, low string first"
+            aria-invalid={invalid || undefined}
+            spellCheck={false}
+          />
+          {ownJob ? (
+            <Button onPress={mix.cancelTranscription}>Cancel</Button>
+          ) : (
+            <Button
+              onPress={() => void mix.transcribeBass()}
+              disabled={!mix.tuning || blocked}
+              title={
+                !mix.tuning
+                  ? 'Enter open strings from low to high, with octaves'
+                  : blocked
+                    ? 'The local engine is already working'
+                    : done
+                      ? 'Lay the cached notes out for this tuning'
+                      : 'Detect bass notes and draw them as tablature'
+              }
+            >
+              {done ? 'Again' : 'Transcribe'}
+            </Button>
+          )}
+        </div>
+        {done && <Button onPress={mix.revealTranscription}>Reveal files</Button>}
+      </div>
+      <div className="mf-tab-draw">
+        {done ? (
+          <Tablature
+            notes={done.sidecar.notes}
+            tuning={done.tuning}
+            seconds={done.sidecar.seconds}
+            bars={mix.grid}
+            span={span}
+            height={height}
+            onSeek={(fraction) => mix.seek(fraction * mix.seconds)}
+          />
+        ) : (
+          <span className={mix.transcribeProblem ? 'mf-tab-message mf-tab-problem' : 'mf-tab-message'}>
+            {mix.transcribeProblem
+              ?? (ownJob
+                ? mix.transcribeJob?.stage ?? 'transcribing the bass'
+                : 'Enter the open strings, then transcribe the bass into this lane')}
           </span>
-          <Button onPress={mix.cancelTranscription}>Cancel</Button>
-        </>
-      ) : done ? (
-        <>
-          <span className="mf-transcribe-status">
-            {done.sidecar.pitchedCount} notes · {done.sidecar.mutedCount} x
-          </span>
-          <Button onPress={mix.revealTranscription}>Reveal</Button>
-          <Button
-            onPress={() => void mix.transcribeBass()}
-            disabled={!mix.tuning || blocked}
-            title="Reuse the detected notes and write tab for this tuning"
-          >
-            Again
-          </Button>
-        </>
-      ) : (
-        <Button
-          onPress={() => void mix.transcribeBass()}
-          disabled={!mix.tuning || blocked}
-          title={
-            !mix.tuning
-              ? 'Enter open strings from low to high, with octaves'
-              : blocked
-                ? 'The local engine is already working'
-                : 'Detect bass notes, write MIDI, and make tab for this tuning'
-          }
-        >
-          Transcribe
-        </Button>
-      )}
-
-      {mix.transcribeProblem && (
-        <span className="mf-transcribe-problem" title={mix.transcribeProblem}>
-          {mix.transcribeProblem}
-        </span>
-      )}
+        )}
+      </div>
     </div>
   );
 }

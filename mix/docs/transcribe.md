@@ -3,7 +3,12 @@
 `mix/python/transcribe.py`, `mix/electron/transcribeJob.ts`,
 `mix/electron/transcribe.ts`, and `mix/src/tab.ts`.
 
-The bass stem can become two useful, deliberately different artifacts:
+The bass stem becomes a complete on-screen tablature lane and two useful,
+deliberately different file artifacts:
+
+- The **Tablature** lane sits directly beneath Bass. Every MIDI onset and duration is
+  projected onto the shared timeline and assigned to a string; zoom, pan, playhead,
+  paging, grid and click-to-seek are the same ones the waveforms use.
 
 - `bass.mid` is the pitched notes, at their measured times and velocities.
 - `bass.tab.txt` places those notes on an explicitly named instrument. Muted or
@@ -20,6 +25,12 @@ Neither is written beside the source audio. They live under the portable library
 
 The separation model is part of the path because the input is that model's `bass.wav`.
 Changing models is changing the audio being heard, not merely changing a setting.
+
+At whole-track width there can be more notes than horizontal pixels. The tablature still
+draws every duration stroke, but suppresses fret labels that would collide. Zooming does
+not reveal new data; it gives the existing data enough room to print every fret. Fret
+assignment is computed over the complete phrase before the visible slice is chosen, so
+panning cannot make the first note on screen jump to a different string.
 
 ## Why a monophonic pitch tracker
 

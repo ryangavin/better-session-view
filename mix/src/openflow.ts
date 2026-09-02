@@ -6,6 +6,7 @@
  * into `electron/` from here would drag them in. Two files that must agree, and
  * `npm run typecheck` covers both.
  */
+import type { TranscribedNote } from './tab.ts';
 
 /**
  * Whether this build can separate, and whether it has the engine yet.
@@ -86,7 +87,14 @@ export interface Transcribed {
   where: string;
   midi: string;
   tab: string;
-  sidecar: { noteCount: number; pitchedCount: number; mutedCount: number; voicedFraction: number };
+  sidecar: {
+    notes: TranscribedNote[];
+    noteCount: number;
+    pitchedCount: number;
+    mutedCount: number;
+    voicedFraction: number;
+    seconds: number;
+  };
   tuning: readonly TuningString[];
   reused: boolean;
 }

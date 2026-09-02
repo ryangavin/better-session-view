@@ -123,7 +123,9 @@ export function assignFrets(notes: readonly TranscribedNote[], tuning: Tuning, m
   return notes.map((note, at) => ({ ...note, ...choices[at]![path[at]!]! }));
 }
 
-const mark = (note: FrettedNote): string => note.unplayable ? '?' : note.muted ? 'x' : String(note.fret);
+/** The symbol both text tab and the on-screen tablature put on a string. */
+export const fretMark = (note: FrettedNote): string =>
+  note.unplayable ? '?' : note.muted ? 'x' : String(note.fret);
 const clock = (seconds: number): string => {
   const minute = Math.floor(seconds / 60);
   return `${String(minute).padStart(2, '0')}:${(seconds - minute * 60).toFixed(3).padStart(6, '0')}`;
@@ -132,7 +134,7 @@ const clock = (seconds: number): string => {
 function unquantized(notes: readonly FrettedNote[], tuning: Tuning): string[] {
   const lines = ['# no trusted grid — exact onset times', ''];
   for (const note of notes) {
-    const cells = tuning.map((_, string) => string === note.string ? mark(note) : '-');
+    const cells = tuning.map((_, string) => string === note.string ? fretMark(note) : '-');
     lines.push(`${clock(note.start)}  ${cells.map((cell, i) => `${tuning[i]!.name}|${cell}`).reverse().join('  ')}`);
   }
   return lines;
@@ -158,7 +160,7 @@ function quantized(notes: readonly FrettedNote[], tuning: Tuning, bars: Bars, se
       let row = `${tuning[string]!.name.padStart(3)}|`;
       for (let slot = block; slot < block + 64; slot += 1) {
         const note = bySlot.get(slot);
-        const cell = note && note.string === string ? mark(note) : '-';
+        const cell = note && note.string === string ? fretMark(note) : '-';
         row += `${cell.padStart(2, '-')}${(slot + 1) % 16 === 0 ? '|' : '-'}`;
       }
       lines.push(row);

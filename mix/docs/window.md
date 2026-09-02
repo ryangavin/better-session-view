@@ -111,11 +111,13 @@ measures the box it was given instead — how tall a stem is depends on how many
 there are and how tall the window is, which is a question CSS answers better than a
 component can. Once the lanes reach 46px the list scrolls rather than going below it.
 
-**The bass lane owns transcription because the input is the bass stem.** A compact
-overlay asks for an explicit low-to-high tuning and runs beside the waveform; it does
-not add an app-wide mode or a seventh lane. While it runs, the overlay carries its stage
-and Cancel. When it finishes, it reports pitched notes and explicit `x` attacks, then
-offers Reveal and a cheap rerun for another tuning. The worker and tab rules are in
+**Tablature is a full timeline lane directly beneath Bass.** Its head asks for an
+explicit low-to-high tuning and owns Transcribe, Cancel, Reveal and the cheap rerun for
+another tuning. Its body draws every MIDI note on a string at its exact onset, with the
+note's duration behind the fret number. At whole-song width every duration remains but
+colliding numbers thin; zooming earns each number back. It shares the waveforms' view,
+grid, playhead, paging and click-to-seek rather than being a separate document pasted
+over the bass waveform. The worker and fret-path rules are in
 [`transcribe.md`](transcribe.md).
 
 ## There is a lane per stem the model made, and no others

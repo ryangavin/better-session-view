@@ -258,56 +258,32 @@ font-variation-settings: var(--mono-axes);
   height: 100%;
 }
 
-.mf-transcribe {
-  position: absolute;
-  z-index: calc(var(--layer-playhead) + 1);
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
+.mf-tab-lane {
+  flex: 0 0 var(--tab-height);
+  min-height: var(--tab-height);
+  background: color-mix(in srgb, var(--stem-bass) 2%, var(--bg));
+}
+
+.mf-tab-head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  background: var(--surface-lane-head);
+  box-shadow: var(--edge-left) var(--stem-bass);
+}
+
+.mf-tab-headline,
+.mf-tab-actions {
   display: flex;
   align-items: center;
   gap: 5px;
-  max-width: calc(100% - 16px);
-  padding: 3px 4px 3px 7px;
-  border: 1px solid var(--bd);
-  border-radius: var(--radius-xs);
-  background: color-mix(in srgb, var(--surface-lane-head) 92%, transparent);
-  box-shadow: 0 2px 9px color-mix(in srgb, var(--bg) 45%, transparent);
-}
-
-.mf-transcribe-tuning {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-variation-settings: var(--mono-axes);
-  font-size: var(--text-label);
-  color: var(--caption);
-}
-
-.mf-transcribe-tuning input {
-  box-sizing: border-box;
-  width: 108px;
-  height: 21px;
-  padding: 0 5px;
-  border: 1px solid var(--bd-strong);
-  border-radius: 2px;
-  outline: none;
-  background: var(--surface-cell-muted);
-  color: var(--ui);
-  font: inherit;
-}
-
-.mf-transcribe-tuning input:focus {
-  border-color: var(--amber);
-}
-
-.mf-transcribe-tuning input[aria-invalid='true'] {
-  border-color: var(--red);
-}
-
-.mf-transcribe-status {
   min-width: 0;
-  max-width: 170px;
+}
+
+.mf-tab-count {
+  min-width: 0;
   overflow: hidden;
   color: var(--detail);
   font-variation-settings: var(--mono-axes);
@@ -316,16 +292,57 @@ font-variation-settings: var(--mono-axes);
   white-space: nowrap;
 }
 
-.mf-transcribe-problem {
+.mf-tab-actions input {
+  box-sizing: border-box;
+  flex: 1;
   min-width: 0;
-  max-width: 190px;
-  overflow: hidden;
-  color: var(--red);
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid var(--bd-strong);
+  border-radius: 2px;
+  outline: none;
+  background: var(--surface-cell-muted);
+  color: var(--ui);
+  font-family: var(--mono);
   font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: help;
+}
+
+.mf-tab-actions input:focus {
+  border-color: var(--amber);
+}
+
+.mf-tab-actions input[aria-invalid='true'] {
+  border-color: var(--red);
+}
+
+.mf-tab-draw {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: var(--tab-height);
+  border-left: 1px solid var(--bd);
+  overflow: hidden;
+}
+
+.mf-tablature-canvas {
+  display: block;
+  width: 100%;
+  cursor: text;
+}
+
+.mf-tab-message {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: var(--caption);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+}
+
+.mf-tab-problem {
+  color: var(--red);
 }
 
 .mf-lane-none {
