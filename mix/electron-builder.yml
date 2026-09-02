@@ -13,20 +13,21 @@ productName: mix[flow]
 # brackets cannot survive into a filename.
 artifactName: mix-flow-${version}-${arch}.${ext}
 
-# The two things this app runs that neither vite nor esbuild produced.
+# The things this app runs that neither vite nor esbuild produced.
 #
 # `python/` is the separation worker, which is ours, plus the `pyproject.toml`
-# and `uv.lock` the engine is built from. `bin/uv` is the pinned binary that
-# builds it — fetched and checked by `mix/tools/prepare.ts`, and the reason a
-# packaged app can set itself up on a machine with no toolchain on it.
+# and `uv.lock` the engine is built from. `bin/` is the pinned `uv` that builds
+# it and the LGPL-only FFmpeg/FFprobe pair that opens every advertised source
+# format. `mix/tools/prepare.ts` fetches or builds and verifies all three, along
+# with the FFmpeg license, provenance, and corresponding source archive.
 # `docs/demucs.md` has the decision behind both.
 #
-# `bin/uv` is a Mach-O, so a signed build signs it along with everything else in
-# the bundle. It is a static Rust binary with no JIT and nothing to load, so the
-# hardened runtime has no argument with it.
+# The three executables are Mach-Os, so a signed build signs them along with
+# everything else in the bundle. They load only macOS system libraries and have
+# no JIT, so the hardened runtime has no argument with them.
 files:
   - python/**
-  - bin/uv
+  - bin/**
 
 directories:
   output: ../release/mix

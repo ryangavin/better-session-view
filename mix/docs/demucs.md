@@ -39,14 +39,18 @@ toolchain, and — the argument that looked decisive — the only one that could
 notarised cleanly.
 
 **The second one won, and what changed the argument was `uv python install`.** uv fetches
-its own standalone CPython, so nobody is asked to install anything: the app ships one
-static binary and a lock file and builds the rest itself. The notarisation argument then
-turned around completely, because it is the *frozen* answer that has the signing problem:
+its own standalone CPython, so nobody is asked to install anything: the app ships the
+small native tools, a lock file, and builds the Python environment itself. That includes
+FFmpeg and FFprobe. Demucs's embedded decoder opens FLAC and WAV, but falls back to those
+executables for sources such as M4A; accepting M4A while relying on a Homebrew PATH made
+a Finder-launched app claim FFmpeg was not installed on a machine that had it. The
+notarisation argument still turns around completely, because it is the *frozen Python*
+answer that has the signing problem:
 
 | | ships | first run | what has to be signed |
 |---|---|---|---|
 | user's workspace | nothing | they install `uv` and a Python project | nothing |
-| **`uv` + a lock** | **+42 MB** | **the locked wheels and a Python, several hundred MB** | **one extra Mach-O** |
+| **`uv` + decoder + lock** | **~80 MB** | **the locked wheels and a Python, several hundred MB** | **three extra Mach-Os** |
 | frozen per arch | ~1 GB per dmg | weights only | every `.so` in a frozen tree, under the hardened runtime |
 
 A venv or a PyInstaller tree *inside* the bundle is thousands of Mach-Os that each need a
@@ -59,11 +63,14 @@ survives the update.
 
 ## What is where
 
-The bundle carries three things it did not compile:
+The bundle carries the native tools and the Python inputs:
 
 ```
 mix[flow].app/Contents/Resources/app/
   bin/uv              the pinned binary — mix/tools/prepare.ts fetched and checked it
+  bin/ffmpeg, ffprobe  the arm64 LGPL decoder pair prepare.ts built and checked
+  bin/COPYING.LGPLv2.1, FFMPEG-SOURCE.txt
+  bin/ffmpeg-8.1.2.tar.xz       the exact corresponding source
   python/separate.py  the worker, which is ours
   python/transcribe.py  the bass pitch worker, also ours
   python/pyproject.toml, uv.lock    what the engine is
@@ -110,15 +117,16 @@ setup is simply not built rather than half-trusted.
 `ready()` answers two questions and they are different ones:
 
 - **`ok`** — could this build separate at all. False only for a bundle missing its own
-  parts, or a `uv` that will not run. That is what draws the broken light in the header.
+  parts, a `uv` that will not run, or a missing FFmpeg/FFprobe pair. That is what draws
+  the broken light in the header.
 - **`built`** — is the engine there *yet*. False is every machine's first run, and it is
   not a failure: `Idle.tsx` says what pressing Generate will also do, before it is
   pressed, because a progress bar that appears unannounced is indistinguishable from
   something being wrong with the song.
 
 Deliberately not `uv sync --dry-run` and deliberately not importing torch — both are
-seconds on a window that has only just opened. Running the bundled `uv --version` and
-comparing one stamp answers both in about ten milliseconds.
+seconds on a window that has only just opened. Running the three bundled version commands
+and comparing one stamp answers both without touching the Python environment.
 
 ## Setting up is part of the job
 
@@ -147,6 +155,11 @@ worker goes through `demucs.api` and prints JSON. What runs is:
     --input <track> --out <scratch> --model <checkpoint>
 ```
 
+The child receives `<bundle>/bin` at the front of PATH. That is not a convenience for a
+developer machine: `demucs.api` literally invokes `ffprobe` and `ffmpeg` by name after
+its embedded decoder rejects a file. An explicit bundle path is what makes the same M4A
+work from Finder, a shell, and a clean machine.
+
 Bass transcription uses the same environment and stdout contract:
 
 ```sh
@@ -167,10 +180,20 @@ change too, and is most of why the old arrangement could not have shipped.
 that has one. mix[flow] is the only one that does, and the seam is the same shape as
 `visuals/tools/build-link.ts`: the thing neither vite nor esbuild makes.
 
-The uv release is pinned by version **and** by digest. A build step that fetches whatever
-is newest cannot be reproduced, and one that fetches over the network without checking
-what it got is a supply chain nobody is watching. `mix/bin/` is gitignored — it is
-fetched, not committed.
+Both inputs are pinned by version **and** by digest: the published `uv` archive and the
+official FFmpeg source tarball. A build step that fetches whatever is newest cannot be
+reproduced, and one that fetches over the network without checking what it got is a
+supply chain nobody is watching. `mix/bin/` is gitignored — it is generated, not
+committed.
+
+There is no suitable codec-complete prebuilt macOS arm64 binary to copy blindly: the
+common ones enable GPL or non-free components the app does not use. `prepare.ts` compiles
+FFmpeg with `--disable-gpl --disable-nonfree --disable-version3 --disable-autodetect`.
+Networking, devices, external libraries, and every encoder are disabled except the PCM
+float stream Demucs requests; all built-in decoders and demuxers remain so the advertised
+audio formats do not become a brittle codec whitelist. The build then probes for M4A/AAC,
+ALAC and raw float output before accepting the binaries. The LGPL text, exact configure
+line, digest, and unmodified corresponding source ship beside them.
 
 ## Measured, on this machine
 
@@ -181,6 +204,8 @@ shipped lock:
 |---|---|
 | locked environment | 58 packages; cold download not remeasured after adding transcription |
 | development `.venv`, both workers | 961 MB |
+| bundled FFmpeg + FFprobe | 26 MB total, arm64, system libraries only |
+| corresponding FFmpeg source | 12 MB compressed, shipped for LGPL compliance |
 | a 20-second clip through `htdemucs` | 2.45 s wall, **8.19× realtime**, on `mps` |
 | residual | −34.4 dB |
 

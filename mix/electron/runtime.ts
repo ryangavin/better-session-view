@@ -10,8 +10,9 @@ import path from 'node:path';
  * Demucs is Python — torch, a managed CPython, and a gigabyte of wheels — which
  * cannot go inside a signed `.app` the way visual[flow]'s Link addon does.
  * `docs/demucs.md` had three answers and no decision; this is the decision. The
- * app ships **`uv` and a lock file**, and builds the environment into the user's
- * Application Support the first time they separate anything.
+ * app ships **`uv`, an FFmpeg decoder pair, and a lock file**, and builds the
+ * environment into the user's Application Support the first time they separate
+ * anything.
  *
  * The three properties that picked it:
  *
@@ -19,15 +20,16 @@ import path from 'node:path';
  *     thousands of Mach-Os that each need a signature and have to survive the
  *     hardened runtime — and torch `dlopen`s its own extensions, which is the
  *     fight that was predicted. Everything built here lands *outside* the
- *     bundle, written by our own process, so Gatekeeper never assesses it and
- *     our signature covers only what we compiled.
+ *     bundle, written by our own process, so Gatekeeper never assesses it. The
+ *     three executables that do ship are ordinary Mach-Os the app build signs.
  *   * **An update is an update, not a reinstall.** The environment survives a
  *     new version of the app. Only a changed `uv.lock` rebuilds it, which is
  *     what the stamp is for.
- *   * **No toolchain in front of a musician.** `uv` is one static binary we
- *     ship, and it fetches its own CPython — `--python-preference only-managed`,
- *     so a Homebrew Python being upgraded underneath cannot break the engine.
- *     Nobody is asked to install anything.
+ *   * **No toolchain in front of a musician.** `uv` fetches its own CPython —
+ *     `--python-preference only-managed` — and the bundled FFmpeg pair opens the
+ *     formats Demucs's embedded decoder cannot. A Homebrew Python or FFmpeg being
+ *     upgraded underneath cannot break the engine. Nobody is asked to install
+ *     anything.
  *
  * The locked environment is several hundred megabytes and the current development
  * venv is 961 MB with both separation and transcription dependencies. Model
@@ -54,6 +56,36 @@ export const uvPath = (): string => {
   const own = inside('bin', 'uv');
   return fs.existsSync(own) ? own : 'uv';
 };
+
+/** The three executables a shipped engine owns, named for tests as well as the probe. */
+export interface RuntimeTools {
+  uv: string;
+  ffmpeg: string;
+  ffprobe: string;
+}
+
+export const runtimeTools = (): RuntimeTools => ({
+  uv: uvPath(),
+  ffmpeg: inside('bin', 'ffmpeg'),
+  ffprobe: inside('bin', 'ffprobe'),
+});
+
+/**
+ * The environment a Python worker gets.
+ *
+ * Demucs invokes `ffmpeg` and `ffprobe` by name when its small embedded decoder
+ * cannot open a source such as M4A. Finder-launched apps do not inherit a shell
+ * PATH — and a Homebrew install is not part of this app anyway — so the bundle's
+ * bin directory goes first explicitly. The old PATH remains for ordinary OS
+ * tools and for a development override's own environment.
+ */
+export const workerEnv = (
+  base: NodeJS.ProcessEnv = process.env,
+  binaries: string = inside('bin'),
+): NodeJS.ProcessEnv => ({
+  ...base,
+  PATH: [binaries, base.PATH].filter((part): part is string => Boolean(part)).join(path.delimiter),
+});
 
 /** A worker, which is ours. Only the environment it runs inside is built. */
 export const worker = (name: 'separate.py' | 'transcribe.py' = 'separate.py'): string =>
@@ -145,35 +177,57 @@ export interface Ready {
   where: string;
 }
 
-/** Long enough for `uv --version`; anything slower is a machine in trouble. */
+/** Long enough for any bundled version probe; anything slower is in trouble. */
 const PROBE_MS = 5000;
 
-/** `uv 0.9.11`, or null when it could not be run at all. */
-function uvVersion(): Promise<string | null> {
+/** One short version command, or null when it could not be run at all. */
+function versionOf(executable: string, args: string[]): Promise<string | null> {
   return new Promise((resolve) => {
     let settled = false;
+    let timer: NodeJS.Timeout | undefined;
     const done = (answer: string | null) => {
       if (settled) return;
       settled = true;
+      if (timer) clearTimeout(timer);
       resolve(answer);
     };
-    const uv = spawn(uvPath(), ['--version'], { stdio: ['ignore', 'pipe', 'ignore'] });
+    const child = spawn(executable, args, { stdio: ['ignore', 'pipe', 'ignore'] });
     let said = '';
-    uv.stdout.on('data', (chunk: Buffer) => {
+    child.stdout.on('data', (chunk: Buffer) => {
       said += chunk.toString();
     });
-    // ENOENT is the ordinary answer in a dev session on a machine that has
-    // never installed uv, and it arrives as an error event rather than an exit
-    // code. A packaged app carries its own, so this is not the shipping path.
-    uv.on('error', () => done(null));
-    uv.on('exit', (code) => done(code === 0 ? said.trim() || 'uv' : null));
-    setTimeout(() => {
-      if (uv.exitCode === null) {
-        uv.kill('SIGKILL');
+    // ENOENT arrives as an error event rather than an exit code. A packaged app
+    // carries all three tools, so it means the bundle is incomplete.
+    child.on('error', () => done(null));
+    child.on('exit', (code) => done(code === 0 ? said.trim() || path.basename(executable) : null));
+    timer = setTimeout(() => {
+      if (child.exitCode === null) {
+        child.kill('SIGKILL');
         done(null);
       }
     }, PROBE_MS);
   });
+}
+
+/** `uv 0.9.11`, or null when it could not be run at all. */
+const uvVersion = (executable: string = uvPath()): Promise<string | null> =>
+  versionOf(executable, ['--version']);
+
+/** The bundle's matched FFmpeg pair, or null when either half is absent. */
+async function decoderVersion(tools: RuntimeTools): Promise<string | null> {
+  const [ffmpeg, ffprobe] = await Promise.all([
+    versionOf(tools.ffmpeg, ['-version']),
+    versionOf(tools.ffprobe, ['-version']),
+  ]);
+  if (!ffmpeg || !ffprobe) return null;
+  const version = /ffmpeg version\s+(\S+)/i.exec(ffmpeg)?.[1];
+  const probeVersion = /ffprobe version\s+(\S+)/i.exec(ffprobe)?.[1];
+  if (version || probeVersion) {
+    if (!version || version !== probeVersion) return null;
+    return `FFmpeg ${version}`;
+  }
+  // Test doubles can be successful version commands without imitating output.
+  return 'FFmpeg';
 }
 
 /** Whether the stamp on disk is the one this build wants. */
@@ -191,22 +245,29 @@ async function matches(at: string, want: string): Promise<boolean> {
  *
  * Deliberately **not** a `uv sync --dry-run`, and deliberately not importing
  * torch: both are seconds, on a window that has only just opened. Running the
- * bundled `uv --version` and comparing one stamp answers the two questions
- * there are — can this build run anything, and is the engine here yet — in
- * about ten milliseconds.
+ * three bundled version commands and comparing one stamp answer the questions
+ * there are — can this build run anything, and is the engine here yet — without
+ * starting Python or touching the network.
  *
  * It never rejects. **Not being built yet is not a failure**: it is the first
  * run, and the window says what pressing Generate will do rather than showing
  * something broken.
  */
-export async function ready(where: string, from: string = shipped()): Promise<Ready> {
+export async function ready(
+  where: string,
+  from: string = shipped(),
+  tools: RuntimeTools = runtimeTools(),
+): Promise<Ready> {
   const lock = path.join(from, 'uv.lock');
   if (!fs.existsSync(lock)) {
     return { ok: false, built: false, says: 'this build has no engine lock in it', where };
   }
-  const version = await uvVersion();
+  const [version, decoder] = await Promise.all([uvVersion(tools.uv), decoderVersion(tools)]);
   if (!version) {
     return { ok: false, built: false, says: 'uv would not run', where };
+  }
+  if (!decoder) {
+    return { ok: false, built: false, says: 'this build has no audio decoder in it', where };
   }
   const want = stampOf(await fsp.readFile(lock, 'utf8'), version);
   const built = await matches(places(where).stamp, want);
@@ -214,7 +275,7 @@ export async function ready(where: string, from: string = shipped()): Promise<Re
     ok: true,
     built,
     says: built
-      ? `engine ready · ${version}`
+      ? `engine ready · ${version} · ${decoder}`
       : 'engine not installed yet — the first separation sets it up',
     where,
   };

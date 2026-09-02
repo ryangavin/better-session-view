@@ -3,9 +3,10 @@
 `mix/electron/models.ts`, `job.ts`, `separate.ts`, and `mix/python/separate.py`.
 
 A source file and a model id go in; a directory of stems, a sidecar describing
-them, and a row in the library's manifest come out. Where the Python
-*environment* comes from is a separate and still-open question —
-[`demucs.md`](demucs.md) — and nothing here depends on its answer.
+them, and a row in the library's manifest come out. The Python environment and
+the audio decoder it runs with are a separate, answered packaging question —
+[`demucs.md`](demucs.md) — and nothing here depends on how they reached the
+machine.
 
 ## The four files, and why it is four
 

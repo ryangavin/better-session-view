@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { lastLine, places, ready, stageOf, stampOf } from './runtime.ts';
+import { lastLine, places, ready, stageOf, stampOf, workerEnv } from './runtime.ts';
 
 /**
  * What this protects is the decision to build an environment on somebody's
@@ -21,6 +21,8 @@ import { lastLine, places, ready, stageOf, stampOf } from './runtime.ts';
  * puts the main process. It is the same `mix/python/` either way.
  */
 const SHIPPED = fileURLToPath(new URL('../python', import.meta.url));
+/** The probe is about its decisions here; app preparation exercises the real binaries. */
+const TOOLS = { uv: '/usr/bin/true', ffmpeg: '/usr/bin/true', ffprobe: '/usr/bin/true' };
 
 const scratches: string[] = [];
 const scratch = async (): Promise<string> => {
@@ -116,7 +118,7 @@ describe('the probe', () => {
     // The ordinary first run. `ok` is about whether this build could separate
     // at all; `built` is about whether it has yet, and the window says so
     // rather than showing something broken.
-    const answer = await ready(await scratch(), SHIPPED);
+    const answer = await ready(await scratch(), SHIPPED, TOOLS);
     expect(answer.ok).toBe(true);
     expect(answer.built).toBe(false);
     expect(answer.says).toMatch(/first separation/);
@@ -125,7 +127,7 @@ describe('the probe', () => {
   it('does not believe a stamp from a different lock', async () => {
     const where = await scratch();
     await fs.writeFile(places(where).stamp, JSON.stringify({ stamp: 'not-this-one' }));
-    expect((await ready(where, SHIPPED)).built).toBe(false);
+    expect((await ready(where, SHIPPED, TOOLS)).built).toBe(false);
   });
 
   it('survives a stamp file that is not even JSON', async () => {
@@ -133,20 +135,43 @@ describe('the probe', () => {
     // answer is to rebuild, not to throw on the way to opening a window.
     const where = await scratch();
     await fs.writeFile(places(where).stamp, 'half a fi');
-    expect((await ready(where, SHIPPED)).built).toBe(false);
+    expect((await ready(where, SHIPPED, TOOLS)).built).toBe(false);
   });
 
   it('says so when the build itself is missing its engine lock', async () => {
     // Not a machine problem: a bundle that shipped without `uv.lock` in it
     // cannot separate however good the machine is, and that is the one case
     // worth drawing the broken light for.
-    const answer = await ready(await scratch(), await scratch());
+    const answer = await ready(await scratch(), await scratch(), TOOLS);
     expect(answer.ok).toBe(false);
     expect(answer.says).toMatch(/no engine lock/);
   });
 
   it('answers for a directory that does not exist at all', async () => {
-    const answer = await ready(path.join(await scratch(), 'never', 'made'), SHIPPED);
+    const answer = await ready(path.join(await scratch(), 'never', 'made'), SHIPPED, TOOLS);
     expect(answer.built).toBe(false);
+  });
+
+  it('rejects a build whose bundled decoder pair is missing', async () => {
+    const nowhere = path.join(await scratch(), 'not-a-binary');
+    const answer = await ready(await scratch(), SHIPPED, {
+      ...TOOLS,
+      ffmpeg: nowhere,
+      ffprobe: nowhere,
+    });
+    expect(answer.ok).toBe(false);
+    expect(answer.says).toMatch(/no audio decoder/);
+  });
+});
+
+describe('the worker environment', () => {
+  it('puts the bundled tools before a shell PATH', () => {
+    const env = workerEnv({ PATH: '/opt/homebrew/bin:/usr/bin', KEPT: 'yes' }, '/bundle/bin');
+    expect(env.PATH).toBe(['/bundle/bin', '/opt/homebrew/bin', '/usr/bin'].join(path.delimiter));
+    expect(env.KEPT).toBe('yes');
+  });
+
+  it('still has a usable PATH when Finder supplied none', () => {
+    expect(workerEnv({}, '/bundle/bin').PATH).toBe('/bundle/bin');
   });
 });

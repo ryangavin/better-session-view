@@ -16,7 +16,7 @@ import {
   type Sidecar,
 } from './job.ts';
 import { modelOf } from './models.ts';
-import { places, prepare, uvPath, worker } from './runtime.ts';
+import { places, prepare, uvPath, worker, workerEnv } from './runtime.ts';
 import {
   busyWork,
   cancelWork,
@@ -252,7 +252,7 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
         '--model',
         model.checkpoint,
       ],
-      { stdio: ['ignore', 'pipe', 'pipe'] },
+      { stdio: ['ignore', 'pipe', 'pipe'], env: workerEnv() },
     );
     hold(lease, child);
 

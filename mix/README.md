@@ -11,9 +11,10 @@ npm run pack:mix     # a .app and a .dmg under release/mix/
 ```
 
 **The app installs its own engine.** Demucs is Python, and none of it ships inside the
-`.app`: the bundle carries `uv` and a lock file, and the first separation on a machine
-builds the environment into Application Support — [`docs/demucs.md`](docs/demucs.md).
-Nobody is asked to install a toolchain, and nothing unsigned goes in the bundle.
+`.app`: the bundle carries `uv`, a small LGPL FFmpeg decoder and a lock file, and the
+first separation on a machine builds the environment into Application Support —
+[`docs/demucs.md`](docs/demucs.md). Nobody is asked to install a toolchain or an audio
+decoder, and nothing unsigned goes in the bundle.
 
 **Everything on screen is real except the slices.** Tracks live in a folder you pick,
 copied there on import, indexed by a manifest that makes the folder portable —
@@ -58,7 +59,7 @@ arrangement yet, and the export button closes the dialog.
 | `python/separate.py` | the worker. Talks JSON, writes stems that sum |
 | `python/transcribe.py` | the bass worker. Talks JSON, writes MIDI and note events |
 | `python/pyproject.toml` | the locked dependencies both workers use, and `uv.lock` beside it |
-| `tools/prepare.ts` | fetches the pinned `uv` the bundle carries. `tools/app.ts` runs it |
+| `tools/prepare.ts` | fetches pinned `uv` and builds pinned LGPL FFmpeg for the bundle. `tools/app.ts` runs it |
 | `electron/preload.ts` | the context bridge |
 | `src/audio.ts` | reaching the stems, decoding them, and the peaks that draw them |
 | `src/engine.ts` | the transport and the mixer, which are one Web Audio graph |
