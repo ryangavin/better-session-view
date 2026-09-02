@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
@@ -141,6 +143,8 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
   const live = mix.phase === 'ready';
   const song = mix.song;
 
+  const [harness, setHarness] = useState(false);
+
   return (
     <header className="mf-header">
       {/* Silent when the toolchain is fine. A green light that is always on is
@@ -176,18 +180,16 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               onCommit={(next) => void mix.editTrack(song.id, { artist: next.trim() || null })}
             />
             {import.meta.env.DEV && (
-              // Served by the dev server beside the app, so a dev build only;
-              // the window's open handler sends it to the browser.
-              <a
+              // Served by the dev server beside the app, so a dev build only.
+              <button
+                type="button"
                 className="mf-debug"
-                href={`/harness/?track=${encodeURIComponent(song.id)}`}
-                target="_blank"
-                rel="noreferrer"
+                onClick={() => setHarness(true)}
                 title="Open this track in the beat-finding harness — see mix/docs/harness.md"
                 aria-label="Open in the beat-finding harness"
               >
                 {bugMark}
-              </a>
+              </button>
             )}
           </>
         ) : (
@@ -362,6 +364,15 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
       >
         Export
       </Button>
+      {harness && song && (
+        <Modal title="harness" label="Beat-finding harness" className="mf-harness" onClose={() => setHarness(false)}>
+          <iframe
+            className="mf-harness-frame"
+            src={`/harness/?track=${encodeURIComponent(song.id)}`}
+            title="Beat-finding harness"
+          />
+        </Modal>
+      )}
     </header>
   );
 }
