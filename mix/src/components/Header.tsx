@@ -203,8 +203,34 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               showFill={false}
               width={44}
               label="Tempo"
-              title="The tempo the grid is ruled at. Drag it, or type one in"
+              title={
+                mix.markers
+                  ? 'The tempo the stems play at with warp on. The grid is where the markers put it'
+                  : 'The tempo the grid is ruled at, until the kick has been followed. Drag it, or type one in'
+              }
             />
+            {/* Live's warp switch: on, every bar of the record plays in the
+                time this tempo gives a bar. It needs markers to know where
+                the record's bars are, and a stretcher to play them through,
+                and it says which of those it is waiting on. */}
+            <Toggle
+              on={mix.warp}
+              onChange={mix.setWarp}
+              label="Warp"
+              title={
+                !mix.markers
+                  ? 'Warp: play the stems stretched to this tempo. Follow the kick first'
+                  : mix.stretching === 'failed'
+                    ? 'Warp: the stretcher could not be loaded, so the stems play as they were recorded'
+                    : mix.stretching === 'loading'
+                      ? 'Warp: loading the stretcher'
+                      : 'Warp: play every bar of the record in the time this tempo gives it'
+              }
+              disabled={!mix.markers || mix.stretching === 'failed'}
+              width={38}
+            >
+              warp
+            </Toggle>
             <Button
               onPress={mix.autoWarp}
               title={

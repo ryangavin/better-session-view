@@ -9,5 +9,11 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "../types/assets.d.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "../types/assets.d.ts",
+    "../types/signalsmith-stretch.d.ts"
+  ]
 }

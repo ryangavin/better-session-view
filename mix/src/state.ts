@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STEMS, slicesFor, type Slice } from './mock.ts';
 import { decode, fileUrl, LIBRARY, peaksOf, stemUrl, type Peak } from './audio.ts';
-import { REST, Transport, type Level } from './engine.ts';
+import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
 import {
   barAt,
@@ -205,6 +205,17 @@ export function useMix() {
   const [wantFit, setWantFit] = useState(first.bpm == null);
   const [playing, setPlaying] = useState(false);
   const [loop, setLoopState] = useState(kept.loop ?? true);
+  /**
+   * Whether the stems play stretched to the header's tempo.
+   *
+   * Live's warp switch. On, every bar of the record is played in the time the
+   * tempo gives a bar, whatever it took on the record; off, the record plays
+   * as it was and the grid is only a ruling over it. A session setting rather
+   * than a track's, like loop: it is how you are listening, not what the song
+   * is.
+   */
+  const [warp, setWarpState] = useState(kept.warp ?? false);
+  const [stretching, setStretching] = useState<Stretching>('idle');
   /** Seconds from the top of the track. The one position everything else derives from. */
   const [position, setPosition] = useState(first.at ?? 0);
   const [job, setJob] = useState<Job | null>(null);
@@ -977,6 +988,22 @@ export function useMix() {
   }, [audio, loop, peaks]);
 
   /**
+   * The map and the tempo, pushed into the graph on every change.
+   *
+   * Only once something has pinned the audio to the grid: a straight ruling
+   * from a typed tempo is a claim about where the bars are, not a measurement
+   * of the record, and stretching a record to a claim is how a song ends up
+   * eight per cent fast for no reason anybody asked for.
+   */
+  useEffect(() => {
+    audio.warp(markers ? grid : null, targetBpm, warp && markers !== null);
+  }, [audio, grid, targetBpm, warp, markers, peaks]);
+
+  useEffect(() => audio.watch(() => setStretching(audio.stretching)), [audio]);
+
+  const setWarp = useCallback((on: boolean) => setWarpState(on), []);
+
+  /**
    * Take the grid from the audio: `warp.ts` fits a tempo and a downbeat to the
    * drums, and both are applied.
    *
@@ -1243,7 +1270,7 @@ export function useMix() {
    */
   useEffect(() => {
     const timer = setTimeout(() => {
-      let next: Session = { ...held.current, selected, model, query, snap, loop };
+      let next: Session = { ...held.current, selected, model, query, snap, loop, warp };
       if (song) {
         next = withTrack(next, song.id, {
           levels: level,
@@ -1268,6 +1295,7 @@ export function useMix() {
     query,
     snap,
     loop,
+    warp,
     song,
     level,
     slices,
@@ -1331,6 +1359,10 @@ export function useMix() {
     setPlaying: start,
     loop,
     setLoop,
+    /** Whether the stems play stretched to the tempo, and whether there is a stretcher to do it. */
+    warp,
+    setWarp,
+    stretching,
     /** Seconds. */
     position,
     seek,
