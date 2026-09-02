@@ -111,13 +111,16 @@ measures the box it was given instead — how tall a stem is depends on how many
 there are and how tall the window is, which is a question CSS answers better than a
 component can. Once the lanes reach 46px the list scrolls rather than going below it.
 
-**Tablature is a full timeline lane directly beneath Bass.** It is a standard four-string
-EADG instrument; its head simply names that fact and owns Transcribe, Cancel and Reveal.
+**Tablature unfolds from Bass rather than living as another track.** The Bass name is its
+disclosure: when it is closed the extra row does not exist and Bass is visually identical
+to every other stem; hover or keyboard focus reveals the affordance. Open, a continuous
+bass-coloured edge and an indented head make the tablature a child of its audio lane. It
+is a standard four-string EADG instrument; its head owns Transcribe, Cancel and Reveal.
 Its body draws every MIDI note on a string at its exact onset, with the note's duration
 behind the fret number. At whole-song width every duration remains but colliding numbers
 thin; zooming earns each number back. It shares the waveforms' view, grid, playhead,
 paging and click-to-seek rather than being a separate document pasted over the bass
-waveform. The worker and fret-path rules are in
+waveform. Changing songs folds it away. The worker and fret-path rules are in
 [`transcribe.md`](transcribe.md).
 
 ## There is a lane per stem the model made, and no others

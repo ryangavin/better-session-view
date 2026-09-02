@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Slider } from '@openflow/widgets/controls/Slider.tsx';
@@ -122,6 +122,14 @@ export function Lanes({ mix }: { mix: Mix }) {
   const limit = limitOf(mix.seconds, mix.rate);
   const { view, zoomAbout, panBy, follow, whole } = useView(song?.id ?? null, limit);
   const span = useMemo(() => spanOf(view), [view]);
+  /**
+   * The tablature belongs to the selected song and starts folded away.
+   *
+   * Remembering the id instead of a bare boolean means changing tracks closes
+   * it without an effect and without briefly showing the last song's lane.
+   */
+  const [tabFor, setTabFor] = useState<string | null>(null);
+  const tabOpen = tabFor === song?.id;
 
   /** The whole thing, because the gesture works over the heads as well. */
   const root = useRef<HTMLDivElement | null>(null);
@@ -317,10 +325,23 @@ export function Lanes({ mix }: { mix: Mix }) {
               <div
                 className="mf-lane"
                 data-quiet={!heard || undefined}
+                data-tab-open={stem.id === 'bass' && tabOpen ? true : undefined}
                 style={{ '--stem': stem.ink } as never}
               >
                 <div className="mf-head mf-lane-head">
-                  <span className="mf-lane-label">{stem.name}</span>
+                  {stem.id === 'bass' ? (
+                    <button
+                      type="button"
+                      className="mf-lane-label mf-tab-toggle"
+                      aria-expanded={tabOpen}
+                      title={`${tabOpen ? 'Hide' : 'Show'} bass tablature`}
+                      onClick={() => setTabFor(tabOpen ? null : song.id)}
+                    >
+                      {stem.name}
+                    </button>
+                  ) : (
+                    <span className="mf-lane-label">{stem.name}</span>
+                  )}
                   <Toggle
                     on={own.muted}
                     onChange={(next) => mix.adjust(stem.id, { muted: next })}
@@ -381,7 +402,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                   )}
                 </div>
               </div>
-              {stem.id === 'bass' && <TablatureLane mix={mix} span={span} />}
+              {stem.id === 'bass' && tabOpen && <TablatureLane mix={mix} span={span} />}
             </Fragment>
           );
         })}

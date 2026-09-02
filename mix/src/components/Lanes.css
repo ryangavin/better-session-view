@@ -205,6 +205,48 @@
   text-overflow: ellipsis;
 }
 
+/* Bass is its own disclosure. Folded, this is exactly the label every other
+   stem has; the mark only appears when the row is hovered, focused or open. */
+.mf-tab-toggle {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mf-tab-toggle::after {
+  content: '›';
+  flex: none;
+  width: 0;
+  overflow: visible;
+  color: var(--stem-bass);
+  opacity: 0;
+  transform: translateX(5px);
+  transform-origin: center;
+  transition: opacity 90ms linear, transform 90ms ease-out;
+}
+
+.mf-lane-head:hover .mf-tab-toggle::after,
+.mf-tab-toggle:focus-visible::after,
+.mf-tab-toggle[aria-expanded='true']::after {
+  opacity: 1;
+}
+
+.mf-tab-toggle[aria-expanded='true']::after {
+  transform: translateX(5px) rotate(90deg);
+}
+
+.mf-tab-toggle:focus-visible {
+  outline: 1px solid var(--stem-bass);
+  outline-offset: 2px;
+}
+
 .mf-lane[data-quiet] .mf-lane-head {
   box-shadow: var(--edge-left) var(--idle);
 }
@@ -261,7 +303,12 @@ font-variation-settings: var(--mono-axes);
 .mf-tab-lane {
   flex: 0 0 var(--tab-height);
   min-height: var(--tab-height);
+  border-top: 1px solid color-mix(in srgb, var(--stem-bass) 22%, var(--bd));
   background: color-mix(in srgb, var(--stem-bass) 2%, var(--bg));
+}
+
+.mf-lane[data-tab-open] {
+  border-bottom-color: transparent;
 }
 
 .mf-tab-head {
@@ -270,6 +317,7 @@ font-variation-settings: var(--mono-axes);
   align-items: stretch;
   justify-content: center;
   gap: 4px;
+  padding-left: 18px;
   background: var(--surface-lane-head);
   box-shadow: var(--edge-left) var(--stem-bass);
 }
