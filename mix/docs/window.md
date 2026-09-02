@@ -411,8 +411,11 @@ is this bar*, and it lands on the nearest kick unless ⌥ is held. A double-clic
 the lane pins the audio under it to the nearest bar — or half, or beat, as `snap`
 says, which is that control's first job — taking the hit nearest the click as the
 thing that was meant. A pin clicked is selected, and Backspace lets it go; never
-the last two, because one marker is not a map. Every one of these is a decision,
-so the fit's percentage goes with it and the tempo range stays.
+the last two, because one marker is not a map. The × beside Auto-warp lets them
+all go — back to a straight grid at the tempo and downbeat there are, which is
+how you start over, and Auto-warp is how you ask for the pins again. Every one of
+these is a decision, so the fit's percentage goes with it and the tempo range
+stays.
 
 It gets a bar of its own at the top of the lanes because in that mode a click in a
 lane means something else. A mode you cannot see is a mode that surprises you.

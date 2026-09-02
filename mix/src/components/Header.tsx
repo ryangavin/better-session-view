@@ -77,6 +77,12 @@ const crosshair = (
   </svg>
 );
 
+const clearMark = (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
 const SNAP = ['1/1', '1/2', '1/4'];
 
 /**
@@ -275,6 +281,22 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                 no fit
               </span>
             ) : null}
+            {/* The way back: every pin gone, and a straight grid at this
+                tempo and downbeat to start over from. Beside the button that
+                makes the pins, because it undoes exactly that. */}
+            <Button
+              onPress={mix.clearMarkers}
+              label="Clear the markers"
+              title={
+                mix.markers
+                  ? 'Clear the warp markers: back to a straight grid at this tempo, to start over'
+                  : 'No markers to clear'
+              }
+              width={26}
+              disabled={!mix.markers}
+            >
+              {clearMark}
+            </Button>
             <Toggle
               on={mix.manual !== null}
               onChange={(on) => (on ? mix.startManual() : mix.endManual())}

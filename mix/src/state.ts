@@ -1317,6 +1317,21 @@ export function useMix() {
   );
 
   /**
+   * Let them all go, and start over.
+   *
+   * Back to the straight line the tempo and the downbeat make, which is where
+   * the pins came from and where a hand can put new ones. The tempo and the
+   * downbeat stay: they are the best straight reading there is, and a ruling
+   * at 120 from the top of the file would be a wrong answer to start over
+   * from. It is a decision, so it is remembered and not re-measured behind
+   * anybody's back; Auto-warp is how you ask for the markers again.
+   */
+  const clearMarkers = useCallback(() => {
+    setMarkers(null);
+    decided();
+  }, [decided]);
+
+  /**
    * How many stems have been moved off their resting position.
    *
    * Counted over the stems this song *has*, not over the six there could be.
@@ -1490,6 +1505,7 @@ export function useMix() {
     moveMarker,
     addMarker,
     removeMarker,
+    clearMarkers,
     resetup,
     keepStems,
     resetting: setupFor !== null && song?.id === setupFor,
