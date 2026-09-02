@@ -15,9 +15,20 @@ slice — a list that sat open all session was eight rows of chrome competing wi
 lanes for a job nobody was doing yet. Two columns instead of three buys the lanes nearly
 three hundred pixels, which is what they are for.
 
+## The library rail
+
+The rail starts with two compact rows: filter plus **Import**, then a YouTube URL plus
+**Fetch**. Import opens the ordinary multi-file picker; Fetch stays explicit rather than
+guessing that text pasted elsewhere is a URL. Both disable while an import is in flight,
+and the rail footer changes from the folder name to the result or the useful error.
+
+Files may also be dropped anywhere on the window. A dashed target covers the window while
+the drag is over it, which both makes the action visible and prevents a file dropped on a
+waveform from navigating the renderer away from the app.
+
 ## The header
 
-    [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ snap ⋯ tempo 128 Auto-warp 91% ⊹ │ Export
+    [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ snap ⋯ tempo 128 warp Auto-warp 126–131 · 91% ⊹ │ Export
 
 Four groups, in the order they are read: what this is, what you are looking at, what you
 can do to it, where it goes. Three departures from the mockup, each one a thing the
@@ -44,6 +55,16 @@ ticks lining up, and without the number on screen half of that is missing. Besid
 it is what the fit agreed with — `91%` of the drumming landing on a grid line, or
 `no fit`, so a press always has an answer.
 
+**Once the kick has been followed the field changes meaning, and `warp` is the
+switch that changes it.** The readout beside the button becomes the tempo the
+record actually runs at — `128`, or `126–131` where it moved — because that is
+now the markers' to say, and the field is what the stems *play* at: with warp
+on, every bar of the record in the time this tempo gives a bar, pitch kept.
+Until something has followed the kick the field rules the grid as it always
+did, since a typed tempo is then the only claim there is. The switch sits
+between the two numbers because it is what makes them two, and it says what
+it is waiting on — markers, or the stretcher — rather than doing nothing.
+
 One smaller thing worth keeping: `snap` is a leading label rather than a `Widget`
 caption. `Widget` puts captions *above*, which in a 34px bar makes that one control two
 rows tall in a line of things one row tall — and a ragged baseline is most of what
@@ -59,7 +80,7 @@ The middle is one of three things:
 
 | | |
 |---|---|
-| **idle** | no stems on disk: the three models, what each trades away, and one button |
+| **idle** | no stems on disk: what the track is called, the models, what each trades away, and one button |
 | **running** | a separation in flight, per source |
 | **ready** | the lanes |
 
@@ -72,7 +93,25 @@ you can act on standing at a laptop; "the piano bleeds badly" is. The numbers th
 there — sources, and speed against the clock — are the two that change what you do next,
 and they come from the bench in `demucs/README.md`.
 
-## The lane head is 204px, and that is the whole layout
+**Redoing a separation is reaching the idle state again, not pressing a button.** A job
+is keyed on the file's content hash and the model — `electron/job.ts` — so re-running
+what is already on disk is answered from the cache in a moment and looks like nothing
+happened. That is exactly what the ⟳ above the lanes used to do. It now sets `setupFor`
+and puts the model cards back, with the model that made the current stems already
+selected and the estimate saying it is on disk, so the only way to spend minutes is to
+choose something different. **Keep these stems** is the way out.
+
+`setupFor` holds an id rather than a boolean, because `phase` is a state of *this track*:
+opening a different one has to show that track's own state and not the setup somebody
+opened over here.
+
+**The metadata lives on that screen** — `Details.tsx`. It is the one moment a person is
+looking at a track and not yet listening to it; every other screen is about the audio,
+and a form on any of them is a form in the way. There is no Save, because a wrong value
+here breaks nothing and a Save button on a three-field form is a button that exists to be
+forgotten: a field commits when you leave it, and Escape puts it back.
+
+## The lane head is 88px, and that is the whole layout
 
 Every row's drawing starts at the same x, so a transient in the drums lines up with the
 one in the bass. That is the only reason the head is a fixed width rather than a
@@ -80,7 +119,31 @@ fraction, and it is why the band above the lanes carries a head of its own — i
 the mix summary and the two buttons that change it, and it exists as much to reserve
 that column as to say anything.
 
-A lane at 46px is the density that lets you *see* an arrangement — a breakdown is a
+**The head is a strip, not a row, and that is what buys the width.** A lane is a few
+dozen pixels tall and only ever a couple of hundred wide, so height is the dimension
+there is spare of: laid out sideways the fader spent 46px of the scarce one to buy 46px
+of travel. Standing up it takes the whole of the leftover height and the whole of the
+column's width, with the stem's name and its trim on the line above and mute and solo
+side by side on the line below — the thing in the head you cannot miss, and the thing
+you cannot fail to hit. There are six stems at most, so no number of them ever squeezes
+a lane to where that stops working.
+
+The names are fixed — Vocals, Drums, Bass, Guitar, Piano, Other — so the column is
+sized to the longest of the six and nothing else, which is why it can be this narrow. It
+is the band head above that is hard to fit rather than the lanes: it carries the actions
+for the whole mix, so its zoom readout and its Reset each take a line of their own with
+a small button beside them, and the model's name truncates rather than push anything
+out. The count of audible stems used to sit there and no longer does — with mute and
+solo drawn this large in every lane, `4/6 audible` was restating what the strip already
+says.
+
+Its length is CSS's, because how much height the lanes have to divide is not known until
+they have been laid out. What has to come back the other way is how long it turned out:
+`Slider` gears its drag to `travel`, and a rail drawn taller than the travel it was
+geared to is a thumb running ahead of the pointer. A `ResizeObserver` on one lane's rail
+answers for all six, since they are all the same height.
+
+A lane at 68px is the density that lets you *see* an arrangement — a breakdown is a
 block where the drums stop, and a fill is a darker column you can point at. Clicking any
 lane moves the head there: a waveform is what you are looking at when you decide where to
 listen from, and reaching back up to a strip at the top to act on it is the sort of gap
@@ -92,15 +155,25 @@ it, and they are the same three a mixer does it with. The separator between lane
 background — a hairline you have to look for is not separating anything. The head
 column has a surface of its own, so the boundary between a stem's controls and its
 drawing is an edge rather than an alignment. And the head carries the stem's colour
-as a stripe down its left edge, with the drawing behind the waveform tinted four per
-cent of the same — which is what makes the stack scannable at a glance: you find the
-bass lane by its colour, not by counting rows.
+as a bar across its top, with the drawing behind the waveform shaded in the same —
+which is what makes the stack scannable at a glance: you find the bass lane by its
+colour, not by counting rows.
 
-The stripe replaced a dot beside the name. Both said the same thing, and the edge of
-the row is where separation is actually read.
+The bar was a stripe down the left edge, and before that a dot beside the name. All
+three said the same thing; the top of the strip is where it now sits, because a
+narrow head is a column and a column is capped rather than fenced.
+
+**The lane is shaded in blocks, not washed evenly.** Every other cell between the
+grid's dividers is lifted, in the stem's own colour, so a phrase reads as a shape
+rather than as the gap between two brighter lines — the thing that tells you where
+you are when the waveform itself is a wall. The blocks never go finer than a bar
+however far the ruling subdivides: alternating sixty-fourths is a zebra, and by the
+time you are that deep the bar is what you are trying to see the hit against.
+`grid.ts` decides both, so the lanes and the warp lane above them cannot disagree about
+which block is lit.
 
 **A lane nobody can hear says so.** Muted, or lost to somebody else's solo, and the
-stripe goes to `--idle`, the tint goes, and the name drops to caption grey. The
+bar goes to `--idle`, the shading all but goes, and the name drops to caption grey. The
 waveform was already dimmed; this makes the whole row agree with it, so *what am I
 hearing* is answered by the shape of the stack rather than by reading six toggles.
 
@@ -280,20 +353,24 @@ weights, while the warp lane, being 24px of strip, says it in height instead.
 Their bar positions are the grid's claim rather than a property of the audio, so changing
 the tempo walks them off the lines or onto them. That is the lane doing its job.
 
-**A grid is two numbers, and the window used to have one.** A tempo says how long a
-bar is; an offset says where the first one starts. Bar 1 was the top of the file by
-construction, so a song with a quarter of a second of air in front of it could not
-be gridded at all — every line was that quarter second late, for the whole song, and
-no tempo would have fixed it. `warp.ts` holds both, and `playback.md` has how they
-are fitted.
+**A grid is a list of markers, and the window used to hold it as two numbers.** A
+marker pins a second of the file to a bar, the bars are spaced evenly between one
+marker and the next, and the spacing carries on past either end. Two markers are
+the tempo and the downbeat the window used to hold: bar 1 was the top of the file
+by construction, so a song with a quarter of a second of air in front of it could
+not be gridded at all — every line was that quarter second late, for the whole
+song, and no tempo would have fixed it. More markers are a band. `warp.ts` holds
+the map, and `playback.md` has how it is fitted and followed.
 
-**Auto-warp fits both to the kick**, and pins bar 1 and the last bar. Not to the
-drums — to the kick band of them, because a kick is short, loud, low and repeated,
-which is the easiest thing in a mix to measure a period from, and a hundred and
-twenty hertz of low-pass takes the snare and the hats off it. It is entitled to
-those pins now: a straight line fitted to every kick in the song is pinned at both
-ends by construction, so it cannot be drifting in the middle by more than it is
-wrong at the ends. Before, they were two marks on a grid nothing had measured.
+**Auto-warp fits a line to the kick and then follows it**, pinning a bar wherever
+the beat moved. Not to the drums — to the kick band of them, because a kick is
+short, loud, low and repeated, which is the easiest thing in a mix to measure a
+period from, and a hundred and twenty hertz of low-pass takes the snare and the
+hats off it. A record made to a click comes back as two pins, bar 1 and the last
+bar, because every other one lay on the line between them and was dropped; a
+drummer keeps a pin every few bars, and the readout beside the button says the
+range they run at. The pins are the map, not marks on it: drag one and the grid
+bends under the pointer.
 
 **It runs on its own when a track is opened that nothing has been decided about**,
 which is what makes it worth having — it costs a few milliseconds, and the
@@ -326,6 +403,16 @@ was clicked stands.
 
 The nudge moves the grid by ten milliseconds, keeping the tempo — the fix for ticks
 sitting evenly *beside* the bar lines rather than drifting off them.
+
+**And then the pins themselves.** Live's workflow is auto-warp, then fix by hand
+what it got wrong, and the pins are where that happens. A pin drags: its second
+of the file moves and its bar stays, which is saying *the audio under the pointer
+is this bar*, and it lands on the nearest kick unless ⌥ is held. A double-click on
+the lane pins the audio under it to the nearest bar — or half, or beat, as `snap`
+says, which is that control's first job — taking the hit nearest the click as the
+thing that was meant. A pin clicked is selected, and Backspace lets it go; never
+the last two, because one marker is not a map. Every one of these is a decision,
+so the fit's percentage goes with it and the tempo range stays.
 
 It gets a bar of its own at the top of the lanes because in that mode a click in a
 lane means something else. A mode you cannot see is a mode that surprises you.
@@ -374,21 +461,29 @@ What is this app's own is in `src/tokens.css`: six stem roles, and the four surf
 this window has that no other app does — the band, the lane head, the wash over time
 outside the song, and the bar that appears while the grid is being set by hand.
 
-Three of the stem roles *are* palette accents, because the mockup had already picked
-them and they were already right:
+**The six are one hue wheel, not six colours that were each picked well.** Two of them
+used to be palette accents — guitar was `--green`, piano was `--blue` — and Other was
+`--detail`, on the reasoning that the residual is not a source so much as what is left.
+Both of those are wrong for the job. Aliasing a stem to a UI accent ties its hue to a
+decision made about buttons, which is how guitar and piano ended up teal and blue with
+forty degrees between them; and grey is not a colour you can find a lane by, which is
+the entire thing a stem role is for.
 
-| role | |
-|---|---|
-| `--stem-guitar` | `--green` |
-| `--stem-piano` | `--blue` |
-| `--stem-other` | `--detail`, because the residual is not a source so much as what is left |
-| `--stem-vocals` | new |
-| `--stem-drums` | new |
-| `--stem-bass` | new |
+So they are spaced around the wheel instead, and what the set has to contain is the
+four a person can name without thinking: red, yellow, green, blue.
 
-The three new ones stay here rather than in the palette until something else needs them.
-They are named for the source they paint and never for the hue, so a stem that changes
-colour changes in one place and nothing else has to be read to find out why.
+| role | | |
+|---|---|---|
+| `--stem-vocals` | red | |
+| `--stem-drums` | yellow | pushed toward lemon, away from `--amber` — the playhead rides over this lane |
+| `--stem-guitar` | green | |
+| `--stem-other` | cyan | |
+| `--stem-bass` | blue | |
+| `--stem-piano` | magenta | |
+
+They stay here rather than in the palette until something else needs them, and they are
+named for the source they paint and never for the hue, so a stem that changes colour
+changes in one place and nothing else has to be read to find out why.
 
 ## What is invented
 

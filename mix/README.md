@@ -2,7 +2,7 @@
 
 **mix[flow]** — a mix in, four parts out. Local stem separation with
 [Demucs v4](https://github.com/adefossez/demucs): drums, bass, vocals and everything
-else, from a file you already have, on a machine you already own.
+else, from a file you already have or a YouTube URL, on a machine you already own.
 
 ```sh
 npm run dev:mix      # working on it: the dev server and the window, one command
@@ -16,6 +16,10 @@ first separation on a machine builds the environment into Application Support �
 [`docs/demucs.md`](docs/demucs.md). Nobody is asked to install a toolchain or an audio
 decoder, and nothing unsigned goes in the bundle.
 
+**YouTube importing carries its own tool too.** A checksum-pinned official `yt-dlp`
+executable fetches the best audio-only stream; it does not wait for the Demucs engine to
+be installed and does not use a Homebrew copy — [`docs/library.md`](docs/library.md).
+
 **Everything on screen is real except the slices.** Tracks live in a folder you pick,
 copied there on import, indexed by a manifest that makes the folder portable —
 [`docs/library.md`](docs/library.md). Pressing Generate runs Demucs against the file and
@@ -25,8 +29,11 @@ the waveforms are the audio, and the faders move it — [`docs/playback.md`](doc
 The bass stem can also become cached MIDI and standard EADG tab —
 [`docs/transcribe.md`](docs/transcribe.md).
 The grid is measured too: `src/warp.ts` fits a tempo and a downbeat to the kick band of
-the separated drums, and a track opens gridded rather than ruled at 120 —
-[`docs/playback.md`](docs/playback.md). The window remembers itself across a reload.
+the separated drums and `src/follow.ts` follows the kick through the song, pinning a
+warp marker wherever the beat moved, so a track opens gridded rather than ruled at
+120. With warp on the stems play stretched to the header's tempo, every bar to the
+grid, through `src/stretch.ts` — [`docs/playback.md`](docs/playback.md). The window
+remembers itself across a reload.
 The slices are still eight evenly spaced spans with names, because nothing detects an
 arrangement yet, and the export button closes the dialog.
 
@@ -38,7 +45,7 @@ arrangement yet, and the export button closes the dialog.
 | the layout, the colours, which lanes there are, or zooming the timeline | [`docs/window.md`](docs/window.md) — `src/`, and `src/zoom.ts` for the zoom |
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
 | bass transcription, MIDI, tuning-aware tab, or its cache | [`docs/transcribe.md`](docs/transcribe.md) — `electron/transcribeJob.ts`, `transcribe.ts`, `python/transcribe.py`, `src/tab.ts` |
-| playback, the mixer, the waveforms, the tempo fit, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `warp.ts`, `remember.ts` |
+| playback, the mixer, the waveforms, the tempo fit, the warp markers, the stretcher, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `warp.ts`, `follow.ts`, `schedule.ts`, `stretch.ts`, `remember.ts` |
 | where the Python engine comes from, how it is installed, and the probe | [`docs/demucs.md`](docs/demucs.md) — `electron/runtime.ts`, `python/pyproject.toml`, `tools/prepare.ts` |
 | the window, packaging, or anything shared with the other apps | [`desktop/README.md`](../desktop/README.md) — there is no mix[flow] version of it, and that is the point |
 
@@ -46,10 +53,11 @@ arrangement yet, and the export button closes the dialog.
 
 | file | |
 |---|---|
-| `electron/main.ts` | the window, the library's four calls, and separation's five |
+| `electron/main.ts` | the window, the library IPC, and the two local engines |
 | `electron/runtime.ts` | the Python engine: where it lives, what built it, and the probe. Tested |
 | `electron/manifest.ts` | the library on disk. No electron import, so it is testable — and tested |
-| `electron/library.ts` | the dialogs, and where the folder is right now |
+| `electron/library.ts` | the dialogs, URL imports, and where the folder is right now |
+| `electron/youtube.ts` | the narrow, pinned yt-dlp run and its temporary download |
 | `electron/models.ts` | which models will run, what they emit, what they cost |
 | `electron/job.ts` | what a separation is: the cache key, the sidecar, the progress. Tested |
 | `electron/separate.ts` | the separation child process and cancellation |
@@ -62,11 +70,14 @@ arrangement yet, and the export button closes the dialog.
 | `tools/prepare.ts` | fetches pinned `uv` and builds pinned LGPL FFmpeg for the bundle. `tools/app.ts` runs it |
 | `electron/preload.ts` | the context bridge |
 | `src/audio.ts` | reaching the stems, decoding them, and the peaks that draw them |
-| `src/engine.ts` | the transport and the mixer, which are one Web Audio graph |
+| `src/engine.ts` | the transport and the mixer, which are one Web Audio graph — and the stretcher beside the sources |
+| `src/schedule.ts` | how a map plays at a tempo: the boundaries, and the playhead back out of them. Tested |
+| `src/stretch.ts` | Signalsmith Stretch as one worklet node for every stem |
 | `src/remember.ts` | what survives a reload, and what deliberately does not |
 | `src/mock.ts` | how a source is drawn, and the one invented thing left |
 | `src/zoom.ts` | how much of the track the lanes show, and which part |
-| `src/warp.ts` | where the bars fall, and the tempo and downbeat fitted to the kick. Tested |
+| `src/warp.ts` | where the bars fall — the markers — and the tempo and downbeat fitted to the kick. Tested |
+| `src/follow.ts` | the kick followed through the song: a marker wherever the beat moved. Tested |
 | `src/tab.ts` | standard EADG bass, the fret-path search and tab layouts. Tested |
 | `src/tablature.ts` | visible-slice projection for the shared notation widget. Tested |
 | `src/midi.ts` | deterministic MIDI rebuilt after octave correction. Tested |

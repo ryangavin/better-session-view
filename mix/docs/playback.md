@@ -137,11 +137,21 @@ zoomed in it is one column each, drawn wide.
 
 The window used to have `BARS = 64` nailed down as a constant. That was fine
 while the audio was invented and is not once it is real: a track is however long
-it is. Position is seconds, and where the bars fall is `warp.ts`'s `Bars`: an
-origin and a span, `{ origin: −offset × bpm / 240, across: seconds × bpm / 240 }`.
-Two numbers, because a grid is a tempo **and** a downbeat — no tempo fixes a song
-with a quarter-second of air in front of it, since every line is that quarter
-second late for the whole of it.
+it is. Position is seconds, and where the bars fall is `warp.ts`'s `Bars`: a
+list of **markers**, each pinning a second of the file to a bar, with the bars
+spaced evenly between one marker and the next and the neighbouring spacing
+carried on past either end. That is Live's warp marker exactly, and the `.asd`
+it writes is the same list. A produced track is two of them — the first
+downbeat and the end of the file — which is the tempo and the downbeat the
+window used to hold as two numbers, and holds still: no tempo fixes a song with
+a quarter-second of air in front of it, since every line is that quarter second
+late for the whole of it. A band is a marker wherever the beat moved.
+
+Everything that draws or quantises goes through `barAt` and `placeOf` and
+nothing does the arithmetic itself, so the lanes, the warp lane and the
+tablature bend at a marker in the same place. The ruling in `grid.ts` is
+measured against the bars on *screen* rather than in the file, so a slow
+section is ruled for the width it actually has.
 
 **The bar count is not the map, and it used to be.** The lanes drew
 `ceil(seconds × bpm / 240)` bars across the width of the file, which silently
@@ -152,8 +162,8 @@ strip whose whole job is to show drift. The count is now derived from the map �
 `countOf` — and nothing rules with it.
 
 That is what makes the warp lane worth looking at. The ticks are onsets — placed
-in bar space by the *grid*, not by the audio — so changing either number walks
-them off the bar lines or onto them. A tempo a fraction out does not look wrong
+in bar space by the *grid*, not by the audio — so changing the tempo or moving
+a marker walks them off the bar lines or onto them. A tempo a fraction out does not look wrong
 at bar 2 and is unmistakable by bar 60.
 
 Onsets come off the drums where there are drums, which is most of the argument
@@ -275,19 +285,54 @@ numbers are three beats out, which the first click of the hand path fixes in one
 click. Bar 1 is then the first downbeat *of the file*, so the bar count means what
 it says; everything before it is still ruled and still numbered, downwards.
 
-### What it will not do
+### Following the drummer
 
-The line is straight by construction. That is the right shape for what this app
-is pointed at and the wrong one for a band playing to no click — and the warp
-lane is where you find out which you have, because a fit that cannot hold walks
-off the bar lines, visibly.
+The line the fit draws is straight by construction. That is the right shape for
+a record and the wrong one for a band playing to no click, and `follow.ts` is
+the other half: Live's Auto-Warp, which walks the song and drops a warp marker
+on the first beat of each bar where the audio drifted, and since 11.3.10 leaves
+a track made at a fixed tempo as a single straight stretch.
+
+**The seed does the hard half.** Which octave the pulse is in, which beat
+starts the bar and where the first one falls are the questions a tracker gets
+wrong, and the fit has already answered them. What is left is drift, and drift
+is small. So the walk predicts each beat from the last one and a local tempo,
+takes the strongest kick within a fifth of a beat of the prediction — weighted
+by how close it came — and moves the local tempo a little toward what it found,
+never more than a tenth from the seed. A three per cent step at bar 60 is
+inside the window, and the walk never lets go of it.
+
+**Where nothing is found it carries on at the seed's tempo**, not the local
+one. A local tempo is a reading of the last few bars, and a sixteen-bar
+breakdown is long enough for a small error in it to walk the count off the
+beat; the seed is a line through every kick in the song and good to a
+hundredth of a BPM, so the first kick after the gap lands on a bar line. After
+eight misses the window widens to find it again. Where the whole song will not
+hold one line — a real tempo change scores under the fit's floor — the seed is
+fitted to the first three quarters of a minute instead.
+
+**A marker on every downbeat that found a hit**, placed by the line through
+the beats around it rather than by the hit. A hit is placed to a millisecond
+or two and a hand plays to ten, and a marker on every wobble is a playback rate
+that wobbles with it. Then any marker within a column of the line through its
+neighbours is dropped. A record at 128.055 comes back as its two end markers;
+a ritardando keeps a marker every few bars; a drummer's lean is followed and
+a drummer's wobble is not written down as tempo.
 
 **What it reports is checkable.** `agreement` is the share of onset strength
-landing within an eighth of a beat of a grid line — exactly what the warp lane
-draws, counted. A quarter of it is luck, because the window is a quarter of a
-beat wide, so a fit under four-tenths is refused: there is no tempo that is
-honest about a track with nothing steady in it, and 120 dressed up as a reading
-is worse than the window saying it found none.
+landing within an eighth of a beat of the map's beats — exactly what the warp
+lane draws, counted — and `tracked` is the share of the beats walked that found
+a hit, because a map pinned to the hits agrees with them by construction and
+the second number is the one that still says something. A quarter of the first
+is luck, because the window is a quarter of a beat wide, so a fit under
+four-tenths is refused: there is no tempo that is honest about a track with
+nothing steady in it, and 120 dressed up as a reading is worse than the window
+saying it found none.
+
+`follow.test.ts` fixtures are four minutes each — a machine, a ritardando, a
+step, a drummer with eight milliseconds of wobble and a per cent of lean, a
+breakdown, a half-time section — and what they assert is where bar 100 lands,
+and for the machine that nothing was pinned at all.
 
 ### Two clicks, and then the same machinery
 
@@ -322,14 +367,65 @@ passes every test written against a two-bar loop. One of them renders a 60 Hz
 kick and a 2 kHz snare into real samples and checks that the filter leaves one
 and takes the other.
 
+## Playing it warped
+
+With warp on, the stems play at the header's tempo and every bar of the record
+takes the time that tempo gives a bar, whatever it took on the record. That is
+Live's clip following the Set, and `schedule.ts` is the maths of it with
+nothing of Web Audio inside: a **pass** through the file is a list of
+boundaries — from this output second, read the file from here, this fast — one
+where the pass starts and one at every marker after it, the rate in each
+segment being the target tempo over the segment's own. The playhead is the
+inverse, worked out from the same map on the audio clock, so the sound and the
+line cannot disagree and both can be tested at a desk.
+
+**The stretcher is Signalsmith Stretch**, the author's own Web Audio build —
+one self-contained module with the WASM inside it, MIT — and it is **one node
+for every stem**. A worklet plays the schedule it was sent, at the sample; but
+six of them are six message streams and six latencies to keep the same, and a
+mixer that could drift a millisecond between the kick and the bass is a mixer
+you can hear. Twelve channels through one node is one time map, one clock and
+one latency, and the stems come apart again in a splitter on the way to their
+own gains, which is why mute and solo know nothing about it.
+
+**Boundaries go over one ahead.** The node keeps what it is given and drops
+anything filed after a new change, so each boundary is sent once the one
+before it has begun, filed at its own time so it queues behind rather than
+replaces — and sent from the node's own update messages rather than a timer,
+because a hidden window's timers are throttled and a boundary that lands late
+is a jump in the sound. A seek is one change filed at the present, which
+drops the future and starts again from where the pointer went. The loop is a
+boundary at the end of the pass back to the top, and the head wraps in bar
+space the same way.
+
+**A straight map at its own tempo plays through the plain sources** even with
+warp on. Every rate is one, and a stretcher at a rate of one is not the
+samples. So a produced record with warp on is bit-exact until the tempo field
+moves, and the stretcher only ever works when there is something to stretch.
+
+The node holds its own copies of the stems: an `AudioBuffer`'s memory cannot
+be lent to a worklet, and the lanes and the plain sources still need the
+buffer. Four four-minute stems at 48 kHz is another three hundred and seventy
+megabytes, so the copies are made when warp is first switched on, handed over
+rather than cloned, and dropped with the stems. A stem the fallback decoder
+kept at the file's rate is resampled first; the worklet does not, and a 44.1 k
+stem in a 48 k graph would play a semitone and a half sharp. Where there is no
+worklet to be had — no WebAssembly, a scheme that refuses a Blob — the window
+plays straight and the warp switch says so.
+
+The clock in the header still shows seconds of the *record*, because the lanes
+are drawn in them. Under warp they pass faster or slower than the wall clock,
+which is the point.
+
 ## The window remembers itself
 
 `remember.ts`, in `localStorage`, keyed on the app's own origin — which is real
 because the app has a scheme rather than `file://`, an opaque origin that
 promises nothing.
 
-Kept: the open track, the model, the search, snap and loop; and per track, the
-mix, the head, the tempo and any slices somebody has actually named. **Not** the
+Kept: the open track, the model, the search, snap, loop and warp; and per
+track, the mix, the head, the tempo, the markers and any slices somebody has
+actually named. **Not** the
 library and not the stems — those are on disk and are read back every time,
 because a second copy of the truth is the copy that goes stale.
 
