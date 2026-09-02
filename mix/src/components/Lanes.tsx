@@ -11,6 +11,7 @@ import { BASS_TRANSPOSE } from '../tab.ts';
 import { placeOf } from '../warp.ts';
 import { factorOf, limitOf, shows, spanOf, useView, type Span } from '../zoom.ts';
 import { Tablature } from './Tablature.tsx';
+import { Tone } from './Tone.tsx';
 import { Waveform } from './Waveform.tsx';
 import { WarpLane } from './WarpLane.tsx';
 import './Lanes.css';
@@ -316,6 +317,8 @@ export function Lanes({ mix }: { mix: Mix }) {
           </div>
         </div>
 
+        <div className="mf-tone mf-band-tone" />
+
         <div className="mf-band-track" ref={timeline}>
           <Outside opens={opens} closes={closes} />
           <div className="mf-ruler">
@@ -418,6 +421,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                     </Toggle>
                   </div>
                 </div>
+                <Tone stem={stem.name} bands={own.bands} onShape={(change) => mix.shape(stem.id, change)} />
                 <div className="mf-lane-draw">
                   {/* Drawn whether or not its audio has arrived. The lane, its
                       controls and its grid are known the moment the manifest says
@@ -455,7 +459,7 @@ export function Lanes({ mix }: { mix: Mix }) {
         {head >= 0 && head <= 1 && (
           <div
             className="mf-playhead"
-            style={{ left: `calc(var(--lane-head) + (100% - var(--lane-head)) * ${head})` }}
+            style={{ left: `calc(var(--lane-lead) + (100% - var(--lane-lead)) * ${head})` }}
           />
         )}
       </div>
@@ -520,6 +524,7 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
           )}
         </div>
       </div>
+      <div className="mf-tone mf-tab-tone" />
       <div className="mf-tab-draw">
         {done ? (
           <Tablature
@@ -559,9 +564,9 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
  */
 function Outside({ opens, closes, inset }: { opens: number; closes: number; inset?: boolean }) {
   const across = (place: number): string =>
-    inset ? `calc(var(--lane-head) + (100% - var(--lane-head)) * ${place})` : `${place * 100}%`;
+    inset ? `calc(var(--lane-lead) + (100% - var(--lane-lead)) * ${place})` : `${place * 100}%`;
   const wide = (span: number): string =>
-    inset ? `calc((100% - var(--lane-head)) * ${span})` : `${span * 100}%`;
+    inset ? `calc((100% - var(--lane-lead)) * ${span})` : `${span * 100}%`;
 
   return (
     <>

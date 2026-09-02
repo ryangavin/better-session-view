@@ -1,3 +1,4 @@
+import { FLAT, Split, type Bands } from './eq.ts';
 import { passOf, sourceAt, straight, type Pass } from './schedule.ts';
 import { channelsOf, stretchOf, type Stretch } from './stretch.ts';
 import type { Beats } from './warp.ts';
@@ -8,10 +9,10 @@ import type { Beats } from './warp.ts';
  *
  * ```
  *   AudioBufferSourceNode ─┐
- *   (one per stem, started ├─ GainNode (per stem) ─┬─ master ─ destination
- *    together, sample-locked)                      │
- *                                                  │
- *   Stretch ─ splitter ─ merger (per stem) ────────┘
+ *   (one per stem, started ├─ Split ─ GainNode (per stem) ─┬─ master ─ destination
+ *    together, sample-locked)   (eq.ts: three bands)       │
+ *                                                          │
+ *   Stretch ─ splitter ─ merger (per stem) ────────────────┘
  *   (one worklet node for every stem, when warp is on)
  * ```
  *
@@ -54,14 +55,15 @@ const LEAD = 0.05;
 /** How often the stretcher reports in, and so how often the next boundary can go over. */
 const TICK = 0.05;
 
-/** A stem's place in the mix. */
+/** A stem's place in the mix: how loud, whether at all, and its three bands. */
 export interface Level {
   volume: number;
   muted: boolean;
   soloed: boolean;
+  bands: Bands;
 }
 
-export const REST: Level = { volume: 0.8, muted: false, soloed: false };
+export const REST: Level = { volume: 0.8, muted: false, soloed: false, bands: FLAT };
 
 /**
  * What a stem's fader and buttons come to, as one number.
@@ -107,6 +109,8 @@ export class Transport {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private gains = new Map<string, GainNode>();
+  /** In front of every gain, the band split the sources and the stretcher both feed. */
+  private splits = new Map<string, Split>();
   private playingSources: AudioBufferSourceNode[] = [];
   private buffers = new Map<string, AudioBuffer>();
   /** Where the head was when playback last started, and the clock reading then. */
@@ -195,10 +199,7 @@ export class Transport {
     this.stop();
     this.drop();
     const ctx = this.audio();
-    for (const gain of this.gains.values()) gain.disconnect();
-    this.gains.clear();
-    this.buffers.clear();
-    this.duration = 0;
+    this.unwire();
     for (const [id, buffer] of Object.entries(stems)) {
       this.buffers.set(id, buffer);
       this.duration = Math.max(this.duration, buffer.duration);
@@ -206,6 +207,9 @@ export class Transport {
       gain.gain.value = 0;
       gain.connect(this.master!);
       this.gains.set(id, gain);
+      const split = new Split(ctx);
+      split.output.connect(gain);
+      this.splits.set(id, split);
     }
     this.from = 0;
     if (this.warping) this.prepare();
@@ -215,11 +219,18 @@ export class Transport {
   clear(): void {
     this.stop();
     this.drop();
+    this.unwire();
+    this.from = 0;
+  }
+
+  /** Take down the per-stem strips, and let go of the stems. */
+  private unwire(): void {
+    for (const split of this.splits.values()) split.disconnect();
     for (const gain of this.gains.values()) gain.disconnect();
+    this.splits.clear();
     this.gains.clear();
     this.buffers.clear();
     this.duration = 0;
-    this.from = 0;
   }
 
   /** Apply the mix. Cheap enough to call on every fader frame, and ramped so it does not click. */
@@ -227,6 +238,7 @@ export class Transport {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     for (const [id, gain] of this.gains) {
+      this.splits.get(id)?.apply(levels[id]?.bands ?? FLAT, now, RAMP);
       const want = gainOf(id, levels, sources);
       if (Math.abs(gain.gain.value - want) < 0.0005) continue;
       gain.gain.cancelScheduledValues(now);
@@ -381,7 +393,7 @@ export class Transport {
       source.loop = this.looping;
       source.loopStart = 0;
       source.loopEnd = this.duration;
-      source.connect(this.gains.get(id)!);
+      source.connect(this.splits.get(id)!.input);
       source.start(when, offset);
       this.playingSources.push(source);
     }
@@ -511,7 +523,7 @@ export class Transport {
           const merger = ctx.createChannelMerger(2);
           splitter.connect(merger, 2 * i, 0);
           splitter.connect(merger, 2 * i + 1, 1);
-          merger.connect(this.gains.get(id)!);
+          merger.connect(this.splits.get(id)!.input);
           this.wiring.push(merger);
         });
         void got.node.setUpdateInterval(TICK, () => this.tick());

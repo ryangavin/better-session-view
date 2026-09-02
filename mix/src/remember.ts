@@ -23,13 +23,15 @@
  * travel, and that is a decision about the manifest rather than about this.
  */
 
+import type { Level } from './engine.ts';
 import type { Beats } from './warp.ts';
 
 const KEY = 'mixflow.window.v1';
 
 /** Everything remembered about one track. */
 export interface Remembered {
-  levels?: Record<string, { volume: number; muted: boolean; soloed: boolean }>;
+  /** Partial, because a store from before the bands existed has no bands in it. */
+  levels?: Record<string, Partial<Level>>;
   slices?: { bar: number; name: string }[];
   /** Seconds. Where the head was, so a reload lands back in the same eight bars. */
   at?: number;

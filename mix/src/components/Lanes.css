@@ -352,6 +352,42 @@
   --wdg-fill: var(--blue);
 }
 
+.mf-tone {
+  flex: none;
+  width: var(--lane-tone);
+  background: var(--surface-lane-head);
+  border-left: 1px solid var(--bd);
+}
+
+.mf-lane-tone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  --wdg-fill: var(--stem);
+  --wdg-knob-size: 26px;
+  --wdg-knob-height: 21px;
+}
+
+.mf-lane-tone .mf-tone-cut {
+  --wdg-knob-size: 18px;
+  --wdg-knob-height: 15px;
+  --wdg-fill: var(--ui);
+}
+
+.mf-lane-tone .mf-tone-cut .wdg-caption {
+  font-variation-settings: var(--wdg-mono-axes);
+  font-variant-numeric: tabular-nums;
+}
+
+.mf-lane[data-quiet] .mf-lane-tone {
+  --wdg-fill: var(--idle);
+}
+
+.mf-lane[data-quiet] .mf-lane-tone .mf-tone-cut {
+  --wdg-fill: var(--idle);
+}
+
 .mf-zoom .wdg-button-body {
   font-family: var(--mono);
   font-variation-settings: var(--mono-axes);

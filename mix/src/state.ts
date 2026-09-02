@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STEMS, slicesFor, type Slice } from './mock.ts';
 import { decode, fileUrl, LIBRARY, peaksOf, stemUrl, type Peak } from './audio.ts';
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
+import { FLAT, isFlat, type Bands } from './eq.ts';
 import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
 import { barAt, countOf, evenBeats, moved, resampled, shifted, startOf, type Beats } from './warp.ts';
 import { fitOf, refitOf, snapped, FASTEST, SLOWEST, type Fit } from './tempo.ts';
@@ -92,8 +93,13 @@ const pinAt = (second: number, offset: number, bpm: number): Anchor => {
   return { at: bar, label: String(bar + 1) };
 };
 
-const levels = (): Record<string, Level> =>
-  Object.fromEntries(STEMS.map((s) => [s.id, { ...REST }]));
+/**
+ * Every stem at rest, or as remembered — filled in field by field, so a store
+ * written before the bands existed comes back with flat bands rather than
+ * none.
+ */
+const levels = (known?: Record<string, Partial<Level>>): Record<string, Level> =>
+  Object.fromEntries(STEMS.map((s) => [s.id, { ...REST, ...known?.[s.id] }]));
 
 /**
  * Columns of peaks per stem.
@@ -145,9 +151,7 @@ export function useMix() {
   const [query, setQuery] = useState(kept.query ?? '');
   const [models, setModels] = useState<Model[]>([]);
   const [model, setModel] = useState(kept.model ?? 'htdemucs_ft');
-  const [level, setLevel] = useState<Record<string, Level>>(() =>
-    first.levels ? { ...levels(), ...first.levels } : levels(),
-  );
+  const [level, setLevel] = useState<Record<string, Level>>(() => levels(first.levels));
   const [slices, setSlices] = useState<Slice[]>(
     () => first.slices ?? slicesFor(8, BARS_UNKNOWN),
   );
@@ -734,7 +738,7 @@ export function useMix() {
       setTranscribeProblem(null);
       const known = forTrack(held.current, id);
       setPosition(known.at ?? 0);
-      setLevel(known.levels ? { ...levels(), ...known.levels } : levels());
+      setLevel(levels(known.levels));
       setSlices(known.slices ?? slicesFor(8, BARS_UNKNOWN));
       setSlicesAuto(!known.slices);
       setActiveSlice(0);
@@ -1191,6 +1195,14 @@ export function useMix() {
     setLevel((was) => ({ ...was, [id]: { ...(was[id] ?? REST), ...change } }));
   }, []);
 
+  /** Move one of a stem's bands, or one of the cuts between them. */
+  const shape = useCallback((id: string, change: Partial<Bands>) => {
+    setLevel((was) => {
+      const own = was[id] ?? REST;
+      return { ...was, [id]: { ...own, bands: { ...(own.bands ?? FLAT), ...change } } };
+    });
+  }, []);
+
   const rename = useCallback((index: number, name: string) => {
     setSlices((was) => was.map((s, i) => (i === index ? { ...s, name } : s)));
     setSlicesAuto(false);
@@ -1297,7 +1309,10 @@ export function useMix() {
     () =>
       (song?.sources ?? []).filter((id) => {
         const own = level[id];
-        return own && (own.muted || own.soloed || Math.abs(own.volume - REST.volume) > 0.001);
+        return (
+          own &&
+          (own.muted || own.soloed || Math.abs(own.volume - REST.volume) > 0.001 || !isFlat(own.bands))
+        );
       }).length,
     [level, song],
   );
@@ -1383,6 +1398,7 @@ export function useMix() {
     labelOf,
     level,
     adjust,
+    shape,
     audible,
     resetMix,
     touched,
