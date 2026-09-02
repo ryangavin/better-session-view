@@ -64,7 +64,7 @@ src/
     Panel.tsx       aligned vertical parameter lanes, through a shared row grid
     chrome.css      their styling, on the same shared parts
   notation/
-    Tablature.tsx   string lines, duration strokes and collision-aware fret labels
+    Tablature.tsx   string lines, plain fret figures and quiet duration hairlines
     PianoRoll.tsx   keyboard rows, note blocks, musical ruling and a movable playhead
     notation.css    shared notation geometry; hosts supply musical meaning
   palette.css       the design language itself: surfaces, the text ramp, the accents,

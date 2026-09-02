@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { keyColor } from '@openflow/core/chords.ts';
 import { parseTuning, type TranscribedNote } from '../tab.ts';
 import { fretsIn } from '../tablature.ts';
 
@@ -33,5 +34,10 @@ describe('on-screen tablature', () => {
   it('applies an octave correction before choosing frets', () => {
     const shown = fretsIn([note(40, 1)], tuning, 4, { from: 0, to: 1 }, -12);
     expect(shown[0]).toMatchObject({ pitch: 28, fret: 0, label: '0' });
+  });
+
+  it('colors pitch classes consistently across octaves', () => {
+    const shown = fretsIn([note(36, 1), note(48, 2)], tuning, 4, { from: 0, to: 1 });
+    expect(shown.map((each) => each.color)).toEqual([keyColor(0), keyColor(0)]);
   });
 });

@@ -10,6 +10,7 @@ import {
   type TranscribedNote,
   type Tuning,
 } from '../tab.ts';
+import { fretColor } from '../tablature.ts';
 import type { Bars } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 
@@ -50,6 +51,7 @@ export function Tablature({
       to: note.end / seconds,
       string: note.string,
       label: fretMark(note),
+      color: fretColor(note),
       kind: note.unplayable ? 'unplayable' : note.muted ? 'muted' : 'note',
       strength: note.confidence,
     })) : [],

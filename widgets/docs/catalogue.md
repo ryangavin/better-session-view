@@ -80,8 +80,9 @@ shape is one app's.
 **Notation arrived when there were two real views to compare.** `Tablature` and
 `PianoRoll` share timeline geometry but do not pretend to share their hosts' musical
 judgement. They take already-labelled strings, keys and events; chart[flow] still owns
-degree colour and its fifth-string mark, while mix[flow] still owns fret assignment and
-transcription confidence. The display boundary is in [notation.md](notation.md).
+degree colour and its fifth-string mark, while mix[flow] still owns fret assignment,
+absolute pitch-class colour and transcription confidence. The display boundary is in
+[notation.md](notation.md).
 
 **`Meter` arrived when the second caller did**, which is what this list said would happen.
 The first was a mixer strip. The second is a signal a look is being driven by, and it is

@@ -6,8 +6,8 @@ These are displays, not music-domain adapters. A host decides what a note means 
 the widget the answer it can draw:
 
 - `Tablature` gets labelled strings and events that have already been assigned to one of
-  them. It owns string geometry, duration strokes, collision-thinned labels, the musical
-  ruling and click-to-seek.
+  them. It owns string geometry, quiet duration hairlines, collision-thinned fret labels,
+  bar ruling and click-to-seek. A host may supply each label's ink.
 - `PianoRoll` gets a highest-to-lowest keyboard and note blocks that already carry their
   labels, colours and exceptional marks. It owns row geometry, bar and beat ruling, label
   fit and a playhead element the host can move without rendering React at frame rate.
@@ -21,7 +21,9 @@ Both timelines use the units supplied by their host. A piano roll can be in beat
 tablature view is in fractions of a file; the reusable fact is their geometry, not one
 project's transport.
 
-They also share one visual sentence: a labelled gutter, hierarchical musical ruling,
-filled duration blocks and text inside the event when it fits. Tablature keeps string
-lines and fret numbers while the roll keeps keyboard rows and note names; making them
-agree does not make one masquerade as the other.
+Their timelines agree without pretending their notation does. The piano roll keeps filled
+duration blocks because duration is its shape. Tablature stays closer to plain text: the
+fret number interrupts a string with no badge or border, bars are the only vertical ruling,
+and duration is a one-pixel underline. The host chooses the fret ink because colour has
+musical meaning; the widget keeps that colour off the duration cue so the number remains
+the thing a player sees first.

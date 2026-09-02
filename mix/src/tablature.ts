@@ -1,3 +1,4 @@
+import { keyColor } from '@openflow/core/chords.ts';
 import {
   assignFrets,
   fretMark,
@@ -12,7 +13,12 @@ export interface DrawnFret extends FrettedNote {
   at: number;
   until: number;
   label: string;
+  color?: string;
 }
+
+/** Absolute pitch-class ink: every C matches every other C, in any octave. */
+export const fretColor = (note: FrettedNote): string | undefined =>
+  note.pitch !== null && !note.muted && !note.unplayable ? keyColor(note.pitch) : undefined;
 
 /** Fret the whole phrase before filtering, so paging cannot change fingering. */
 export function fretsIn(
@@ -31,5 +37,6 @@ export function fretsIn(
       at: (note.start / seconds - span.from) / wide,
       until: (note.end / seconds - span.from) / wide,
       label: fretMark(note),
+      color: fretColor(note),
     }));
 }

@@ -26,8 +26,10 @@ export interface TablatureNote {
   /** String index, low to high. */
   string: number;
   label: string;
+  /** Host-chosen ink for the fret label. */
+  color?: string;
   kind?: 'note' | 'muted' | 'unplayable';
-  /** Confidence or emphasis. It never hides the event. */
+  /** Confidence or emphasis for the quiet duration cue. It never hides the fret. */
   strength?: number;
 }
 
@@ -40,17 +42,6 @@ export interface TablatureProps {
   className?: string;
   onSeek?(place: number): void;
 }
-
-const LADDER = [1024, 256, 64, 16, 8, 4, 2, 1];
-
-const ruleEvery = (perTick: number): number => {
-  for (let i = LADDER.length - 1; i >= 0; i -= 1) {
-    if (LADDER[i]! * perTick >= 16) return LADDER[i]!;
-  }
-  let step = LADDER[0]!;
-  while (step * perTick < 16 && step < Number.MAX_SAFE_INTEGER / 4) step *= 4;
-  return step;
-};
 
 const ink = (el: HTMLElement, name: string, fallback: string): string =>
   getComputedStyle(el).getPropertyValue(name).trim() || fallback;
@@ -88,21 +79,14 @@ export function Tablature({ strings, notes, view, height, grid, className, onSee
       const face = ink(el, '--wdg-face', '#151517');
       const noteInk = ink(el, '--wdg-fill', '#f0b23c');
       const alarm = ink(el, '--wdg-alarm', '#d4544f');
-      const fillText = ink(el, '--wdg-fill-text', '#000');
       const xOf = (place: number) => ((place - view.from) / wide) * box.width;
 
       if (grid && grid.across > 0) {
-        const perBar = grid.ticksPerBar ?? 64;
-        const ticks = grid.across * perBar;
-        const origin = grid.origin * perBar;
-        const step = ruleEvery(box.width / wide / ticks);
-        const first = Math.floor((view.from * ticks + origin) / step) * step;
-        const last = Math.ceil(view.to * ticks + origin);
-        for (let tick = first; tick <= last; tick += step) {
-          const x = Math.round(xOf((tick - origin) / ticks)) + 0.5;
-          const isPhrase = tick % (perBar * 4) === 0;
-          const isBar = tick % perBar === 0;
-          ctx.fillStyle = isPhrase || isBar ? major : edge;
+        const first = Math.floor(view.from * grid.across + grid.origin);
+        const last = Math.ceil(view.to * grid.across + grid.origin);
+        for (let bar = first; bar <= last; bar += 1) {
+          const x = Math.round(xOf((bar - grid.origin) / grid.across)) + 0.5;
+          ctx.fillStyle = bar % 4 === 0 ? major : edge;
           ctx.fillRect(x, 0, 1, height);
         }
       }
@@ -111,9 +95,7 @@ export function Tablature({ strings, notes, view, height, grid, className, onSee
       const bottom = height - 13;
       const gap = strings.length > 1 ? (bottom - top) / (strings.length - 1) : 0;
       const yOf = (string: number) => top + (strings.length - 1 - string) * gap;
-      const noteHeight = Math.max(4, Math.min(10, gap * 0.45));
-
-      ctx.font = '600 10px ui-monospace, Menlo, monospace';
+      ctx.font = '700 12px ui-monospace, Menlo, monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (let string = 0; string < strings.length; string += 1) {
@@ -129,39 +111,43 @@ export function Tablature({ strings, notes, view, height, grid, className, onSee
         const until = xOf(note.to);
         if (until < 0 || x > box.width) continue;
         const y = yOf(note.string);
-        const colour = note.kind === 'unplayable' ? alarm : note.kind === 'muted' ? quiet : noteInk;
-        ctx.globalAlpha = note.kind === 'muted' ? 0.65 : Math.max(0.5, note.strength ?? 1);
-        ctx.fillStyle = colour;
+        const colour = note.kind === 'unplayable'
+          ? alarm
+          : note.kind === 'muted'
+            ? quiet
+            : note.color ?? noteInk;
+        // Time remains available, but as a hairline under the string rather
+        // than a coloured block competing with the fret number.
+        ctx.globalAlpha = Math.max(0.25, Math.min(0.55, note.strength ?? 0.45));
+        ctx.fillStyle = note.kind === 'unplayable' ? alarm : quiet;
         ctx.fillRect(
           Math.max(0, x),
-          y - noteHeight / 2,
+          Math.round(y + 2) + 0.5,
           Math.max(1, Math.min(box.width, until) - Math.max(0, x)),
-          noteHeight,
+          1,
         );
         ctx.globalAlpha = 1;
 
-        const labelWidth = Math.max(10, ctx.measureText(note.label).width + 6);
+        const labelWidth = Math.max(9, ctx.measureText(note.label).width + 4);
         if (x - labelWidth / 2 <= labelledUntil[note.string]!) continue;
-        // A fret is the tablature equivalent of the piano roll's note label:
-        // one filled block, not a badge floating above a separate duration.
-        ctx.fillStyle = colour;
+        // Like plain text tab, the number interrupts the string. The face fill
+        // only erases the rule behind it; there is no badge, border or block.
+        ctx.fillStyle = face;
         ctx.fillRect(x - labelWidth / 2, y - 7, labelWidth, 14);
-        ctx.strokeStyle = face;
-        ctx.strokeRect(x - labelWidth / 2 + 0.5, y - 6.5, labelWidth - 1, 13);
-        ctx.fillStyle = fillText;
+        ctx.fillStyle = colour;
         ctx.fillText(note.label, x, y + 0.5);
-        labelledUntil[note.string] = x + labelWidth / 2 + 3;
+        labelledUntil[note.string] = x + labelWidth / 2 + 2;
       }
 
       // Fixed string names keep the display legible while its time view pans.
       ctx.fillStyle = face;
       ctx.globalAlpha = 0.94;
-      ctx.fillRect(0, 0, 30, height);
+      ctx.fillRect(0, 0, 24, height);
       ctx.globalAlpha = 1;
       ctx.textAlign = 'left';
       for (let string = 0; string < strings.length; string += 1) {
         ctx.fillStyle = text;
-        ctx.fillText(strings[string]!.label, 5, yOf(string) + 0.5);
+        ctx.fillText(strings[string]!.label, 4, yOf(string) + 0.5);
       }
     };
 

@@ -33,8 +33,14 @@ press, and `bass.mid` and `bass.tab.txt` are rebuilt from the cached detections.
 sidecar keeps those raw detections and records the selected correction separately, so
 the choice survives reopening the result and can always be undone.
 
+The display stays close to plain-text tab: string rules, bar lines and fret figures, with
+no badge around a number. A one-pixel underline preserves duration without turning every
+note into a piano-roll block. Fret ink is an absolute pitch-class colour — every C is red,
+and the same pitch keeps the same colour in every octave. Muted and unplayable marks keep
+their uncertainty colours instead.
+
 At whole-track width there can be more notes than horizontal pixels. The tablature still
-draws every duration stroke, but suppresses fret labels that would collide. Zooming does
+draws every quiet duration cue, but suppresses fret labels that would collide. Zooming does
 not reveal new data; it gives the existing data enough room to print every fret. Fret
 assignment is computed over the complete phrase before the visible slice is chosen, so
 panning cannot make the first note on screen jump to a different string.
