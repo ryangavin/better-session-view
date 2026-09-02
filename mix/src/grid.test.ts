@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEAST, rankOf, ruleEvery, TICKS_PER_BAR } from './grid.ts';
+import { LEAST, rankOf, ruleEvery, rulingOf, shadeEvery, shaded, TICKS_PER_BAR } from './grid.ts';
 
 /**
  * What this protects is a grid you can play to.
@@ -108,5 +108,77 @@ describe('what a line is', () => {
     expect(rankOf(-TICKS_PER_BAR * 4)).toBe('phrase');
     expect(rankOf(-TICKS_PER_BAR / 4)).toBe('beat');
     expect(rankOf(-TICKS_PER_BAR / 8)).toBe('sub');
+  });
+});
+
+describe('the staggered shading', () => {
+  it('never subdivides past a bar, however fine the ruling gets', () => {
+    // The ruling thins and thickens with the zoom; the shading only ever
+    // coarsens. Alternating sixty-fourths is a zebra, not a grid.
+    expect(shadeEvery(TICKS_PER_BAR / 64)).toBe(TICKS_PER_BAR);
+    expect(shadeEvery(TICKS_PER_BAR / 4)).toBe(TICKS_PER_BAR);
+    expect(shadeEvery(TICKS_PER_BAR)).toBe(TICKS_PER_BAR);
+    expect(shadeEvery(TICKS_PER_BAR * 16)).toBe(TICKS_PER_BAR * 16);
+  });
+
+  it('alternates, and keeps alternating through bar 1', () => {
+    // Counted in absolute ticks, so which blocks are lit does not change as
+    // the view moves under them — and the time before the song starts is
+    // ruled and shaded like any other.
+    const bar = TICKS_PER_BAR;
+    expect(shaded(0, bar)).toBe(false);
+    expect(shaded(bar, bar)).toBe(true);
+    expect(shaded(bar * 2, bar)).toBe(false);
+    expect(shaded(-bar, bar)).toBe(true);
+    expect(shaded(-bar * 2, bar)).toBe(false);
+  });
+});
+
+describe('ruling a span of bars', () => {
+  /**
+   * What the lanes used to work out inline, for a straight grid: the file
+   * holds `across` bars from `origin`, and the view shows `from` to `to` of it
+   * across `width` pixels.
+   */
+  const inline = (origin: number, across: number, from: number, to: number, width: number) => {
+    const ticks = across * TICKS_PER_BAR;
+    const start = origin * TICKS_PER_BAR;
+    const step = ruleEvery(width / (to - from) / ticks);
+    const shade = shadeEvery(step);
+    return {
+      step,
+      first: Math.floor((from * ticks + start) / step) * step,
+      last: Math.ceil(to * ticks + start),
+      shade,
+      block: Math.floor((from * ticks + start) / shade) * shade,
+    };
+  };
+
+  it.each([
+    [0, 1],
+    [0.25, 0.375],
+    [-0.5, 1.5],
+  ])('rules a straight grid exactly as the lanes did, from %f to %f', (from, to) => {
+    // The ruling is measured against the bars on screen, which for one
+    // straight line is the same arithmetic the lanes carried inline — and the
+    // old arithmetic is the fixture, so nothing about where a line falls has
+    // moved. Negative bars are the time before the song, ruled like any other.
+    const origin = -0.5;
+    const across = 127.5;
+    const barAt = (place: number) => origin + place * across;
+    expect(rulingOf(barAt(from), barAt(to), 900)).toEqual(inline(origin, across, from, to, 900));
+  });
+
+  it('rules finer where the bars on screen are fewer', () => {
+    // A slow section holds fewer bars in the same width than a fast one, and
+    // the ladder should answer for the bars it is drawing.
+    expect(rulingOf(0, 8, 900).step).toBeLessThan(rulingOf(0, 32, 900).step);
+  });
+
+  it('starts the first line on the step so the bright lines hold still', () => {
+    const ruling = rulingOf(2.3, 10, 900);
+    expect(ruling.first % ruling.step).toBe(0);
+    expect(ruling.first).toBeLessThanOrEqual(2.3 * TICKS_PER_BAR);
+    expect(ruling.block % ruling.shade).toBe(0);
   });
 });

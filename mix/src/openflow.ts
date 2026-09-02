@@ -107,6 +107,9 @@ export interface Track {
   file: string;
   title: string;
   artist: string | null;
+  album: string | null;
+  /** `art/<id>.jpg`, relative to the root, or null. Served over the app's own scheme. */
+  art: string | null;
   /** Null until something detects it, and drawn as unknown rather than as zero. */
   bpm: number | null;
   key: string | null;
@@ -129,14 +132,44 @@ export interface Imported extends Library {
   refused: string[];
 }
 
+/** The fields a person may correct. Nothing about the disk is in here. */
+export interface Edits {
+  title?: string;
+  artist?: string | null;
+  album?: string | null;
+  art?: string | null;
+}
+
+/**
+ * One thing the catalogue thinks a track might be.
+ *
+ * `artwork` is the catalogue's own URL and is never stored: choosing a match
+ * asks the main process to fetch it into the library folder, and what lands in
+ * the manifest is `art/<id>.jpg`.
+ */
+export interface Match {
+  title: string;
+  artist: string;
+  album: string | null;
+  year: number | null;
+  artwork: string | null;
+  /** The cover as a `data:` URI, carried back by the main process. */
+  thumb: string | null;
+}
+
 interface Bridge {
   demucs(): Promise<Ready>;
   library: {
     read(): Promise<Library>;
     choose(): Promise<Library>;
-    add(files?: string[]): Promise<Imported>;
+    add(): Promise<Imported>;
+    drop(files: File[]): Promise<Imported>;
+    youtube(url: string): Promise<Imported>;
     reveal(): Promise<void>;
     base(): Promise<string>;
+    edit(id: string, edits: Edits): Promise<Library>;
+    matches(text: string): Promise<Match[]>;
+    artwork(id: string, url: string): Promise<Library>;
   };
   separate: {
     models(): Promise<Model[]>;
@@ -151,7 +184,7 @@ interface Bridge {
     run(ask: {
       trackId: string;
       tuning: readonly TuningString[];
-      bars: { origin: number; across: number } | null;
+      bars: { seconds: number; markers: readonly { at: number; bar: number }[] } | null;
       transpose: number;
     }): Promise<TranscribeOutcome>;
     cancel(trackId?: string): Promise<void>;

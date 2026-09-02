@@ -23,6 +23,8 @@
  * travel, and that is a decision about the manifest rather than about this.
  */
 
+import type { Marker } from './warp.ts';
+
 const KEY = 'mixflow.window.v1';
 
 /** Everything remembered about one track. */
@@ -35,6 +37,12 @@ export interface Remembered {
   bpmAuto?: boolean;
   /** Seconds to the downbeat of bar 1. The other half of a grid. */
   offset?: number;
+  /**
+   * Where the audio is pinned to the grid, once something has pinned it — a
+   * fit, or a hand. Absent, the grid is the straight line `bpm` and `offset`
+   * make, and the track is still owed a fit.
+   */
+  markers?: readonly Marker[];
 }
 
 export interface Session {
@@ -43,6 +51,8 @@ export interface Session {
   query?: string;
   snap?: string;
   loop?: boolean;
+  /** Whether the stems play stretched to the header tempo, or as they were recorded. */
+  warp?: boolean;
   tracks?: Record<string, Remembered>;
 }
 

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Slider } from '@openflow/widgets/controls/Slider.tsx';
@@ -48,14 +48,52 @@ const LEVEL: Param = { kind: 'float', min: 0, max: 1, defaultValue: 0.8, unit: '
 const OCTAVES = ['−8va', '0', '+8va'] as const;
 
 /**
- * The fader's drawn length.
+ * The fader stands up and fills its lane, in both directions.
  *
  * A number rather than `layout="inside"`, and the difference is not cosmetic:
  * an inside row deliberately has no fill, because a parameter on a node row is
  * a *where* and a fill invents a left-hand side that means nothing. A fader is
  * the case that doc carves out — its own length is what it is saying.
+ *
+ * Standing it up is what buys the head its width. A lane is a few dozen pixels
+ * tall and only ever a couple of hundred wide, so height is the dimension
+ * there is spare of: a horizontal fader spent 46px of the scarce one to buy
+ * 46px of travel. This one is given the whole of the leftover height and the
+ * whole of the column's width, so it is the thing in the head you cannot miss
+ * and the thing you cannot fail to hit.
+ *
+ * Its length is therefore CSS's to decide, and what has to come back the other
+ * way is how long it turned out — `Slider` gears its drag to `travel`, and a
+ * rail drawn taller than the travel it was geared to is a thumb running ahead
+ * of the pointer.
  */
-const FADER = 46;
+const TRAVEL_MIN = 16;
+
+/**
+ * How long the drawn rail is, measured from the laid-out lane.
+ *
+ * The lanes divide whatever height the window leaves them, so this is not
+ * known until they have been laid out — and every lane is the same height, so
+ * one of them answers for all six. `ResizeObserver` reports the size when it
+ * starts watching as well as when it changes, so there is nothing to measure
+ * separately on the way in.
+ */
+function useTravel(list: RefObject<HTMLDivElement | null>, lanes: number, song: string | null): number {
+  const [travel, setTravel] = useState(TRAVEL_MIN);
+
+  useEffect(() => {
+    const rail = list.current?.querySelector('.mf-lane-head .wdg-slider-body');
+    if (!(rail instanceof HTMLElement)) return;
+    const watch = new ResizeObserver(() => {
+      const height = rail.clientHeight;
+      if (height > 0) setTravel(Math.max(TRAVEL_MIN, Math.round(height)));
+    });
+    watch.observe(rail);
+    return () => watch.disconnect();
+  }, [list, lanes, song]);
+
+  return travel;
+}
 
 /** A lane with nothing decoded yet: the grid, and no drawing over it. */
 const NOTHING: readonly Peak[] = [];
@@ -219,6 +257,8 @@ export function Lanes({ mix }: { mix: Mix }) {
     if (mix.playing) follow(at);
   }, [mix.playing, at, follow]);
 
+  const travel = useTravel(list, sources.length, song?.id ?? null);
+
   if (!song) return null;
 
   const lanes = STEMS.filter((stem) => sources.includes(stem.id));
@@ -242,39 +282,37 @@ export function Lanes({ mix }: { mix: Mix }) {
       <div className="mf-band">
         <div className="mf-head mf-band-head">
           <div className="mf-band-top">
-            <span className="mf-cap">mix</span>
-            <div className="mf-band-actions">
-              <Button
-                onPress={whole}
-                disabled={view.zoom === 1}
-                label="Show the whole track"
-                title="How much time the lanes are showing — press to fit the song. ⇧-scroll or ⌘-scroll over the lanes to zoom, in as far as single samples and out past the whole song"
-                className="mf-zoom"
-                width={40}
-              >
-                {seen(mix.seconds / view.zoom)}
-              </Button>
-              <Button
-                onPress={mix.resetMix}
-                disabled={mix.touched === 0}
-                title="Return every stem to unity, unmuted, unsoloed"
-              >
-                Reset
-              </Button>
-              <Button
-                onPress={() => void mix.separate()}
-                label="Separate again"
-                title="Separate this song again, with a different model"
-                width={26}
-                disabled={mix.engineBusy}
-              >
-                {again}
-              </Button>
-            </div>
+            <Button
+              onPress={whole}
+              disabled={view.zoom === 1}
+              label="Show the whole track"
+              title="How much time the lanes are showing — press to fit the song. ⇧-scroll or ⌘-scroll over the lanes to zoom, in as far as single samples and out past the whole song"
+              className="mf-zoom mf-band-wide"
+            >
+              {seen(mix.seconds / view.zoom)}
+            </Button>
+            <Button
+              onPress={mix.resetup}
+              label="Separate again"
+              title="Set this song up again — the models, and what it is called"
+              width={22}
+              disabled={mix.engineBusy}
+            >
+              {again}
+            </Button>
           </div>
           <div className="mf-band-bottom">
-            <span className="mf-band-audible">{mix.audibleLine}</span>
-            <span className="mf-band-model">{mix.labelOf(song.model)}</span>
+            <Button
+              onPress={mix.resetMix}
+              disabled={mix.touched === 0}
+              title="Return every stem to unity, unmuted, unsoloed"
+              className="mf-band-reset"
+            >
+              Reset
+            </Button>
+            <span className="mf-band-model" title={mix.labelOf(song.model)}>
+              {mix.labelOf(song.model)}
+            </span>
           </div>
         </div>
 
@@ -311,6 +349,7 @@ export function Lanes({ mix }: { mix: Mix }) {
             bars={grid}
             height={24}
             anchors={mix.anchors}
+            markers={mix.markers ?? undefined}
             onPin={mix.pin}
             pinning={mix.manual !== null}
             span={span}
@@ -331,49 +370,51 @@ export function Lanes({ mix }: { mix: Mix }) {
                 style={{ '--stem': stem.ink } as never}
               >
                 <div className="mf-head mf-lane-head">
-                  {stem.id === 'bass' ? (
-                    <button
-                      type="button"
-                      className="mf-lane-label mf-tab-toggle"
-                      aria-expanded={tabOpen}
-                      title={`${tabOpen ? 'Hide' : 'Show'} bass tablature`}
-                      onClick={() => setTabFor(tabOpen ? null : song.id)}
-                    >
-                      {stem.name}
-                    </button>
-                  ) : (
-                    <span className="mf-lane-label">{stem.name}</span>
-                  )}
-                  <Toggle
-                    on={own.muted}
-                    onChange={(next) => mix.adjust(stem.id, { muted: next })}
-                    label={`Mute ${stem.name}`}
-                    title="Mute"
-                    width={18}
-                  >
-                    M
-                  </Toggle>
-                  <Toggle
-                    on={own.soloed}
-                    onChange={(next) => mix.adjust(stem.id, { soloed: next })}
-                    label={`Solo ${stem.name}`}
-                    title="Solo"
-                    width={18}
-                    className="mf-solo"
-                  >
-                    S
-                  </Toggle>
+                  <div className="mf-lane-id">
+                    {stem.id === 'bass' ? (
+                      <button
+                        type="button"
+                        className="mf-lane-label mf-tab-toggle"
+                        aria-expanded={tabOpen}
+                        title={`${tabOpen ? 'Hide' : 'Show'} bass tablature`}
+                        onClick={() => setTabFor(tabOpen ? null : song.id)}
+                      >
+                        {stem.name}
+                      </button>
+                    ) : (
+                      <span className="mf-lane-label">{stem.name}</span>
+                    )}
+                    <span className="mf-lane-db">{trim(own.volume)}</span>
+                  </div>
                   <Slider
                     param={LEVEL}
                     value={own.volume}
                     onChange={(next) => mix.adjust(stem.id, { volume: next })}
-                    orientation="horizontal"
-                    length={FADER}
+                    orientation="vertical"
+                    travel={travel}
                     showValue={false}
                     label={`${stem.name} level`}
                     className="mf-fader"
                   />
-                  <span className="mf-lane-db">{trim(own.volume)}</span>
+                  <div className="mf-lane-keys">
+                    <Toggle
+                      on={own.muted}
+                      onChange={(next) => mix.adjust(stem.id, { muted: next })}
+                      label={`Mute ${stem.name}`}
+                      title="Mute"
+                    >
+                      M
+                    </Toggle>
+                    <Toggle
+                      on={own.soloed}
+                      onChange={(next) => mix.adjust(stem.id, { soloed: next })}
+                      label={`Solo ${stem.name}`}
+                      title="Solo"
+                      className="mf-solo"
+                    >
+                      S
+                    </Toggle>
+                  </div>
                 </div>
                 <div className="mf-lane-draw">
                   {/* Drawn whether or not its audio has arrived. The lane, its
@@ -443,7 +484,7 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
       <div className="mf-head mf-tab-head">
         <div className="mf-tab-headline">
           <span className="mf-lane-label">Tablature</span>
-          <span className="mf-tab-tuning">E · A · D · G</span>
+          <span className="mf-tab-tuning">E A D G</span>
         </div>
         {done && (
           <span className="mf-tab-count">
@@ -465,7 +506,7 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
           {ownJob ? (
             <Button onPress={mix.cancelTranscription}>Cancel</Button>
           ) : done ? (
-            <Button onPress={mix.revealTranscription}>Reveal files</Button>
+            <Button onPress={mix.revealTranscription}>Reveal</Button>
           ) : (
             <Button
               onPress={() => void mix.transcribeBass()}

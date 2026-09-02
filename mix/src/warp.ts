@@ -11,36 +11,113 @@ import type { Onset, Peak } from './audio.ts';
  * second of air in front of it could not be gridded at all: every line was that
  * quarter second late, for the whole song, and no tempo would fix it.
  *
+ * **The map is a list of markers.** A marker pins a second of the file to a
+ * bar of the grid, and between two markers the bars are spaced evenly — the
+ * tempo is straight inside a segment and may change at a marker. A produced
+ * track is two markers, the first downbeat and the end of the file, and that
+ * is the straight line `fitOf` below draws. A band playing to no click is a
+ * marker wherever the beat moved, which `follow.ts` places. Past the last
+ * marker and before the first the neighbouring segment's tempo carries on:
+ * Live's rule, and the one that makes a two-marker map exactly the line it
+ * always was.
+ *
  * **The bar count is not the map.** It used to be: the lanes drew `bars` bars
  * across the width of the file and that was the grid. That silently rounded the
  * tempo, because the count is a `ceil` — a two-hundred-second track at 128
  * holds 106.67 bars, was drawn as 107, and so was ruled at 128.4 BPM. Half a
  * bar of drift by the end of the song, from the ruler rather than from the
  * audio, on the one strip whose whole job is to show drift. `Bars` is the map
- * instead: a linear one, and the count is derived from it rather than the other
- * way round.
+ * instead, and the count is derived from it rather than the other way round.
  */
 
-/** Where the bars of a grid fall on a file. */
-export interface Bars {
-  /** The bar the file starts on. Negative when bar 1 begins after the top of it. */
-  origin: number;
-  /** How many bars the whole file spans, unrounded. */
-  across: number;
+/** A point where the audio is pinned to the grid. */
+export interface Marker {
+  /** Seconds from the top of the file. */
+  at: number;
+  /** The bar it is pinned to, counting bar 1 as zero. A beat is a quarter, and it may be fractional. */
+  bar: number;
 }
 
-/** The grid a tempo and a downbeat make, over a file of a given length. */
-export const barsOf = (seconds: number, bpm: number, offset: number): Bars => ({
-  origin: (-offset * bpm) / 240,
-  across: (seconds * bpm) / 240,
-});
+/**
+ * Where the bars of a grid fall on a file: at least two markers, in order, and
+ * how long the file is.
+ *
+ * The length is here because markers are written in seconds and everything
+ * that draws speaks in fractions of the file. Plain data rather than a class,
+ * because it crosses the bridge to the main process for the tab and is written
+ * down beside the mix.
+ */
+export interface Bars {
+  seconds: number;
+  markers: readonly Marker[];
+}
+
+/**
+ * A map from whatever markers there are.
+ *
+ * Sorted, and anything that would run the bars backwards is dropped — a marker
+ * later in the file than its neighbour and earlier in the bars is not a map
+ * but a fold. Fewer than two survive and a second is added a bar or the rest
+ * of the file later, whichever is longer, at `bpm`: a map always has a tempo,
+ * so the ends can always be extrapolated.
+ */
+export function mapOf(seconds: number, markers: readonly Marker[], bpm: number): Bars {
+  const kept: Marker[] = [];
+  for (const marker of [...markers].sort((a, b) => a.at - b.at)) {
+    const last = kept[kept.length - 1];
+    if (last && (marker.at <= last.at || marker.bar <= last.bar)) continue;
+    kept.push({ at: marker.at, bar: marker.bar });
+  }
+  if (kept.length === 0) kept.push({ at: 0, bar: 0 });
+  if (kept.length === 1) {
+    const only = kept[0];
+    const at = Math.max(seconds, only.at + 240 / bpm);
+    kept.push({ at, bar: only.bar + ((at - only.at) * bpm) / 240 });
+  }
+  return { seconds, markers: kept };
+}
+
+/** The grid a tempo and a downbeat make, over a file of a given length: two markers and a straight line. */
+export const barsOf = (seconds: number, bpm: number, offset: number): Bars =>
+  mapOf(seconds, [{ at: offset, bar: 0 }], bpm);
+
+/**
+ * The segment a value falls in: the index of the marker on its left, held to
+ * the first and last segments so the ends extrapolate rather than stop.
+ */
+function segmentOf(markers: readonly Marker[], value: number, of: (m: Marker) => number): number {
+  let lo = 0;
+  let hi = markers.length - 2;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (of(markers[mid]) <= value) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
+}
+
+const bySecond = (m: Marker) => m.at;
+const byBar = (m: Marker) => m.bar;
 
 /** The bar at a fraction of the file. */
-export const barAt = (bars: Bars, place: number): number => bars.origin + place * bars.across;
+export function barAt(bars: Bars, place: number): number {
+  const { markers } = bars;
+  const at = place * bars.seconds;
+  const i = segmentOf(markers, at, bySecond);
+  const a = markers[i];
+  const b = markers[i + 1];
+  return a.bar + ((at - a.at) * (b.bar - a.bar)) / (b.at - a.at);
+}
 
 /** Where a bar falls, as a fraction of the file. */
-export const placeOf = (bars: Bars, bar: number): number =>
-  bars.across > 0 ? (bar - bars.origin) / bars.across : 0;
+export function placeOf(bars: Bars, bar: number): number {
+  if (!(bars.seconds > 0)) return 0;
+  const { markers } = bars;
+  const i = segmentOf(markers, bar, byBar);
+  const a = markers[i];
+  const b = markers[i + 1];
+  return (a.at + ((bar - a.bar) * (b.at - a.at)) / (b.bar - a.bar)) / bars.seconds;
+}
 
 /**
  * How many bars the song holds, counting bar 1 as the first.
@@ -48,7 +125,97 @@ export const placeOf = (bars: Bars, bar: number): number =>
  * A count rather than a measurement — what the slices are spread over and what
  * the export writes down. Nothing draws with it.
  */
-export const countOf = (bars: Bars): number => Math.max(1, Math.ceil(bars.origin + bars.across));
+export const countOf = (bars: Bars): number => Math.max(1, Math.ceil(barAt(bars, 1)));
+
+/** One straight stretch of the map, and the tempo it runs at. */
+export interface Segment {
+  from: Marker;
+  to: Marker;
+  bpm: number;
+}
+
+/** The map as its segments, first to last. */
+export const segmentsOf = (bars: Bars): Segment[] => {
+  const out: Segment[] = [];
+  for (let i = 0; i + 1 < bars.markers.length; i++) {
+    const from = bars.markers[i];
+    const to = bars.markers[i + 1];
+    out.push({ from, to, bpm: ((to.bar - from.bar) * 240) / (to.at - from.at) });
+  }
+  return out;
+};
+
+/** The tempo at a bar: the segment it is in, or the nearest one beyond the ends. */
+export function tempoAt(bars: Bars, bar: number): number {
+  const i = segmentOf(bars.markers, bar, byBar);
+  const a = bars.markers[i];
+  const b = bars.markers[i + 1];
+  return ((b.bar - a.bar) * 240) / (b.at - a.at);
+}
+
+/** The slowest and fastest the map runs at. One number twice for a straight line. */
+export function tempoRange(bars: Bars): { slowest: number; fastest: number } {
+  let slowest = Infinity;
+  let fastest = 0;
+  for (const segment of segmentsOf(bars)) {
+    slowest = Math.min(slowest, segment.bpm);
+    fastest = Math.max(fastest, segment.bpm);
+  }
+  return { slowest, fastest };
+}
+
+/**
+ * The tempo a map runs at, as somebody reads it: one number where it is
+ * straight, and the two ends of the range where it is not.
+ *
+ * A song fact is a range. Whole numbers either side, because `126.37–131.02`
+ * is a header nobody can read and the second decimal is not what a range is
+ * saying.
+ */
+export function rangeText(bars: Bars): string {
+  const { slowest, fastest } = tempoRange(bars);
+  if (!Number.isFinite(slowest)) return '';
+  if (fastest - slowest < 0.05) return bpmText(Number(slowest.toFixed(2)));
+  const lo = Math.round(slowest);
+  const hi = Math.round(fastest);
+  return lo === hi ? String(lo) : `${lo}–${hi}`;
+}
+
+/** The least two markers may be apart, in seconds, so every segment still has a tempo. */
+const APART = 0.001;
+
+/** A marker moved to another second of the file, held strictly between its neighbours. */
+export function moved(markers: readonly Marker[], index: number, at: number): Marker[] {
+  const before = markers[index - 1];
+  const after = markers[index + 1];
+  let to = at;
+  if (before) to = Math.max(to, before.at + APART);
+  if (after) to = Math.min(to, after.at - APART);
+  return markers.map((m, i) => (i === index ? { ...m, at: to } : m));
+}
+
+/**
+ * A marker added, replacing any on the same bar.
+ *
+ * Refused — the list comes back as it was — where it would fold the map: a
+ * marker earlier in the file than the bar before it, or on top of a neighbour.
+ */
+export function added(markers: readonly Marker[], marker: Marker): readonly Marker[] {
+  const kept = markers.filter((m) => Math.abs(m.bar - marker.bar) > 1e-6);
+  const out = [...kept, { ...marker }].sort((a, b) => a.at - b.at);
+  for (let i = 1; i < out.length; i++) {
+    if (out[i].bar <= out[i - 1].bar || out[i].at - out[i - 1].at < APART) return markers;
+  }
+  return out;
+}
+
+/** A marker taken away. Refused below two, because one marker is not a map. */
+export const removed = (markers: readonly Marker[], index: number): readonly Marker[] =>
+  markers.length > 2 ? markers.filter((_, i) => i !== index) : markers;
+
+/** Every marker moved the same way through the file: the nudge. */
+export const shifted = (markers: readonly Marker[], by: number): Marker[] =>
+  markers.map((m) => ({ ...m, at: m.at + by }));
 
 /**
  * A tempo, as a number somebody reads. Integers stay integers, and anything
@@ -163,20 +330,20 @@ export interface Fit {
 }
 
 /** One rise in the audio: where it was, in columns, and how big against the biggest. */
-interface Hit {
+export interface Hit {
   at: number;
   weight: number;
 }
 
 /** A beat of the grid that found a hit under it. */
-interface Beat {
+export interface Beat {
   k: number;
   at: number;
   weight: number;
 }
 
 /** Where a beat grid sits, in columns. */
-interface Line {
+export interface Line {
   first: number;
   period: number;
 }
@@ -277,7 +444,7 @@ export function hearing(
  * off a local mean leaves *how much this moment stood out from its neighbours*,
  * which is the same everywhere in the song.
  */
-function riseOf(level: Float32Array, per: number): Float32Array {
+export function riseOf(level: Float32Array, per: number): Float32Array {
   const n = level.length;
   const raw = new Float64Array(n);
   for (let i = 1; i < n; i++) raw[i] = Math.max(0, level[i] - level[i - 1]);
@@ -303,7 +470,7 @@ function riseOf(level: Float32Array, per: number): Float32Array {
  * rounding every hit to a column would put a floor under the accuracy of
  * everything downstream.
  */
-function hitsOf(rise: Float32Array): Hit[] {
+export function hitsOf(rise: Float32Array): Hit[] {
   let loudest = 0;
   for (let i = 0; i < rise.length; i++) if (rise[i] > loudest) loudest = rise[i];
   if (loudest <= 0) return [];
@@ -414,7 +581,7 @@ const carried = (hits: Hit[], line: Line, columns: number): number =>
   under(hits, line, columns, Number.MAX_SAFE_INTEGER).reduce((sum, one) => sum + one.weight, 0);
 
 /** The straight line through the hits: where beat zero is, and how far apart they are. */
-function through(beats: Beat[]): Line | null {
+export function through(beats: readonly Beat[]): Line | null {
   let w = 0;
   let k = 0;
   let kk = 0;

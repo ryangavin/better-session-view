@@ -6,11 +6,16 @@ export interface NotationSpan {
   to: number;
 }
 
+/**
+ * Where the bars fall on the complete timeline, as two functions rather than
+ * two numbers, so a grid whose tempo bends is drawn where it bends. Bar 1 is
+ * zero; the time before it is negative.
+ */
 export interface NotationGrid {
-  /** Bar number at the start of the complete timeline. */
-  origin: number;
-  /** Number of bars across the complete timeline. */
-  across: number;
+  /** The bar at a place on the timeline, in the same zero-to-one space as `view`. */
+  barAt(place: number): number;
+  /** The place on the timeline a bar falls at. */
+  placeOf(bar: number): number;
   /** Finest integer division of a bar. Four-four defaults to sixty-fourths. */
   ticksPerBar?: number;
 }
@@ -81,11 +86,13 @@ export function Tablature({ strings, notes, view, height, grid, className, onSee
       const alarm = ink(el, '--wdg-alarm', '#d4544f');
       const xOf = (place: number) => ((place - view.from) / wide) * box.width;
 
-      if (grid && grid.across > 0) {
-        const first = Math.floor(view.from * grid.across + grid.origin);
-        const last = Math.ceil(view.to * grid.across + grid.origin);
+      const barFrom = grid ? grid.barAt(view.from) : 0;
+      const barTo = grid ? grid.barAt(view.to) : 0;
+      if (grid && barTo > barFrom) {
+        const first = Math.floor(barFrom);
+        const last = Math.ceil(barTo);
         for (let bar = first; bar <= last; bar += 1) {
-          const x = Math.round(xOf((bar - grid.origin) / grid.across)) + 0.5;
+          const x = Math.round(xOf(grid.placeOf(bar))) + 0.5;
           ctx.fillStyle = bar % 4 === 0 ? major : edge;
           ctx.fillRect(x, 0, 1, height);
         }

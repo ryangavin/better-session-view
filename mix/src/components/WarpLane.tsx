@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { rankOf, ruleEvery, TICKS_PER_BAR } from '../grid.ts';
-import { placeOf, type Bars } from '../warp.ts';
+import { rankOf, rulingOf, shaded, TICKS_PER_BAR } from '../grid.ts';
+import { barAt, placeOf, type Bars, type Marker } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 /**
  * An onset placed in bar space, which is the grid's claim about it rather than
@@ -32,6 +32,8 @@ export interface WarpLaneProps {
   height: number;
   /** Where the grid is pinned, in bars. */
   anchors: readonly { at: number; label: string }[];
+  /** Where the audio is pinned to the grid, once something has pinned it. */
+  markers?: readonly Marker[];
   /** A click, as a fraction of the file. */
   onPin?(place: number): void;
   /** Manual mode: the pointer is placing a point rather than scrubbing. */
@@ -52,7 +54,7 @@ const ink = (el: HTMLElement, name: string, fallback: string): string =>
 
 const WHOLE: Span = { from: 0, to: 1 };
 
-export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }: WarpLaneProps) {
+export function WarpLane({ onsets, bars, height, anchors, markers, onPin, pinning, span }: WarpLaneProps) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const from = span?.from ?? WHOLE.from;
   const to = span?.to ?? WHOLE.to;
@@ -77,6 +79,7 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       const tick = ink(el, '--detail', '#8b8b93');
       const sure = ink(el, '--green', '#5fbfa8');
       const caption = ink(el, '--caption', '#5e5e66');
+      const block = ink(el, '--sel', '#1c1c20');
 
       // The width the whole track would have at this zoom. Nothing is drawn
       // that wide: it is what turns a position in the track into an x on a
@@ -95,14 +98,26 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       // pixels is not a grid, it is a grey wash with a tick rate — and not
       // clamped to the track at either end, because zoomed out there is time on
       // screen that is not in the song and the grid runs through it.
-      if (!(bars.across > 0)) return;
-      const ticks = bars.across * TICKS_PER_BAR;
-      const origin = bars.origin * TICKS_PER_BAR;
-      const step = ruleEvery(track / ticks);
-      const first = Math.floor((from * ticks + origin) / step) * step;
-      const last = Math.ceil(to * ticks + origin);
+      // Everything on the strip is placed through the map, never by tick
+      // arithmetic of its own: where a bar falls is the map's to say, and a
+      // grid that bends between markers bends here the same way it does in
+      // the lanes.
+      const barFrom = barAt(bars, from);
+      const barTo = barAt(bars, to);
+      if (!(barTo > barFrom)) return;
+      const atTick = (t: number) => xOf(placeOf(bars, t / TICKS_PER_BAR));
+      const { step, first, last, shade, block: firstBlock } = rulingOf(barFrom, barTo, box.width);
+      // The lanes' staggered blocks, carried up here so the band and the stack
+      // agree about which one is lit. Neutral rather than a stem's colour: the
+      // band belongs to the mix, not to any one source.
+      ctx.fillStyle = block;
+      for (let t = firstBlock; t <= last; t += shade) {
+        if (!shaded(t, shade)) continue;
+        const x = Math.round(atTick(t));
+        ctx.fillRect(x, 0, Math.round(atTick(t + shade)) - x, height);
+      }
       for (let t = first; t <= last; t += step) {
-        const x = Math.round(xOf((t - origin) / ticks)) + 0.5;
+        const x = Math.round(atTick(t)) + 0.5;
         const rank = rankOf(t);
         const whole = rank === 'phrase' || rank === 'bar';
         ctx.fillStyle = whole ? barLine : beat;
@@ -129,9 +144,10 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       // A four-minute track has a hundred and change of them and the old fixed
       // eight would have printed sixteen numbers into a 24px strip.
       let every = 8;
-      const whole = bars.across;
-      while ((every / whole) * track < 34 && every < whole) every *= 2;
-      if ((every / whole) * track > 34) {
+      const whole = barAt(bars, 1) - barAt(bars, 0);
+      const perBar = box.width / (barTo - barFrom);
+      while (every * perBar < 34 && every < whole) every *= 2;
+      if (every * perBar > 34) {
         ctx.font = '500 9px ui-monospace, Menlo, monospace';
         ctx.fillStyle = caption;
         ctx.textBaseline = 'top';
@@ -139,8 +155,8 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
         // bar 1 into 0, -7, -15 — an arrangement's way of saying *before the
         // start*. It is the numbers that make the shaded region legible as
         // somewhere rather than as a margin.
-        const start = Math.floor((from * whole + bars.origin) / every) * every;
-        for (let b = start; b < to * whole + bars.origin + every; b += every) {
+        const start = Math.floor(barFrom / every) * every;
+        for (let b = start; b < barTo + every; b += every) {
           ctx.fillText(String(b + 1), xOf(placeOf(bars, b)) + 4, 3);
         }
       }
@@ -167,6 +183,20 @@ export function WarpLane({ onsets, bars, height, anchors, onPin, pinning, span }
       role="presentation"
     >
       <canvas ref={canvas} style={{ height }} />
+      {markers?.map((marker, i) => {
+        const where = (placeOf(bars, marker.bar) - from) / (to - from);
+        if (where < -0.5 || where > 1.5) return null;
+        return (
+          <span
+            key={`m${i}`}
+            className="mf-marker"
+            style={{ left: `${where * 100}%` }}
+            title={`Bar ${marker.bar + 1} is pinned to ${marker.at.toFixed(3)} s`}
+          >
+            <i>{Number.isInteger(marker.bar) ? marker.bar + 1 : (marker.bar + 1).toFixed(2)}</i>
+          </span>
+        );
+      })}
       {anchors.map((anchor, i) => {
         // Dropped rather than positioned when it is off screen: zoomed in, a
         // pin at the far end of the song is a `left` in the millions of per

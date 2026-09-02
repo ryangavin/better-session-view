@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import {
   Tablature as TablatureWidget,
+  type NotationGrid,
   type TablatureNote,
 } from '@openflow/widgets/notation/Tablature.tsx';
 import {
@@ -11,7 +12,7 @@ import {
   type Tuning,
 } from '../tab.ts';
 import { fretColor } from '../tablature.ts';
-import type { Bars } from '../warp.ts';
+import { barAt, placeOf, type Bars } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 
 export interface TablatureProps {
@@ -61,6 +62,12 @@ export function Tablature({
     () => tuning.map((string) => ({ label: string.name })),
     [tuning],
   );
+  // Memoised because the widget repaints on the grid's identity, and a fresh
+  // pair of closures every render would be a repaint every render.
+  const grid = useMemo<NotationGrid>(
+    () => ({ barAt: (place) => barAt(bars, place), placeOf: (bar) => placeOf(bars, bar) }),
+    [bars],
+  );
 
   return (
     <TablatureWidget
@@ -68,7 +75,7 @@ export function Tablature({
       notes={drawable}
       view={span}
       height={height}
-      grid={bars}
+      grid={grid}
       className="mf-tablature"
       onSeek={onSeek}
     />

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Peak } from './audio.ts';
 import {
+  added,
   bandsOf,
   barAt,
   barsOf,
@@ -8,10 +9,19 @@ import {
   columnsOf,
   countOf,
   fitOf,
+  mapOf,
+  moved,
   placeOf,
+  rangeText,
   refitOf,
+  removed,
+  segmentsOf,
+  shifted,
   startOf,
+  tempoAt,
+  tempoRange,
   type Heard,
+  type Marker,
   type Pulse,
 } from './warp.ts';
 
@@ -344,7 +354,7 @@ describe('where the bars fall', () => {
   const grid = barsOf(240, 128, 0.9375);
 
   it('puts the top of the file before bar 1 when the song starts late', () => {
-    expect(grid.origin).toBeLessThan(0);
+    expect(barAt(grid, 0)).toBeLessThan(0);
     expect(barAt(grid, 0)).toBeCloseTo(-0.5, 6);
   });
 
@@ -366,5 +376,122 @@ describe('where the bars fall', () => {
     expect(countOf(barsOf(240, 128, 0))).toBe(128);
     expect(countOf(grid)).toBe(128);
     expect(countOf(barsOf(0, 128, 0))).toBe(1);
+  });
+});
+
+describe('a map of markers', () => {
+  /** A song that runs at 128 for forty bars, 120 for forty, then 132 to the end. */
+  const bent: Marker[] = [
+    { at: 0.5, bar: 0 },
+    { at: 0.5 + 40 * (240 / 128), bar: 40 },
+    { at: 0.5 + 40 * (240 / 128) + 40 * 2, bar: 80 },
+    { at: 0.5 + 40 * (240 / 128) + 40 * 2 + 20 * (240 / 132), bar: 100 },
+  ];
+  const map = mapOf(240, bent, 132);
+
+  it('is the straight line it always was when it has two markers', () => {
+    // `barsOf` is the old grid — an offset and a tempo — and the line through
+    // its two markers has to be that grid to the millimetre, at bar 100 and in
+    // the time before bar 1 alike.
+    const grid = barsOf(240, 128, 0.9375);
+    for (const bar of [-4, 0, 37.5, 100]) {
+      expect(placeOf(grid, bar) * 240).toBeCloseTo(0.9375 + (bar * 240) / 128, 9);
+    }
+  });
+
+  it('maps a bar back to the place it was drawn at, across three segments', () => {
+    for (const bar of [-3, 0, 12.25, 40, 57.5, 80, 100, 130]) {
+      expect(barAt(map, placeOf(map, bar))).toBeCloseTo(bar, 9);
+    }
+  });
+
+  it('bends at a marker', () => {
+    expect(tempoAt(map, 10)).toBeCloseTo(128, 9);
+    expect(tempoAt(map, 60)).toBeCloseTo(120, 9);
+    const tempos = segmentsOf(map).map((s) => s.bpm);
+    expect(tempos).toHaveLength(3);
+    [128, 120, 132].forEach((bpm, i) => expect(tempos[i]).toBeCloseTo(bpm, 9));
+  });
+
+  it('carries the neighbouring tempo on past both ends', () => {
+    // Live's rule, and the one that makes a two-marker map a straight line:
+    // before the first marker the first segment runs on, and after the last
+    // the last does.
+    expect(tempoAt(map, -5)).toBeCloseTo(128, 9);
+    expect(placeOf(map, -1) * 240).toBeCloseTo(0.5 - 240 / 128, 9);
+    expect(tempoAt(map, 200)).toBeCloseTo(132, 9);
+    expect(placeOf(map, 81) * 240).toBeCloseTo(bent[2].at + 240 / 132, 9);
+  });
+
+  it('counts the bars the file holds by the tempo it ends on', () => {
+    const end = barAt(map, 1);
+    expect(end).toBeCloseTo(100 + ((240 - bent[3].at) * 132) / 240, 9);
+    expect(countOf(map)).toBe(Math.ceil(end));
+  });
+
+  it('drops a marker that would fold the map', () => {
+    // Later in the file and earlier in the bars is not a map but a fold.
+    const folded = mapOf(240, [...bent, { at: 100, bar: 30 }], 128);
+    expect(folded.markers).toEqual(bent);
+    expect(mapOf(240, [{ at: 1, bar: 0 }, { at: 1, bar: 4 }], 128).markers).toHaveLength(2);
+  });
+
+  it('spans the file at the given tempo when handed a single marker', () => {
+    const one = mapOf(240, [{ at: 0.25, bar: 0 }], 128);
+    expect(one.markers).toHaveLength(2);
+    expect(tempoAt(one, 50)).toBeCloseTo(128, 9);
+    expect(barAt(one, 1)).toBeCloseTo(((240 - 0.25) * 128) / 240, 9);
+  });
+
+  it('still has a tempo for a file with no length yet', () => {
+    const empty = mapOf(0, [{ at: 0, bar: 0 }], 128);
+    expect(tempoAt(empty, 0)).toBeCloseTo(128, 9);
+    expect(countOf(empty)).toBe(1);
+  });
+
+  it('reads as one number when straight and a range when bent', () => {
+    expect(rangeText(barsOf(240, 128, 0))).toBe('128');
+    expect(rangeText(barsOf(240, 128.05, 0))).toBe('128.05');
+    expect(rangeText(map)).toBe('120–132');
+    expect(tempoRange(map).slowest).toBeCloseTo(120, 9);
+    expect(tempoRange(map).fastest).toBeCloseTo(132, 9);
+  });
+});
+
+describe('editing the markers', () => {
+  const markers: Marker[] = [
+    { at: 0.5, bar: 0 },
+    { at: 8, bar: 4 },
+    { at: 16, bar: 8 },
+  ];
+
+  it('moves a marker in time and keeps it between its neighbours', () => {
+    expect(moved(markers, 1, 8.3)[1]).toEqual({ at: 8.3, bar: 4 });
+    expect(moved(markers, 1, 30)[1].at).toBeLessThan(16);
+    expect(moved(markers, 1, -3)[1].at).toBeGreaterThan(0.5);
+    expect(moved(markers, 0, -3)[0].at).toBe(-3);
+  });
+
+  it('adds a marker in order, and replaces one on the same bar', () => {
+    const more = added(markers, { at: 12.1, bar: 6 });
+    expect(more.map((m) => m.bar)).toEqual([0, 4, 6, 8]);
+    const same = added(markers, { at: 8.2, bar: 4 });
+    expect(same).toHaveLength(3);
+    expect(same[1]).toEqual({ at: 8.2, bar: 4 });
+  });
+
+  it('refuses a marker that would fold the map', () => {
+    expect(added(markers, { at: 20, bar: 6 })).toBe(markers);
+    expect(added(markers, { at: 8, bar: 5 })).toBe(markers);
+  });
+
+  it('takes a marker away but never the last two', () => {
+    expect(removed(markers, 1).map((m) => m.bar)).toEqual([0, 8]);
+    const two = removed(markers, 1);
+    expect(removed(two, 0)).toBe(two);
+  });
+
+  it('shifts every marker the same way', () => {
+    expect(shifted(markers, 0.01).map((m) => m.at)).toEqual([0.51, 8.01, 16.01]);
   });
 });

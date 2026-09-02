@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STEMS, slicesFor, type Slice } from './mock.ts';
-import { decode, LIBRARY, peaksOf, stemUrl, type Peak } from './audio.ts';
+import { decode, fileUrl, LIBRARY, peaksOf, stemUrl, type Peak } from './audio.ts';
 import { REST, Transport, type Level } from './engine.ts';
 import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
 import {
   barAt,
   barsOf,
   countOf,
-  fitOf,
   hearing,
   hitsIn,
+  mapOf,
   refitOf,
+  shifted,
   snapped,
   startOf,
   FASTEST,
@@ -18,10 +19,14 @@ import {
   type Bars,
   type Fit,
   type Heard,
+  type Marker,
 } from './warp.ts';
 import {
   openflow,
   type Library,
+  type Edits,
+  type Imported,
+  type Match,
   type Model,
   type Progress,
   type Transcribed,
@@ -30,6 +35,7 @@ import {
   type Track,
 } from './openflow.ts';
 import { STANDARD_BASS } from './tab.ts';
+import { followOf, seedOf, type Follow } from './follow.ts';
 
 /**
  * Everything the window knows, in one hook.
@@ -122,6 +128,9 @@ const COLUMNS = 9000;
 /** Bars, before anything has been decoded, so the ruler is not zero wide. */
 const BARS_UNKNOWN = 64;
 
+/** The map before anything has been decoded: those bars across a nominal file. */
+const UNKNOWN: Bars = mapOf(1, [{ at: 0, bar: 0 }, { at: 1, bar: BARS_UNKNOWN }], 120);
+
 const NOTHING: Library = { root: null, tracks: [] };
 
 /** How long the window sits still before writing what it remembers. */
@@ -168,8 +177,17 @@ export function useMix() {
   const [bpmAuto, setBpmAuto] = useState(first.bpmAuto ?? true);
   /** Seconds from the top of the file to the downbeat of bar 1. */
   const [offset, setOffset] = useState(first.offset ?? 0);
+  /**
+   * Where the audio is pinned to the grid, once something has pinned it.
+   *
+   * Null is the straight line `targetBpm` and `offset` make, which is what a
+   * typed tempo rules and what the ruler shows before anything has been
+   * measured. A fit or a hand replaces it with markers, and from then on the
+   * grid is theirs: the tempo field says what *plays*, not where the bars are.
+   */
+  const [markers, setMarkers] = useState<readonly Marker[] | null>(first.markers ?? null);
   /** The last fit, kept so the window can say where the tempo on screen came from. */
-  const [detected, setDetected] = useState<Fit | null>(null);
+  const [detected, setDetected] = useState<Fit | Follow | null>(null);
   /**
    * That the last attempt found nothing, which is not the same as not having
    * tried. A button press with no visible answer reads as a broken button.
@@ -200,6 +218,8 @@ export function useMix() {
   const [manual, setManual] = useState<Manual | null>(null);
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [note, setNote] = useState<string | null>(null);
+  const [noteBad, setNoteBad] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   /**
    * The audio graph, made once and kept for the life of the window.
@@ -229,6 +249,22 @@ export function useMix() {
   const [decoding, setDecoding] = useState(false);
   /** Why there is no sound, when there is none. */
   const [audioProblem, setAudioProblem] = useState<string | null>(null);
+
+  /**
+   * The track whose separation is being set up again, if any.
+   *
+   * A separation is keyed on the file's content hash and the model — see
+   * `electron/job.ts` — so re-running the *same* model over the same file is a
+   * no-op the main process answers from disk. Redoing one therefore means
+   * choosing again, which means the setup screen, which was unreachable the
+   * moment a track had stems. This is what reaches it: an id rather than a
+   * boolean, so opening a *different* track shows that track's own state rather
+   * than the setup somebody opened over here.
+   */
+  const [setupFor, setSetupFor] = useState<string | null>(null);
+  /** Candidates from the catalogue, and whether one is being asked for. */
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [matching, setMatching] = useState(false);
 
   const tracks = library.tracks;
 
@@ -266,7 +302,7 @@ export function useMix() {
     ? 'empty'
     : job && runningId === song.id
       ? 'running'
-      : song.sources.length
+      : song.sources.length && setupFor !== song.id
         ? 'ready'
         : 'idle';
 
@@ -291,10 +327,10 @@ export function useMix() {
    * Change either and this changes with it, which is the whole point of the
    * warp lane underneath — the ticks stop lining up.
    */
-  const grid = useMemo<Bars>(
-    () => (seconds > 0 ? barsOf(seconds, targetBpm, offset) : { origin: 0, across: BARS_UNKNOWN }),
-    [seconds, targetBpm, offset],
-  );
+  const grid = useMemo<Bars>(() => {
+    if (!(seconds > 0)) return UNKNOWN;
+    return markers ? mapOf(seconds, markers, targetBpm) : barsOf(seconds, targetBpm, offset);
+  }, [seconds, targetBpm, offset, markers]);
 
   /**
    * How many bars the song holds, counting bar 1 as the first.
@@ -366,31 +402,81 @@ export function useMix() {
     setLibrary(await bridge.library.choose());
     setSelected(null);
     setNote(null);
+    setNoteBad(false);
   }, []);
 
   /**
    * Import, and say what happened.
    *
-   * A refusal is per file rather than for the batch — dragging a folder in
+   * A refusal is per file rather than for the batch — dragging several files
    * means a stray `.DS_Store` or a PDF, and one of those must not stop the
    * eleven WAVs beside it.
    */
-  const importTracks = useCallback(async (files?: string[]) => {
-    const bridge = openflow();
-    if (!bridge) return;
-    const done = await bridge.library.add(files);
+  const finishImport = useCallback((done: Imported): boolean => {
     setLibrary({ root: done.root, tracks: done.tracks, problem: done.problem });
+    const failed = done.added === 0 && done.refused.length > 0;
+    setNoteBad(failed);
     setNote(
       done.added === 0 && done.refused.length === 0
         ? null
-        : [
-            done.added > 0 ? `imported ${done.added}` : null,
-            done.refused.length > 0 ? `skipped ${done.refused.length}` : null,
-          ]
-            .filter(Boolean)
-            .join(' · '),
+        : failed
+          ? done.refused[0] ?? 'nothing was imported'
+          : [
+              done.added > 0 ? `imported ${done.added}` : null,
+              done.refused.length > 0 ? `skipped ${done.refused.length}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · '),
     );
+    return done.added > 0;
   }, []);
+
+  const importTracks = useCallback(async () => {
+    const bridge = openflow();
+    if (!bridge || importing) return;
+    setImporting(true);
+    try {
+      finishImport(await bridge.library.add());
+    } catch (why) {
+      setNote((why as Error).message);
+      setNoteBad(true);
+    } finally {
+      setImporting(false);
+    }
+  }, [finishImport, importing]);
+
+  /** Genuine dropped `File`s become paths only inside the isolated preload. */
+  const importDropped = useCallback(async (files: File[]) => {
+    const bridge = openflow();
+    if (!bridge || importing || files.length === 0) return;
+    setImporting(true);
+    try {
+      finishImport(await bridge.library.drop(files));
+    } catch (why) {
+      setNote((why as Error).message);
+      setNoteBad(true);
+    } finally {
+      setImporting(false);
+    }
+  }, [finishImport, importing]);
+
+  /** Fetch one URL; true lets the form clear only after an actual import. */
+  const importYoutube = useCallback(async (url: string): Promise<boolean> => {
+    const bridge = openflow();
+    if (!bridge || importing) return false;
+    setImporting(true);
+    setNote('fetching YouTube audio…');
+    setNoteBad(false);
+    try {
+      return finishImport(await bridge.library.youtube(url));
+    } catch (why) {
+      setNote((why as Error).message);
+      setNoteBad(true);
+      return false;
+    } finally {
+      setImporting(false);
+    }
+  }, [finishImport, importing]);
 
   const reveal = useCallback(() => void openflow()?.library.reveal(), []);
 
@@ -625,6 +711,7 @@ export function useMix() {
           bpm: targetBpm,
           bpmAuto,
           offset,
+          markers: markers ?? undefined,
         });
         remember(held.current);
       }
@@ -647,11 +734,12 @@ export function useMix() {
       setTargetBpm(known.bpm ?? picked?.bpm ?? 120);
       setBpmAuto(known.bpmAuto ?? (picked?.bpm != null));
       setOffset(known.offset ?? 0);
+      setMarkers(known.markers ?? null);
       // Nothing written down about this track, so its grid is still to be
       // measured — and it will be, as soon as there are stems to measure.
       setWantFit(known.bpm == null);
     },
-    [tracks, audio, song, selected, level, slices, targetBpm, bpmAuto, offset],
+    [tracks, audio, song, selected, level, slices, targetBpm, bpmAuto, offset, markers],
   );
 
   /**
@@ -683,6 +771,7 @@ export function useMix() {
     const bridge = openflow();
     if (!bridge || !song) return;
     setProblem(null);
+    setSetupFor(null);
     setRunningId(song.id);
     setJob({
       done: 0,
@@ -695,6 +784,81 @@ export function useMix() {
     const outcome = await bridge.separate.run({ trackId: song.id, file: song.file, model });
     if (!outcome.ok && !outcome.cancelled) setProblem(outcome.says);
   }, [song, model]);
+
+  /**
+   * Set this track's separation up again.
+   *
+   * Not *run* it again: pressing a button that re-ran the model already on disk
+   * would answer from the cache in a second and look like nothing happened,
+   * which is exactly what the old ⟳ did. What a person wants here is the model
+   * cards back — and while they are there, the metadata for this track, which
+   * is the other thing that screen is now for.
+   */
+  const resetup = useCallback(() => {
+    if (!song) return;
+    setProblem(null);
+    setModel(song.model ?? model);
+    setSetupFor(song.id);
+  }, [song, model]);
+
+  /** Leave the setup screen without separating, for a track that already has stems. */
+  const keepStems = useCallback(() => setSetupFor(null), []);
+
+  /**
+   * Write a correction, and take the library back from the process that owns it.
+   *
+   * The whole library rather than the one row, because the window holds one
+   * list: splicing a reply into it would be a second place for the two to
+   * disagree about what is on disk.
+   */
+  const editTrack = useCallback(async (id: string, edits: Edits) => {
+    const bridge = openflow();
+    if (!bridge) return;
+    setLibrary(await bridge.library.edit(id, edits));
+  }, []);
+
+  /**
+   * Ask the catalogue what this might be.
+   *
+   * An empty list is every kind of failure — offline, refused, nothing
+   * released under that name — because they all mean the same thing to the
+   * screen showing them, which is that nobody knows.
+   */
+  const findMatches = useCallback(async (text: string) => {
+    const bridge = openflow();
+    if (!bridge) return;
+    setMatching(true);
+    try {
+      setMatches(await bridge.library.matches(text));
+    } finally {
+      setMatching(false);
+    }
+  }, []);
+
+  /** Take one candidate: its words go in the manifest, its cover into the folder. */
+  const takeMatch = useCallback(
+    async (id: string, found: Match) => {
+      const bridge = openflow();
+      if (!bridge) return;
+      setLibrary(
+        await bridge.library.edit(id, {
+          title: found.title,
+          artist: found.artist,
+          album: found.album,
+        }),
+      );
+      if (found.artwork) setLibrary(await bridge.library.artwork(id, found.artwork));
+      setMatches([]);
+    },
+    [],
+  );
+
+  /** The cover's URL on this app's own scheme, or null while there is no cover. */
+  const artOf = useCallback(
+    (track: Track | null): string | null =>
+      track?.art ? fileUrl(base, track.art) : null,
+    [base],
+  );
 
   /**
    * Stop it, naming the track.
@@ -728,7 +892,7 @@ export function useMix() {
     const outcome = await bridge.transcribe.run({
       trackId: song.id,
       tuning: STANDARD_BASS,
-      bars: bpmAuto ? grid : null,
+      bars: bpmAuto || markers ? grid : null,
       transpose: 0,
     });
     // The runner normally announces this as an event. Early refusals cannot,
@@ -737,28 +901,18 @@ export function useMix() {
     setTranscribingId(null);
     setTranscription(outcome.ok ? outcome : null);
     setTranscribeProblem(outcome.ok || outcome.cancelled ? null : outcome.says);
-  }, [song, bpmAuto, grid]);
+  }, [song, bpmAuto, markers, grid]);
 
-  /**
-   * Correct an octave error without asking the pitch model again.
-   *
-   * The cached sidecar keeps the detected pitches. The main process rebuilds
-   * MIDI and text tab from them, while the optimistic sidecar value makes the
-   * on-screen fret path move on the same press.
-   */
   const transposeBass = useCallback(async (transpose: number) => {
     const bridge = openflow();
     if (!bridge || !song || !transcription || transcription.trackId !== song.id) return;
     const before = transcription;
     setTranscribeProblem(null);
-    setTranscription({
-      ...before,
-      sidecar: { ...before.sidecar, transpose },
-    });
+    setTranscription({ ...before, sidecar: { ...before.sidecar, transpose } });
     const outcome = await bridge.transcribe.run({
       trackId: song.id,
       tuning: STANDARD_BASS,
-      bars: bpmAuto ? grid : null,
+      bars: bpmAuto || markers ? grid : null,
       transpose,
     });
     if (outcome.ok) setTranscription(outcome);
@@ -766,7 +920,7 @@ export function useMix() {
       setTranscription(before);
       if (!outcome.cancelled) setTranscribeProblem(outcome.says);
     }
-  }, [song, transcription, bpmAuto, grid]);
+  }, [song, transcription, bpmAuto, markers, grid]);
 
   const cancelTranscription = useCallback(() => {
     const id = transcribingId;
@@ -838,13 +992,14 @@ export function useMix() {
    * one.
    */
   const fit = useCallback(
-    (found: Fit | null) => {
+    (found: Fit | Follow | null) => {
       setWantFit(false);
       setDetected(found);
       setFitFailed(found === null);
       if (!found) return;
       setTargetBpm(found.bpm);
       setOffset(found.offset);
+      setMarkers('markers' in found ? found.markers : null);
       setBpmAuto(true);
       setManual(null);
       const held = countOf(barsOf(seconds, found.bpm, found.offset));
@@ -856,10 +1011,21 @@ export function useMix() {
     [seconds],
   );
 
-  const autoWarp = useCallback(() => {
+  /**
+   * The grid, read off the audio: a seed fitted to the whole song, and the
+   * kick followed behind it. The follow is what gets applied when there is
+   * one; the seed alone is the straight line, and a song with nothing steady
+   * in it is a refusal rather than a guess.
+   */
+  const measure = useCallback((): Fit | Follow | null => {
     const it = listen();
-    fit(it ? fitOf(it) : null);
-  }, [fit, listen]);
+    if (!it) return null;
+    const seed = seedOf(it);
+    if (!seed) return null;
+    return followOf(it, seed) ?? seed;
+  }, [listen]);
+
+  const autoWarp = useCallback(() => fit(measure()), [fit, measure]);
 
   /**
    * A tempo somebody set, which is a different thing from one that was
@@ -889,9 +1055,8 @@ export function useMix() {
   useEffect(() => {
     if (!wantFit || decoding || seconds <= 0) return;
     if (Object.keys(peaks).length === 0) return;
-    const it = listen();
-    fit(it ? fitOf(it) : null);
-  }, [wantFit, decoding, peaks, seconds, fit, listen]);
+    fit(measure());
+  }, [wantFit, decoding, peaks, seconds, fit, measure]);
 
   const startManual = useCallback(
     () => setManual((was) => ({ stage: 'first', span: was?.span ?? 4, first: null })),
@@ -932,6 +1097,9 @@ export function useMix() {
         const placed = startOf(at, targetBpm);
         setManual({ ...manual, stage: 'late', first: at });
         setOffset(placed);
+        // A hand starting over: the markers go, and the grid is the straight
+        // line from this downbeat until the second click says otherwise.
+        setMarkers(null);
         setDetected(null);
         setFitFailed(false);
         setWantFit(false);
@@ -956,14 +1124,18 @@ export function useMix() {
       const refined = it ? refitOf(it, measured, from) : null;
       const bpm = refined ? refined.bpm : measured;
       const placed = refined ? refined.offset : startOf(from, measured);
+      // And then followed: the clicks said which beat and which bar, the fit
+      // made that exact, and the walk behind it is what finds the drift.
+      const followed = it && refined ? followOf(it, refined) : null;
 
       setManual({ ...manual, stage: 'tune' });
       setTargetBpm(bpm);
       setOffset(placed);
+      setMarkers(followed ? followed.markers : null);
       setBpmAuto(false);
       setWantFit(false);
       setFitFailed(false);
-      setDetected(refined);
+      setDetected(followed ?? refined);
       const first = pinAt(from, placed, bpm);
       setAnchors([
         first,
@@ -984,6 +1156,7 @@ export function useMix() {
    */
   const nudge = useCallback((direction: number) => {
     setOffset((was) => was + direction * 0.01);
+    setMarkers((was) => (was ? shifted(was, direction * 0.01) : was));
     setDetected(null);
   }, []);
 
@@ -1036,16 +1209,6 @@ export function useMix() {
     });
   }, [listen, seconds, grid]);
 
-  /** `4/6 audible`, and whether a solo is what is doing it. */
-  const audibleLine = useMemo(() => {
-    if (!song?.sources.length) return '';
-    const soloing = song.sources.some((id) => level[id]?.soloed);
-    const heard = song.sources.filter((id) =>
-      soloing ? level[id]?.soloed : !level[id]?.muted,
-    ).length;
-    return `${heard}/${song.sources.length} audible${soloing ? ' · solo' : ''}`;
-  }, [song, level]);
-
   /**
    * How many stems have been moved off their resting position.
    *
@@ -1092,6 +1255,7 @@ export function useMix() {
           bpm: targetBpm,
           bpmAuto,
           offset,
+          markers: markers ?? undefined,
         });
       }
       held.current = next;
@@ -1111,6 +1275,7 @@ export function useMix() {
     targetBpm,
     bpmAuto,
     offset,
+    markers,
     playing,
     audio,
   ]);
@@ -1120,8 +1285,12 @@ export function useMix() {
     loading,
     chooseFolder,
     importTracks,
+    importDropped,
+    importYoutube,
+    importing,
     reveal,
     note,
+    noteBad,
     songs: shown,
     total: tracks.length,
     withStems: tracks.filter((t) => t.sources.length > 0).length,
@@ -1152,6 +1321,8 @@ export function useMix() {
     bpmAuto,
     /** Seconds from the top of the file to the downbeat of bar 1. */
     offset,
+    /** Where the audio is pinned to the grid, or null while the grid is the straight line. */
+    markers,
     /** The last fit, or null where nothing has been measured or the fit failed. */
     detected,
     /** The last attempt found nothing steady, as against not having been asked. */
@@ -1202,7 +1373,15 @@ export function useMix() {
     autoWarp,
     pin,
     nudge,
-    audibleLine,
+    resetup,
+    keepStems,
+    resetting: setupFor !== null && song?.id === setupFor,
+    editTrack,
+    findMatches,
+    takeMatch,
+    matches,
+    matching,
+    artOf,
   };
 }
 

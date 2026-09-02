@@ -5,7 +5,7 @@ import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Ready } from '../openflow.ts';
 import type { Mix } from '../state.ts';
-import { bpmText, FASTEST, SLOWEST } from '../warp.ts';
+import { bpmText, rangeText, FASTEST, SLOWEST } from '../warp.ts';
 import './Header.css';
 
 /**
@@ -208,21 +208,37 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
             <Button
               onPress={mix.autoWarp}
               title={
-                mix.detected
-                  ? `Fitted ${bpmText(mix.detected.bpm)} BPM to the kick — ${Math.round(
+                mix.detected && 'markers' in mix.detected
+                  ? `Followed the kick through ${mix.detected.markers.length} markers at ${rangeText(
+                      mix.grid,
+                    )} BPM — ${Math.round(mix.detected.tracked * 100)}% of the beats found, ${Math.round(
                       mix.detected.agreement * 100,
-                    )}% of the kicks land on the grid. Press to fit it again`
-                  : 'Fit a tempo and a downbeat to the kick'
+                    )}% of the kicks on the grid. Press to follow it again`
+                  : mix.detected
+                    ? `Fitted ${bpmText(mix.detected.bpm)} BPM to the kick — ${Math.round(
+                        mix.detected.agreement * 100,
+                      )}% of the kicks land on the grid. Press to fit it again`
+                    : 'Fit a tempo and a downbeat to the kick, and follow it through the song'
               }
               disabled={mix.decoding}
             >
               Auto-warp
             </Button>
-            {/* The one number that says whether to believe the grid, next to
-                the button that made it. A fit that found nothing says so
-                rather than leaving a press with no answer. */}
+            {/* The numbers that say whether to believe the grid, next to the
+                button that made it: the tempo the song runs at — a range
+                where it moved — and how much of the kick sits on a line. A
+                fit that found nothing says so rather than leaving a press
+                with no answer. */}
             {mix.detected ? (
-              <span className="mf-fit" title="How much of the kick lands on a grid line">
+              <span
+                className="mf-fit"
+                title={
+                  mix.markers
+                    ? 'The tempo the markers follow, and how much of the kick lands on a grid line'
+                    : 'How much of the kick lands on a grid line'
+                }
+              >
+                {mix.markers ? `${rangeText(mix.grid)} · ` : ''}
                 {Math.round(mix.detected.agreement * 100)}%
               </span>
             ) : mix.fitFailed ? (

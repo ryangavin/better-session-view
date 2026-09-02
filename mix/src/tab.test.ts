@@ -8,6 +8,7 @@ import {
   transposeNotes,
   type TranscribedNote,
 } from './tab.ts';
+import { barsOf } from './warp.ts';
 
 const note = (pitch: number | null, start: number): TranscribedNote => ({
   pitch,
@@ -73,7 +74,7 @@ describe('tab text', () => {
       notes: [note(28, 0), note(30, 0.5), note(null, 1)],
       tuning,
       seconds: 4,
-      bars: { origin: 0, across: 1 },
+      bars: barsOf(4, 60, 0),
     });
     expect(text).toContain('# trusted grid · nearest sixteenth');
     expect(text).toContain('bars 1–4');

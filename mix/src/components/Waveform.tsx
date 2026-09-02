@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Peak } from '../audio.ts';
-import { rankOf, ruleEvery, TICKS_PER_BAR, type Rank } from '../grid.ts';
-import type { Bars } from '../warp.ts';
+import { rankOf, rulingOf, shaded, TICKS_PER_BAR, type Rank } from '../grid.ts';
+import { barAt, placeOf, type Bars } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 
 /**
@@ -189,28 +189,46 @@ export function Waveform({
       const left = from * track;
       const xOf = (fraction: number) => fraction * track - left;
 
-      if (bars && bars.across > 0) {
+      const colour = ink.startsWith('var(')
+        ? getComputedStyle(el).getPropertyValue(ink.slice(4, -1).trim()).trim() || '#8b8b93'
+        : ink;
+      const alpha = quiet ? 0.22 : 1;
+
+      const barFrom = bars ? barAt(bars, from) : 0;
+      const barTo = bars ? barAt(bars, to) : 0;
+      if (bars && barTo > barFrom) {
         // As fine as there is room for, from bars down to sixty-fourths —
         // `grid.ts` picks the rung and says what each line is. Measuring
-        // against the *zoomed* width is what makes zooming in hand back the
+        // against the bars on *screen* is what makes zooming in hand back the
         // divisions it thinned: a song wide is bars, a bar wide is beats, and a
         // kick drum wide is whatever fits under it.
         //
         // Counted in absolute ticks — bar 1 is tick zero wherever in the file
         // it falls — so that what a line *is* does not change when the downbeat
-        // moves. `origin` is where the file starts in that counting.
-        const ticks = bars.across * TICKS_PER_BAR;
-        const origin = bars.origin * TICKS_PER_BAR;
-        const step = ruleEvery(track / ticks);
-        // Snapped down to the step so which lines are bright does not change as
-        // the view moves under them. Neither end is clamped to the track:
-        // zoomed out past the lane there is time on screen that is not in the
-        // song, and the grid carries on through it — what says it is outside is
-        // the shading over it, not a gap in the ruling.
-        const start = Math.floor((from * ticks + origin) / step) * step;
-        const end = Math.ceil(to * ticks + origin);
-        for (let t = start; t <= end; t += step) {
-          const x = Math.round(xOf((t - origin) / ticks)) + 0.5;
+        // moves. Where a tick falls is the map's to say, and nothing here does
+        // the arithmetic itself: a grid that bends between markers bends here
+        // exactly as it does on the warp lane.
+        const atTick = (t: number) => xOf(placeOf(bars, t / TICKS_PER_BAR));
+        // Neither end is clamped to the track: zoomed out past the lane there
+        // is time on screen that is not in the song, and the grid carries on
+        // through it — what says it is outside is the shading over it, not a
+        // gap in the ruling.
+        const { step, first, last, shade, block } = rulingOf(barFrom, barTo, box.width);
+        // Every other block between the dividers, in the stem's own colour —
+        // which is what makes a lane readable as an arrangement and as *this*
+        // stem's arrangement at the same time. Under the ruling, so a bar line
+        // still reads as a line rather than as the edge of a shape.
+        ctx.save();
+        ctx.fillStyle = colour;
+        ctx.globalAlpha = quiet ? 0.015 : 0.05;
+        for (let t = block; t <= last; t += shade) {
+          if (!shaded(t, shade)) continue;
+          const x = Math.round(atTick(t));
+          ctx.fillRect(x, 0, Math.round(atTick(t + shade)) - x, tall);
+        }
+        ctx.restore();
+        for (let t = first; t <= last; t += step) {
+          const x = Math.round(atTick(t)) + 0.5;
           ctx.strokeStyle = RULE[rankOf(t)];
           ctx.beginPath();
           ctx.moveTo(x, 0);
@@ -219,10 +237,6 @@ export function Waveform({
         }
       }
 
-      const colour = ink.startsWith('var(')
-        ? getComputedStyle(el).getPropertyValue(ink.slice(4, -1).trim()).trim() || '#8b8b93'
-        : ink;
-      const alpha = quiet ? 0.22 : 1;
       ctx.globalAlpha = alpha;
       ctx.fillStyle = colour;
       ctx.strokeStyle = colour;

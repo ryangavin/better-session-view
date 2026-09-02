@@ -88,3 +88,19 @@ describe('per-track memory', () => {
     expect(forTrack(session, 'a').at).toBe(30);
   });
 });
+
+describe('what a track keeps of its grid', () => {
+  it('round-trips the markers with the rest of the track', () => {
+    const markers = [
+      { at: 0.5, bar: 0 },
+      { at: 75.5, bar: 40 },
+    ];
+    remember(withTrack({}, 'a', { bpm: 128, bpmAuto: true, offset: 0.5, markers }));
+    expect(forTrack(recall(), 'a').markers).toEqual(markers);
+  });
+
+  it('reads a store from before there were markers as a track still owed a fit', () => {
+    remember(withTrack({}, 'a', { bpm: 128, offset: 0.5 }));
+    expect(forTrack(recall(), 'a').markers).toBeUndefined();
+  });
+});
