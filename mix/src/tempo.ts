@@ -1,3 +1,4 @@
+import type { CandidateTrace, TempoTrace } from './trace.ts';
 import type { Heard, Transient } from './transients.ts';
 
 /**
@@ -123,7 +124,7 @@ interface Candidate {
  * strongest, each placed between frames by the parabola through it. No lean
  * toward any tempo: which of these is the beat is the pattern's to say.
  */
-function candidatesOf(pulse: Float32Array): Candidate[] {
+function candidatesOf(pulse: Float32Array, trace?: TempoTrace): Candidate[] {
   const n = pulse.length;
   const lo = Math.max(2, Math.floor(60 / (FASTEST * FRAME)));
   const hi = Math.min(n >> 2, Math.ceil(60 / (SLOWEST * FRAME)));
@@ -135,6 +136,7 @@ function candidatesOf(pulse: Float32Array): Candidate[] {
     for (let i = 0; i < reach; i++) sum += pulse[i] * pulse[i + lag];
     acf[lag] = sum / reach;
   }
+  if (trace) trace.acf = { lo, values: Array.from(acf.subarray(lo, hi + 1)) };
   let best = 0;
   for (let lag = lo; lag <= hi; lag++) if (acf[lag] > best) best = acf[lag];
   if (!(best > 0)) return [];
@@ -188,13 +190,14 @@ function busiest(hits: readonly Transient[], seconds: number): [number, number] 
  * that error under ten milliseconds, and the least squares below is what
  * carries the phase to the end of the song.
  */
-export function phaseOf(hits: readonly Transient[], period: number, seconds: number): Line {
+export function phaseOf(hits: readonly Transient[], period: number, seconds: number, sweep?: CandidateTrace): Line {
   const [from, to] = busiest(hits, seconds);
   const within = hits.filter((hit) => hit.at >= from && hit.at < to);
   const step = 0.001;
   const window = period * TIGHT;
   let best = -1;
   let phase = from;
+  const scores: number[] = [];
   for (let phi = from; phi < from + period; phi += step) {
     let score = 0;
     for (const hit of within) {
@@ -202,11 +205,13 @@ export function phaseOf(hits: readonly Transient[], period: number, seconds: num
       const away = Math.abs(off - Math.round(off / period) * period);
       if (away <= window) score += hit.strength * WEIGHT[hit.band] * (1 - away / window);
     }
+    if (sweep) scores.push(score);
     if (score > best) {
       best = score;
       phase = phi;
     }
   }
+  if (sweep) sweep.sweep = { from, step, scores };
   return { first: phase, period };
 }
 
@@ -384,7 +389,7 @@ function wholeOf(hits: readonly Transient[], line: Line, seconds: number): numbe
  * will meet. Four on the floor says nothing, so the tie goes to the beat the
  * song starts on, and a vote has to carry five per cent more to move it.
  */
-function downbeatOf(heard: Heard, line: Line): number {
+function downbeatOf(heard: Heard, line: Line, votesOut?: number[]): number {
   // By how loud the kick got, not how sharply it rose: a downbeat kick is a
   // heavier one, and sharpness is the same for every stroke of the same drum.
   const kicks = heard.transients
@@ -395,6 +400,7 @@ function downbeatOf(heard: Heard, line: Line): number {
   for (const beat of under(kicks, line, heard.seconds)) votes[(((beat.k - first) % 4) + 4) % 4] += beat.weight;
   let downbeat = 0;
   for (let r = 1; r < 4; r++) if (votes[r] > votes[downbeat] * 1.05) downbeat = r;
+  votesOut?.push(...votes);
   return first + downbeat;
 }
 
@@ -413,32 +419,65 @@ function firstBarOf(line: Line, downbeat: number): number {
  * over a tempo change — the line is straight by construction, and
  * `follow.ts` is where the beat is followed through one.
  */
-export function fitOf(heard: Heard): Fit | null {
+export function fitOf(heard: Heard, trace?: TempoTrace): Fit | null {
+  const refuse = (why: string): null => {
+    if (trace) trace.refused = why;
+    return null;
+  };
   const hits = beatBands(heard);
-  if (hits.length < 16) return null;
-  const candidates = candidatesOf(pulseOf(heard));
-  if (candidates.length === 0) return null;
+  if (hits.length < 16) return refuse('fewer than sixteen kick or snare hits');
+  const pulse = pulseOf(heard);
+  if (trace) trace.pulse = Array.from(pulse);
+  const candidates = candidatesOf(pulse, trace);
+  if (candidates.length === 0) return refuse('nothing repeats within the tempo range');
 
   // Each candidate gets its phase, its line through the whole song, and then
   // its say: the pattern is judged on the refined line, because a line a
   // frame out drifts off the hits it is being judged against.
-  let best: { line: Line; beatness: number } | null = null;
-  for (const candidate of candidates.slice(0, 6)) {
+  let best: { line: Line; beatness: number; index: number } | null = null;
+  const weighed: CandidateTrace[] = [];
+  for (const [index, candidate] of candidates.slice(0, 6).entries()) {
     const bpm = 60 / candidate.period;
-    if (bpm < SLOWEST || bpm > FASTEST) continue;
-    const line = refined(hits, phaseOf(hits, candidate.period, heard.seconds), heard.seconds);
-    if (!line) continue;
+    const seen: CandidateTrace = { period: candidate.period, bpm, score: candidate.score };
+    weighed.push(seen);
+    if (bpm < SLOWEST || bpm > FASTEST) {
+      seen.rejected = 'range';
+      continue;
+    }
+    const line = refined(hits, phaseOf(hits, candidate.period, heard.seconds, trace && seen), heard.seconds);
+    if (!line) {
+      seen.rejected = 'unrefined';
+      continue;
+    }
     const beatness = beatnessOf(heard, line.period, line.first) * (0.75 + 0.25 * candidate.score);
-    if (!best || beatness > best.beatness) best = { line, beatness };
+    seen.line = line;
+    seen.beatness = beatness;
+    if (!best || beatness > best.beatness) best = { line, beatness, index };
   }
-  if (!best) return null;
+  if (trace) trace.candidates = weighed;
+  if (!best) return refuse('no candidate period refined to a line');
 
   const line = best.line;
   const bpm = wholeOf(hits, line, heard.seconds);
-  if (bpm < SLOWEST || bpm > FASTEST) return null;
+  if (bpm < SLOWEST || bpm > FASTEST) return refuse(`fitted ${bpm} is outside the range`);
   const agreement = agreementOf(hits, line);
-  if (agreement < HOPELESS) return null;
-  return { bpm, offset: firstBarOf(line, downbeatOf(heard, line)), agreement };
+  if (agreement < HOPELESS) return refuse(`only ${Math.round(agreement * 100)}% of the hits sit on the grid`);
+  const votes: number[] = [];
+  const downbeat = downbeatOf(heard, line, votes);
+  const offset = firstBarOf(line, downbeat);
+  if (trace) {
+    trace.chosen = {
+      candidate: best.index,
+      line,
+      fitted: 60 / line.period,
+      bpm,
+      agreement,
+      votes,
+      downbeat: (((downbeat - Math.ceil(-line.first / line.period)) % 4) + 4) % 4,
+      offset,
+    };
+  }
+  return { bpm, offset, agreement };
 }
 
 /**

@@ -1,4 +1,5 @@
 import { beatnessOf, phaseOf, type Fit } from './tempo.ts';
+import type { FollowTrace, StretchTrace } from './trace.ts';
 import type { Heard, Transient } from './transients.ts';
 import { beatAt, beatsOf, type Beats } from './warp.ts';
 
@@ -117,7 +118,7 @@ function strengthOf(heard: Heard): Float32Array {
  * — against the seed's period over the same stretch, and believed only where
  * it looks more like the beat than the seed does.
  */
-function periodsOf(strength: Float32Array, seed: number, heard: Heard, hits: readonly Transient[]): Float32Array {
+function periodsOf(strength: Float32Array, seed: number, heard: Heard, hits: readonly Transient[], trace?: FollowTrace): Float32Array {
   const frames = strength.length;
   const span = Math.round(STRETCH / FRAME);
   const step = Math.round(STEP / FRAME);
@@ -174,7 +175,18 @@ function periodsOf(strength: Float32Array, seed: number, heard: Heard, hits: rea
   // A fill is a stretch several times as busy as the song usually is.
   const busy = totals.filter((t) => t > ENOUGH).sort((a, b) => a - b);
   const usual = busy[busy.length >> 1] ?? 0;
-  for (let i = 0; i < read.length; i++) if (usual > 0 && totals[i] > usual * FILL) read[i] = null;
+  const fills = read.map((_, i) => usual > 0 && totals[i] > usual * FILL);
+  if (trace) {
+    trace.stretches = centres.map(
+      (centre, i): StretchTrace => ({
+        at: centre * FRAME,
+        total: totals[i],
+        read: read[i] === null ? null : 60 / (read[i]! * FRAME),
+        fill: fills[i],
+      }),
+    );
+  }
+  for (let i = 0; i < read.length; i++) if (fills[i]) read[i] = null;
 
   // Draw straight between the stretches that spoke; hold flat past the
   // first and last of them; and where none did, the seed.
@@ -292,23 +304,26 @@ function agreementOf(hits: readonly Transient[], beats: Beats): number {
  * Nothing where nothing can be followed: fewer than four beats found, or a
  * seed with no transients to anchor to, is null rather than a guess.
  */
-export function followOf(heard: Heard, seed: Fit): Follow | null {
+export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow | null {
+  const refuse = (why: string): null => {
+    if (trace) trace.refused = why;
+    return null;
+  };
   const hits = heard.transients.filter((t) => t.band !== 'high');
-  if (hits.length < 8) return null;
+  if (hits.length < 8) return refuse('fewer than eight kick or snare hits');
   const strength = strengthOf(heard);
+  if (trace) trace.strength = Array.from(strength);
   const seedPeriod = 60 / seed.bpm / FRAME;
-  const period = periodsOf(strength, seedPeriod, heard, hits);
+  const period = periodsOf(strength, seedPeriod, heard, hits, trace);
+  if (trace) trace.tempo = Array.from(period, (p) => 60 / (p * FRAME));
   const frames = beatFramesOf(strength, period);
-  if (frames.length < 4) return null;
+  if (frames.length < 4) return refuse('fewer than four beats found');
 
   // Anchor each beat to the transient under it; mark the ones with none.
-  const anchored: (number | null)[] = frames.map((frame) => {
-    const at = frame * FRAME;
-    const hit = anchorNear(hits, at, SNAP);
-    return hit ? hit.sample : null;
-  });
+  const under: (Transient | null)[] = frames.map((frame) => anchorNear(hits, frame * FRAME, SNAP));
+  const anchored: (number | null)[] = under.map((hit) => (hit ? hit.sample : null));
   const found = anchored.filter((s) => s !== null).length;
-  if (found < 4) return null;
+  if (found < 4) return refuse('fewer than four beats had a transient under them');
 
   // Beats with nothing under them sit evenly between the anchored beats
   // either side; before the first or after the last, at that neighbour's
@@ -353,6 +368,16 @@ export function followOf(heard: Heard, seed: Fit): Follow | null {
   let downbeat = 0;
   for (let r = 1; r < 4; r++) if (votes[r] > votes[downbeat] * 1.05) downbeat = r;
   const beats = beatsOf(heard.rate, Math.round(heard.seconds * heard.rate), -downbeat, samples, seed.bpm);
+  if (trace) {
+    trace.beats = frames.map((frame, i) => ({
+      frame,
+      at: frame * FRAME,
+      hit: under[i] ? heard.transients.indexOf(under[i]!) : null,
+      sample: samples[i],
+    }));
+    trace.votes = votes;
+    trace.downbeat = downbeat;
+  }
 
   let slowest = Infinity;
   let fastest = 0;
