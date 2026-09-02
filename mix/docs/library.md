@@ -1,6 +1,7 @@
 # The library
 
-`mix/electron/manifest.ts`, `mix/electron/library.ts`, `mix/src/components/Library.tsx`.
+`mix/electron/manifest.ts`, `mix/electron/library.ts`, `mix/electron/youtube.ts`,
+`mix/src/components/Library.tsx`.
 
 A folder you chose, the audio inside it, and one manifest that makes the pair portable.
 
@@ -44,9 +45,45 @@ dotfile, and a name that sanitises to nothing becomes `track`. Collisions get `-
 and **never overwrite** — importing the same filename twice gives you two tracks, which
 is the safe way to be wrong.
 
-**A refusal is per file, not per batch.** Dragging in a folder means a stray `.DS_Store`
+**A refusal is per file, not per batch.** Dragging several files can include a stray `.DS_Store`
 or a PDF, and one of those must not stop the eleven WAVs beside it. What was refused and
 why comes back with the count that succeeded.
+
+The Import button opens a multi-file picker. Dropping files anywhere on the window takes
+the same path: the page hands browser `File` objects to the isolated preload,
+`webUtils.getPathForFile` resolves only those genuine dropped files, and the main process
+passes the resulting paths to `addFiles`. The renderer never receives a filesystem path
+and cannot invent one through the bridge.
+
+The dashed drop target is window-wide because dropping on a waveform should not navigate
+the app to a local file. It appears only after a library folder has been chosen and while
+no other import is running.
+
+## YouTube is another source, not another kind of track
+
+Paste a YouTube video URL into the rail and press **Fetch**. The app runs its bundled,
+checksum-pinned official `yt-dlp` executable with `bestaudio`, imports the one file it
+wrote through `addFiles`, and removes the temporary download. The file in `audio/` and the
+manifest row are therefore exactly the same as a Finder import; no URL or machine path is
+recorded in the portable library.
+
+The boundary is intentionally narrow:
+
+- only HTTPS YouTube, youtu.be and youtube-nocookie hosts are accepted;
+- every accepted link is reduced to its video id first, so playlist, radio, timestamp and
+  tracking parameters are discarded rather than changing what yt-dlp extracts;
+- playlists are reduced to the linked video, live streams are refused, and at most one
+  file is downloaded;
+- user yt-dlp configuration, plugin directories and remote components are disabled;
+- the best audio-only stream is kept without transcoding. YouTube commonly serves that as
+  Opus in a WebM container, so `.webm` is an advertised library format now;
+- the official executable carries the current YouTube scripts, and Electron's signed
+  binary is supplied as its Node runtime so a Finder launch does not depend on a shell
+  installation.
+
+`tools/prepare.ts` fetches immutable release bytes and verifies their published SHA-256
+before `electron-builder` signs the executable with the rest of the app. It stays separate
+from the Python separation environment: importing a URL must not install torch first.
 
 ## The manifest is written once, and atomically
 
@@ -71,14 +108,61 @@ the useful thing to know when something is wrong is what has *not* happened.
 
 ## What a track knows on the day it arrives
 
-Its filename, and nothing else. Nothing has read its tags, decoded it, or run detection,
-so `artist`, `bpm`, `key` and `seconds` are all `null` — and `null` is drawn as unknown
-rather than as zero. The library row shows the file's own type where the key and tempo
-would go, which is honest and better than a column of dashes; the idle page says "length
-not read yet" instead of inventing an estimate.
+Its filename — and, if a catalogue recognised it, who it is by and what it looks like.
+`bpm`, `key` and `seconds` are still `null`, and `null` is drawn as unknown rather than
+as zero. The library row shows the file's own type where the key and tempo would go,
+which is honest and better than a column of dashes; the idle page says "length not read
+yet" instead of inventing an estimate. Tempo and key are detection and are not here yet.
 
-Filling those in is the next thing this file needs, and it is two separate jobs: tags are
-a parser, and tempo and key are detection. Neither is here yet.
+**The filename is read first, offline** — [`guess.ts`](../electron/guess.ts). `Artist -
+Title`, with the track number off the front, the video id `yt-dlp` was told to append off
+the end, and `(Official Video)` gone while `(feat. Rosalía)` and `(Live at Massey Hall)`
+stay. That last distinction is why the bracket rule is a deny-list: strip every bracket
+and four different recordings collapse into one title.
+
+**Then the catalogue is asked** — [`art.ts`](../electron/art.ts), the iTunes Search API,
+chosen because it needs no key and no account, so a build works the day it is installed.
+What leaves the machine is the guessed title and nothing else: no track id, no path, no
+identifier that persists between calls. The cover comes back into `art/<id>.jpg`, relative
+like every other path here, because a library that needed the internet to draw itself
+would not be portable, only mobile.
+
+### The two guards on writing without being asked
+
+The lookup runs automatically at import, so it writes to a person's library with nobody
+watching. Two rules keep that honest, and both are about the same failure — a filled-in
+row looks exactly like a correct one.
+
+**A track whose filename gave up no artist is not looked up at all.** That is the bounce
+out of a DAW, `mixdown_v3`, and a catalogue searched for it returns a real song by a real
+artist with real art, every time. Renaming somebody's rough mix after a stranger's record
+is the worst thing this could do, and the filename already said it does not know.
+
+**A match has to be recognisable in what was searched for** — three quarters of its
+title's words have to be words that were asked for. `Weird Fishes / Arpeggi (Remastered)`
+passes a search for `Radiohead Weird Fishes`; `Bounce Back` does not pass `bounce final
+FINAL`.
+
+Past both, the artist and the album are taken and **the title is not**. A filename that
+already said `Artist - Title` is a better source than a search's first result, which for a
+remix or a live take is confidently the studio version.
+
+**A lookup can never fail an import.** Offline, refused, rate-limited, nonsense back —
+every one of them answers with nothing, and the track keeps the name its file gave it.
+A library is worth more than its metadata.
+
+### Correcting it
+
+Everything above is a guess, so all of it is editable: the separation screen carries the
+title, artist, album and cover, and a **Look up** that runs the same search against
+whatever the fields now say and shows the candidates rather than applying one. One result
+is a fact; five results are a question, and a question is the honest thing to draw when a
+title exists as a single, an album cut, a remaster and two live takes.
+
+Only those four fields can be written back — `Edits` in
+[`manifest.ts`](../electron/manifest.ts) is deliberately not a `Partial<Track>`. `file`,
+`model` and `stems` are facts about the disk rather than about the music, and a window
+that could rewrite them could point a track at somebody else's stems.
 
 ## What separation writes back
 
@@ -101,11 +185,9 @@ take to change.
 
 ## Not yet
 
-- **Drag and drop onto the rail.** `add` already takes explicit paths for it, but Electron
-  removed `File.path`, so the renderer needs `webUtils.getPathForFile` exposed through the
-  preload before a drop can name a file.
+- **Reading the file's own tags**, which would beat both the filename and the catalogue
+  when they are there — and are there for a properly ripped library, which this app has
+  not met yet.
 - **Removing a track**, which is a manifest edit plus a decision about whether the audio
   goes with it.
 - **Re-scanning the folder**, for audio somebody dropped in by hand.
-- **Stems**, which will land at `stems/<track id>/<source>.wav` and be recorded on the
-  track — relative, like everything else.

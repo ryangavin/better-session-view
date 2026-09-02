@@ -135,3 +135,192 @@
   font-size: var(--text-control);
   color: var(--caption);
 }
+
+/* --- the track's own facts ------------------------------------------- */
+
+.mf-details {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-areas:
+    'cover fields'
+    'cover lookup';
+  align-content: start;
+  gap: 10px 14px;
+  margin-top: 16px;
+  max-width: 520px;
+}
+
+.mf-cover {
+  position: relative;
+  grid-area: cover;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border: 1px solid var(--bd2);
+  border-radius: var(--radius-md);
+  background: var(--surface-control);
+}
+
+.mf-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mf-cover-none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  color: var(--idle);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+}
+
+.mf-cover-clear {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--shadow-edge);
+  color: var(--ui);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.mf-cover:hover .mf-cover-clear,
+.mf-cover-clear:focus-visible {
+  opacity: 1;
+}
+
+.mf-fields {
+  grid-area: fields;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mf-field {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.mf-field-label {
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--caption);
+}
+
+.mf-field input {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid var(--bd2);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--surface-cell-muted);
+  color: var(--ui);
+  font-family: var(--sans);
+  font-size: var(--text-body);
+}
+
+.mf-field input:hover {
+  border-color: var(--focus);
+}
+
+.mf-field input:focus {
+  border-color: var(--amber);
+}
+
+.mf-field input::placeholder {
+  color: var(--idle);
+}
+
+.mf-lookup {
+  grid-area: lookup;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mf-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mf-match {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.mf-match:hover,
+.mf-match:focus-visible {
+  border-color: var(--focus);
+  background: var(--surface-cell);
+  outline: none;
+}
+
+.mf-match img,
+.mf-match-none {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-control);
+  object-fit: cover;
+}
+
+.mf-match-words {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mf-match-title,
+.mf-match-by {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mf-match-title {
+  font-size: var(--text-body);
+  color: var(--ui);
+}
+
+.mf-match-by {
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  color: var(--caption);
+}

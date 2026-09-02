@@ -7,9 +7,9 @@ import { state } from '@openflow/desktop/state.ts';
 import { updates } from '@openflow/desktop/update.ts';
 import { lifecycle, only, open } from '@openflow/desktop/window.ts';
 import { ready } from './runtime.ts';
-import { add, choose, load, reveal, root } from './library.ts';
+import { add, artwork, choose, edit, load, matches, reveal, root, youtube } from './library.ts';
 import { MODELS } from './models.ts';
-import { recordStems } from './manifest.ts';
+import { recordStems, type Edits } from './manifest.ts';
 import { busy, cancel, separate, stopAll, type Outcome } from './separate.ts';
 import type { Progress } from './job.ts';
 import {
@@ -21,6 +21,7 @@ import {
 import { TAB_FILE, transcriptionAt, type TranscribeProgress } from './transcribeJob.ts';
 import type { Tuning } from '../src/tab.ts';
 import type { Bars } from '../src/warp.ts';
+import { stopYoutube } from './youtube.ts';
 
 /**
  * mix[flow]: a mix in, its parts out — and the bass written down.
@@ -89,7 +90,18 @@ if (only(app)) {
   ipcMain.handle('openflow:library', () => load());
   ipcMain.handle('openflow:library-choose', () => choose(window_()));
   ipcMain.handle('openflow:library-add', (_event, files?: string[]) => add(window_(), files));
+  ipcMain.handle('openflow:library-youtube', (_event, url: string) => youtube(url));
   ipcMain.handle('openflow:library-reveal', () => reveal());
+  ipcMain.handle('openflow:library-edit', (_event, ask: { id: string; edits: Edits }) =>
+    edit(ask.id, ask.edits),
+  );
+  // The two that reach the network. Both are the main process's because the
+  // page must not fetch a picture it is about to have stored in a folder — and
+  // because a renderer cannot reach a third party without CORS letting it.
+  ipcMain.handle('openflow:library-matches', (_event, text: string) => matches(text));
+  ipcMain.handle('openflow:library-artwork', (_event, ask: { id: string; url: string }) =>
+    artwork(ask.id, ask.url),
+  );
   ipcMain.handle('openflow:library-base', () => `${MIX.name}://app${MOUNT}`);
 
   // Separation. The registry is answered rather than restated in the renderer,
@@ -147,12 +159,7 @@ if (only(app)) {
   ipcMain.handle('openflow:transcribe-cancel', (_event, trackId?: string) => cancelTranscription(trackId));
   ipcMain.handle(
     'openflow:transcribe',
-    async (_event, ask: {
-      trackId: string;
-      tuning: Tuning;
-      bars: Bars | null;
-      transpose: number;
-    }): Promise<TranscribeOutcome> => {
+    async (_event, ask: { trackId: string; tuning: Tuning; bars: Bars | null; transpose: number }): Promise<TranscribeOutcome> => {
       const library = await load();
       const track = library.tracks.find((candidate) => candidate.id === ask.trackId);
       if (!library.root || !track?.stems || !track.model || !track.sources.includes('bass')) {
@@ -188,7 +195,10 @@ if (only(app)) {
   // Local work is a child process holding the GPU, and quitting the window
   // that started it is not a reason for it to carry on. Same lesson as
   // `desktop/docs/server.md` records about a server.
-  app.on('before-quit', stopAll);
+  app.on('before-quit', () => {
+    stopAll();
+    stopYoutube();
+  });
 
   void app.whenReady().then(() => {
     // The build, and the library folder beside it. `mix://app/library/audio/x.wav`

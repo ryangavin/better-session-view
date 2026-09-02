@@ -1,7 +1,10 @@
 import { app, dialog, shell, type BrowserWindow } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { addFiles, read, type Track } from './manifest.ts';
+import { agrees, fetchArt, inBatches, lookup, lookupWithThumbs, type Match } from './art.ts';
+import { guess, term } from './guess.ts';
+import { addFiles, editTrack, read, type Edits, type Track } from './manifest.ts';
+import { addYoutube } from './youtube.ts';
 
 /**
  * The library, as the window sees it: pick a folder, import into it, read it
@@ -16,6 +19,12 @@ import { addFiles, read, type Track } from './manifest.ts';
  * Importing **copies**. A library that referenced files where they already sat
  * would break the first time someone tidied their Downloads folder, and the
  * point of a library is that it still works next year.
+ *
+ * An import also *looks up* what it just copied — `art.ts`. A track arrives
+ * with nothing but a filename, and a row called `01_bounce_final_FINAL` with no
+ * artist and no cover is a library you cannot scan. The lookup is bounded and
+ * cannot fail an import: no network, no matter, and the guess from the filename
+ * stands.
  */
 
 export interface Library {
@@ -84,6 +93,81 @@ const options: Electron.OpenDialogOptions = {
   buttonLabel: 'Use this folder',
 };
 
+/**
+ * Fill in what the catalogue knows about tracks that were just imported.
+ *
+ * **Two guards, and both exist because this writes without being asked.**
+ *
+ * A track whose filename gave up no artist is left alone entirely. That is the
+ * bounce out of a DAW — `mixdown_v3` — and searching a catalogue for it returns
+ * a real song by a real artist with real cover art, every time. Renaming
+ * somebody's rough mix after a stranger's record is the worst thing this
+ * feature could do, and the filename already said it does not know.
+ *
+ * The rest have to be recognisable in what was searched for — `agrees`. Past
+ * both, the artist and the album are taken and the *title is not*: a filename
+ * that said `Artist - Title` is a better source than a search's first result,
+ * which for a remix or a live take is confidently the studio version.
+ *
+ * Every failure is silent and per track, because the alternative is an import
+ * that refuses a folder of WAVs because a search endpoint was unreachable.
+ */
+async function enrich(root: string, ids: readonly string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const manifest = await read(root);
+  const tracks = manifest.tracks.filter((track) => ids.includes(track.id) && track.artist);
+
+  await inBatches(tracks, async (track) => {
+    try {
+      const asked = term({ title: track.title, artist: track.artist });
+      const [found] = await lookup(asked, 1);
+      if (!found || !agrees(asked, found)) return;
+      const edits: Edits = { artist: found.artist, album: found.album };
+      if (found.artwork) edits.art = await fetchArt(root, track.id, found.artwork);
+      await editTrack(root, track.id, edits);
+    } catch {
+      // A track keeps the name its file gave it. That is the whole fallback.
+    }
+  });
+}
+
+/** Ask the catalogue about one track, for a person who wants to choose. */
+export async function matches(text: string): Promise<Match[]> {
+  return lookupWithThumbs(text.trim(), 5);
+}
+
+/** What the separation screen would search for, before anybody types anything. */
+export const guessFrom = guess;
+
+/**
+ * Apply a person's corrections, and answer with the whole library.
+ *
+ * The library rather than the track, because the window holds one list and a
+ * reply that changed one row would leave it to splice — which is a second
+ * place for the two to disagree.
+ */
+export async function edit(id: string, edits: Edits): Promise<Library> {
+  const root = await readRoot();
+  if (!root) return load();
+  await editTrack(root, id, edits);
+  return load();
+}
+
+/**
+ * Take one candidate's cover into the library and record it against a track.
+ *
+ * The URL is fetched here rather than in the window: the page never reaches
+ * the network for a picture it is about to store in a folder, and the only
+ * thing that lands on disk is what this wrote.
+ */
+export async function artwork(id: string, url: string): Promise<Library> {
+  const root = await readRoot();
+  if (!root) return load();
+  const at = await fetchArt(root, id, url);
+  if (at) await editTrack(root, id, { art: at });
+  return load();
+}
+
 export async function add(win: BrowserWindow | null, files?: string[]): Promise<Imported> {
   const root = await readRoot();
   if (!root) return { ...(await load()), added: 0, refused: ['no library folder chosen'] };
@@ -93,7 +177,7 @@ export async function add(win: BrowserWindow | null, files?: string[]): Promise<
     const ask: Electron.OpenDialogOptions = {
       title: 'Import tracks',
       properties: ['openFile', 'multiSelections'],
-      filters: [{ name: 'Audio', extensions: ['wav', 'flac', 'aiff', 'aif', 'mp3', 'm4a', 'aac', 'ogg', 'opus'] }],
+      filters: [{ name: 'Audio', extensions: ['wav', 'flac', 'aiff', 'aif', 'mp3', 'm4a', 'aac', 'ogg', 'opus', 'webm'] }],
       buttonLabel: 'Import',
     };
     const picked = await (win ? dialog.showOpenDialog(win, ask) : dialog.showOpenDialog(ask));
@@ -102,7 +186,21 @@ export async function add(win: BrowserWindow | null, files?: string[]): Promise<
   }
 
   const done = await addFiles(root, chosen);
-  return { root, tracks: done.manifest.tracks, added: done.added, refused: done.refused };
+  await enrich(root, done.ids);
+  return { ...(await load()), added: done.added, refused: done.refused };
+}
+
+/** Fetch one YouTube video's best audio stream, then import it like any other file. */
+export async function youtube(url: string): Promise<Imported> {
+  const root = await readRoot();
+  if (!root) return { ...(await load()), added: 0, refused: ['no library folder chosen'] };
+  try {
+    const done = await addYoutube(root, url);
+    await enrich(root, done.ids);
+    return { ...(await load()), added: done.added, refused: done.refused };
+  } catch (why) {
+    return { ...(await load()), added: 0, refused: [(why as Error).message] };
+  }
 }
 
 /** Show the folder, for when a person would rather use the Finder than this. */

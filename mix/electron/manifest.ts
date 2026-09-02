@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { guess } from './guess.ts';
 
 /**
  * The library on disk: a folder, the audio in it, and one manifest that makes
@@ -23,7 +24,12 @@ export const MANIFEST = 'library.json';
 export const AUDIO = 'audio';
 
 /** What ffmpeg can open and demucs is happy to be handed. */
-export const SOUND = ['.wav', '.flac', '.aiff', '.aif', '.mp3', '.m4a', '.aac', '.ogg', '.opus'];
+export const SOUND = [
+  '.wav', '.flac', '.aiff', '.aif', '.mp3', '.m4a', '.aac', '.ogg', '.opus',
+  // YouTube commonly serves its best audio-only stream as Opus in WebM. The
+  // container is still audio here, and the app's decoder opens it locally.
+  '.webm',
+];
 
 export interface Track {
   id: string;
@@ -31,6 +37,16 @@ export interface Track {
   file: string;
   title: string;
   artist: string | null;
+  album: string | null;
+  /**
+   * The cover, relative to the root — `art/<id>.jpg` — or null.
+   *
+   * A path rather than the catalogue URL it came from, for the same reason
+   * every other path here is relative: a library is a folder you can carry to
+   * the machine at the venue, and one that needs the internet to draw itself
+   * is not portable, it is merely mobile.
+   */
+  art: string | null;
   /** Null until something detects it, and drawn as unknown rather than as zero. */
   bpm: number | null;
   key: string | null;
@@ -88,7 +104,12 @@ export async function read(root: string): Promise<Manifest> {
   return {
     ...held,
     version: held.version ?? FORMAT,
-    tracks: held.tracks.map((track) => ({ ...track, stems: track.stems ?? null })),
+    tracks: held.tracks.map((track) => ({
+      ...track,
+      stems: track.stems ?? null,
+      album: track.album ?? null,
+      art: track.art ?? null,
+    })),
   };
 }
 
@@ -134,8 +155,47 @@ export async function freeName(dir: string, base: string, ext: string): Promise<
 export interface Added {
   manifest: Manifest;
   added: number;
+  /**
+   * The tracks this call created, for whatever wants to work on them next —
+   * which is the catalogue lookup in `library.ts`. Ids rather than tracks,
+   * because by the time it runs the manifest has been read again.
+   */
+  ids: string[];
   /** Files that were not audio, or could not be copied, each with its reason. */
   refused: string[];
+}
+
+/** The fields a person may correct, and the only ones anything may write back. */
+export interface Edits {
+  title?: string;
+  artist?: string | null;
+  album?: string | null;
+  art?: string | null;
+}
+
+/**
+ * Change one track's metadata, and nothing else.
+ *
+ * Read, change, write the whole file — the same atomic write every other
+ * change here uses. The narrow `Edits` type is the point: a general `update`
+ * taking a `Partial<Track>` would let a caller rewrite `file`, `stems` or
+ * `model`, which are facts about the disk rather than about the music, and are
+ * the three fields that must only ever be written by whatever put them there.
+ *
+ * An empty title is refused rather than stored. A row has to be called
+ * something to be findable, and blanking the field in the window is a person
+ * clearing it before typing, not asking for a nameless track.
+ */
+export async function editTrack(root: string, id: string, edits: Edits): Promise<Manifest> {
+  const manifest = await read(root);
+  const track = manifest.tracks.find((t) => t.id === id);
+  if (!track) return manifest;
+  if (edits.title !== undefined && edits.title.trim()) track.title = edits.title.trim();
+  if (edits.artist !== undefined) track.artist = edits.artist?.trim() || null;
+  if (edits.album !== undefined) track.album = edits.album?.trim() || null;
+  if (edits.art !== undefined) track.art = edits.art;
+  await write(root, manifest);
+  return manifest;
 }
 
 /**
@@ -179,7 +239,7 @@ export async function recordStems(
  * on the ninth of ten, and an index that disagrees with the audio beside it is
  * the one state this is meant never to reach.
  *
- * A refusal is per file rather than for the batch: dragging a folder in means a
+ * A refusal is per file rather than for the batch: dragging several files in can include a
  * stray `.DS_Store` or a PDF, and one of those must not stop the eleven WAVs
  * beside it.
  */
@@ -189,7 +249,7 @@ export async function addFiles(root: string, files: readonly string[]): Promise<
   await fs.mkdir(audio, { recursive: true });
 
   const refused: string[] = [];
-  let added = 0;
+  const ids: string[] = [];
 
   for (const source of files) {
     const ext = path.extname(source).toLowerCase();
@@ -200,16 +260,21 @@ export async function addFiles(root: string, files: readonly string[]): Promise<
     try {
       const base = tidy(path.basename(source, path.extname(source)));
       const name = await freeName(audio, base, ext);
+      // The filename is the only metadata an import ever brings — `guess.ts`.
+      const read = guess(base);
+      const id = crypto.randomUUID();
       // `copyFile` rather than a stream: it lets the OS clone on APFS, which
       // makes importing a folder of WAVs off the same volume nearly instant.
       await fs.copyFile(source, path.join(audio, name));
       manifest.tracks.push({
-        id: crypto.randomUUID(),
+        id,
         // Posix separators whatever platform wrote it, so a library written on
         // one reads on another.
         file: `${AUDIO}/${name}`,
-        title: base,
-        artist: null,
+        title: read.title,
+        artist: read.artist,
+        album: null,
+        art: null,
         bpm: null,
         key: null,
         seconds: null,
@@ -218,12 +283,12 @@ export async function addFiles(root: string, files: readonly string[]): Promise<
         sources: [],
         stems: null,
       });
-      added += 1;
+      ids.push(id);
     } catch (why) {
       refused.push(`${path.basename(source)} — ${(why as Error).message}`);
     }
   }
 
-  if (added > 0) await write(root, manifest);
-  return { manifest, added, refused };
+  if (ids.length > 0) await write(root, manifest);
+  return { manifest, added: ids.length, ids, refused };
 }

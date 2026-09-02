@@ -44,7 +44,17 @@ export const LIBRARY = 'mix://app/library/';
  * this gets looked at on a device that cannot run Electron.
  */
 export const stemUrl = (base: string, stems: string, source: string): string =>
-  `${base}/${stems}/${source}.wav`.replace(/([^:])\/+/g, '$1/');
+  fileUrl(base, `${stems}/${source}.wav`);
+
+/**
+ * Any file in the library, by its manifest-relative path.
+ *
+ * The same joining `stemUrl` does, which is why it is the thing `stemUrl` is
+ * now written in terms of: one place decides how a relative path becomes a URL,
+ * so a cover and a stem cannot disagree about a double slash.
+ */
+export const fileUrl = (base: string, at: string): string =>
+  `${base}/${at}`.replace(/([^:])\/+/g, '$1/');
 
 /**
  * A WAV this app wrote, read without asking the browser.

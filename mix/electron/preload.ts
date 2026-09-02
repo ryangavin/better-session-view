@@ -1,6 +1,8 @@
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, webUtils } from 'electron';
 import { expose } from '@openflow/desktop/preload.ts';
 import type { Imported, Library } from './library.ts';
+import type { Edits } from './manifest.ts';
+import type { Match } from './art.ts';
 import type { Ready } from './runtime.ts';
 import type { Model } from './models.ts';
 import type { Progress } from './job.ts';
@@ -13,13 +15,13 @@ import type { TranscribeProgress } from './transcribeJob.ts';
 /**
  * What the renderer cannot do for itself: reach a process, and reach a folder.
  *
- * Four library calls, one probe, separation and bass transcription. Not a single one takes
- * a path from the renderer — `add` optionally takes the paths a *drop*
- * produced, which the renderer got from the OS rather than invented, and a
- * separation names a track by its id and lets the main process work out where
- * that is. Everything else is the main process opening its own dialogs and
- * answering with data. That is what keeps `contextIsolation` worth having: the
- * page can ask for the library, and cannot ask for `/etc/passwd`.
+ * Library calls, one probe, separation and bass transcription. Not a single
+ * one takes a path from the renderer. A drop hands genuine browser `File`
+ * objects to `webUtils.getPathForFile` here in the preload and sends only those
+ * OS-provided paths onward; the page can never invent one. A separation names a
+ * track by its id and lets the main process work out where that is. That is
+ * what keeps `contextIsolation` worth having: the page can ask for the library,
+ * and cannot ask for `/etc/passwd`.
  *
  * The two local jobs talk back. They run long enough to report their stages, and
  * reports hundreds of times, so progress arrives as an event and `run` resolves
@@ -32,9 +34,26 @@ expose({
   library: {
     read: (): Promise<Library> => ipcRenderer.invoke('openflow:library'),
     choose: (): Promise<Library> => ipcRenderer.invoke('openflow:library-choose'),
-    /** With no argument, opens a file dialog. With paths, imports those — a drop. */
-    add: (files?: string[]): Promise<Imported> => ipcRenderer.invoke('openflow:library-add', files),
+    /** Open the ordinary multi-file import dialog. */
+    add: (): Promise<Imported> => ipcRenderer.invoke('openflow:library-add'),
+    /** Resolve genuine dropped files in the preload; their paths never enter the page. */
+    drop: (files: File[]): Promise<Imported> =>
+      ipcRenderer.invoke(
+        'openflow:library-add',
+        files.map((file) => webUtils.getPathForFile(file)).filter(Boolean),
+      ),
+    /** Fetch one YouTube video's best audio stream with the bundled yt-dlp. */
+    youtube: (url: string): Promise<Imported> => ipcRenderer.invoke('openflow:library-youtube', url),
     reveal: (): Promise<void> => ipcRenderer.invoke('openflow:library-reveal'),
+    /** Correct one track's title, artist, album or cover. */
+    edit: (id: string, edits: Edits): Promise<Library> =>
+      ipcRenderer.invoke('openflow:library-edit', { id, edits }),
+    /** Ask the catalogue what this might be. Never throws; empty means nobody knows. */
+    matches: (text: string): Promise<Match[]> =>
+      ipcRenderer.invoke('openflow:library-matches', text),
+    /** Take one candidate's cover into the library folder. */
+    artwork: (id: string, url: string): Promise<Library> =>
+      ipcRenderer.invoke('openflow:library-artwork', { id, url }),
     /** Where library files are served from, decided by the process that serves them. */
     base: (): Promise<string> => ipcRenderer.invoke('openflow:library-base'),
   },
@@ -60,12 +79,7 @@ expose({
   },
   transcribe: {
     busy: (): Promise<string | null> => ipcRenderer.invoke('openflow:transcribing'),
-    run: (ask: {
-      trackId: string;
-      tuning: Tuning;
-      bars: Bars | null;
-      transpose: number;
-    }): Promise<TranscribeOutcome> =>
+    run: (ask: { trackId: string; tuning: Tuning; bars: Bars | null; transpose: number }): Promise<TranscribeOutcome> =>
       ipcRenderer.invoke('openflow:transcribe', ask),
     cancel: (trackId?: string): Promise<void> => ipcRenderer.invoke('openflow:transcribe-cancel', trackId),
     reveal: (trackId: string): Promise<void> => ipcRenderer.invoke('openflow:transcribe-reveal', trackId),

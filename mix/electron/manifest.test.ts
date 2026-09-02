@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { AUDIO, MANIFEST, addFiles, empty, read, recordStems, tidy, write } from './manifest.ts';
+import { AUDIO, MANIFEST, addFiles, editTrack, empty, read, recordStems, tidy, write } from './manifest.ts';
 
 /**
  * This is the file that owns a person's library, so it is the one that gets
@@ -59,6 +59,24 @@ describe('reading', () => {
     await expect(read(root)).rejects.toThrow(/no track list/);
   });
 
+  it('fills in fields a version that wrote the file did not have', async () => {
+    // A field added later reads as `undefined`, and a `Track` that claims
+    // `art: string | null` while holding `undefined` is a type that lies —
+    // every reader would then need to know which version wrote the file.
+    await fs.writeFile(
+      path.join(root, MANIFEST),
+      JSON.stringify({
+        openflow: 'mix-library',
+        version: 1,
+        tracks: [{ id: 'one', file: 'audio/a.wav', title: 'A' }],
+      }),
+    );
+    const [track] = (await read(root)).tracks;
+    expect(track.stems).toBe(null);
+    expect(track.album).toBe(null);
+    expect(track.art).toBe(null);
+  });
+
   it('refuses a manifest that is not JSON at all', async () => {
     await fs.writeFile(path.join(root, MANIFEST), 'not json');
     await expect(read(root)).rejects.toThrow();
@@ -73,6 +91,8 @@ describe('writing', () => {
       file: 'audio/a.wav',
       title: 'A',
       artist: null,
+      album: null,
+      art: null,
       bpm: null,
       key: null,
       seconds: null,
@@ -97,6 +117,20 @@ describe('importing', () => {
     expect(done.added).toBe(1);
     expect(done.manifest.tracks[0].file).toBe('audio/Nightcrawler.wav');
     expect(await exists(path.join(root, AUDIO, 'Nightcrawler.wav'))).toBe(true);
+  });
+
+  it('reads the filename as an artist and a title', async () => {
+    // The only metadata an import ever brings. `guess.ts` owns the reading;
+    // what is pinned here is that the reading is actually applied.
+    const done = await addFiles(root, [await drop('Radiohead - Weird Fishes.wav')]);
+    expect(done.manifest.tracks[0].title).toBe('Weird Fishes');
+    expect(done.manifest.tracks[0].artist).toBe('Radiohead');
+  });
+
+  it('hands back the tracks it made, for whatever runs next', async () => {
+    const done = await addFiles(root, [await drop('a.wav'), await drop('notes.pdf'), await drop('b.mp3')]);
+    expect(done.ids).toHaveLength(2);
+    expect(done.manifest.tracks.map((t) => t.id)).toEqual(expect.arrayContaining(done.ids));
   });
 
   it('never records an absolute path, which is the whole portability claim', async () => {
@@ -255,5 +289,55 @@ describe('recording a separation', () => {
     expect(tracks).toHaveLength(1);
     expect(tracks[0].model).toBe('htdemucs_6s');
     expect(tracks[0].stems).toBe('b');
+  });
+});
+
+describe('correcting a track', () => {
+  const oneTrack = async (): Promise<string> => {
+    const done = await addFiles(root, [await drop('a.wav')]);
+    return done.manifest.tracks[0].id;
+  };
+
+  it('writes the fields a person may correct', async () => {
+    const id = await oneTrack();
+    await editTrack(root, id, { title: 'Xtal', artist: 'Aphex Twin', album: 'Selected Ambient Works' });
+    const [track] = (await read(root)).tracks;
+    expect(track.title).toBe('Xtal');
+    expect(track.artist).toBe('Aphex Twin');
+    expect(track.album).toBe('Selected Ambient Works');
+  });
+
+  it('leaves the facts about the disk alone', async () => {
+    // The reason `Edits` is its own type rather than a `Partial<Track>`: these
+    // three are written by whatever put the files there, and a window that
+    // could rewrite them could point a track at somebody else's stems.
+    const id = await oneTrack();
+    await recordStems(root, id, { model: 'htdemucs', sources: ['bass'], stems: 'stems/x/htdemucs' });
+    await editTrack(root, id, { title: 'Xtal' } as never);
+    const [track] = (await read(root)).tracks;
+    expect(track.file).toBe('audio/a.wav');
+    expect(track.model).toBe('htdemucs');
+    expect(track.stems).toBe('stems/x/htdemucs');
+  });
+
+  it('refuses to leave a track with no name', async () => {
+    const id = await oneTrack();
+    await editTrack(root, id, { title: '   ' });
+    expect((await read(root)).tracks[0].title).toBe('a');
+  });
+
+  it('clears an artist rather than storing an empty one', async () => {
+    const id = await oneTrack();
+    await editTrack(root, id, { artist: 'Aphex Twin' });
+    await editTrack(root, id, { artist: '  ' });
+    expect((await read(root)).tracks[0].artist).toBe(null);
+  });
+
+  it('says nothing about a track that is not there', async () => {
+    // Edited from a window while the row was deleted somewhere else. Writing a
+    // row back for a track somebody removed would be worse than doing nothing.
+    await oneTrack();
+    const before = await read(root);
+    expect(await editTrack(root, 'gone', { title: 'X' })).toEqual(before);
   });
 });

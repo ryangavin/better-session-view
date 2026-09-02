@@ -1,12 +1,22 @@
 import { Button } from '@openflow/widgets/controls/Button.tsx';
+import { Details } from './Details.tsx';
 import { STEMS } from '../mock.ts';
 import { duration, estimate, roughly, type Ready } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './Idle.css';
 
 /**
- * What a track with no stems on disk shows: the models this build will actually
- * run, what each one trades away, and one button.
+ * What a track with no stems on disk shows: who it is by, the models this build
+ * will actually run, what each one trades away, and one button.
+ *
+ * **It is also where a separation is redone.** A track with stems reaches this
+ * screen through `mix.resetup()`, because redoing one means *choosing* again —
+ * a job is keyed on the file's content hash and the model, so re-running what
+ * is already on disk is answered from the cache and looks like nothing
+ * happened. The screen says the stems are there and offers the way back.
+ *
+ * The metadata sits here for the same reason: it is the one moment a person is
+ * looking at a track and not yet listening to it. `Details.tsx` has the form.
  *
  * The cards say the trade rather than the score. A model's SDR figure is not
  * something you can act on standing at a laptop; "the piano bleeds badly" is.
@@ -33,11 +43,19 @@ export function Idle({ mix, ready }: { mix: Mix; ready: Ready | null }) {
 
   if (!song) return null;
 
+  /** Stems already on disk, which is only true when this screen was asked for. */
+  const again = song.sources.length > 0;
+  /** The same model over the same file is answered from disk, not re-rendered. */
+  const same = again && song.model === mix.model;
+
   return (
     <div className="mf-page">
       <div className="mf-page-body">
-        <p className="mf-eyebrow">no stems on disk</p>
+        <p className="mf-eyebrow">{again ? 'separate again' : 'no stems on disk'}</p>
         <h2 className="mf-page-title">{song.title}</h2>
+
+        <Details mix={mix} song={song} />
+
         <p className="mf-page-blurb">
           Each model trades render time against bleed between sources. A six-source model
           splits guitar and piano out of the residual; a four-source one folds them back
@@ -92,16 +110,23 @@ export function Idle({ mix, ready }: { mix: Mix; ready: Ready | null }) {
             className="mf-primary"
             disabled={!chosen || mix.engineBusy}
           >
-            Generate stems
+            {again ? 'Separate again' : 'Generate stems'}
           </Button>
+          {mix.resetting && (
+            <Button onPress={mix.keepStems} title="Go back to the mix without separating again">
+              Keep these stems
+            </Button>
+          )}
           <span className="mf-estimate">
             {!chosen
               ? 'separation needs the app around this page'
               : mix.engineBusy
                 ? 'one at a time — the local engine is already working'
-                : wait === null
-                  ? `${chosen.speed} — length not read yet`
-                  : `${duration(song.seconds)} at ${chosen.speed} · ${wait}`}
+                : same
+                  ? `${mix.labelOf(song.model)} is already on disk — this returns it in a moment`
+                  : wait === null
+                    ? `${chosen.speed} — length not read yet`
+                    : `${duration(song.seconds)} at ${chosen.speed} · ${wait}`}
           </span>
         </div>
       </div>
