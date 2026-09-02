@@ -1,10 +1,4 @@
-:root {
-  --bg: #0b0a09;
-  --panel: #141311;
-  --line: #2a2724;
-  --ink: #ddd6cd;
-  --dim: #8b837a;
-}
+@import '@openflow/widgets/palette.css';
 
 * {
   box-sizing: border-box;
@@ -17,14 +11,15 @@
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--ink);
+  color: var(--fg);
   overflow-x: hidden;
-  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-lead);
+  line-height: 1.4;
 }
 
 .summary {
   padding: 6px 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--bd);
   white-space: pre-wrap;
 }
 
@@ -37,7 +32,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--bd);
   flex-wrap: wrap;
 }
 
@@ -50,15 +45,15 @@ body {
 .sep {
   width: 1px;
   height: 16px;
-  background: var(--line);
+  background: var(--bd);
 }
 
 select,
 button,
 input {
   background: var(--panel);
-  color: var(--ink);
-  border: 1px solid var(--line);
+  color: var(--fg);
+  border: 1px solid var(--bd);
   border-radius: 3px;
   font: inherit;
   padding: 2px 4px;
@@ -69,7 +64,7 @@ button:hover {
 }
 
 .dim {
-  color: var(--dim);
+  color: var(--detail);
 }
 
 .rows {
@@ -78,7 +73,7 @@ button:hover {
 
 .row {
   position: relative;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--bd);
 }
 
 .row canvas {
@@ -91,7 +86,7 @@ button:hover {
   position: absolute;
   right: 4px;
   top: 2px;
-  color: var(--dim);
+  color: var(--detail);
   pointer-events: none;
   z-index: 1;
 }
@@ -117,7 +112,7 @@ button:hover {
 }
 
 .verdict {
-  color: var(--dim);
+  color: var(--detail);
 }
 
 .verdict b {
@@ -168,14 +163,14 @@ button.danger {
 .panel {
   flex: 1;
   min-width: 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--bd);
   background: var(--panel);
 }
 
 .panel .head {
   padding: 4px 6px;
-  border-bottom: 1px solid var(--line);
-  color: var(--dim);
+  border-bottom: 1px solid var(--bd);
+  color: var(--detail);
   display: flex;
   gap: 8px;
   align-items: center;
@@ -189,16 +184,16 @@ button.danger {
 
 .panel .text {
   padding: 6px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--bd);
   white-space: pre-wrap;
-  color: var(--dim);
+  color: var(--detail);
 }
 
 .tip {
   position: fixed;
   z-index: 10;
   background: #000;
-  border: 1px solid var(--line);
+  border: 1px solid var(--bd);
   padding: 5px 7px;
   white-space: pre;
   pointer-events: none;

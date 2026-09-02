@@ -81,25 +81,3 @@ button {
   background: var(--amber-hover);
   border-color: var(--amber-hover);
 }
-
-::-webkit-scrollbar {
-  width: var(--scroll-size);
-  height: var(--scroll-size);
-}
-
-::-webkit-scrollbar-thumb {
-  border: var(--scroll-inset) solid transparent;
-  border-radius: var(--radius-pill);
-  background: var(--idle);
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--focus);
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-track,
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
