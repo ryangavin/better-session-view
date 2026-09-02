@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { rankOf, rulingOf, shaded, TICKS_PER_BAR } from '../grid.ts';
 import { barAt, placeOf, type Bars, type Marker } from '../warp.ts';
 import type { Span } from '../zoom.ts';
@@ -34,6 +34,13 @@ export interface WarpLaneProps {
   anchors: readonly { at: number; label: string }[];
   /** Where the audio is pinned to the grid, once something has pinned it. */
   markers?: readonly Marker[];
+  /** The hits the fit listened to, in seconds, for a dragged marker to snap to. */
+  hits?: readonly number[];
+  /** A marker dragged to another second of the file. */
+  onMove?(index: number, at: number): void;
+  /** A double-click, as a fraction of the file: pin the audio here to the nearest bar. */
+  onAdd?(place: number): void;
+  onRemove?(index: number): void;
   /** A click, as a fraction of the file. */
   onPin?(place: number): void;
   /** Manual mode: the pointer is placing a point rather than scrubbing. */
@@ -54,8 +61,45 @@ const ink = (el: HTMLElement, name: string, fallback: string): string =>
 
 const WHOLE: Span = { from: 0, to: 1 };
 
-export function WarpLane({ onsets, bars, height, anchors, markers, onPin, pinning, span }: WarpLaneProps) {
+/** How close a dragged marker has to come to a hit to land on it, in pixels. */
+const CATCH = 6;
+
+/** A marker's name: the bar, and the beat where it is not on the one. */
+const nameOf = (marker: Marker): string => {
+  const whole = Math.floor(marker.bar + 1e-9);
+  const beat = Math.round((marker.bar - whole) * 4) + 1;
+  return beat === 1 ? String(whole + 1) : `${whole + 1}.${beat}`;
+};
+
+/** Whether a key press belongs to something being typed rather than to the lane. */
+const typing = (target: EventTarget | null): boolean => {
+  const el = target as HTMLElement | null;
+  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+};
+
+export function WarpLane({
+  onsets,
+  bars,
+  height,
+  anchors,
+  markers,
+  hits,
+  onMove,
+  onAdd,
+  onRemove,
+  onPin,
+  pinning,
+  span,
+}: WarpLaneProps) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
+  const lane = useRef<HTMLDivElement | null>(null);
+  /**
+   * The marker a hand is on, for the delete key. Held here rather than in the
+   * window's state because nothing else needs to know: it is a pin with a
+   * ring round it, and it is gone the moment you click anywhere else.
+   */
+  const [selected, setSelected] = useState<number | null>(null);
+  const drag = useRef<{ index: number; pointer: number } | null>(null);
   const from = span?.from ?? WHOLE.from;
   const to = span?.to ?? WHOLE.to;
 
@@ -168,18 +212,99 @@ export function WarpLane({ onsets, bars, height, anchors, markers, onPin, pinnin
     return () => watch.disconnect();
   }, [onsets, bars, height, from, to]);
 
-  const place = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!onPin) return;
-    const box = event.currentTarget.getBoundingClientRect();
-    const across = (event.clientX - box.left) / box.width;
-    onPin(from + across * (to - from));
+  useEffect(() => {
+    if (selected !== null && (!markers || selected >= markers.length)) setSelected(null);
+  }, [markers, selected]);
+
+  // Backspace lets a selected marker go, and Escape lets go of the selection.
+  // On the window rather than the lane, because a strip of canvas is not
+  // something anybody expects to have to focus first — and not while a slice
+  // is being named.
+  useEffect(() => {
+    if (selected === null) return;
+    const key = (event: KeyboardEvent) => {
+      if (typing(event.target)) return;
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+        onRemove?.(selected);
+        setSelected(null);
+      } else if (event.key === 'Escape') {
+        setSelected(null);
+      }
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [selected, onRemove]);
+
+  /** Where a pointer is, as a fraction of the file. */
+  const placeAt = (clientX: number): number => {
+    const box = (lane.current ?? canvas.current)!.getBoundingClientRect();
+    return from + ((clientX - box.left) / box.width) * (to - from);
   };
+
+  const place = (event: React.MouseEvent<HTMLDivElement>) => {
+    setSelected(null);
+    if (!onPin) return;
+    onPin(placeAt(event.clientX));
+  };
+
+  const add = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!onAdd || pinning) return;
+    onAdd(placeAt(event.clientX));
+  };
+
+  /**
+   * Dragging a pin moves its second of the file and keeps its bar, which is
+   * Live's gesture exactly: the audio under the pointer is what is being said
+   * to be that bar. It lands on a hit when it comes close to one — a kick is
+   * nearly always what is meant — unless ⌥ is held, which is how you say it
+   * is not.
+   */
+  const take = (index: number) => (event: React.PointerEvent<HTMLElement>) => {
+    if (!onMove) return;
+    event.stopPropagation();
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = { index, pointer: event.pointerId };
+    setSelected(index);
+  };
+
+  const carry = (event: React.PointerEvent<HTMLElement>) => {
+    const held = drag.current;
+    if (!held || !onMove || !(bars.seconds > 0)) return;
+    const box = (lane.current ?? canvas.current)!.getBoundingClientRect();
+    let at = placeAt(event.clientX) * bars.seconds;
+    if (!event.altKey && hits) {
+      let reach = (CATCH * (to - from) * bars.seconds) / box.width;
+      for (const hit of hits) {
+        const gap = Math.abs(hit - at);
+        if (gap < reach) {
+          reach = gap;
+          at = hit;
+        }
+      }
+    }
+    onMove(held.index, at);
+  };
+
+  const release = (event: React.PointerEvent<HTMLElement>) => {
+    const held = drag.current;
+    if (!held) return;
+    drag.current = null;
+    if (event.currentTarget.hasPointerCapture(held.pointer)) {
+      event.currentTarget.releasePointerCapture(held.pointer);
+    }
+  };
+
+  const swallow = (event: React.MouseEvent) => event.stopPropagation();
 
   return (
     <div
+      ref={lane}
       className="mf-warplane"
       data-pinning={pinning || undefined}
       onClick={place}
+      onDoubleClick={add}
       role="presentation"
     >
       <canvas ref={canvas} style={{ height }} />
@@ -190,10 +315,20 @@ export function WarpLane({ onsets, bars, height, anchors, markers, onPin, pinnin
           <span
             key={`m${i}`}
             className="mf-marker"
+            data-selected={selected === i || undefined}
             style={{ left: `${where * 100}%` }}
-            title={`Bar ${marker.bar + 1} is pinned to ${marker.at.toFixed(3)} s`}
           >
-            <i>{Number.isInteger(marker.bar) ? marker.bar + 1 : (marker.bar + 1).toFixed(2)}</i>
+            <i
+              title={`Bar ${nameOf(marker)} is pinned to ${marker.at.toFixed(3)} s. Drag to move it; ⌥ to skip the hits; Backspace to let it go`}
+              onPointerDown={take(i)}
+              onPointerMove={carry}
+              onPointerUp={release}
+              onPointerCancel={release}
+              onClick={swallow}
+              onDoubleClick={swallow}
+            >
+              {nameOf(marker)}
+            </i>
           </span>
         );
       })}

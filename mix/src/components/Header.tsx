@@ -255,17 +255,20 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                 where it moved — and how much of the kick sits on a line. A
                 fit that found nothing says so rather than leaving a press
                 with no answer. */}
-            {mix.detected ? (
+            {mix.markers || mix.detected ? (
               <span
                 className="mf-fit"
                 title={
-                  mix.markers
+                  mix.markers && mix.detected
                     ? 'The tempo the markers follow, and how much of the kick lands on a grid line'
-                    : 'How much of the kick lands on a grid line'
+                    : mix.markers
+                      ? 'The tempo the markers follow, set by hand'
+                      : 'How much of the kick lands on a grid line'
                 }
               >
-                {mix.markers ? `${rangeText(mix.grid)} · ` : ''}
-                {Math.round(mix.detected.agreement * 100)}%
+                {mix.markers ? rangeText(mix.grid) : ''}
+                {mix.markers && mix.detected ? ' · ' : ''}
+                {mix.detected ? `${Math.round(mix.detected.agreement * 100)}%` : ''}
               </span>
             ) : mix.fitFailed ? (
               <span className="mf-fit mf-fit-none" title="Nothing steady enough to fit a tempo to">

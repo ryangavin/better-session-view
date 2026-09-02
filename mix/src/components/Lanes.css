@@ -180,6 +180,20 @@
   font-size: var(--text-label);
   font-style: normal;
   line-height: 1.4;
+  pointer-events: auto;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.mf-marker[data-selected] {
+  background: var(--fg);
+  opacity: 1;
+}
+
+.mf-marker[data-selected] i {
+  background: var(--fg);
+  box-shadow: var(--ring-focus);
 }
 
 .mf-anchor i {

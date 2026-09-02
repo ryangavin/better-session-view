@@ -4,16 +4,20 @@ import { decode, fileUrl, LIBRARY, peaksOf, stemUrl, type Peak } from './audio.t
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
 import {
+  added,
   barAt,
   barsOf,
   countOf,
   hearing,
   hitsIn,
   mapOf,
+  moved,
   refitOf,
+  removed,
   shifted,
   snapped,
   startOf,
+  tempoAt,
   FASTEST,
   SLOWEST,
   type Bars,
@@ -135,6 +139,12 @@ const NOTHING: Library = { root: null, tracks: [] };
 
 /** How long the window sits still before writing what it remembers. */
 const SETTLE_MS = 400;
+
+/** What the snap setting rounds a hand-placed marker to, in bars. */
+const DIVISION: Record<string, number> = { '1/1': 1, '1/2': 0.5, '1/4': 0.25 };
+
+/** How close to a double-click a hit has to be to be the thing that was meant, in beats. */
+const MEANT = 0.15;
 
 export function useMix() {
   const kept = useRef<Session>(recall()).current;
@@ -1236,6 +1246,76 @@ export function useMix() {
     });
   }, [listen, seconds, grid]);
 
+  /** The same hits, in seconds, for a dragged marker to snap to. */
+  const hits = useMemo(() => {
+    const it = listen();
+    return it ? hitsIn(it).map((hit) => hit.at) : [];
+  }, [listen]);
+
+  /**
+   * A hand on the markers, which is the other half of following the kick.
+   *
+   * Live's workflow: auto-warp, then fix by hand what it got wrong. Every one
+   * of these starts from the map as drawn — the straight line, where nothing
+   * has pinned the audio yet, becomes the two markers it is made of and one
+   * more — and every one is a decision, so the fit's readout goes and the
+   * grid stops being something that was measured.
+   */
+  const decided = useCallback(() => {
+    setBpmAuto(false);
+    setDetected(null);
+    setFitFailed(false);
+    setWantFit(false);
+  }, []);
+
+  /** Drag a marker to another second of the file, keeping its bar. */
+  const moveMarker = useCallback(
+    (index: number, at: number) => {
+      setMarkers((was) => moved(was ?? grid.markers, index, at));
+      decided();
+    },
+    [grid, decided],
+  );
+
+  /**
+   * Pin the audio under a double-click to the nearest bar — or half, or beat,
+   * as the snap setting says. The hit nearest the click within a small reach
+   * is what was meant; a double-click a few pixels off a kick is a
+   * double-click on it.
+   */
+  const addMarker = useCallback(
+    (place: number) => {
+      if (manual || seconds <= 0) return;
+      const click = place * seconds;
+      const division = DIVISION[snap] ?? 1;
+      const bar = Math.round(barAt(grid, place) / division) * division;
+      let at = click;
+      let nearest = (60 / tempoAt(grid, bar)) * MEANT;
+      for (const hit of hits) {
+        const gap = Math.abs(hit - click);
+        if (gap < nearest) {
+          nearest = gap;
+          at = hit;
+        }
+      }
+      const was = markers ?? grid.markers;
+      const next = added(was, { at, bar });
+      if (next === was) return;
+      setMarkers(next);
+      decided();
+    },
+    [manual, seconds, snap, grid, hits, markers, decided],
+  );
+
+  /** Let a marker go. Never the last two: one marker is not a map. */
+  const removeMarker = useCallback(
+    (index: number) => {
+      setMarkers((was) => (was ? removed(was, index) : was));
+      decided();
+    },
+    [decided],
+  );
+
   /**
    * How many stems have been moved off their resting position.
    *
@@ -1405,6 +1485,11 @@ export function useMix() {
     autoWarp,
     pin,
     nudge,
+    /** The fit's hits in seconds, and the three things a hand can do to a marker. */
+    hits,
+    moveMarker,
+    addMarker,
+    removeMarker,
     resetup,
     keepStems,
     resetting: setupFor !== null && song?.id === setupFor,

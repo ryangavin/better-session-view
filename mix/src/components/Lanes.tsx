@@ -350,6 +350,10 @@ export function Lanes({ mix }: { mix: Mix }) {
             height={24}
             anchors={mix.anchors}
             markers={mix.markers ?? undefined}
+            hits={mix.hits}
+            onMove={mix.moveMarker}
+            onAdd={mix.addMarker}
+            onRemove={mix.removeMarker}
             onPin={mix.pin}
             pinning={mix.manual !== null}
             span={span}
