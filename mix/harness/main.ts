@@ -86,6 +86,12 @@ async function loadIndex(): Promise<void> {
   } catch {
     // no storage; the first track will do
   }
+  // The app's header links here with the open track; that wins over what was remembered.
+  const asked = new URLSearchParams(location.search).get('track');
+  if (asked) {
+    if (entries.some((e) => e.id === asked)) want = asked;
+    else el('#summary').textContent = `no report for ${asked} — run npm run warp:mix -- --report`;
+  }
   if (want) {
     select.value = want;
     await loadTrack(want);

@@ -4,6 +4,7 @@ import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Ready } from '../openflow.ts';
+import { QuietField } from './Editable.tsx';
 import type { Mix } from '../state.ts';
 import { FASTEST, SLOWEST } from '../tempo.ts';
 import { bpmText, rangeText } from '../warp.ts';
@@ -43,7 +44,13 @@ import './Header.css';
  *
  * The track name is here because the right rail that used to carry it is gone,
  * and a window that never says what is open is one you can only orient in by
- * looking at which library row is highlighted.
+ * looking at which library row is highlighted. **It is also where the name gets
+ * fixed.** `Details.tsx` is the form, and it is on the setup screen — which is
+ * behind you the moment a track has stems, so a name you only notice is wrong
+ * once you are listening to it meant going back through the library to correct
+ * it. The two words are already on the bar; typing over them is the shortest
+ * path there is, and `QuietField` keeps them looking like the label they also
+ * are until you reach for one.
  */
 
 const play = (
@@ -75,6 +82,14 @@ const crosshair = (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
     <path d="M12 3v6M12 15v6M3 12h6M15 12h6" />
     <circle cx="12" cy="12" r="2.2" />
+  </svg>
+);
+
+/** A bug: the beat-finding harness, which is a debugging page and says so. */
+const bugMark = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+    <rect x="8" y="8" width="8" height="11" rx="4" />
+    <path d="M10 8V6.5a2 2 0 0 1 4 0V8M4 13h4M16 13h4M5 19l3-2M19 19l-3-2M5 8l3 2M19 8l-3 2" />
   </svg>
 );
 
@@ -124,6 +139,7 @@ function clockOf(seconds: number): string {
 
 export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
   const live = mix.phase === 'ready';
+  const song = mix.song;
 
   return (
     <header className="mf-header">
@@ -141,10 +157,38 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
       </div>
 
       <div className="mf-open">
-        {mix.song ? (
+        {song ? (
           <>
-            <span className="mf-open-title">{mix.song.title}</span>
-            <span className="mf-open-artist">{mix.song.artist ?? ''}</span>
+            <QuietField
+              className="mf-open-title"
+              value={song.title}
+              label="Title"
+              title="The track's name. Type over it to correct it"
+              required
+              onCommit={(next) => void mix.editTrack(song.id, { title: next.trim() })}
+            />
+            <QuietField
+              className="mf-open-artist"
+              value={song.artist ?? ''}
+              label="Artist"
+              placeholder="artist"
+              title="Who it is by. Type over it to correct it"
+              onCommit={(next) => void mix.editTrack(song.id, { artist: next.trim() || null })}
+            />
+            {import.meta.env.DEV && (
+              // Served by the dev server beside the app, so a dev build only;
+              // the window's open handler sends it to the browser.
+              <a
+                className="mf-debug"
+                href={`/harness/?track=${encodeURIComponent(song.id)}`}
+                target="_blank"
+                rel="noreferrer"
+                title="Open this track in the beat-finding harness — see mix/docs/harness.md"
+                aria-label="Open in the beat-finding harness"
+              >
+                {bugMark}
+              </a>
+            )}
           </>
         ) : (
           <span className="mf-open-none">nothing open</span>
