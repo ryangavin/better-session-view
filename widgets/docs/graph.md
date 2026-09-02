@@ -69,6 +69,13 @@ pair and never asks how it was drawn — the circuit editor's `wire(from, to)` r
 signal as the one leaving and `to`'s as the one arriving, and would be wrong half the time
 if the graph passed the gesture's order through instead of the cord's.
 
+The release is resolved synchronously against the registered port rectangles, with seven
+screen pixels of landing room around each dot. Hover state still paints the invitation, but
+it is not trusted to commit the gesture: pointer enter and pointer up can occur in one browser
+turn, before React has published the new hover state. That race dropped quick cords, and the
+tiny exact hit area made it look directional. Measuring on release makes both directions the
+same gesture without making the drawn ports larger.
+
 Two things fall out of that, and both are the difference between the feature working and
 the feature reading as working.
 

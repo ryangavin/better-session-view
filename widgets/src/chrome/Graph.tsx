@@ -279,6 +279,40 @@ export function Graph({
     setOver(id !== null && side ? portKey(id, side) : null);
   }, []);
 
+  /**
+   * The port under a released pointer, with a little humane landing room.
+   *
+   * React enter/leave state is useful for highlighting, but it is a poor final
+   * authority for a gesture: a pointerup can arrive in the same browser turn as
+   * the enter that should have updated it. That race made the common
+   * outlet-to-inlet drag intermittently disappear. Measuring the registered
+   * buttons at release time is synchronous, direction-neutral, and gives an
+   * eleven-pixel dot enough tolerance to use without changing its drawing.
+   */
+  const targetAt = useCallback((clientX: number, clientY: number, from: PortSide) => {
+    const wanted = opposite(from);
+    const margin = 7;
+    let nearest: { at: string; distance: number } | null = null;
+    for (const [at, held] of elements.current) {
+      if (held.side !== wanted || held.el.matches(':disabled')) continue;
+      const box = held.el.getBoundingClientRect();
+      if (
+        clientX < box.left - margin ||
+        clientX > box.right + margin ||
+        clientY < box.top - margin ||
+        clientY > box.bottom + margin
+      ) {
+        continue;
+      }
+      const distance = Math.hypot(
+        clientX - (box.left + box.width / 2),
+        clientY - (box.top + box.height / 2),
+      );
+      if (!nearest || distance < nearest.distance) nearest = { at, distance };
+    }
+    return nearest?.at ?? null;
+  }, []);
+
   /** While a cord is out, the whole document is somewhere it can be let go. */
   const drawingOut = drawing !== null;
   useEffect(() => {
@@ -286,7 +320,10 @@ export function Graph({
     const move = (e: PointerEvent) => {
       setDrawing((held) => (held ? { ...held, ...toGraph(e.clientX, e.clientY) } : held));
     };
-    const up = () => land(now.current.over);
+    const up = (e: PointerEvent) => {
+      const held = now.current.drawing;
+      land(held ? (targetAt(e.clientX, e.clientY, held.side) ?? now.current.over) : null);
+    };
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setDrawing(null);
     };
@@ -298,7 +335,7 @@ export function Graph({
       document.removeEventListener('pointerup', up);
       document.removeEventListener('keydown', key);
     };
-  }, [drawingOut, toGraph, land]);
+  }, [drawingOut, toGraph, land, targetAt]);
 
   /**
    * Zoom about the pointer, on a native listener because React registers wheel
