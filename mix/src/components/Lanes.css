@@ -225,7 +225,7 @@
 .mf-lane {
   display: flex;
   flex: 1 1 0;
-  min-height: 68px;
+  min-height: 96px;
   border-bottom: 1px solid var(--bd);
 }
 
@@ -301,6 +301,7 @@
 .mf-lane-keys {
   flex: none;
   display: flex;
+  flex-direction: column;
   gap: 3px;
   --wdg-field-height: 17px;
 }
@@ -352,40 +353,61 @@
   --wdg-fill: var(--blue);
 }
 
-.mf-tone {
-  flex: none;
-  width: var(--lane-tone);
-  background: var(--surface-lane-head);
-  border-left: 1px solid var(--bd);
+.mf-lane-strip {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 6px;
 }
 
 .mf-lane-tone {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: space-between;
-  padding: 0 6px;
   --wdg-fill: var(--stem);
-  --wdg-knob-size: 26px;
-  --wdg-knob-height: 21px;
+  --wdg-knob-size: 16px;
+  --wdg-knob-height: 13px;
+  --wdg-space: 4px;
+}
+
+.mf-lane-tone .wdg-widget {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.mf-lane-tone .wdg-caption {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mf-lane-tone .mf-tone-cut {
-  --wdg-knob-size: 18px;
-  --wdg-knob-height: 15px;
+  --wdg-knob-size: 12px;
+  --wdg-knob-height: 10px;
   --wdg-fill: var(--ui);
+  padding-left: 2px;
 }
 
 .mf-lane-tone .mf-tone-cut .wdg-caption {
   font-variation-settings: var(--wdg-mono-axes);
   font-variant-numeric: tabular-nums;
+  color: var(--caption);
 }
 
-.mf-lane[data-quiet] .mf-lane-tone {
-  --wdg-fill: var(--idle);
-}
-
+.mf-lane[data-quiet] .mf-lane-tone,
 .mf-lane[data-quiet] .mf-lane-tone .mf-tone-cut {
   --wdg-fill: var(--idle);
+}
+
+.mf-lane-level {
+  flex: none;
+  width: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .mf-zoom .wdg-button-body {

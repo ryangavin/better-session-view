@@ -23,9 +23,7 @@
   --surface-manual: #17171c;
 
   --rail-left: 258px;
-  --lane-head: 88px;
-  --lane-tone: 172px;
-  --lane-lead: calc(var(--lane-head) + var(--lane-tone));
+  --lane-head: 100px;
 
   --layer-outside: 3;
   --layer-playhead: 5;
