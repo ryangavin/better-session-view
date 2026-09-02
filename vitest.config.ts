@@ -59,13 +59,14 @@ export default defineConfig({
         'set/src/**/*.{ts,tsx}',
         'mix/src/**/*.{ts,tsx}',
         // Not the whole of electron/: main.ts and library.ts import electron,
-        // which only exists inside a main process. These three are the parts
+        // which only exists inside a main process. These are the parts
         // that own a person's library and what gets written into it, and they
         // have no electron in them precisely so they can be reached from here.
         'mix/electron/manifest.ts',
         'mix/electron/job.ts',
         'mix/electron/models.ts',
         'mix/electron/runtime.ts',
+        'mix/electron/youtube.ts',
         'visuals/client/**/*.{ts,tsx}',
         'visuals/server/**/*.{ts,tsx}',
         'chart/src/**/*.{ts,tsx}',

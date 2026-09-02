@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// mix[flow]'s own build step: make the three binaries the bundle carries.
+// mix[flow]'s own build step: make the four binaries the bundle carries.
 //
 // `tools/app.ts` runs this before building the app's main process. `uv` is a
 // pinned release binary; FFmpeg is built from its pinned upstream source because
@@ -25,6 +25,10 @@ const UV_DIGEST = '594d9f4cfbd21d5a2f34b0352bf423066a9dab1733c90b5d40e3e227506de
 const UV_BUILD = 'uv-aarch64-apple-darwin';
 const UV_FROM = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${UV_BUILD}.tar.gz`;
 
+const YT_DLP_VERSION = '2026.08.19';
+const YT_DLP_DIGEST = '0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202';
+const YT_DLP_FROM = `https://github.com/yt-dlp/yt-dlp/releases/download/${YT_DLP_VERSION}/yt-dlp_macos`;
+
 const FFMPEG_VERSION = '8.1.2';
 const FFMPEG_DIGEST = '464beb5e7bf0c311e68b45ae2f04e9cc2af88851abb4082231742a74d97b524c';
 const FFMPEG_FROM = `https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz`;
@@ -32,6 +36,7 @@ const FFMPEG_FROM = `https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz
 const here = path.dirname(fileURLToPath(import.meta.url));
 const bin = path.join(here, '..', 'bin');
 const uv = path.join(bin, 'uv');
+const ytDlp = path.join(bin, 'yt-dlp');
 const ffmpeg = path.join(bin, 'ffmpeg');
 const ffprobe = path.join(bin, 'ffprobe');
 const ffmpegLicense = path.join(bin, 'COPYING.LGPLv2.1');
@@ -92,6 +97,31 @@ async function prepareUv(): Promise<void> {
 
   if (!uvCurrent()) throw new Error('the uv that was built would not run');
   console.log(`prepare: uv ${UV_VERSION} → mix/bin/uv`);
+}
+
+/** Whether the exact official yt-dlp executable this build pins is already there. */
+function ytDlpCurrent(): boolean {
+  if (!fs.existsSync(ytDlp)) return false;
+  const digest = createHash('sha256').update(fs.readFileSync(ytDlp)).digest('hex');
+  if (digest !== YT_DLP_DIGEST) return false;
+  const said = spawnSync(ytDlp, ['--version'], { encoding: 'utf8' });
+  return said.status === 0 && said.stdout.trim() === YT_DLP_VERSION;
+}
+
+async function prepareYtDlp(): Promise<void> {
+  if (ytDlpCurrent()) {
+    console.log(`prepare: yt-dlp ${YT_DLP_VERSION} is already there`);
+    return;
+  }
+
+  const bytes = await fetchPinned(`yt-dlp ${YT_DLP_VERSION}`, YT_DLP_FROM, YT_DLP_DIGEST);
+  await fsp.mkdir(bin, { recursive: true });
+  const next = path.join(bin, 'yt-dlp.next');
+  await fsp.writeFile(next, bytes, { mode: 0o755 });
+  await fsp.rename(next, ytDlp);
+
+  if (!ytDlpCurrent()) throw new Error('the yt-dlp executable that was fetched would not run');
+  console.log(`prepare: yt-dlp ${YT_DLP_VERSION} → mix/bin/yt-dlp`);
 }
 
 /**
@@ -229,6 +259,7 @@ async function prepareFfmpeg(): Promise<void> {
 
 try {
   await prepareUv();
+  await prepareYtDlp();
   await prepareFfmpeg();
 } catch (why) {
   console.error(`prepare: ${(why as Error).message}`);

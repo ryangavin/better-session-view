@@ -20,10 +20,34 @@ button {
 }
 
 .mf-app {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+}
+
+.mf-drop {
+  position: absolute;
+  z-index: var(--layer-modal);
+  inset: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--amber);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  color: var(--fg);
+  pointer-events: none;
+}
+
+.mf-drop span {
+  padding: 12px 16px;
+  border: 1px solid var(--bd3);
+  border-radius: var(--radius-md);
+  background: var(--surface-control);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-lead);
 }
 
 .mf-body {

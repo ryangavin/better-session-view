@@ -17,12 +17,13 @@ artifactName: mix-flow-${version}-${arch}.${ext}
 #
 # `python/` is the separation worker, which is ours, plus the `pyproject.toml`
 # and `uv.lock` the engine is built from. `bin/` is the pinned `uv` that builds
-# it and the LGPL-only FFmpeg/FFprobe pair that opens every advertised source
-# format. `mix/tools/prepare.ts` fetches or builds and verifies all three, along
-# with the FFmpeg license, provenance, and corresponding source archive.
-# `docs/demucs.md` has the decision behind both.
+# it, the official pinned yt-dlp used for YouTube imports, and the LGPL-only
+# FFmpeg/FFprobe pair that opens every advertised source format.
+# `mix/tools/prepare.ts` fetches or builds and verifies all four, along with the
+# FFmpeg license, provenance, and corresponding source archive. `docs/demucs.md`
+# has the engine decision; `docs/library.md` has the downloader boundary.
 #
-# The three executables are Mach-Os, so a signed build signs them along with
+# The four executables are Mach-Os, so a signed build signs them along with
 # everything else in the bundle. They load only macOS system libraries and have
 # no JIT, so the hardened runtime has no argument with them.
 files:

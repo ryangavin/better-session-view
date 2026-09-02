@@ -1,3 +1,4 @@
+import { useState, type FormEvent } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS } from '../mock.ts';
 import { facts } from '../openflow.ts';
@@ -20,25 +21,51 @@ import './Library.css';
  */
 export function Library({ mix }: { mix: Mix }) {
   const { library } = mix;
+  const [youtube, setYoutube] = useState('');
+
+  const fetchYoutube = async (event?: FormEvent) => {
+    event?.preventDefault();
+    if (!youtube.trim()) return;
+    if (await mix.importYoutube(youtube)) setYoutube('');
+  };
 
   return (
     <aside className="mf-library">
       <div className="mf-library-top">
-        <input
-          type="text"
-          value={mix.query}
-          onChange={(e) => mix.setQuery(e.target.value)}
-          placeholder="Filter library"
-          aria-label="Filter the library"
-          disabled={!library.root}
-        />
-        <Button
-          onPress={() => void mix.importTracks()}
-          disabled={!library.root}
-          title={library.root ? 'Copy tracks into the library folder' : 'Choose a library folder first'}
-        >
-          Import
-        </Button>
+        <div className="mf-library-tools">
+          <input
+            type="text"
+            value={mix.query}
+            onChange={(e) => mix.setQuery(e.target.value)}
+            placeholder="Filter library"
+            aria-label="Filter the library"
+            disabled={!library.root}
+          />
+          <Button
+            onPress={() => void mix.importTracks()}
+            disabled={!library.root || mix.importing}
+            title={library.root ? 'Copy tracks into the library folder' : 'Choose a library folder first'}
+          >
+            Import
+          </Button>
+        </div>
+        <form className="mf-library-tools" onSubmit={(event) => void fetchYoutube(event)}>
+          <input
+            type="url"
+            value={youtube}
+            onChange={(event) => setYoutube(event.currentTarget.value)}
+            placeholder="YouTube URL"
+            aria-label="YouTube URL"
+            disabled={!library.root || mix.importing}
+          />
+          <Button
+            onPress={() => void fetchYoutube()}
+            disabled={!library.root || mix.importing || !youtube.trim()}
+            title={library.root ? 'Fetch the best audio with yt-dlp' : 'Choose a library folder first'}
+          >
+            Fetch
+          </Button>
+        </form>
       </div>
 
       <div className="mf-library-list">
@@ -66,7 +93,11 @@ export function Library({ mix }: { mix: Mix }) {
           <div className="mf-library-blank">
             <p className="mf-blank-lead">Nothing in here yet.</p>
             <p>Import a few tracks and they will be copied into the folder.</p>
-            <Button onPress={() => void mix.importTracks()} className="mf-primary">
+            <Button
+              onPress={() => void mix.importTracks()}
+              disabled={mix.importing}
+              className="mf-primary"
+            >
               Import tracks
             </Button>
           </div>
@@ -101,14 +132,22 @@ export function Library({ mix }: { mix: Mix }) {
         )}
       </div>
 
-      <div className="mf-library-foot">
-        <span>
-          {mix.songs.length === mix.total
-            ? `${mix.total} indexed`
-            : `${mix.songs.length} of ${mix.total}`}
-        </span>
+      <div className="mf-library-foot" data-bad={mix.noteBad || undefined}>
+        {!mix.noteBad && (
+          <span>
+            {mix.songs.length === mix.total
+              ? `${mix.total} indexed`
+              : `${mix.songs.length} of ${mix.total}`}
+          </span>
+        )}
         {mix.note ? (
-          <span className="mf-library-note">{mix.note}</span>
+          <span
+            className="mf-library-note"
+            data-bad={mix.noteBad || undefined}
+            title={mix.note}
+          >
+            {mix.note}
+          </span>
         ) : (
           <button
             type="button"

@@ -11,10 +11,18 @@
 .mf-library-top {
   flex: none;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
   padding: 7px 8px;
   border-bottom: 1px solid var(--bd);
+}
+
+.mf-library-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
 }
 
 .mf-library-top .wdg {
@@ -208,7 +216,24 @@ font-variation-settings: var(--mono-axes);
 }
 
 .mf-library-note {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
   color: var(--green);
+}
+
+.mf-library-note[data-bad] {
+  color: var(--red);
+}
+
+.mf-library-foot[data-bad] .mf-library-note {
+  overflow: visible;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.45;
 }
 
 .mf-library-where {

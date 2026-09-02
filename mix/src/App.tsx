@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Empty } from './components/Empty.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
 import { Header } from './components/Header.tsx';
@@ -38,6 +38,8 @@ import './App.css';
 export function App() {
   const mix = useMix();
   const [ready, setReady] = useState<Ready | null>(null);
+  const [dropping, setDropping] = useState(false);
+  const dragDepth = useRef(0);
 
   useEffect(() => {
     const bridge = openflow();
@@ -67,8 +69,49 @@ export function App() {
     return () => window.removeEventListener('keydown', key);
   }, [mix.playing, mix.setPlaying]);
 
+  const carriesFiles = (event: DragEvent): boolean =>
+    Array.from(event.dataTransfer.types).includes('Files');
+
+  const dragEnter = (event: DragEvent) => {
+    if (!carriesFiles(event)) return;
+    event.preventDefault();
+    dragDepth.current += 1;
+    if (mix.library.root && !mix.importing) setDropping(true);
+  };
+
+  const dragOver = (event: DragEvent) => {
+    if (!carriesFiles(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = mix.library.root && !mix.importing ? 'copy' : 'none';
+  };
+
+  const dragLeave = (_event: DragEvent) => {
+    // Chromium may clear `dataTransfer.types` on the final leave. The depth is
+    // already proof that this drag entered with files, and is the reliable way
+    // to make sure the target cannot remain stuck on screen.
+    if (dragDepth.current === 0) return;
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDropping(false);
+  };
+
+  const drop = (event: DragEvent) => {
+    if (event.dataTransfer.files.length === 0) return;
+    event.preventDefault();
+    dragDepth.current = 0;
+    setDropping(false);
+    if (mix.library.root && !mix.importing) {
+      void mix.importDropped(Array.from(event.dataTransfer.files));
+    }
+  };
+
   return (
-    <div className="mf-app">
+    <div
+      className="mf-app"
+      onDragEnter={dragEnter}
+      onDragOver={dragOver}
+      onDragLeave={dragLeave}
+      onDrop={drop}
+    >
       <Header mix={mix} ready={ready} />
       <main className="mf-body">
         <Library mix={mix} />
@@ -80,6 +123,11 @@ export function App() {
         </section>
       </main>
       {mix.exporting && <ExportModal mix={mix} />}
+      {dropping && (
+        <div className="mf-drop" role="status">
+          <span>Drop audio files to import</span>
+        </div>
+      )}
     </div>
   );
 }
