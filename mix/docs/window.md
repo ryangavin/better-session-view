@@ -123,6 +123,12 @@ paging and click-to-seek rather than being a separate document pasted over the b
 waveform. Changing songs folds it away. The worker and fret-path rules are in
 [`transcribe.md`](transcribe.md).
 
+Once notes exist, `−8va / 0 / +8va` corrects their octave. It is a layout of the cached
+detections rather than another inference: the view moves immediately and the MIDI and
+text tab on disk are rebuilt to agree. The string drawing is the shared
+`@openflow/widgets` Tablature; this file only adapts mix[flow]'s fret path and timeline
+into it.
+
 ## There is a lane per stem the model made, and no others
 
 A four-source model folds guitar and piano back into Other. The lanes used to draw all

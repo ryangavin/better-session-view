@@ -6,9 +6,9 @@
 The bass stem becomes a complete on-screen tablature lane and two useful,
 deliberately different file artifacts:
 
-- The **Tablature** lane sits directly beneath Bass. Every MIDI onset and duration is
-  projected onto the shared timeline and assigned to a string; zoom, pan, playhead,
-  paging, grid and click-to-seek are the same ones the waveforms use.
+- The **Tablature** lane unfolds from Bass. Every MIDI onset and duration is projected
+  onto the shared timeline and assigned to a string; zoom, pan, playhead, paging, grid
+  and click-to-seek are the same ones the waveforms use.
 
 - `bass.mid` is the pitched notes, at their measured times and velocities.
 - `bass.tab.txt` places those notes on a standard four-string EADG bass. Muted or
@@ -26,11 +26,24 @@ Neither is written beside the source audio. They live under the portable library
 The separation model is part of the path because the input is that model's `bass.wav`.
 Changing models is changing the audio being heard, not merely changing a setting.
 
+The lane's octave control is `−8va / 0 / +8va`. Pitch trackers can settle on a bass
+harmonic an octave above its fundamental; choosing `−8va` corrects the complete result
+without pretending the model should be run again. The on-screen fret path moves on the
+press, and `bass.mid` and `bass.tab.txt` are rebuilt from the cached detections. The
+sidecar keeps those raw detections and records the selected correction separately, so
+the choice survives reopening the result and can always be undone.
+
 At whole-track width there can be more notes than horizontal pixels. The tablature still
 draws every duration stroke, but suppresses fret labels that would collide. Zooming does
 not reveal new data; it gives the existing data enough room to print every fret. Fret
 assignment is computed over the complete phrase before the visible slice is chosen, so
 panning cannot make the first note on screen jump to a different string.
+
+The drawing itself is `@openflow/widgets/notation/Tablature.tsx`. mix[flow]'s adapter
+owns the instrument-specific work — octave correction and the whole-phrase fret path —
+then hands the widget labelled strings, duration events, a grid and a visible span. That
+is the same boundary chart[flow]'s piano roll uses: the app decides the music, the widget
+draws notation.
 
 ## Why a monophonic pitch tracker
 
@@ -108,9 +121,9 @@ measured times; grid choice only changes the text layout.
 - torchcrepe and full-model versions;
 - pitch range, hop, and periodicity threshold.
 
-The grid is deliberately not in that key. Once pitch inference exists, laying the same
-notes against a newly fitted grid rewrites only `bass.tab.txt`. MIDI and the detected
-notes are reused.
+The grid and octave correction are deliberately not in that key. Once pitch inference
+exists, laying the same notes against a newly fitted grid rewrites `bass.tab.txt`; changing
+octave rewrites that tab and `bass.mid`. In both cases the detected notes are reused.
 
 Fresh work goes into `<model>.writing` and is renamed only after MIDI, sidecar and tab
 all exist. Cancellation or a failed worker cannot land a partial transcription in the

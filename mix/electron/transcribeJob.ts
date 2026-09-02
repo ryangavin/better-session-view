@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { TranscribedNote } from '../src/tab.ts';
+import { bassTranspose, type TranscribedNote } from '../src/tab.ts';
 
 export const TRANSCRIPTIONS = 'transcriptions';
 export const TRANSCRIPTION_SIDECAR = 'transcription.json';
@@ -24,6 +24,9 @@ export interface TranscriptionSidecar {
   key: string;
   source: { file: string; bytes: number; hash: string };
   engine: typeof PITCH_ENGINE;
+  /** Semitone correction applied to MIDI, text tab and the on-screen view. */
+  transpose: number;
+  /** Raw detections. `transpose` is applied when an output is laid out. */
   notes: TranscribedNote[];
   noteCount: number;
   pitchedCount: number;
@@ -44,7 +47,7 @@ export type TranscribeEvent =
   | { event: 'read'; seconds: number; samples: number }
   | ({ event: 'done'; notes: TranscribedNote[] } & Omit<
       TranscriptionSidecar,
-      'openflow' | 'version' | 'key' | 'source' | 'engine' | 'notes' | 'midi' | 'produced'
+      'openflow' | 'version' | 'key' | 'source' | 'engine' | 'transpose' | 'notes' | 'midi' | 'produced'
     > & { file: string; model: string; fmin: number; fmax: number; confidence: number })
   | { event: 'failed'; says: string };
 
@@ -91,6 +94,7 @@ export function transcriptionSidecar(args: {
   key: string;
   source: TranscriptionSidecar['source'];
   done: Extract<TranscribeEvent, { event: 'done' }>;
+  transpose?: number;
 }): TranscriptionSidecar {
   const { key, source, done } = args;
   return {
@@ -99,6 +103,7 @@ export function transcriptionSidecar(args: {
     key,
     source,
     engine: PITCH_ENGINE,
+    transpose: bassTranspose(args.transpose ?? 0),
     notes: done.notes,
     noteCount: done.noteCount,
     pitchedCount: done.pitchedCount,
@@ -122,6 +127,9 @@ export async function readTranscription(root: string, where: string): Promise<Tr
     ) as TranscriptionSidecar;
     if (held.openflow !== 'mix-transcription' || held.version !== TRANSCRIPTION_FORMAT) return null;
     if (!Array.isArray(held.notes)) return null;
+    // Version 1 sidecars predate octave correction. Zero is the exact old
+    // behaviour, so they remain valuable cached inference instead of expiring.
+    held.transpose = bassTranspose(held.transpose ?? 0);
     return held;
   } catch {
     return null;

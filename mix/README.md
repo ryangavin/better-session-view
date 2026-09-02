@@ -22,7 +22,7 @@ copied there on import, indexed by a manifest that makes the folder portable —
 writes float32 stems into that same folder with a sidecar describing them —
 [`docs/stems.md`](docs/stems.md). Those stems are then decoded, drawn and played:
 the waveforms are the audio, and the faders move it — [`docs/playback.md`](docs/playback.md).
-The bass stem can also become cached MIDI and tuning-aware tab —
+The bass stem can also become cached MIDI and standard EADG tab —
 [`docs/transcribe.md`](docs/transcribe.md).
 The grid is measured too: `src/warp.ts` fits a tempo and a downbeat to the kick band of
 the separated drums, and a track opens gridded rather than ruled at 120 —
@@ -68,6 +68,8 @@ arrangement yet, and the export button closes the dialog.
 | `src/zoom.ts` | how much of the track the lanes show, and which part |
 | `src/warp.ts` | where the bars fall, and the tempo and downbeat fitted to the kick. Tested |
 | `src/tab.ts` | standard EADG bass, the fret-path search and tab layouts. Tested |
+| `src/tablature.ts` | visible-slice projection for the shared notation widget. Tested |
+| `src/midi.ts` | deterministic MIDI rebuilt after octave correction. Tested |
 | `src/grid.ts` | how finely the grid rules at that zoom, and what each line is. Tested |
 | `src/state.ts` | everything the window knows, in one hook |
 | `src/components/` | the header, the library, the three states, the lanes and the warp lane |

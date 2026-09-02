@@ -21,6 +21,7 @@ with no React, this is React with no domain.
 | [the gesture](docs/gesture.md) | dragging, the fine modifier, keys, write rate, the local-value hold | `src/gesture/*` |
 | [the catalogue](docs/catalogue.md) | **adding a widget** — what exists, what's next, and what Max for Live does and doesn't tell you | `src/controls/*` |
 | [the graph](docs/graph.md) | the node canvas, ports, cords, or who owns a position | `src/chrome/Graph.tsx`, `Port.tsx`, `graphContext.ts` |
+| [notation displays](docs/notation.md) | tablature, a piano roll, their timelines, or the app/widget boundary | `src/notation/*` |
 | [the bench](docs/bench.md) | the dev harness, or adding a case to it | `bench/*`, `vite.config.ts` |
 
 ## The shape of it
@@ -62,6 +63,10 @@ src/
     Row.tsx         controls on one line, in three bands, through a subgrid
     Panel.tsx       aligned vertical parameter lanes, through a shared row grid
     chrome.css      their styling, on the same shared parts
+  notation/
+    Tablature.tsx   string lines, duration strokes and collision-aware fret labels
+    PianoRoll.tsx   keyboard rows, note blocks, musical ruling and a movable playhead
+    notation.css    shared notation geometry; hosts supply musical meaning
   palette.css       the design language itself: surfaces, the text ramp, the accents,
                     the type stacks, the radii and the 22px control height. Every app
                     here imports it; DESIGN.md is what it means

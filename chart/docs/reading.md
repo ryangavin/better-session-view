@@ -326,6 +326,16 @@ The black keys stay blank — their names are the two-character ones, and the pa
 them already says which is which. **No octave numbers**, because the roll is one octave and
 which one it is is not a fact anybody plays.
 
+### The roll is shared; the reading is not
+
+The rows, keyboard, note geometry, bar and beat ruling, label fit and movable playhead are
+`@openflow/widgets/notation/PianoRoll.tsx`. This app still owns every musical judgement:
+which octave arrives on the wire, how a note is spelled, its degree colour, the root ring
+and the fifth-string dot. It maps those answers into a display widget that knows nothing
+about Live, clips, keys or tracks. mix[flow]'s tablature uses the matching boundary, so the
+two notation views can evolve as one design without either app importing the other's
+domain.
+
 ### Reading it
 
 Notes are a **read, not a watch** — the LOM has no event for a clip's contents that would

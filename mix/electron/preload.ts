@@ -60,7 +60,12 @@ expose({
   },
   transcribe: {
     busy: (): Promise<string | null> => ipcRenderer.invoke('openflow:transcribing'),
-    run: (ask: { trackId: string; tuning: Tuning; bars: Bars | null }): Promise<TranscribeOutcome> =>
+    run: (ask: {
+      trackId: string;
+      tuning: Tuning;
+      bars: Bars | null;
+      transpose: number;
+    }): Promise<TranscribeOutcome> =>
       ipcRenderer.invoke('openflow:transcribe', ask),
     cancel: (trackId?: string): Promise<void> => ipcRenderer.invoke('openflow:transcribe-cancel', trackId),
     reveal: (trackId: string): Promise<void> => ipcRenderer.invoke('openflow:transcribe-reveal', trackId),

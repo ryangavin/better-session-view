@@ -88,6 +88,7 @@ export interface Transcribed {
   midi: string;
   tab: string;
   sidecar: {
+    transpose: number;
     notes: TranscribedNote[];
     noteCount: number;
     pitchedCount: number;
@@ -151,6 +152,7 @@ interface Bridge {
       trackId: string;
       tuning: readonly TuningString[];
       bars: { origin: number; across: number } | null;
+      transpose: number;
     }): Promise<TranscribeOutcome>;
     cancel(trackId?: string): Promise<void>;
     reveal(trackId: string): Promise<void>;

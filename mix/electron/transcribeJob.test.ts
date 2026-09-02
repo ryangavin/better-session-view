@@ -63,6 +63,21 @@ describe('transcription cache', () => {
     await fs.rm(path.join(root, where, MIDI_FILE));
     expect(await reusableTranscription(root, where, transcriptionKey('hash'))).toBeNull();
   });
+
+  it('loads older sidecars as untransposed without expiring their inference', async () => {
+    const where = transcriptionAt('track', 'htdemucs_ft');
+    const sidecar = transcriptionSidecar({
+      key: transcriptionKey('hash'),
+      source: { file: 'stems/track/htdemucs_ft/bass.wav', bytes: 10, hash: 'hash' },
+      done: done(),
+    });
+    const old = { ...sidecar } as Partial<typeof sidecar>;
+    delete old.transpose;
+    await fs.mkdir(path.join(root, where), { recursive: true });
+    await fs.writeFile(path.join(root, where, TRANSCRIPTION_SIDECAR), JSON.stringify(old));
+    await fs.writeFile(path.join(root, where, MIDI_FILE), 'MThd');
+    expect(await reusableTranscription(root, where, transcriptionKey('hash'))).toMatchObject({ transpose: 0 });
+  });
 });
 
 describe('transcription worker events', () => {

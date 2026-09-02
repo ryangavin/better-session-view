@@ -13,6 +13,7 @@
     ".": "./src/index.ts",
     "./controls/*": "./src/controls/*",
     "./chrome/*": "./src/chrome/*",
+    "./notation/*": "./src/notation/*",
     "./param/*": "./src/param/*",
     "./gesture/*": "./src/gesture/*",
     "./palette.css": "./src/palette.css",

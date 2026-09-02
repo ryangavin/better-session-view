@@ -147,7 +147,12 @@ if (only(app)) {
   ipcMain.handle('openflow:transcribe-cancel', (_event, trackId?: string) => cancelTranscription(trackId));
   ipcMain.handle(
     'openflow:transcribe',
-    async (_event, ask: { trackId: string; tuning: Tuning; bars: Bars | null }): Promise<TranscribeOutcome> => {
+    async (_event, ask: {
+      trackId: string;
+      tuning: Tuning;
+      bars: Bars | null;
+      transpose: number;
+    }): Promise<TranscribeOutcome> => {
       const library = await load();
       const track = library.tracks.find((candidate) => candidate.id === ask.trackId);
       if (!library.root || !track?.stems || !track.model || !track.sources.includes('bass')) {
@@ -162,6 +167,7 @@ if (only(app)) {
           stems: track.stems,
           tuning: ask.tuning,
           bars: ask.bars,
+          transpose: ask.transpose,
         },
         {
           progress: (trackId: string, progress: TranscribeProgress) =>

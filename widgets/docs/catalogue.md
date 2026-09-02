@@ -77,6 +77,12 @@ draws a clip's audio, by the same rule that kept `Meter` out until a second call
 appeared. Until then it is one app's component, and the cost of being wrong about the
 shape is one app's.
 
+**Notation arrived when there were two real views to compare.** `Tablature` and
+`PianoRoll` share timeline geometry but do not pretend to share their hosts' musical
+judgement. They take already-labelled strings, keys and events; chart[flow] still owns
+degree colour and its fifth-string mark, while mix[flow] still owns fret assignment and
+transcription confidence. The display boundary is in [notation.md](notation.md).
+
 **`Meter` arrived when the second caller did**, which is what this list said would happen.
 The first was a mixer strip. The second is a signal a look is being driven by, and it is
 the one that makes a meter a widget rather than a bar the mixer draws: a *hand-driven*

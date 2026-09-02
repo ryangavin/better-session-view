@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { assignFrets, parseTuning, renderTab, STANDARD_BASS, type TranscribedNote } from './tab.ts';
+import {
+  assignFrets,
+  bassTranspose,
+  parseTuning,
+  renderTab,
+  STANDARD_BASS,
+  transposeNotes,
+  type TranscribedNote,
+} from './tab.ts';
 
 const note = (pitch: number | null, start: number): TranscribedNote => ({
   pitch,
@@ -43,6 +51,17 @@ describe('fret assignment', () => {
   it('uses open E and marks notes below the standard instrument unplayable', () => {
     expect(assignFrets([note(28, 0)], STANDARD_BASS)[0]).toMatchObject({ string: 0, fret: 0 });
     expect(assignFrets([note(27, 0)], STANDARD_BASS)[0]).toMatchObject({ unplayable: true });
+  });
+});
+
+describe('octave correction', () => {
+  it('moves pitched notes by a whole octave and leaves muted attacks alone', () => {
+    expect(transposeNotes([note(40, 0), note(null, 1)], -12).map((each) => each.pitch)).toEqual([28, null]);
+  });
+
+  it('refuses corrections the lane cannot state', () => {
+    expect(bassTranspose(-7)).toBe(0);
+    expect(bassTranspose(-12)).toBe(-12);
   });
 });
 

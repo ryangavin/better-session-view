@@ -729,6 +729,7 @@ export function useMix() {
       trackId: song.id,
       tuning: STANDARD_BASS,
       bars: bpmAuto ? grid : null,
+      transpose: 0,
     });
     // The runner normally announces this as an event. Early refusals cannot,
     // so the invocation's answer is also applied; doing it twice is harmless.
@@ -737,6 +738,35 @@ export function useMix() {
     setTranscription(outcome.ok ? outcome : null);
     setTranscribeProblem(outcome.ok || outcome.cancelled ? null : outcome.says);
   }, [song, bpmAuto, grid]);
+
+  /**
+   * Correct an octave error without asking the pitch model again.
+   *
+   * The cached sidecar keeps the detected pitches. The main process rebuilds
+   * MIDI and text tab from them, while the optimistic sidecar value makes the
+   * on-screen fret path move on the same press.
+   */
+  const transposeBass = useCallback(async (transpose: number) => {
+    const bridge = openflow();
+    if (!bridge || !song || !transcription || transcription.trackId !== song.id) return;
+    const before = transcription;
+    setTranscribeProblem(null);
+    setTranscription({
+      ...before,
+      sidecar: { ...before.sidecar, transpose },
+    });
+    const outcome = await bridge.transcribe.run({
+      trackId: song.id,
+      tuning: STANDARD_BASS,
+      bars: bpmAuto ? grid : null,
+      transpose,
+    });
+    if (outcome.ok) setTranscription(outcome);
+    else {
+      setTranscription(before);
+      if (!outcome.cancelled) setTranscribeProblem(outcome.says);
+    }
+  }, [song, transcription, bpmAuto, grid]);
 
   const cancelTranscription = useCallback(() => {
     const id = transcribingId;
@@ -1158,6 +1188,7 @@ export function useMix() {
     transcription,
     transcribeProblem,
     transcribeBass,
+    transposeBass,
     cancelTranscription,
     revealTranscription,
     engineBusy: runningId !== null || transcribingId !== null,

@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { renderTab, type Tuning } from '../src/tab.ts';
+import { midiFile } from '../src/midi.ts';
+import { bassTranspose, renderTab, transposeNotes, type Tuning } from '../src/tab.ts';
 import type { Bars } from '../src/warp.ts';
 import { hashOf } from './job.ts';
 import { places, prepare, uvPath, worker } from './runtime.ts';
@@ -34,6 +35,8 @@ export interface TranscribeRequest {
   stems: string;
   tuning: Tuning;
   bars: Bars | null;
+  /** Semitones, constrained to the octave choices the renderer exposes. */
+  transpose: number;
 }
 
 export interface Transcribed {
@@ -64,18 +67,39 @@ export interface TranscribeWatcher {
 export const transcribing = (): string | null => busyWork('transcribe');
 export const cancelTranscription = (trackId?: string): void => cancelWork(trackId, 'transcribe');
 
-async function writeTab(
+async function atomicWrite(file: string, contents: string | Uint8Array): Promise<void> {
+  const scratch = `${file}.writing`;
+  await fs.writeFile(scratch, contents);
+  await fs.rename(scratch, file);
+}
+
+/**
+ * Rebuild every cheap artifact from one cached inference.
+ *
+ * The sidecar keeps raw detections. Its transpose records how MIDI, text tab
+ * and the renderer currently interpret them, so changing octave never asks the
+ * pitch model the same expensive question twice.
+ */
+export async function writeLayouts(
   root: string,
   where: string,
   sidecar: TranscriptionSidecar,
   tuning: Tuning,
   bars: Bars | null,
-): Promise<void> {
-  const text = renderTab({ notes: sidecar.notes, tuning, seconds: sidecar.seconds, bars });
-  const file = path.join(root, where, TAB_FILE);
-  const scratch = `${file}.writing`;
-  await fs.writeFile(scratch, text);
-  await fs.rename(scratch, file);
+  transpose: number,
+): Promise<TranscriptionSidecar> {
+  const corrected = { ...sidecar, transpose: bassTranspose(transpose) };
+  const notes = transposeNotes(corrected.notes, corrected.transpose);
+  await atomicWrite(path.join(root, where, MIDI_FILE), midiFile(notes));
+  await atomicWrite(
+    path.join(root, where, TAB_FILE),
+    renderTab({ notes, tuning, seconds: corrected.seconds, bars }),
+  );
+  await atomicWrite(
+    path.join(root, where, TRANSCRIPTION_SIDECAR),
+    `${JSON.stringify(corrected, null, 2)}\n`,
+  );
+  return corrected;
 }
 
 export async function transcribe(
@@ -102,7 +126,14 @@ export async function transcribe(
   const where = transcriptionAt(request.trackId, request.model);
   const already = await reusableTranscription(request.root, where, key);
   if (already) {
-    await writeTab(request.root, where, already, request.tuning, request.bars);
+    const sidecar = await writeLayouts(
+      request.root,
+      where,
+      already,
+      request.tuning,
+      request.bars,
+      request.transpose,
+    );
     return {
       ok: true,
       trackId: request.trackId,
@@ -110,7 +141,7 @@ export async function transcribe(
       where,
       midi: `${where}/${MIDI_FILE}`,
       tab: `${where}/${TAB_FILE}`,
-      sidecar: already,
+      sidecar,
       tuning: request.tuning,
       reused: true,
     };
@@ -196,12 +227,16 @@ export async function transcribe(
     key,
     source: { file: stemRelative, bytes, hash },
     done,
+    transpose: request.transpose,
   });
   try {
-    await fs.writeFile(path.join(scratch, TRANSCRIPTION_SIDECAR), `${JSON.stringify(sidecar, null, 2)}\n`);
-    await fs.writeFile(
-      path.join(scratch, TAB_FILE),
-      renderTab({ notes: sidecar.notes, tuning: request.tuning, seconds: sidecar.seconds, bars: request.bars }),
+    await writeLayouts(
+      request.root,
+      `${where}.writing`,
+      sidecar,
+      request.tuning,
+      request.bars,
+      request.transpose,
     );
     await fs.rm(path.join(request.root, where), { recursive: true, force: true });
     await fs.mkdir(path.dirname(path.join(request.root, where)), { recursive: true });

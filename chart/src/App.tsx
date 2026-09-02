@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  PianoRoll as PianoRollWidget,
+  type PianoRollKey,
+  type PianoRollNote,
+} from '@openflow/widgets/notation/PianoRoll.tsx';
 import { hex } from '../../core/src/color.ts';
 import {
   degreeColor,
@@ -289,17 +294,6 @@ function Wheel({
 }
 
 /**
- * How wide a note has to be, as a percentage of the roll, before its name fits.
- *
- * A phone's grid is around three hundred pixels and two characters want fourteen
- * of them, so anything under about five percent gets a clipped glyph instead of
- * a label. The threshold is in percent rather than beats deliberately: the same
- * eighth note is legible in a four-bar loop and a smear in a sixteen-bar one, so
- * it is the drawn width that decides and not the duration.
- */
-const LABEL_AT = 4.5;
-
-/**
  * The bass part, drawn the way Ableton's piano roll draws it.
  *
  * **A copy, not a chart of it.** Time runs left to right against the clip's own
@@ -371,82 +365,44 @@ function PianoRoll({ line, anchor }: { line: ChartBassline; anchor: Anchor | nul
   const rows = Math.max(1, line.high - line.low + 1);
   const pitches = Array.from({ length: rows }, (_, i) => line.high - i);
   const degree = (pitch: number) => (line.root === null ? null : degreeOf(pitch, line.root));
-  const bars = Math.max(1, Math.round(span / line.beatsPerBar));
-  // Beat lines are detail, and detail stops helping once the bars are thin. A
-  // sixteen-bar loop on a phone is twenty pixels a bar, where four more lines
-  // inside each one is a texture rather than a grid.
-  const beats = bars <= 8 && Number.isInteger(line.beatsPerBar) ? line.beatsPerBar : 0;
+  const keys: PianoRollKey[] = pitches.map((pitch) => ({
+    pitch,
+    black: isBlackKey(pitch),
+    emphasis: pitch % 12 === 0,
+    // Every white key, so a note can be read off its row without counting up
+    // from the nearest C. Black keys stay blank: their pattern says which is
+    // which and the two-character names do not fit this gutter.
+    label: isBlackKey(pitch) ? '' : noteName(pitch, line.flats),
+  }));
+  const notes: PianoRollNote[] = line.notes.map((note) => {
+    const at = degree(note.pitch);
+    const label = noteName(note.pitch, line.flats);
+    return {
+      from: note.from,
+      to: note.to,
+      pitch: note.pitch,
+      label,
+      // The track's colour until the set states a key, because a roll coloured
+      // against a root nobody gave would still look deliberate.
+      color: at === null ? hex(line.color) : degreeColor(at),
+      emphasis: at === 0,
+      marked: note.below,
+      title: `${label}${at === null ? '' : ` · ${degreeName(at)}`}${
+        note.below ? ' · an octave up, needs the fifth string' : ''
+      }`,
+    };
+  });
 
   return (
-    <div className="roll" style={{ '--rows': rows } as React.CSSProperties}>
-      <div className="keys">
-        {pitches.map((pitch) => (
-          <span key={pitch} className={`key ${isBlackKey(pitch) ? 'black' : 'white'}`}>
-            {/* Every white key, so a note can be read off its row without
-                counting up from the nearest C. The black keys stay blank: their
-                names are the two-character ones, and the pattern beside them
-                already says which is which. No octave numbers, because the roll
-                is one octave and which one it is is not a fact anybody plays. */}
-            {isBlackKey(pitch) ? '' : noteName(pitch, line.flats)}
-          </span>
-        ))}
-      </div>
-
-      <div className="grid">
-        {pitches.map((pitch) => (
-          <div
-            key={pitch}
-            className={`lane ${isBlackKey(pitch) ? 'black' : 'white'} ${
-              pitch % 12 === 0 ? 'octave' : ''
-            }`}
-          />
-        ))}
-
-        {Array.from({ length: bars - 1 }, (_, i) => (
-          <div key={`bar${i}`} className="barline" style={{ left: `${((i + 1) / bars) * 100}%` }} />
-        ))}
-
-        {Array.from({ length: bars * beats }, (_, i) => i).map((i) =>
-          i === 0 || i % beats === 0 ? null : (
-            <div key={`beat${i}`} className="beatline" style={{ left: `${(i / (bars * beats)) * 100}%` }} />
-          ),
-        )}
-
-        {line.notes.map((note) => {
-          const at = degree(note.pitch);
-          const width = ((note.to - note.from) / span) * 100;
-          return (
-            <div
-              key={`${note.from}:${note.pitch}`}
-              className={`note ${at === 0 ? 'tonic' : ''} ${note.below ? 'below' : ''}`}
-              style={{
-                left: `${(note.from / span) * 100}%`,
-                width: `${width}%`,
-                top: `${((line.high - note.pitch) / rows) * 100}%`,
-                height: `${100 / rows}%`,
-                // The track's colour until the set states a key, because a roll
-                // coloured against a root nobody gave is worse than a plain one:
-                // the colours would still look deliberate.
-                backgroundColor: at === null ? hex(line.color) : degreeColor(at),
-              }}
-              title={`${noteName(note.pitch, line.flats)}${at === null ? '' : ` · ${degreeName(at)}`}${
-                note.below ? ' · an octave up, needs the fifth string' : ''
-              }`}
-            >
-              {width >= LABEL_AT ? noteName(note.pitch, line.flats) : ''}
-            </div>
-          );
-        })}
-
-        <div className="playhead" ref={head} />
-      </div>
-
-      <ol className="bars">
-        {Array.from({ length: bars }, (_, i) => (
-          <li key={i}>{i + 1}</li>
-        ))}
-      </ol>
-    </div>
+    <PianoRollWidget
+      keys={keys}
+      notes={notes}
+      from={0}
+      to={span}
+      beatsPerBar={line.beatsPerBar}
+      playheadRef={head}
+      className="chart-piano-roll"
+    />
   );
 }
 

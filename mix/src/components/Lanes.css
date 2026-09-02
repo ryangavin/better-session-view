@@ -330,6 +330,14 @@ font-variation-settings: var(--mono-axes);
   min-width: 0;
 }
 
+.mf-tab-actions {
+  flex-wrap: wrap;
+}
+
+.mf-tab-octave {
+  --wdg-field-height: 18px;
+}
+
 .mf-tab-count {
   min-width: 0;
   overflow: hidden;
@@ -356,10 +364,14 @@ font-variation-settings: var(--mono-axes);
   overflow: hidden;
 }
 
-.mf-tablature-canvas {
-  display: block;
-  width: 100%;
-  cursor: text;
+.mf-tablature {
+  --wdg-face: var(--surface-lane-head);
+  --wdg-edge: var(--bd);
+  --wdg-empty: var(--idle);
+  --wdg-fill: var(--amber);
+  --wdg-text: var(--detail);
+  --wdg-caption: var(--caption);
+  --wdg-alarm: var(--red);
 }
 
 .mf-tab-message {

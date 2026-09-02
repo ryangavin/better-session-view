@@ -71,3 +71,18 @@ export { Port, type PortProps } from './chrome/Port.tsx';
 export { Rack, type RackProps } from './chrome/Rack.tsx';
 export { Row, type RowProps } from './chrome/Row.tsx';
 export { Panel, PanelColumn, type PanelProps, type PanelColumnProps } from './chrome/Panel.tsx';
+
+export {
+  Tablature,
+  type NotationGrid,
+  type NotationSpan,
+  type TablatureNote,
+  type TablatureProps,
+  type TablatureString,
+} from './notation/Tablature.tsx';
+export {
+  PianoRoll,
+  type PianoRollKey,
+  type PianoRollNote,
+  type PianoRollProps,
+} from './notation/PianoRoll.tsx';

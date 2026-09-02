@@ -18,6 +18,25 @@ export interface TuningString {
 
 export type Tuning = readonly TuningString[];
 
+/** The octave corrections exposed by the transcription lane, in semitones. */
+export const BASS_TRANSPOSE = [-12, 0, 12] as const;
+
+/** Keep an IPC-supplied correction on the octave steps the UI can state. */
+export const bassTranspose = (semitones: number): number =>
+  BASS_TRANSPOSE.includes(semitones as (typeof BASS_TRANSPOSE)[number]) ? semitones : 0;
+
+/** Apply a layout correction without changing the cached pitch inference. */
+export function transposeNotes(
+  notes: readonly TranscribedNote[],
+  semitones: number,
+): TranscribedNote[] {
+  const by = bassTranspose(semitones);
+  return notes.map((note) => ({
+    ...note,
+    pitch: note.pitch === null ? null : Math.max(0, Math.min(127, note.pitch + by)),
+  }));
+}
+
 /** The instrument mix[flow] transcribes for: standard four-string bass, EADG. */
 export const STANDARD_BASS: Tuning = [
   { name: 'E1', pitch: 28 },

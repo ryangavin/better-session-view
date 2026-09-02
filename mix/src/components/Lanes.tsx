@@ -7,6 +7,7 @@ import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Peak } from '../audio.ts';
 import { STEMS } from '../mock.ts';
 import { SPANS, type Mix } from '../state.ts';
+import { BASS_TRANSPOSE } from '../tab.ts';
 import { placeOf } from '../warp.ts';
 import { factorOf, limitOf, shows, spanOf, useView, type Span } from '../zoom.ts';
 import { Tablature } from './Tablature.tsx';
@@ -44,6 +45,7 @@ import './Lanes.css';
  * two controls to the left.
  */
 const LEVEL: Param = { kind: 'float', min: 0, max: 1, defaultValue: 0.8, unit: 'percent' };
+const OCTAVES = ['−8va', '0', '+8va'] as const;
 
 /**
  * The fader's drawn length.
@@ -432,6 +434,9 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
   const blocked = mix.runningId !== null || (mix.transcribingId !== null && !ownJob);
   const strings = done?.tuning.length ?? 4;
   const height = Math.max(84, strings * 18 + 22);
+  const transpose = done?.sidecar.transpose ?? 0;
+  const found = BASS_TRANSPOSE.indexOf(transpose as (typeof BASS_TRANSPOSE)[number]);
+  const octave = found < 0 ? 1 : found;
 
   return (
     <div className="mf-lane mf-tab-lane" style={{ '--tab-height': `${height}px` } as never}>
@@ -446,6 +451,17 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
           </span>
         )}
         <div className="mf-tab-actions">
+          {done && (
+            <Segmented
+              items={OCTAVES}
+              index={octave}
+              onChange={(next) => void mix.transposeBass(BASS_TRANSPOSE[next]!)}
+              disabled={blocked}
+              label="Bass octave correction"
+              title="Move the complete transcription by one octave without running pitch detection again"
+              className="mf-tab-octave"
+            />
+          )}
           {ownJob ? (
             <Button onPress={mix.cancelTranscription}>Cancel</Button>
           ) : done ? (
@@ -466,6 +482,7 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
           <Tablature
             notes={done.sidecar.notes}
             tuning={done.tuning}
+            transpose={transpose}
             seconds={done.sidecar.seconds}
             bars={mix.grid}
             span={span}

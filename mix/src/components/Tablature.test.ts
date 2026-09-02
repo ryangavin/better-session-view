@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseTuning, type TranscribedNote } from '../tab.ts';
-import { fretsIn } from './Tablature.tsx';
+import { fretsIn } from '../tablature.ts';
 
 const note = (pitch: number | null, start: number, end = start + 0.25): TranscribedNote => ({
   pitch,
@@ -28,5 +28,10 @@ describe('on-screen tablature', () => {
   it('keeps muted and unplayable events visible', () => {
     const shown = fretsIn([note(null, 1), note(20, 2)], tuning, 4, { from: 0, to: 1 });
     expect(shown.map((each) => each.label)).toEqual(['x', '?']);
+  });
+
+  it('applies an octave correction before choosing frets', () => {
+    const shown = fretsIn([note(40, 1)], tuning, 4, { from: 0, to: 1 }, -12);
+    expect(shown[0]).toMatchObject({ pitch: 28, fret: 0, label: '0' });
   });
 });
