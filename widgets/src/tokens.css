@@ -3,7 +3,7 @@
   --wdg-edge: var(--bd3, #2c2c31);
   --wdg-edge-live: var(--focus, #4a4a52);
   --wdg-empty: var(--idle, #3a3a41);
-  --wdg-fill: var(--amber, #f7c65a);
+  --wdg-fill: var(--amber, #f0b23c);
   --wdg-fill-text: #000;
   --wdg-marker: var(--fg, #ececed);
   --wdg-text: var(--ui, #b7b7be);
@@ -37,7 +37,7 @@
   --wdg-strip: 4px;
   --wdg-mark-width: 3px;
   --wdg-reach-ink: var(--ui, #b7b7be);
-  --wdg-arrival-ink: color-mix(in srgb, var(--amber-hover, #ffd97f) 60%, var(--fg, #ececed));
+  --wdg-arrival-ink: color-mix(in srgb, var(--amber-hover, #ffc961) 60%, var(--fg, #ececed));
   --wdg-groove: var(--surface-sunken, #101012);
   --wdg-knob-size: 34px;
   --wdg-knob-height: 27px;
