@@ -3,7 +3,7 @@
  * the drums, the transients it heard, the beats it laid down, the tempo it
  * followed, and the truth when there is one. Not part of the app.
  */
-import { countedOf, refitOf } from '../src/tempo.ts';
+import { countedOf, refitOf, sweepOf, type Sweep } from '../src/tempo.ts';
 import { beatAt, tempoAt, countOf, renumbered, tempoOf, BEATS_PER_BAR } from '../src/warp.ts';
 import type { Beats } from '../src/warp.ts';
 import type { IndexEntry, Report, Truth } from './types.ts';
@@ -136,6 +136,7 @@ async function loadTrack(id: string): Promise<void> {
   }
   fillArms(entries.find((e) => e.id === id));
   report = await json<Report>(`${REPORTS}/${id}${arm ? `.${arm}` : ''}.json`);
+  swept = null;
   truth = await json<Truth>(`${REPORTS}/truth/${id}.json`);
   if (!report) throw new Error(`no report for ${id}${arm ? ` (${arm})` : ''}`);
   saved = truth ? structuredClone(truth) : null;
@@ -356,6 +357,7 @@ function drawPanels(): void {
 
   const which = Number(el<HTMLSelectElement>('#cand').value || 0);
   el('#sweepText').textContent = D.drawSweep(el<HTMLCanvasElement>('#sweep'), tempo?.candidates?.[which]);
+  el('#driftText').textContent = D.drawDrift(el<HTMLCanvasElement>('#drift'), swept);
 }
 
 /* ---------- time interaction ---------- */
@@ -880,6 +882,7 @@ function wireCorrection(): void {
   el('#save').addEventListener('click', () => void saveTruth());
   el('#discard').addEventListener('click', discard);
   el('#forget').addEventListener('click', () => void forgetTruth());
+  el('#sweepTempo').addEventListener('click', sweepTempo);
 }
 
 /** Keys that only mean something with a beat in hand. Returns whether the key was taken. */
@@ -966,10 +969,34 @@ function replaceMap(beats: Beats, bpm: number, offset: number): void {
   render();
 }
 
+/** The last tempo sweep, drawn in its panel until the report changes. */
+let swept: Sweep | null = null;
+
 /**
- * 1.1.1 moved to a sample. A straight map is ruled again from there at its
- * tempo; a followed map keeps every anchor, takes the nearest beat to the
- * sample, and counts from it.
+ * The tempo a straight grid should have from where 1.1.1 is now: swept
+ * across a beat per minute either side of the current tempo against every
+ * kick and snare, and the map ruled again at the bottom of the curve.
+ */
+function sweepTempo(): void {
+  const beats = report?.beats;
+  if (!report || !beats) return;
+  const rate = beats.rate;
+  const offset = report.fit?.offset ?? beats.samples[0] / rate;
+  const around = report.fit?.bpm ?? tempoOf(beats);
+  swept = sweepOf(report.heard, offset, around);
+  if (!swept) {
+    el('#note').textContent = 'too few hits to sweep';
+    return;
+  }
+  const ruled = straight(swept.best.bpm, offset, rate, beats.length);
+  if (ruled) replaceMap(ruled, swept.best.bpm, offset);
+  el('#note').textContent = `swept from 1.1.1 at ${offset.toFixed(3)} s: ${swept.best.bpm.toFixed(3)} (${swept.best.error.toFixed(1)} ms) · whole ${swept.whole.bpm} (${swept.whole.error.toFixed(1)} ms)`;
+}
+
+/**
+ * 1.1.1 moved to a sample. A straight map is ruled again from there, then
+ * its tempo swept; a followed map keeps every anchor, takes the nearest beat
+ * to the sample, and counts from it.
  */
 function anchorAt(sample: number): void {
   const beats = report?.beats;
@@ -979,6 +1006,8 @@ function anchorAt(sample: number): void {
     const bpm = report.fit?.bpm ?? tempoOf(beats);
     const ruled = straight(bpm, sample / rate, rate, beats.length);
     if (ruled) replaceMap(ruled, bpm, sample / rate);
+    sweepTempo();
+    return;
   } else {
     const i = D.nearestBeat(beats, sample);
     if (i == null) return;

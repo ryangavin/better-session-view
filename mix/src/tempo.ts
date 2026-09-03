@@ -523,3 +523,74 @@ export function refitOf(heard: Heard, bpm: number, offset: number): Fit | null {
   if (agreement < HOPELESS) return null;
   return { bpm: wholeOf(hits, line, heard.seconds), offset: firstBarOf(line, 0), agreement };
 }
+
+/** One tempo tried against the hits: how far, on average, they sit from its grid. */
+export interface Swept {
+  bpm: number;
+  /** Weighted mean distance from a kick or snare to the nearest grid line, in ms, each capped at an eighth of a beat. */
+  error: number;
+}
+
+export interface Sweep {
+  /** Where the error stops falling and starts rising again. */
+  best: Swept;
+  /** The nearest whole number of beats per minute, for comparison. */
+  whole: Swept;
+  /** The tempo the sweep started from. */
+  was: Swept;
+  /** Seconds to 1.1.1, held fixed throughout. */
+  offset: number;
+  curve: Swept[];
+}
+
+/** How far either side of the starting tempo the sweep goes, and how finely. */
+const REACH = 1;
+const STEP = 0.002;
+
+/**
+ * The tempo a straight grid should have, given where 1.1.1 is.
+ *
+ * A downbeat somebody pointed at is trusted absolutely, and from it the only
+ * thing left to decide is how fast the ruler runs. Every tempo across a range
+ * is ruled from that downbeat and measured against the kicks and snares of the
+ * whole song: the error falls as the grid comes into line with them and rises
+ * again as it drifts past, and the bottom of that curve is the tempo. A hit
+ * further than an eighth of a beat from any line counts as that far and no
+ * further, so a fill or a syncopation moves the bottom no more than the beats
+ * do.
+ *
+ * Nothing is rounded. Whether the bottom sits on a whole number is the
+ * question, so the whole number is measured too, and reported beside it.
+ */
+export function sweepOf(heard: Heard, offset: number, around: number, reach = REACH, step = STEP): Sweep | null {
+  const hits = beatBands(heard);
+  if (hits.length < 8 || !(around > 0)) return null;
+  const errorAt = (bpm: number): Swept => {
+    const period = 60 / bpm;
+    const cap = period * ON;
+    let sum = 0;
+    let all = 0;
+    for (const hit of hits) {
+      const w = hit.strength * WEIGHT[hit.band];
+      const k = Math.round((hit.at - offset) / period);
+      const away = Math.abs(hit.at - (offset + k * period));
+      sum += w * Math.min(away, cap);
+      all += w;
+    }
+    return { bpm, error: all > 0 ? (sum / all) * 1000 : cap * 1000 };
+  };
+  const steps = Math.round((2 * reach) / step);
+  const curve: Swept[] = [];
+  for (let i = 0; i <= steps; i++) curve.push(errorAt(Number((around - reach + i * step).toFixed(6))));
+  let best = curve[0];
+  for (const point of curve) if (point.error < best.error) best = point;
+  // The bottom, to a tenth of a thousandth: the coarse steps say which
+  // thousandths it lies between, and a whole number is only ever found
+  // exactly by looking between them.
+  const fine = step / 20;
+  for (let bpm = best.bpm - step; bpm <= best.bpm + step + fine / 2; bpm += fine) {
+    const point = errorAt(Number(bpm.toFixed(6)));
+    if (point.error < best.error) best = point;
+  }
+  return { best, whole: errorAt(Math.round(around)), was: errorAt(around), offset, curve };
+}

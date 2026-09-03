@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { countedOf, fitOf, refitOf, snapped, through, type Beat } from './tempo.ts';
-import { heardIn, type Heard } from './transients.ts';
+import { countedOf, fitOf, refitOf, snapped, sweepOf, through, type Beat } from './tempo.ts';
+import { heardIn, type Heard, type Transient } from './transients.ts';
 
 /**
  * What this protects is a grid that holds at the end of the song, found
@@ -254,5 +254,40 @@ describe('countedOf', () => {
   it('refuses picks too close to be a beat apart', () => {
     expect(countedOf(10, 10.02, 128)).toBeNull();
     expect(countedOf(10, 10.1, 128)).toBeNull();
+  });
+});
+
+describe('sweepOf', () => {
+  const train = (bpm: number, offset: number, seconds: number, jitter = 0): Heard => {
+    const rate = 44100;
+    const period = 60 / bpm;
+    const transients: Transient[] = [];
+    let k = 0;
+    for (let at = offset; at < seconds; at = offset + ++k * period) {
+      const wobble = jitter * Math.sin(k * 1.7);
+      const t = at + wobble;
+      transients.push({ at: t, sample: Math.round(t * rate), strength: 1, level: 1, band: k % 2 ? 'mid' : 'low' });
+    }
+    return { seconds, rate, transients };
+  };
+
+  it('finds the bottom on a whole number when the song is on one', () => {
+    const swept = sweepOf(train(128, 0.35, 300), 0.35, 128.055);
+    expect(swept?.best.bpm).toBeCloseTo(128, 3);
+    expect(swept?.best.error).toBeLessThan(0.01);
+    expect(swept?.whole.error).toBeCloseTo(swept!.best.error, 6);
+    expect(swept?.was.error).toBeGreaterThan(swept!.best.error);
+  });
+
+  it('finds the bottom off the whole number when the song is off it', () => {
+    const swept = sweepOf(train(128.055, 0.35, 300, 0.004), 0.35, 128);
+    expect(Math.abs(swept!.best.bpm - 128.055)).toBeLessThanOrEqual(0.002);
+    expect(swept!.whole.error).toBeGreaterThan(swept!.best.error);
+  });
+
+  it('holds 1.1.1 where it was pointed', () => {
+    const swept = sweepOf(train(128, 0.35, 300), 0.35, 128);
+    expect(swept?.offset).toBe(0.35);
+    expect(swept?.curve.length).toBe(1001);
   });
 });

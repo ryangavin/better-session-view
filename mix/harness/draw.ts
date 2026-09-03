@@ -4,6 +4,7 @@ import type { Transient } from '../src/transients.ts';
 import type { Beats } from '../src/warp.ts';
 import { BEATS_PER_BAR, tempoAt } from '../src/warp.ts';
 import type { CandidateTrace, FollowTrace, TempoTrace } from '../src/trace.ts';
+import type { Sweep } from '../src/tempo.ts';
 import type { KnownTempo, Truth } from './types.ts';
 
 export interface View {
@@ -423,6 +424,54 @@ export function drawSweep(canvas: HTMLCanvasElement, cand: CandidateTrace | unde
   g.fillText(`${sweep.from.toFixed(3)}s`, 32, h - 6);
   g.fillText(`${(sweep.from + (sweep.scores.length - 1) * sweep.step).toFixed(3)}s`, w - 70, h - 6);
   return `best phase ${(sweep.from + best * sweep.step).toFixed(4)}s, score ${max.toFixed(3)} over ${sweep.scores.length} steps of ${sweep.step}s`;
+}
+
+/**
+ * The tempo sweep: error against tempo, with 1.1.1 held. The bottom in
+ * green, the whole number in white, the tempo the sweep started from in amber.
+ */
+export function drawDrift(canvas: HTMLCanvasElement, sweep: Sweep | null): string {
+  const { g, w, h } = fit(canvas);
+  g.fillStyle = '#0e0d0c';
+  g.fillRect(0, 0, w, h);
+  if (!sweep) {
+    g.fillStyle = '#8b837a';
+    g.fillText('alt-click a beat or a hit to set 1.1.1, or press sweep', 6, 16);
+    return '';
+  }
+  const from = sweep.curve[0].bpm;
+  const to = sweep.curve[sweep.curve.length - 1].bpm;
+  const max = Math.max(...sweep.curve.map((p) => p.error));
+  const x = (bpm: number) => ((bpm - from) / (to - from)) * (w - 40) + 32;
+  const y = (error: number) => h - 18 - (error / Math.max(1e-9, max)) * (h - 30);
+  const mark = (bpm: number, ink: string, dashed = false) => {
+    g.strokeStyle = ink;
+    g.setLineDash(dashed ? [3, 3] : []);
+    g.beginPath();
+    g.moveTo(x(bpm), 4);
+    g.lineTo(x(bpm), h - 18);
+    g.stroke();
+    g.setLineDash([]);
+  };
+  if (sweep.whole.bpm >= from && sweep.whole.bpm <= to) mark(sweep.whole.bpm, '#ffffff', true);
+  mark(sweep.was.bpm, '#ffd93d', true);
+  mark(sweep.best.bpm, '#9ef0b6');
+  g.strokeStyle = '#6fd08c';
+  g.beginPath();
+  sweep.curve.forEach((p, i) => (i === 0 ? g.moveTo(x(p.bpm), y(p.error)) : g.lineTo(x(p.bpm), y(p.error))));
+  g.stroke();
+  g.fillStyle = '#8b837a';
+  g.font = '10px ui-monospace, monospace';
+  g.fillText(`${from.toFixed(3)}`, 32, h - 6);
+  g.fillText(`${to.toFixed(3)}`, w - 60, h - 6);
+  g.fillText(`${max.toFixed(0)} ms`, 2, 12);
+  const ms = (p: { error: number }) => `${p.error.toFixed(1)} ms`;
+  return [
+    `bottom ${sweep.best.bpm.toFixed(4)} · ${ms(sweep.best)}`,
+    `whole ${sweep.whole.bpm} · ${ms(sweep.whole)}`,
+    `from ${sweep.was.bpm.toFixed(4)} · ${ms(sweep.was)}`,
+    `1.1.1 at ${sweep.offset.toFixed(4)} s`,
+  ].join('\n');
 }
 
 export const localTempo = (beats: Beats, i: number): number => tempoAt(beats, beats.first + i);
