@@ -35,6 +35,11 @@ export interface Remembered {
   slices?: { bar: number; name: string }[];
   /** Seconds. Where the head was, so a reload lands back in the same eight bars. */
   at?: number;
+  /**
+   * The grid, only where there is no library to keep it in — a `vite` session
+   * with no app around it. With one, it lives beside the track
+   * (`mix/electron/analysis.ts`) and these are cleared on the first write.
+   */
   bpm?: number;
   bpmAuto?: boolean;
   /** Seconds to the downbeat of bar 1. The other half of a grid. */

@@ -23,6 +23,7 @@ import { TAB_FILE, transcriptionAt, type TranscribeProgress } from './transcribe
 import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
 import { stopYoutube } from './youtube.ts';
+import { readAnalysis, readPeaks, writeAnalysis, writePeaks, type Grid, type Reading } from './analysis.ts';
 
 /**
  * mix[flow]: a mix in, its parts out — and the bass written down.
@@ -104,6 +105,35 @@ if (only(app)) {
     artwork(ask.id, ask.url),
   );
   ipcMain.handle('openflow:library-base', () => `${MIX.name}://app${MOUNT}`);
+
+  // The analysis beside a track: the grid, and the peaks of one separation.
+  // Every answer is null without a library folder, which the renderer treats
+  // the same as a track nothing has been worked out about.
+  ipcMain.handle('openflow:analysis-read', async (_event, trackId: string) => {
+    const where = await root();
+    return where ? readAnalysis(where, trackId) : null;
+  });
+  ipcMain.handle(
+    'openflow:analysis-write',
+    async (_event, ask: { trackId: string; grid: Grid | null; fit: Reading | null }) => {
+      const where = await root();
+      if (where) await writeAnalysis(where, ask.trackId, { grid: ask.grid, fit: ask.fit });
+    },
+  );
+  ipcMain.handle('openflow:peaks-read', async (_event, ask: { trackId: string; stems: string }) => {
+    const where = await root();
+    return where ? readPeaks(where, ask.trackId, ask.stems) : null;
+  });
+  ipcMain.handle(
+    'openflow:peaks-write',
+    async (
+      _event,
+      ask: { trackId: string; stems: string; columns: number; sources: Record<string, Float32Array> },
+    ) => {
+      const where = await root();
+      if (where) await writePeaks(where, ask.trackId, ask.stems, ask.columns, ask.sources);
+    },
+  );
 
   // Where an export goes. Outside the library on purpose — `destination.ts` —
   // and picked with a dialog rather than typed, so the page still never names a

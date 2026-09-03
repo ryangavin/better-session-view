@@ -7,6 +7,9 @@
  * `npm run typecheck` covers both.
  */
 import type { TranscribedNote } from './tab.ts';
+import type { Beats } from './warp.ts';
+import type { Fit } from './tempo.ts';
+import type { Follow } from './follow.ts';
 
 /**
  * Whether this build can separate, and whether it has the engine yet.
@@ -157,6 +160,40 @@ export interface Match {
   thumb: string | null;
 }
 
+/**
+ * The grid as kept beside a track — `mix/electron/analysis.ts`'s shape.
+ *
+ * An even ruling from `bpm` and `offset` when `beats` is null, otherwise the
+ * map. `bpmAuto` says whether the tempo was measured or typed, which is what
+ * the header shows beside it.
+ */
+export interface Grid {
+  bpm: number;
+  bpmAuto: boolean;
+  offset: number;
+  beats: Beats | null;
+}
+
+/** The last fit's reading, without the map — the map is the grid's. */
+export type Reading = Fit | Omit<Follow, 'beats'>;
+
+export interface Analysis {
+  openflow: 'mix-analysis';
+  version: number;
+  track: string;
+  grid: Grid | null;
+  fit: Reading | null;
+  produced: string;
+}
+
+/** One separation's drawing, interleaved min and max per column, per source. */
+export interface KeptPeaks {
+  stems: string;
+  key: string;
+  columns: number;
+  sources: Record<string, Float32Array>;
+}
+
 interface Bridge {
   demucs(): Promise<Ready>;
   library: {
@@ -170,6 +207,17 @@ interface Bridge {
     edit(id: string, edits: Edits): Promise<Library>;
     matches(text: string): Promise<Match[]>;
     artwork(id: string, url: string): Promise<Library>;
+  };
+  analysis: {
+    read(trackId: string): Promise<Analysis | null>;
+    write(trackId: string, grid: Grid | null, fit: Reading | null): Promise<void>;
+    peaks(trackId: string, stems: string): Promise<KeptPeaks | null>;
+    keepPeaks(
+      trackId: string,
+      stems: string,
+      columns: number,
+      sources: Record<string, Float32Array>,
+    ): Promise<void>;
   };
   destination: {
     read(): Promise<string>;

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STEMS, slicesFor, type Slice } from './mock.ts';
-import { decode, fileUrl, LIBRARY, peaksOf, stemUrl, type Peak } from './audio.ts';
+import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak } from './audio.ts';
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
-import { forTrack, recall, remember, withTrack, type Session } from './remember.ts';
+import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
 import { barAt, countOf, evenBeats, moved, resampled, shifted, startOf, type Beats } from './warp.ts';
 import { fitOf, refitOf, snapped, FASTEST, SLOWEST, type Fit } from './tempo.ts';
 import { hearing, type Heard } from './transients.ts';
@@ -19,6 +19,9 @@ import {
   type TranscribeOutcome,
   type TranscribeProgress,
   type Track,
+  type Analysis,
+  type Grid,
+  type Reading,
 } from './openflow.ts';
 import { STANDARD_BASS } from './tab.ts';
 import { followOf, type Follow } from './follow.ts';
@@ -130,6 +133,23 @@ const NOTHING: Library = { root: null, tracks: [] };
 /** How long the window sits still before writing what it remembers. */
 const SETTLE_MS = 400;
 
+/** The last fit without its map, which is the grid's to keep. */
+const readingOf = (found: Fit | Follow | null): Reading | null => {
+  if (!found) return null;
+  if ('beats' in found) {
+    const { beats: _beats, ...rest } = found;
+    return rest;
+  }
+  return found;
+};
+
+/** The reading with its map back, so the header can say it was followed. */
+const foundOf = (held: Analysis): Fit | Follow | null => {
+  if (!held.fit) return null;
+  if ('tracked' in held.fit && held.grid?.beats) return { ...held.fit, beats: held.grid.beats };
+  return held.fit;
+};
+
 
 export function useMix() {
   const kept = useRef<Session>(recall()).current;
@@ -198,6 +218,16 @@ export function useMix() {
    * decision, and a decision is not re-taken behind somebody's back.
    */
   const [wantFit, setWantFit] = useState(first.bpm == null);
+  /**
+   * Whether the library has answered about this track's grid.
+   *
+   * The grid kept beside the track — `mix/electron/analysis.ts` — is read after
+   * the track is opened, and until it has been read nothing about the grid is
+   * trusted enough to write down or to measure over: the first fit waits, and
+   * so does the writer, or a window that opened a second ago would overwrite
+   * a grid a hand made last week with the default it had not yet replaced.
+   */
+  const [asked, setAsked] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [loop, setLoopState] = useState(kept.loop ?? true);
   /**
@@ -584,6 +614,7 @@ export function useMix() {
    */
   const stemsAt = song?.stems ?? null;
   const sourceList = song?.sources.join(',') ?? '';
+  const songId = song?.id ?? null;
   useEffect(() => {
     if (!stemsAt || sourceList === '') {
       audio.clear();
@@ -601,20 +632,42 @@ export function useMix() {
     void (async () => {
       try {
         const sources = sourceList.split(',');
+        // The drawing kept beside the track, if there is one, goes up before a
+        // byte of audio is read: it is what makes a track open on its lanes
+        // rather than on four blank strips and a wait.
+        const bridge = openflow();
+        const kept =
+          bridge && songId
+            ? await bridge.analysis.peaks(songId, stemsAt).catch(() => null)
+            : null;
+        if (!live) return;
+        const drawn: Record<string, Peak[]> = {};
+        if (kept && kept.columns === COLUMNS) {
+          for (const source of sources) {
+            if (kept.sources[source]) drawn[source] = unpacked(kept.sources[source]);
+          }
+          setPeaks({ ...drawn });
+        }
+        let walked = false;
         const decoded = await Promise.all(
           sources.map(async (source) => {
             const answer = await fetch(stemUrl(base, stemsAt, source));
             if (!answer.ok) throw new Error(`${source}.wav — ${answer.status}`);
             const buffer = await decode(audio.audio(), await answer.arrayBuffer());
             // Drawn now, while its neighbours are still being read.
-            if (live) {
-              const drawn = peaksOf(buffer, COLUMNS);
-              setPeaks((was) => ({ ...was, [source]: drawn }));
+            if (live && !drawn[source]) {
+              drawn[source] = peaksOf(buffer, COLUMNS);
+              walked = true;
+              setPeaks((was) => ({ ...was, [source]: drawn[source] }));
             }
             return [source, buffer] as const;
           }),
         );
         if (!live) return;
+        if (walked && bridge && songId) {
+          const flat = Object.fromEntries(sources.map((source) => [source, packed(drawn[source])]));
+          void bridge.analysis.keepPeaks(songId, stemsAt, COLUMNS, flat).catch(() => undefined);
+        }
         // The graph still gets all of them at once: the stems are started in
         // one call so they play on the same sample, and a transport built from
         // four separate handovers is four different ideas of where zero is.
@@ -633,7 +686,7 @@ export function useMix() {
     return () => {
       live = false;
     };
-  }, [stemsAt, sourceList, base, audio]);
+  }, [stemsAt, sourceList, songId, base, audio]);
 
   /**
    * One stem's audio, for the lane drawing it.
@@ -700,6 +753,30 @@ export function useMix() {
   }, [playing, audio]);
 
   /**
+   * The grid as the window's own store should hold it.
+   *
+   * With a library to write to, nothing: the grid lives beside the track, and
+   * a second copy here is the copy that goes stale. Undefined rather than
+   * absent, so a copy from before the file existed is cleared on the first
+   * write rather than resurfacing whenever the file is gone.
+   */
+  const gridHeld = useCallback(
+    (): Partial<Remembered> =>
+      openflow()
+        ? { bpm: undefined, bpmAuto: undefined, offset: undefined, beats: undefined }
+        : { bpm: targetBpm, bpmAuto, offset, beats: beats ?? undefined },
+    [targetBpm, bpmAuto, offset, beats],
+  );
+
+  /** Write the grid beside the track, now. Nothing to write until the library has answered. */
+  const keepGrid = useCallback(() => {
+    const bridge = openflow();
+    if (!bridge || !song || !asked) return;
+    const grid: Grid | null = wantFit ? null : { bpm: targetBpm, bpmAuto, offset, beats };
+    void bridge.analysis.write(song.id, grid, readingOf(detected)).catch(() => undefined);
+  }, [song, asked, wantFit, targetBpm, bpmAuto, offset, beats, detected]);
+
+  /**
    * Open a track.
    *
    * The outgoing track is written down **synchronously**, before anything is
@@ -720,12 +797,10 @@ export function useMix() {
           levels: level,
           slices: slicesAuto ? undefined : slices,
           at: audio.at(),
-          bpm: targetBpm,
-          bpmAuto,
-          offset,
-          beats: beats ?? undefined,
+          ...gridHeld(),
         });
         remember(held.current);
+        keepGrid();
       }
       audio.stop();
       setPlaying(false);
@@ -751,8 +826,56 @@ export function useMix() {
       // measured — and it will be, as soon as there are stems to measure.
       setWantFit(known.bpm == null);
     },
-    [tracks, audio, song, selected, level, slices, targetBpm, bpmAuto, offset, beats],
+    [tracks, audio, song, selected, level, slices, gridHeld, keepGrid],
   );
+
+  /**
+   * The grid, read from beside the track.
+   *
+   * What the library holds wins over what the window remembered: the file is
+   * the one that travels with the folder, and the window's own copy is only
+   * there to carry a grid from a build before the file existed into it — which
+   * the writer below does, the first time it settles.
+   */
+  useEffect(() => {
+    const bridge = openflow();
+    if (!selected || !bridge) {
+      setAsked(true);
+      return;
+    }
+    let live = true;
+    setAsked(false);
+    void bridge.analysis
+      .read(selected)
+      .catch(() => null)
+      .then((held) => {
+        if (!live) return;
+        if (held?.grid) {
+          setTargetBpm(held.grid.bpm);
+          setBpmAuto(held.grid.bpmAuto);
+          setOffset(held.grid.offset);
+          setBeats(held.grid.beats);
+          setDetected(foundOf(held));
+          setWantFit(false);
+        }
+        setAsked(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [selected]);
+
+  /**
+   * The grid, written beside the track once the window sits still.
+   *
+   * Null while the track is still owed a fit: a file claiming 120 would be
+   * read back as a decision, and the track would open at 120 forever.
+   */
+  useEffect(() => {
+    if (!openflow() || !song || !asked) return;
+    const timer = setTimeout(keepGrid, SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [song, asked, keepGrid]);
 
   /**
    * Let go of a remembered track the library no longer has.
@@ -1084,10 +1207,10 @@ export function useMix() {
    * so, and pressing Auto-warp is how you ask for it again.
    */
   useEffect(() => {
-    if (!wantFit || decoding || seconds <= 0) return;
+    if (!wantFit || !asked || decoding || seconds <= 0) return;
     if (Object.keys(peaks).length === 0) return;
     fit(measure());
-  }, [wantFit, decoding, peaks, seconds, fit, measure]);
+  }, [wantFit, asked, decoding, peaks, seconds, fit, measure]);
 
   const startManual = useCallback(
     () => setManual((was) => ({ stage: 'first', span: was?.span ?? 4, first: null })),
@@ -1343,10 +1466,7 @@ export function useMix() {
           // out against a length the window had not measured yet.
           slices: slicesAuto ? undefined : slices,
           at: audio.at(),
-          bpm: targetBpm,
-          bpmAuto,
-          offset,
-          beats: beats ?? undefined,
+          ...gridHeld(),
         });
       }
       held.current = next;
@@ -1364,9 +1484,7 @@ export function useMix() {
     level,
     slices,
     slicesAuto,
-    targetBpm,
-    bpmAuto,
-    offset,
+    gridHeld,
     playing,
     audio,
   ]);

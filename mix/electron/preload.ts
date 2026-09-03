@@ -11,6 +11,7 @@ import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
+import type { Analysis, Grid, Peaks, Reading } from './analysis.ts';
 
 /**
  * What the renderer cannot do for itself: reach a process, and reach a folder.
@@ -56,6 +57,22 @@ expose({
       ipcRenderer.invoke('openflow:library-artwork', { id, url }),
     /** Where library files are served from, decided by the process that serves them. */
     base: (): Promise<string> => ipcRenderer.invoke('openflow:library-base'),
+  },
+  analysis: {
+    /** The grid and the last reading kept beside a track, or null when there is none. */
+    read: (trackId: string): Promise<Analysis | null> =>
+      ipcRenderer.invoke('openflow:analysis-read', trackId),
+    write: (trackId: string, grid: Grid | null, fit: Reading | null): Promise<void> =>
+      ipcRenderer.invoke('openflow:analysis-write', { trackId, grid, fit }),
+    /** The drawing of one separation's stems, or null when it has not been kept or is stale. */
+    peaks: (trackId: string, stems: string): Promise<Peaks | null> =>
+      ipcRenderer.invoke('openflow:peaks-read', { trackId, stems }),
+    keepPeaks: (
+      trackId: string,
+      stems: string,
+      columns: number,
+      sources: Record<string, Float32Array>,
+    ): Promise<void> => ipcRenderer.invoke('openflow:peaks-write', { trackId, stems, columns, sources }),
   },
   destination: {
     /** Where an export would go right now: what was picked, or the default. */

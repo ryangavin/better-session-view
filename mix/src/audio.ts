@@ -180,6 +180,22 @@ export function peaksOf(buffer: AudioBuffer, columns: number): Peak[] {
   return out;
 }
 
+/** Peaks as one flat array of min, max pairs — how they are kept on disk. */
+export function packed(peaks: readonly Peak[]): Float32Array {
+  const out = new Float32Array(peaks.length * 2);
+  peaks.forEach((peak, i) => {
+    out[i * 2] = peak.min;
+    out[i * 2 + 1] = peak.max;
+  });
+  return out;
+}
+
+export function unpacked(floats: Float32Array): Peak[] {
+  const out: Peak[] = new Array(floats.length >> 1);
+  for (let i = 0; i < out.length; i++) out[i] = { min: floats[i * 2], max: floats[i * 2 + 1] };
+  return out;
+}
+
 /**
  * The same peaks at a coarser resolution, folded rather than re-scanned.
  *
