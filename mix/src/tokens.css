@@ -2,8 +2,8 @@
 @import '@openflow/widgets/tokens.css';
 
 :root {
-  --stem-vocals: #e8574f;
-  --stem-drums: #d6cd4b;
+  --stem-vocals: #a068f0;
+  --stem-drums: #e8574f;
   --stem-bass: #6d8bf5;
   --stem-guitar: #56c163;
   --stem-piano: #c471e0;
