@@ -10,28 +10,42 @@
     <div id="verdict" class="summary verdict" hidden></div>
 
     <div class="bar">
-      <select id="track"></select>
-      <select id="arm" title="which arm of the beat finding drew this"></select>
-      <button id="play">play</button>
-      <label><input type="radio" name="map" value="predicted" checked /> predicted</label>
-      <label><input type="radio" name="map" value="truth" /> truth</label>
-      <span class="sep"></span>
-      <label><input type="checkbox" class="stem" value="drums" checked /> drums</label>
-      <label><input type="checkbox" class="stem" value="bass" /> bass</label>
-      <label><input type="checkbox" class="stem" value="other" /> other</label>
-      <label><input type="checkbox" class="stem" value="vocals" /> vocals</label>
-      <span class="sep"></span>
-      <label title="the drums stem below 120 Hz, as the kick was heard"><input type="checkbox" class="band" value="low" /> kick band</label>
-      <label title="the drums stem from 200 to 2500 Hz, as the snare was heard"><input type="checkbox" class="band" value="mid" /> snare band</label>
-      <label title="the drums stem above 4 kHz, as the hats were heard"><input type="checkbox" class="band" value="high" /> hat band</label>
-      <span class="sep"></span>
-      <button id="clearLoop">clear loop</button>
-      <button id="whole">whole song</button>
-      <span id="span" class="dim"></span>
-      <span id="note" class="dim"></span>
-      <span class="sep"></span>
-      <button id="correct">correct</button>
-      <button id="forget" title="delete this track's saved truth" hidden>forget truth</button>
+      <div class="group">
+        <span class="cap">track</span>
+        <select id="track"></select>
+        <select id="arm" title="which arm of the beat finding drew this"></select>
+      </div>
+      <div class="group">
+        <span class="cap">listen</span>
+        <button id="play">play</button>
+        <span class="cap">stems</span>
+        <label><input type="checkbox" class="stem" value="drums" checked /> drums</label>
+        <label><input type="checkbox" class="stem" value="bass" /> bass</label>
+        <label><input type="checkbox" class="stem" value="other" /> other</label>
+        <label><input type="checkbox" class="stem" value="vocals" /> vocals</label>
+        <span class="cap" title="the drums stem through the transient finding's own band filters">heard</span>
+        <label title="below 120 Hz, as the kick was heard"><input type="checkbox" class="band" value="low" /> kick</label>
+        <label title="200 to 2500 Hz, as the snare was heard"><input type="checkbox" class="band" value="mid" /> snare</label>
+        <label title="above 4 kHz, as the hats were heard"><input type="checkbox" class="band" value="high" /> hats</label>
+      </div>
+      <div class="group">
+        <span class="cap">click</span>
+        <label title="a click on every beat of the chosen map, higher on the downbeat"><input type="checkbox" id="click" checked /> on</label>
+        <label><input type="radio" name="map" value="predicted" checked /> predicted</label>
+        <label><input type="radio" name="map" value="truth" /> truth</label>
+      </div>
+      <div class="group">
+        <span class="cap">view</span>
+        <button id="whole">whole song</button>
+        <button id="clearLoop">clear loop</button>
+        <span id="span" class="dim"></span>
+      </div>
+      <div class="group">
+        <span class="cap">truth</span>
+        <button id="correct">correct</button>
+        <button id="forget" title="delete this track's saved truth" hidden>forget</button>
+      </div>
+      <span id="note" class="dim note"></span>
     </div>
 
     <div id="editbar" class="bar edit" hidden>
@@ -51,12 +65,42 @@
     </div>
 
     <div id="rows" class="rows">
-      <div class="row" data-row="ruler" title="click to seek; drag to pan; shift-drag for a loop; drag the playhead, or alt-drag anywhere, to scrub"><span class="label">time</span><canvas></canvas></div>
-      <div class="row" data-row="wave"><span class="label">drums</span><canvas></canvas></div>
-      <div class="row" data-row="hits"><span class="label">transients</span><canvas></canvas></div>
-      <div class="row" data-row="beats"><span class="label">beats</span><canvas></canvas></div>
-      <div class="row" data-row="tempo"><span class="label">tempo</span><canvas></canvas></div>
-      <div class="row" data-row="truth"><span class="label">truth</span><canvas></canvas></div>
+      <div class="row" data-row="ruler" title="click to seek; drag to pan; shift-drag for a loop; drag the playhead, or alt-drag anywhere, to scrub">
+        <span class="label">time
+          <span class="legend"><i class="line" style="--ink: #ffffff"></i>playhead <i class="swatch" style="--ink: #78b4ff; opacity: 0.5"></i>loop <i class="text" style="--ink: #6fd08c">12</i>bar</span>
+        </span>
+        <canvas></canvas>
+      </div>
+      <div class="row" data-row="wave">
+        <span class="label">drums
+          <span class="legend"><i class="swatch" style="--ink: #6f97bd"></i>stem</span>
+        </span>
+        <canvas></canvas>
+      </div>
+      <div class="row" data-row="hits">
+        <span class="label">transients
+          <span class="legend"><i class="swatch" style="--ink: #ff6a3d"></i>kick <i class="swatch" style="--ink: #ffd93d"></i>snare <i class="swatch" style="--ink: #4dd8ff"></i>hats · height is how sharply it rose, brightness how loud</span>
+        </span>
+        <canvas></canvas>
+      </div>
+      <div class="row" data-row="beats">
+        <span class="label">beats
+          <span class="legend"><i class="line" style="--ink: #6fd08c"></i>beat <i class="line tall" style="--ink: #9ef0b6"></i>downbeat <i class="line dashed" style="--ink: #6fd08c"></i>placed between anchors <i class="line" style="--ink: #5a5248"></i>known tempo</span>
+        </span>
+        <canvas></canvas>
+      </div>
+      <div class="row" data-row="tempo">
+        <span class="label">tempo
+          <span class="legend"><i class="swatch" style="--ink: #ffd93d"></i>followed <i class="dot" style="--ink: #6fd08c"></i>beat to beat <i class="dot" style="--ink: #4dd8ff"></i>stretch read <i class="dot" style="--ink: #7a736b"></i>stretch unclear <i class="dot" style="--ink: #ff4d4d"></i>fill</span>
+        </span>
+        <canvas></canvas>
+      </div>
+      <div class="row" data-row="truth">
+        <span class="label">truth
+          <span class="legend"><i class="line" style="--ink: #d05cc0"></i>beat <i class="line tall" style="--ink: #ff8ff0"></i>downbeat <i class="text" style="--ink: #8b837a">+1.2</i>ms after predicted, <i class="text" style="--ink: #ff6a3d">+31</i> past 30</span>
+        </span>
+        <canvas></canvas>
+      </div>
       <canvas id="overlay"></canvas>
     </div>
 

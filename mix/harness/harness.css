@@ -42,6 +42,27 @@ body {
   gap: 3px;
 }
 
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 6px;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+}
+
+.cap {
+  color: var(--detail);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  margin-right: 2px;
+}
+
+.note {
+  margin-left: auto;
+}
+
 .sep {
   width: 1px;
   height: 16px;
@@ -89,10 +110,56 @@ button:hover {
   color: var(--detail);
   pointer-events: none;
   z-index: 1;
+  text-align: right;
+}
+
+.legend {
+  display: block;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.legend i {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 3px 0 8px;
+  font-style: normal;
+}
+
+.legend .swatch {
+  width: 9px;
+  height: 9px;
+  background: var(--ink);
+}
+
+.legend .line {
+  width: 0;
+  height: 9px;
+  border-left: 1px solid var(--ink);
+}
+
+.legend .line.tall {
+  height: 13px;
+}
+
+.legend .line.dashed {
+  border-left-style: dashed;
+}
+
+.legend .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.legend .text {
+  color: var(--ink);
+  font-family: ui-monospace, monospace;
 }
 
 .row[data-row='ruler'] {
-  height: 28px;
+  height: 34px;
   cursor: ew-resize;
 }
 .row[data-row='wave'] {

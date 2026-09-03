@@ -51,6 +51,7 @@ export class Audition {
         const channels = Array.from({ length: whole.numberOfChannels }, (_, c) => whole.getChannelData(c));
         const heard = this.context().createBuffer(1, whole.length, whole.sampleRate);
         heard.getChannelData(0).set(bandOf(channels, whole.sampleRate, band));
+        this.have.set(url, heard);
         return heard;
       });
       this.cache.set(url, got);
@@ -132,14 +133,19 @@ export class Audition {
   /**
    * Scrubbing, as an editor does it: a grain of the stems at each position
    * the pointer passes through, and silence when it stops moving. Stops the
-   * pass, if one was playing.
+   * pass, if one was playing. Starts at once with whatever is decoded; a
+   * stem still decoding joins the grains when it is.
    */
-  async scrubStart(urls: string[], at: number): Promise<void> {
-    const ctx = this.context();
-    await ctx.resume();
-    const buffers = await Promise.all(urls.map((u) => this.buffer(u)));
+  scrubStart(urls: string[], at: number): void {
+    void this.context().resume();
     this.stop();
-    this.scrubbing = { buffers, at };
+    const scrubbing = { buffers: urls.map((u) => this.have.get(u)).filter((b): b is AudioBuffer => b !== undefined), at };
+    this.scrubbing = scrubbing;
+    if (scrubbing.buffers.length < urls.length) {
+      void Promise.all(urls.map((u) => this.buffer(u))).then((buffers) => {
+        if (this.scrubbing === scrubbing) scrubbing.buffers = buffers;
+      });
+    }
   }
 
   scrubTo(at: number): void {

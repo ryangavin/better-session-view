@@ -389,7 +389,7 @@ function wireTime(): void {
       const wasPlaying = deck.playing;
       cursor = startTime;
       drawOverlay();
-      void deck.scrubStart(chosenStems(), startTime);
+      deck.scrubStart(chosenStems(), startTime);
       const scrub = (m: PointerEvent) => {
         cursor = Math.max(0, Math.min(D.timeOf(viewOf(1), m.clientX - box.left), seconds()));
         deck.scrubTo(cursor);
@@ -472,7 +472,7 @@ async function play(): Promise<void> {
   const span = loop ?? { from: 0, to: report.track.seconds };
   el('#note').textContent = 'decoding…';
   try {
-    await deck.start(stems, clicksOf(), span, loop ? loop.from : cursor);
+    await deck.start(stems, el<HTMLInputElement>('#click').checked ? clicksOf() : [], span, loop ? loop.from : cursor);
     el('#note').textContent = '';
   } catch (err) {
     el('#note').textContent = String(err);
@@ -922,7 +922,7 @@ function wire(): void {
     render();
   });
   el('#cand').addEventListener('change', drawPanels);
-  for (const box of document.querySelectorAll<HTMLInputElement>('.stem, .band')) {
+  for (const box of document.querySelectorAll<HTMLInputElement>('.stem, .band, #click')) {
     box.addEventListener('change', () => {
       if (deck.playing) void play();
     });
