@@ -13,8 +13,9 @@ export interface Span {
 }
 
 const LOOKAHEAD = 2;
-/** How much of the song a scrub plays at each position, in seconds. */
-const GRAIN = 0.08;
+/** The least and the most of the song a scrub plays at each move, in seconds. */
+const GRAIN = 0.03;
+const GRAIN_MOST = 0.15;
 
 export class Audition {
   private ctx: AudioContext | null = null;
@@ -148,17 +149,26 @@ export class Audition {
     }
   }
 
+  /**
+   * The playhead moved: play what it moved across, so the sound ends where
+   * it now stands going forward and starts there going back. A move
+   * smaller than a grain plays a grain; a leap plays no more than the most.
+   */
   scrubTo(at: number): void {
-    if (!this.scrubbing || Math.abs(at - this.scrubbing.at) < GRAIN / 4) return;
+    if (!this.scrubbing) return;
+    const was = this.scrubbing.at;
+    const moved = at - was;
+    if (Math.abs(moved) < 0.002) return;
     this.scrubbing.at = at;
-    this.grain();
+    const length = Math.min(GRAIN_MOST, Math.max(GRAIN, Math.abs(moved)));
+    this.grain(moved > 0 ? at - length : at, length);
   }
 
   scrubEnd(): void {
     this.scrubbing = null;
   }
 
-  private grain(): void {
+  private grain(from: number, length: number): void {
     if (!this.scrubbing) return;
     const ctx = this.context();
     const now = ctx.currentTime;
@@ -168,10 +178,10 @@ export class Audition {
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(1, now + 0.003);
-      gain.gain.setValueAtTime(1, now + GRAIN - 0.008);
-      gain.gain.linearRampToValueAtTime(0, now + GRAIN);
+      gain.gain.setValueAtTime(1, now + length - 0.006);
+      gain.gain.linearRampToValueAtTime(0, now + length);
       node.connect(gain).connect(ctx.destination);
-      node.start(now, Math.max(0, this.scrubbing.at), GRAIN);
+      node.start(now, Math.max(0, from), length);
     }
   }
 
