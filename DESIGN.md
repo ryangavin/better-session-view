@@ -42,7 +42,7 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   `--shadow-modal` are the only two elevations, and `--shadow-lift` is the fade above a
   docked bar. They carry geometry only — the colour is appended at the call site, because
   a custom property substitutes as text: `box-shadow: var(--ring) var(--amber-muted)`
-  resolves to `inset 0 0 0 1px #9f8a5e`. Without that, a ring would need a token per
+  resolves to `inset 0 0 0 1px #7f6a45`. Without that, a ring would need a token per
   colour, which is how thirty-six distinct shadows happened.
 - **A stylesheet reaches the tokens by importing the palette, not by re-declaring them.**
   [`widgets/src/palette.css`](widgets/src/palette.css) is the only definition; it pulls in
