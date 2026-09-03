@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import type { Match, Track } from '../openflow.ts';
 import type { Mix } from '../state.ts';
+import { useDraft } from './draft.ts';
 
 /**
  * Who this track is by, what it is called, and what it looks like.
@@ -32,19 +32,20 @@ export function Details({ mix, song }: { mix: Mix; song: Track }) {
         <Field
           label="Title"
           value={song.title}
-          onCommit={(next) => void mix.editTrack(song.id, { title: next })}
+          required
+          onCommit={(next) => void mix.editTrack(song.id, { title: next.trim() })}
         />
         <Field
           label="Artist"
           value={song.artist ?? ''}
           placeholder="unknown"
-          onCommit={(next) => void mix.editTrack(song.id, { artist: next })}
+          onCommit={(next) => void mix.editTrack(song.id, { artist: next.trim() || null })}
         />
         <Field
           label="Album"
           value={song.album ?? ''}
           placeholder="unknown"
-          onCommit={(next) => void mix.editTrack(song.id, { album: next })}
+          onCommit={(next) => void mix.editTrack(song.id, { album: next.trim() || null })}
         />
       </div>
       <Lookup mix={mix} song={song} />
@@ -84,51 +85,31 @@ function Cover({ mix, song, at }: { mix: Mix; song: Track; at: string | null }) 
 }
 
 /**
- * One editable fact.
+ * One editable fact, drawn as a field because this screen is a form.
  *
- * A local draft, seeded from the manifest and re-seeded whenever the manifest
- * changes underneath it — which happens when a catalogue match is taken while
- * this field is on screen. Without that, choosing a match would fill the
- * manifest and leave the boxes showing what they showed before.
- *
- * Escape puts the value back rather than committing it, because the only way
- * out of a half-typed correction otherwise is to remember what was there.
+ * The header's two are the same correction with the box taken off — both are
+ * `useDraft`, which is where the commit-on-blur, the re-seeding and the escape
+ * live.
  */
 function Field({
   label,
   value,
   placeholder,
+  required,
   onCommit,
 }: {
   label: string;
   value: string;
   placeholder?: string;
+  required?: boolean;
   onCommit(next: string): void;
 }) {
-  const [draft, setDraft] = useState(value);
-  useEffect(() => setDraft(value), [value]);
-
-  const commit = () => {
-    if (draft !== value) onCommit(draft);
-  };
+  const props = useDraft(value, onCommit, required);
 
   return (
     <label className="mf-field">
       <span className="mf-field-label">{label}</span>
-      <input
-        value={draft}
-        placeholder={placeholder}
-        spellCheck={false}
-        onChange={(event) => setDraft(event.currentTarget.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') event.currentTarget.blur();
-          if (event.key === 'Escape') {
-            setDraft(value);
-            event.currentTarget.blur();
-          }
-        }}
-      />
+      <input {...props} placeholder={placeholder} />
     </label>
   );
 }
