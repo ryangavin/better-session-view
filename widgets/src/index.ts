@@ -87,3 +87,5 @@ export {
   type PianoRollNote,
   type PianoRollProps,
 } from './notation/PianoRoll.tsx';
+
+export * from './debug/index.ts';

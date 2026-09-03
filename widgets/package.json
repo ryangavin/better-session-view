@@ -18,7 +18,9 @@
     "./gesture/*": "./src/gesture/*",
     "./palette.css": "./src/palette.css",
     "./tokens.css": "./src/tokens.css",
-    "./type.css": "./src/type.css"
+    "./type.css": "./src/type.css",
+    "./debug": "./src/debug/index.ts",
+    "./debug/*": "./src/debug/*"
   },
   "types": "dist/index.d.ts",
   "scripts": {

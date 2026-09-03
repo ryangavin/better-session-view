@@ -19,12 +19,14 @@ import { Select } from '../src/controls/Select.tsx';
 import { Slider } from '../src/controls/Slider.tsx';
 import { Toggle } from '../src/controls/Toggle.tsx';
 import { XYPad } from '../src/controls/XYPad.tsx';
+import { DebugCase } from './DebugCase.tsx';
 
 const SECTIONS = [
   'Knob', 'Slider', 'Number field', 'Toggle', 'Button', 'Meter', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',
   'Chain',
   'Graph',
   'Modal',
+  'Debug',
   'Model',
 ];
 
@@ -1004,6 +1006,15 @@ export function Bench() {
         <Section id="Modal">
           <Case note="Ask it, and it is over everything: a native dialog, so it sits in the top layer whatever it opened over, focus is trapped inside it and returns to the button afterwards, escape and the scrim both close it. The × is always there because those two ways out are invisible; the row along the bottom is only for what the modal is for, so there is no Cancel saying what the × already says.">
             <Asking />
+          </Case>
+        </Section>
+
+        <Section id="Debug">
+          <Case
+            wide
+            note="The frame a harness is built in, with nothing under it: a made-up signal, beats every half second, a head on the wall clock. Click the time row to seek, drag it to pan, shift-drag for a loop, alt-drag or drag the head to scrub; scroll pans and shift-scroll zooms about the pointer. The legends appear under the pointer. Everything is drawn in palette inks read off the page, so it follows the host-tokens switch."
+          >
+            <DebugCase />
           </Case>
         </Section>
 

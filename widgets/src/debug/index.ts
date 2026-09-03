@@ -1,0 +1,11 @@
+export { around, clamped, clock, panned, spanOf, timeOf, xOf, zoomed, type Span, type View, type Window } from './axis.ts';
+export { useAxis, NARROWEST, type Axis, type AxisOptions } from './useAxis.ts';
+export { useCanvas, type Draw } from './useCanvas.ts';
+export { useRemembered } from './useRemembered.ts';
+export { ink, inkOf, INKS, type InkName } from './ink.ts';
+export { Scope, ScopeRow, type ScopeProps, type ScopeRowProps, type ScopePointer, type Scrub } from './Scope.tsx';
+export { Plot, type PlotProps } from './Plot.tsx';
+export { Facts, type Fact, type FactsProps } from './Facts.tsx';
+export { Legend, type LegendItem, type LegendProps } from './Legend.tsx';
+export { Transport, type TransportProps } from './Transport.tsx';
+export { Harness, Toolbar, Group, Status, Shelf, type HarnessProps, type GroupProps, type StatusProps } from './Harness.tsx';

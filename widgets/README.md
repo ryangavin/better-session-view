@@ -23,6 +23,7 @@ with no React, this is React with no domain.
 | [the graph](docs/graph.md) | the node canvas, ports, cords, or who owns a position | `src/chrome/Graph.tsx`, `Port.tsx`, `graphContext.ts` |
 | [notation displays](docs/notation.md) | tablature, a piano roll, their timelines, or the app/widget boundary | `src/notation/*` |
 | [the bench](docs/bench.md) | the dev harness, or adding a case to it | `bench/*`, `vite.config.ts` |
+| [the debug module](docs/debug.md) | building a debugging page in an app: the frame, a time axis, plots, a transport | `src/debug/*` |
 
 ## The shape of it
 
