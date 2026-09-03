@@ -82,7 +82,7 @@ export function Tablature({ strings, notes, view, height, grid, className, onSee
       const edge = ink(el, '--wdg-edge', '#2c2c31');
       const major = ink(el, '--wdg-empty', '#3a3a41');
       const face = ink(el, '--wdg-face', '#151517');
-      const noteInk = ink(el, '--wdg-fill', '#f0b23c');
+      const noteInk = ink(el, '--wdg-fill', '#f7c65a');
       const alarm = ink(el, '--wdg-alarm', '#d4544f');
       const xOf = (place: number) => ((place - view.from) / wide) * box.width;
 

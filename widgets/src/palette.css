@@ -15,9 +15,9 @@
   --caption: #5e5e66;
   --idle: #3a3a41;
 
-  --amber: #f0b23c;
-  --amber-hover: #ffc961;
-  --amber-muted: #927b51;
+  --amber: #f7c65a;
+  --amber-hover: #ffd97f;
+  --amber-muted: #9f8a5e;
   --red: #d4544f;
   --green: #5fbfa8;
   --blue: #4da6d9;
@@ -43,7 +43,7 @@
 
        box-shadow: var(--ring) var(--amber-muted);
 
-     resolves to `inset 0 0 0 1px #927b51`. That is what lets one token
+     resolves to `inset 0 0 0 1px #9f8a5e`. That is what lets one token
      serve every ring in the suite without a token per colour.
 
      `--ring` outlines inside the box and `--ring-out` outside it — the
