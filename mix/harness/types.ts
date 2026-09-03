@@ -41,6 +41,8 @@ export interface IndexEntry {
   bpm: number | null;
   /** A truth file exists, or a tempo is known. */
   truth: boolean;
+  /** The other arms run on the track, as `<input>.<arm>`; each has a report at `<id>.<variant>.json`. */
+  arms?: string[];
 }
 
 /** One correction made by hand in the page, and what kind of error it names. */

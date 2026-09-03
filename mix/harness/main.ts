@@ -14,6 +14,9 @@ import { score } from './score.ts';
 
 const REPORTS = './reports';
 const KEY = 'mix-harness-track';
+const ARM_KEY = 'mix-harness-arm';
+/** The arm of the beat finding whose report is shown; empty is ours on the drums, the bare report. */
+let arm = '';
 
 const el = <T extends Element>(sel: string): T => document.querySelector<T>(sel)!;
 const rowCanvas = (name: string): HTMLCanvasElement => el<HTMLCanvasElement>(`.row[data-row="${name}"] canvas`);
@@ -92,10 +95,31 @@ async function loadIndex(): Promise<void> {
     if (entries.some((e) => e.id === asked)) want = asked;
     else el('#summary').textContent = `no report for ${asked} — run npm run warp:mix -- --report`;
   }
+  try {
+    arm = localStorage.getItem(ARM_KEY) ?? '';
+  } catch {
+    // no storage
+  }
   if (want) {
     select.value = want;
     await loadTrack(want);
   }
+}
+
+/** The arms run on the track, for the select; the bare report first. */
+function fillArms(entry: IndexEntry | undefined): void {
+  const select = el<HTMLSelectElement>('#arm');
+  select.innerHTML = '';
+  const arms = ['', ...(entry?.arms ?? [])];
+  for (const each of arms) {
+    const option = document.createElement('option');
+    option.value = each;
+    option.textContent = each === '' ? 'drums.ours' : each;
+    select.append(option);
+  }
+  if (!arms.includes(arm)) arm = '';
+  select.value = arm;
+  select.hidden = arms.length < 2;
 }
 
 async function loadTrack(id: string): Promise<void> {
@@ -105,9 +129,10 @@ async function loadTrack(id: string): Promise<void> {
   } catch {
     // no storage
   }
-  report = await json<Report>(`${REPORTS}/${id}.json`);
+  fillArms(entries.find((e) => e.id === id));
+  report = await json<Report>(`${REPORTS}/${id}${arm ? `.${arm}` : ''}.json`);
   truth = await json<Truth>(`${REPORTS}/truth/${id}.json`);
-  if (!report) throw new Error(`no report for ${id}`);
+  if (!report) throw new Error(`no report for ${id}${arm ? ` (${arm})` : ''}`);
   saved = truth ? structuredClone(truth) : null;
   correcting = false;
   undoStack = [];
@@ -797,6 +822,15 @@ function correctionKey(ev: KeyboardEvent): boolean {
 function wire(): void {
   el<HTMLSelectElement>('#track').addEventListener('change', (ev) => {
     void loadTrack((ev.target as HTMLSelectElement).value);
+  });
+  el<HTMLSelectElement>('#arm').addEventListener('change', (ev) => {
+    arm = (ev.target as HTMLSelectElement).value;
+    try {
+      localStorage.setItem(ARM_KEY, arm);
+    } catch {
+      // no storage
+    }
+    if (report) void loadTrack(report.track.id);
   });
   el('#play').addEventListener('click', toggle);
   el('#clearLoop').addEventListener('click', () => {

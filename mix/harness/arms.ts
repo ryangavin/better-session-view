@@ -1,0 +1,86 @@
+/**
+ * The beat finding, several ways, so the harness can score them against one
+ * another on the same track and the same truth.
+ *
+ * Our own pipeline is three stages — `transients.ts` hears the hits,
+ * `tempo.ts` fits a line through them, `follow.ts` follows the beat through
+ * the song — and the library this is measured against (audiojs/beat, copied
+ * into `flux.ts`, `comb.ts` and `ellis.ts`) has the same three. So an arm is
+ * not only ours or theirs: their onsets can be handed to our fit and
+ * follower, their tempo can seed our follower, and each swap says which stage
+ * is losing the accuracy.
+ */
+import { combOf } from '../src/comb.ts';
+import { ellisOf, gridOf } from '../src/ellis.ts';
+import { fluxOf, heardOf, monoOf, onsetsOf } from '../src/flux.ts';
+import { followOf, type Follow } from '../src/follow.ts';
+import { beatnessOf, FASTEST, fitOf, phaseOf, SLOWEST, type Fit } from '../src/tempo.ts';
+import type { Trace } from '../src/trace.ts';
+import { heardIn, type Heard } from '../src/transients.ts';
+import { beatsOf, type Beats } from '../src/warp.ts';
+
+export const ARMS = ['ours', 'flux', 'comb', 'ellis', 'grid'] as const;
+export type Arm = (typeof ARMS)[number];
+
+export const SAYS: Record<Arm, string> = {
+  ours: 'our transients, our fit, our follower',
+  flux: 'their spectral flux onsets into our fit and follower',
+  comb: 'our transients; their comb-filter tempo seeds our follower',
+  ellis: 'their onsets, their comb tempo, their dynamic-programming tracker',
+  grid: 'their onsets, their comb tempo, a straight grid at the best phase',
+};
+
+/** What the arms hear: the drums stem alone, or every stem summed back into the whole. */
+export const INPUTS = ['drums', 'full'] as const;
+export type Input = (typeof INPUTS)[number];
+
+/** The arm's default file name is bare; every other pairing carries its name. */
+export const variantOf = (input: Input, arm: Arm): string | null => (input === 'drums' && arm === 'ours' ? null : `${input}.${arm}`);
+
+export interface Run {
+  heard: Heard;
+  fit: Fit | null;
+  follow: Follow | null;
+  beats: Beats | null;
+}
+
+/** A beat map from times in seconds: bar 1 at the first beat, as the follower counts. */
+const mapOf = (seconds: readonly number[], rate: number, length: number, bpm: number): Beats | null =>
+  seconds.length >= 2 ? beatsOf(rate, length, 0, seconds.map((s) => Math.round(s * rate)), bpm) : null;
+
+export function run(arm: Arm, channels: readonly Float32Array[], rate: number, trace: Trace): Run | null {
+  const length = channels[0].length;
+  const seconds = length / rate;
+  if (arm === 'ours') {
+    const heard = heardIn(channels, rate);
+    if (!heard) return null;
+    const fit = fitOf(heard, trace.tempo);
+    const follow = fit ? followOf(heard, fit, trace.follow) : null;
+    return { heard, fit, follow, beats: follow?.beats ?? null };
+  }
+  const onset = fluxOf(monoOf(channels), rate);
+  if (!onset) return null;
+  if (arm === 'flux') {
+    const heard = heardOf(onset, rate, seconds);
+    const fit = fitOf(heard, trace.tempo);
+    const follow = fit ? followOf(heard, fit, trace.follow) : null;
+    return { heard, fit, follow, beats: follow?.beats ?? null };
+  }
+  const comb = combOf(onset, SLOWEST, FASTEST);
+  if (arm === 'comb') {
+    const heard = heardIn(channels, rate);
+    if (!heard) return null;
+    if (!comb) return { heard, fit: null, follow: null, beats: null };
+    const period = 60 / comb.bpm;
+    const line = phaseOf(heard.transients.filter((t) => t.band !== 'high'), period, heard.seconds);
+    const fit: Fit = { bpm: comb.bpm, offset: line.first, agreement: beatnessOf(heard, period, line.first) };
+    const follow = followOf(heard, fit, trace.follow);
+    return { heard, fit, follow, beats: follow?.beats ?? null };
+  }
+  const heard = heardOf(onset, rate, seconds);
+  if (!comb) return { heard, fit: null, follow: null, beats: null };
+  const times = arm === 'ellis' ? ellisOf(onset, comb.bpm) : gridOf(onsetsOf(onset), comb.bpm, seconds);
+  const beats = mapOf(times, rate, length, comb.bpm);
+  const fit: Fit = { bpm: comb.bpm, offset: beats ? beats.samples[0] / rate : 0, agreement: comb.confidence };
+  return { heard, fit, follow: null, beats };
+}
