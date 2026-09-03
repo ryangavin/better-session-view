@@ -148,6 +148,22 @@ async function loadTrack(id: string): Promise<void> {
   summarise();
   showVerdict();
   render();
+  void ready();
+}
+
+/** The ticked stems and bands decoded ahead, reversed copies and all, so play and scrub start at once. */
+async function ready(): Promise<void> {
+  try {
+    await deck.preload(chosenStems());
+  } catch {
+    // a missing stem says so when played
+  }
+  showLatency();
+}
+
+function showLatency(): void {
+  const ms = deck.latency() * 1000;
+  el('#latency').textContent = ms > 0 ? `${ms.toFixed(1)} ms out` : '';
 }
 
 const stemUrl = (name: string): string => {
@@ -474,6 +490,7 @@ async function play(): Promise<void> {
   try {
     await deck.start(stems, el<HTMLInputElement>('#click').checked ? clicksOf() : [], span, loop ? loop.from : cursor);
     el('#note').textContent = '';
+    showLatency();
   } catch (err) {
     el('#note').textContent = String(err);
   }
@@ -935,6 +952,7 @@ function wire(): void {
   for (const box of document.querySelectorAll<HTMLInputElement>('.stem, .band, #click')) {
     box.addEventListener('change', () => {
       if (deck.playing) void play();
+      else void ready();
     });
   }
   for (const radio of document.querySelectorAll<HTMLInputElement>('input[name="map"]')) {

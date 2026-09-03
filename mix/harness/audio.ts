@@ -63,8 +63,24 @@ export class Audition {
   readonly have = new Map<string, AudioBuffer>();
 
   context(): AudioContext {
-    if (!this.ctx) this.ctx = new AudioContext();
+    if (!this.ctx) this.ctx = new AudioContext({ latencyHint: 'interactive' });
     return this.ctx;
+  }
+
+  /**
+   * How long after a sample is scheduled it reaches the ear, in seconds:
+   * the graph's own buffering and the output device's, as the browser
+   * reports them. Zero until the context is running.
+   */
+  latency(): number {
+    const ctx = this.ctx;
+    if (!ctx || ctx.state !== 'running') return 0;
+    return ctx.baseLatency + (ctx.outputLatency ?? 0);
+  }
+
+  /** Decode these ahead of a play or a scrub, reversed copies and all. */
+  preload(urls: string[]): Promise<void> {
+    return Promise.all(urls.map((u) => this.buffer(u))).then(() => undefined);
   }
 
   /**
@@ -80,6 +96,7 @@ export class Audition {
         const heard = this.context().createBuffer(1, whole.length, whole.sampleRate);
         heard.getChannelData(0).set(bandOf(channels, whole.sampleRate, band));
         this.have.set(url, heard);
+        this.backwards(heard);
         return heard;
       });
       this.cache.set(url, got);
@@ -92,6 +109,7 @@ export class Audition {
         .then((bytes) => this.context().decodeAudioData(bytes))
         .then((buffer) => {
           this.have.set(url, buffer);
+          this.backwards(buffer);
           return buffer;
         });
       this.cache.set(url, got);
@@ -107,7 +125,7 @@ export class Audition {
     this.clicks = clicks;
     this.span = span;
     this.playing = true;
-    this.pass(Math.max(span.from, Math.min(from, span.to - 0.05)), ctx.currentTime + 0.08);
+    this.pass(Math.max(span.from, Math.min(from, span.to - 0.05)), ctx.currentTime + 0.02);
     this.timer = window.setInterval(() => this.tick(), 100);
   }
 
@@ -197,6 +215,8 @@ export class Audition {
     let voice = scrub.voice;
     let pos = voice ? this.positionOf(voice, now) : at;
     const dir: 1 | -1 = at >= pos ? 1 : -1;
+    // Aimed past the pointer by what it will cover while the sound is on its way to the ear.
+    at += dir * speed * this.latency();
     if (!voice || voice.dir !== dir || Math.abs(at - pos) > LEAP) {
       if (Math.abs(at - pos) > LEAP) pos = at - dir * HORIZON;
       voice = this.turn(scrub, dir, pos, now);
@@ -290,9 +310,9 @@ export class Audition {
     this.playing = false;
   }
 
-  /** Where the playhead is, in seconds from the top of the file, or null when stopped. */
+  /** Where the ear is, in seconds from the top of the file — the output's latency behind the schedule — or null when stopped. */
   position(): number | null {
     if (!this.playing || !this.ctx) return null;
-    return this.passFrom + (this.ctx.currentTime - this.passAt);
+    return this.passFrom + (this.ctx.currentTime - this.passAt) - this.latency();
   }
 }
