@@ -42,7 +42,7 @@
 
 .wdg-widget[data-layout='inside'] > .wdg-caption,
 .wdg-widget[data-layout='inside'] > .wdg-readout {
-  z-index: 1;
+  z-index: 3;
   grid-row: 1;
   align-self: center;
   white-space: nowrap;
@@ -90,7 +90,11 @@
   text-align: right;
 }
 
-.wdg-widget[data-layout='inside'] .wdg-slider-body,
+.wdg-widget[data-layout='inside'] .wdg-slider-body {
+  border: 0;
+  background: var(--wdg-empty);
+}
+
 .wdg-widget[data-layout='inside'] .wdg-meter-horizontal {
   border: 0;
   background: var(--wdg-groove, #101012);
