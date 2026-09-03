@@ -367,6 +367,7 @@
   flex-direction: column;
   justify-content: space-between;
   --wdg-fill: var(--stem);
+  --wdg-marker: var(--stem);
   --wdg-knob-size: 16px;
   --wdg-knob-height: 13px;
   --wdg-space: 4px;
@@ -385,10 +386,9 @@
 }
 
 .mf-lane-tone .mf-tone-cut {
-  --wdg-knob-size: 12px;
-  --wdg-knob-height: 10px;
-  --wdg-fill: var(--ui);
-  padding-left: 2px;
+  --wdg-knob-size: 14px;
+  --wdg-knob-height: 11px;
+  padding-left: 1px;
 }
 
 .mf-lane-tone .mf-tone-cut .wdg-caption {
@@ -397,9 +397,9 @@
   color: var(--caption);
 }
 
-.mf-lane[data-quiet] .mf-lane-tone,
-.mf-lane[data-quiet] .mf-lane-tone .mf-tone-cut {
+.mf-lane[data-quiet] .mf-lane-tone {
   --wdg-fill: var(--idle);
+  --wdg-marker: var(--idle);
 }
 
 .mf-lane-level {
