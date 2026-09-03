@@ -13,6 +13,9 @@ export interface Span {
 }
 
 const LOOKAHEAD = 2;
+/** How much of the song a scrub plays at each position, in seconds, and how often a held position plays again. */
+const GRAIN = 0.08;
+const HOLD = 0.12;
 
 export class Audition {
   private ctx: AudioContext | null = null;
@@ -25,6 +28,7 @@ export class Audition {
   private clicks: Click[] = [];
   private buffers: AudioBuffer[] = [];
   private clicked = 0;
+  private scrubbing: { buffers: AudioBuffer[]; at: number; timer: number } | null = null;
   playing = false;
   /** Whether the pass repeats: a loop region rather than the whole song once. */
   looping = false;
@@ -124,6 +128,50 @@ export class Audition {
     osc.connect(gain).connect(ctx.destination);
     osc.start(when);
     osc.stop(when + 0.06);
+  }
+
+  /**
+   * Scrubbing: a grain of the stems at wherever the pointer is, and the same
+   * grain again while it holds still, so a hit can be found by ear. Stops
+   * the pass, if one was playing.
+   */
+  async scrubStart(urls: string[], at: number): Promise<void> {
+    const ctx = this.context();
+    await ctx.resume();
+    const buffers = await Promise.all(urls.map((u) => this.buffer(u)));
+    this.stop();
+    this.scrubEnd();
+    this.scrubbing = { buffers, at, timer: window.setInterval(() => this.grain(), HOLD * 1000) };
+    this.grain();
+  }
+
+  scrubTo(at: number): void {
+    if (!this.scrubbing || Math.abs(at - this.scrubbing.at) < GRAIN / 4) return;
+    this.scrubbing.at = at;
+    this.grain();
+  }
+
+  scrubEnd(): void {
+    if (!this.scrubbing) return;
+    window.clearInterval(this.scrubbing.timer);
+    this.scrubbing = null;
+  }
+
+  private grain(): void {
+    if (!this.scrubbing) return;
+    const ctx = this.context();
+    const now = ctx.currentTime;
+    for (const buffer of this.scrubbing.buffers) {
+      const node = ctx.createBufferSource();
+      node.buffer = buffer;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(1, now + 0.003);
+      gain.gain.setValueAtTime(1, now + GRAIN - 0.008);
+      gain.gain.linearRampToValueAtTime(0, now + GRAIN);
+      node.connect(gain).connect(ctx.destination);
+      node.start(now, Math.max(0, this.scrubbing.at), GRAIN);
+    }
   }
 
   stop(): void {

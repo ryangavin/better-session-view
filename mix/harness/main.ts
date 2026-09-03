@@ -381,7 +381,32 @@ function wireTime(): void {
     const startView = { ...view };
     const startTime = D.timeOf(viewOf(1), ev.clientX - box.left);
     const selecting = ev.shiftKey;
+    // On the playhead, or with alt held anywhere: drag to scrub through the sound.
+    const scrubbing = ev.altKey || Math.abs(D.xOf(viewOf(1), deck.position() ?? cursor) - (ev.clientX - box.left)) <= 6;
     let moved = false;
+
+    if (scrubbing && !selecting) {
+      const wasPlaying = deck.playing;
+      cursor = startTime;
+      drawOverlay();
+      // Decoding may outlast the first movement; the grain then follows the pointer's latest position.
+      void deck.scrubStart(chosenStems(), startTime).then(() => deck.scrubTo(cursor));
+      const scrub = (m: PointerEvent) => {
+        cursor = Math.max(0, Math.min(D.timeOf(viewOf(1), m.clientX - box.left), seconds()));
+        deck.scrubTo(cursor);
+        drawOverlay();
+      };
+      const done = () => {
+        ruler.removeEventListener('pointermove', scrub);
+        ruler.removeEventListener('pointerup', done);
+        deck.scrubEnd();
+        if (wasPlaying) void play();
+        else drawOverlay();
+      };
+      ruler.addEventListener('pointermove', scrub);
+      ruler.addEventListener('pointerup', done);
+      return;
+    }
 
     const move = (m: PointerEvent) => {
       const dx = m.clientX - startX;
@@ -435,12 +460,15 @@ function clicksOf(): Click[] {
   }));
 }
 
+/** The stems and bands ticked, as URLs for the deck. */
+const chosenStems = (): string[] => [
+  ...[...document.querySelectorAll<HTMLInputElement>('.stem')].filter((box) => box.checked).map((box) => stemUrl(box.value)),
+  ...[...document.querySelectorAll<HTMLInputElement>('.band')].filter((box) => box.checked).map((box) => `${stemUrl('drums')}#${box.value}`),
+];
+
 async function play(): Promise<void> {
   if (!report) return;
-  const stems = [
-    ...[...document.querySelectorAll<HTMLInputElement>('.stem')].filter((box) => box.checked).map((box) => stemUrl(box.value)),
-    ...[...document.querySelectorAll<HTMLInputElement>('.band')].filter((box) => box.checked).map((box) => `${stemUrl('drums')}#${box.value}`),
-  ];
+  const stems = chosenStems();
   deck.looping = loop !== null;
   const span = loop ?? { from: 0, to: report.track.seconds };
   el('#note').textContent = 'decoding…';
