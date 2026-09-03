@@ -287,3 +287,12 @@ button.danger {
   white-space: pre;
   pointer-events: none;
 }
+
+.group input[type='number'] {
+  width: 5.5em;
+  background: var(--panel);
+  color: inherit;
+  border: 1px solid var(--bd);
+  padding: 1px 4px;
+  font: inherit;
+}

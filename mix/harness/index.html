@@ -47,6 +47,12 @@
         <button id="two" title="click any two beats, on the beats row or the transients row; the count between them is inferred and the tempo set from them">two beats</button>
         <button id="correct">correct</button>
         <button id="forget" title="delete this track's saved truth" hidden>forget</button>
+        <button id="keep" title="write this grid into the app's library, as the grid the app opens the track with">keep grid</button>
+      </div>
+      <div class="group">
+        <span class="cap">export</span>
+        <label title="the tempo the stems are laid at; the whole number nearest the grid's, unless you say otherwise">at <input id="exportBpm" type="number" step="0.001" min="40" max="300" /> bpm</label>
+        <button id="export" title="lay every stem straight from 1.1.1 at that tempo, padded to whole bars, into the app's export folder">export stems</button>
       </div>
       <span id="note" class="dim note"></span>
     </div>

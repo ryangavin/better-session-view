@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coarser, LIBRARY, onsetsOf, peaksOf, readWav, stemUrl, type Peak } from './audio.ts';
+import { coarser, LIBRARY, onsetsOf, peaksOf, readWav, stemUrl, wavOf, type Peak } from './audio.ts';
 
 /**
  * The format contract, from the other end.
@@ -248,5 +248,22 @@ describe('where a stem is served from', () => {
     expect(stemUrl('/library', 'stems/a/htdemucs', 'drums')).toBe(
       '/library/stems/a/htdemucs/drums.wav',
     );
+  });
+});
+
+describe('wavOf', () => {
+  it('writes what readWav reads back, to the float', () => {
+    const left = Float32Array.from([0, 0.5, -0.25, 1, -1]);
+    const right = Float32Array.from([0.1, 0.2, 0.3, 0.4, 0.5]);
+    const read = readWav(wavOf([left, right], 48000));
+    expect(read?.rate).toBe(48000);
+    expect(read?.channels.length).toBe(2);
+    expect(Array.from(read!.channels[0])).toEqual(Array.from(left));
+    expect(Array.from(read!.channels[1])).toEqual(Array.from(right));
+  });
+
+  it('is empty but well-formed with no frames', () => {
+    const read = readWav(wavOf([new Float32Array(0)], 44100));
+    expect(read?.channels[0].length).toBe(0);
   });
 });

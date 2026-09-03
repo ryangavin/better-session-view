@@ -178,8 +178,17 @@ const stemUrl = (name: string): string => {
 
 /* ---------- summary ---------- */
 
+/** The tempo the export box offers: the whole number nearest the grid's, unless a hand has typed one. */
+function offerTempo(): void {
+  const box = el<HTMLInputElement>('#exportBpm');
+  const bpm = report?.fit?.bpm ?? (report?.beats ? tempoOf(report.beats) : null);
+  if (bpm == null) return;
+  if (document.activeElement !== box) box.value = String(Math.round(bpm));
+}
+
 function summarise(): void {
   if (!report) return;
+  offerTempo();
   const { track, fit, follow, beats, known } = report;
   const bits = [
     `<b>${track.title}</b>`,
@@ -883,6 +892,8 @@ function wireCorrection(): void {
   el('#discard').addEventListener('click', discard);
   el('#forget').addEventListener('click', () => void forgetTruth());
   el('#sweepTempo').addEventListener('click', sweepTempo);
+  el('#keep').addEventListener('click', () => void keepGrid());
+  el('#export').addEventListener('click', () => void exportStems());
 }
 
 /** Keys that only mean something with a beat in hand. Returns whether the key was taken. */
@@ -967,6 +978,69 @@ function replaceMap(beats: Beats, bpm: number, offset: number): void {
   scale = D.tempoScale(report.trace.follow, report.beats);
   summarise();
   render();
+}
+
+/**
+ * The grid as it stands, written into the app's library beside the track.
+ *
+ * A straight map goes as its tempo and downbeat alone — the app rules it
+ * evenly from those, and a map of identical spacings would only be that
+ * ruling written out — and a followed map goes as the map.
+ */
+async function keepGrid(): Promise<void> {
+  const beats = report?.beats;
+  if (!report || !beats) return;
+  const bpm = report.fit?.bpm ?? tempoOf(beats);
+  const offset = report.fit?.offset ?? beats.samples[0] / beats.rate;
+  const grid = { bpm, bpmAuto: true, offset, beats: isStraight(beats) ? null : beats };
+  const fit = report.follow ? { ...report.follow } : report.fit;
+  try {
+    const put = await fetch(`./grid/${report.track.id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ grid, fit }),
+    });
+    const text = await put.text();
+    if (!put.ok) throw new Error(text || String(put.status));
+    el('#note').textContent = `kept: ${bpm} bpm from ${offset.toFixed(3)} s → ${(JSON.parse(text) as { where: string }).where}`;
+  } catch (error) {
+    el('#note').textContent = `keep failed: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+/**
+ * Every stem laid straight from 1.1.1 at the tempo in the box, into the
+ * app's export folder. The grid's own tempo and downbeat say how the record
+ * runs; the box says how the file should.
+ */
+async function exportStems(): Promise<void> {
+  const beats = report?.beats;
+  if (!report || !beats) return;
+  const to = Number(el<HTMLInputElement>('#exportBpm').value);
+  if (!(to > 0)) {
+    el('#note').textContent = 'a tempo to export at, first';
+    return;
+  }
+  const bpm = report.fit?.bpm ?? tempoOf(beats);
+  const offset = report.fit?.offset ?? beats.samples[0] / beats.rate;
+  const button = el<HTMLButtonElement>('#export');
+  button.disabled = true;
+  el('#note').textContent = `laying ${report.track.stems.length} stems at ${to}…`;
+  try {
+    const post = await fetch(`./export/${report.track.id}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: report.track.title, stems: report.track.stems, bpm, offset, to }),
+    });
+    const text = await post.text();
+    if (!post.ok) throw new Error(text || String(post.status));
+    const done = JSON.parse(text) as { where: string; files: string[]; bars: number; seconds: number; speed: number };
+    el('#note').textContent = `${done.files.length} stems, ${done.bars} bars (${done.seconds.toFixed(1)} s) at ${to}, speed ${done.speed.toFixed(5)} → ${done.where}`;
+  } catch (error) {
+    el('#note').textContent = `export failed: ${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    button.disabled = false;
+  }
 }
 
 /** The last tempo sweep, drawn in its panel until the report changes. */

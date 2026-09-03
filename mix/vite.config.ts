@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { APPS, uiPort } from '@openflow/desktop/apps.ts';
 import { truthWriter } from './harness/vite-truth.ts';
+import { gridExport } from './harness/vite-export.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,7 +19,11 @@ const PORT = uiPort(APPS.mix);
 export default defineConfig({
   root: here,
   // The harness page under harness/ saves hand-corrected beats through the dev server.
-  plugins: [react(), truthWriter(path.resolve(here, 'harness', 'reports'))],
+  plugins: [
+    react(),
+    truthWriter(path.resolve(here, 'harness', 'reports')),
+    gridExport(path.resolve(here, 'harness', 'reports')),
+  ],
   // Named, because `npm run dev` runs several of these at once and the default
   // resolves to the same `node_modules/.vite` for all of them.
   cacheDir: path.resolve(here, '../node_modules/.vite/mix'),

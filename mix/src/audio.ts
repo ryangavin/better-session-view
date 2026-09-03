@@ -125,6 +125,42 @@ export function readWav(
 }
 
 /**
+ * Channels written as a float32 WAV, the format the stems arrive in.
+ *
+ * Float because that is what was separated and what will be read back: a
+ * stem rescaled to 16 bits on the way out would be the one thing in the
+ * library that does not sum. Every channel is taken to be the length of the
+ * first.
+ */
+export function wavOf(channels: readonly Float32Array[], rate: number): ArrayBuffer {
+  const frames = channels[0]?.length ?? 0;
+  const width = 4 * channels.length;
+  const bytes = new ArrayBuffer(44 + frames * width);
+  const view = new DataView(bytes);
+  const tag = (at: number, text: string) => {
+    for (let i = 0; i < 4; i++) view.setUint8(at + i, text.charCodeAt(i));
+  };
+  tag(0, 'RIFF');
+  view.setUint32(4, 36 + frames * width, true);
+  tag(8, 'WAVE');
+  tag(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 3, true);
+  view.setUint16(22, channels.length, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * width, true);
+  view.setUint16(32, width, true);
+  view.setUint16(34, 32, true);
+  tag(36, 'data');
+  view.setUint32(40, frames * width, true);
+  for (let f = 0; f < frames; f++) {
+    const base = 44 + f * width;
+    for (let c = 0; c < channels.length; c++) view.setFloat32(base + c * 4, channels[c][f] ?? 0, true);
+  }
+  return bytes;
+}
+
+/**
  * One stem, decoded.
  *
  * The browser first, because it knows every format and resamples; our own
