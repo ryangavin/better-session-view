@@ -15,11 +15,16 @@ export function truthWriter(reports: string): Plugin {
     name: 'harness-truth',
     configureServer(server) {
       server.middlewares.use('/harness/truth/', (req, res, next) => {
-        if (req.method !== 'PUT') return next();
+        if (req.method !== 'PUT' && req.method !== 'DELETE') return next();
         const id = decodeURIComponent((req.url ?? '/').slice(1).replace(/\.json$/, ''));
         if (!/^[A-Za-z0-9_-]+$/.test(id)) {
           res.statusCode = 400;
           return res.end('bad id');
+        }
+        if (req.method === 'DELETE') {
+          fs.rmSync(path.join(dir, `${id}.json`), { force: true });
+          res.statusCode = 204;
+          return res.end();
         }
         const chunks: Buffer[] = [];
         req.on('data', (chunk: Buffer) => chunks.push(chunk));

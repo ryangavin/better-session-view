@@ -39,6 +39,7 @@ let undoStack: Truth[] = [];
 let selected: number | null = null;
 let drag: { beat: number; sample: number; snapped: boolean } | null = null;
 let discardArmed = false;
+let forgetArmed = false;
 
 const seconds = (): number => report?.track.seconds ?? 60;
 const rate = (): number => report?.track.rate ?? 44100;
@@ -628,6 +629,7 @@ function chrome(): void {
   el<HTMLElement>('#editbar').hidden = !correcting;
   el<HTMLButtonElement>('#correct').classList.toggle('on', correcting);
   el<HTMLButtonElement>('#correct').textContent = correcting ? 'correcting' : 'correct';
+  el<HTMLButtonElement>('#forget').hidden = saved === null;
 }
 
 function toggleCorrect(): void {
@@ -679,28 +681,39 @@ async function saveTruth(): Promise<void> {
       return;
     }
     saved = structuredClone(truth);
+    chrome();
     say(`saved ${truth.beats.samples.length} beats, ${truth.edits.length} edits`);
   } catch (error) {
     say(`save failed: ${error instanceof Error ? error.message : String(error)}`, true);
   }
 }
 
-/** Two clicks rather than a dialog: a browser driving the page cannot answer a confirm(). */
-function discard(): void {
-  const button = el<HTMLButtonElement>('#discard');
+/**
+ * Two clicks rather than a dialog: a browser driving the page cannot answer
+ * a confirm(). The first click arms the button for three seconds; the second
+ * does the thing. Returns whether the thing is to be done.
+ */
+function armed(button: HTMLButtonElement, isArmed: boolean, setArmed: (to: boolean) => void, label: string, ask: string): boolean {
   const disarm = () => {
-    discardArmed = false;
+    setArmed(false);
     button.classList.remove('danger');
-    button.textContent = 'discard';
+    button.textContent = label;
   };
-  if (!discardArmed) {
-    discardArmed = true;
+  if (!isArmed) {
+    setArmed(true);
     button.classList.add('danger');
-    button.textContent = 'really discard?';
-    window.setTimeout(() => discardArmed && disarm(), 3000);
-    return;
+    button.textContent = ask;
+    window.setTimeout(() => {
+      if (button.classList.contains('danger')) disarm();
+    }, 3000);
+    return false;
   }
   disarm();
+  return true;
+}
+
+function discard(): void {
+  if (!armed(el('#discard'), discardArmed, (to) => (discardArmed = to), 'discard', 'really discard?')) return;
   truth = saved ? structuredClone(saved) : null;
   undoStack = [];
   selected = null;
@@ -712,6 +725,43 @@ function discard(): void {
   showVerdict();
   render();
   say(saved ? 'back to the saved truth' : 'seeded truth thrown away');
+}
+
+/** The saved truth for the track deleted from disk, and the page back to the predicted map. */
+async function forgetTruth(): Promise<void> {
+  if (!report || !saved) return;
+  if (!armed(el('#forget'), forgetArmed, (to) => (forgetArmed = to), 'forget truth', 'really forget?')) return;
+  const id = report.track.id;
+  try {
+    const gone = await fetch(`./truth/${id}.json`, { method: 'DELETE' });
+    if (!gone.ok) {
+      el('#note').textContent = `forget failed: ${(await gone.text()) || gone.status}`;
+      return;
+    }
+  } catch (error) {
+    el('#note').textContent = `forget failed: ${error instanceof Error ? error.message : String(error)}`;
+    return;
+  }
+  truth = null;
+  saved = null;
+  correcting = false;
+  undoStack = [];
+  selected = null;
+  drag = null;
+  loop = null;
+  deck.looping = false;
+  const entry = entries.find((e) => e.id === id);
+  if (entry) {
+    entry.truth = false;
+    const option = Array.from(el<HTMLSelectElement>('#track').options).find((o) => o.value === id);
+    if (option) option.textContent = option.textContent?.replace(/ — truth$/, '') ?? '';
+  }
+  el<HTMLInputElement>('input[name="map"][value="predicted"]').checked = true;
+  el('#note').textContent = 'truth forgotten';
+  chrome();
+  summarise();
+  showVerdict();
+  render();
 }
 
 function wireCorrection(): void {
@@ -780,6 +830,7 @@ function wireCorrection(): void {
   el('#undo').addEventListener('click', undo);
   el('#save').addEventListener('click', () => void saveTruth());
   el('#discard').addEventListener('click', discard);
+  el('#forget').addEventListener('click', () => void forgetTruth());
 }
 
 /** Keys that only mean something with a beat in hand. Returns whether the key was taken. */
