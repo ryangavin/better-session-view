@@ -389,8 +389,7 @@ function wireTime(): void {
       const wasPlaying = deck.playing;
       cursor = startTime;
       drawOverlay();
-      // Decoding may outlast the first movement; the grain then follows the pointer's latest position.
-      void deck.scrubStart(chosenStems(), startTime).then(() => deck.scrubTo(cursor));
+      void deck.scrubStart(chosenStems(), startTime);
       const scrub = (m: PointerEvent) => {
         cursor = Math.max(0, Math.min(D.timeOf(viewOf(1), m.clientX - box.left), seconds()));
         deck.scrubTo(cursor);

@@ -13,9 +13,8 @@ export interface Span {
 }
 
 const LOOKAHEAD = 2;
-/** How much of the song a scrub plays at each position, in seconds, and how often a held position plays again. */
+/** How much of the song a scrub plays at each position, in seconds. */
 const GRAIN = 0.08;
-const HOLD = 0.12;
 
 export class Audition {
   private ctx: AudioContext | null = null;
@@ -28,7 +27,7 @@ export class Audition {
   private clicks: Click[] = [];
   private buffers: AudioBuffer[] = [];
   private clicked = 0;
-  private scrubbing: { buffers: AudioBuffer[]; at: number; timer: number } | null = null;
+  private scrubbing: { buffers: AudioBuffer[]; at: number } | null = null;
   playing = false;
   /** Whether the pass repeats: a loop region rather than the whole song once. */
   looping = false;
@@ -131,18 +130,16 @@ export class Audition {
   }
 
   /**
-   * Scrubbing: a grain of the stems at wherever the pointer is, and the same
-   * grain again while it holds still, so a hit can be found by ear. Stops
-   * the pass, if one was playing.
+   * Scrubbing, as an editor does it: a grain of the stems at each position
+   * the pointer passes through, and silence when it stops moving. Stops the
+   * pass, if one was playing.
    */
   async scrubStart(urls: string[], at: number): Promise<void> {
     const ctx = this.context();
     await ctx.resume();
     const buffers = await Promise.all(urls.map((u) => this.buffer(u)));
     this.stop();
-    this.scrubEnd();
-    this.scrubbing = { buffers, at, timer: window.setInterval(() => this.grain(), HOLD * 1000) };
-    this.grain();
+    this.scrubbing = { buffers, at };
   }
 
   scrubTo(at: number): void {
@@ -152,8 +149,6 @@ export class Audition {
   }
 
   scrubEnd(): void {
-    if (!this.scrubbing) return;
-    window.clearInterval(this.scrubbing.timer);
     this.scrubbing = null;
   }
 
