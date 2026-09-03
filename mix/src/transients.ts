@@ -163,24 +163,38 @@ class Follower {
     this.down = 1 - Math.exp(-1 / (RELEASE * rate));
   }
 
-  /** The follower after this sample. */
-  step(x: number): number {
+  /** The band's filter after this sample: what the follower listens to. */
+  filter(x: number): number {
     this.a1 += this.lo * (x - this.a1);
     this.a2 += this.lo * (this.a1 - this.a2);
     this.a3 += this.lo * (this.a2 - this.a3);
-    let y: number;
-    if (this.band === 'low') y = this.a3;
-    else if (this.band === 'high') y = x - this.a1;
-    else {
-      this.b1 += this.hi * (x - this.b1);
-      this.b2 += this.hi * (this.b1 - this.b2);
-      this.b3 += this.hi * (this.b2 - this.b3);
-      y = this.b3 - this.a3;
-    }
+    if (this.band === 'low') return this.a3;
+    if (this.band === 'high') return x - this.a1;
+    this.b1 += this.hi * (x - this.b1);
+    this.b2 += this.hi * (this.b1 - this.b2);
+    this.b3 += this.hi * (this.b2 - this.b3);
+    return this.b3 - this.a3;
+  }
+
+  /** The follower after this sample. */
+  step(x: number): number {
+    const y = this.filter(x);
     const size = y < 0 ? -y : y;
     this.env += (size > this.env ? this.up : this.down) * (size - this.env);
     return this.env;
   }
+}
+
+/**
+ * One band of a stem, as the follower hears it, for listening to: the
+ * channels summed and put through the band's filter, at the same lag the
+ * hits are timed against.
+ */
+export function bandOf(channels: readonly Float32Array[], rate: number, band: Band): Float32Array {
+  const follower = new Follower(band, rate);
+  const out = new Float32Array(channels[0].length);
+  for (let s = 0; s < out.length; s++) out[s] = follower.filter(mixed(channels, s));
+  return out;
 }
 
 /** The channels summed at one sample: a hit is a hit whichever side it is panned. */

@@ -1,4 +1,5 @@
 /** Stem playback with a click on every beat, for auditioning a beat map. */
+import { bandOf, type Band } from '../src/transients.ts';
 
 export interface Click {
   /** Seconds from the top of the file. */
@@ -35,10 +36,22 @@ export class Audition {
     return this.ctx;
   }
 
-  /** Decode a stem once and hold it. */
+  /**
+   * Decode a stem once and hold it. A URL with `#low`, `#mid` or `#high` on
+   * the end is that band of the stem, as the transient finding heard it.
+   */
   buffer(url: string): Promise<AudioBuffer> {
     let got = this.cache.get(url);
-    if (!got) {
+    if (!got && /#(low|mid|high)$/.test(url)) {
+      const [stem, band] = url.split('#') as [string, Band];
+      got = this.buffer(stem).then((whole) => {
+        const channels = Array.from({ length: whole.numberOfChannels }, (_, c) => whole.getChannelData(c));
+        const heard = this.context().createBuffer(1, whole.length, whole.sampleRate);
+        heard.getChannelData(0).set(bandOf(channels, whole.sampleRate, band));
+        return heard;
+      });
+      this.cache.set(url, got);
+    } else if (!got) {
       got = fetch(url)
         .then((r) => {
           if (!r.ok) throw new Error(`${r.status} ${url}`);

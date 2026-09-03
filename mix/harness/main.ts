@@ -437,9 +437,10 @@ function clicksOf(): Click[] {
 
 async function play(): Promise<void> {
   if (!report) return;
-  const stems = [...document.querySelectorAll<HTMLInputElement>('.stem')]
-    .filter((box) => box.checked)
-    .map((box) => stemUrl(box.value));
+  const stems = [
+    ...[...document.querySelectorAll<HTMLInputElement>('.stem')].filter((box) => box.checked).map((box) => stemUrl(box.value)),
+    ...[...document.querySelectorAll<HTMLInputElement>('.band')].filter((box) => box.checked).map((box) => `${stemUrl('drums')}#${box.value}`),
+  ];
   deck.looping = loop !== null;
   const span = loop ?? { from: 0, to: report.track.seconds };
   el('#note').textContent = 'decoding…';
@@ -894,7 +895,7 @@ function wire(): void {
     render();
   });
   el('#cand').addEventListener('change', drawPanels);
-  for (const box of document.querySelectorAll<HTMLInputElement>('.stem')) {
+  for (const box of document.querySelectorAll<HTMLInputElement>('.stem, .band')) {
     box.addEventListener('change', () => {
       if (deck.playing) void play();
     });
