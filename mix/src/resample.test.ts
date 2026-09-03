@@ -31,4 +31,16 @@ describe('resample', () => {
     expect(out[50]).toBe(0);
     expect(out[99]).toBe(0);
   });
+
+  it('keeps the level: a signal comes through at the loudness it went in', () => {
+    const noise = Float32Array.from({ length: 40000 }, (_, i) => Math.sin(i * 12.9898) * Math.cos(i * 0.37));
+    const out = resample(noise, 0.9996, 1000, 30000);
+    const rms = (x: Float32Array, from: number, to: number) => {
+      let sum = 0;
+      for (let i = from; i < to; i++) sum += x[i] * x[i];
+      return Math.sqrt(sum / (to - from));
+    };
+    const ratio = rms(out, 100, 29900) / rms(noise, 1100, 1100 + Math.round(29800 * 0.9996));
+    expect(20 * Math.log10(ratio)).toBeCloseTo(0, 2);
+  });
 });
