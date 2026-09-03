@@ -114,9 +114,16 @@ button:hover {
 }
 
 .legend {
-  display: block;
+  display: none;
   font-size: 10px;
-  opacity: 0.85;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.row:hover .legend,
+.legends .legend {
+  display: block;
 }
 
 .legend i {
@@ -159,7 +166,7 @@ button:hover {
 }
 
 .row[data-row='ruler'] {
-  height: 34px;
+  height: 28px;
   cursor: ew-resize;
 }
 .row[data-row='wave'] {

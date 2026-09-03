@@ -912,6 +912,9 @@ function wire(): void {
     if (report) void loadTrack(report.track.id);
   });
   el('#play').addEventListener('click', toggle);
+  el<HTMLInputElement>('#legends').addEventListener('change', (ev) => {
+    document.body.classList.toggle('legends', (ev.target as HTMLInputElement).checked);
+  });
   el('#clearLoop').addEventListener('click', () => {
     loop = null;
     deck.looping = false;
