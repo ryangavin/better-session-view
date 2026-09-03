@@ -7,7 +7,7 @@ import { countedOf, refitOf, sweepOf, type Sweep } from '../src/tempo.ts';
 import { beatAt, tempoAt, countOf, renumbered, tempoOf, BEATS_PER_BAR } from '../src/warp.ts';
 import type { Beats } from '../src/warp.ts';
 import type { IndexEntry, Report, Truth } from './types.ts';
-import { straight } from './arms.ts';
+import { straight } from '../src/debug/arms.ts';
 import { Audition } from './audio.ts';
 import type { Click } from './audio.ts';
 import * as D from './draw.ts';

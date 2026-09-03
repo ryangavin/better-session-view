@@ -7,6 +7,7 @@ import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Ready } from '../openflow.ts';
 import { QuietField } from './Editable.tsx';
+import { Analysis } from '../debug/Analysis.tsx';
 import type { Mix } from '../state.ts';
 import { FASTEST, SLOWEST } from '../tempo.ts';
 import { bpmText, rangeText } from '../warp.ts';
@@ -87,7 +88,7 @@ const crosshair = (
   </svg>
 );
 
-/** A bug: the beat-finding harness, which is a debugging page and says so. */
+/** A bug: the analysis harness, which is a debugging page and says so. */
 const bugMark = (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
     <rect x="8" y="8" width="8" height="11" rx="4" />
@@ -179,18 +180,15 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               title="Who it is by. Type over it to correct it"
               onCommit={(next) => void mix.editTrack(song.id, { artist: next.trim() || null })}
             />
-            {import.meta.env.DEV && (
-              // Served by the dev server beside the app, so a dev build only.
-              <button
-                type="button"
-                className="mf-debug"
-                onClick={() => setHarness(true)}
-                title="Open this track in the beat-finding harness — see mix/docs/harness.md"
-                aria-label="Open in the beat-finding harness"
-              >
-                {bugMark}
-              </button>
-            )}
+            <button
+              type="button"
+              className="mf-debug"
+              onClick={() => setHarness(true)}
+              title="Open this track in the analysis harness — see mix/docs/harness.md"
+              aria-label="Open in the analysis harness"
+            >
+              {bugMark}
+            </button>
           </>
         ) : (
           <span className="mf-open-none">nothing open</span>
@@ -365,12 +363,8 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
         Export
       </Button>
       {harness && song && (
-        <Modal title="harness" label="Beat-finding harness" className="mf-harness" onClose={() => setHarness(false)}>
-          <iframe
-            className="mf-harness-frame"
-            src={`/harness/?track=${encodeURIComponent(song.id)}`}
-            title="Beat-finding harness"
-          />
+        <Modal title="analysis" label="Analysis harness" className="mf-harness" onClose={() => setHarness(false)}>
+          <Analysis mix={mix} />
         </Modal>
       )}
     </header>

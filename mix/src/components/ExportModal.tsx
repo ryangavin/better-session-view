@@ -25,12 +25,11 @@ import './ExportModal.css';
  * describes, and it pushed that line onto a second row. What it was saying
  * belongs in the tooltip, where the answer to *why can't I press this* is.
  *
- * **Writing the files is not wired yet.** The sheet chooses, and Export closes
- * without a byte hitting the disk — there is no `export` on the bridge to call
- * (`openflow.ts` is the whole of what the main process offers). The warp is the
- * same deferral one level down: the stems on disk are at the track's own tempo,
- * and rendering them at the header's needs the stretcher off the playback path,
- * so the toggle that will ask for it says `soon` too rather than pretending.
+ * **Export writes the stems laid straight.** `bridge.export.stems` hands the
+ * main process the grid — the measured tempo and 1.1.1 — and the whole tempo
+ * to lay the files at; `straighten.ts` varispeeds the record by the fraction
+ * between and pads to whole bars, so the folder drops into Live like a loop
+ * off a pack. The full track is not summed yet, and the pack is still to come.
  *
  * **Export sits on the same line as where it is going**, at the end of it,
  * because those two are one sentence: *this much audio, to there*. A row of
@@ -97,6 +96,8 @@ export function ExportModal({ mix }: { mix: Mix }) {
   const [chosen, setChosen] = useState<string[]>(sources);
   const [fullTrack, setFullTrack] = useState(false);
   const [where, setWhere] = useState<string | null>(null);
+  const [writing, setWriting] = useState(false);
+  const [wrote, setWrote] = useState<string | null>(null);
   const bridge = openflow();
 
   useEffect(() => {
@@ -128,6 +129,32 @@ export function ExportModal({ mix }: { mix: Mix }) {
 
   const flip = (id: string) =>
     setChosen((was) => (was.includes(id) ? was.filter((s) => s !== id) : [...was, id]));
+
+  // The tempo the files are laid at: the whole number nearest the grid's, so
+  // the name on the file is the tempo Live reads, and the record is varisped
+  // by the fraction between — see `straighten.ts`.
+  const laidAt = Math.round(mix.targetBpm);
+  const write = async () => {
+    if (!bridge || !song.stems || chosen.length === 0) return;
+    setWriting(true);
+    setWrote(null);
+    try {
+      const done = await bridge.export.stems({
+        trackId: song.id,
+        title: song.title,
+        stems: song.stems,
+        sources: chosen,
+        bpm: mix.targetBpm,
+        offset: mix.offset,
+        to: laidAt,
+      });
+      setWrote(`${done.files.length} wav · ${done.bars} bars · ${done.where}`);
+    } catch (error) {
+      setWrote(`failed — ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setWriting(false);
+    }
+  };
 
   return (
     <Modal
@@ -178,11 +205,10 @@ export function ExportModal({ mix }: { mix: Mix }) {
 
       <div className="mf-export-picks">
         <Pick
-          on={false}
+          on
           onPick={() => {}}
-          name={`Warp to ${bpmText(mix.targetBpm)} BPM`}
-          blurb="Written at the track's own tempo until this lands"
-          soon
+          name={`Laid straight at ${laidAt} BPM`}
+          blurb={`From 1.1.1, whole bars, the record varisped by ${((laidAt / mix.targetBpm - 1) * 100).toFixed(3)}%`}
         />
       </div>
 
@@ -239,10 +265,16 @@ export function ExportModal({ mix }: { mix: Mix }) {
         >
           Change…
         </Button>
-        <Button onPress={close} disabled={!files} className="mf-primary">
-          Export stems
+        <Button
+          onPress={() => void write()}
+          disabled={!bridge || chosen.length === 0 || writing}
+          className="mf-primary"
+          title={bridge ? undefined : 'Only in the app'}
+        >
+          {writing ? 'Writing…' : 'Export stems'}
         </Button>
       </div>
+      {wrote && <p className="mf-export-wrote">{wrote}</p>}
     </Modal>
   );
 }

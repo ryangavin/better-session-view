@@ -8,6 +8,7 @@ import type { Model } from './models.ts';
 import type { Progress } from './job.ts';
 import type { Outcome } from './separate.ts';
 import type { Tuning } from '../src/tab.ts';
+import type { ExportAsk, Written } from './export.ts';
 import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
@@ -73,6 +74,10 @@ expose({
       columns: number,
       sources: Record<string, Float32Array>,
     ): Promise<void> => ipcRenderer.invoke('openflow:peaks-write', { trackId, stems, columns, sources }),
+  },
+  export: {
+    /** Every named stem laid straight at `to` bpm from 1.1.1, into the export folder. */
+    stems: (ask: ExportAsk): Promise<Written> => ipcRenderer.invoke('openflow:export-stems', ask),
   },
   destination: {
     /** Where an export would go right now: what was picked, or the default. */

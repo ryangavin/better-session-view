@@ -223,3 +223,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.mf-export-wrote {
+  margin: 0;
+  color: var(--detail);
+  font-size: var(--text-body);
+  overflow-wrap: anywhere;
+}

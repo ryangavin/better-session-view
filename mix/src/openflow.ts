@@ -186,6 +186,29 @@ export interface Analysis {
   produced: string;
 }
 
+/** What an export is asked for: the ruling, the track, and which stems. */
+export interface ExportAsk {
+  trackId: string;
+  title: string;
+  /** `stems/<id>/<model>`, relative to the library root. */
+  stems: string;
+  sources: string[];
+  /** The tempo the record was measured at. */
+  bpm: number;
+  /** Seconds from the top of the record to 1.1.1. */
+  offset: number;
+  /** The tempo to lay it at. */
+  to: number;
+}
+
+export interface Written {
+  where: string;
+  files: string[];
+  bars: number;
+  seconds: number;
+  speed: number;
+}
+
 /** One separation's drawing, interleaved min and max per column, per source. */
 export interface KeptPeaks {
   stems: string;
@@ -222,6 +245,9 @@ interface Bridge {
   destination: {
     read(): Promise<string>;
     choose(): Promise<string>;
+  };
+  export: {
+    stems(ask: ExportAsk): Promise<Written>;
   };
   separate: {
     models(): Promise<Model[]>;

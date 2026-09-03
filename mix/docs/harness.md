@@ -1,66 +1,67 @@
 # Checking the beat finding
 
-The app cannot show whether the beats it found are right: the pipeline's
-intermediates are internal, and a grid drawn at one tempo cannot say where a
-pulse was missed. The harness can. It is not user-facing, and is built to be
-thrown away when the beat finding is trusted.
+The app can say what grid it found; it cannot say why. The analysis harness can.
+It is the bug button beside the open track's title, and it opens over the window
+— in a dev build and a packed one alike, because it runs the same pipeline on the
+same decoded stems the lanes are drawn from, and what it decides goes back to the
+app over the same bridge.
 
-## Run
+## The page
+
+`src/debug/Analysis.tsx`, built on [`widgets/src/debug`](../../widgets/docs/debug.md).
+
+The first look is the app's own pipeline — `transients.ts` → `tempo.ts` →
+`follow.ts` — on the drums, run with a trace so every decision on the way to the
+answer is kept. The **run** group runs any arm of the A/B rig (`src/debug/arms.ts`)
+on the drums or the whole mix summed back together, so a wrong tempo can be
+traced to the stage that lost it.
+
+One time axis, zoomable to the sample: the drums; every transient by band; every
+beat of the map, anchored solid and interpolated dashed; the grid the app holds
+now, for comparison; the local tempo the follower held to and the stretches it
+read a period off. Under it, the autocorrelation with every candidate marked,
+the phase sweep that placed the winner, and the tempo sweep from 1.1.1.
+
+**Listen.** Play the stems with a click on every beat — the kick, the snare or the
+hats alone, through the transient finding's own band filters — loop a stretch,
+scrub. The ear is the strongest check there is.
+
+**The grid by hand.** Alt-click a hit or a beat to make it 1.1.1; a straight map is
+ruled again from there and its tempo swept. **Two beats**: pick any two, the count
+between them is read off the tempo the analysis already has, and the line is
+refined through every hit in the song. **Sweep** holds 1.1.1 and walks the tempo a
+beat per minute either side; the bottom of the error curve is the tempo, and the
+panel says how the whole number nearest it compares.
+
+**Take** hands the map to the app as if Auto-warp had found it: the lanes redraw
+and it is kept beside the track (`electron/analysis.ts`). **Export** lays every
+stem straight from 1.1.1 at the tempo in the box, padded to whole bars, into the
+export folder, named for the tempo — `bridge.export.stems`, which is the same
+call the Export sheet makes. The folder drops into Live like a loop off a pack.
+
+## The batch run
 
 ```
-npm run warp:mix -- --report            every track in the app's library
-npm run warp:mix -- --report --only=Sandstorm
-npm run warp:mix -- --file=/path/to.wav  a file: into the harness's own library, separated, run
-npm run warp:mix -- --youtube=URL        the same from a video (--model= to choose the separator)
-npm run dev:mix-ui                       then open http://localhost:<mix port>/harness/
+npm run warp:mix                        every track in the library, tempo found vs known
+npm run warp:mix -- --ab --report       every arm, scored side by side into harness/reports/ab.md
+npm run warp:mix -- --only=Sandstorm
 ```
 
-A run writes `harness/reports/<track id>.json` — the transients, the fit, the
-follow, the map, and the trace from both stages — with the stems hard-linked
-beside it, and an index. The folder is generated and ignored, apart from
-`harness/reports/truth/`, which is yours.
-
-## What the page shows
-
-One time axis, zoomable to the sample. The drums stem; every transient by band;
-every beat of the map, anchored ones solid and interpolated dashed; the local
-tempo the follower held to, with the stretches it read a period off; the truth
-where there is one. Under it, the autocorrelation with every candidate period
-marked and the phase sweep that placed the winner, so an octave or an off-beat
-error is seen at the decision that made it rather than inferred from the grid.
-Play the stems with a click on every beat, from either map, and loop a region.
-The ear is the strongest check there is.
-
-## Truth, and the error report
-
-Set a loop over a stretch worth correcting — sixteen bars is plenty — and press
-Correct. The predicted beats in the region become the truth, and you fix them:
-drag one to where it should be (it snaps to the nearest transient; Alt to
-place freely), Alt-click one that is not a beat, double-click where one is
-missing, rotate the bar line, halve or double. Each fix is recorded as the
-kind of error it names. Save writes `harness/reports/truth/<track id>.json`.
-
-The next `--report` run scores every track with a truth file into
-`harness/reports/errors/<track id>.md`: on time, shifted, missed and spurious
-per true beat, F-measure and continuity, the shape of the misses — half or
-double tempo, between the beats, a bar line that starts late — and, for every
-true beat, what was heard under it and whether the map's beat there was
-anchored or interpolated. That page is written to be read by whoever is
-changing `src/transients.ts`, `src/tempo.ts` or `src/follow.ts` next. The JSON
-beside it diffs across runs.
-
-A known tempo in `tools/mix-warp-truth.json` is not laid out as beats. A rip
-running 0.08% off its label is 190 ms adrift after four minutes, and every
-beat would score missed; it stays a tempo check, in the table.
+`tools/mix-warp.ts` runs the arms headless over the app's library and, with
+`--report`, writes what each saw. The truth files and the scorer it reads are the
+previous page's (`harness/`), which still opens at `/harness/` under
+`npm run dev:mix-ui` with the reports beside it; the in-app page supersedes it for
+looking and listening, and the batch run is what the arms are still for.
 
 ## Where
 
 | | |
 |---|---|
-| `src/trace.ts` | what the two stages write when handed a trace; the app passes none |
-| `tools/mix-warp.ts` | the run, the report, the intake and the scoring |
-| `harness/types.ts` | the report, the truth and an edit |
-| `harness/score.ts` | the judgement, pure, tested |
-| `harness/edit.ts` | the corrections, pure, tested |
-| `harness/main.ts`, `draw.ts`, `audio.ts` | the page |
-| `harness/vite-truth.ts` | the dev server writing a saved truth to disk |
+| `src/debug/Analysis.tsx` | the page |
+| `src/debug/arms.ts` | the beat finding, several ways |
+| `src/debug/draw.ts` | the rows and the plots, in palette inks |
+| `src/debug/audition.ts` | stems and a click, looped and scrubbed |
+| `src/trace.ts` | what the two stages write when handed a trace; the app's own run passes none |
+| `electron/export.ts` | the stems laid straight, on disk |
+| `tools/mix-warp.ts` | the batch run, the reports, the scoring |
+| `harness/` | the previous page: truth, the scorer, the error report |

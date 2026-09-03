@@ -1,0 +1,21 @@
+.mf-analysis {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.mf-analysis .wdg-harness-subject .wdg-select {
+  max-width: 260px;
+}
+
+.mf-analysis-under {
+  display: block;
+  padding: 3px var(--wdg-space);
+  font-size: var(--text-label);
+}
+
+.mf-analysis .wdg-plot-caption {
+  font-size: var(--text-label);
+}

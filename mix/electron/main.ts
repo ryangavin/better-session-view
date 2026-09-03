@@ -8,6 +8,7 @@ import { updates } from '@openflow/desktop/update.ts';
 import { lifecycle, only, open } from '@openflow/desktop/window.ts';
 import { ready } from './runtime.ts';
 import { chooseDestination, destination } from './destination.ts';
+import { exportStems, type ExportAsk } from './export.ts';
 import { add, artwork, choose, edit, load, matches, reveal, root, youtube } from './library.ts';
 import { MODELS } from './models.ts';
 import { recordStems, type Edits } from './manifest.ts';
@@ -140,6 +141,12 @@ if (only(app)) {
   // folder the OS did not hand it.
   ipcMain.handle('openflow:destination', () => destination());
   ipcMain.handle('openflow:destination-choose', () => chooseDestination(window_()));
+  // The stems laid straight at a tempo, into that folder — `export.ts`.
+  ipcMain.handle('openflow:export-stems', async (_event, ask: ExportAsk) => {
+    const where = await root();
+    if (!where) throw new Error('no library folder');
+    return exportStems(where, ask);
+  });
 
   // Separation. The registry is answered rather than restated in the renderer,
   // so what the window offers and what a job will actually run are one list.

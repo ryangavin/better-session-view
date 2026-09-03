@@ -1585,6 +1585,8 @@ export function useMix() {
     setSpan,
     anchors,
     autoWarp,
+    /** A grid something else measured — the harness — taken as if Auto-warp had found it. */
+    take: fit,
     pin,
     nudge,
     /** The hits in seconds, and the two things a hand can do to the map. */

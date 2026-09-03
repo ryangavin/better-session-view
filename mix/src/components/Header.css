@@ -88,13 +88,9 @@
   flex: 1;
 }
 
-.mf-harness-frame {
-  flex: 1;
-  width: 100%;
+.mf-harness .wdg-modal-body {
   min-height: 0;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: #111;
+  overflow: hidden;
 }
 
 .mf-quiet {

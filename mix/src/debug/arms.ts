@@ -10,14 +10,14 @@
  * follower, their tempo can seed our follower, and each swap says which stage
  * is losing the accuracy.
  */
-import { combOf } from '../src/comb.ts';
-import { ellisOf, gridOf } from '../src/ellis.ts';
-import { fluxOf, heardOf, monoOf, onsetsOf } from '../src/flux.ts';
-import { followOf, type Follow } from '../src/follow.ts';
-import { beatnessOf, FASTEST, fitOf, phaseOf, SLOWEST, type Fit } from '../src/tempo.ts';
-import type { Trace } from '../src/trace.ts';
-import { heardIn, type Heard } from '../src/transients.ts';
-import { beatsOf, type Beats } from '../src/warp.ts';
+import { combOf } from '../comb.ts';
+import { ellisOf, gridOf } from '../ellis.ts';
+import { fluxOf, heardOf, monoOf, onsetsOf } from '../flux.ts';
+import { followOf, type Follow } from '../follow.ts';
+import { beatnessOf, FASTEST, fitOf, phaseOf, SLOWEST, type Fit } from '../tempo.ts';
+import type { Trace } from '../trace.ts';
+import { heardIn, type Heard } from '../transients.ts';
+import { beatsOf, type Beats } from '../warp.ts';
 
 export const ARMS = ['ours', 'line', 'whole', 'flux', 'comb', 'ellis', 'grid'] as const;
 export type Arm = (typeof ARMS)[number];
