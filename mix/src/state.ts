@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { STEMS, slicesFor, type Slice } from './mock.ts';
+import { STEMS } from './mock.ts';
+import { cut, dragged, removed, slicesFor, slicesOf, type Slice } from './slices.ts';
 import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak } from './audio.ts';
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
-import { barAt, countOf, evenBeats, moved, resampled, shifted, startOf, type Beats } from './warp.ts';
+import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, type Beats } from './warp.ts';
 import { fitOf, refitOf, snapped, FASTEST, SLOWEST, type Fit } from './tempo.ts';
 import { hearing, type Heard } from './transients.ts';
 import {
@@ -185,7 +186,6 @@ export function useMix() {
    */
   const [slicesAuto, setSlicesAuto] = useState(!first.slices);
   const [activeSlice, setActiveSlice] = useState(0);
-  const [snap, setSnap] = useState(kept.snap ?? '1/2');
   const [targetBpm, setTargetBpm] = useState(first.bpm ?? 120);
   const [bpmAuto, setBpmAuto] = useState(first.bpmAuto ?? true);
   /** Seconds from the top of the file to the downbeat of bar 1. */
@@ -1097,6 +1097,17 @@ export function useMix() {
     [audio, seconds],
   );
 
+  /** Select a slice and put the head at the top of it. */
+  const pickSlice = useCallback(
+    (index: number) => {
+      const slice = slices[index];
+      if (!slice) return;
+      setActiveSlice(index);
+      seek(placeOf(grid, slice.bar) * seconds);
+    },
+    [slices, grid, seconds, seek],
+  );
+
   const setLoop = useCallback(
     (on: boolean) => {
       audio.setLoop(on);
@@ -1331,18 +1342,53 @@ export function useMix() {
     setSlicesAuto(false);
   }, []);
 
+  /** Slice `index` starts at `bar` now. Held between its neighbours — `slices.ts`. */
+  const moveSlice = useCallback(
+    (index: number, bar: number, least: number) => {
+      setSlices((was) => dragged(was, index, bar, bars, least));
+      setSlicesAuto(false);
+    },
+    [bars],
+  );
+
+  /** A new cut at `bar`, and the slice it starts is the one selected. */
+  const cutSlice = useCallback(
+    (bar: number) => {
+      const next = cut(slices, bar);
+      setSlices(next.slices);
+      setActiveSlice(next.index);
+      setSlicesAuto(false);
+    },
+    [slices],
+  );
+
+  /** Slice `index` folded into the one before it, which is then the one selected. */
+  const removeSlice = useCallback((index: number) => {
+    if (index <= 0) return;
+    setSlices((was) => removed(was, index));
+    setActiveSlice(index - 1);
+    setSlicesAuto(false);
+  }, []);
+
+  /** Back to the slices the track was read to have. */
+  const resetSlices = useCallback(() => {
+    setSlicesAuto(true);
+    setActiveSlice(0);
+  }, []);
+
   /**
-   * Re-spread the default slices once the track's real length is known.
+   * Read the slices off the stems, for as long as nobody has touched them.
    *
-   * The window has to lay some out before it has decoded anything, and it does
-   * that against a nominal sixty-four bars. A four-minute track at 128 is twice
-   * that, so leaving them alone would bunch all eight into the first half of
-   * the song and read as an arrangement rather than as a ruler.
+   * The window lays some out before it has decoded anything, against a nominal
+   * sixty-four bars; once the peaks are in they are replaced by cuts where the
+   * stems change, and they follow the grid as it is measured or bent, since a
+   * slice is a place on the grid. The moment somebody moves, cuts, or renames
+   * one the set is theirs and this stops.
    */
   useEffect(() => {
     if (!slicesAuto) return;
-    setSlices(slicesFor(8, bars));
-  }, [slicesAuto, bars]);
+    setSlices(Object.keys(peaks).length > 0 ? slicesOf(peaks, grid) : slicesFor(8, bars));
+  }, [slicesAuto, bars, peaks, grid]);
 
   const resetMix = useCallback(() => setLevel(levels()), []);
 
@@ -1457,7 +1503,7 @@ export function useMix() {
    */
   useEffect(() => {
     const timer = setTimeout(() => {
-      let next: Session = { ...held.current, selected, model, query, snap, loop, warp };
+      let next: Session = { ...held.current, selected, model, query, loop, warp };
       if (song) {
         next = withTrack(next, song.id, {
           levels: level,
@@ -1477,7 +1523,6 @@ export function useMix() {
     selected,
     model,
     query,
-    snap,
     loop,
     warp,
     song,
@@ -1524,8 +1569,12 @@ export function useMix() {
     activeSlice,
     setActiveSlice,
     rename,
-    snap,
-    setSnap,
+    moveSlice,
+    cutSlice,
+    removeSlice,
+    resetSlices,
+    pickSlice,
+    slicesAuto,
     targetBpm,
     setTempo,
     bpmAuto,

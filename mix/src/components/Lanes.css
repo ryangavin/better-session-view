@@ -97,12 +97,37 @@
   align-items: center;
   gap: 5px;
   padding-left: 6px;
-  border: none;
   border-right: 1px solid var(--bd);
   background: transparent;
   overflow: hidden;
   cursor: pointer;
   font: inherit;
+  user-select: none;
+}
+
+.mf-slice-cut {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.mf-slice-cut::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--bd3);
+}
+
+.mf-slice-cut:hover::after,
+.mf-slice-cut:active::after {
+  background: var(--amber);
 }
 
 .mf-slice:hover {
@@ -124,6 +149,7 @@
 }
 
 .mf-slice-name {
+  min-width: 0;
   font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   color: var(--caption);

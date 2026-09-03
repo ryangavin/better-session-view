@@ -56,7 +56,6 @@ export interface Session {
   selected?: string | null;
   model?: string;
   query?: string;
-  snap?: string;
   loop?: boolean;
   /** Whether the stems play stretched to the header tempo, or as they were recorded. */
   warp?: boolean;

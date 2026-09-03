@@ -3,6 +3,7 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { laneOrder, stemOf } from '../mock.ts';
 import { openflow } from '../openflow.ts';
+import { barText, lengthText } from '../slices.ts';
 import type { Mix } from '../state.ts';
 import { bpmText } from '../warp.ts';
 import './ExportModal.css';
@@ -45,11 +46,13 @@ import './ExportModal.css';
  * window there is no dialog to open, so it says the default and the button is
  * dead rather than lying.
  *
- * The slice list only appears under the pack, which is whose it is: naming
- * eight slices is what turns them into eight Session rows, and it means nothing
- * to a folder of four wavs. So it is dormant while the pack is — the code is
- * kept rather than deleted, because the naming is the part that was already
- * right.
+ * **Sections are a cut, not a second render.** Asked for them, the stems are
+ * laid straight exactly as they always were and then cut where the slices fall
+ * — so a section costs no render time and butts back against its neighbours
+ * sample for sample. The list of slices is the same list the pack will use and
+ * the same one the ruler draws, which is why naming them is worth doing before
+ * either: a folder of sections named Part 3 is a folder you have to listen to
+ * to sort out.
  */
 
 type Target = 'stems' | 'pack';
@@ -95,6 +98,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
   const [target, setTarget] = useState<Target>('stems');
   const [chosen, setChosen] = useState<string[]>(sources);
   const [fullTrack, setFullTrack] = useState(false);
+  const [sliced, setSliced] = useState(false);
   const [where, setWhere] = useState<string | null>(null);
   const [writing, setWriting] = useState(false);
   const [wrote, setWrote] = useState<string | null>(null);
@@ -114,10 +118,12 @@ export function ExportModal({ mix }: { mix: Mix }) {
   const song = mix.song;
   const folder = song.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const at = `${where ?? '~/Music/mixflow'}/${folder}/`;
-  const files = chosen.length + (fullTrack ? 1 : 0);
+  const sections = sliced ? mix.slices.length : 1;
+  const files = (chosen.length + (fullTrack ? 1 : 0)) * sections;
   const parts = [
     chosen.length ? `${chosen.length} stem${chosen.length === 1 ? '' : 's'}` : '',
     fullTrack ? 'full track' : '',
+    sections > 1 ? `× ${sections} sections` : '',
   ].filter(Boolean);
 
   const facts: [string, string][] = [
@@ -144,11 +150,13 @@ export function ExportModal({ mix }: { mix: Mix }) {
         title: song.title,
         stems: song.stems,
         sources: sources.filter((id) => chosen.includes(id)),
+        slices: sliced ? mix.slices : undefined,
         bpm: mix.targetBpm,
         offset: mix.offset,
         to: laidAt,
       });
-      setWrote(`${done.files.length} wav · ${done.bars} bars · ${done.where}`);
+      const cut = done.parts > 1 ? ` · ${done.parts} sections` : '';
+      setWrote(`${done.files.length} wav · ${done.bars} bars${cut} · ${done.where}`);
     } catch (error) {
       setWrote(`failed — ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -210,13 +218,33 @@ export function ExportModal({ mix }: { mix: Mix }) {
           name={`Laid straight at ${laidAt} BPM`}
           blurb={`From 1.1.1, whole bars, the record varisped by ${((laidAt / mix.targetBpm - 1) * 100).toFixed(3)}%`}
         />
+        {target === 'stems' && (
+          <Pick
+            on={sliced}
+            onPick={() => setSliced(!sliced)}
+            name={`Cut into ${mix.slices.length} sections`}
+            blurb="A folder per section, each holding the same stems, cut on the grid"
+          />
+        )}
       </div>
 
-      {target === 'pack' && (
+      {(target === 'pack' || sliced) && (
         <div className="mf-modal-slices">
           <div className="mf-modal-slice-head">
             <span>#</span>
-            <span>slice</span>
+            <span>
+              slice
+              {!mix.slicesAuto && (
+                <button
+                  type="button"
+                  className="mf-modal-slice-redo"
+                  onClick={mix.resetSlices}
+                  title="Throw these away and read the slices off the stems again"
+                >
+                  read again
+                </button>
+              )}
+            </span>
             <span>bar</span>
             <span>len</span>
           </div>
@@ -227,7 +255,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
                 key={i}
                 className="mf-modal-slice"
                 data-on={i === mix.activeSlice || undefined}
-                onClick={() => mix.setActiveSlice(i)}
+                onClick={() => mix.pickSlice(i)}
               >
                 <span className="mf-modal-slice-num">{String(i + 1).padStart(2, '0')}</span>
                 <input
@@ -236,8 +264,8 @@ export function ExportModal({ mix }: { mix: Mix }) {
                   onChange={(e) => mix.rename(i, e.target.value)}
                   aria-label={`Name of slice ${i + 1}`}
                 />
-                <span className="mf-modal-slice-fact">{slice.bar + 1}</span>
-                <span className="mf-modal-slice-fact">{next - slice.bar}</span>
+                <span className="mf-modal-slice-fact">{barText(slice.bar)}</span>
+                <span className="mf-modal-slice-fact">{lengthText(next - slice.bar)}</span>
               </div>
             );
           })}

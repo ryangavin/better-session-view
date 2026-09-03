@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
-import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Ready } from '../openflow.ts';
@@ -101,8 +100,6 @@ const clearMark = (
     <path d="M6 6l12 12M18 6L6 18" />
   </svg>
 );
-
-const SNAP = ['1/1', '1/2', '1/4'];
 
 /**
  * The tempo, beside the button that measures it.
@@ -236,14 +233,6 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
           </div>
 
           <div className="mf-group" role="group" aria-label="Grid">
-            <span className="mf-group-label">snap</span>
-            <Segmented
-              items={SNAP}
-              index={SNAP.indexOf(mix.snap)}
-              onChange={(next) => mix.setSnap(SNAP[next])}
-              label="Snap"
-              title="Where a slice point lands when you drag it"
-            />
             <span className="mf-group-label">tempo</span>
             <NumberField
               param={TEMPO}

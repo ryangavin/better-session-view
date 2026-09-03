@@ -420,7 +420,7 @@ which is the point.
 because the app has a scheme rather than `file://`, an opaque origin that
 promises nothing.
 
-Kept: the open track, the model, the search, snap, loop and warp; and per
+Kept: the open track, the model, the search, loop and warp; and per
 track, the mix, the head, the tempo it plays at, the beat map and any slices
 somebody has actually named. **Not** the
 library and not the stems — those are on disk and are read back every time,
@@ -448,11 +448,12 @@ A reload during a separation reattaches rather than restarting: the renderer
 restarting does not stop the main process, so the window asks `busy()` on mount
 and picks the job back up mid-flight.
 
-Untouched slices are the one thing deliberately *not* kept. Eight evenly spaced
-spans are a default rather than a decision, and they are laid out before
-anything has been decoded — writing them down would freeze eight positions
-against a length the window had not measured yet. They are re-spread when the
-bar count settles, and only become somebody's, and kept, once one is renamed.
+Untouched slices are the one thing deliberately *not* kept. What the window
+read off the stems is a reading rather than a decision, and it is read again
+every time the track opens, against whatever the grid is by then — writing it
+down would freeze cuts against a beat map that might since have been bent. They
+only become somebody's, and kept, once one is renamed, moved, cut or removed;
+*read again* in the export dialog gives them back.
 
 **The mix lives on this machine, not in the library.** Carrying the folder to
 another laptop carries the audio and the stems, not the balance. That is a real
@@ -463,5 +464,7 @@ should travel, and that is a decision about the manifest.
 
 - **Export.** The dialog says what it would write and the button closes it. An
   Ableton set is its own engine.
-- **Slices as an arrangement.** Eight even spans with names, and nothing reads
-  the audio to place them.
+- **Slices that hear more than loudness.** The cuts come off each stem's level
+  per bar, which finds where a stem arrives or leaves and not where the same
+  stems play something else; a verse and a chorus at the same weight are one
+  span until somebody cuts them.

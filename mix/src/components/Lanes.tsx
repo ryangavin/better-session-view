@@ -8,11 +8,11 @@ import type { Peak } from '../audio.ts';
 import { STEMS } from '../mock.ts';
 import { SPANS, type Mix } from '../state.ts';
 import { BASS_TRANSPOSE } from '../tab.ts';
-import { placeOf } from '../warp.ts';
 import { factorOf, limitOf, shows, spanOf, useView, type Span } from '../zoom.ts';
 import { Tablature } from './Tablature.tsx';
 import { Tone } from './Tone.tsx';
 import { Waveform } from './Waveform.tsx';
+import { Ruler } from './Ruler.tsx';
 import { WarpLane } from './WarpLane.tsx';
 import './Lanes.css';
 
@@ -133,16 +133,6 @@ const seen = (seconds: number): string => {
   if (seconds >= 0.01) return `${Math.round(seconds * 1000)}ms`;
   return `${(seconds * 1000).toFixed(1)}ms`;
 };
-
-/**
- * How far off screen a slice is allowed to be drawn.
- *
- * Zoomed in far enough, a slice sixty bars wide is a box tens of millions of
- * pixels across — past what a browser will lay out, and pointless besides,
- * since all but a window's worth of it is behind the clip. Anything outside
- * the view is dropped and what is left is trimmed to a screen either side.
- */
-const OFF = 0.5;
 
 const again = (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -319,32 +309,7 @@ export function Lanes({ mix }: { mix: Mix }) {
 
         <div className="mf-band-track" ref={timeline}>
           <Outside opens={opens} closes={closes} />
-          <div className="mf-ruler">
-            {mix.slices.map((slice, i) => {
-              const next = mix.slices[i + 1]?.bar ?? mix.bars;
-              const starts = shows(view, placeOf(grid, slice.bar));
-              const ends = shows(view, placeOf(grid, next));
-              if (ends < -OFF || starts > 1 + OFF) return null;
-              const left = Math.max(starts, -OFF);
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  className="mf-slice"
-                  data-on={i === mix.activeSlice || undefined}
-                  style={{
-                    left: `${left * 100}%`,
-                    width: `${(Math.min(ends, 1 + OFF) - left) * 100}%`,
-                  }}
-                  onClick={() => mix.setActiveSlice(i)}
-                  title={`${slice.name} — bar ${slice.bar + 1}, ${next - slice.bar} bars`}
-                >
-                  <span className="mf-slice-num">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="mf-slice-name">{slice.name}</span>
-                </button>
-              );
-            })}
-          </div>
+          <Ruler mix={mix} view={view} timeline={timeline} />
           <WarpLane
             onsets={mix.onsets}
             bars={grid}

@@ -28,7 +28,7 @@ waveform from navigating the renderer away from the app.
 
 ## The header
 
-    [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ snap ⋯ tempo 128 warp Auto-warp 126–131 · 91% ⊹ │ Export
+    [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ tempo 128 warp Auto-warp 126–131 · 91% ⊹ │ Export
 
 Four groups, in the order they are read: what this is, what you are looking at, what you
 can do to it, where it goes. Three departures from the mockup, each one a thing the
@@ -39,7 +39,7 @@ part of the brand, and the one control it describes was two groups away.
 
 **Playback and the grid are separated by a rule, and both disappear unless the track has
 stems.** Every control was the same 22px outlined pill, so nothing said that play and
-snap belong to different subsystems — and in the two states where there is nothing to
+tempo belong to different subsystems — and in the two states where there is nothing to
 play they were all still there, dead. An idle header is a wordmark, a title and a
 disabled Export, which is the honest amount.
 
@@ -65,10 +65,17 @@ always did, since a typed tempo is then the only claim there is. The switch sits
 between the two numbers because it is what makes them two, and it says what it
 is waiting on — the beat map, or the stretcher — rather than doing nothing.
 
-One smaller thing worth keeping: `snap` is a leading label rather than a `Widget`
+One smaller thing worth keeping: `tempo` is a leading label rather than a `Widget`
 caption. `Widget` puts captions *above*, which in a 34px bar makes that one control two
 rows tall in a line of things one row tall — and a ragged baseline is most of what
 "messy header" means.
+
+**There is no snap control.** There was one, and it was a setting for a gesture that
+did not exist yet. When the gesture arrived — dragging a cut on the slice ruler — the
+ruling already drawn under the ruler was the right answer to where it should land:
+bars across a song, beats across a phrase, sixteenths across a bar. A cut goes to the
+nearest line the grid is showing, so a section cannot be put on a beat you could not
+see, and one control leaves the bar.
 
 **The demucs probe is silent when it passes.** A green light that is always on is a
 thing you stop seeing; a red chip that appears is not. So there is no indicator at all
@@ -430,7 +437,6 @@ countable from.
 | on screen | is |
 |---|---|
 | the model menu | `Select` |
-| the snap group | `Segmented` |
 | play, stop, cancel, export | `Button` |
 | the zoom readout, which presses back to the whole track | `Button` |
 | loop, mute, solo | `Toggle` |
@@ -500,9 +506,16 @@ separation is a child process, and the progress bar is what it reports —
 transport plays those same buffers — [`playback.md`](playback.md) — so the picture and
 the sound cannot disagree, which they could the moment they came from two places.
 
-**The slices are invented**: eight evenly spaced spans with names, because nothing reads
-the audio to place them. They are a ruler rather than a reading of the song, and
-`mock.ts` says so where they are made.
+**The slices are read off the stems**, and then they are yours. `slices.ts` scores
+every phrase boundary by how much each stem's level changes across it — the vocal
+arriving over an unchanged beat counts as much as the whole mix getting louder — and
+cuts where the score stands out. The spans are named by how loud they are: the loudest
+are drops, a span that rises into a drop is a build, a quiet one between two drops is
+a break, and the ends are the intro and outro. The names are a guess and the cuts are
+a reading, and both are there to be corrected on the ruler: drag a cut, double-click
+to make one, drag it back onto the last to remove it, and type the name in place.
+Until anything is decoded the ruler is eight even spans, which is spacing rather than
+a reading, and says so nowhere because it is gone the moment the stems are in.
 
 **The tempo is measured, and the key is not.** A track imported today has no key
 until something reads for one, and it is drawn as unknown rather than as zero. The

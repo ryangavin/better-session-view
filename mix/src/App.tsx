@@ -57,17 +57,24 @@ export function App() {
   }, []);
 
   // Space is the one key a person expects to work in a window with a playhead
-  // in it, and it must not fire while they are naming a slice.
+  // in it, and neither it nor delete may fire while they are naming a slice.
+  // Delete folds the selected slice into the one before it, which is the
+  // keyboard's version of dragging its cut back onto the last one.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (e.key !== ' ' || target?.tagName === 'INPUT') return;
-      e.preventDefault();
-      mix.setPlaying(!mix.playing);
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
+      if (e.key === ' ') {
+        e.preventDefault();
+        mix.setPlaying(!mix.playing);
+      } else if ((e.key === 'Backspace' || e.key === 'Delete') && mix.activeSlice > 0) {
+        e.preventDefault();
+        mix.removeSlice(mix.activeSlice);
+      }
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [mix.playing, mix.setPlaying]);
+  }, [mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice]);
 
   const carriesFiles = (event: DragEvent): boolean =>
     Array.from(event.dataTransfer.types).includes('Files');

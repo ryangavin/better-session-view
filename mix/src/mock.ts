@@ -58,36 +58,3 @@ export const laneOrder = (sources: readonly string[]): string[] => [
   ...STEMS.filter((stem) => sources.includes(stem.id)).map((stem) => stem.id),
   ...sources.filter((id) => !STEMS.some((stem) => stem.id === id)),
 ];
-
-/**
- * A slice is a span of bars with a name — what becomes one Session row when the
- * pack is written.
- *
- * Not called a scene or a cue, deliberately. Both already mean something exact
- * in Live and neither is this: a scene is a row you fire, a cue is a locator in
- * the Arrangement, and a slice is a cut this app made in a file it separated.
- * The word only has to survive contact with set[flow], where the other two are
- * load-bearing.
- */
-export interface Slice {
-  /** The bar it starts on, counting from zero. */
-  bar: number;
-  name: string;
-}
-
-const SLICE_NAMES = ['Intro', 'Verse A', 'Build', 'Drop', 'Break', 'Verse B', 'Lift', 'Outro'];
-
-/**
- * `count` evenly spaced slices across `bars`.
- *
- * Still invented, and the last invented thing in the window: nothing detects an
- * arrangement, so this is a ruler with names on it rather than a reading of the
- * song. It takes the bar count now instead of owning a constant one, because a
- * track is however long it is — the 64 that used to live here was only ever
- * true of audio that was made up.
- */
-export const slicesFor = (count: number, bars: number): Slice[] =>
-  Array.from({ length: count }, (_, i) => ({
-    bar: Math.round((i * bars) / count),
-    name: SLICE_NAMES[i % SLICE_NAMES.length],
-  }));
