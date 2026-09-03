@@ -11,11 +11,11 @@ import { BAND, HIGH_BEGINS, LOW_ENDS, type Bands } from '../eq.ts';
  * between the two bands it divides and is a different shape from them,
  * because it is a *where* and not a *how much*: a row with its reading on
  * it, since a divider at 250 Hz is a different control from the same divider
- * at 800 and a mark alone cannot say which. The bands are knobs captioned by
- * name with their reading left off: the column is half a lane head wide and
- * a knob's fill, growing from its centre, already says boost or cut. The
- * exact figure is on the tooltip and read to a screen reader, which is where
- * an exact figure on a mixer is wanted.
+ * at 800 and a mark alone cannot say which. The bands are bare knobs, no
+ * caption and no reading: the column is as wide as a mute button, their
+ * order says which is which, and a knob's fill, growing from its centre,
+ * already says boost or cut. The name and the exact figure are on the
+ * tooltip and read to a screen reader, which is where they are wanted.
  */
 
 /** A frequency short enough to print on a row half a lane head wide. */
@@ -39,9 +39,8 @@ export function Tone({
       param={BAND}
       value={bands[key]}
       onChange={(next) => onShape({ [key]: next })}
-      name={name}
+      name=""
       showValue={false}
-      layout="inline"
       ink={ink}
       label={`${stem} ${name.toLowerCase()} band`}
       title={`${name} band: ${format(BAND, bands[key])}`}

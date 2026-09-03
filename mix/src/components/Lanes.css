@@ -225,7 +225,7 @@
 .mf-lane {
   display: flex;
   flex: 1 1 0;
-  min-height: 96px;
+  min-height: 112px;
   border-bottom: 1px solid var(--bd);
 }
 
@@ -348,33 +348,23 @@
   flex: 1;
   min-height: 0;
   display: flex;
+  justify-content: center;
   gap: 6px;
 }
 
 .mf-lane-tone {
-  flex: 1;
-  min-width: 0;
+  flex: none;
+  width: 28px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  --wdg-knob-size: 16px;
-  --wdg-knob-height: 13px;
-  --wdg-space: 4px;
-}
-
-.mf-lane-tone .mf-tone-band {
-  flex-direction: row-reverse;
-  justify-content: flex-end;
   align-items: center;
-}
-
-.mf-lane-tone .mf-tone-band .wdg-caption {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  --wdg-knob-size: 24px;
+  --wdg-knob-height: 19px;
 }
 
 .mf-lane-tone .mf-tone-cut {
+  width: 100%;
   --wdg-inside-height: 13px;
 }
 
