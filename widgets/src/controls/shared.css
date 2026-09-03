@@ -90,11 +90,6 @@
   text-align: right;
 }
 
-.wdg-widget[data-layout='inside'] .wdg-slider-body {
-  border: 0;
-  background: var(--wdg-empty);
-}
-
 .wdg-widget[data-layout='inside'] .wdg-meter-horizontal {
   border: 0;
   background: var(--wdg-groove, #101012);
