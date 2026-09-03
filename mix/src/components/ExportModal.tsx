@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
-import { stemOf } from '../mock.ts';
+import { laneOrder, stemOf } from '../mock.ts';
 import { openflow } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import { bpmText } from '../warp.ts';
@@ -91,7 +91,7 @@ function Pick({
 
 export function ExportModal({ mix }: { mix: Mix }) {
   const close = () => mix.setExporting(false);
-  const sources = mix.song?.sources ?? [];
+  const sources = laneOrder(mix.song?.sources ?? []);
   const [target, setTarget] = useState<Target>('stems');
   const [chosen, setChosen] = useState<string[]>(sources);
   const [fullTrack, setFullTrack] = useState(false);
@@ -143,7 +143,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
         trackId: song.id,
         title: song.title,
         stems: song.stems,
-        sources: chosen,
+        sources: sources.filter((id) => chosen.includes(id)),
         bpm: mix.targetBpm,
         offset: mix.offset,
         to: laidAt,

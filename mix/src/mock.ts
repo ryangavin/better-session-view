@@ -47,6 +47,19 @@ export const STEMS: readonly Stem[] = [
 export const stemOf = (id: string): Stem => STEMS.find((s) => s.id === id) ?? STEMS[5];
 
 /**
+ * A song's sources in the order the lanes draw them.
+ *
+ * The lanes walk `STEMS` and keep the ones the model made, so that — not the
+ * order the manifest happens to list them in — is the order anything showing
+ * or writing a stem per line has to follow. Anything the models grow later and
+ * `STEMS` has not caught up with trails the known ones rather than vanishing.
+ */
+export const laneOrder = (sources: readonly string[]): string[] => [
+  ...STEMS.filter((stem) => sources.includes(stem.id)).map((stem) => stem.id),
+  ...sources.filter((id) => !STEMS.some((stem) => stem.id === id)),
+];
+
+/**
  * A slice is a span of bars with a name — what becomes one Session row when the
  * pack is written.
  *

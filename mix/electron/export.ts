@@ -14,6 +14,10 @@ import { destination } from './destination.ts';
  *
  * The stems are named by the manifest's relative path and the source, never
  * by a path the window made up — the library root is this process's to know.
+ *
+ * Each file name opens with the stem's place in the list the window sent, which
+ * is the order the lanes are drawn in, so a folder sorted by name in Finder or
+ * dropped into Live lands in the order the app showed rather than alphabetical.
  */
 export interface ExportAsk extends Ruling {
   trackId: string;
@@ -47,13 +51,13 @@ export async function exportStems(root: string, ask: ExportAsk): Promise<Written
   let bars = 0;
   let seconds = 0;
   let speed = 1;
-  for (const source of ask.sources) {
+  for (const [index, source] of ask.sources.entries()) {
     if (!/^[a-z0-9_-]+$/i.test(source)) throw new Error(`not a source: ${source}`);
     const bytes = fs.readFileSync(path.join(root, ask.stems, `${source}.wav`));
     const read = readWav(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
     if (!read) throw new Error(`${source}.wav: not a wav this reads`);
     const laid = straightened(read.channels, read.rate, ask);
-    const file = path.join(where, `${tidy(ask.title)} - ${source} - ${label}bpm.wav`);
+    const file = path.join(where, `${index + 1} - ${tidy(ask.title)} - ${source} - ${label}bpm.wav`);
     fs.writeFileSync(file, Buffer.from(wavOf(laid.channels, laid.rate)));
     files.push(file);
     bars = laid.bars;
