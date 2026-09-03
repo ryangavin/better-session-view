@@ -13,12 +13,34 @@ export interface Span {
 }
 
 const LOOKAHEAD = 2;
-/** How long a scrub voice runs after a move before it goes quiet, in seconds. */
-const GRAIN = 0.06;
-/** How far behind the playhead a voice begins going forward, so a hit just crossed is in it. */
-const LEAD = 0.012;
-/** How quickly the voice that was playing is taken off when the playhead moves again. */
-const CUT = 0.002;
+/**
+ * Scrubbing: how long the voice is given to reach the playhead, in seconds,
+ * the fastest it will run to get there, and the leap beyond which it does
+ * not chase but jumps.
+ */
+const HORIZON = 0.02;
+const FASTEST = 4;
+const LEAP = 0.4;
+
+interface Voice {
+  dir: 1 | -1;
+  nodes: AudioBufferSourceNode[];
+  rates: AudioParam[];
+  gain: GainNode;
+  /** Where it was when last aimed, in seconds of the song, and at what speed, from when, until when. */
+  pos: number;
+  rate: number;
+  setAt: number;
+  haltAt: number;
+}
+
+interface Scrub {
+  buffers: AudioBuffer[];
+  /** Where the playhead is, and when it was put there, in seconds of the clock. */
+  at: number;
+  wall: number;
+  voice: Voice | null;
+}
 
 export class Audition {
   private ctx: AudioContext | null = null;
@@ -31,7 +53,9 @@ export class Audition {
   private clicks: Click[] = [];
   private buffers: AudioBuffer[] = [];
   private clicked = 0;
-  private scrubbing: { buffers: AudioBuffer[]; at: number; voice: { nodes: AudioBufferSourceNode[]; gain: GainNode } | null } | null = null;
+  private scrubbing: Scrub | null = null;
+  /** Each decoded buffer backwards, for scrubbing the other way. */
+  private readonly reversed = new Map<AudioBuffer, AudioBuffer>();
   playing = false;
   /** Whether the pass repeats: a loop region rather than the whole song once. */
   looping = false;
@@ -135,15 +159,23 @@ export class Audition {
   }
 
   /**
-   * Scrubbing, as an editor does it: a grain of the stems at each position
-   * the pointer passes through, and silence when it stops moving. Stops the
-   * pass, if one was playing. Starts at once with whatever is decoded; a
-   * stem still decoding joins the grains when it is.
+   * Scrubbing as tape does it: one voice whose speed follows the hand, so
+   * the sound is always at the playhead — never ahead of it, and halting
+   * where it halts. Each move sets the speed from how fast the pointer is
+   * going plus enough to close the gap within the horizon, and schedules
+   * the halt at the moment the gap closes; the next move re-aims before
+   * then. Going back plays the stem reversed. Starts at once with whatever
+   * is decoded; a stem still decoding joins at the next turn.
    */
   scrubStart(urls: string[], at: number): void {
     void this.context().resume();
     this.stop();
-    const scrubbing = { buffers: urls.map((u) => this.have.get(u)).filter((b): b is AudioBuffer => b !== undefined), at, voice: null };
+    const scrubbing: Scrub = {
+      buffers: urls.map((u) => this.have.get(u)).filter((b): b is AudioBuffer => b !== undefined),
+      at,
+      wall: performance.now() / 1000,
+      voice: null,
+    };
     this.scrubbing = scrubbing;
     if (scrubbing.buffers.length < urls.length) {
       void Promise.all(urls.map((u) => this.buffer(u))).then((buffers) => {
@@ -152,56 +184,96 @@ export class Audition {
     }
   }
 
-  /**
-   * The playhead moved: one voice, retriggered. Whatever was sounding is cut
-   * in two milliseconds and a new voice starts from just behind the playhead
-   * — behind, so a hit it has just crossed is heard, not skipped — and runs
-   * on for a grain unless the next move cuts it first. No voices pile up,
-   * and a playhead at rest goes quiet.
-   */
   scrubTo(at: number): void {
-    if (!this.scrubbing) return;
-    const was = this.scrubbing.at;
-    if (Math.abs(at - was) < 0.001) return;
-    this.scrubbing.at = at;
-    this.voice(at >= was ? Math.max(was, at - LEAD) : at);
+    const scrub = this.scrubbing;
+    if (!scrub) return;
+    const ctx = this.context();
+    const now = ctx.currentTime;
+    const wall = performance.now() / 1000;
+    const speed = Math.abs(at - scrub.at) / Math.max(0.004, wall - scrub.wall);
+    scrub.at = at;
+    scrub.wall = wall;
+
+    let voice = scrub.voice;
+    let pos = voice ? this.positionOf(voice, now) : at;
+    const dir: 1 | -1 = at >= pos ? 1 : -1;
+    if (!voice || voice.dir !== dir || Math.abs(at - pos) > LEAP) {
+      if (Math.abs(at - pos) > LEAP) pos = at - dir * HORIZON;
+      voice = this.turn(scrub, dir, pos, now);
+      if (!voice) return;
+    }
+    const gap = dir * (at - pos);
+    const rate = Math.min(FASTEST, speed + gap / HORIZON);
+    const halt = now + (rate > 0 ? gap / rate : 0);
+    for (const param of voice.rates) {
+      param.cancelScheduledValues(now);
+      param.setValueAtTime(rate, now);
+      param.setValueAtTime(0, halt);
+    }
+    voice.pos = pos;
+    voice.rate = rate;
+    voice.setAt = now;
+    voice.haltAt = halt;
   }
 
   scrubEnd(): void {
-    if (this.scrubbing) this.cut();
+    if (this.scrubbing?.voice) this.silence(this.scrubbing.voice);
     this.scrubbing = null;
   }
 
-  private cut(): void {
-    const voice = this.scrubbing?.voice;
-    if (!voice) return;
+  /** Where a voice has got to: its speed since it was last aimed, until it halted. */
+  private positionOf(voice: Voice, now: number): number {
+    const ran = Math.max(0, Math.min(now, voice.haltAt) - voice.setAt);
+    return voice.pos + voice.dir * voice.rate * ran;
+  }
+
+  private silence(voice: Voice): void {
     const now = this.context().currentTime;
     voice.gain.gain.cancelScheduledValues(now);
     voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
-    voice.gain.gain.linearRampToValueAtTime(0, now + CUT);
-    for (const node of voice.nodes) node.stop(now + CUT);
-    this.scrubbing!.voice = null;
+    voice.gain.gain.linearRampToValueAtTime(0, now + 0.002);
+    for (const node of voice.nodes) node.stop(now + 0.003);
   }
 
-  private voice(from: number): void {
-    if (!this.scrubbing) return;
-    this.cut();
+  /** A voice facing one way from a position, standing still until aimed. */
+  private turn(scrub: Scrub, dir: 1 | -1, pos: number, now: number): Voice | null {
+    if (scrub.voice) this.silence(scrub.voice);
+    scrub.voice = null;
+    if (scrub.buffers.length === 0) return null;
     const ctx = this.context();
-    const now = ctx.currentTime;
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(1, now + 0.001);
-    gain.gain.setValueAtTime(1, now + GRAIN - 0.005);
-    gain.gain.linearRampToValueAtTime(0, now + GRAIN);
+    gain.gain.linearRampToValueAtTime(1, now + 0.002);
     gain.connect(ctx.destination);
-    const nodes = this.scrubbing.buffers.map((buffer) => {
+    const nodes: AudioBufferSourceNode[] = [];
+    const rates: AudioParam[] = [];
+    for (const forward of scrub.buffers) {
       const node = ctx.createBufferSource();
-      node.buffer = buffer;
+      node.buffer = dir > 0 ? forward : this.backwards(forward);
+      node.playbackRate.setValueAtTime(0, now);
       node.connect(gain);
-      node.start(now, Math.max(0, from), GRAIN);
-      return node;
-    });
-    this.scrubbing.voice = { nodes, gain };
+      const offset = dir > 0 ? pos : forward.duration - pos;
+      node.start(now, Math.max(0, Math.min(forward.duration, offset)));
+      nodes.push(node);
+      rates.push(node.playbackRate);
+    }
+    const voice: Voice = { dir, nodes, rates, gain, pos, rate: 0, setAt: now, haltAt: now };
+    scrub.voice = voice;
+    return voice;
+  }
+
+  private backwards(forward: AudioBuffer): AudioBuffer {
+    let back = this.reversed.get(forward);
+    if (!back) {
+      back = this.context().createBuffer(forward.numberOfChannels, forward.length, forward.sampleRate);
+      for (let c = 0; c < forward.numberOfChannels; c++) {
+        const from = forward.getChannelData(c);
+        const to = back.getChannelData(c);
+        for (let i = 0, j = from.length - 1; i < from.length; i++, j--) to[i] = from[j];
+      }
+      this.reversed.set(forward, back);
+    }
+    return back;
   }
 
   stop(): void {
