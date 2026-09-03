@@ -50,7 +50,7 @@ export function reportSnapshotTiming(
     `%c⏱ snapshot%c ${data.clipCount} clips · ${data.sceneCount} scenes · ` +
       `${Math.round(total)}ms end-to-end` +
       (t.restarts > 0 ? ` · ${t.restarts} restarts` : ''),
-    'color:#d99a2b;font-weight:600',
+    'color:#f7c65a;font-weight:600',
     'color:inherit',
   );
   console.table({
