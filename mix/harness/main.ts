@@ -3,9 +3,11 @@
  * the drums, the transients it heard, the beats it laid down, the tempo it
  * followed, and the truth when there is one. Not part of the app.
  */
-import { beatAt, tempoAt, countOf, BEATS_PER_BAR } from '../src/warp.ts';
+import { countedOf, refitOf } from '../src/tempo.ts';
+import { beatAt, tempoAt, countOf, renumbered, tempoOf, BEATS_PER_BAR } from '../src/warp.ts';
 import type { Beats } from '../src/warp.ts';
 import type { IndexEntry, Report, Truth } from './types.ts';
+import { straight } from './arms.ts';
 import { Audition } from './audio.ts';
 import type { Click } from './audio.ts';
 import * as D from './draw.ts';
@@ -40,6 +42,8 @@ let selected: number | null = null;
 let drag: { beat: number; sample: number; snapped: boolean } | null = null;
 let discardArmed = false;
 let forgetArmed = false;
+/** Two-beats mode: the beats picked so far, as samples. Null when not picking. */
+let picking: number[] | null = null;
 
 const seconds = (): number => report?.track.seconds ?? 60;
 const rate = (): number => report?.track.rate ?? 44100;
@@ -913,6 +917,149 @@ function correctionKey(ev: KeyboardEvent): boolean {
   return true;
 }
 
+/* ---------- the grid by hand ---------- */
+
+/** Whether a map is a straight ruling: every spacing the same, to a sample. */
+function isStraight(beats: Beats): boolean {
+  const gap = beats.samples[1] - beats.samples[0];
+  for (let i = 1; i + 1 < beats.samples.length; i++) if (Math.abs(beats.samples[i + 1] - beats.samples[i] - gap) > 1) return false;
+  return true;
+}
+
+/** The kick or snare nearest a moment, within a twentieth of a second, as a sample. */
+function hitNear(at: number): number | null {
+  let best: number | null = null;
+  let away = 0.05;
+  for (const hit of report?.heard.transients ?? []) {
+    if (hit.band === 'high') continue;
+    const d = Math.abs(hit.at - at);
+    if (d < away) {
+      away = d;
+      best = hit.sample;
+    }
+  }
+  return best;
+}
+
+/** The predicted beat nearest a moment, within a quarter of a beat, as a sample. */
+function beatNear(at: number): number | null {
+  const beats = report?.beats;
+  if (!beats) return null;
+  const i = D.nearestBeat(beats, at * beats.rate);
+  if (i == null) return null;
+  const period = (60 * beats.rate) / tempoOf(beats);
+  return Math.abs(beats.samples[i] - at * beats.rate) <= period / 4 ? beats.samples[i] : null;
+}
+
+/** The map replaced by hand: the follower's trace no longer describes it. */
+function replaceMap(beats: Beats, bpm: number, offset: number): void {
+  if (!report) return;
+  report.beats = beats;
+  report.fit = { bpm, offset, agreement: report.fit?.agreement ?? 0 };
+  report.follow = null;
+  if (report.trace.follow) {
+    delete report.trace.follow.beats;
+    delete report.trace.follow.tempo;
+  }
+  scale = D.tempoScale(report.trace.follow, report.beats);
+  summarise();
+  render();
+}
+
+/**
+ * 1.1.1 moved to a sample. A straight map is ruled again from there at its
+ * tempo; a followed map keeps every anchor, takes the nearest beat to the
+ * sample, and counts from it.
+ */
+function anchorAt(sample: number): void {
+  const beats = report?.beats;
+  if (!report || !beats) return;
+  const rate = beats.rate;
+  if (isStraight(beats)) {
+    const bpm = report.fit?.bpm ?? tempoOf(beats);
+    const ruled = straight(bpm, sample / rate, rate, beats.length);
+    if (ruled) replaceMap(ruled, bpm, sample / rate);
+  } else {
+    const i = D.nearestBeat(beats, sample);
+    if (i == null) return;
+    const samples = [...beats.samples];
+    samples[i] = sample;
+    replaceMap(renumbered({ ...beats, samples }, beats.first + i), report.fit?.bpm ?? tempoOf(beats), sample / rate);
+  }
+  el('#note').textContent = `1.1.1 at ${(sample / rate).toFixed(3)} s`;
+}
+
+/**
+ * Two beats picked: how many beats apart they are is read off the tempo
+ * the analysis already has, the tempo is then what that count makes the
+ * span, and the line is refined through every hit in the song from there.
+ * Bar 1 stays where the first pick's beat had it.
+ */
+function twoPicked(a: number, b: number): void {
+  const beats = report?.beats;
+  if (!report || !beats) return;
+  const rate = beats.rate;
+  const known = report.fit?.bpm ?? tempoOf(beats);
+  const counted = countedOf(a / rate, b / rate, known);
+  if (!counted) {
+    el('#note').textContent = 'the two picks are not a beat apart';
+    return;
+  }
+  const first = Math.min(a, b);
+  // Which beat of the bar the first pick is, by the map it was picked on.
+  const i = D.nearestBeat(beats, first);
+  const inBar = i == null ? 0 : (((beats.first + i) % 4) + 4) % 4;
+  const period = 60 / counted.bpm;
+  const downbeat = first / rate - inBar * period;
+  const refined = refitOf(report.heard, counted.bpm, downbeat);
+  const bpm = refined?.bpm ?? counted.bpm;
+  const offset = refined?.offset ?? downbeat;
+  const ruled = straight(bpm, offset, rate, beats.length);
+  if (!ruled) return;
+  replaceMap(ruled, bpm, offset);
+  el('#note').textContent = `${counted.beats} beats apart: ${counted.bpm} measured, ${bpm} through the song${refined ? '' : ' (refinement refused; the measurement stands)'}`;
+}
+
+function togglePicking(): void {
+  picking = picking ? null : [];
+  el<HTMLButtonElement>('#two').classList.toggle('on', picking !== null);
+  el<HTMLButtonElement>('#two').textContent = picking ? 'pick the first beat' : 'two beats';
+  if (!picking) el('#note').textContent = '';
+}
+
+/** A click on the beats row or the transients row: a pick, or with alt, a new 1.1.1. */
+function wireGridByHand(): void {
+  for (const [row, snap] of [
+    ['beats', beatNear],
+    ['hits', hitNear],
+  ] as const) {
+    const canvas = rowCanvas(row);
+    canvas.addEventListener('click', (ev) => {
+      if (!report || (!picking && !ev.altKey)) return;
+      const box = canvas.getBoundingClientRect();
+      const sample = snap(D.timeOf(viewOf(1), ev.clientX - box.left));
+      if (sample == null) {
+        el('#note').textContent = row === 'beats' ? 'no beat there' : 'no kick or snare there';
+        return;
+      }
+      if (picking) {
+        picking.push(sample);
+        if (picking.length < 2) {
+          el<HTMLButtonElement>('#two').textContent = 'pick the second beat';
+          el('#note').textContent = `first beat at ${(sample / report.beats!.rate).toFixed(3)} s`;
+          return;
+        }
+        const [a, b] = picking;
+        togglePicking();
+        twoPicked(a, b);
+        return;
+      }
+      anchorAt(sample);
+    });
+  }
+  el('#two').addEventListener('click', togglePicking);
+}
+
 /* ---------- wiring ---------- */
 
 function wire(): void {
@@ -974,6 +1121,7 @@ function wire(): void {
   window.addEventListener('resize', render);
   wireTime();
   wireTooltip();
+  wireGridByHand();
   wireCorrection();
 
   const frame = () => {

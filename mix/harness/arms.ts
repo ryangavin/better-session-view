@@ -51,7 +51,7 @@ const mapOf = (seconds: readonly number[], rate: number, length: number, bpm: nu
   seconds.length >= 2 ? beatsOf(rate, length, 0, seconds.map((s) => Math.round(s * rate)), bpm) : null;
 
 /** A straight grid at `bpm` with bar 1's downbeat at `offset`, from the top of the file to the end. */
-function straight(bpm: number, offset: number, rate: number, length: number): Beats | null {
+export function straight(bpm: number, offset: number, rate: number, length: number): Beats | null {
   const period = 60 / bpm;
   const seconds = length / rate;
   const first = Math.ceil(-offset / period);

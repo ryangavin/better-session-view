@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitOf, refitOf, snapped, through, type Beat } from './tempo.ts';
+import { countedOf, fitOf, refitOf, snapped, through, type Beat } from './tempo.ts';
 import { heardIn, type Heard } from './transients.ts';
 
 /**
@@ -236,5 +236,23 @@ describe('the pieces', () => {
     expect(line.first).toBeCloseTo(0.5, 9);
     expect(line.period).toBeCloseTo(0.4, 9);
     expect(through([beats[0]])).toBeNull();
+  });
+});
+
+describe('countedOf', () => {
+  it('counts the beats between two picks at the known tempo and reads the tempo off the span', () => {
+    // Nine beats at 128 are 4.21875 s; picks a few milliseconds loose still count nine.
+    const counted = countedOf(10.002, 10.002 + 4.2, 128)!;
+    expect(counted.beats).toBe(9);
+    expect(counted.bpm).toBeCloseTo(128.571, 2);
+  });
+
+  it('takes the picks in either order', () => {
+    expect(countedOf(14.2, 10, 128)).toEqual(countedOf(10, 14.2, 128));
+  });
+
+  it('refuses picks too close to be a beat apart', () => {
+    expect(countedOf(10, 10.02, 128)).toBeNull();
+    expect(countedOf(10, 10.1, 128)).toBeNull();
   });
 });

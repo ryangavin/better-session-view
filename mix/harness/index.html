@@ -43,7 +43,8 @@
         <label title="show every row's legend; otherwise a row shows its own under the pointer"><input type="checkbox" id="legends" /> legends</label>
       </div>
       <div class="group">
-        <span class="cap">truth</span>
+        <span class="cap">grid</span>
+        <button id="two" title="click any two beats, on the beats row or the transients row; the count between them is inferred and the tempo set from them">two beats</button>
         <button id="correct">correct</button>
         <button id="forget" title="delete this track's saved truth" hidden>forget</button>
       </div>
@@ -92,8 +93,8 @@
     <div id="help" class="help">
       <div class="entry" data-for="ruler"><b>time</b> <i class="line" style="--ink: #ffffff"></i>playhead <i class="swatch" style="--ink: #78b4ff; opacity: 0.5"></i>loop <i class="text" style="--ink: #6fd08c">12</i>bar <span class="dim">· click to seek · drag to pan · shift-drag for a loop · drag the playhead, or alt-drag, to scrub · scroll pans, shift-scroll zooms about the cursor</span></div>
       <div class="entry" data-for="wave"><b>drums</b> <i class="swatch" style="--ink: #6f97bd"></i>stem</div>
-      <div class="entry" data-for="hits"><b>transients</b> <i class="swatch" style="--ink: #ff6a3d"></i>kick <i class="swatch" style="--ink: #ffd93d"></i>snare <i class="swatch" style="--ink: #4dd8ff"></i>hats · height is how sharply it rose, brightness how loud</div>
-      <div class="entry" data-for="beats"><b>beats</b> <i class="line" style="--ink: #6fd08c"></i>beat <i class="line tall" style="--ink: #9ef0b6"></i>downbeat <i class="line dashed" style="--ink: #6fd08c"></i>placed between anchors <i class="line" style="--ink: #5a5248"></i>known tempo</div>
+      <div class="entry" data-for="hits"><b>transients</b> <span class="dim">alt-click a hit to make it 1.1.1 · in two-beats mode a click picks the nearest hit ·</span> <i class="swatch" style="--ink: #ff6a3d"></i>kick <i class="swatch" style="--ink: #ffd93d"></i>snare <i class="swatch" style="--ink: #4dd8ff"></i>hats · height is how sharply it rose, brightness how loud</div>
+      <div class="entry" data-for="beats"><b>beats</b> <span class="dim">alt-click a beat to make it 1.1.1 · in two-beats mode a click picks the nearest beat ·</span> <i class="line" style="--ink: #6fd08c"></i>beat <i class="line tall" style="--ink: #9ef0b6"></i>downbeat <i class="line dashed" style="--ink: #6fd08c"></i>placed between anchors <i class="line" style="--ink: #5a5248"></i>known tempo</div>
       <div class="entry" data-for="tempo"><b>tempo</b> <i class="swatch" style="--ink: #ffd93d"></i>followed <i class="dot" style="--ink: #6fd08c"></i>beat to beat <i class="dot" style="--ink: #4dd8ff"></i>stretch read <i class="dot" style="--ink: #7a736b"></i>stretch unclear <i class="dot" style="--ink: #ff4d4d"></i>fill</div>
       <div class="entry" data-for="truth"><b>truth</b> <i class="line" style="--ink: #d05cc0"></i>beat <i class="line tall" style="--ink: #ff8ff0"></i>downbeat <i class="text" style="--ink: #8b837a">+1.2</i>ms after predicted, <i class="text" style="--ink: #ff6a3d">+31</i> past 30</div>
     </div>

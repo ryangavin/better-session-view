@@ -480,6 +480,31 @@ export function fitOf(heard: Heard, trace?: TempoTrace): Fit | null {
   return { bpm, offset, agreement };
 }
 
+/** Two beats somebody pointed at, and what they measure. */
+export interface Counted {
+  /** How many beats apart the two are: inferred, not asked. */
+  beats: number;
+  bpm: number;
+}
+
+/**
+ * Two beats pointed at by hand, any two, a tempo already roughly known:
+ * how many beats lie between them, and the tempo that count makes them.
+ *
+ * The count is the nearest whole number of beats at the known tempo, so
+ * nobody has to count bars — the analysis already knows the octave, which
+ * is the thing two clicks cannot say — and the two clicks then say the
+ * tempo to the precision of the span between them, which over a minute is
+ * better than the fit's own.
+ */
+export function countedOf(a: number, b: number, bpm: number): Counted | null {
+  const span = Math.abs(b - a);
+  if (!(span > 0.05) || !(bpm > 0)) return null;
+  const beats = Math.round(span / (60 / bpm));
+  if (beats < 1) return null;
+  return { beats, bpm: Number(((60 * beats) / span).toFixed(3)) };
+}
+
 /**
  * The same fit, seeded with a tempo and a downbeat somebody measured by hand.
  *
