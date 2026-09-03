@@ -37,6 +37,15 @@ export interface SliderProps extends WidgetProps {
    * reading sit. A horizontal fader with its caption above it is ordinary.
    */
   orientation?: 'vertical' | 'horizontal';
+  /**
+   * Whether the value is drawn as a filled length as well as a mark.
+   *
+   * A fader fills by default and a row does not — the comment on the fill
+   * below says why. A row that is the only thing on its line, with a
+   * reading printed over it, can ask for one: the fill is a ground the
+   * digits sit on, which a two-pixel mark passing under them is not.
+   */
+  fill?: boolean;
   /** Where the fill grows from. Defaults to the middle when zero is the middle. */
   origin?: FillOrigin;
   showValue?: boolean;
@@ -58,6 +67,7 @@ export function Slider({
   label,
   name = param.shortName ?? param.name,
   orientation = 'vertical',
+  fill,
   origin = defaultOrigin(param),
   showValue = true,
   length = 27,
@@ -141,9 +151,9 @@ export function Slider({
          * then it is the loudest thing on the line while carrying the least.
          * On a row the value is a mark, and the range is the only filled
          * shape there is. A fader keeps its fill, because a fader's own
-         * length is what it is saying.
+         * length is what it is saying — and a row may ask for one back.
          */}
-        {layout !== 'inside' && <span className="wdg-slider-fill" aria-hidden="true" />}
+        {(fill ?? layout !== 'inside') && <span className="wdg-slider-fill" aria-hidden="true" />}
         {span !== null && <span className="wdg-slider-span" aria-hidden="true" />}
         {span !== null && <span className="wdg-slider-reach" aria-hidden="true" />}
         {span !== null &&

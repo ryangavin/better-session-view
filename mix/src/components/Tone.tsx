@@ -56,6 +56,7 @@ export function Tone({
         onChange={(next) => onShape({ [key]: next })}
         orientation="horizontal"
         layout="inside"
+        fill
         name=""
         display={hz(bands[key])}
         ink={ink}
