@@ -9,7 +9,7 @@
 }
 
 body {
-  margin: 0;
+  margin: 0 0 40px;
   background: var(--bg);
   color: var(--fg);
   overflow-x: hidden;
@@ -110,57 +110,72 @@ button:hover {
   color: var(--detail);
   pointer-events: none;
   z-index: 1;
-  text-align: right;
 }
 
-.legend {
+.help {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 28px;
+  padding: 4px 10px;
+  background: var(--panel);
+  border-top: 1px solid var(--bd);
+  color: var(--detail);
+  font-size: 11px;
+  z-index: 5;
+}
+
+.help .entry {
   display: none;
-  font-size: 10px;
-  background: rgba(0, 0, 0, 0.75);
-  padding: 1px 4px;
-  border-radius: 3px;
+  line-height: 20px;
 }
 
-.row:hover .legend,
-.legends .legend {
+.help .entry.on,
+.legends .help .entry {
   display: block;
 }
 
-.legend i {
+.help b {
+  color: var(--fg);
+  margin-right: 6px;
+}
+
+.help i {
   display: inline-block;
   vertical-align: middle;
   margin: 0 3px 0 8px;
   font-style: normal;
 }
 
-.legend .swatch {
+.help .swatch {
   width: 9px;
   height: 9px;
   background: var(--ink);
 }
 
-.legend .line {
+.help .line {
   width: 0;
   height: 9px;
   border-left: 1px solid var(--ink);
 }
 
-.legend .line.tall {
+.help .line.tall {
   height: 13px;
 }
 
-.legend .line.dashed {
+.help .line.dashed {
   border-left-style: dashed;
 }
 
-.legend .dot {
+.help .dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--ink);
 }
 
-.legend .text {
+.help .text {
   color: var(--ink);
   font-family: ui-monospace, monospace;
 }

@@ -915,6 +915,13 @@ function wire(): void {
   el<HTMLInputElement>('#legends').addEventListener('change', (ev) => {
     document.body.classList.toggle('legends', (ev.target as HTMLInputElement).checked);
   });
+  // The help strip at the foot shows the legend of the row under the pointer.
+  for (const row of document.querySelectorAll<HTMLElement>('.row')) {
+    const entry = document.querySelector<HTMLElement>(`.help .entry[data-for="${row.dataset.row}"]`);
+    if (!entry) continue;
+    row.addEventListener('pointerenter', () => entry.classList.add('on'));
+    row.addEventListener('pointerleave', () => entry.classList.remove('on'));
+  }
   el('#clearLoop').addEventListener('click', () => {
     loop = null;
     deck.looping = false;
