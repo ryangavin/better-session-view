@@ -19,11 +19,13 @@ import type { Trace } from '../src/trace.ts';
 import { heardIn, type Heard } from '../src/transients.ts';
 import { beatsOf, type Beats } from '../src/warp.ts';
 
-export const ARMS = ['ours', 'flux', 'comb', 'ellis', 'grid'] as const;
+export const ARMS = ['ours', 'line', 'whole', 'flux', 'comb', 'ellis', 'grid'] as const;
 export type Arm = (typeof ARMS)[number];
 
 export const SAYS: Record<Arm, string> = {
   ours: 'our transients, our fit, our follower',
+  line: 'our transients and our fit, laid straight: the fitted line, no follower',
+  whole: 'a straight grid at the whole-number tempo from the fitted 1.1.1: what a file labelled with that tempo gets',
   flux: 'their spectral flux onsets into our fit and follower',
   comb: 'our transients; their comb-filter tempo seeds our follower',
   ellis: 'their onsets, their comb tempo, their dynamic-programming tracker',
@@ -48,15 +50,32 @@ export interface Run {
 const mapOf = (seconds: readonly number[], rate: number, length: number, bpm: number): Beats | null =>
   seconds.length >= 2 ? beatsOf(rate, length, 0, seconds.map((s) => Math.round(s * rate)), bpm) : null;
 
+/** A straight grid at `bpm` with bar 1's downbeat at `offset`, from the top of the file to the end. */
+function straight(bpm: number, offset: number, rate: number, length: number): Beats | null {
+  const period = 60 / bpm;
+  const seconds = length / rate;
+  const first = Math.ceil(-offset / period);
+  const samples: number[] = [];
+  for (let k = first; offset + k * period < seconds; k++) samples.push(Math.round((offset + k * period) * rate));
+  return samples.length >= 2 ? beatsOf(rate, length, first, samples, bpm) : null;
+}
+
 export function run(arm: Arm, channels: readonly Float32Array[], rate: number, trace: Trace): Run | null {
   const length = channels[0].length;
   const seconds = length / rate;
-  if (arm === 'ours') {
+  if (arm === 'ours' || arm === 'line' || arm === 'whole') {
     const heard = heardIn(channels, rate);
     if (!heard) return null;
     const fit = fitOf(heard, trace.tempo);
-    const follow = fit ? followOf(heard, fit, trace.follow) : null;
-    return { heard, fit, follow, beats: follow?.beats ?? null };
+    if (arm === 'ours') {
+      const follow = fit ? followOf(heard, fit, trace.follow) : null;
+      return { heard, fit, follow, beats: follow?.beats ?? null };
+    }
+    if (!fit) return { heard, fit, follow: null, beats: null };
+    if (arm === 'line') return { heard, fit, follow: null, beats: straight(fit.bpm, fit.offset, rate, length) };
+    // From the same 1.1.1 as the line, so the two differ only by their drift across the song.
+    const whole = Math.round(fit.bpm);
+    return { heard, fit: { ...fit, bpm: whole }, follow: null, beats: straight(whole, fit.offset, rate, length) };
   }
   const onset = fluxOf(monoOf(channels), rate);
   if (!onset) return null;
