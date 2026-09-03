@@ -186,13 +186,15 @@ export interface Analysis {
   produced: string;
 }
 
-/** What an export is asked for: the ruling, the track, and which stems. */
+/** What an export is asked for: the ruling, the track, which stems, and where they are cut. */
 export interface ExportAsk {
   trackId: string;
   title: string;
   /** `stems/<id>/<model>`, relative to the library root. */
   stems: string;
   sources: string[];
+  /** The sections to cut each stem into, in order, or nothing for one file per stem. */
+  slices?: { bar: number; name: string }[];
   /** The tempo the record was measured at. */
   bpm: number;
   /** Seconds from the top of the record to 1.1.1. */
@@ -207,6 +209,8 @@ export interface Written {
   bars: number;
   seconds: number;
   speed: number;
+  /** How many sections each stem was cut into. One means it was not cut. */
+  parts: number;
 }
 
 /** One separation's drawing, interleaved min and max per column, per source. */
