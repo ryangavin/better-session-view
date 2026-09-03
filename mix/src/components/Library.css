@@ -108,6 +108,18 @@ font-variation-settings: var(--mono-axes);
   color: var(--caption);
 }
 
+.mf-art[data-art] {
+  border-color: transparent;
+  background: none;
+}
+
+.mf-art img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
 .mf-song[data-selected] .mf-art {
   color: var(--detail);
 }

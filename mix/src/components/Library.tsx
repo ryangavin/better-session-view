@@ -111,9 +111,7 @@ export function Library({ mix }: { mix: Mix }) {
             data-selected={song.id === mix.selected || undefined}
             onClick={() => mix.select(song.id)}
           >
-            <span className="mf-art" aria-hidden="true">
-              {song.title.charAt(0).toUpperCase()}
-            </span>
+            <Art at={mix.artOf(song)} title={song.title} />
             <span className="mf-song-body">
               <span className="mf-song-line">
                 <span className="mf-song-title">{song.title}</span>
@@ -161,6 +159,20 @@ export function Library({ mix }: { mix: Mix }) {
         )}
       </div>
     </aside>
+  );
+}
+
+/**
+ * The cover in the row, or the initial that stands in for one.
+ *
+ * The same 30px cell either way: a library where identified tracks are taller
+ * than unidentified ones is a list that changes shape as covers arrive.
+ */
+export function Art({ at, title }: { at: string | null; title: string }) {
+  return (
+    <span className="mf-art" data-art={at ? true : undefined} aria-hidden="true">
+      {at ? <img src={at} alt="" /> : title.charAt(0).toUpperCase()}
+    </span>
   );
 }
 
