@@ -38,7 +38,9 @@ export interface Ruling {
 
 export function straightened(channels: readonly Float32Array[], rate: number, ruling: Ruling): Straightened {
   const speed = ruling.to / ruling.bpm;
-  const from = ruling.offset * rate;
+  // Laid at its own tempo, the record is not resampled at all: from a whole
+  // sample at a speed of one, the output is the input, bit for bit.
+  const from = speed === 1 ? Math.round(ruling.offset * rate) : ruling.offset * rate;
   const bar = (BEATS_PER_BAR * 60 * rate) / ruling.to;
   const longest = Math.max(0, ...channels.map((c) => c.length));
   const remaining = Math.max(0, longest - from) / speed;

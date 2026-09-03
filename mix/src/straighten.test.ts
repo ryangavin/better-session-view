@@ -39,4 +39,10 @@ describe('straightened', () => {
     expect(laid.speed).toBeCloseTo(128 / 128.055, 9);
     expect(laid.seconds).toBeGreaterThan(60);
   });
+
+  it('is bit for bit the record when laid at its own tempo', () => {
+    const noise = Float32Array.from({ length: 12000 }, (_, i) => Math.sin(i * 12.9898) * 0.5);
+    const laid = straightened([noise], RATE, { bpm: 120, offset: 0.5004, to: 120 });
+    for (let i = 0; i < 11000; i++) expect(laid.channels[0][i]).toBe(noise[500 + i]);
+  });
 });
