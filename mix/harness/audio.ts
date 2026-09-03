@@ -13,9 +13,12 @@ export interface Span {
 }
 
 const LOOKAHEAD = 2;
-/** The least and the most of the song a scrub plays at each move, in seconds. */
-const GRAIN = 0.03;
-const GRAIN_MOST = 0.15;
+/** How long a scrub voice runs after a move before it goes quiet, in seconds. */
+const GRAIN = 0.06;
+/** How far behind the playhead a voice begins going forward, so a hit just crossed is in it. */
+const LEAD = 0.012;
+/** How quickly the voice that was playing is taken off when the playhead moves again. */
+const CUT = 0.002;
 
 export class Audition {
   private ctx: AudioContext | null = null;
@@ -28,7 +31,7 @@ export class Audition {
   private clicks: Click[] = [];
   private buffers: AudioBuffer[] = [];
   private clicked = 0;
-  private scrubbing: { buffers: AudioBuffer[]; at: number } | null = null;
+  private scrubbing: { buffers: AudioBuffer[]; at: number; voice: { nodes: AudioBufferSourceNode[]; gain: GainNode } | null } | null = null;
   playing = false;
   /** Whether the pass repeats: a loop region rather than the whole song once. */
   looping = false;
@@ -140,7 +143,7 @@ export class Audition {
   scrubStart(urls: string[], at: number): void {
     void this.context().resume();
     this.stop();
-    const scrubbing = { buffers: urls.map((u) => this.have.get(u)).filter((b): b is AudioBuffer => b !== undefined), at };
+    const scrubbing = { buffers: urls.map((u) => this.have.get(u)).filter((b): b is AudioBuffer => b !== undefined), at, voice: null };
     this.scrubbing = scrubbing;
     if (scrubbing.buffers.length < urls.length) {
       void Promise.all(urls.map((u) => this.buffer(u))).then((buffers) => {
@@ -150,39 +153,55 @@ export class Audition {
   }
 
   /**
-   * The playhead moved: play what it moved across, so the sound ends where
-   * it now stands going forward and starts there going back. A move
-   * smaller than a grain plays a grain; a leap plays no more than the most.
+   * The playhead moved: one voice, retriggered. Whatever was sounding is cut
+   * in two milliseconds and a new voice starts from just behind the playhead
+   * — behind, so a hit it has just crossed is heard, not skipped — and runs
+   * on for a grain unless the next move cuts it first. No voices pile up,
+   * and a playhead at rest goes quiet.
    */
   scrubTo(at: number): void {
     if (!this.scrubbing) return;
     const was = this.scrubbing.at;
-    const moved = at - was;
-    if (Math.abs(moved) < 0.002) return;
+    if (Math.abs(at - was) < 0.001) return;
     this.scrubbing.at = at;
-    const length = Math.min(GRAIN_MOST, Math.max(GRAIN, Math.abs(moved)));
-    this.grain(moved > 0 ? at - length : at, length);
+    this.voice(at >= was ? Math.max(was, at - LEAD) : at);
   }
 
   scrubEnd(): void {
+    if (this.scrubbing) this.cut();
     this.scrubbing = null;
   }
 
-  private grain(from: number, length: number): void {
+  private cut(): void {
+    const voice = this.scrubbing?.voice;
+    if (!voice) return;
+    const now = this.context().currentTime;
+    voice.gain.gain.cancelScheduledValues(now);
+    voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
+    voice.gain.gain.linearRampToValueAtTime(0, now + CUT);
+    for (const node of voice.nodes) node.stop(now + CUT);
+    this.scrubbing!.voice = null;
+  }
+
+  private voice(from: number): void {
     if (!this.scrubbing) return;
+    this.cut();
     const ctx = this.context();
     const now = ctx.currentTime;
-    for (const buffer of this.scrubbing.buffers) {
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(1, now + 0.001);
+    gain.gain.setValueAtTime(1, now + GRAIN - 0.005);
+    gain.gain.linearRampToValueAtTime(0, now + GRAIN);
+    gain.connect(ctx.destination);
+    const nodes = this.scrubbing.buffers.map((buffer) => {
       const node = ctx.createBufferSource();
       node.buffer = buffer;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(1, now + 0.003);
-      gain.gain.setValueAtTime(1, now + length - 0.006);
-      gain.gain.linearRampToValueAtTime(0, now + length);
-      node.connect(gain).connect(ctx.destination);
-      node.start(now, Math.max(0, from), length);
-    }
+      node.connect(gain);
+      node.start(now, Math.max(0, from), GRAIN);
+      return node;
+    });
+    this.scrubbing.voice = { nodes, gain };
   }
 
   stop(): void {
