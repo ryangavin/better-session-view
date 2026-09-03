@@ -393,7 +393,11 @@ in JavaScript rather than a `calc()` because CSS `abs()` is younger than we want
 depend on.
 
 A fill is always the full `--wdg-fill` — the same amber as a knob's arc, a lit switch and
-a chosen tab, because one meaning should have one colour. The value box is the only place
+a chosen tab, because one meaning should have one colour. When the colour *is* the meaning
+— a mixer strip inked in its stem's colour, a solo lit in the solo colour — the control
+takes it as `ink`, a prop on every filled control, and the frame sets `--wdg-fill` and the
+needle's `--wdg-marker` from it. A host does not reach into the custom properties itself:
+the widget owns which parts a colour touches. The value box is the only place
 text sits on a fill, and it draws its reading twice rather than dimming the fill to make
 room: once in `--wdg-text`, once in `--wdg-fill-text` clipped to the filled part. The
 number then reads dark on the fill and light off it, splitting at the edge.

@@ -31,6 +31,8 @@ export interface ToggleProps {
   width?: number;
   className?: string;
   title?: string;
+  /** The colour it lights in. See `WidgetProps.ink`. */
+  ink?: string;
   children?: ReactNode;
 }
 
@@ -44,13 +46,17 @@ export function Toggle({
   width,
   className,
   title,
+  ink,
   children,
 }: ToggleProps) {
   return (
     <div
       className={`wdg wdg-toggle${className ? ` ${className}` : ''}`}
       style={
-        (width === undefined ? {} : { '--wdg-toggle-width': `${width}px` }) as CSSProperties
+        {
+          ...(width === undefined ? {} : { '--wdg-toggle-width': `${width}px` }),
+          ...(ink === undefined ? {} : { '--wdg-fill': ink }),
+        } as CSSProperties
       }
     >
       {name && <span className="wdg-caption">{name}</span>}

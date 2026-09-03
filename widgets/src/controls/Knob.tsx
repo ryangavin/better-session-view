@@ -44,6 +44,7 @@ export function Knob({
   layout,
   className,
   title,
+  ink,
 }: KnobProps) {
   const gesture = useParamGesture({
     param,
@@ -73,6 +74,7 @@ export function Knob({
       disabled={disabled}
       className={className}
       title={title}
+      ink={ink}
     >
       <div className="wdg-knob-dial" {...gesture.props}>
         <svg viewBox={`0 ${DIAL_VIEWBOX_TOP} 40 ${DIAL_VIEWBOX_HEIGHT}`} aria-hidden="true">

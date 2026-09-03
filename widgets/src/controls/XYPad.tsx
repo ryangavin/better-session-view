@@ -80,6 +80,7 @@ export function XYPad({
   layout,
   className,
   title,
+  ink,
   children,
 }: XYPadProps) {
   const gx = useParamGesture({
@@ -116,6 +117,7 @@ export function XYPad({
       disabled={disabled}
       className={className}
       title={title}
+      ink={ink}
       vars={{
         '--wdg-xypad-width': `${width}px`,
         '--wdg-xypad-height': `${height}px`,

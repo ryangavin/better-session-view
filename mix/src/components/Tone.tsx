@@ -23,10 +23,13 @@ const hz = (value: number): string =>
 
 export function Tone({
   stem,
+  ink,
   bands,
   onShape,
 }: {
   stem: string;
+  /** The stem's colour, or the idle grey while it cannot be heard. */
+  ink: string;
   bands: Bands;
   onShape(change: Partial<Bands>): void;
 }) {
@@ -38,6 +41,7 @@ export function Tone({
       name={name}
       showValue={false}
       layout="inline"
+      ink={ink}
       label={`${stem} ${name.toLowerCase()} band`}
       title={`${name} band: ${format(BAND, bands[key])}`}
       className="mf-tone-band"
@@ -53,6 +57,7 @@ export function Tone({
         name={hz(bands[key])}
         showValue={false}
         layout="inline"
+        ink={ink}
         label={`${stem}: ${param.name}`}
         title={`${param.name}: ${format(param, bands[key])}`}
         className="mf-tone-cut"

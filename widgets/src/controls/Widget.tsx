@@ -47,6 +47,14 @@ export interface WidgetProps {
   disabled?: boolean;
   className?: string;
   title?: string;
+  /**
+   * The colour the control fills in — its arc, its rail, its needle. Any CSS
+   * colour, and usually a `var()`: a mixer's strip inked in its own stem's
+   * colour, a rack's macro in the macro's. Left out, the fill is the accent
+   * every control shares, which the catalogue's one-meaning-one-colour rule
+   * wants until something on screen is *about* the colour.
+   */
+  ink?: string;
 }
 
 export interface WidgetSlots extends WidgetProps {
@@ -86,9 +94,11 @@ export function Widget({
   ref,
   className,
   title,
+  ink,
   children,
 }: WidgetSlots) {
   const reserved = useReserved(param);
+  const inked = ink === undefined ? {} : { '--wdg-fill': ink, '--wdg-marker': ink };
 
   return (
     <div
@@ -96,7 +106,7 @@ export function Widget({
       className={`wdg wdg-widget wdg-${kind}${className ? ` ${className}` : ''}`}
       data-layout={layout}
       {...(disabled ? { 'data-disabled': '' } : {})}
-      style={{ ...reserved, ...vars } as CSSProperties}
+      style={{ ...reserved, ...inked, ...vars } as CSSProperties}
     >
       {name && <span className="wdg-caption">{name}</span>}
       <div className="wdg-body" title={title}>

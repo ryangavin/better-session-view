@@ -331,11 +331,6 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  --wdg-fill: var(--stem);
-}
-
-.mf-lane[data-quiet] .mf-fader {
-  --wdg-fill: var(--idle);
 }
 
 .mf-lane-head .mf-fader .wdg-body {
@@ -347,10 +342,6 @@
 .mf-lane-head .mf-fader .wdg-slider-body {
   width: 100%;
   height: 100%;
-}
-
-.mf-lane-head .mf-solo.wdg-toggle-on {
-  --wdg-fill: var(--blue);
 }
 
 .mf-lane-strip {
@@ -366,8 +357,6 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  --wdg-fill: var(--stem);
-  --wdg-marker: var(--stem);
   --wdg-knob-size: 16px;
   --wdg-knob-height: 13px;
   --wdg-space: 4px;
@@ -395,11 +384,6 @@
   font-variation-settings: var(--wdg-mono-axes);
   font-variant-numeric: tabular-nums;
   color: var(--caption);
-}
-
-.mf-lane[data-quiet] .mf-lane-tone {
-  --wdg-fill: var(--idle);
-  --wdg-marker: var(--idle);
 }
 
 .mf-lane-level {

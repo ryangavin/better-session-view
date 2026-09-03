@@ -364,6 +364,7 @@ export function Lanes({ mix }: { mix: Mix }) {
         {lanes.map((stem) => {
           const own = mix.level[stem.id];
           const heard = mix.audible(stem.id);
+          const ink = heard ? stem.ink : 'var(--idle)';
           return (
             <Fragment key={stem.id}>
               <div
@@ -390,7 +391,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                     <span className="mf-lane-db">{trim(own.volume)}</span>
                   </div>
                   <div className="mf-lane-strip">
-                    <Tone stem={stem.name} bands={own.bands} onShape={(change) => mix.shape(stem.id, change)} />
+                    <Tone stem={stem.name} ink={ink} bands={own.bands} onShape={(change) => mix.shape(stem.id, change)} />
                     <div className="mf-lane-level">
                       <Slider
                         param={LEVEL}
@@ -399,6 +400,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                         orientation="vertical"
                         travel={travel}
                         showValue={false}
+                        ink={ink}
                         label={`${stem.name} level`}
                         className="mf-fader"
                       />
@@ -416,6 +418,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                           onChange={(next) => mix.adjust(stem.id, { soloed: next })}
                           label={`Solo ${stem.name}`}
                           title="Solo"
+                          ink="var(--blue)"
                           className="mf-solo"
                         >
                           S

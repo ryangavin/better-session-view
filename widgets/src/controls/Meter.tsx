@@ -52,6 +52,7 @@ export function Meter({
   length,
   className,
   title,
+  ink,
 }: MeterProps) {
   const level = clamp(value);
   const held = peak === undefined ? undefined : clamp(peak);
@@ -63,6 +64,7 @@ export function Meter({
       layout={layout}
       className={className}
       title={title}
+      ink={ink}
       vars={{
         ...(width === undefined ? {} : { '--wdg-meter-width': `${width}px` }),
         ...(length === undefined ? {} : { '--wdg-meter-length': `${length}px` }),

@@ -65,6 +65,7 @@ export function Slider({
   layout,
   className,
   title,
+  ink,
 }: SliderProps) {
   const gesture = useParamGesture({
     param,
@@ -117,6 +118,7 @@ export function Slider({
       disabled={disabled}
       className={`wdg-slider-${orientation}${className ? ` ${className}` : ''}`}
       title={title}
+      ink={ink}
       vars={{
         '--wdg-slider-length': `${length}px`,
         ...fillFrom(param, origin, gesture.fraction),
