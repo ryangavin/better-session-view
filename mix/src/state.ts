@@ -114,13 +114,25 @@ const levels = (known?: Record<string, Partial<Level>>): Record<string, Level> =
  * and not a re-scan of forty million samples.
  *
  * The count decides where a lane stops drawing peaks and starts drawing the
- * audio itself — that happens when a column of them is wider than a pixel,
- * which at this resolution is around ten times a window's width. It is a
- * balance rather than a preference: fewer columns hands over early, where a
- * screenful is still millions of samples to walk on every wheel tick, and more
- * spends the load scanning detail nothing ever draws.
+ * audio itself — that happens when a column of them is wider than a pixel. It
+ * is a balance rather than a preference: fewer columns hands over early, where
+ * a screenful is still millions of samples to walk on every wheel tick, and
+ * more spends the load scanning detail nothing ever draws.
+ *
+ * It sat at 9000, and that was the wrong side of the balance by a long way.
+ * The handover landed about four zoom steps in, and past it a lane read a few
+ * million samples a frame: zooming or panning anywhere below it ran at eight
+ * frames a second in a browser, against sixty above it. Eight times the columns
+ * moves the handover past anything a person zooms to by hand, and every reading
+ * measured — zoom, pan, and a sweep from the whole track to a single bar —
+ * holds sixty.
+ *
+ * What it costs is a scan the same length as before, since walking the samples
+ * is the same walk whatever it is folded into, and 2.3MB of cache per track
+ * beside the audio it is a drawing of. The scan happens once and is kept; what
+ * was being paid before happened on every wheel tick.
  */
-const COLUMNS = 9000;
+const COLUMNS = 72000;
 
 /** Bars, before anything has been decoded, so the ruler is not zero wide. */
 const BARS_UNKNOWN = 64;
