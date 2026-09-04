@@ -281,3 +281,24 @@ font-variation-settings: var(--mono-axes);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.case-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.case-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.bench {
+  --stem-vocals: #a068f0;
+  --stem-drums: #f0883a;
+  --stem-bass: #6d8bf5;
+}
+

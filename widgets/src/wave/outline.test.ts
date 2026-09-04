@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Peak } from '../audio.ts';
-import { levelsOf, packedOf } from './levels.ts';
+import { levelsOf, packedOf, type Peak } from './levels.ts';
 import { densityFor, edgeInk, edgesOf, samplesFrom } from './outline.ts';
 
 const ask = (over: Partial<Parameters<typeof edgesOf>[1]> = {}) => ({

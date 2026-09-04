@@ -1,4 +1,4 @@
-import { edgeInk } from '../../render/outline.ts';
+import { edgeInk } from '@openflow/widgets/wave/outline.ts';
 
 /**
  * How a silhouette is painted, kept apart from how it is built.

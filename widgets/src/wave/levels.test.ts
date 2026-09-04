@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Peak } from '../audio.ts';
-import { cellsIn, coarser, levelFor, levelsOf, packedOf } from './levels.ts';
+import { cellsIn, coarser, levelFor, levelsOf, packedOf, type Peak } from './levels.ts';
 
 const ramp = (n: number): Peak[] =>
   Array.from({ length: n }, (_, i) => ({ min: -(i % 9) / 9, max: (i % 7) / 7 }));

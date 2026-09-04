@@ -11,8 +11,8 @@ import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Mix } from '../../state.ts';
 import { STEMS } from '../../mock.ts';
 import type { Peak } from '../../audio.ts';
-import { cellsIn, levelsOf, packedOf, type Steps } from '../../render/levels.ts';
-import { densityFor, edgesOf, pathOf, samplesFrom } from '../../render/outline.ts';
+import { cellsIn, levelsOf, packedOf, type Steps } from '@openflow/widgets/wave/levels.ts';
+import { densityFor, edgesOf, pathOf, samplesFrom } from '@openflow/widgets/wave/outline.ts';
 import { FILLS, paintShape } from './fills.ts';
 import './render.css';
 

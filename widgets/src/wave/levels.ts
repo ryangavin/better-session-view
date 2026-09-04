@@ -1,4 +1,3 @@
-import type { Peak } from '../audio.ts';
 
 /**
  * One master reading of a stem, and a few progressively coarser copies of it.
@@ -22,6 +21,18 @@ import type { Peak } from '../audio.ts';
  * it, so a transient survives to the coarsest level there is. That is the whole
  * difference between a summary and a picture that has been thinned out.
  */
+
+/**
+ * One column of a drawing: how far the signal reached either side of zero.
+ *
+ * Declared here rather than imported, because this module is the library and
+ * the app is the consumer — a widget that reached into `mix/` for a type would
+ * be a widget only that app could use.
+ */
+export interface Peak {
+  min: number;
+  max: number;
+}
 
 /** Min and max interleaved: cell `i` is `[i * 2]` and `[i * 2 + 1]`. */
 export type Steps = Float32Array;

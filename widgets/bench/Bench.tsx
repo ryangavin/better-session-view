@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { FINE_KEY } from '../src/gesture/platform.ts';
 import { format } from '../src/param/format.ts';
 import { enumParam, type Param, type UnitStyle } from '../src/param/param.ts';
@@ -20,11 +20,17 @@ import { Slider } from '../src/controls/Slider.tsx';
 import { Toggle } from '../src/controls/Toggle.tsx';
 import { XYPad } from '../src/controls/XYPad.tsx';
 import { DebugCase } from './DebugCase.tsx';
+import { WaveCases } from './WaveCases.tsx';
+import { Workspace, type Experiment } from '../src/debug/Workspace.tsx';
+import { useRemembered } from '../src/debug/useRemembered.ts';
+
+const slug = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 
 const SECTIONS = [
   'Knob', 'Slider', 'Number field', 'Toggle', 'Button', 'Meter', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',
   'Chain',
   'Graph',
+  'Waveform',
   'Modal',
   'Debug',
   'Model',
@@ -65,7 +71,19 @@ function PadGrid() {
   );
 }
 
+/**
+ * Which section is being shown, read by the sections themselves.
+ *
+ * Through a context rather than by splitting the file, because every case below
+ * is written as a sibling of every other and cutting four hundred lines into
+ * seventeen components to change which one is visible would be a large edit to
+ * make a small point. A section asks whether it is the one wanted and returns
+ * nothing when it is not.
+ */
+const Showing = createContext('');
+
 function Section({ id, children }: { id: string; children: ReactNode }) {
+  if (useContext(Showing) !== id) return null;
   return (
     <section id={id.toLowerCase().replace(/\s+/g, '-')}>
       <h2>{id}</h2>
@@ -577,28 +595,12 @@ function Model() {
   );
 }
 
-export function Bench() {
-  const [hosted, setHosted] = useState(true);
-
+/** Every case the bench has, with one section of them showing. */
+function Cases({ only }: { only: string }) {
   return (
-    <div className={`bench${hosted ? ' hosted' : ''}`}>
-      <header>
-        <h1>Widget bench</h1>
-        <p>
-          Drag any control. Hold <kbd>{FINE_KEY}</kbd> for fine, double-click for the
-          parameter&rsquo;s default, arrow keys once focused. No control jumps to the click.
-        </p>
-        <nav>
-          {SECTIONS.map((name) => (
-            <a key={name} href={`#${name.toLowerCase().replace(/\s+/g, '-')}`}>{name}</a>
-          ))}
-          <button type="button" onClick={() => setHosted((on) => !on)}>
-            {hosted ? 'host tokens: on' : 'host tokens: off'}
-          </button>
-        </nav>
-      </header>
-
+    <Showing.Provider value={only}>
       <main>
+
         <Section id="Knob">
           <Case note="Unipolar. The arc grows from the left, like Live's Dry/Wet.">
             <Held param={DRY_WET}>{(v, set) => <Knob param={DRY_WET} value={v} onChange={set} />}</Held>
@@ -1003,6 +1005,10 @@ export function Bench() {
           </Case>
         </Section>
 
+        <Section id="Waveform">
+          <WaveCases />
+        </Section>
+
         <Section id="Modal">
           <Case note="Ask it, and it is over everything: a native dialog, so it sits in the top layer whatever it opened over, focus is trapped inside it and returns to the button afterwards, escape and the scrim both close it. The × is always there because those two ways out are invisible; the row along the bottom is only for what the modal is for, so there is no Cancel saying what the × already says.">
             <Asking />
@@ -1022,9 +1028,48 @@ export function Bench() {
           <Model />
         </Section>
       </main>
+    </Showing.Provider>
+  );
+}
+
+export function Bench() {
+  const [hosted, setHosted] = useState(true);
+  const [tab, setTab] = useRemembered('bench-tab', slug(SECTIONS[0]));
+
+  // The bench is the harness, not a thing behind a button in one: this module
+  // owns `Workspace`, and the surest way to know a widget holds up is to have
+  // built the page you are reading it on out of it.
+  const experiments = useMemo<readonly Experiment<null>[]>(
+    () =>
+      SECTIONS.map((name) => ({
+        id: slug(name),
+        title: name,
+        description: '',
+        component: () => <Cases only={name} />,
+      })),
+    [],
+  );
+
+  return (
+    <div className={`bench${hosted ? ' hosted' : ''}`}>
+      <header>
+        <h1>Widget bench</h1>
+        <p>
+          Drag any control. Hold <kbd>{FINE_KEY}</kbd> for fine, double-click for the
+          parameter&rsquo;s default, arrow keys once focused. No control jumps to the click.
+        </p>
+        <nav>
+          <button type="button" onClick={() => setHosted((on) => !on)}>
+            {hosted ? 'host tokens: on' : 'host tokens: off'}
+          </button>
+        </nav>
+      </header>
+
+      <Workspace experiments={experiments} context={null} selected={tab} onSelect={setTab} />
     </div>
   );
 }
+
 
 /** Mounted while the question is being asked, and unmounted once it is answered. */
 function Asking() {
