@@ -167,16 +167,8 @@ export function Lanes({ mix }: { mix: Mix }) {
 
   /** The whole thing, because the gesture works over the heads as well. */
   const root = useRef<HTMLDivElement | null>(null);
-  /** The lane list, asked one question: has it anywhere of its own to scroll. */
+  /** The lane list, used to measure the mixer fader travel. */
   const list = useRef<HTMLDivElement | null>(null);
-  /**
-   * How far in the view is, for the wheel handler.
-   *
-   * A ref rather than a dependency: the zoom changes on every wheel tick, and a
-   * listener re-registered on every tick is a listener that misses ticks.
-   */
-  const depth = useRef(view.zoom);
-  depth.current = view.zoom;
   /**
    * The timeline, for geometry only.
    *
@@ -219,57 +211,77 @@ export function Lanes({ mix }: { mix: Mix }) {
   };
 
   /**
-   * Shift- or ⌘-scroll zooms, and everything else moves along the song.
-   *
-   * A native listener rather than `onWheel`, and that is the whole reason this
-   * is an effect: React registers wheel handlers passively, so `preventDefault`
-   * from one is ignored — and without it ⌘-scroll is the browser's own page
-   * zoom and the lanes get a picture of the window growing instead.
-   *
-   * Both modifiers, because neither is obviously the one: ⌘ is what a Mac
-   * timeline uses and ⇧ is what a wheel-and-mouse rig can reach. `ctrl` comes
-   * with them for free and is worth having twice over — it is the modifier on
-   * Windows and Linux, and it is also what a trackpad pinch arrives as.
-   *
-   * **A plain vertical wheel moves along the song**, scrolling down to go back
-   * and up to go on. Once you are zoomed in far enough for the lanes to be
-   * worth reading, moving along them is the thing you do constantly and a
-   * modifier on every one of those is a modifier held down all day.
-   *
-   * It only takes the wheel where there is somewhere to take it. Fitted or
-   * zoomed out there is nothing to the left or right of what is on screen, so
-   * the wheel goes back to being the page's — and so it does whenever the lane
-   * list has scrolling of its own to do, which is a short window with six
-   * stems in it. A window that hijacks the scroll wheel and leaves you unable
-   * to reach a row is worse than one that never took it.
+   * Wheel zooms; Shift-wheel pans. Native listeners can prevent page zoom and
+   * middle-button autoscroll. Capture keeps navigation out of lane controls.
    */
   useEffect(() => {
     const el = root.current;
     if (!el) return;
+    const placeAt = (x: number, box: DOMRect) => Math.max(0, Math.min(1, (x - box.left) / box.width));
     const wheel = (event: WheelEvent) => {
       const box = timeline.current?.getBoundingClientRect();
       if (!box || box.width < 1) return;
-      const place = Math.max(0, Math.min(1, (event.clientX - box.left) / box.width));
-      if (event.shiftKey || event.metaKey || event.ctrlKey) {
-        event.preventDefault();
-        zoomAbout(factorOf(pixels(event)), place);
-        return;
-      }
-      // Sideways, from a trackpad or a tilt wheel. One window's width of
-      // movement is one window's worth of track, at any zoom.
-      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
-        event.preventDefault();
-        panBy((event.deltaX * unit(event)) / box.width);
-        return;
-      }
-      if (depth.current <= 1) return;
-      const rows = list.current;
-      if (rows && rows.scrollHeight > rows.clientHeight + 1) return;
       event.preventDefault();
-      panBy((-event.deltaY * unit(event)) / box.width);
+      if (event.shiftKey && !event.metaKey && !event.ctrlKey) {
+        const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : -event.deltaY;
+        panBy(delta * unit(event) / box.width);
+      } else {
+        zoomAbout(factorOf(pixels(event)), placeAt(event.clientX, box));
+      }
+    };
+    let drag: { id: number; x: number; y: number } | null = null;
+    const end = () => {
+      const active = drag;
+      drag = null;
+      if (active && el.hasPointerCapture(active.id)) el.releasePointerCapture(active.id);
+      el.style.removeProperty('cursor');
+    };
+    const down = (event: PointerEvent) => {
+      if (event.button !== 1 || drag) return;
+      const box = timeline.current?.getBoundingClientRect();
+      if (!box || box.width < 1) return;
+      event.preventDefault();
+      event.stopPropagation();
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      el.setPointerCapture(event.pointerId);
+      el.style.cursor = 'grabbing';
+    };
+    const move = (event: PointerEvent) => {
+      if (!drag || drag.id !== event.pointerId) return;
+      if (!(event.buttons & 4)) { end(); return; }
+      event.preventDefault();
+      event.stopPropagation();
+      const box = timeline.current?.getBoundingClientRect();
+      if (!box || box.width < 1) return;
+      zoomAbout(factorOf(event.clientY - drag.y), placeAt(drag.x, box));
+      panBy((drag.x - event.clientX) / box.width);
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    };
+    const up = (event: PointerEvent) => {
+      if (drag?.id === event.pointerId) end();
+    };
+    const aux = (event: MouseEvent) => {
+      if (event.button === 1) { event.preventDefault(); event.stopPropagation(); }
     };
     el.addEventListener('wheel', wheel, { passive: false });
-    return () => el.removeEventListener('wheel', wheel);
+    el.addEventListener('pointerdown', down, true);
+    el.addEventListener('pointermove', move, true);
+    el.addEventListener('pointerup', up, true);
+    el.addEventListener('pointercancel', up, true);
+    el.addEventListener('lostpointercapture', up);
+    el.addEventListener('auxclick', aux, true);
+    window.addEventListener('blur', end);
+    return () => {
+      end();
+      el.removeEventListener('wheel', wheel);
+      el.removeEventListener('pointerdown', down, true);
+      el.removeEventListener('pointermove', move, true);
+      el.removeEventListener('pointerup', up, true);
+      el.removeEventListener('pointercancel', up, true);
+      el.removeEventListener('lostpointercapture', up);
+      el.removeEventListener('auxclick', aux, true);
+      window.removeEventListener('blur', end);
+    };
   }, [song?.id, zoomAbout, panBy]);
 
   /**
@@ -312,7 +324,7 @@ export function Lanes({ mix }: { mix: Mix }) {
               onPress={whole}
               disabled={view.zoom === 1}
               label="Show the whole track"
-              title="How much time the lanes are showing — press to fit the song. ⇧-scroll or ⌘-scroll over the lanes to zoom, in as far as single samples and out past the whole song"
+              title="How much time the lanes are showing — press to fit the song. Scroll to zoom; ⇧-scroll to pan. Hold the middle button and drag up/down to zoom, left/right to pan"
               className="mf-zoom mf-band-wide"
             >
               {seen(mix.seconds / view.zoom)}

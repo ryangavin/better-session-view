@@ -52,3 +52,23 @@ wherever it is mounted, which is what the hex literals the old pages carried did
 
 The **Debug** section of the widget bench (`npm run dev:widgets`) is a harness with nothing
 under it: a made-up signal, beats every half second, a head on the wall clock.
+
+## Tabs and experiments
+
+`Workspace<Context>` is the multipurpose host above individual harnesses. It accepts an
+`experiments` registry, a host-owned `context`, and controlled `selected` / `onSelect`
+props. Each `Experiment<Context>` has a stable `id`, a `title`, a short `description`,
+and a `component` receiving `{ context }`. That component may render any React content:
+a harness, a canvas, a form, a table, or a whole experimental interface.
+
+Only the selected component mounts. Switching tabs tears down its effects; **Reset tab**
+remounts it. A render error stays inside that tab with a visible error and can be reset.
+Tabs support arrow keys, Home and End. An unknown saved ID falls back to the first entry.
+The host decides whether to remember the selection, and keeps domain types out of widgets.
+Keep the registry and component definitions outside the host render to preserve identity.
+
+An experiment must clean up its own playback, listeners, workers and asynchronous jobs
+on unmount, and display asynchronous failures itself (React boundaries cover rendering,
+not promises or event handlers). Keep useful settings in `useRemembered` if they should
+survive tab switches; reset only clears in-memory state, not remembered preferences.
+See `mix/src/debug/Workspace.tsx` for an actual registration with app context.

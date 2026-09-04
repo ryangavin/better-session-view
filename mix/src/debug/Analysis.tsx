@@ -24,6 +24,7 @@ import { BEATS_PER_BAR, beatAt, tempoAt, tempoOf, countOf, renumbered, type Beat
 import { ARMS, INPUTS, run, SAYS, straight, type Arm, type Input } from './arms.ts';
 import { Audition, type Click } from './audition.ts';
 import * as D from './draw.ts';
+import { AnalysisEvidence } from './AnalysisEvidence.tsx';
 import './Analysis.css';
 
 /**
@@ -697,6 +698,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
           </Group>
         </Toolbar>
         <Facts items={facts} />
+        <AnalysisEvidence mix={mix} beats={beats} heard={ran?.heard ?? null} axis={axis} head={head ?? undefined} runLabel={ran ? `${ran.arm} on ${ran.input}${map?.followed ? ' · followed' : ' · edited/straight'}` : 'No run'} />
         <Scope axis={axis} head={head ?? undefined} scrub={scrub}>
           <ScopeRow label="time" height={26} draw={drawRuler} ruler />
           <ScopeRow

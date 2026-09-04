@@ -1,0 +1,55 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mix",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:mix"
+      ],
+      "port": 5673,
+      "autoPort": false
+    },
+    {
+      "name": "set",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:set-ui"
+      ],
+      "port": 5173,
+      "autoPort": false
+    },
+    {
+      "name": "widgets",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:widgets"
+      ],
+      "port": 5273,
+      "autoPort": false
+    },
+    {
+      "name": "visuals",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:visuals-ui"
+      ],
+      "port": 5473,
+      "autoPort": false
+    },
+    {
+      "name": "chart",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:chart-ui"
+      ],
+      "port": 5573,
+      "autoPort": false
+    }
+  ]
+}

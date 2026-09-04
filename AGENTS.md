@@ -96,6 +96,11 @@ work in [Issues](../../issues).
 
 ## Before you claim something works
 
+**Whenever working on `mix/`, open its dev harness in the Codex in-app browser:**
+[`http://localhost:5673/harness/reach.html`](http://localhost:5673/harness/reach.html).
+Reuse the existing harness tab when it is already open. Keep it available while working
+on the module and use it to check usability changes.
+
 `lom.ts` has no automated coverage — it needs Live open with the device loaded, and
 **it's the file to suspect first**. Everything else is checkable:
 

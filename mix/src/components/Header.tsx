@@ -8,7 +8,7 @@ import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Snap } from '../grid.ts';
 import type { Ready } from '../openflow.ts';
 import { QuietField } from './Editable.tsx';
-import { Analysis } from '../debug/Analysis.tsx';
+import { DebugWorkspace } from '../debug/Workspace.tsx';
 import type { Mix } from '../state.ts';
 import { FASTEST, SLOWEST } from '../tempo.ts';
 import { bpmText, rangeText } from '../warp.ts';
@@ -217,8 +217,8 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               type="button"
               className="mf-debug"
               onClick={() => setHarness(true)}
-              title="Open this track in the analysis harness — see mix/docs/harness.md"
-              aria-label="Open in the analysis harness"
+              title="Open debugging and experiments — see mix/docs/harness.md"
+              aria-label="Open debug workspace"
             >
               {bugMark}
             </button>
@@ -426,8 +426,8 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
         Export
       </Button>
       {harness && song && (
-        <Modal title="analysis" label="Analysis harness" className="mf-harness" onClose={() => setHarness(false)}>
-          <Analysis mix={mix} />
+        <Modal title="debug & experiments" label="Debug workspace" className="mf-harness" onClose={() => setHarness(false)}>
+          <DebugWorkspace mix={mix} />
         </Modal>
       )}
     </header>

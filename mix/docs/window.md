@@ -267,19 +267,16 @@ The lanes draw the whole track by default, which is right for finding a breakdow
 useless for finding a downbeat: four minutes across nine hundred pixels is a quarter of a
 second per pixel, so a kick and the snare after it are the same column.
 
-**⇧-scroll or ⌘-scroll over the lanes zooms** — both, because neither is obviously the
-one, and `ctrl` comes along with them for the platforms where it is the modifier and for
-the trackpad pinch that arrives wearing it. A sideways scroll pans, by the screenful, so
-the gesture means the same thing at every depth.
+**Scroll over the lanes zooms; ⇧-scroll pans.** Zoom stays anchored under the
+pointer. Shift with a vertical wheel moves back on down and forward on up;
+Shift with a sideways trackpad swipe pans in that direction. ⌘/Ctrl-scroll and
+trackpad pinch still zoom. The lane list's scrollbar reaches rows in short windows.
 
-**A plain vertical scroll moves along the song**, down to go back and up to go on. Once
-you are zoomed in far enough for the lanes to be worth reading, moving along them is the
-thing you do constantly, and a modifier on every one of those is a modifier held down all
-day. It only takes the wheel where there is somewhere to take it: fitted or zoomed out
-there is nothing either side of what is on screen, so the wheel goes back to being the
-page's — and so it does whenever the lane list has scrolling of its own to do, which is a
-short window with six stems in it. A window that steals the scroll wheel and leaves you
-unable to reach a row is worse than one that never took it.
+**Hold the middle mouse button to cruise around.** Drag up to zoom in, down to
+zoom out, and sideways to pull the audio with the pointer. Both axes work together.
+Pointer capture keeps the gesture alive outside the lanes; release, cancellation,
+lost capture, window blur and track changes end it. The gesture intercepts the
+press before lane controls can seek or edit, and suppresses browser autoscroll.
 
 Three things make it feel like a timeline rather than a picture being resized:
 

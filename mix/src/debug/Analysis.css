@@ -5,6 +5,17 @@
   min-height: 0;
   height: 100%;
 }
+.mf-analysis-evidence { margin:12px 0; border-block:1px solid var(--bd); padding:12px 0; }
+.mf-analysis-evidence header { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:0 12px; }
+.mf-analysis-evidence header > div { flex:1; min-width:230px; }
+.mf-analysis-evidence header b { font-size:15px; }
+.mf-analysis-evidence header p, .mf-analysis-evidence-note { font-size:11px; line-height:1.6; color:var(--detail); }
+.mf-analysis-evidence-note { padding:0 12px; }
+.mf-analysis-evidence table { width:100%; border-collapse:collapse; font-size:11px; }
+.mf-analysis-evidence th, .mf-analysis-evidence td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--bd); }
+.mf-analysis-review { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:12px; font-size:11px; }
+.mf-analysis-reference { margin:12px; font-size:11px; line-height:1.6; }
+.mf-analysis-reference summary { cursor:pointer; color:var(--fg); }
 
 .mf-analysis .wdg-harness-subject .wdg-select {
   max-width: 260px;
