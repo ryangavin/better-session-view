@@ -2,6 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { uiPort, type App } from './apps.ts';
+import { fromWire, toWire } from './binary.ts';
 import { TYPES } from './mime.ts';
 import { within } from './within.ts';
 import type { Mounts } from './serve.ts';
@@ -162,8 +163,14 @@ export function reach(
               res.statusCode = 404;
               return res.end(JSON.stringify({ says: `no handler for ${channel}` }));
             }
-            const value = await handler({ [FROM_TAB]: true }, ...(args ?? []));
-            res.end(JSON.stringify({ value: value ?? null }));
+            // Both ways through the codec: the API takes and returns typed
+            // arrays, and JSON alone turns those into something that looks like
+            // an object and is not one.
+            const value = await handler(
+              { [FROM_TAB]: true },
+              ...((fromWire(args ?? []) as unknown[]) ?? []),
+            );
+            res.end(JSON.stringify({ value: toWire(value ?? null) }));
           } catch (cause) {
             // The renderer's contract is a rejected promise, not a dead socket.
             res.statusCode = 500;
@@ -230,7 +237,7 @@ export function reach(
       server.close();
     },
     push: (channel, payload) => {
-      const line = `data: ${JSON.stringify({ channel, payload })}\n\n`;
+      const line = `data: ${JSON.stringify({ channel, payload: toWire(payload) })}\n\n`;
       for (const res of listening) res.write(line);
     },
     origin: (event, fallback) =>

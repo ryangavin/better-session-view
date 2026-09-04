@@ -16,6 +16,8 @@
  * opened, against an app they started with a flag that says so.
  */
 
+import { fromWire, toWire } from './binary.ts';
+
 let origin = '';
 const hearing = new Map<string, Set<(event: unknown, ...args: unknown[]) => void>>();
 
@@ -25,9 +27,10 @@ export async function attach(at: string): Promise<void> {
   const stream = new EventSource(`${origin}/reach/events`);
   stream.onmessage = (message) => {
     const { channel, payload } = JSON.parse(message.data) as { channel: string; payload: unknown };
+    const carried = fromWire(payload);
     // The listener signature is Electron's: an event nobody reads, then the
     // payload. Kept exactly, because preload.ts is written against it.
-    for (const hear of hearing.get(channel) ?? []) hear({}, payload);
+    for (const hear of hearing.get(channel) ?? []) hear({}, carried);
   };
   await new Promise<void>((resolve, reject) => {
     stream.onopen = () => resolve();
@@ -40,12 +43,12 @@ export const ipcRenderer = {
     const reply = await fetch(`${origin}/reach/invoke`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ channel, args }),
+      body: JSON.stringify({ channel, args: toWire(args) }),
     });
     const body = (await reply.json()) as { value?: unknown; says?: string };
     // A handler that threw rejects here, which is what `invoke` promises.
     if (!reply.ok) throw new Error(body.says ?? `reach: ${channel} failed`);
-    return body.value;
+    return fromWire(body.value);
   },
 
   on(channel: string, hear: (event: unknown, ...args: unknown[]) => void): void {
