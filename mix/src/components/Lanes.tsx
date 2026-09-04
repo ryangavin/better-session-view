@@ -314,12 +314,12 @@ export function Lanes({ mix }: { mix: Mix }) {
             onsets={mix.onsets}
             bars={grid}
             height={24}
-            anchors={mix.anchors}
-            pinned={mix.beats ? grid : undefined}
+            barMarks={mix.barMarks}
+            beats={mix.beats ? grid : undefined}
             hits={mix.hits}
             onMove={mix.moveBeat}
-            onPin={mix.pin}
-            pinning={mix.manual !== null}
+            onPlace={mix.place}
+            placing={mix.manual !== null}
             span={span}
           />
         </div>

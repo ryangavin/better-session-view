@@ -34,7 +34,7 @@ const map = bent();
 const seconds = (beat: number) => sampleOf(map, beat) / RATE;
 
 describe('the boundaries of a pass', () => {
-  it('reads each beat at the rate that lands the next anchor on its beat', () => {
+  it('reads each beat at the rate that lands the next beat on its beat', () => {
     const pass = passOf(map, 128, 0);
     for (let i = 0; i + 1 < pass.boundaries.length; i++) {
       const a = pass.boundaries[i];
@@ -52,7 +52,7 @@ describe('the boundaries of a pass', () => {
     expect(straight(map, 128)).toBe(false);
   });
 
-  it('is still straight with a detector’s scatter on the anchors, and not with a drummer’s', () => {
+  it('is still straight with a detector’s scatter on the beats, and not with a drummer’s', () => {
     const even = evenBeats(RATE, LENGTH, 128, 0.25);
     const scattered = { ...even, samples: even.samples.map((s, i) => s + ((i * 7919) % 5 - 2) * 40) };
     expect(straight(scattered, 128)).toBe(true);
@@ -66,7 +66,7 @@ describe('the boundaries of a pass', () => {
     expect(pass.length).toBeCloseTo(SECONDS / 2, 3);
   });
 
-  it('starts mid-beat at that beat’s rate, with only the anchors ahead', () => {
+  it('starts mid-beat at that beat’s rate, with only the beats ahead', () => {
     const from = seconds(230.5);
     const pass = passOf(map, 128, from);
     expect(pass.boundaries[0]).toMatchObject({ output: 0, input: from });
@@ -81,7 +81,7 @@ describe('the boundaries of a pass', () => {
 });
 
 describe('where the sound is', () => {
-  it('inverts the output time at every beat, before bar 1 and past the last anchor', () => {
+  it('inverts the output time at every beat, before bar 1 and past the last beat', () => {
     const startBeat = beatAt(map, 0);
     for (const beat of [startBeat, 0, 150.5, 400, 440]) {
       const elapsed = ((beat - startBeat) * 60) / 128;
@@ -119,7 +119,7 @@ describe('where the sound is', () => {
  *
  * The pass ends where the section does and the next begins where it began, so
  * what has to hold is that nothing about the boundaries between those two
- * points changes: the same anchors, at the same rates, at the same output
+ * points changes: the same beats, at the same rates, at the same output
  * times. A loop that re-planned the middle of a section would be audible.
  */
 describe('a span', () => {

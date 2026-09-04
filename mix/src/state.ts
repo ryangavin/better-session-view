@@ -73,7 +73,7 @@ export type Job = Progress;
  * **Neither click is bar 1.** A downbeat is a downbeat wherever it is in the
  * song, and somebody who scrolled to the drop and marked one there has said
  * where the bars fall, not which bar that was. Bar 1 is the first downbeat in
- * the file, the same as it is for a fit, and the pins are numbered with
+ * the file, the same as it is for a fit, and the marks are numbered with
  * whatever bars the clicks turn out to have landed on.
  */
 export interface Manual {
@@ -86,14 +86,14 @@ export interface Manual {
 /** The spans worth counting out. Four is the one nobody has to think about. */
 export const SPANS = [1, 2, 4, 8];
 
-/** A point where the grid is pinned to the audio. */
-export interface Anchor {
+/** A bar a hand has marked, while the grid is being set. */
+export interface BarMark {
   at: number;
   label: string;
 }
 
-/** A pin on the bar a click landed on, numbered from wherever the grid puts bar 1. */
-const pinAt = (second: number, offset: number, bpm: number): Anchor => {
+/** The mark on the bar a click landed on, numbered from wherever the grid puts bar 1. */
+const barMarkAt = (second: number, offset: number, bpm: number): BarMark => {
   const bar = Math.round(((second - offset) * bpm) / 240);
   return { at: bar, label: String(bar + 1) };
 };
@@ -192,7 +192,7 @@ export function useMix() {
   /** Seconds from the top of the file to the downbeat of bar 1. */
   const [offset, setOffset] = useState(first.offset ?? 0);
   /**
-   * Where the beats fall, once something has found them: the map, an anchor
+   * Where the beats fall, once something has found them: the map, a sample
    * for every beat, and the only source of truth about timing.
    *
    * Null is the even ruling `targetBpm` and `offset` make, which is what a
@@ -274,7 +274,7 @@ export function useMix() {
   const [transcribeProblem, setTranscribeProblem] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [manual, setManual] = useState<Manual | null>(null);
-  const [anchors, setAnchors] = useState<Anchor[]>([]);
+  const [barMarks, setBarMarks] = useState<BarMark[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [noteBad, setNoteBad] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -833,7 +833,7 @@ export function useMix() {
       audio.stop();
       setPlaying(false);
       setSelected(id);
-      setAnchors([]);
+      setBarMarks([]);
       setManual(null);
       setDetected(null);
       setFitFailed(false);
@@ -1197,7 +1197,7 @@ export function useMix() {
   /**
    * The map and the tempo, pushed into the graph on every change.
    *
-   * Only once something has pinned the audio to the grid: a straight ruling
+   * Only once the beats have been found: a straight ruling
    * from a typed tempo is a claim about where the bars are, not a measurement
    * of the record, and stretching a record to a claim is how a song ends up
    * eight per cent fast for no reason anybody asked for.
@@ -1214,9 +1214,9 @@ export function useMix() {
    * Take the grid from the audio: `warp.ts` fits a tempo and a downbeat to the
    * drums, and both are applied.
    *
-   * The anchors it drops are bar 1 and the last bar, which is a claim it is now
+   * The marks it drops are bar 1 and the last bar, which is a claim it is now
    * entitled to make — a straight line fitted to every hit in the song is
-   * pinned at both ends by construction, so it cannot be drifting in the middle
+   * fixed at both ends by construction, so it cannot be drifting in the middle
    * by more than it is wrong at the ends. Before this they were two marks on a
    * grid nothing had measured.
    *
@@ -1240,7 +1240,7 @@ export function useMix() {
       const held = countOf(
         'beats' in found ? found.beats : evenBeats(rate, Math.round(seconds * rate), found.bpm, found.offset),
       );
-      setAnchors([
+      setBarMarks([
         { at: 0, label: '1' },
         { at: held - 1, label: String(held) },
       ]);
@@ -1319,9 +1319,9 @@ export function useMix() {
    * correcting and then converting it back would put the old grid inside the
    * new one.
    */
-  const pin = useCallback(
-    (place: number) => {
-      const at = place * seconds;
+  const place = useCallback(
+    (fraction: number) => {
+      const at = fraction * seconds;
       if (!manual) {
         seek(at);
         return;
@@ -1329,7 +1329,7 @@ export function useMix() {
       if (manual.stage === 'first') {
         // A click on any downbeat. It says where the bars fall and nothing
         // about which bar this is: bar 1 is the first downbeat in the file,
-        // here as everywhere, and the pin is labelled with whatever bar that
+        // here as everywhere, and the mark is labelled with whatever bar that
         // makes the one that was clicked.
         const placed = startOf(at, targetBpm);
         setManual({ ...manual, stage: 'late', first: at });
@@ -1340,7 +1340,7 @@ export function useMix() {
         setDetected(null);
         setFitFailed(false);
         setWantFit(false);
-        setAnchors([pinAt(at, placed, targetBpm)]);
+        setBarMarks([barMarkAt(at, placed, targetBpm)]);
         return;
       }
 
@@ -1373,8 +1373,8 @@ export function useMix() {
       setWantFit(false);
       setFitFailed(false);
       setDetected(followed ?? refined);
-      const first = pinAt(from, placed, bpm);
-      setAnchors([
+      const first = barMarkAt(from, placed, bpm);
+      setBarMarks([
         first,
         { at: first.at + manual.span, label: String(first.at + manual.span + 1) },
       ]);
@@ -1388,7 +1388,7 @@ export function useMix() {
    * The downbeat is the half of a grid that a detector gets wrong while getting
    * the other half right — a fit locked onto the snare is the right tempo and a
    * bar line in the wrong place — and this is the fastest way out of that. It
-   * moves bar 1 rather than an anchor, because an anchor that could be dragged
+   * moves bar 1 rather than a beat, because a beat that could be dragged
    * off the grid it is marking would be a second, competing claim.
    */
   const nudge = useCallback((direction: number) => {
@@ -1491,17 +1491,17 @@ export function useMix() {
       });
   }, [listen, seconds, grid]);
 
-  /** The same hits, in seconds, for a dragged anchor to snap to. */
+  /** The same hits, in seconds, for a dragged beat to snap to. */
   const hits = useMemo(() => {
     const it = listen();
     return it ? it.transients.filter((hit) => hit.band !== 'high').map((hit) => hit.at) : [];
   }, [listen]);
 
   /**
-   * A hand on an anchor, which is the other half of following the beat.
+   * A hand on a beat, which is the other half of following the beat.
    *
    * Live's workflow: auto-warp, then fix by hand what it got wrong. Dragging a
-   * beat moves that one anchor — its neighbours hold, the two spacings beside
+   * beat moves that one beat — its neighbours hold, the two spacings beside
    * it take up the difference, and nothing further away can tell. It starts
    * from the map as drawn, so the even ruling of a typed tempo becomes a map
    * the moment a beat is moved; and it is a decision, so the fit's readout
@@ -1514,7 +1514,7 @@ export function useMix() {
     setWantFit(false);
   }, []);
 
-  /** Drag a beat's anchor to another second of the file. */
+  /** Drag a beat to another second of the file. */
   const moveBeat = useCallback(
     (beat: number, at: number) => {
       setBeats((was) => moved(was ?? grid, beat, at * grid.rate));
@@ -1527,7 +1527,7 @@ export function useMix() {
    * Let the map go, and start over.
    *
    * Back to the even ruling the tempo and the downbeat make, which is where the
-   * anchors came from. The tempo and the downbeat stay: they are the best
+   * beats came from. The tempo and the downbeat stay: they are the best
    * straight reading there is, and a ruling at 120 from the top of the file
    * would be a wrong answer to start over from. It is a decision, so it is
    * remembered and not re-measured behind anybody's back; Auto-warp is how you
@@ -1705,11 +1705,11 @@ export function useMix() {
     startManual,
     endManual,
     setSpan,
-    anchors,
+    barMarks,
     autoWarp,
     /** A grid something else measured — the harness — taken as if Auto-warp had found it. */
     take: fit,
-    pin,
+    place,
     nudge,
     /** The hits in seconds, and the two things a hand can do to the map. */
     hits,

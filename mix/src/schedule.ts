@@ -30,7 +30,7 @@ export interface Span {
 /** The whole file, which is what a span is when nobody has picked one. */
 export const whole = (beats: Beats): Span => ({ from: 0, to: beats.length / beats.rate });
 
-/** One straight stretch of playback: from one anchor to the next. */
+/** One straight stretch of playback: from one beat to the next. */
 export interface Boundary {
   /** Seconds of output since the pass began, when this segment starts. */
   output: number;
@@ -54,10 +54,10 @@ const perBeat = (tempo: number): number => 60 / tempo;
 
 /**
  * The boundaries of one pass from `from` seconds into the file: one where it
- * starts, and one at every anchor after it, in output time from the start.
+ * starts, and one at every beat after it, in output time from the start.
  *
- * An anchor is where the rate may change, so it is where a boundary has to be —
- * and the only place. Between two anchors the record ran at one spacing, and
+ * An beat is where the rate may change, so it is where a boundary has to be —
+ * and the only place. Between two beats the record ran at one spacing, and
  * one rate plays it at another: the record's seconds for that beat over the
  * target's.
  */

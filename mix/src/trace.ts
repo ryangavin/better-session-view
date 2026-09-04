@@ -73,9 +73,9 @@ export interface BeatTrace {
   frame: number;
   /** Seconds, from the frame. */
   at: number;
-  /** The transient it was anchored to, as an index into the heard transients, or nothing. */
+  /** The transient it was placed on, as an index into the heard transients, or nothing. */
   hit: number | null;
-  /** The sample it ended up on: the anchor, or the interpolation between anchors. */
+  /** The sample it ended up on: the transient, or the interpolation between struck beats. */
   sample: number;
 }
 

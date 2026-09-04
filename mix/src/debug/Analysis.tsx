@@ -243,7 +243,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
   );
 
   /** 1.1.1 moved to a sample: a straight map ruled again and swept; a followed map renumbered. */
-  const anchorAt = useCallback(
+  const downbeatAt = useCallback(
     (sample: number) => {
       if (!ran || !map) return;
       const r = map.beats.rate;
@@ -341,9 +341,9 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
         twoPicked(next[0], next[1]);
         return;
       }
-      anchorAt(sample);
+      downbeatAt(sample);
     },
-    [map, picking, anchorAt, twoPicked, say],
+    [map, picking, downbeatAt, twoPicked, say],
   );
 
   /* ---------- listening ---------- */
@@ -581,7 +581,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
           `beat ${beat}`,
           `bar ${Math.floor(beat / BEATS_PER_BAR) + 1}.${(((beat % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR) + 1}`,
           `${(b.samples[near] / b.rate).toFixed(4)} s`,
-          hit != null && t ? `anchor ${t.band} ${t.strength.toFixed(2)}` : followTrace ? 'interpolated' : 'ruled',
+          hit != null && t ? `struck ${t.band} ${t.strength.toFixed(2)}` : followTrace ? 'interpolated' : 'ruled',
           `${tempoAt(b, beat).toFixed(3)} bpm`,
           `beatAt ${beatAt(b, b.samples[near]).toFixed(3)}`,
         ].join(' · '),

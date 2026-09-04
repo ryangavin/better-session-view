@@ -12,14 +12,14 @@ const clicks = (bpm: number, offset: number, seconds: number): Float32Array => {
 };
 
 /** A click on each of these samples, and nothing anywhere else. */
-const clicksAt = (anchors: readonly number[], length: number): Float32Array => {
+const clicksAt = (samples: readonly number[], length: number): Float32Array => {
   const out = new Float32Array(length);
-  for (const at of anchors) if (at >= 0 && at < length) out[at] = 1;
+  for (const at of samples) if (at >= 0 && at < length) out[at] = 1;
   return out;
 };
 
-/** Anchors from a first one and a spacing per beat, added up. */
-const anchorsOf = (first: number, spacings: readonly number[]): number[] => {
+/** Beat samples from a first one and a spacing per beat, added up. */
+const beatsFrom = (first: number, spacings: readonly number[]): number[] => {
   const out = [first];
   for (const spacing of spacings) out.push(out[out.length - 1] + spacing);
   return out;
@@ -67,36 +67,36 @@ describe('straightened', () => {
     // on a grid, and the tempo the whole thing averages to is the best a
     // straight line can do.
     const spacings = Array.from({ length: 40 }, (_, k) => Math.round(500 + (k * 100) / 40));
-    const anchors = anchorsOf(500, spacings);
-    const length = anchors[anchors.length - 1] + 500;
-    const beats = beatsOf(RATE, length, 0, anchors);
-    const laid = straightened([clicksAt(anchors, length)], RATE, {
+    const samples = beatsFrom(500, spacings);
+    const length = samples[samples.length - 1] + 500;
+    const beats = beatsOf(RATE, length, 0, samples);
+    const laid = straightened([clicksAt(samples, length)], RATE, {
       bpm: tempoOf(beats),
-      offset: anchors[0] / RATE,
+      offset: samples[0] / RATE,
       to: 120,
       beats,
     });
     const found = peaksIn(laid.channels[0]);
     const period = (60 * RATE) / 120;
-    anchors.forEach((_, k) => expect(Math.abs(found[k] - k * period)).toBeLessThanOrEqual(1));
+    samples.forEach((_, k) => expect(Math.abs(found[k] - k * period)).toBeLessThanOrEqual(1));
   });
 
   it('lands both halves of a record that steps tempo on the output grid', () => {
     // Sixteen bars at 120, then the rest at 90. Laid at one speed the second
     // half is late by the whole step, and further out with every beat.
     const spacings = Array.from({ length: 32 }, (_, k) => (k < 16 ? 500 : 667));
-    const anchors = anchorsOf(300, spacings);
-    const length = anchors[anchors.length - 1] + 500;
-    const beats = beatsOf(RATE, length, 0, anchors);
-    const laid = straightened([clicksAt(anchors, length)], RATE, {
+    const samples = beatsFrom(300, spacings);
+    const length = samples[samples.length - 1] + 500;
+    const beats = beatsOf(RATE, length, 0, samples);
+    const laid = straightened([clicksAt(samples, length)], RATE, {
       bpm: tempoOf(beats),
-      offset: anchors[0] / RATE,
+      offset: samples[0] / RATE,
       to: 120,
       beats,
     });
     const found = peaksIn(laid.channels[0]);
     const period = (60 * RATE) / 120;
-    anchors.forEach((_, k) => expect(Math.abs(found[k] - k * period)).toBeLessThanOrEqual(1));
+    samples.forEach((_, k) => expect(Math.abs(found[k] - k * period)).toBeLessThanOrEqual(1));
   });
 
   it('is untouched by being handed its own map when it is already straight', () => {
@@ -117,8 +117,8 @@ describe('straightened', () => {
     // A record running a beat and a half past bar six: the pad has to reach
     // bar seven, and the click in that last beat has to survive it.
     const last = 6 * 4 * 500 + 500;
-    const anchors = anchorsOf(0, Array.from({ length: 25 }, () => 500));
-    const beats = beatsOf(RATE, last + 250, 0, anchors);
+    const samples = beatsFrom(0, Array.from({ length: 25 }, () => 500));
+    const beats = beatsOf(RATE, last + 250, 0, samples);
     const laid = straightened([clicksAt([last], last + 250)], RATE, {
       bpm: 120,
       offset: 0,

@@ -140,21 +140,21 @@ while the audio was invented and is not once it is real: a track is however long
 it is. Position is seconds, and where the beats fall is `warp.ts`'s `Beats`:
 **the sample of every beat**, bar 1's downbeat as beat zero, counted in the rate
 the file was heard at. That is the one source of truth about timing. Between
-two anchors the beats are drawn straight; past either end the neighbouring
+two beats the grid is drawn straight; past either end the neighbouring
 spacing carries on. Nothing else about timing is stored — there is no BPM in the
-map, a tempo is the spacing of two anchors read off on demand, and a tempo
+map, a tempo is the spacing of two beats read off on demand, and a tempo
 change is nothing more than the spacing changing. Which is what makes an edit
-local: drag one beat's anchor and its neighbours hold, the two spacings beside
+local: drag one beat and its neighbours hold, the two spacings beside
 it take up the difference, and nothing further away can tell.
 
 Everything that draws, quantises, loops or plays goes through `beatAt` and
 `sampleOf` — or `barAt` and `placeOf`, the same in bars and fractions — and
 nothing does the arithmetic itself, so the lanes, the warp lane, the tablature
-and the stretcher bend at an anchor in the same place. The ruling in `grid.ts`
+and the stretcher bend at a beat in the same place. The ruling in `grid.ts`
 is measured against the bars on *screen* rather than in the file, so a slow
 section is ruled for the width it actually has. Samples rather than seconds
 because a sample is exact and a second is a measurement of one, and the rate
-travels with the map so an anchor means one thing on any device.
+travels with the map so a beat means one thing on any device.
 
 Before anything has been measured the map is the even ruling a typed tempo
 makes — `evenBeats`, a beat every `60 × rate / bpm` samples — and a typed
@@ -169,7 +169,7 @@ strip whose whole job is to show drift. The count is now derived from the map �
 `countOf` — and nothing rules with it.
 
 That is what makes the warp lane worth looking at. The ticks are onsets — placed
-in bar space by the *grid*, not by the audio — so moving an anchor walks them
+in bar space by the *grid*, not by the audio — so moving a beat walks them
 off the bar lines or onto them. A tempo a fraction out does not look wrong
 at bar 2 and is unmistakable by bar 60.
 
@@ -197,7 +197,7 @@ the same pixel at whole-track width.
 
 Three files, in the order the work happens: `transients.ts` hears where the
 drums hit, `tempo.ts` reads a tempo and a downbeat off all of them, and
-`follow.ts` finds every beat and anchors it to a sample.
+`follow.ts` finds every beat and places it on a sample.
 
 ### Where the drums hit, to the millisecond
 
@@ -233,7 +233,7 @@ A stroke is timed by its click. The bands do not climb together: the click at
 the front of a kick or a snare is over in a millisecond, and the thump under it
 takes a few cycles of its fundamental to be heard as having started — sixteen
 milliseconds each at 60 Hz. Judged in its own band a kick is late by that,
-every time, and the harness page showed it: the pin on the red tick, a cyan
+every time, and the harness page showed it: the beat on the red tick, a cyan
 tick a few milliseconds ahead of it. So a kick or a snare with a high-band rise
 inside the fifteen milliseconds before it takes that rise's sample as its own,
 whether the click stood as a hat or was dropped as bleed. The band still says
@@ -288,7 +288,7 @@ on hand is 128 in the DAW and 128.055 on the master. Under four-tenths
 agreement the fit refuses, as before: 120 dressed up as a reading is worse than
 the window saying it found none.
 
-### Every beat, anchored
+### Every beat, placed
 
 The fit is one straight line, which is the right shape for a record and the
 wrong one for a band. `follow.ts` finds the beats themselves and hands back
@@ -321,11 +321,11 @@ says nothing clearly takes the period of the clear stretches either side of it,
 drawn straight between them — not the seed's, because a song with two tempos
 in it has a seed that is one of them.
 
-**Then each beat is anchored.** The transient under a found beat is placed to
-the sample, and that is the anchor. A beat with none is placed evenly between
-the anchored beats either side, because that is what the sound did. Bar 1
+**Then each beat is placed.** The transient under a found beat is placed to
+the sample, and that is where the beat is. A beat with none is placed evenly
+between the struck beats either side, because that is what the sound did. Bar 1
 beat 1 is the first beat found, as a clip dropped in Ableton starts at 1.1.1:
-the whole file, the start and every anchor are kept, and where the music's one
+the whole file, the start and every beat are kept, and where the music's one
 is elsewhere the count is moved rather than the beats — `renumbered` in
 `warp.ts` is Ableton's "set 1.1.1 here". The kick's vote for the heaviest
 quarter is still taken and reported, for whoever moves it.
@@ -333,7 +333,7 @@ quarter is still taken and reported, for whoever moves it.
 **What it reports is checkable.** `agreement` is the share of the kick and
 snare strength within an eighth of a beat of the map, which is what the warp
 lane draws, counted; `tracked` is the share of the beats that had a transient
-under them, because a map anchored to the hits agrees with them by construction
+under them, because a map placed on the hits agrees with them by construction
 and the second number is the one that still says something.
 
 ### Measured on the library
@@ -369,7 +369,7 @@ takes the time that tempo gives a beat, whatever it took on the record. That is
 Live's clip following the Set, and `schedule.ts` is the maths of it with
 nothing of Web Audio inside: a **pass** through the file is a list of
 boundaries — from this output second, read the file from here, this fast — one
-where the pass starts and one at every anchor after it, the rate in each beat
+where the pass starts and one at every beat after it, the rate in each beat
 being the record's seconds for that beat over the target's. The playhead is the
 inverse, worked out from the same map on the audio clock, so the sound and the
 line cannot disagree and both can be tested at a desk.
@@ -394,7 +394,7 @@ boundary at the end of the pass back to the top, and the head wraps in bar
 space the same way.
 
 **A record at its own tempo plays through the plain sources** even with warp
-on. Its anchors sit within a per cent of even — the detector's scatter on where
+on. Its beats sit within a per cent of even — the detector's scatter on where
 a kick began, not the record moving — and a stretcher at a rate of one is not
 the samples. So a produced record with warp on is bit-exact until the tempo
 field moves by a twentieth of a per cent, and the stretcher only ever works

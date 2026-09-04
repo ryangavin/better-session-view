@@ -2,19 +2,19 @@
  * Where the beats fall on a file: the one map everything else reads.
  *
  * **Beat to sample is the only source of truth.** Every beat of the song has
- * an anchor — the exact sample it falls on — and every question about time is
- * answered by interpolating between two anchors: where the bar lines are
+ * its sample — the exact one it falls on — and every question about time is
+ * answered by interpolating between two beats: where the bar lines are
  * drawn, where a slice starts, where a loop wraps, how fast a stretch of the
  * record has to play to land its next beat on the grid. Nothing else about
  * timing is stored. There is no BPM in here; a tempo is the spacing of two
- * anchors read off on demand, and a tempo change is nothing more than the
- * spacing changing. That is what makes an edit local: drag one beat's anchor
- * and its two neighbours hold, the two segments beside it re-tempo, and
+ * beats read off on demand, and a tempo change is nothing more than the
+ * spacing changing. That is what makes an edit local: drag one beat and its
+ * two neighbours hold, the two segments beside it re-tempo, and
  * nothing further away can tell.
  *
  * Samples rather than seconds, because a sample is exact and a second is a
  * measurement of one; the rate the samples count in travels with the map, so
- * an anchor means one thing on any device. Bar 1's downbeat is beat zero,
+ * a beat means one thing on any device. Bar 1's downbeat is beat zero,
  * beats before it are negative, and bars are beats over four — the one
  * assumption, and it is stated rather than hidden.
  *
@@ -30,18 +30,18 @@ export const BEATS_PER_BAR = 4;
 
 /** Where the beats fall on a file. */
 export interface Beats {
-  /** Samples per second the anchors count in. */
+  /** Samples per second the beats count in. */
   rate: number;
   /** How many samples the file is. */
   length: number;
-  /** The beat index of the first anchor. Zero is bar 1's downbeat; negative is before it. */
+  /** The beat index of the first sample. Zero is bar 1's downbeat; negative is before it. */
   first: number;
   /** The sample of each beat from `first` on, one per beat, strictly increasing. At least two. */
   samples: readonly number[];
 }
 
 /**
- * A map from anchors, made safe: anchors that do not advance are pushed a
+ * A map from beat samples, made safe: beats that do not advance are pushed a
  * sample past the one before, and fewer than two are given a second a beat
  * later at `bpm`, so a map always has a spacing and can always be extrapolated.
  */
@@ -74,7 +74,7 @@ export function evenBeats(rate: number, length: number, bpm: number, offset: num
 }
 
 /**
- * The segment a value falls in: the index of the anchor on its left, held to
+ * The segment a value falls in: the index of the beat on its left, held to
  * the first and last segments so the ends extrapolate rather than stop.
  */
 function segmentOf(samples: readonly number[], value: number): number {
@@ -88,14 +88,14 @@ function segmentOf(samples: readonly number[], value: number): number {
   return lo;
 }
 
-/** The beat at a sample, fractional, interpolated between the anchors either side. */
+/** The beat at a sample, fractional, interpolated between the beats either side. */
 export function beatAt(beats: Beats, sample: number): number {
   const { samples } = beats;
   const i = segmentOf(samples, sample);
   return beats.first + i + (sample - samples[i]) / (samples[i + 1] - samples[i]);
 }
 
-/** The sample a beat falls on, fractional beats interpolated between anchors. */
+/** The sample a beat falls on, fractional beats interpolated between whole ones. */
 export function sampleOf(beats: Beats, beat: number): number {
   const { samples } = beats;
   const k = beat - beats.first;
@@ -119,7 +119,7 @@ export const placeOf = (beats: Beats, bar: number): number =>
  */
 export const countOf = (beats: Beats): number => Math.max(1, Math.ceil(barAt(beats, 1)));
 
-/** The tempo at a beat: read off the spacing of the anchors either side. */
+/** The tempo at a beat: read off the spacing of the beats either side. */
 export function tempoAt(beats: Beats, beat: number): number {
   const { samples } = beats;
   const i = Math.max(0, Math.min(samples.length - 2, Math.floor(beat - beats.first)));
@@ -140,7 +140,7 @@ export function tempoRange(beats: Beats): { slowest: number; fastest: number } {
 
 /**
  * The tempo the whole map runs at, as one number: beats over the time they
- * took, from the first anchor to the last. What a straight map *is*, and what
+ * took, from the first beat to the last. What a straight map *is*, and what
  * a bent one averages to.
  */
 export function tempoOf(beats: Beats): number {
@@ -189,10 +189,10 @@ export const startOf = (downbeat: number, bpm: number): number => {
 };
 
 /**
- * One anchor moved to another sample, held strictly between its neighbours.
+ * One beat moved to another sample, held strictly between its neighbours.
  *
  * The edit, and the whole of it: the beat keeps its index, the two segments
- * beside it take up the difference, and every other anchor is exactly where
+ * beside it take up the difference, and every other beat is exactly where
  * it was. Nothing is re-fitted, because the map is not a fit — it is where the
  * beats are.
  */
@@ -210,13 +210,13 @@ export function moved(beats: Beats, beat: number, sample: number): Beats {
 }
 
 /**
- * Bar 1 beat 1 set at a beat: Ableton's "set 1.1.1 here". Every anchor stays
+ * Bar 1 beat 1 set at a beat: Ableton's "set 1.1.1 here". Every beat stays
  * exactly where it is; only the count starts somewhere else, so beats before
  * it go negative rather than going away.
  */
 export const renumbered = (beats: Beats, beat: number): Beats => ({ ...beats, first: beats.first - beat });
 
-/** Every anchor moved the same way through the file: the nudge. */
+/** Every beat moved the same way through the file: the nudge. */
 export const shifted = (beats: Beats, samples: number): Beats => ({
   ...beats,
   samples: beats.samples.map((s) => s + Math.round(samples)),

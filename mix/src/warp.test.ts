@@ -23,7 +23,7 @@ import {
 /**
  * What this protects is one map that every part of the window reads the same.
  *
- * The bars on the lanes, the pins on the warp lane, the tab's columns and the
+ * The bars on the lanes, the markers on the warp lane, the tab's columns and the
  * stretcher's boundaries all ask this file where a beat is, and if any two of
  * them could disagree the window would show a grid that the sound did not
  * follow. So the assertions are about the map's arithmetic — interpolation,
@@ -37,7 +37,7 @@ const LENGTH = SECONDS * RATE;
 /** The old straight grid: a tempo and a downbeat, as an even map. */
 const straight = evenBeats(RATE, LENGTH, 128, 0.9375);
 
-/** A song at 128 for forty bars, 120 for forty, then 132: anchors from three spacings. */
+/** A song at 128 for forty bars, 120 for forty, then 132: beat samples from three spacings. */
 function bent(): Beats {
   const samples: number[] = [];
   let at = 0.5 * RATE;
@@ -120,12 +120,12 @@ describe('a map that bends', () => {
 });
 
 describe('making a map safe', () => {
-  it('pushes an anchor that does not advance a sample past the one before', () => {
+  it('pushes a beat that does not advance a sample past the one before', () => {
     const map = beatsOf(RATE, LENGTH, 0, [100, 100, 90, 500]);
     expect(map.samples).toEqual([100, 101, 102, 500]);
   });
 
-  it('gives a lone anchor a second, a beat later at the tempo given', () => {
+  it('gives a lone beat a second, a beat later at the tempo given', () => {
     const map = beatsOf(RATE, LENGTH, 0, [1000], 120);
     expect(map.samples).toEqual([1000, 1000 + RATE / 2]);
     expect(beatsOf(RATE, LENGTH, 0, []).samples).toHaveLength(2);
@@ -139,7 +139,7 @@ describe('making a map safe', () => {
   });
 });
 
-describe('editing an anchor', () => {
+describe('editing a beat', () => {
   const map = bent();
 
   it('moves one beat and leaves every other where it was', () => {
@@ -168,12 +168,12 @@ describe('editing an anchor', () => {
     expect(moved(map, 10000, 5)).toBe(map);
   });
 
-  it('shifts every anchor the same way', () => {
+  it('shifts every beat the same way', () => {
     const later = shifted(map, 480);
     later.samples.forEach((s, i) => expect(s).toBe(map.samples[i] + 480));
   });
 
-  it('sets 1.1.1 at a beat without moving any anchor', () => {
+  it('sets 1.1.1 at a beat without moving any beat', () => {
     const counted = renumbered(map, 6);
     expect(counted.samples).toBe(map.samples);
     expect(sampleOf(counted, 0)).toBe(sampleOf(map, 6));

@@ -21,8 +21,8 @@ import { beatAt, resampled, tempoOf, BEATS_PER_BAR, type Beats } from './warp.ts
  * a song's average on the grid and everything else beside it, a bar out by
  * the end. So a ruling may carry the beat map instead, and then the record is
  * played a beat at a time — each beat's span at whatever speed puts its far
- * end on the next line of the output grid. The speed changes at the anchors
- * and nowhere else, which is where the tempo changed; between two anchors
+ * end on the next line of the output grid. The speed changes at the beats
+ * and nowhere else, which is where the tempo changed; between two beats
  * nothing is touched, so the drummer is left alone exactly as before.
  *
  * A varispeed that moves is still a varispeed nobody can hear, because the
@@ -82,7 +82,7 @@ export function straightened(channels: readonly Float32Array[], rate: number, ru
  *
  * The output grid is fixed — beat `b` of the song is `b × spacing` samples in,
  * from 1.1.1 at zero — so each beat's span is read at the one speed that fills
- * it: the anchors' distance over the grid's. Beats past the last anchor carry
+ * it: the beats' distance over the grid's. Beats past the last beat carry
  * on at the last spacing, which is what the map says about them.
  *
  * The spans are resampled against the whole channel rather than against a

@@ -25,28 +25,28 @@ interface Onset {
  * Green is a tick detection believes starts a bar. When the green ones sit on
  * the bright lines the grid is right, and when they walk off them it is not.
  *
- * The pins are the map's anchors, one per beat, and they are the map: drag
- * one and the grid bends under the pointer. Zoomed out they thin to the
- * downbeats and lose their names, because a hundred and twenty-eight labelled
- * pins in a strip is a band of amber and not a thing you can read a bar off.
+ * The markers are the map's beats, one each, and they are the map: drag one
+ * and the grid bends under the pointer. Zoomed out they thin to the downbeats
+ * and lose their names, because a hundred and twenty-eight labelled markers
+ * in a strip is a band of amber and not a thing you can read a bar off.
  */
 export interface WarpLaneProps {
   onsets: readonly Onset[];
   /** Where the beats fall on the file: bar 1 may be anywhere in it. */
   bars: Beats;
   height: number;
-  /** Where the grid is pinned, in bars, while it is being set by hand. */
-  anchors: readonly { at: number; label: string }[];
-  /** The map whose anchors to draw as pins, once something has found the beats. */
-  pinned?: Beats;
-  /** The hits the fit listened to, in seconds, for a dragged pin to snap to. */
+  /** The bars a hand has marked, while the grid is being set. */
+  barMarks: readonly { at: number; label: string }[];
+  /** The map whose beats to draw as markers, once something has found them. */
+  beats?: Beats;
+  /** The hits the fit listened to, in seconds, for a dragged marker to snap to. */
   hits?: readonly number[];
-  /** A beat's anchor dragged to another second of the file. */
+  /** A beat dragged to another second of the file. */
   onMove?(beat: number, at: number): void;
   /** A click, as a fraction of the file. */
-  onPin?(place: number): void;
-  /** Manual mode: the pointer is placing a point rather than scrubbing. */
-  pinning?: boolean;
+  onPlace?(place: number): void;
+  /** Manual mode: the pointer is placing a downbeat rather than scrubbing. */
+  placing?: boolean;
   /**
    * Which slice of the track to draw, as fractions — the whole of it by
    * default, and whatever the lanes are zoomed into otherwise.
@@ -63,9 +63,9 @@ const ink = (el: HTMLElement, name: string, fallback: string): string =>
 
 const WHOLE: Span = { from: 0, to: 1 };
 
-/** How close a dragged pin has to come to a hit to land on it, in pixels. */
+/** How close a dragged marker has to come to a hit to land on it, in pixels. */
 const CATCH = 6;
-/** How far apart pins have to be, in pixels, to show every beat rather than every bar, and to carry a name. */
+/** How far apart markers have to be, in pixels, to show every beat rather than every bar, and to carry a name. */
 const ROOM = 22;
 const NAMED = 30;
 
@@ -76,10 +76,10 @@ const nameOf = (beat: number): string => {
   return inBar === 0 ? String(bar + 1) : `${bar + 1}.${inBar + 1}`;
 };
 
-export function WarpLane({ onsets, bars, height, anchors, pinned, hits, onMove, onPin, pinning, span }: WarpLaneProps) {
+export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, onPlace, placing, span }: WarpLaneProps) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const lane = useRef<HTMLDivElement | null>(null);
-  /** How wide the strip is, so the pins can decide how many of them fit. */
+  /** How wide the strip is, so the markers can decide how many of them fit. */
   const [width, setWidth] = useState(0);
   const drag = useRef<{ beat: number; pointer: number } | null>(null);
   const from = span?.from ?? WHOLE.from;
@@ -117,7 +117,7 @@ export function WarpLane({ onsets, bars, height, anchors, pinned, hits, onMove, 
 
       // Everything on the strip is placed through the map, never by tick
       // arithmetic of its own: where a bar falls is the map's to say, and a
-      // grid that bends between anchors bends here the same way it does in
+      // grid that bends between beats bends here the same way it does in
       // the lanes.
       const barFrom = barAt(bars, from);
       const barTo = barAt(bars, to);
@@ -189,12 +189,12 @@ export function WarpLane({ onsets, bars, height, anchors, pinned, hits, onMove, 
   };
 
   const place = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!onPin) return;
-    onPin(placeAt(event.clientX));
+    if (!onPlace) return;
+    onPlace(placeAt(event.clientX));
   };
 
   /**
-   * Dragging a pin moves that beat's anchor and nothing else, which is Live's
+   * Dragging a marker moves that beat and nothing else, which is Live's
    * gesture exactly: the audio under the pointer is what is being said to be
    * that beat. It lands on a hit when it comes close to one — a kick is nearly
    * always what is meant — unless ⌥ is held, which is how you say it is not.
@@ -237,55 +237,55 @@ export function WarpLane({ onsets, bars, height, anchors, pinned, hits, onMove, 
 
   const swallow = (event: React.MouseEvent) => event.stopPropagation();
 
-  // Which anchors to draw: every beat where a beat has room, else the
+  // Which beats to draw: every one where a beat has room, else the
   // downbeats; named where a name has room. Only the ones on screen, because
-  // zoomed in a pin at the far end of the song is a `left` in the millions of
+  // zoomed in a marker at the far end of the song is a `left` in the millions of
   // per cent, and the browser is being asked to lay out something nobody can
   // see.
-  const pins: { beat: number; where: number; named: boolean }[] = [];
-  if (pinned && width > 0) {
-    const perBeat = width / ((barAt(pinned, to) - barAt(pinned, from)) * BEATS_PER_BAR);
+  const markers: { beat: number; where: number; named: boolean }[] = [];
+  if (beats && width > 0) {
+    const perBeat = width / ((barAt(beats, to) - barAt(beats, from)) * BEATS_PER_BAR);
     const everyBeat = perBeat >= ROOM;
     const named = (everyBeat ? perBeat : perBeat * BEATS_PER_BAR) >= NAMED;
-    const lowBeat = Math.floor(barAt(pinned, from) * BEATS_PER_BAR) - 1;
-    const highBeat = Math.ceil(barAt(pinned, to) * BEATS_PER_BAR) + 1;
-    for (let beat = Math.max(lowBeat, pinned.first); beat <= Math.min(highBeat, pinned.first + pinned.samples.length - 1); beat++) {
+    const lowBeat = Math.floor(barAt(beats, from) * BEATS_PER_BAR) - 1;
+    const highBeat = Math.ceil(barAt(beats, to) * BEATS_PER_BAR) + 1;
+    for (let beat = Math.max(lowBeat, beats.first); beat <= Math.min(highBeat, beats.first + beats.samples.length - 1); beat++) {
       if (!everyBeat && beat % BEATS_PER_BAR !== 0) continue;
-      const where = (pinned.samples[beat - pinned.first] / pinned.length - from) / (to - from);
-      pins.push({ beat, where, named });
+      const where = (beats.samples[beat - beats.first] / beats.length - from) / (to - from);
+      markers.push({ beat, where, named });
     }
   }
 
   return (
-    <div ref={lane} className="mf-warplane" data-pinning={pinning || undefined} onClick={place} role="presentation">
+    <div ref={lane} className="mf-warplane" data-placing={placing || undefined} onClick={place} role="presentation">
       <canvas ref={canvas} style={{ height }} />
-      {pins.map((pin) => (
+      {markers.map((marker) => (
         <span
-          key={pin.beat}
+          key={marker.beat}
           className="mf-marker"
-          data-beat={pin.beat % BEATS_PER_BAR !== 0 || undefined}
-          data-bare={!pin.named || undefined}
-          style={{ left: `${pin.where * 100}%` }}
+          data-beat={marker.beat % BEATS_PER_BAR !== 0 || undefined}
+          data-bare={!marker.named || undefined}
+          style={{ left: `${marker.where * 100}%` }}
         >
           <i
-            title={`Beat ${nameOf(pin.beat)}. Drag to move it; ⌥ to skip the hits`}
-            onPointerDown={take(pin.beat)}
+            title={`Beat ${nameOf(marker.beat)}. Drag to move it; ⌥ to skip the hits`}
+            onPointerDown={take(marker.beat)}
             onPointerMove={carry}
             onPointerUp={release}
             onPointerCancel={release}
             onClick={swallow}
             onDoubleClick={swallow}
           >
-            {pin.named ? nameOf(pin.beat) : ''}
+            {marker.named ? nameOf(marker.beat) : ''}
           </i>
         </span>
       ))}
-      {anchors.map((anchor, i) => {
-        const where = (placeOf(bars, anchor.at) - from) / (to - from);
+      {barMarks.map((mark, i) => {
+        const where = (placeOf(bars, mark.at) - from) / (to - from);
         if (where < -0.5 || where > 1.5) return null;
         return (
-          <span key={i} className="mf-anchor" style={{ left: `${where * 100}%` }} title={`Bar ${anchor.label} is pinned here`}>
-            <i>{anchor.label}</i>
+          <span key={i} className="mf-barmark" style={{ left: `${where * 100}%` }} title={`Bar ${mark.label} is marked here`}>
+            <i>{mark.label}</i>
           </span>
         );
       })}

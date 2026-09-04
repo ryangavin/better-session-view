@@ -30,7 +30,7 @@ The bass stem can also become cached MIDI and standard EADG tab —
 [`docs/transcribe.md`](docs/transcribe.md).
 The grid is measured too: `src/transients.ts` hears where the separated drums hit to
 the sample, `src/tempo.ts` reads the tempo and the downbeat off all of them, and
-`src/follow.ts` finds every beat of the song and anchors it — the map in `src/warp.ts`
+`src/follow.ts` finds every beat of the song and places it — the map in `src/warp.ts`
 is the sample of every beat and the only truth about timing, with no BPM stored
 anywhere — so a track opens gridded rather than ruled at 120. With warp on the stems
 play stretched to the header's tempo, every beat to the grid, through
@@ -82,7 +82,7 @@ arrangement yet, and the export button closes the dialog.
 | `src/warp.ts` | the beat map: the sample of every beat, and the only truth about timing. Tested |
 | `src/transients.ts` | where the drums hit, in three bands, to the exact sample. Tested |
 | `src/tempo.ts` | the tempo, which pulse is the beat, and the downbeat, read off every hit with no lean. Tested |
-| `src/follow.ts` | every beat of the song found at once and anchored to a hit or evenly between two. Tested |
+| `src/follow.ts` | every beat of the song found at once and placed on a hit or evenly between two. Tested |
 | `src/tab.ts` | standard EADG bass, the fret-path search and tab layouts. Tested |
 | `src/tablature.ts` | visible-slice projection for the shared notation widget. Tested |
 | `src/midi.ts` | deterministic MIDI rebuilt after octave correction. Tested |

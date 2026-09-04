@@ -88,7 +88,7 @@ export const removed = (slices: readonly Slice[], index: number): Slice[] =>
  * Sections change on phrase boundaries, and a phrase is four bars: every cut
  * the detector considers is a multiple of this from bar 1.
  */
-const PHRASE = 4;
+export const PHRASE = 4;
 
 /** How much a slice has to differ from its neighbour to be one, against the biggest difference heard. */
 const STANDS_OUT = 0.25;

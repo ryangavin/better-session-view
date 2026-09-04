@@ -4,7 +4,7 @@ import type { Heard, Transient } from './transients.ts';
 import { beatAt, beatsOf, type Beats } from './warp.ts';
 
 /**
- * Following the beat through the song: an anchor for every beat.
+ * Following the beat through the song: the sample of every beat.
  *
  * `tempo.ts` finds one straight line, which is the right shape for a record
  * and the wrong one for a band. This finds the beats themselves, one by one,
@@ -29,13 +29,13 @@ import { beatAt, beatsOf, type Beats } from './warp.ts';
  * cost is then stiff: a beat that lands late by a twentieth of its spacing
  * pays as much as a missing kick.
  *
- * **Then each beat is anchored to a sample.** The beat found in the strength
+ * **Then each beat is placed on a sample.** The beat found in the strength
  * is placed to five milliseconds; the transient it was found on is placed to
- * the sample, and that is the anchor. A beat with no transient under it is
- * placed evenly between the anchored beats either side of it, because that is
+ * the sample, and that is where the beat is. A beat with no transient under it
+ * is placed evenly between the struck beats either side of it, because that is
  * what the sound did. Bar 1 beat 1 is the first beat found, as a clip
  * dropped in Ableton starts at 1.1.1: the whole file, the start, and every
- * anchor are kept, and where the music's one is elsewhere the count is moved
+ * beat are kept, and where the music's one is elsewhere the count is moved
  * rather than the beats — `renumbered` in `warp.ts`. The kick's vote for the
  * heaviest quarter is still taken, and reported, for whoever moves it.
  */
@@ -81,7 +81,7 @@ const CLEAR = 1.5;
 const FILL = 2.5;
 /** How much better a stretch's own period must look as the beat than the seed's before it is believed. */
 const BETTER = 1.1;
-/** How far a found beat looks for the transient to anchor to, in seconds. */
+/** How far a found beat looks for the transient to sit on, in seconds. */
 const SNAP = 0.02;
 
 /** The onset strength, frame by frame. */
@@ -268,7 +268,7 @@ function beatFramesOf(strength: Float32Array, period: Float32Array): number[] {
 }
 
 /** The kick or snare nearest a moment within reach, or nothing. */
-function anchorNear(hits: readonly Transient[], at: number, reach: number): Transient | null {
+function hitNear(hits: readonly Transient[], at: number, reach: number): Transient | null {
   let lo = 0;
   let hi = hits.length;
   while (lo < hi) {
@@ -305,7 +305,7 @@ function agreementOf(hits: readonly Transient[], beats: Beats): number {
  * The beats of the song, followed from a seed, as a map.
  *
  * Nothing where nothing can be followed: fewer than four beats found, or a
- * seed with no transients to anchor to, is null rather than a guess.
+ * seed with no transients to sit on, is null rather than a guess.
  */
 export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow | null {
   const refuse = (why: string): null => {
@@ -322,39 +322,39 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
   const frames = beatFramesOf(strength, period);
   if (frames.length < 4) return refuse('fewer than four beats found');
 
-  // Anchor each beat to the transient under it; mark the ones with none.
-  const under: (Transient | null)[] = frames.map((frame) => anchorNear(hits, frame * FRAME, SNAP));
-  const anchored: (number | null)[] = under.map((hit) => (hit ? hit.sample : null));
-  const found = anchored.filter((s) => s !== null).length;
+  // Place each beat on the transient under it; mark the ones with none.
+  const under: (Transient | null)[] = frames.map((frame) => hitNear(hits, frame * FRAME, SNAP));
+  const struck: (number | null)[] = under.map((hit) => (hit ? hit.sample : null));
+  const found = struck.filter((s) => s !== null).length;
   if (found < 4) return refuse('fewer than four beats had a transient under them');
 
-  // Beats with nothing under them sit evenly between the anchored beats
+  // Beats with nothing under them sit evenly between the struck beats
   // either side; before the first or after the last, at that neighbour's
   // spacing to the next.
-  const samples = new Array<number>(anchored.length);
+  const samples = new Array<number>(struck.length);
   let prev = -1;
-  for (let i = 0; i < anchored.length; i++) {
-    if (anchored[i] === null) continue;
+  for (let i = 0; i < struck.length; i++) {
+    if (struck[i] === null) continue;
     if (prev < 0) {
-      // Before the first anchor: back from it at the spacing to the next.
+      // Before the first struck beat: back from it at the spacing to the next.
       let next = i + 1;
-      while (next < anchored.length && anchored[next] === null) next++;
+      while (next < struck.length && struck[next] === null) next++;
       const spacing =
-        next < anchored.length ? (anchored[next]! - anchored[i]!) / (next - i) : (frames[i] - frames[0]) * FRAME * heard.rate / Math.max(1, i);
-      for (let j = 0; j < i; j++) samples[j] = Math.round(anchored[i]! - (i - j) * spacing);
+        next < struck.length ? (struck[next]! - struck[i]!) / (next - i) : (frames[i] - frames[0]) * FRAME * heard.rate / Math.max(1, i);
+      for (let j = 0; j < i; j++) samples[j] = Math.round(struck[i]! - (i - j) * spacing);
     } else {
       for (let j = prev + 1; j < i; j++) {
-        samples[j] = Math.round(anchored[prev]! + ((anchored[i]! - anchored[prev]!) * (j - prev)) / (i - prev));
+        samples[j] = Math.round(struck[prev]! + ((struck[i]! - struck[prev]!) * (j - prev)) / (i - prev));
       }
     }
-    samples[i] = anchored[i]!;
+    samples[i] = struck[i]!;
     prev = i;
   }
-  if (prev < anchored.length - 1) {
+  if (prev < struck.length - 1) {
     let before = prev - 1;
-    while (before >= 0 && anchored[before] === null) before--;
-    const spacing = before >= 0 ? (anchored[prev]! - anchored[before]!) / (prev - before) : period[frames[prev]] * FRAME * heard.rate;
-    for (let j = prev + 1; j < anchored.length; j++) samples[j] = Math.round(anchored[prev]! + (j - prev) * spacing);
+    while (before >= 0 && struck[before] === null) before--;
+    const spacing = before >= 0 ? (struck[prev]! - struck[before]!) / (prev - before) : period[frames[prev]] * FRAME * heard.rate;
+    for (let j = prev + 1; j < struck.length; j++) samples[j] = Math.round(struck[prev]! + (j - prev) * spacing);
   }
 
   // The heaviest quarter, voted by how loud the kick got on each of the four
@@ -362,9 +362,9 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
   // moves from there if somebody says so.
   const kicks = heard.transients.filter((t) => t.band === 'low');
   const votes = [0, 0, 0, 0];
-  anchored.forEach((sample, i) => {
+  struck.forEach((sample, i) => {
     if (sample === null) return;
-    const kick = anchorNear(kicks, sample / heard.rate, SNAP);
+    const kick = hitNear(kicks, sample / heard.rate, SNAP);
     if (kick) votes[i % 4] += kick.level;
   });
   let downbeat = 0;
@@ -394,7 +394,7 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
     offset: beats.samples[0] / beats.rate,
     beats,
     agreement: agreementOf(hits, beats),
-    tracked: found / anchored.length,
+    tracked: found / struck.length,
     slowest,
     fastest,
   };

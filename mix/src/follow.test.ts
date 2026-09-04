@@ -5,10 +5,10 @@ import { heardIn, type Heard } from './transients.ts';
 import { tempoAt } from './warp.ts';
 
 /**
- * What this protects is an anchor on every beat, where the beat was.
+ * What this protects is a sample for every beat, where the beat was.
  *
  * Two failures pull against each other. A follower that trusts every hit
- * pins the syncopated kick and calls it the beat; one that trusts the seed
+ * grabs the syncopated kick and calls it the beat; one that trusts the seed
  * loses a band the moment it pushes into a chorus. And a third is quieter: a
  * breakdown with nothing in it, where the beats have to go on being counted
  * at the right spacing so the first kick after it lands on the beat it is.
@@ -18,7 +18,7 @@ import { tempoAt } from './warp.ts';
 
 const RATE = 16000;
 const SECONDS = 240;
-/** How far an anchor may be from the strike it stands for. Three milliseconds, which is what a sixty-hertz kick allows. */
+/** How far a beat may be from the strike it stands for. Three milliseconds, which is what a sixty-hertz kick allows. */
 const CLOSE = 0.003;
 
 function strike(out: Float32Array, at: number, hz: number, ring: number, loud: number): void {
@@ -96,7 +96,7 @@ describe('following a machine', () => {
   const beats = beatsOf(0.25, () => 128);
   const { heard } = kit(beats);
 
-  it('anchors every beat to the kick, to the end of the song', () => {
+  it('places every beat on the kick, to the end of the song', () => {
     const follow = followed(heard);
     for (const k of [0, 1, 100, 250, 400, 510]) expect(Math.abs(at(follow, k) - beats[k])).toBeLessThan(CLOSE);
     expect(follow.tracked).toBeGreaterThan(0.95);
@@ -142,9 +142,9 @@ describe('following a band', () => {
     for (const k of [120, 300, 450]) expect(Math.abs(at(follow, k) - beats[k])).toBeLessThan(CLOSE);
   });
 
-  it('anchors to the drummer, wobble and all', () => {
+  it('follows the drummer, wobble and all', () => {
     // Eight milliseconds of wobble on every hit and a slow lean of a per cent.
-    // The anchors are where the hits were, not where a line would put them.
+    // The beats are where the hits were, not where a line would put them.
     const beats = beatsOf(0.3, (bar) => 128 * (1 + 0.01 * Math.sin((2 * Math.PI * bar) / 64)));
     const { heard, struck } = kit(beats, { jitter: 0.008, snares: [1, 3] });
     const follow = followed(heard);

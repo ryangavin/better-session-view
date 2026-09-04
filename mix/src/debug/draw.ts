@@ -156,7 +156,7 @@ export function drawTransients(g: CanvasRenderingContext2D, v: View, hits: reado
   g.globalAlpha = 1;
 }
 
-/** The beats of a map: downbeats tall and numbered, anchored ones solid, interpolated dashed. */
+/** The beats of a map: downbeats tall and numbered, struck ones solid, interpolated dashed. */
 export function drawBeats(
   g: CanvasRenderingContext2D,
   v: View,
@@ -172,11 +172,11 @@ export function drawBeats(
     const x = Math.round(xOf(v, beats.samples[i] / beats.rate)) + 0.5;
     if (x < -30 || x > v.width + 30) continue;
     const down = isDownbeat(beats, i);
-    const anchored = trace?.beats?.[i]?.hit != null || !trace;
+    const struck = trace?.beats?.[i]?.hit != null || !trace;
     const top = down ? 8 : v.height * 0.35;
     g.strokeStyle = down ? strong : color;
-    g.globalAlpha = anchored ? 1 : 0.55;
-    g.setLineDash(anchored ? [] : [2, 3]);
+    g.globalAlpha = struck ? 1 : 0.55;
+    g.setLineDash(struck ? [] : [2, 3]);
     g.lineWidth = 1;
     g.beginPath();
     g.moveTo(x, top);

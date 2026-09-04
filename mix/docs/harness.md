@@ -17,7 +17,7 @@ on the drums or the whole mix summed back together, so a wrong tempo can be
 traced to the stage that lost it.
 
 One time axis, zoomable to the sample: the drums; every transient by band; every
-beat of the map, anchored solid and interpolated dashed; the grid the app holds
+beat of the map, struck solid and interpolated dashed; the grid the app holds
 now, for comparison; the local tempo the follower held to and the stretches it
 read a period off. Under it, the autocorrelation with every candidate marked,
 the phase sweep that placed the winner, and the tempo sweep from 1.1.1.

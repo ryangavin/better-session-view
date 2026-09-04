@@ -354,9 +354,9 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                 no fit
               </span>
             ) : null}
-            {/* The way back: every pin gone, and a straight grid at this
+            {/* The way back: every found beat gone, and a straight grid at this
                 tempo and downbeat to start over from. Beside the button that
-                makes the pins, because it undoes exactly that. */}
+                finds the beats, because it undoes exactly that. */}
             <Button
               onPress={mix.clearBeats}
               label="Clear the beat map"
