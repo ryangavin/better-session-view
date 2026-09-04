@@ -395,6 +395,74 @@ async function loopIsContinuous(): Promise<void> {
   });
 }
 
+/**
+ * A loop round a section turns round at the section's end, not the file's.
+ *
+ * Where a stretch of the render came from is found by matching it against
+ * *another render*, never against the file: everything reaches the output
+ * through the band split, whose sum is flat in level but not in phase, so the
+ * shape that went in is not the shape that comes out and the file no longer
+ * matches itself. A straight play of the whole record from the top has been
+ * through the same chain, so it is the ruler.
+ *
+ * The same rig with no span is the control. Without it this would pass on a
+ * transport that ignored the span and simply never played that far.
+ */
+async function loopHoldsTheSection(): Promise<void> {
+  const ids = ['drums'];
+  const span = { from: 0.4, to: 0.7 };
+  const WINDOW = 2048;
+
+  const render = async (bounded: boolean | null): Promise<Float32Array> => {
+    const { transport, ctx } = rig(ids, 1.4);
+    transport.apply(resting(ids), ids);
+    transport.load({ drums: noiseBuffer(ctx, 1, 7) });
+    tap(transport, ctx, ids);
+    transport.setLoop(bounded !== null);
+    if (bounded) transport.setLoopSpan(span);
+    transport.seek(bounded === null ? 0 : span.from);
+    transport.play();
+    return (await ctx.startRendering()).getChannelData(0);
+  };
+
+  // The ruler: the record played once, straight through, from the top.
+  const ruler = await render(null);
+  const reach = (out: Float32Array): { low: number; high: number; least: number } => {
+    let low = Infinity;
+    let high = -Infinity;
+    let least = 1;
+    for (let at = Math.round((KICKOFF + 0.02) * RATE); at + WINDOW < out.length; at += WINDOW * 2) {
+      const win = out.slice(at, at + WINDOW);
+      const mid = Math.round((KICKOFF + 0.5) * RATE);
+      const { lag, score } = alignment(ruler, win, mid, Math.round(0.5 * RATE));
+      if (score < 0.9) continue;
+      // A lag in the ruler is a place in the record, once its own start is
+      // taken off.
+      low = Math.min(low, lag / RATE - KICKOFF);
+      high = Math.max(high, (lag + WINDOW) / RATE - KICKOFF);
+      least = Math.min(least, score);
+    }
+    return { low, high, least };
+  };
+
+  const kept = reach(await render(true));
+  const free = reach(await render(false));
+  report({
+    name: 'a loop round a section turns round inside it',
+    ok:
+      Number.isFinite(kept.low) &&
+      kept.low >= span.from - 0.005 &&
+      kept.high <= span.to + 0.005 &&
+      free.high > span.to + 0.05,
+    detail: {
+      section: span,
+      cameFrom: [Number(kept.low.toFixed(4)), Number(kept.high.toFixed(4))],
+      wholeFileReaches: Number(free.high.toFixed(4)),
+      leastMatch: Number(kept.least.toFixed(4)),
+    },
+  });
+}
+
 const evenMap = (ctx: BaseAudioContext, buffer: AudioBuffer): Beats =>
   evenBeats(ctx.sampleRate, buffer.length, 120, 0);
 
@@ -542,6 +610,7 @@ async function main(): Promise<void> {
   const runs: Array<[string, () => Promise<void>]> = [
     ['seek', seekLands],
     ['loop', loopIsContinuous],
+    ['section', loopHoldsTheSection],
     ['level', levelsMatch],
     ['ahead', warpIsScheduledAhead],
     ['locked', stemsStayLocked],

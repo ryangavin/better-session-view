@@ -13,6 +13,23 @@ import { beatAt, sampleOf, tempoOf, type Beats } from './warp.ts';
  * neither can be tested if it lives inside an audio graph.
  */
 
+/**
+ * The stretch of the file being played round and round, in file seconds.
+ *
+ * A loop over a section rather than over the record: the pass ends at `to`
+ * instead of at the last sample, and the next one starts at `from` instead of
+ * at the top. Nothing else changes — the boundaries inside it are the same
+ * boundaries, because a loop is a choice about where playback turns round and
+ * not a different way of reading the file.
+ */
+export interface Span {
+  from: number;
+  to: number;
+}
+
+/** The whole file, which is what a span is when nobody has picked one. */
+export const whole = (beats: Beats): Span => ({ from: 0, to: beats.length / beats.rate });
+
 /** One straight stretch of playback: from one anchor to the next. */
 export interface Boundary {
   /** Seconds of output since the pass began, when this segment starts. */
@@ -44,9 +61,9 @@ const perBeat = (tempo: number): number => 60 / tempo;
  * one rate plays it at another: the record's seconds for that beat over the
  * target's.
  */
-export function passOf(beats: Beats, tempo: number, from: number): Pass {
-  const seconds = beats.length / beats.rate;
-  const start = Math.max(0, Math.min(from, seconds));
+export function passOf(beats: Beats, tempo: number, from: number, span?: Span): Pass {
+  const { from: opens, to: closes } = held(beats, span);
+  const start = Math.max(opens, Math.min(from, closes));
   const startBeat = beatAt(beats, start * beats.rate);
   const boundaries: Boundary[] = [];
   const spacing = (beat: number): number => {
@@ -56,12 +73,30 @@ export function passOf(beats: Beats, tempo: number, from: number): Pass {
   boundaries.push({ output: 0, input: start, rate: spacing(startBeat) / perBeat(tempo) });
   for (let i = 0; i < beats.samples.length; i++) {
     const at = beats.samples[i] / beats.rate;
-    if (at <= start || at >= seconds) continue;
+    if (at <= start || at >= closes) continue;
     const beat = beats.first + i;
     boundaries.push({ output: (beat - startBeat) * perBeat(tempo), input: at, rate: spacing(beat) / perBeat(tempo) });
   }
-  const endBeat = beatAt(beats, beats.length);
+  const endBeat = beatAt(beats, closes * beats.rate);
   return { from: start, boundaries, length: Math.max(0, (endBeat - startBeat) * perBeat(tempo)) };
+}
+
+/**
+ * A span made safe: inside the file, and the right way round.
+ *
+ * A span from the window is bars turned into seconds, and bars outlive the
+ * file they were counted on — a slice at bar 60 of a track that was replaced
+ * by a shorter one is a loop off the end. Held rather than refused, because
+ * the loop is how somebody is listening and not something to be correct
+ * about; a span with nothing in it is the whole file, which is what they had
+ * before they asked.
+ */
+export function held(beats: Beats, span?: Span): Span {
+  const seconds = beats.length / beats.rate;
+  if (!span) return { from: 0, to: seconds };
+  const from = Math.max(0, Math.min(span.from, seconds));
+  const to = Math.max(0, Math.min(span.to, seconds));
+  return to - from > 0.001 ? { from, to } : { from: 0, to: seconds };
 }
 
 /**
@@ -70,24 +105,32 @@ export function passOf(beats: Beats, tempo: number, from: number): Pass {
  * Read off the audio clock rather than the node, which reports where it is
  * only every so often and only by message. The map is what was scheduled, so
  * this is what is playing to the sample as long as the boundaries went in.
- * Looping runs off the end of the file and back in at the top, as the
- * transport's straight path does; not looping, it holds at the end.
+ * Looping runs to the end of the span and back in at its start — the whole
+ * file, unless somebody has picked a section — as the transport's straight
+ * path does; not looping, it holds at the end.
  */
-export function sourceAt(beats: Beats, tempo: number, from: number, elapsed: number, looping: boolean): number {
-  const seconds = beats.length / beats.rate;
-  let start = Math.max(0, Math.min(from, seconds));
+export function sourceAt(
+  beats: Beats,
+  tempo: number,
+  from: number,
+  elapsed: number,
+  looping: boolean,
+  span?: Span,
+): number {
+  const { from: opens, to: closes } = held(beats, span);
+  let start = Math.max(0, Math.min(from, beats.length / beats.rate));
   let left = Math.max(0, elapsed);
-  const endBeat = beatAt(beats, beats.length);
+  const endBeat = beatAt(beats, closes * beats.rate);
   for (let pass = 0; pass < 10000; pass++) {
     const startBeat = beatAt(beats, start * beats.rate);
     const length = (endBeat - startBeat) * perBeat(tempo);
-    if (!(length > 0)) return seconds;
+    if (!(length > 0)) return closes;
     if (left < length) return sampleOf(beats, startBeat + left / perBeat(tempo)) / beats.rate;
-    if (!looping) return seconds;
+    if (!looping) return closes;
     left -= length;
-    start = 0;
+    start = opens;
   }
-  return seconds;
+  return closes;
 }
 
 /**

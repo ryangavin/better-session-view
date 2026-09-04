@@ -57,9 +57,10 @@ export function App() {
   }, []);
 
   // Space is the one key a person expects to work in a window with a playhead
-  // in it, and neither it nor delete may fire while they are naming a slice.
-  // Delete folds the selected slice into the one before it, which is the
-  // keyboard's version of dragging its cut back onto the last one.
+  // in it, and none of these may fire while they are naming a slice. Delete
+  // folds the selected slice into the one before it, which is the keyboard's
+  // version of dragging its cut back onto the last one, and Command-L loops
+  // round it.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -70,11 +71,17 @@ export function App() {
       } else if ((e.key === 'Backspace' || e.key === 'Delete') && mix.activeSlice > 0) {
         e.preventDefault();
         mix.removeSlice(mix.activeSlice);
+      } else if (e.key.toLowerCase() === 'l' && (e.metaKey || e.ctrlKey)) {
+        // Command-L is Live's loop switch, and the section it means is the one
+        // that is selected — click a slice, ask for the loop, and the two are
+        // the same gesture.
+        e.preventDefault();
+        mix.loopSlice();
       }
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice]);
+  }, [mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
 
   const carriesFiles = (event: DragEvent): boolean =>
     Array.from(event.dataTransfer.types).includes('Files');

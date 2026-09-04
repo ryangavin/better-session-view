@@ -231,6 +231,17 @@ export function useMix() {
   const [playing, setPlaying] = useState(false);
   const [loop, setLoopState] = useState(kept.loop ?? true);
   /**
+   * The slice the loop is round, or null for the whole record.
+   *
+   * The index rather than the seconds, because a section is a thing on the
+   * grid and the seconds under it move: re-rule the track or drag the cut and
+   * the loop is still round *that section*. Not remembered between sessions —
+   * a loop round the drop is how you are working this minute, and coming back
+   * to a track tomorrow with it still on would be a puzzle rather than a
+   * convenience.
+   */
+  const [looped, setLooped] = useState<number | null>(null);
+  /**
    * Whether the stems play stretched to the header's tempo.
    *
    * Live's warp switch. On, every bar of the record is played in the time the
@@ -1130,11 +1141,47 @@ export function useMix() {
     [audio],
   );
 
+  /**
+   * Loop round the slice that is selected, or let it go.
+   *
+   * The same key both ways, because it is one question — *am I working on this
+   * bit?* — and the answer to it changes as often as the mind does. Asking for
+   * it turns looping on: a loop nobody can hear because the transport is not
+   * looping would be the key doing nothing, which reads as broken.
+   */
+  const loopSlice = useCallback(() => {
+    if (looped === activeSlice) {
+      setLooped(null);
+      return;
+    }
+    setLooped(activeSlice);
+    if (!loop) setLoop(true);
+  }, [looped, activeSlice, loop, setLoop]);
+
   // The graph is built after the first render, so the remembered loop setting
   // has to be pushed into it rather than assumed.
   useEffect(() => {
     audio.setLoop(loop);
   }, [audio, loop, peaks]);
+
+  /**
+   * The looped slice, as the seconds the graph loops between.
+   *
+   * Worked out here rather than held here, so that a cut dragged or a grid
+   * re-ruled moves the loop with the section it was put round — the index is
+   * the decision and this is only where it lands today.
+   */
+  const loopSpan = useMemo(() => {
+    if (looped === null || !(seconds > 0)) return null;
+    const slice = slices[looped];
+    if (!slice) return null;
+    const next = slices[looped + 1]?.bar ?? bars;
+    return { from: placeOf(grid, slice.bar) * seconds, to: placeOf(grid, next) * seconds };
+  }, [looped, slices, bars, grid, seconds]);
+
+  useEffect(() => {
+    audio.setLoopSpan(loopSpan);
+  }, [audio, loopSpan, peaks]);
 
   /**
    * The map and the tempo, pushed into the graph on every change.
@@ -1598,6 +1645,9 @@ export function useMix() {
     setPlaying: start,
     loop,
     setLoop,
+    /** The slice the loop is round, or null for the whole record. */
+    looped,
+    loopSlice,
     /** Whether the stems play stretched to the tempo, and whether there is a stretcher to do it. */
     warp,
     setWarp,

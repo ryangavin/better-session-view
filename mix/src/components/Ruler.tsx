@@ -108,6 +108,7 @@ export function Ruler({
             key={i}
             className="mf-slice"
             data-on={i === mix.activeSlice || undefined}
+            data-looped={i === mix.looped || undefined}
             style={{
               left: `${left * 100}%`,
               width: `${(Math.min(ends, 1 + OFF) - left) * 100}%`,
@@ -123,7 +124,9 @@ export function Ruler({
               }
               split(event);
             }}
-            title={`${slice.name} — bar ${barText(slice.bar)}, ${lengthText(next - slice.bar)} bars. Double-click to cut here`}
+            title={`${slice.name} — bar ${barText(slice.bar)}, ${lengthText(next - slice.bar)} bars.${
+              i === mix.looped ? ' Looping. ' : ' '
+            }Double-click to cut here`}
           >
             {i > 0 && (
               <span

@@ -1,5 +1,5 @@
 import { FLAT, Split, type Bands } from './eq.ts';
-import { passOf, sourceAt, straight, type Pass } from './schedule.ts';
+import { passOf, sourceAt, straight, type Pass, type Span } from './schedule.ts';
 import { channelsOf, stretchOf, type Stretch } from './stretch.ts';
 import type { Beats } from './warp.ts';
 
@@ -127,6 +127,17 @@ export class Transport {
   private since = 0;
   private going = false;
   private looping = true;
+  /**
+   * The stretch of the record the loop turns round in, or null for all of it.
+   *
+   * A section rather than the record, which is how anybody actually works on
+   * one: the drop round and round while the faders move. Kept in file seconds
+   * even though it was picked in bars, because the graph plays seconds and
+   * the bars it came from may be re-ruled while it is playing — a loop that
+   * moved every time the grid was nudged would be a loop you could not
+   * listen through.
+   */
+  private span: Span | null = null;
   private via: Via = 'straight';
 
   /** The map, the tempo to play it at, and whether to. */
@@ -258,9 +269,45 @@ export class Transport {
     }
   }
 
+  /**
+   * Loop this stretch of the record, or all of it.
+   *
+   * Takes effect where the sound already is: the playing sources are given
+   * new ends rather than restarted, so setting a loop round the section you
+   * are listening to does not interrupt it.
+   */
+  setLoopSpan(span: Span | null): void {
+    this.span = span;
+    for (const source of this.playingSources) this.bound(source);
+    if (this.going && this.via === 'stretch') this.replan();
+  }
+
+  /**
+   * The span in force, held inside the record.
+   *
+   * The straight path has no beat map to hold it against, so the holding is
+   * here as well as in `schedule.ts` — one rule, applied wherever the sound
+   * happens to be coming from.
+   */
+  private spanning(): Span {
+    const span = this.span;
+    if (!span || !(this.duration > 0)) return { from: 0, to: this.duration };
+    const from = Math.max(0, Math.min(span.from, this.duration));
+    const to = Math.max(0, Math.min(span.to, this.duration));
+    return to - from > 0.001 ? { from, to } : { from: 0, to: this.duration };
+  }
+
+  /** The loop's ends on one source, in whatever span is in force. */
+  private bound(source: AudioBufferSourceNode): void {
+    const { from, to } = this.spanning();
+    source.loop = this.looping;
+    source.loopStart = from;
+    source.loopEnd = to;
+  }
+
   setLoop(on: boolean): void {
     this.looping = on;
-    for (const source of this.playingSources) source.loop = on;
+    for (const source of this.playingSources) this.bound(source);
     // The stretcher's loop is a boundary at the end of the pass, so what has
     // been sent ahead is re-planned from where the sound will be.
     if (this.going && this.via === 'stretch') this.replan();
@@ -373,12 +420,17 @@ export class Transport {
   /** Where the sound will be at a moment on the clock, on whichever graph it is on. */
   private positionAt(when: number): number {
     if (this.via === 'stretch' && this.map) {
-      return sourceAt(this.map, this.tempo, this.from, when - this.since, this.looping);
+      return sourceAt(this.map, this.tempo, this.from, when - this.since, this.looping, this.span ?? undefined);
     }
     const gone = this.from + Math.max(0, when - this.since);
     if (!this.duration) return gone;
-    if (this.looping) return gone % this.duration;
-    return Math.min(gone, this.duration);
+    if (!this.looping) return Math.min(gone, this.duration);
+    // Within the span the head wraps to its start rather than to the top of
+    // the file; started outside it, it plays up to the far end and turns in.
+    const { from, to } = this.spanning();
+    if (gone < to) return gone;
+    const round = to - from;
+    return round > 0 ? from + ((gone - from) % round) : gone;
   }
 
   /** Which graph the sound should be on, given what has been asked for and what there is. */
@@ -401,9 +453,7 @@ export class Transport {
     for (const [id, buffer] of this.buffers) {
       const source = ctx.createBufferSource();
       source.buffer = buffer;
-      source.loop = this.looping;
-      source.loopStart = 0;
-      source.loopEnd = this.duration;
+      this.bound(source);
       source.connect(this.splits.get(id)!.input);
       source.start(when, offset);
       this.playingSources.push(source);
@@ -429,7 +479,7 @@ export class Transport {
     const map = this.map!;
     this.halt();
     const offset = Math.max(0, Math.min(at, this.duration));
-    this.pass = passOf(map, this.tempo, offset);
+    this.pass = passOf(map, this.tempo, offset, this.span ?? undefined);
     this.passAt = when;
     this.next = 1;
     this.done = false;
@@ -487,7 +537,7 @@ export class Transport {
       if (this.done || !begun(boundaries.length - 1)) return;
       const end = this.passAt + length;
       if (this.looping) {
-        const pass = passOf(this.map, this.tempo, 0);
+        const pass = passOf(this.map, this.tempo, this.spanning().from, this.span ?? undefined);
         const first = pass.boundaries[0];
         void node.schedule({ outputTime: end, output: end, input: first.input, rate: first.rate, active: true });
         this.pass = pass;
