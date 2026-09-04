@@ -54,6 +54,50 @@ describe('pinnedOf', () => {
     }
   });
 
+  /**
+   * The claim, stated directly: inside a pinned section the output is one
+   * scale and one offset of the source, so every beat marker keeps its place
+   * relative to every other and the only thing that changed is the tempo.
+   * On the feels the section is meant to keep — a swing, a pushed backbeat,
+   * a drummer's wobble — not only a ritardando.
+   */
+  const feels: [string, () => ReturnType<typeof beatsOf>][] = [
+    ['a swung beat, long-short', () => {
+      const samples = beatsFrom(300, Array.from({ length: 48 }, (_, k) => (k % 2 === 0 ? 560 : 440)));
+      return beatsOf(RATE, samples[samples.length - 1] + 500, 0, samples);
+    }],
+    ['a pushed two and four', () => {
+      const samples = beatsFrom(300, Array.from({ length: 48 }, (_, k) => [500, 480, 520, 500][k % 4]));
+      return beatsOf(RATE, samples[samples.length - 1] + 500, 0, samples);
+    }],
+    ['a drummer\'s wobble', wobbling],
+    ['a ritardando', slowing],
+  ];
+  for (const [feel, make] of feels) {
+    it(`keeps every beat marker where it was played, relative to the rest, on ${feel}`, () => {
+      const beats = make();
+      const pinned = pinnedOf(beats, 120, [0, 4, 8], 'section');
+      for (let i = 0; i + 1 < pinned.pins.length; i++) {
+        const a = pinned.pins[i];
+        const b = pinned.pins[i + 1];
+        const scale = (b.output - a.output) / (b.source - a.source);
+        const inside = beats.samples
+          .map((source, k) => ({ source, beat: beats.first + k }))
+          .filter(({ source }) => source >= a.source && source <= b.source);
+        expect(inside.length).toBeGreaterThan(2);
+        for (const { source } of inside) {
+          expect(outputOf(pinned, source)).toBeCloseTo(a.output + (source - a.source) * scale, 6);
+        }
+        // And the section is not quietly straightened: the swing survives.
+        const played = inside.map(({ source }) => source);
+        const laidOut = played.map((source) => outputOf(pinned, source));
+        for (let k = 0; k + 2 < played.length; k++) {
+          expect((laidOut[k + 1] - laidOut[k]) / (laidOut[k + 2] - laidOut[k + 1])).toBeCloseTo((played[k + 1] - played[k]) / (played[k + 2] - played[k + 1]), 9);
+        }
+      }
+    });
+  }
+
   it('leaves a rigid record at its own tempo untouched', () => {
     const beats = evenBeats(RATE, 20000, 120, 0.35);
     for (const every of DENSITIES) {
