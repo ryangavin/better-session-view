@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { coarser, LIBRARY, onsetsOf, peaksOf, readWav, stemUrl, wavOf, type Peak } from './audio.ts';
 
@@ -52,6 +54,74 @@ function wav(
       const value = samples[c][f];
       if (float) view.setFloat32(at, value, true);
       else view.setInt16(at, Math.round(value * 32768), true);
+      at += width;
+    }
+  }
+  return bytes;
+}
+
+/**
+ * A WAV in a format nothing here writes — which is most of the WAVs there are.
+ *
+ * `wav` above writes what the worker writes. This writes what a file arrives
+ * as: a container width other than the two we produce, and optionally wrapped
+ * in WAVE_FORMAT_EXTENSIBLE, where the tag is 0xFFFE and the real format is the
+ * head of a SubFormat GUID out in the extension.
+ */
+function foreign(
+  samples: number[][],
+  { bits, format, extensible = false, rate = 44100 }:
+    { bits: number; format: number; extensible?: boolean; rate?: number },
+): ArrayBuffer {
+  const channels = samples.length;
+  const frames = samples[0].length;
+  // Ceiled, because a compressed format declares a sub-byte width and this
+  // still has to lay some bytes down for the reader to refuse.
+  const width = Math.max(1, Math.ceil(bits / 8));
+  const fmtSize = extensible ? 40 : 16;
+  const bytes = new ArrayBuffer(20 + fmtSize + 8 + frames * channels * width);
+  const view = new DataView(bytes);
+  const tag = (at: number, text: string) => {
+    for (let i = 0; i < 4; i++) view.setUint8(at + i, text.charCodeAt(i));
+  };
+  tag(0, 'RIFF');
+  view.setUint32(4, bytes.byteLength - 8, true);
+  tag(8, 'WAVE');
+  tag(12, 'fmt ');
+  view.setUint32(16, fmtSize, true);
+  view.setUint16(20, extensible ? 0xfffe : format, true);
+  view.setUint16(22, channels, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * channels * width, true);
+  view.setUint16(32, channels * width, true);
+  view.setUint16(34, bits, true);
+  if (extensible) {
+    view.setUint16(36, 22, true); // cbSize
+    view.setUint16(38, bits, true); // valid bits, all of the container
+    view.setUint32(40, 0, true); // channel mask, unspecified
+    view.setUint16(44, format, true); // the SubFormat GUID's first two bytes
+  }
+  let at = 20 + fmtSize;
+  tag(at, 'data');
+  view.setUint32(at + 4, frames * channels * width, true);
+  at += 8;
+  for (let f = 0; f < frames; f++) {
+    for (let c = 0; c < channels; c++) {
+      const value = samples[c][f];
+      // Integer full scale is one code short on the positive side, which is
+      // why nothing here writes a bare 1.0 and expects it back.
+      const whole = (scale: number) => Math.max(-scale, Math.min(scale - 1, Math.round(value * scale)));
+      if (format === 3) view.setFloat32(at, value, true);
+      else if (bits === 16) view.setInt16(at, whole(32768), true);
+      else if (bits === 24) {
+        const three = whole(8388608);
+        view.setUint8(at, three & 0xff);
+        view.setUint8(at + 1, (three >> 8) & 0xff);
+        view.setUint8(at + 2, (three >> 16) & 0xff);
+      } else if (bits === 32) view.setInt32(at, whole(2147483648), true);
+      // A narrower or compressed width is only ever written here to be
+      // declined, so the bytes under it do not have to mean anything.
+      else for (let b = 0; b < width; b++) view.setUint8(at + b, 0);
       at += width;
     }
   }
@@ -114,6 +184,72 @@ describe('reading a WAV this app wrote', () => {
     const bytes = wav([[0.5]]);
     new DataView(bytes).setUint16(20, 85, true);
     expect(readWav(bytes)).toBeNull();
+  });
+
+  it('reads a real stem the separator wrote', () => {
+    // The one contract between `python/separate.py` and `electron/export.ts`,
+    // and until this fixture landed nothing held either end of it. A slice of
+    // an actual htdemucs_ft drums stem out of the library: float32, stereo,
+    // and with the `fact` chunk torchaudio puts between `fmt ` and `data`,
+    // which is exactly the thing a fixed-offset reader walks into.
+    const bytes = fs.readFileSync(fileURLToPath(new URL('./fixtures/drums-slice.wav', import.meta.url)));
+    const read = readWav(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+    expect(read?.rate).toBe(44100);
+    expect(read?.channels).toHaveLength(2);
+    expect(read?.channels[0]).toHaveLength(4000);
+    // Audio rather than silence or noise: it reaches somewhere near full scale
+    // and stays inside it, which reading the bytes as the wrong width does not.
+    const loudest = Math.max(...read!.channels[0].map(Math.abs));
+    expect(loudest).toBeGreaterThan(0.1);
+    expect(loudest).toBeLessThan(1);
+  });
+
+  it('reads float32 wrapped in WAVE_FORMAT_EXTENSIBLE', () => {
+    // libsndfile writes the envelope routinely, and the main process has no
+    // browser behind it — declining this is a failed export of a valid file.
+    const read = readWav(foreign([[0.5, -0.25]], { bits: 32, format: 3, extensible: true }));
+    expect([...read!.channels[0]]).toEqual([0.5, -0.25]);
+  });
+
+  it('reads 24-bit PCM, which is what a studio WAV usually is', () => {
+    const read = readWav(foreign([[0.5, -0.5, 0.001]], { bits: 24, format: 1 }));
+    expect(read!.channels[0][0]).toBeCloseTo(0.5, 6);
+    expect(read!.channels[0][1]).toBeCloseTo(-0.5, 6);
+    // The bottom of the range is the whole reason for the extra byte: this
+    // value is below a 16-bit file's resolution and has to survive.
+    expect(read!.channels[0][2]).toBeCloseTo(0.001, 6);
+  });
+
+  it('reads 24-bit in the extensible envelope too, which is where it usually arrives', () => {
+    const read = readWav(foreign([[0.25], [-0.75]], { bits: 24, format: 1, extensible: true }));
+    expect(read!.channels[0][0]).toBeCloseTo(0.25, 6);
+    expect(read!.channels[1][0]).toBeCloseTo(-0.75, 6);
+  });
+
+  it('reads 32-bit int without reading it as float', () => {
+    // The two formats share a width, so getting this wrong is not an error —
+    // it is a stem full of denormals that draws as a flat line.
+    const read = readWav(foreign([[0.5, -0.5]], { bits: 32, format: 1 }));
+    expect(read!.channels[0][0]).toBeCloseTo(0.5, 6);
+    expect(read!.channels[0][1]).toBeCloseTo(-0.5, 6);
+  });
+
+  it('still declines a format it cannot read, envelope or not', () => {
+    // Widening the reader must not turn into reading anything at all: mu-law
+    // and ADPCM are bytes that decode to samples, not samples.
+    expect(readWav(foreign([[0.5]], { bits: 8, format: 7 }))).toBeNull();
+    expect(readWav(foreign([[0.5]], { bits: 4, format: 0x11 }))).toBeNull();
+    expect(readWav(foreign([[0.5]], { bits: 16, format: 7, extensible: true }))).toBeNull();
+  });
+
+  it('survives a data chunk claiming more than the file holds', () => {
+    // A truncated download, or a writer that never went back to fix the size.
+    // Trusting the number reads off the end of the buffer; the frames that are
+    // actually there are worth more than the failure.
+    const bytes = wav([[0.5, -0.5]]);
+    new DataView(bytes).setUint32(40, 0xffff, true);
+    const read = readWav(bytes);
+    expect([...read!.channels[0]]).toEqual([0.5, -0.5]);
   });
 });
 

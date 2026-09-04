@@ -57,16 +57,24 @@ export const fileUrl = (base: string, at: string): string =>
   `${base}/${at}`.replace(/([^:])\/+/g, '$1/');
 
 /**
- * A WAV this app wrote, read without asking the browser.
+ * A WAV read without asking the browser.
  *
- * The fallback for `decodeAudioData`, and it exists because the output contract
- * is float32 — `demucs/README.md`'s reason: independently rescaled stems do not
- * sum. Float WAV is not the common case a decoder is tuned for, and a build
- * that cannot read one would silently lose the only format this app produces.
- * Reading it is a header and a copy, so the certainty is nearly free.
+ * In the window this is the fallback for `decodeAudioData`, and it exists
+ * because the output contract is float32 — `demucs/README.md`'s reason:
+ * independently rescaled stems do not sum. Float WAV is not the common case a
+ * decoder is tuned for, and a build that cannot read one would silently lose
+ * the only format this app produces.
  *
- * Returns null for anything that is not the shape we write, which is the signal
- * to let the browser try.
+ * In the main process it is not a fallback at all: `electron/export.ts` has no
+ * browser behind it, so a format this declines is an export that fails. That is
+ * why the reader takes more than the one shape this app writes — 24-bit PCM is
+ * what a studio WAV usually is, and a file that came out of libsndfile is as
+ * likely to be wrapped in WAVE_FORMAT_EXTENSIBLE as not.
+ *
+ * Returns null for anything it genuinely cannot read, which in the window is
+ * the signal to let the browser try. Declining is always better than reading
+ * the bytes as if they were samples: an unrecognised format read anyway is
+ * noise at full scale, and it arrives looking like audio.
  */
 export function readWav(
   bytes: ArrayBuffer,
@@ -94,6 +102,13 @@ export function readWav(
       channels = view.getUint16(body + 2, true);
       rate = view.getUint32(body + 4, true);
       bits = view.getUint16(body + 14, true);
+      // WAVE_FORMAT_EXTENSIBLE is an envelope rather than a format: the tag
+      // says only "the real one is in the extension", and it is the first two
+      // bytes of the SubFormat GUID that follows the 22-byte extension header.
+      // libsndfile writes this whenever it feels like it — more than two
+      // channels, or a container wider than 16 bits — so a stem that came from
+      // anywhere but here arrives wearing it as often as not.
+      if (format === 0xfffe && size >= 40) format = view.getUint16(body + 24, true);
     } else if (kind === 'data') {
       data = { at: body, length: Math.min(size, bytes.byteLength - body) };
     }
@@ -104,8 +119,8 @@ export function readWav(
 
   if (!data || channels < 1 || rate < 1) return null;
   const float = format === 3 && bits === 32;
-  const short = format === 1 && bits === 16;
-  if (!float && !short) return null;
+  const pcm = format === 1 && (bits === 16 || bits === 24 || bits === 32);
+  if (!float && !pcm) return null;
 
   const width = bits / 8;
   const frames = Math.floor(data.length / (width * channels));
@@ -116,9 +131,20 @@ export function readWav(
   for (let f = 0; f < frames; f++) {
     const base = data.at + f * width * channels;
     for (let c = 0; c < channels; c++) {
+      const at = base + c * width;
+      // Each width divides by its own full scale rather than by a common one,
+      // because the point of the wider formats is that they are not scaled: a
+      // 24-bit file read against 2^15 is the same take twice as loud.
       out[c][f] = float
-        ? view.getFloat32(base + c * 4, true)
-        : view.getInt16(base + c * 2, true) / 32768;
+        ? view.getFloat32(at, true)
+        : width === 2
+          ? view.getInt16(at, true) / 32768
+          : width === 3
+            // No three-byte accessor exists, so the sign has to be carried by
+            // the top byte being read signed and shifted up.
+            ? (view.getUint8(at) | (view.getUint8(at + 1) << 8) | (view.getInt8(at + 2) << 16)) /
+              8388608
+            : view.getInt32(at, true) / 2147483648;
     }
   }
   return { channels: out, rate };
