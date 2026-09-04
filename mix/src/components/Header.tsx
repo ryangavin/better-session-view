@@ -244,12 +244,12 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               onChange={mix.setLoop}
               label="Loop"
               title={
-                mix.looped === null
-                  ? 'Loop the whole track. Command-L loops the selected section'
-                  : `Looping ${mix.slices[mix.looped]?.name ?? 'a section'}. Command-L lets it go`
+                mix.region
+                  ? 'Looping a part of the track. Command-L lets it go'
+                  : 'Loop the whole track. Shift-click the timeline, or Command-L for the selected section'
               }
               width={26}
-              className={mix.looped === null ? undefined : 'mf-looping-part'}
+              className={mix.region ? 'mf-looping-part' : undefined}
             >
               {loopMark}
             </Toggle>

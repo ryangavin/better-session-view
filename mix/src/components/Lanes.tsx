@@ -5,9 +5,12 @@ import { Slider } from '@openflow/widgets/controls/Slider.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Peak } from '../audio.ts';
+import { rulingOf, stepFor } from '../grid.ts';
 import { STEMS } from '../mock.ts';
+import { snappedBar } from '../slices.ts';
 import { SPANS, type Mix } from '../state.ts';
 import { BASS_TRANSPOSE } from '../tab.ts';
+import { barAt, placeOf } from '../warp.ts';
 import { factorOf, limitOf, shows, spanOf, useView, type Span } from '../zoom.ts';
 import { Tablature } from './Tablature.tsx';
 import { Tone } from './Tone.tsx';
@@ -182,6 +185,38 @@ export function Lanes({ mix }: { mix: Mix }) {
    * band's track is the one element whose box is exactly the timeline.
    */
   const timeline = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * A place on the track, held to whatever the snap is set to.
+   *
+   * The same holding the ruler does to a cut, applied to the head — because
+   * the head is what a loop is built out of now, and a loop that begins a
+   * pixel off the downbeat is a loop that stumbles every time round. The
+   * ruling is measured against the view for the same reason it is there: on
+   * `grid` the rung is whatever is drawn under the pointer, so what you can
+   * land on is what you can see.
+   */
+  const held = (place: number): number => {
+    const box = timeline.current?.getBoundingClientRect();
+    if (!box || box.width < 1) return place;
+    const from = barAt(grid, view.from);
+    const to = barAt(grid, view.from + 1 / view.zoom);
+    const step = stepFor(mix.snap, rulingOf(from, to, box.width).step);
+    return placeOf(grid, snappedBar(barAt(grid, place), step));
+  };
+
+  /**
+   * A click is where to listen from; a shift-click is the far end of a loop.
+   *
+   * Two gestures on one press, which is the pair every timeline has: the
+   * first says *here*, the second says *to here*, and between them they are
+   * how a region gets picked without a mode to be in.
+   */
+  const scrub = (place: number, extend: boolean): void => {
+    const at = held(place) * mix.seconds;
+    if (extend) mix.loopTo(at);
+    else mix.scrubTo(at);
+  };
 
   /**
    * Shift- or ⌘-scroll zooms, and everything else moves along the song.
@@ -411,7 +446,7 @@ export function Lanes({ mix }: { mix: Mix }) {
                     quiet={!heard}
                     bars={grid}
                     span={span}
-                    onSeek={(fraction) => mix.seek(fraction * mix.seconds)}
+                    onSeek={scrub}
                   />
                   {/* An empty lane and a lane of zeroes look the same and only one
                       of them is honest — but a lane that is still being read is
@@ -504,7 +539,7 @@ function TablatureLane({ mix, span }: { mix: Mix; span: Span }) {
             bars={mix.grid}
             span={span}
             height={height}
-            onSeek={(fraction) => mix.seek(fraction * mix.seconds)}
+            onSeek={(fraction) => mix.scrubTo(fraction * mix.seconds)}
           />
         ) : (
           <span className={mix.transcribeProblem ? 'mf-tab-message mf-tab-problem' : 'mf-tab-message'}>

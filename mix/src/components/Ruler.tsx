@@ -98,6 +98,22 @@ export function Ruler({
     if (at && at.bar > 0 && at.bar < mix.bars) mix.cutSlice(at.bar);
   };
 
+  /**
+   * The loop, drawn over the sections rather than among them.
+   *
+   * A region is not a slice — it is two points somebody put down — so it is
+   * its own mark on the ruler, and it is drawn on top so that a loop over
+   * half of one section is still legible as half of one.
+   */
+  const brace = ((): { left: number; width: number } | null => {
+    if (!mix.region || !(mix.seconds > 0)) return null;
+    const starts = shows(view, mix.region.from / mix.seconds);
+    const ends = shows(view, mix.region.to / mix.seconds);
+    if (ends < -OFF || starts > 1 + OFF) return null;
+    const left = Math.max(starts, -OFF);
+    return { left, width: Math.min(ends, 1 + OFF) - left };
+  })();
+
   return (
     <div className="mf-ruler">
       {mix.slices.map((slice, i) => {
@@ -111,7 +127,6 @@ export function Ruler({
             key={i}
             className="mf-slice"
             data-on={i === mix.activeSlice || undefined}
-            data-looped={i === mix.looped || undefined}
             style={{
               left: `${left * 100}%`,
               width: `${(Math.min(ends, 1 + OFF) - left) * 100}%`,
@@ -127,9 +142,7 @@ export function Ruler({
               }
               split(event);
             }}
-            title={`${slice.name} — bar ${barText(slice.bar)}, ${lengthText(next - slice.bar)} bars.${
-              i === mix.looped ? ' Looping. ' : ' '
-            }Double-click to cut here`}
+            title={`${slice.name} — bar ${barText(slice.bar)}, ${lengthText(next - slice.bar)} bars. Double-click to cut here`}
           >
             {i > 0 && (
               <span
@@ -161,6 +174,13 @@ export function Ruler({
           </div>
         );
       })}
+      {brace && (
+        <div
+          className="mf-loop-brace"
+          style={{ left: `${brace.left * 100}%`, width: `${brace.width * 100}%` }}
+          title="Looping this. Command-L lets it go"
+        />
+      )}
     </div>
   );
 }

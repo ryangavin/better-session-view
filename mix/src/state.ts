@@ -243,16 +243,30 @@ export function useMix() {
    */
   const [snap, setSnapState] = useState<Snap>(kept.snap ?? 'grid');
   /**
-   * The slice the loop is round, or null for the whole record.
+   * The stretch of the record the loop turns round in, in seconds, or null for
+   * all of it.
    *
-   * The index rather than the seconds, because a section is a thing on the
-   * grid and the seconds under it move: re-rule the track or drag the cut and
-   * the loop is still round *that section*. Not remembered between sessions —
-   * a loop round the drop is how you are working this minute, and coming back
-   * to a track tomorrow with it still on would be a puzzle rather than a
-   * convenience.
+   * Seconds rather than bars or a slice, because a region is picked by
+   * pointing at the record twice and what is between two points is a time.
+   * The snap is what makes those two points musical, and it has already been
+   * applied by the time they arrive here — which keeps this from having to
+   * know about the zoom, and keeps a region you placed by eye exactly where
+   * you placed it when the grid is re-ruled underneath it.
+   *
+   * Not remembered between sessions: a loop round the drop is how you are
+   * working this minute, and finding it still on tomorrow would be a puzzle
+   * rather than a convenience.
    */
-  const [looped, setLooped] = useState<number | null>(null);
+  const [region, setRegion] = useState<{ from: number; to: number } | null>(null);
+  /**
+   * Where the last plain click landed, which is the far end a shift-click
+   * measures from.
+   *
+   * The head would nearly do, but not quite: it moves while a track plays,
+   * and a region picked after listening for ten seconds would then be ten
+   * seconds long by accident.
+   */
+  const anchor = useRef(0);
   /**
    * Whether the stems play stretched to the header's tempo.
    *
@@ -1160,22 +1174,55 @@ export function useMix() {
     [audio],
   );
 
+  /** Where a click landed: the head goes there, and a shift-click measures from it. */
+  const scrubTo = useCallback(
+    (at: number) => {
+      anchor.current = at;
+      seek(at);
+    },
+    [seek],
+  );
+
   /**
-   * Loop round the slice that is selected, or let it go.
+   * The other end of a loop: from the last place clicked to this one.
+   *
+   * Either way round, because a region is picked by pointing at both ends of
+   * it and nobody points left to right every time. Asking for one turns
+   * looping on — a region nobody can hear because the transport is not looping
+   * would be the gesture doing nothing, which reads as broken — and the head
+   * goes to the top of it, which is where you were about to put it anyway.
+   */
+  const loopTo = useCallback(
+    (at: number) => {
+      const from = Math.min(anchor.current, at);
+      const to = Math.max(anchor.current, at);
+      if (to - from < 0.01) return;
+      setRegion({ from, to });
+      if (!loop) setLoop(true);
+      seek(from);
+    },
+    [loop, setLoop, seek],
+  );
+
+  /**
+   * Loop round the slice that is selected, or let the record have itself back.
    *
    * The same key both ways, because it is one question — *am I working on this
-   * bit?* — and the answer to it changes as often as the mind does. Asking for
-   * it turns looping on: a loop nobody can hear because the transport is not
-   * looping would be the key doing nothing, which reads as broken.
+   * bit?* — and the answer to it changes as often as the mind does. Any region
+   * clears, however it was made: one key that means "stop looping a part of
+   * this" is worth more than two that each undo only their own gesture.
    */
   const loopSlice = useCallback(() => {
-    if (looped === activeSlice) {
-      setLooped(null);
+    if (region) {
+      setRegion(null);
       return;
     }
-    setLooped(activeSlice);
+    const slice = slices[activeSlice];
+    if (!slice || !(seconds > 0)) return;
+    const next = slices[activeSlice + 1]?.bar ?? bars;
+    setRegion({ from: placeOf(grid, slice.bar) * seconds, to: placeOf(grid, next) * seconds });
     if (!loop) setLoop(true);
-  }, [looped, activeSlice, loop, setLoop]);
+  }, [region, slices, activeSlice, bars, grid, seconds, loop, setLoop]);
 
   // The graph is built after the first render, so the remembered loop setting
   // has to be pushed into it rather than assumed.
@@ -1183,24 +1230,9 @@ export function useMix() {
     audio.setLoop(loop);
   }, [audio, loop, peaks]);
 
-  /**
-   * The looped slice, as the seconds the graph loops between.
-   *
-   * Worked out here rather than held here, so that a cut dragged or a grid
-   * re-ruled moves the loop with the section it was put round — the index is
-   * the decision and this is only where it lands today.
-   */
-  const loopSpan = useMemo(() => {
-    if (looped === null || !(seconds > 0)) return null;
-    const slice = slices[looped];
-    if (!slice) return null;
-    const next = slices[looped + 1]?.bar ?? bars;
-    return { from: placeOf(grid, slice.bar) * seconds, to: placeOf(grid, next) * seconds };
-  }, [looped, slices, bars, grid, seconds]);
-
   useEffect(() => {
-    audio.setLoopSpan(loopSpan);
-  }, [audio, loopSpan, peaks]);
+    audio.setLoopSpan(region);
+  }, [audio, region, peaks]);
 
   /**
    * The map and the tempo, pushed into the graph on every change.
@@ -1673,8 +1705,10 @@ export function useMix() {
     /** What a cut on the ruler is held to — `grid.ts`. */
     snap,
     setSnap: setSnapState,
-    /** The slice the loop is round, or null for the whole record. */
-    looped,
+    /** The stretch the loop turns round in, in seconds, or null for the whole record. */
+    region,
+    scrubTo,
+    loopTo,
     loopSlice,
     /** Whether the stems play stretched to the tempo, and whether there is a stretcher to do it. */
     warp,

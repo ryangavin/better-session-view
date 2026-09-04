@@ -179,6 +179,10 @@
   color: var(--amber);
 }
 
+.mf-snap .wdg-segmented-body button + button {
+  border-left: 0;
+}
+
 .mf-snap .wdg-segmented-body button {
   min-width: 20px;
   padding: 0 5px;
@@ -189,7 +193,7 @@
 
 .mf-snap .wdg-segmented-body button[aria-checked='true'] {
   color: var(--amber);
-  background: var(--sel);
+  background: color-mix(in oklab, var(--amber) 16%, transparent);
 }
 
 .mf-group-label,

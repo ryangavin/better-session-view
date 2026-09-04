@@ -81,8 +81,12 @@ export interface WaveformProps {
    * width it was given and has no idea how many seconds that is. The caller
    * knows. It is a fraction of the whole track and not of what is on screen, so
    * a click means the same thing at every zoom.
+   *
+   * `extend` is the shift key: the same click, meaning *to here* rather than
+   * *at here*. Which is the caller's business too — a waveform has no idea
+   * there is such a thing as a loop.
    */
-  onSeek?(fraction: number): void;
+  onSeek?(fraction: number, extend: boolean): void;
   className?: string;
 }
 
@@ -360,7 +364,7 @@ export function Waveform({
     ? (event: React.MouseEvent<HTMLCanvasElement>) => {
         const box = event.currentTarget.getBoundingClientRect();
         const place = Math.max(0, Math.min(1, (event.clientX - box.left) / box.width));
-        onSeek(from + place * (to - from));
+        onSeek(from + place * (to - from), event.shiftKey);
       }
     : undefined;
 
