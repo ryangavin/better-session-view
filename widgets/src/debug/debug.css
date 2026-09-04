@@ -311,3 +311,69 @@
 .wdg-workspace-description { margin:0; padding:8px 12px; color:var(--wdg-caption); font-size:12px; }
 .wdg-workspace-panel { flex:1; min-height:0; overflow:auto; }
 .wdg-experiment-error { padding:24px; color:var(--wdg-alarm); }
+
+.wdg-rooms {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.wdg-rooms-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border-right: 1px solid var(--wdg-line, #26262b);
+}
+
+.wdg-rooms-side [role='tablist'] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wdg-rooms-side button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--wdg-dim, #7d7d86);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wdg-rooms-side button small {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  color: var(--wdg-dim, #7d7d86);
+  opacity: 0.75;
+}
+
+.wdg-rooms-side button:hover {
+  border-color: var(--wdg-line, #26262b);
+  color: var(--wdg-text, #b7b7be);
+}
+
+.wdg-rooms-side button[aria-selected='true'] {
+  border-color: var(--wdg-accent, #e9a23b);
+  color: var(--wdg-text, #b7b7be);
+}
+
+.wdg-rooms-count {
+  /* Beside the title, not after the note: auto-placement would otherwise put
+     it on a third row, where it reads as a stray number. */
+  grid-row: 1;
+  grid-column: 2;
+  color: var(--wdg-dim, #7d7d86);
+  font-variant-numeric: tabular-nums;
+}
+
+.wdg-rooms-panel {
+  min-width: 0;
+}
+

@@ -302,3 +302,14 @@ font-variation-settings: var(--mono-axes);
   --stem-bass: #6d8bf5;
 }
 
+.bench-aside h1 {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+
+.bench-aside p {
+  margin: 0 0 8px;
+  color: var(--wdg-dim, #7d7d86);
+  line-height: 1.5;
+}
+

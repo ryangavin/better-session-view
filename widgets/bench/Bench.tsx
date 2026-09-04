@@ -21,20 +21,33 @@ import { Toggle } from '../src/controls/Toggle.tsx';
 import { XYPad } from '../src/controls/XYPad.tsx';
 import { DebugCase } from './DebugCase.tsx';
 import { WaveCases } from './WaveCases.tsx';
-import { Workspace, type Experiment } from '../src/debug/Workspace.tsx';
+import { Rooms, type Room } from '../src/debug/Rooms.tsx';
 import { useRemembered } from '../src/debug/useRemembered.ts';
 
 const slug = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 
-const SECTIONS = [
-  'Knob', 'Slider', 'Number field', 'Toggle', 'Button', 'Meter', 'Segmented', 'Select', 'XY pad', 'Text', 'Row', 'Device',
-  'Chain',
-  'Graph',
-  'Waveform',
-  'Modal',
-  'Debug',
-  'Model',
+/**
+ * The bench, grouped.
+ *
+ * Eighteen tabs in a row stopped being a list and became a thing you had to
+ * read before you could read anything else. The grouping is by what you came
+ * to look at rather than by what the file tree happens to say: a control you
+ * put your hand on, a shape a window is built out of, a drawing over time, and
+ * the harness this page is itself made of.
+ */
+const ROOMS = [
+  {
+    id: 'controls',
+    title: 'Controls',
+    note: 'things you put a hand on',
+    sections: ['Knob', 'Slider', 'Number field', 'Toggle', 'Button', 'Meter', 'Segmented', 'Select', 'XY pad'],
+  },
+  { id: 'chrome', title: 'Chrome', note: 'what a window is built out of', sections: ['Text', 'Row', 'Device', 'Chain', 'Graph', 'Modal'] },
+  { id: 'drawing', title: 'Drawing', note: 'over a length of time', sections: ['Waveform'] },
+  { id: 'debug', title: 'Debug', note: 'the harness this page is', sections: ['Debug', 'Model'] },
 ];
+
+const SECTIONS = ROOMS.flatMap((room) => room.sections);
 
 /** One widget's own value, so every example on the page is genuinely live. */
 function Held({
@@ -1034,38 +1047,50 @@ function Cases({ only }: { only: string }) {
 
 export function Bench() {
   const [hosted, setHosted] = useState(true);
+  const [room, setRoom] = useRemembered('bench-room', ROOMS[0].id);
   const [tab, setTab] = useRemembered('bench-tab', slug(SECTIONS[0]));
 
-  // The bench is the harness, not a thing behind a button in one: this module
-  // owns `Workspace`, and the surest way to know a widget holds up is to have
-  // built the page you are reading it on out of it.
-  const experiments = useMemo<readonly Experiment<null>[]>(
+  // The bench is the harness rather than a thing behind a button in one: this
+  // module owns `Rooms` and `Workspace`, and the surest way to know a widget
+  // holds up is to have built the page you are reading it on out of it.
+  const rooms = useMemo<readonly Room<null>[]>(
     () =>
-      SECTIONS.map((name) => ({
-        id: slug(name),
-        title: name,
-        description: '',
-        component: () => <Cases only={name} />,
+      ROOMS.map((one) => ({
+        id: one.id,
+        title: one.title,
+        note: one.note,
+        experiments: one.sections.map((name) => ({
+          id: slug(name),
+          title: name,
+          description: '',
+          component: () => <Cases only={name} />,
+        })),
       })),
     [],
   );
 
   return (
     <div className={`bench${hosted ? ' hosted' : ''}`}>
-      <header>
-        <h1>Widget bench</h1>
-        <p>
-          Drag any control. Hold <kbd>{FINE_KEY}</kbd> for fine, double-click for the
-          parameter&rsquo;s default, arrow keys once focused. No control jumps to the click.
-        </p>
-        <nav>
-          <button type="button" onClick={() => setHosted((on) => !on)}>
-            {hosted ? 'host tokens: on' : 'host tokens: off'}
-          </button>
-        </nav>
-      </header>
-
-      <Workspace experiments={experiments} context={null} selected={tab} onSelect={setTab} />
+      <Rooms
+        rooms={rooms}
+        context={null}
+        room={room}
+        tab={tab}
+        onRoom={setRoom}
+        onTab={setTab}
+        aside={
+          <div className="bench-aside">
+            <h1>Widget bench</h1>
+            <p>
+              Drag any control. Hold <kbd>{FINE_KEY}</kbd> for fine, double-click for the
+              parameter&rsquo;s default, arrow keys once focused.
+            </p>
+            <button type="button" onClick={() => setHosted((on) => !on)}>
+              {hosted ? 'host tokens: on' : 'host tokens: off'}
+            </button>
+          </div>
+        }
+      />
     </div>
   );
 }
