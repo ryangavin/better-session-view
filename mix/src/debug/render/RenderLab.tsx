@@ -12,7 +12,8 @@ import type { Mix } from '../../state.ts';
 import { STEMS } from '../../mock.ts';
 import type { Peak } from '../../audio.ts';
 import { cellsIn, levelsOf, packedOf, type Steps } from './levels.ts';
-import { densityFor, edgeInk, edgesOf, pathOf, samplesFrom } from './outline.ts';
+import { densityFor, edgesOf, pathOf, samplesFrom } from './outline.ts';
+import { FILLS, paintShape } from './fills.ts';
 import './render.css';
 
 /**
@@ -161,38 +162,14 @@ function Lab({ mix }: { mix: Mix }) {
         read: edges.read,
       };
       const made = performance.now();
-      const tint = tintOf(g, token);
-      // The whole reason a silhouette is worth having: one fill can carry a
-      // ramp across the height of the shape, and a comb of separate columns
-      // cannot — each column would need its own, and the seams would show.
-      if (fill === 0) {
-        g.fillStyle = tint;
-      } else if (fill === 1) {
-        const ramp = g.createLinearGradient(0, 0, 0, view.height);
-        ramp.addColorStop(0, tint);
-        ramp.addColorStop(0.5, `${tint}44`);
-        ramp.addColorStop(1, tint);
-        g.fillStyle = ramp;
-      } else {
-        // Glass: bright where the shape is thin and it reads as an edge, clear
-        // through the middle where a solid block would read as a wall.
-        const ramp = g.createLinearGradient(0, 0, 0, view.height);
-        ramp.addColorStop(0, `${tint}dd`);
-        ramp.addColorStop(0.35, `${tint}33`);
-        ramp.addColorStop(0.5, `${tint}18`);
-        ramp.addColorStop(0.65, `${tint}33`);
-        ramp.addColorStop(1, `${tint}dd`);
-        g.fillStyle = ramp;
-      }
-      g.fill(shape.path);
-      // Through `globalAlpha` rather than an alpha on the colour: the tint comes
-      // out of a CSS custom property and is not promised to be hex.
-      g.save();
-      g.globalAlpha = edgeInk(ask.density);
-      g.strokeStyle = tint;
-      g.lineWidth = fill === 2 ? 1.25 : 1;
-      g.stroke(shape.path);
-      g.restore();
+      // How it is painted is `fills.ts`'s argument, on its own timetable. The
+      // shape is the same shape whichever treatment is chosen.
+      paintShape(g, FILLS[fill], {
+        path: shape.path,
+        view,
+        tint: tintOf(g, token),
+        density: ask.density,
+      });
       const at = timing.current[i];
       if (!at) return;
       at.build = made - t0;
@@ -380,7 +357,7 @@ function Lab({ mix }: { mix: Mix }) {
               />
               <Select
                 label="Fill"
-                items={['flat', 'ramp', 'glass']}
+                items={[...FILLS]}
                 index={fill}
                 onChange={setFill}
                 width={72}
