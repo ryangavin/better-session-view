@@ -1,0 +1,12 @@
+.mf-render-lab .mf-render-note {
+  padding: 16px;
+  color: var(--fg-dim);
+}
+
+.mf-render-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--bd);
+}
