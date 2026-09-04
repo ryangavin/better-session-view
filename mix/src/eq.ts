@@ -17,11 +17,20 @@ import type { Param } from '@openflow/widgets/param/param.ts';
  * agree with the knobs.
  *
  * ```
- *              ┌─ LP(a) ─ LP(a) ─ AP(b) ─ gain(low)  ─┐
- *   input ─────┼─ HP(a) ─ HP(a) ─ LP(b) ─ LP(b) ─ gain(mid) ─┼─ output
- *              └─ HP(b) ─ HP(b) ─ gain(high) ─────────┘
+ *              ┌─ LP(a) ─ LP(a) ─ AP(b) ──────────── gain(low)  ─┐
+ *   input ─────┤                    ┌─ LP(b) ─ LP(b) ─ gain(mid) ─┼─ output
+ *              └─ HP(a) ─ HP(a) ────┤                             │
+ *                                   └─ HP(b) ─ HP(b) ─ gain(high)─┘
  *   a = where the low band ends, b = where the high band begins
  * ```
+ *
+ * The cuts are a tree, not three taps off the input: the first divides low
+ * from everything above it, and the second divides that remainder again. The
+ * high band therefore comes through the first cut's highpass as well, which
+ * is what lets the mid and the high add back to exactly what the first cut
+ * handed them. Hanging the high band straight off the input instead is a hole
+ * at the second cut that only closes when the two cuts are octaves apart —
+ * and the knobs can put them both at a kilohertz.
  *
  * The allpass on the low band is what makes the three sum back to flat. The
  * mid and high have both been through the second cut, and a pair of LR4
@@ -155,7 +164,7 @@ export class Split {
     this.gains = { low: ctx.createGain(), mid: ctx.createGain(), high: ctx.createGain() };
     chain(this.input, ...lowA, lowB, this.gains.low, this.output);
     chain(this.input, ...midA, ...midB, this.gains.mid, this.output);
-    chain(this.input, ...highB, this.gains.high, this.output);
+    chain(midA[midA.length - 1], ...highB, this.gains.high, this.output);
 
     this.atLowEnd = [...lowA, ...midA];
     this.atHighStart = [...midB, ...highB, lowB];
