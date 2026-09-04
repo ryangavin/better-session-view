@@ -203,6 +203,8 @@ export interface ExportAsk {
   offset: number;
   /** The tempo to lay it at. */
   to: number;
+  /** Where the beats actually fall, so a record that moves is followed rather than averaged. */
+  beats?: Beats;
 }
 
 export interface Written {

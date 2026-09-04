@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { readWav, wavOf } from '../src/audio.ts';
 import { straightened } from '../src/straighten.ts';
+import { beatsOf, tempoOf } from '../src/warp.ts';
 import { cutsFor, exportStems, tidy } from './export.ts';
 
 /**
@@ -166,6 +167,34 @@ describe('exportStems', () => {
     );
     expect(done.bars).toBe(8);
     expect(read(done.files[1]).length).toBe(4 * BAR);
+  });
+
+  it('cuts a bent record on its own bar lines', async () => {
+    // Sixteen beats at 120 and then sixteen at 96: `cutsFor` places bar two at
+    // two bars' worth of samples and nowhere else, so the map has to have put
+    // the record's ninth beat exactly there.
+    const anchors = [0];
+    for (let k = 0; k < 32; k++) anchors.push(anchors[k] + (k < 16 ? BAR / 4 : 5000));
+    const length = anchors[anchors.length - 1] + BAR / 4;
+    const marks = new Float32Array(length);
+    for (const at of anchors) marks[at] = 1;
+    const beats = beatsOf(RATE, length, 0, anchors);
+    put(root, 'vocals', marks);
+    const done = await exportStems(
+      root,
+      ask({
+        sources: ['vocals'],
+        bpm: tempoOf(beats),
+        beats,
+        slices: [{ bar: 0, name: 'A' }, { bar: 2, name: 'B' }],
+      }),
+    );
+    const spans = done.files.map(read);
+    expect(spans[0].length).toBe(2 * BAR);
+    expect(spans[1][0]).toBeCloseTo(1, 5);
+    for (let k = 0; k * BAR / 4 < spans[1].length && k < 8; k++) {
+      expect(spans[1][k * (BAR / 4)]).toBeCloseTo(1, 5);
+    }
   });
 
   it('refuses slices that are not in order', async () => {
