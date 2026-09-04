@@ -25,6 +25,18 @@ describe('resample', () => {
     for (let i = 20; i < 3900; i++) expect(slow[i]).toBeCloseTo(want[i], 3);
   });
 
+  it('passes a whole sample through untouched, silence included', () => {
+    // Where a sample is not zero, dust a ten-thousandth of a trillionth down
+    // is lost in the float anyway; where it is zero there is nothing for it to
+    // hide under, and a stem is mostly silence. So a gap in the signal has to
+    // come back as the digital silence it went in as, not as a whisper of one.
+    const gapped = Float32Array.from({ length: 2000 }, (_, i) =>
+      i > 800 && i < 1200 ? 0 : Math.sin(i * 12.9898) * 0.5,
+    );
+    const out = resample(gapped, 1, 0, gapped.length);
+    expect(out).toEqual(gapped);
+  });
+
   it('is silent past either end', () => {
     const wave = sine(1000, 50);
     const out = resample(wave, 1, 990, 100);

@@ -24,7 +24,17 @@ const PHASES = 16384;
 /** The Kaiser window's shape: twelve is a stopband a hundred and ten decibels down. */
 const BETA = 12;
 
-const sinc = (x: number): number => (x === 0 ? 1 : Math.sin(Math.PI * x) / (Math.PI * x));
+/**
+ * A sinc, exact on the integers.
+ *
+ * It is zero at every whole number but zero, and `Math.sin(Math.PI * x)` is
+ * not — pi is not pi in a float, so a tap that should vanish arrives as a
+ * ten-thousandth of a trillionth instead. Sixty-three of those under the one
+ * tap that matters is the difference between a record laid at its own tempo
+ * coming back bit for bit and coming back nearly.
+ */
+const sinc = (x: number): number =>
+  Number.isInteger(x) ? (x === 0 ? 1 : 0) : Math.sin(Math.PI * x) / (Math.PI * x);
 
 /** The zeroth-order modified Bessel function, by its series. */
 const bessel0 = (x: number): number => {
