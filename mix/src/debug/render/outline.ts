@@ -66,6 +66,26 @@ export interface OutlineAsk {
 }
 
 /**
+ * How fine to draw, given how much of the track is on screen.
+ *
+ * The two ends want opposite things and a single number cannot serve both. With
+ * the whole track across a lane, a point per pixel is drawing the loudest
+ * sample of a twentieth of a second at full height next to its neighbour, over
+ * and over — the hair along the top that says nothing except that the summary
+ * moved. A quarter of that reads as the shape of the arrangement, which is what
+ * a wide view is for. Zoomed into a bar, the opposite: every point is nearly a
+ * sample, and coarseness there is throwing away the thing being looked at.
+ *
+ * So it rides the zoom. The exponent is gentle on purpose — detail arrives as
+ * you go in rather than snapping at a threshold, because a drawing that changes
+ * character in one wheel click looks like a bug even when it is a policy.
+ */
+export function densityFor(share: number): number {
+  if (!(share > 0)) return 2;
+  return Math.min(2, Math.max(0.25, 0.25 * Math.pow(1 / share, 0.45)));
+}
+
+/**
  * Catmull-Rom, as the two control points of a cubic.
  *
  * The tangent at a point is the line between its neighbours, which is what

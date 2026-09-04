@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Peak } from '../../audio.ts';
 import { levelsOf, packedOf } from './levels.ts';
-import { edgesOf } from './outline.ts';
+import { densityFor, edgesOf } from './outline.ts';
 
 const ask = (over: Partial<Parameters<typeof edgesOf>[1]> = {}) => ({
   from: 0,
@@ -69,5 +69,31 @@ describe('the silhouette', () => {
     const shape = edgesOf(levels, ask({ from: 0.999, to: 1 }));
     expect(shape.points).toBeGreaterThan(0);
     expect(Number.isFinite(shape.read)).toBe(true);
+  });
+});
+
+describe('how fine to draw', () => {
+  it('is coarse across the whole track and fine inside a bar', () => {
+    expect(densityFor(1)).toBeCloseTo(0.25, 2);
+    expect(densityFor(0.01)).toBeGreaterThan(1.5);
+  });
+
+  it('only ever gets finer as the view narrows', () => {
+    // A drawing that got coarser on the way in would be losing the thing being
+    // looked at, and it would do it in the middle of a gesture.
+    let last = 0;
+    for (const share of [1, 0.7, 0.4, 0.2, 0.1, 0.05, 0.02, 0.005]) {
+      const now = densityFor(share);
+      expect(now).toBeGreaterThanOrEqual(last);
+      last = now;
+    }
+  });
+
+  it('stays inside its ends, whatever it is handed', () => {
+    for (const share of [0, -1, 1e-9, 5, Number.NaN]) {
+      const d = densityFor(share);
+      expect(d).toBeGreaterThanOrEqual(0.25);
+      expect(d).toBeLessThanOrEqual(2);
+    }
   });
 });

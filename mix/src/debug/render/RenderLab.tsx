@@ -12,7 +12,7 @@ import type { Mix } from '../../state.ts';
 import { STEMS } from '../../mock.ts';
 import type { Peak } from '../../audio.ts';
 import { cellsIn, levelsOf, packedOf, type Steps } from './levels.ts';
-import { outlineOf } from './outline.ts';
+import { densityFor, outlineOf } from './outline.ts';
 import './render.css';
 
 /**
@@ -48,7 +48,8 @@ interface Timing {
 
 const fresh = (): Timing => ({ build: 0, fill: 0, worst: 0, points: 0, level: 0, read: 0 });
 
-const DENSITIES = [0.25, 0.5, 1, 2];
+/** `null` rides the zoom; the rest are there to see what it is choosing between. */
+const DENSITIES = [null, 0.25, 0.5, 1, 2];
 const SMOOTHS = [0, 0.5, 1];
 
 export function RenderLab({ mix }: { mix: Mix }) {
@@ -79,9 +80,9 @@ export function RenderLab({ mix }: { mix: Mix }) {
 function Lab({ mix }: { mix: Mix }) {
   const [mode, setMode] = useState(0);
   const [count, setCount] = useState(0);
-  const [density, setDensity] = useState(2);
+  const [density, setDensity] = useState(0);
   const [smooth, setSmooth] = useState(2);
-  const [gradient, setGradient] = useState(true);
+  const [fill, setFill] = useState(1);
   const [ladder, setLadder] = useState(true);
   const lanes = count === 0 ? 4 : 6;
   const axis = useAxis({ seconds: mix.seconds, narrowest: 0.02 });
@@ -135,26 +136,37 @@ function Lab({ mix }: { mix: Mix }) {
         to: view.to / mix.seconds,
         width: view.width,
         height: view.height,
-        density: DENSITIES[density],
+        density: DENSITIES[density] ?? densityFor((view.to - view.from) / mix.seconds),
         smooth: SMOOTHS[smooth],
         headroom: 0.86,
       });
       const made = performance.now();
       const tint = tintOf(g, token);
-      if (gradient) {
-        // What a silhouette buys that a comb cannot: one fill carrying a ramp
-        // across the height of the shape.
+      // The whole reason a silhouette is worth having: one fill can carry a
+      // ramp across the height of the shape, and a comb of separate columns
+      // cannot — each column would need its own, and the seams would show.
+      if (fill === 0) {
+        g.fillStyle = tint;
+      } else if (fill === 1) {
         const ramp = g.createLinearGradient(0, 0, 0, view.height);
         ramp.addColorStop(0, tint);
         ramp.addColorStop(0.5, `${tint}44`);
         ramp.addColorStop(1, tint);
         g.fillStyle = ramp;
       } else {
-        g.fillStyle = tint;
+        // Glass: bright where the shape is thin and it reads as an edge, clear
+        // through the middle where a solid block would read as a wall.
+        const ramp = g.createLinearGradient(0, 0, 0, view.height);
+        ramp.addColorStop(0, `${tint}dd`);
+        ramp.addColorStop(0.35, `${tint}33`);
+        ramp.addColorStop(0.5, `${tint}18`);
+        ramp.addColorStop(0.65, `${tint}33`);
+        ramp.addColorStop(1, `${tint}dd`);
+        g.fillStyle = ramp;
       }
       g.fill(shape.path);
-      g.strokeStyle = tint;
-      g.lineWidth = 1;
+      g.strokeStyle = fill === 2 ? `${tint}ee` : tint;
+      g.lineWidth = fill === 2 ? 1.25 : 1;
       g.stroke(shape.path);
       const at = timing.current[i];
       if (!at) return;
@@ -165,7 +177,7 @@ function Lab({ mix }: { mix: Mix }) {
       at.level = shape.level;
       at.read = shape.read;
     },
-    [ladders, ladder, density, smooth, gradient, mix.seconds],
+    [ladders, ladder, density, smooth, fill, mix.seconds],
   );
 
   // The lanes' own drawing, mirrored: a column per half pixel, every column in
@@ -295,7 +307,7 @@ function Lab({ mix }: { mix: Mix }) {
             <Group caption="Detail">
               <Select
                 label="Points per pixel"
-                items={DENSITIES.map((d) => `${d}/px`)}
+                items={DENSITIES.map((d) => (d === null ? 'auto' : `${d}/px`))}
                 index={density}
                 onChange={setDensity}
                 width={78}
@@ -312,9 +324,13 @@ function Lab({ mix }: { mix: Mix }) {
                 onChange={setSmooth}
                 width={72}
               />
-              <Toggle on={gradient} onChange={setGradient} label="Gradient fill">
-                ramp
-              </Toggle>
+              <Select
+                label="Fill"
+                items={['flat', 'ramp', 'glass']}
+                index={fill}
+                onChange={setFill}
+                width={72}
+              />
             </Group>
           </>
         )}
@@ -335,6 +351,9 @@ function Lab({ mix }: { mix: Mix }) {
         <Status>
           each lane · {first.points} {mode === 0 ? 'points' : 'columns'}
           {mode === 0 ? ` · rung ${first.level}` : ''}
+          {mode === 0 && DENSITIES[density] === null
+            ? ` · ${densityFor((axis.window.to - axis.window.from) / mix.seconds).toFixed(2)}/px`
+            : ''}
         </Status>
         <Status>
           ladders {ladders.size} × {ladders.size ? [...ladders.values()][0].length : 0} rungs, built
