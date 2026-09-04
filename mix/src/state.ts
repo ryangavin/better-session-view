@@ -4,6 +4,7 @@ import { cut, dragged, removed, slicesFor, slicesOf, type Slice } from './slices
 import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak } from './audio.ts';
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
+import { loosest, type Every } from './pinned.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
 import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, type Beats } from './warp.ts';
 import type { Snap } from './grid.ts';
@@ -262,6 +263,13 @@ export function useMix() {
    * is.
    */
   const [warp, setWarpState] = useState(kept.warp ?? false);
+  /**
+   * How densely the map is pinned to the tempo's grid, or null for whatever
+   * `loosest` measures — `pinned.ts`. The sections are always pinned; this
+   * is what happens between them, and it is one answer for the stretcher and
+   * the export, so what loops in the window is what the files will hold.
+   */
+  const [pinEvery, setPinEvery] = useState<Every | null>(null);
   const [stretching, setStretching] = useState<Stretching>('idle');
   /** Seconds from the top of the track. The one position everything else derives from. */
   const [position, setPosition] = useState(first.at ?? 0);
@@ -1202,9 +1210,14 @@ export function useMix() {
    * of the record, and stretching a record to a claim is how a song ends up
    * eight per cent fast for no reason anybody asked for.
    */
+  const cuts = useMemo(() => slices.map((slice) => slice.bar), [slices]);
+  const pinned = useMemo(
+    () => (beats ? { every: pinEvery ?? loosest(grid, targetBpm, cuts).every, cuts } : null),
+    [beats, grid, targetBpm, cuts, pinEvery],
+  );
   useEffect(() => {
-    audio.warp(beats ? grid : null, targetBpm, warp && beats !== null);
-  }, [audio, grid, targetBpm, warp, beats, peaks]);
+    audio.warp(beats ? grid : null, targetBpm, warp && beats !== null, pinned?.every, pinned?.cuts);
+  }, [audio, grid, targetBpm, warp, beats, peaks, pinned]);
 
   useEffect(() => audio.watch(() => setStretching(audio.stretching)), [audio]);
 
@@ -1666,6 +1679,9 @@ export function useMix() {
     /** Whether the stems play stretched to the tempo, and whether there is a stretcher to do it. */
     warp,
     setWarp,
+    /** How the map is pinned between the sections: a choice, or null for the measured default. */
+    pinEvery,
+    setPinEvery,
     stretching,
     /** Seconds. */
     position,

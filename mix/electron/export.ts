@@ -121,7 +121,10 @@ export async function exportStems(root: string, ask: ExportAsk): Promise<Written
     if (index > 0 && slice.bar < ask.slices![index - 1].bar) throw new Error('slices out of order');
   }
   if (ask.every !== undefined && !DENSITIES.includes(ask.every)) throw new Error(`not a density: ${ask.every}`);
-  const pinnedAt = (ask.slices ?? []).map((slice) => slice.bar);
+  // The sections are pinned whether or not the stems are cut at them: the
+  // ask may say where the cuts are on their own, for a folder of whole stems
+  // that still lands every section on its bars.
+  const pinnedAt = ask.cuts ?? (ask.slices ?? []).map((slice) => slice.bar);
   const label = tempoLabel(ask.to);
   const where = path.join(await destination(), `${tidy(ask.title)} ${label}bpm`);
   fs.mkdirSync(where, { recursive: true });

@@ -1,8 +1,10 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
+import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { laneOrder, stemOf } from '../mock.ts';
 import { openflow } from '../openflow.ts';
+import { DENSITIES, loosest, pinnedOf, worstBarOf, type Every } from '../pinned.ts';
 import { barText, lengthText } from '../slices.ts';
 import type { Mix } from '../state.ts';
 import { bpmText } from '../warp.ts';
@@ -31,6 +33,25 @@ import './ExportModal.css';
  * to lay the files at; `straighten.ts` varispeeds the record by the fraction
  * between and pads to whole bars, so the folder drops into Live like a loop
  * off a pack. The full track is not summed yet, and the pack is still to come.
+ *
+ * **Where there is a beat map, the record is pinned to the grid, and how
+ * densely is the one choice on the sheet that changes the sound.** The
+ * sections are always pinned: each lands exactly on its bars. Between them
+ * the record can be pinned per section, which keeps every push and pull the
+ * way it was played at one speed; per phrase or per bar, which straightens
+ * a drummer who drifts; or per beat, which is every beat on its line and
+ * what an export was before it could be asked. The default is measured —
+ * `loosest` in `pinned.ts` — the sparsest pinning whose bar lines all land
+ * within ten milliseconds, and the sheet says which it is and how far the
+ * worst bar line is off, in the words a musician would use rather than a
+ * percentage. The choice is the window's rather than the sheet's, so a loop
+ * under warp plays exactly what the export will write; it is not written
+ * beside the track, because how tightly to pin is a question about what the
+ * files are for, and the next export may be for something else.
+ *
+ * **The full track is greyed like the pack.** It was a pick that counted
+ * toward the files and was never sent, which is a sheet promising one more
+ * file than it writes.
  *
  * **Export sits on the same line as where it is going**, at the end of it,
  * because those two are one sentence: *this much audio, to there*. A row of
@@ -97,7 +118,6 @@ export function ExportModal({ mix }: { mix: Mix }) {
   const sources = laneOrder(mix.song?.sources ?? []);
   const [target, setTarget] = useState<Target>('stems');
   const [chosen, setChosen] = useState<string[]>(sources);
-  const [fullTrack, setFullTrack] = useState(false);
   const [sliced, setSliced] = useState(false);
   const [where, setWhere] = useState<string | null>(null);
   const [writing, setWriting] = useState(false);
@@ -114,15 +134,38 @@ export function ExportModal({ mix }: { mix: Mix }) {
     };
   }, [bridge]);
 
+  // The tempo the files are laid at: the whole number nearest the grid's, so
+  // the name on the file is the tempo Live reads, and the record is varisped
+  // by the fraction between — see `straighten.ts`.
+  const laidAt = Math.round(mix.targetBpm);
+
+  // How the record is pinned to that grid, where there is a map to pin: the
+  // sections always, and between them as densely as was measured to be
+  // needed unless the sheet has been told otherwise.
+  const cuts = useMemo(() => mix.slices.map((slice) => slice.bar), [mix.slices]);
+  const measured = useMemo(
+    () => (mix.beats ? loosest(mix.grid, laidAt, cuts) : null),
+    [mix.beats, mix.grid, laidAt, cuts],
+  );
+  const picked = mix.pinEvery;
+  const every: Every = picked ?? measured?.every ?? 'section';
+  const worst = useMemo(
+    () => (mix.beats ? worstBarOf(mix.grid, pinnedOf(mix.grid, laidAt, cuts, every)) : 0),
+    [mix.beats, mix.grid, laidAt, cuts, every],
+  );
+  const pinSays = !mix.beats
+    ? ''
+    : worst < 0.0005
+      ? 'every bar line on the grid'
+      : `the worst bar line ${(worst * 1000).toFixed(worst < 0.01 ? 1 : 0)} ms off`;
   if (!mix.song) return null;
   const song = mix.song;
   const folder = song.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const at = `${where ?? '~/Music/mixflow'}/${folder}/`;
   const sections = sliced ? mix.slices.length : 1;
-  const files = (chosen.length + (fullTrack ? 1 : 0)) * sections;
+  const files = chosen.length * sections;
   const parts = [
     chosen.length ? `${chosen.length} stem${chosen.length === 1 ? '' : 's'}` : '',
-    fullTrack ? 'full track' : '',
     sections > 1 ? `× ${sections} sections` : '',
   ].filter(Boolean);
 
@@ -136,10 +179,6 @@ export function ExportModal({ mix }: { mix: Mix }) {
   const flip = (id: string) =>
     setChosen((was) => (was.includes(id) ? was.filter((s) => s !== id) : [...was, id]));
 
-  // The tempo the files are laid at: the whole number nearest the grid's, so
-  // the name on the file is the tempo Live reads, and the record is varisped
-  // by the fraction between — see `straighten.ts`.
-  const laidAt = Math.round(mix.targetBpm);
   const write = async () => {
     if (!bridge || !song.stems || chosen.length === 0) return;
     setWriting(true);
@@ -151,16 +190,22 @@ export function ExportModal({ mix }: { mix: Mix }) {
         stems: song.stems,
         sources: sources.filter((id) => chosen.includes(id)),
         slices: sliced ? mix.slices : undefined,
-        // The map where there is one, so a record that moves is followed
-        // rather than averaged — `straighten.ts`. Null is a grid that really
-        // is a straight line, and the constant speed is right for it.
+        // The map where there is one, pinned to the grid at the sections and
+        // as densely between them as the sheet says — `straighten.ts`. Null
+        // is a grid that really is a straight line, and the constant speed
+        // is right for it.
         beats: mix.beats ?? undefined,
+        every: mix.beats ? every : undefined,
+        cuts,
         bpm: mix.targetBpm,
         offset: mix.offset,
         to: laidAt,
       });
       const cut = done.parts > 1 ? ` · ${done.parts} sections` : '';
-      setWrote(`${done.files.length} wav · ${done.bars} bars${cut} · ${done.where}`);
+      const pinned = done.every
+        ? ` · pinned per ${done.every}${done.worst && done.worst >= 0.0005 ? `, worst bar line ${(done.worst * 1000).toFixed(0)} ms off` : ''}`
+        : '';
+      setWrote(`${done.files.length} wav · ${done.bars} bars${cut}${pinned} · ${done.where}`);
     } catch (error) {
       setWrote(`failed — ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -207,10 +252,11 @@ export function ExportModal({ mix }: { mix: Mix }) {
             );
           })}
           <Pick
-            on={fullTrack}
-            onPick={() => setFullTrack(!fullTrack)}
+            on={false}
+            onPick={() => {}}
             name="Full track"
             blurb="The stems summed back, at the levels on the lanes"
+            soon
           />
         </div>
       </div>
@@ -220,8 +266,28 @@ export function ExportModal({ mix }: { mix: Mix }) {
           on
           onPick={() => {}}
           name={`Laid straight at ${laidAt} BPM`}
-          blurb={`From 1.1.1, whole bars, the record varisped by ${((laidAt / mix.targetBpm - 1) * 100).toFixed(3)}%`}
+          blurb={
+            mix.beats
+              ? `From 1.1.1, whole bars, every section pinned to its bars`
+              : `From 1.1.1, whole bars, the record varisped by ${((laidAt / mix.targetBpm - 1) * 100).toFixed(3)}%`
+          }
         />
+        {mix.beats && (
+          <div className="mf-export-pin">
+            <span className="mf-export-pin-cap">pinned per</span>
+            <Segmented
+              items={[...DENSITIES]}
+              index={DENSITIES.indexOf(every)}
+              onChange={(next) => mix.setPinEvery(DENSITIES[next])}
+              label="How densely the record is pinned to the grid"
+              title="Per section keeps the timing inside each section as it was played, at one speed. Per phrase and per bar straighten a record that drifts. Per beat puts every beat on its line, and every push and pull with it."
+            />
+            <span className="mf-export-pin-says">
+              {pinSays}
+              {measured && picked && picked !== measured.every ? ` · measured: per ${measured.every}` : ''}
+            </span>
+          </div>
+        )}
         {target === 'stems' && (
           <Pick
             on={sliced}

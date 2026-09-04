@@ -205,6 +205,8 @@ export interface ExportAsk {
   to: number;
   /** How densely the map is pinned to the grid: per section, phrase, bar or beat. Per beat if unsaid. */
   every?: 'section' | 'phrase' | 'bar' | 'beat';
+  /** The sections, in bars from 1.1.1, pinned whether or not the stems are cut there. The slices, if unsaid. */
+  cuts?: number[];
   /** Where the beats actually fall, so a record that moves is followed rather than averaged. */
   beats?: Beats;
 }

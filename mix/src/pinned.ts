@@ -165,8 +165,8 @@ export function errorsOf(beats: Beats, pinned: Pinned): Float64Array {
   return out;
 }
 
-/** The worst bar line, in seconds. */
-const worstBarOf = (beats: Beats, pinned: Pinned): number => {
+/** How far the worst bar line lands from the grid, in seconds. */
+export const worstBarOf = (beats: Beats, pinned: Pinned): number => {
   const errors = errorsOf(beats, pinned);
   let worst = 0;
   for (let beat = 0; beat < errors.length; beat += BEATS_PER_BAR) worst = Math.max(worst, errors[beat]);
