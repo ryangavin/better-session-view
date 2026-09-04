@@ -151,6 +151,10 @@ export function ExportModal({ mix }: { mix: Mix }) {
         stems: song.stems,
         sources: sources.filter((id) => chosen.includes(id)),
         slices: sliced ? mix.slices : undefined,
+        // The map where there is one, so a record that moves is followed
+        // rather than averaged — `straighten.ts`. Null is a grid that really
+        // is a straight line, and the constant speed is right for it.
+        beats: mix.beats ?? undefined,
         bpm: mix.targetBpm,
         offset: mix.offset,
         to: laidAt,
