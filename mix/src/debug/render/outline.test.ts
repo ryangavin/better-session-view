@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Peak } from '../../audio.ts';
 import { levelsOf, packedOf } from './levels.ts';
-import { densityFor, edgesOf } from './outline.ts';
+import { densityFor, edgeInk, edgesOf } from './outline.ts';
 
 const ask = (over: Partial<Parameters<typeof edgesOf>[1]> = {}) => ({
   from: 0,
@@ -95,5 +95,27 @@ describe('how fine to draw', () => {
       expect(d).toBeGreaterThanOrEqual(0.25);
       expect(d).toBeLessThanOrEqual(2);
     }
+  });
+});
+
+describe('how strongly to draw the edge', () => {
+  it('steps back as the drawing gets finer', () => {
+    // The illusion it exists for: perimeter climbs with the point count and the
+    // area it encloses does not, so an unchanged line reads as a growing rim.
+    expect(edgeInk(0.25)).toBeGreaterThan(edgeInk(1));
+    expect(edgeInk(1)).toBeGreaterThan(edgeInk(2));
+  });
+
+  it('stays between an edge that shows and one that shouts', () => {
+    for (const density of [0.01, 0.25, 1, 2, 64, 0, -1, Number.NaN]) {
+      expect(edgeInk(density)).toBeGreaterThanOrEqual(0.3);
+      expect(edgeInk(density)).toBeLessThanOrEqual(0.9);
+    }
+  });
+
+  it('is strong where the outline is most of the drawing', () => {
+    // Across a whole track the shape is smooth and the edge is what says where
+    // it is; that is the one place the border should be assertive.
+    expect(edgeInk(densityFor(1))).toBeCloseTo(0.9, 2);
   });
 });

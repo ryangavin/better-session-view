@@ -12,7 +12,7 @@ import type { Mix } from '../../state.ts';
 import { STEMS } from '../../mock.ts';
 import type { Peak } from '../../audio.ts';
 import { cellsIn, levelsOf, packedOf, type Steps } from './levels.ts';
-import { densityFor, edgesOf, pathOf, samplesFrom } from './outline.ts';
+import { densityFor, edgeInk, edgesOf, pathOf, samplesFrom } from './outline.ts';
 import './render.css';
 
 /**
@@ -185,9 +185,14 @@ function Lab({ mix }: { mix: Mix }) {
         g.fillStyle = ramp;
       }
       g.fill(shape.path);
-      g.strokeStyle = fill === 2 ? `${tint}ee` : tint;
+      // Through `globalAlpha` rather than an alpha on the colour: the tint comes
+      // out of a CSS custom property and is not promised to be hex.
+      g.save();
+      g.globalAlpha = edgeInk(ask.density);
+      g.strokeStyle = tint;
       g.lineWidth = fill === 2 ? 1.25 : 1;
       g.stroke(shape.path);
+      g.restore();
       const at = timing.current[i];
       if (!at) return;
       at.build = made - t0;

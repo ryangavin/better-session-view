@@ -86,6 +86,24 @@ export function densityFor(share: number): number {
 }
 
 /**
+ * How strongly to draw the edge, given how fine the drawing is.
+ *
+ * A stroke's ink is its *perimeter*, and perimeter climbs with the point count
+ * while the area it encloses does not. So the same line width that reads as a
+ * clean edge across a whole track reads as a hard bright rim once every point
+ * is a wiggle — the border looks like it grew, and nothing about it changed.
+ *
+ * Falling with the root of the density keeps roughly the same amount of ink on
+ * the edge at any zoom. Wide and smooth, the outline is most of what says where
+ * the shape is and it stays strong; fine and busy, it steps back and lets the
+ * fill carry it.
+ */
+export function edgeInk(density: number): number {
+  if (!(density > 0)) return 0.9;
+  return Math.min(0.9, Math.max(0.3, 0.45 / Math.sqrt(density)));
+}
+
+/**
  * Catmull-Rom, as the two control points of a cubic.
  *
  * The tangent at a point is the line between its neighbours, which is what
