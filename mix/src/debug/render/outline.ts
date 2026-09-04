@@ -163,6 +163,59 @@ export function edgesOf(levels: readonly Steps[], ask: OutlineAsk): Edges {
   return { topX, topY, lowX, lowY, points: count, level: chosen.level, read: span };
 }
 
+/**
+ * The same two edges, read from the audio instead of from a summary of it.
+ *
+ * The ladder runs out. Its master is a reading of the whole track at a fixed
+ * count, so a cell of it covers milliseconds; zoom past that and every rung is
+ * a drawing being enlarged, which is what made a kick stop looking like a kick.
+ * A person who has spent years in these programs knows the shape of an attack,
+ * and a stretched envelope is not it.
+ *
+ * So below the handover this reads the samples, exactly as the lanes do —
+ * folding channels by widest excursion, the way `peaksOf` folds them — and
+ * hands back the same `Edges`, so the curve and the fill do not know which side
+ * of the handover they are drawing.
+ */
+export function samplesFrom(
+  channels: readonly Float32Array[],
+  ask: OutlineAsk & { length: number },
+): Edges {
+  const { from, to, width, height, density, headroom, length } = ask;
+  const first = Math.max(0, Math.floor(from * length));
+  const last = Math.min(length, Math.ceil(to * length));
+  const span = Math.max(1, last - first);
+  const count = Math.max(2, Math.min(Math.round(width * density), span));
+
+  const middle = height / 2;
+  const reach = middle * headroom;
+  const topX = new Float32Array(count);
+  const topY = new Float32Array(count);
+  const lowX = new Float32Array(count);
+  const lowY = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    const a = first + Math.floor((i * span) / count);
+    const b = Math.max(a + 1, first + Math.floor(((i + 1) * span) / count));
+    let low = 0;
+    let high = 0;
+    for (const channel of channels) {
+      for (let sample = a; sample < b; sample++) {
+        const value = channel[sample];
+        if (value < low) low = value;
+        else if (value > high) high = value;
+      }
+    }
+    const at = ((a + b) / 2 / length - from) / (to - from);
+    const x = at * width;
+    topX[i] = x;
+    topY[i] = middle - high * reach;
+    lowX[i] = x;
+    lowY[i] = middle - low * reach;
+  }
+  return { topX, topY, lowX, lowY, points: count, level: -1, read: span };
+}
+
 /** The edges as one closed silhouette: along the top, back along the bottom. */
 export function pathOf(edges: Edges, smooth: number): Path2D {
   const { topX, topY, lowX, lowY, points } = edges;

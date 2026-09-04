@@ -12,7 +12,7 @@ import type { Mix } from '../../state.ts';
 import { STEMS } from '../../mock.ts';
 import type { Peak } from '../../audio.ts';
 import { cellsIn, levelsOf, packedOf, type Steps } from './levels.ts';
-import { densityFor, outlineOf } from './outline.ts';
+import { densityFor, edgesOf, pathOf, samplesFrom } from './outline.ts';
 import './render.css';
 
 /**
@@ -131,15 +131,35 @@ function Lab({ mix }: { mix: Mix }) {
       const levels = ladders.get(id);
       if (!levels) return;
       const t0 = performance.now();
-      const shape = outlineOf(ladder ? levels : [levels[0]], {
+      const share = (view.to - view.from) / mix.seconds;
+      const ask = {
         from: view.from / mix.seconds,
         to: view.to / mix.seconds,
         width: view.width,
         height: view.height,
-        density: DENSITIES[density] ?? densityFor((view.to - view.from) / mix.seconds),
+        density: DENSITIES[density] ?? densityFor(share),
         smooth: SMOOTHS[smooth],
         headroom: 0.86,
-      });
+      };
+      // The same handover the lanes make. A master cell is milliseconds wide,
+      // so past it every rung is a drawing being enlarged — and an enlarged
+      // envelope is why an attack stopped looking like an attack.
+      const buffer = mix.audioOf(id);
+      const master = cellsIn(levels[0]);
+      const wanted = Math.round(view.width * ask.density);
+      const fine = buffer && (ask.to - ask.from) * master < wanted;
+      const edges = fine
+        ? samplesFrom(
+            Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c)),
+            { ...ask, length: buffer.length },
+          )
+        : edgesOf(ladder ? levels : [levels[0]], ask);
+      const shape = {
+        path: pathOf(edges, ask.smooth),
+        points: edges.points,
+        level: edges.level,
+        read: edges.read,
+      };
       const made = performance.now();
       const tint = tintOf(g, token);
       // The whole reason a silhouette is worth having: one fill can carry a
@@ -177,7 +197,7 @@ function Lab({ mix }: { mix: Mix }) {
       at.level = shape.level;
       at.read = shape.read;
     },
-    [ladders, ladder, density, smooth, fill, mix.seconds],
+    [ladders, ladder, density, smooth, fill, mix.seconds, mix.audioOf],
   );
 
   // The lanes' own drawing, mirrored: a column per half pixel, every column in
@@ -224,6 +244,35 @@ function Lab({ mix }: { mix: Mix }) {
       at.read = span;
     },
     [mix.peaks, mix.seconds],
+  );
+
+  /**
+   * Both drawings on one lane, which is the only way to ask whether they agree.
+   *
+   * Faster is half the question. The other half is whether the same sound still
+   * reads as the same thing — a snare where a snare was, an attack that still
+   * looks like an attack — and no amount of flipping between two rows answers
+   * that as well as one drawn through the other. The columns go down in grey
+   * and the outline over them in the stem's colour, so anywhere the curve has
+   * invented or swallowed a shape it shows as colour with no grey under it, or
+   * grey with no line on it.
+   */
+  const drawBoth = useCallback(
+    (i: number, id: string, token: string) => (g: CanvasRenderingContext2D, view: View) => {
+      g.save();
+      g.globalAlpha = 0.55;
+      drawRects(i, id, '--fg-dim')(g, view);
+      g.restore();
+      const before = { ...timing.current[i] };
+      g.save();
+      drawVector(i, id, token)(g, view);
+      g.restore();
+      // The overlay's reading is the vector's; the columns under it are there
+      // to be looked at, not to be timed.
+      const at = timing.current[i];
+      if (at) at.worst = Math.max(at.worst, before.worst);
+    },
+    [drawRects, drawVector],
   );
 
   const [bench, setBench] = useState('');
@@ -293,7 +342,7 @@ function Lab({ mix }: { mix: Mix }) {
       <Toolbar>
         <Group caption="Drawing">
           <Segmented
-            items={['vector', 'lanes today']}
+            items={['vector', 'lanes today', 'overlay']}
             index={mode}
             onChange={setMode}
             label="Which drawing"
@@ -350,7 +399,7 @@ function Lab({ mix }: { mix: Mix }) {
         </Status>
         <Status>
           each lane · {first.points} {mode === 0 ? 'points' : 'columns'}
-          {mode === 0 ? ` · rung ${first.level}` : ''}
+          {mode === 0 ? (first.level < 0 ? ' · from samples' : ` · rung ${first.level}`) : ''}
           {mode === 0 && DENSITIES[density] === null
             ? ` · ${densityFor((axis.window.to - axis.window.from) / mix.seconds).toFixed(2)}/px`
             : ''}
@@ -368,7 +417,11 @@ function Lab({ mix }: { mix: Mix }) {
             height={lanes === 4 ? 116 : 78}
             ruler={i === 0}
             draw={
-              mode === 0 ? drawVector(i, row.id, row.ink) : drawRects(i, row.id, row.ink)
+              mode === 1
+                ? drawRects(i, row.id, row.ink)
+                : mode === 0
+                  ? drawVector(i, row.id, row.ink)
+                  : drawBoth(i, row.id, row.ink)
             }
           />
         ))}
