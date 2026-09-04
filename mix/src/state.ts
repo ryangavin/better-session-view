@@ -854,18 +854,22 @@ export function useMix() {
     void bridge.analysis
       .read(selected)
       .catch(() => null)
-      .then((held) => {
+      .then((stored) => {
         if (!live) return;
-        if (held?.grid) {
-          setTargetBpm(held.grid.bpm);
-          setBpmAuto(held.grid.bpmAuto);
-          setOffset(held.grid.offset);
-          setBeats(held.grid.beats);
-          setDetected(foundOf(held));
+        if (stored?.grid) {
+          setTargetBpm(stored.grid.bpm);
+          setBpmAuto(stored.grid.bpmAuto);
+          setOffset(stored.grid.offset);
+          setBeats(stored.grid.beats);
+          setDetected(foundOf(stored));
           setWantFit(false);
         }
-        if (held?.slices) {
-          setSlices(held.slices);
+        // Slices made before they lived beside the track are still in the
+        // window's store. They are adopted once, and the settled write below
+        // puts them where they now go.
+        const made = stored?.slices ?? (forTrack(held.current, selected) as { slices?: Slice[] }).slices;
+        if (made) {
+          setSlices(made);
           setSlicesAuto(false);
         }
         setAsked(true);
