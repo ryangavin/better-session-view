@@ -71,6 +71,13 @@ looking and listening, and the batch run is what the arms are still for.
 | `harness/` | the previous page: truth, the scorer, the error report |
 
 
+## Musical alignment
+
+The **Musical alignment** experiment is documented in [alignment.md](alignment.md).
+It uses the kept beat map and explicit original/recurring/section policies to render
+shared-stem audio, with source/fitted audition and individual WAV downloads. Its
+varispeed, range and rate limits are explicit; it does not change the main player's policy.
+
 ## Waveform lab
 
 The **Waveform lab** tab compares three designs using the currently decoded stems:

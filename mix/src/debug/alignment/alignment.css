@@ -1,0 +1,20 @@
+.mf-alignment { padding: 12px 18px 24px; color: var(--fg); font-size: 12px; }
+.mf-alignment p { max-width: 1000px; line-height: 1.55; color: var(--caption); }
+.mf-alignment-controls, .mf-alignment-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0; align-items: end; }
+.mf-alignment label { display: flex; flex-direction: column; gap: 6px; }
+.mf-alignment input, .mf-alignment select, .mf-alignment button { color: var(--fg); background: var(--surface-control); border: 1px solid var(--bd); border-radius: 4px; padding: 7px; font: inherit; }
+.mf-alignment input[type=number] { width: 125px; }
+.mf-alignment input[type=checkbox] { align-self: start; }
+.mf-alignment button { cursor: pointer; }
+.mf-alignment button:disabled { opacity: .45; cursor: default; }
+.mf-alignment [role=alert] { color: var(--red); }
+.mf-alignment .mf-alignment-limit { color: var(--amber); }
+.mf-alignment-summary { margin-top: 20px; }
+.mf-alignment svg { display: block; width: 100%; margin: 18px 0; background: var(--surface-control); }
+.mf-alignment svg text { fill: var(--caption); font-size: 12px; }
+.mf-alignment .grid { stroke: var(--caption); stroke-dasharray: 2 2; }
+.mf-alignment .beat { stroke: var(--green); }
+.mf-alignment .pin { stroke: var(--amber); stroke-width: 2; }
+.mf-alignment table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.mf-alignment td, .mf-alignment th { text-align: left; padding: 6px; border-bottom: 1px solid var(--bd); font-variant-numeric: tabular-nums; }
+.mf-alignment audio { width: min(100%, 660px); margin-bottom: 14px; }
