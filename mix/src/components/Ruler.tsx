@@ -1,4 +1,4 @@
-import { useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { rulingOf, TICKS_PER_BAR } from '../grid.ts';
 import { barText, lengthText, snappedBar } from '../slices.ts';
 import type { Mix } from '../state.ts';
@@ -172,13 +172,19 @@ function Name({
   onDone(): void;
 }) {
   const props = useDraft(value, onCommit, true);
+  const field = useRef<HTMLInputElement | null>(null);
+  // Focused without scrolling: the ruler clips rather than scrolls, but a
+  // browser bringing a field into view is the one thing that would move it.
+  useEffect(() => {
+    field.current?.focus({ preventScroll: true });
+    field.current?.select();
+  }, []);
   return (
     <input
       {...props}
+      ref={field}
       className="mf-slice-name mf-slice-field"
       aria-label={label}
-      autoFocus
-      onFocus={(event) => event.currentTarget.select()}
       onBlur={(event) => {
         props.onBlur?.(event);
         onDone();

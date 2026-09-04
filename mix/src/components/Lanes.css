@@ -85,7 +85,7 @@
   flex: none;
   height: 21px;
   position: relative;
-  overflow: hidden;
+  overflow: clip;
   border-bottom: 1px solid var(--sel);
 }
 
@@ -99,7 +99,7 @@
   padding-left: 6px;
   border-right: 1px solid var(--bd);
   background: transparent;
-  overflow: hidden;
+  overflow: clip;
   cursor: pointer;
   font: inherit;
   user-select: none;
@@ -159,7 +159,9 @@
 }
 
 .mf-slice-field {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
   height: 17px;
   padding: 0 3px;
   margin-right: 4px;
