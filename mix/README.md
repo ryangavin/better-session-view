@@ -33,11 +33,12 @@ the sample, `src/tempo.ts` reads the tempo and the downbeat off all of them, and
 `src/follow.ts` finds every beat of the song and places it — the map in `src/warp.ts`
 is the sample of every beat and the only truth about timing, with no BPM stored
 anywhere — so a track opens gridded rather than ruled at 120. With warp on the stems
-play stretched to the header's tempo, every beat to the grid, through
-`src/stretch.ts` — [`docs/playback.md`](docs/playback.md). The window remembers
-itself across a reload.
-The slices are still eight evenly spaced spans with names, because nothing detects an
-arrangement yet, and the export button closes the dialog.
+play stretched to the header's tempo, the record **pinned** to that grid at every
+section and, between the sections, as densely as it needs — `src/pinned.ts`,
+[`docs/pinned.md`](docs/pinned.md) — through `src/stretch.ts`;
+[`docs/playback.md`](docs/playback.md). Export lays the same pins into whole-bar
+files. The window remembers itself across a reload.
+The slices are read off the stems and are then yours to cut, drag and name.
 
 **This is an index. Read the row you're changing.**
 
@@ -48,6 +49,7 @@ arrangement yet, and the export button closes the dialog.
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
 | bass transcription, MIDI, tuning-aware tab, or its cache | [`docs/transcribe.md`](docs/transcribe.md) — `electron/transcribeJob.ts`, `transcribe.ts`, `python/transcribe.py`, `src/tab.ts` |
 | playback, the mixer, the waveforms, the beat map, finding the beats, the stretcher, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `warp.ts`, `transients.ts`, `tempo.ts`, `follow.ts`, `schedule.ts`, `stretch.ts`, `remember.ts` |
+| how a record is held to the grid for playing and export, how densely, and why not every beat | [`docs/pinned.md`](docs/pinned.md) — `src/pinned.ts`, `straighten.ts`, `schedule.ts`, `components/ExportModal.tsx` |
 | whether the beats it found are right: the analysis harness in the app, the arms, the batch run | [`docs/harness.md`](docs/harness.md) — `src/debug/`, `tools/mix-warp.ts`, `src/trace.ts` |
 | where the Python engine comes from, how it is installed, and the probe | [`docs/demucs.md`](docs/demucs.md) — `electron/runtime.ts`, `python/pyproject.toml`, `tools/prepare.ts` |
 | the window, packaging, or anything shared with the other apps | [`desktop/README.md`](../desktop/README.md) — there is no mix[flow] version of it, and that is the point |
@@ -74,7 +76,8 @@ arrangement yet, and the export button closes the dialog.
 | `electron/preload.ts` | the context bridge |
 | `src/audio.ts` | reaching the stems, decoding them, and the peaks that draw them |
 | `src/engine.ts` | the transport and the mixer, which are one Web Audio graph — and the stretcher beside the sources |
-| `src/schedule.ts` | how a map plays at a tempo: the boundaries, and the playhead back out of them. Tested |
+| `src/pinned.ts` | the record pinned to the grid: at the sections always, between them per section, phrase, bar or beat; what the stretcher and the export both read. Tested |
+| `src/schedule.ts` | how a pinned record plays: the boundaries, and the playhead back out of them. Tested |
 | `src/stretch.ts` | Signalsmith Stretch as one worklet node for every stem |
 | `src/remember.ts` | what survives a reload, and what deliberately does not |
 | `src/mock.ts` | how a source is drawn, and the one invented thing left |
