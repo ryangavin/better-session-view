@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Peak } from '../audio.ts';
 import { rankOf, rulingOf, shaded, TICKS_PER_BAR, type Rank } from '../grid.ts';
 import { barAt, placeOf, type Beats } from '../warp.ts';
@@ -186,6 +186,13 @@ export function Waveform({
    */
   const pending = useRef(0);
   const latest = useRef<() => void>(() => {});
+  const schedule = useCallback(() => {
+    if (pending.current) return;
+    pending.current = requestAnimationFrame(() => {
+      pending.current = 0;
+      latest.current();
+    });
+  }, []);
 
   useEffect(() => {
     const el = canvas.current;
@@ -387,14 +394,24 @@ export function Waveform({
     };
 
     latest.current = paint;
-    const schedule = () => {
-      if (pending.current) return;
-      pending.current = requestAnimationFrame(() => {
-        pending.current = 0;
-        latest.current();
-      });
-    };
     schedule();
+  }, [schedule, peaks, buffer, ink, quiet, height, bars, from, to]);
+
+  /**
+   * The observer is made once, and a booked frame is only ever dropped when the
+   * lane goes away.
+   *
+   * Cancelling it on a change was the bug this replaces. The effect above lists
+   * the zoom among its dependencies, so every wheel event tore down the frame
+   * that was owed and booked another — and a hand that kept moving kept moving
+   * the drawing out of its own way, which is a stutter that gets worse the less
+   * you stop. Scrolling on is not a reason to abandon a frame already promised:
+   * it is finished, with the newest zoom there is, and the next change books
+   * the next one.
+   */
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
     const watch = new ResizeObserver(schedule);
     watch.observe(el);
     return () => {
@@ -402,7 +419,8 @@ export function Waveform({
       if (pending.current) cancelAnimationFrame(pending.current);
       pending.current = 0;
     };
-  }, [peaks, buffer, ink, quiet, height, bars, from, to]);
+  }, [schedule]);
+
 
   // Every lane is scrubbable, not just the ruler. A waveform is the thing you
   // are actually looking at when you decide where to listen from, and reaching

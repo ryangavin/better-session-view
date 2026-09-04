@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { rankOf, rulingOf, shaded, TICKS_PER_BAR } from '../grid.ts';
 import { barAt, placeOf, BEATS_PER_BAR, type Beats } from '../warp.ts';
 import type { Span } from '../zoom.ts';
@@ -106,6 +106,13 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
    */
   const pending = useRef(0);
   const latest = useRef<() => void>(() => {});
+  const schedule = useCallback(() => {
+    if (pending.current) return;
+    pending.current = requestAnimationFrame(() => {
+      pending.current = 0;
+      latest.current();
+    });
+  }, []);
 
   useEffect(() => {
     const el = canvas.current;
@@ -205,14 +212,24 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
     };
 
     latest.current = paint;
-    const schedule = () => {
-      if (pending.current) return;
-      pending.current = requestAnimationFrame(() => {
-        pending.current = 0;
-        latest.current();
-      });
-    };
     schedule();
+  }, [schedule, onsets, bars, height, from, to]);
+
+  /**
+   * The observer is made once, and a booked frame is only ever dropped when the
+   * lane goes away.
+   *
+   * Cancelling it on a change was the bug this replaces. The effect above lists
+   * the zoom among its dependencies, so every wheel event tore down the frame
+   * that was owed and booked another — and a hand that kept moving kept moving
+   * the drawing out of its own way, which is a stutter that gets worse the less
+   * you stop. Scrolling on is not a reason to abandon a frame already promised:
+   * it is finished, with the newest zoom there is, and the next change books
+   * the next one.
+   */
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
     const watch = new ResizeObserver(schedule);
     watch.observe(el);
     return () => {
@@ -220,7 +237,8 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
       if (pending.current) cancelAnimationFrame(pending.current);
       pending.current = 0;
     };
-  }, [onsets, bars, height, from, to]);
+  }, [schedule]);
+
 
   /** Where a pointer is, as a fraction of the file. */
   const placeAt = (clientX: number): number => {
