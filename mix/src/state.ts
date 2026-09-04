@@ -719,11 +719,16 @@ export function useMix() {
             return [source, buffer] as const;
           }),
         );
-        if (!live) return;
+        // Kept before the view is asked about, and on purpose. The scan has
+        // already happened by here; throwing it away because somebody clicked
+        // the next track while the stems were still decoding means paying for
+        // it again on every open, which is exactly the track that never gets
+        // its cache written.
         if (walked && bridge && songId) {
           const flat = Object.fromEntries(sources.map((source) => [source, packed(drawn[source])]));
           void bridge.analysis.keepPeaks(songId, stemsAt, COLUMNS, flat).catch(() => undefined);
         }
+        if (!live) return;
         // The graph still gets all of them at once: the stems are started in
         // one call so they play on the same sample, and a transport built from
         // four separate handovers is four different ideas of where zero is.
