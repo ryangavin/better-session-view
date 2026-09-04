@@ -183,6 +183,8 @@ export interface Analysis {
   track: string;
   grid: Grid | null;
   fit: Reading | null;
+  /** The slices somebody made, or null (or absent) while they are the window's to read off the stems. */
+  slices?: { bar: number; name: string }[] | null;
   produced: string;
 }
 
@@ -237,7 +239,12 @@ interface Bridge {
   };
   analysis: {
     read(trackId: string): Promise<Analysis | null>;
-    write(trackId: string, grid: Grid | null, fit: Reading | null): Promise<void>;
+    write(
+      trackId: string,
+      grid: Grid | null,
+      fit: Reading | null,
+      slices: { bar: number; name: string }[] | null,
+    ): Promise<void>;
     peaks(trackId: string, stems: string): Promise<KeptPeaks | null>;
     keepPeaks(
       trackId: string,

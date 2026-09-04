@@ -58,6 +58,12 @@ export interface Reading {
   fastest?: number;
 }
 
+/** A span of the song with a name, starting at a bar of the grid. `src/slices.ts`. */
+export interface SliceKept {
+  bar: number;
+  name: string;
+}
+
 export interface Analysis {
   openflow: 'mix-analysis';
   version: number;
@@ -65,6 +71,12 @@ export interface Analysis {
   /** Null when nothing has been decided, which is the same as the file not being there. */
   grid: Grid | null;
   fit: Reading | null;
+  /**
+   * The slices somebody made, in order of bar. Null while nobody has, which
+   * the window takes as: read them off the stems again. A file from before
+   * there were slices has no field, and reads the same.
+   */
+  slices?: SliceKept[] | null;
   produced: string;
 }
 
@@ -113,16 +125,29 @@ export async function readAnalysis(root: string, trackId: string): Promise<Analy
     if (held.track !== trackId) return null;
     if (held.grid && !(held.grid.bpm > 0 && Number.isFinite(held.grid.offset))) return null;
     if (held.grid?.beats && !Array.isArray(held.grid.beats.samples)) return null;
+    if (held.slices != null && !slicesSound(held.slices)) return null;
     return held;
   } catch {
     return null;
   }
 }
 
+/** Slices the window can draw: a list in bar order, each a finite bar and a name. */
+const slicesSound = (slices: unknown): slices is SliceKept[] =>
+  Array.isArray(slices) &&
+  slices.every(
+    (s, i) =>
+      typeof s === 'object' &&
+      s !== null &&
+      Number.isFinite((s as SliceKept).bar) &&
+      typeof (s as SliceKept).name === 'string' &&
+      (i === 0 || (s as SliceKept).bar >= (slices[i - 1] as SliceKept).bar),
+  );
+
 export async function writeAnalysis(
   root: string,
   trackId: string,
-  it: { grid: Grid | null; fit: Reading | null },
+  it: { grid: Grid | null; fit: Reading | null; slices?: SliceKept[] | null },
 ): Promise<void> {
   const analysis: Analysis = {
     openflow: 'mix-analysis',
@@ -130,6 +155,7 @@ export async function writeAnalysis(
     track: trackId,
     grid: it.grid,
     fit: it.fit,
+    slices: it.slices ?? null,
     produced: new Date().toISOString(),
   };
   await place(root, `${analysisAt(trackId)}/${ANALYSIS_FILE}`, JSON.stringify(analysis));

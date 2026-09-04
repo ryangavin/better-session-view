@@ -127,3 +127,35 @@ describe('the peaks', () => {
     await expect(writePeaks(root, TRACK, STEMS, 10, { drums: ramp(9, 1) })).rejects.toThrow('drums');
   });
 });
+
+describe('the slices', () => {
+  const grid = { bpm: 120, bpmAuto: false, offset: 0, beats: null };
+
+  it('keeps the slices somebody made beside the grid', async () => {
+    const slices = [
+      { bar: 0, name: 'Intro' },
+      { bar: 16.5, name: 'Drop' },
+    ];
+    await writeAnalysis(root, TRACK, { grid, fit: null, slices });
+    expect((await readAnalysis(root, TRACK))?.slices).toEqual(slices);
+  });
+
+  it('writes null where nobody has made any, and reads a file from before there were any the same', async () => {
+    await writeAnalysis(root, TRACK, { grid, fit: null });
+    expect((await readAnalysis(root, TRACK))?.slices).toBeNull();
+    const at = path.join(root, analysisAt(TRACK), ANALYSIS_FILE);
+    await fs.writeFile(at, JSON.stringify({ openflow: 'mix-analysis', version: 1, track: TRACK, grid: null }));
+    expect((await readAnalysis(root, TRACK))?.slices).toBeUndefined();
+  });
+
+  it('refuses slices out of order or without a bar', async () => {
+    const at = path.join(root, analysisAt(TRACK), ANALYSIS_FILE);
+    await fs.mkdir(path.dirname(at), { recursive: true });
+    const file = (slices: unknown) =>
+      fs.writeFile(at, JSON.stringify({ openflow: 'mix-analysis', version: 1, track: TRACK, grid: null, slices }));
+    await file([{ bar: 8, name: 'b' }, { bar: 0, name: 'a' }]);
+    expect(await readAnalysis(root, TRACK)).toBeNull();
+    await file([{ name: 'a' }]);
+    expect(await readAnalysis(root, TRACK)).toBeNull();
+  });
+});

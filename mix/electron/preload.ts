@@ -12,7 +12,7 @@ import type { ExportAsk, Written } from './export.ts';
 import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
-import type { Analysis, Grid, Peaks, Reading } from './analysis.ts';
+import type { Analysis, Grid, Peaks, Reading, SliceKept } from './analysis.ts';
 
 /**
  * What the renderer cannot do for itself: reach a process, and reach a folder.
@@ -63,8 +63,12 @@ expose({
     /** The grid and the last reading kept beside a track, or null when there is none. */
     read: (trackId: string): Promise<Analysis | null> =>
       ipcRenderer.invoke('openflow:analysis-read', trackId),
-    write: (trackId: string, grid: Grid | null, fit: Reading | null): Promise<void> =>
-      ipcRenderer.invoke('openflow:analysis-write', { trackId, grid, fit }),
+    write: (
+      trackId: string,
+      grid: Grid | null,
+      fit: Reading | null,
+      slices: SliceKept[] | null,
+    ): Promise<void> => ipcRenderer.invoke('openflow:analysis-write', { trackId, grid, fit, slices }),
     /** The drawing of one separation's stems, or null when it has not been kept or is stale. */
     peaks: (trackId: string, stems: string): Promise<Peaks | null> =>
       ipcRenderer.invoke('openflow:peaks-read', { trackId, stems }),

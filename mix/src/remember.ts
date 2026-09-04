@@ -16,7 +16,7 @@
  * knows and the disk does not — which track is open, where the head is, and how
  * the faders are set.
  *
- * The mix and the slices are stored per track and are therefore **on this
+ * The mix is stored per track and is therefore **on this
  * machine, not in the library**. Carrying the folder to another laptop carries
  * the audio and the stems, not the balance. That is a real limitation rather
  * than an oversight: putting it in the manifest is where it goes when it should
@@ -32,7 +32,6 @@ const KEY = 'mixflow.window.v1';
 export interface Remembered {
   /** Partial, because a store from before the bands existed has no bands in it. */
   levels?: Record<string, Partial<Level>>;
-  slices?: { bar: number; name: string }[];
   /** Seconds. Where the head was, so a reload lands back in the same eight bars. */
   at?: number;
   /**

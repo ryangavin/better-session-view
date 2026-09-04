@@ -421,8 +421,8 @@ because the app has a scheme rather than `file://`, an opaque origin that
 promises nothing.
 
 Kept: the open track, the model, the search, loop and warp; and per
-track, the mix, the head, the tempo it plays at, the beat map and any slices
-somebody has actually named. **Not** the
+track, the mix and the head. **Not** the grid and not the slices, which are
+facts about the audio and go beside it in `analysis/`. **Not** the
 library and not the stems — those are on disk and are read back every time,
 because a second copy of the truth is the copy that goes stale.
 
@@ -448,12 +448,13 @@ A reload during a separation reattaches rather than restarting: the renderer
 restarting does not stop the main process, so the window asks `busy()` on mount
 and picks the job back up mid-flight.
 
-Untouched slices are the one thing deliberately *not* kept. What the window
-read off the stems is a reading rather than a decision, and it is read again
-every time the track opens, against whatever the grid is by then — writing it
-down would freeze cuts against a beat map that might since have been bent. They
-only become somebody's, and kept, once one is renamed, moved, cut or removed;
-*read again* in the export dialog gives them back.
+Untouched slices are deliberately *not* kept anywhere. What the window read
+off the stems is a reading rather than a decision, and it is read again every
+time the track opens, against whatever the grid is by then — writing it down
+would freeze cuts against a beat map that might since have been bent. They
+only become somebody's once one is renamed, moved, cut or removed, and then
+they are written beside the track in `analysis.json` with the grid they sit
+on; *read again* in the export dialog gives the reading back.
 
 **The mix lives on this machine, not in the library.** Carrying the folder to
 another laptop carries the audio and the stems, not the balance. That is a real

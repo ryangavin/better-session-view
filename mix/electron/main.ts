@@ -24,7 +24,15 @@ import { TAB_FILE, transcriptionAt, type TranscribeProgress } from './transcribe
 import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
 import { stopYoutube } from './youtube.ts';
-import { readAnalysis, readPeaks, writeAnalysis, writePeaks, type Grid, type Reading } from './analysis.ts';
+import {
+  readAnalysis,
+  readPeaks,
+  writeAnalysis,
+  writePeaks,
+  type Grid,
+  type Reading,
+  type SliceKept,
+} from './analysis.ts';
 
 /**
  * mix[flow]: a mix in, its parts out — and the bass written down.
@@ -116,9 +124,14 @@ if (only(app)) {
   });
   ipcMain.handle(
     'openflow:analysis-write',
-    async (_event, ask: { trackId: string; grid: Grid | null; fit: Reading | null }) => {
+    async (
+      _event,
+      ask: { trackId: string; grid: Grid | null; fit: Reading | null; slices: SliceKept[] | null },
+    ) => {
       const where = await root();
-      if (where) await writeAnalysis(where, ask.trackId, { grid: ask.grid, fit: ask.fit });
+      if (where) {
+        await writeAnalysis(where, ask.trackId, { grid: ask.grid, fit: ask.fit, slices: ask.slices });
+      }
     },
   );
   ipcMain.handle('openflow:peaks-read', async (_event, ask: { trackId: string; stems: string }) => {

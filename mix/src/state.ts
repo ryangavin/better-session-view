@@ -173,18 +173,18 @@ export function useMix() {
   const [models, setModels] = useState<Model[]>([]);
   const [model, setModel] = useState(kept.model ?? 'htdemucs_ft');
   const [level, setLevel] = useState<Record<string, Level>>(() => levels(first.levels));
-  const [slices, setSlices] = useState<Slice[]>(
-    () => first.slices ?? slicesFor(8, BARS_UNKNOWN),
-  );
+  const [slices, setSlices] = useState<Slice[]>(() => slicesFor(8, BARS_UNKNOWN));
   /**
-   * Whether the slices are still the eight the window laid out, untouched.
+   * Whether the slices are still the window's reading, untouched.
    *
-   * An untouched set is a *default* rather than a decision, so it is re-spread
-   * when the bar count settles and it is never written down. Once somebody
-   * renames one it becomes theirs, and from then on it is kept exactly as it is
-   * — including its bar positions, which is why re-spreading has to stop.
+   * An untouched set is a *reading* rather than a decision, so it is read
+   * again whenever the stems or the grid change and it is never written down.
+   * Once somebody renames, moves, cuts or removes one it becomes theirs, kept
+   * beside the track in the analysis file, and from then on it is exactly as
+   * they left it — including its bar positions, which is why the reading has
+   * to stop.
    */
-  const [slicesAuto, setSlicesAuto] = useState(!first.slices);
+  const [slicesAuto, setSlicesAuto] = useState(true);
   const [activeSlice, setActiveSlice] = useState(0);
   const [targetBpm, setTargetBpm] = useState(first.bpm ?? 120);
   const [bpmAuto, setBpmAuto] = useState(first.bpmAuto ?? true);
@@ -768,13 +768,20 @@ export function useMix() {
     [targetBpm, bpmAuto, offset, beats],
   );
 
-  /** Write the grid beside the track, now. Nothing to write until the library has answered. */
+  /**
+   * Write the grid and the slices beside the track, now. Nothing to write
+   * until the library has answered. The slices go only when they are
+   * somebody's: a reading is re-read, and writing it down would freeze it
+   * against a grid that might since have been bent.
+   */
   const keepGrid = useCallback(() => {
     const bridge = openflow();
     if (!bridge || !song || !asked) return;
     const grid: Grid | null = wantFit ? null : { bpm: targetBpm, bpmAuto, offset, beats };
-    void bridge.analysis.write(song.id, grid, readingOf(detected)).catch(() => undefined);
-  }, [song, asked, wantFit, targetBpm, bpmAuto, offset, beats, detected]);
+    void bridge.analysis
+      .write(song.id, grid, readingOf(detected), slicesAuto ? null : slices)
+      .catch(() => undefined);
+  }, [song, asked, wantFit, targetBpm, bpmAuto, offset, beats, detected, slicesAuto, slices]);
 
   /**
    * Open a track.
@@ -795,7 +802,6 @@ export function useMix() {
       if (song) {
         held.current = withTrack(held.current, song.id, {
           levels: level,
-          slices: slicesAuto ? undefined : slices,
           at: audio.at(),
           ...gridHeld(),
         });
@@ -814,8 +820,8 @@ export function useMix() {
       const known = forTrack(held.current, id);
       setPosition(known.at ?? 0);
       setLevel(levels(known.levels));
-      setSlices(known.slices ?? slicesFor(8, BARS_UNKNOWN));
-      setSlicesAuto(!known.slices);
+      setSlices(slicesFor(8, BARS_UNKNOWN));
+      setSlicesAuto(true);
       setActiveSlice(0);
       const picked = tracks.find((t) => t.id === id);
       setTargetBpm(known.bpm ?? picked?.bpm ?? 120);
@@ -826,7 +832,7 @@ export function useMix() {
       // measured — and it will be, as soon as there are stems to measure.
       setWantFit(known.bpm == null);
     },
-    [tracks, audio, song, selected, level, slices, gridHeld, keepGrid],
+    [tracks, audio, song, selected, level, gridHeld, keepGrid],
   );
 
   /**
@@ -857,6 +863,10 @@ export function useMix() {
           setBeats(held.grid.beats);
           setDetected(foundOf(held));
           setWantFit(false);
+        }
+        if (held?.slices) {
+          setSlices(held.slices);
+          setSlicesAuto(false);
         }
         setAsked(true);
       });
@@ -1507,10 +1517,6 @@ export function useMix() {
       if (song) {
         next = withTrack(next, song.id, {
           levels: level,
-          // Only when they are somebody's. An untouched set is regenerated from
-          // the bar count, and writing it down would freeze eight defaults laid
-          // out against a length the window had not measured yet.
-          slices: slicesAuto ? undefined : slices,
           at: audio.at(),
           ...gridHeld(),
         });
@@ -1527,8 +1533,6 @@ export function useMix() {
     warp,
     song,
     level,
-    slices,
-    slicesAuto,
     gridHeld,
     playing,
     audio,
