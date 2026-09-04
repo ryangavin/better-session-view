@@ -20,6 +20,15 @@ import { Slider } from '../src/controls/Slider.tsx';
 import { Toggle } from '../src/controls/Toggle.tsx';
 import { XYPad } from '../src/controls/XYPad.tsx';
 import { DebugCase } from './DebugCase.tsx';
+import {
+  FactsCase,
+  HarnessCase,
+  LegendCase,
+  PlotCase,
+  ScopeCase,
+  TransportCase,
+  WorkspaceCase,
+} from './DebugCases.tsx';
 import { WaveCases } from './WaveCases.tsx';
 import { Rooms, type Room } from '../src/debug/Rooms.tsx';
 import { useRemembered } from '../src/debug/useRemembered.ts';
@@ -44,7 +53,12 @@ const ROOMS = [
   },
   { id: 'chrome', title: 'Chrome', note: 'what a window is built out of', sections: ['Text', 'Row', 'Device', 'Chain', 'Graph', 'Modal'] },
   { id: 'drawing', title: 'Drawing', note: 'over a length of time', sections: ['Waveform'] },
-  { id: 'debug', title: 'Debug', note: 'the harness this page is', sections: ['Debug', 'Model'] },
+  {
+    id: 'debug',
+    title: 'Debug',
+    note: 'the harness this page is',
+    sections: ['Harness', 'Scope', 'Plot', 'Facts', 'Legend', 'Transport', 'Workspace', 'Together', 'Model'],
+  },
 ];
 
 const SECTIONS = ROOMS.flatMap((room) => room.sections);
@@ -1028,10 +1042,18 @@ function Cases({ only }: { only: string }) {
           </Case>
         </Section>
 
-        <Section id="Debug">
+        <Section id="Harness"><HarnessCase /></Section>
+        <Section id="Scope"><ScopeCase /></Section>
+        <Section id="Plot"><PlotCase /></Section>
+        <Section id="Facts"><FactsCase /></Section>
+        <Section id="Legend"><LegendCase /></Section>
+        <Section id="Transport"><TransportCase /></Section>
+        <Section id="Workspace"><WorkspaceCase /></Section>
+
+        <Section id="Together">
           <Case
             wide
-            note="The frame a harness is built in, with nothing under it: a made-up signal, beats every half second, a head on the wall clock. Click the time row to seek, drag it to pan, shift-drag for a loop, alt-drag or drag the head to scrub; scroll pans and shift-scroll zooms about the pointer. The legends appear under the pointer. Everything is drawn in palette inks read off the page, so it follows the host-tokens switch."
+            note="All of them at once, which is the point of the module and the thing a page of parts stops showing. A made-up signal, beats every half second, a head on the wall clock. Click the time row to seek, drag it to pan, shift-drag for a loop, alt-drag or drag the head to scrub; scroll pans and shift-scroll zooms about the pointer. Everything is drawn in palette inks read off the page, so it follows the host-tokens switch."
           >
             <DebugCase />
           </Case>

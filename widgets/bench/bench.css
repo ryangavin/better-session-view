@@ -338,3 +338,8 @@ font-variation-settings: var(--mono-axes);
   cursor: pointer;
 }
 
+.case-hint {
+  color: var(--wdg-caption);
+  font-size: var(--text-label);
+}
+
