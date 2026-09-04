@@ -50,9 +50,18 @@ building, which is the earliest possible warning.
 
 ## What's on it
 
-One section per control, each a grid of cases with a note saying what the case is for.
-Every case is genuinely live, with its own value. The chrome sections follow and stop
-where a shell with a faceplate under it stops.
+Rooms down the side, and the chosen room's tabs across the top —
+[`Rooms`](../src/debug/Rooms.tsx) over [`Workspace`](../src/debug/Workspace.tsx), which are
+this module's own, so the page you read a widget on is built out of the widgets. Most rooms
+are a section per control: a grid of cases with a note saying what the case is for, each
+genuinely live and holding its own value. The chrome sections follow and stop where a shell
+with a faceplate under it stops.
+
+**Graph is the exception, and is a room rather than a section for a reason.** A knob is
+right or wrong in a screenshot; a canvas is not. A cord that lands nine times out of ten
+looks exactly like one that lands ten times out of ten, so that room carries an instrument
+instead of more cases — see [the graph](graph.md#where-to-work-on-it) for what it counts and
+why. It lives in `bench/GraphCases.tsx` and `bench/trace.ts` rather than in `Bench.tsx`.
 
 **A whole stock device face is not on this page**, and the omission is the boundary again.
 Composing one means naming a particular device, and a page that reproduces Live's EQ Eight
@@ -89,7 +98,17 @@ it, which is what stops it rotting.
 
 ## Adding a case
 
-Add it to the section's grid in `Bench.tsx`. Use `Held` so it has its own value, and write
-the note as what the case is *for*, not what the control is — "four steps across the
-range, Max's own worked example" earns its space; "a knob" doesn't. Every new widget needs
-at least a default case and a disabled one.
+Add it to the section's grid in `Bench.tsx`. `Held` and `Case`, and the made-up parameters
+every case runs on, are in `bench/parts.tsx` — shared, because the page is no longer one
+file. Use `Held` so the case has its own value, and write the note as what the case is
+*for*, not what the control is — "four steps across the range, Max's own worked example"
+earns its space; "a knob" doesn't. Every new widget needs at least a default case and a
+disabled one.
+
+## Adding a room
+
+A room is a line in `ROOMS` at the top of `Bench.tsx`. Usually it is a title and a list of
+section names, and the sections are drawn out of `Cases` like every other. A room that needs
+more than that passes `tabs` instead — its own `Experiment`s, mounted directly — which is
+what **Graph** does. Prefer the section list: bringing your own tabs is worth it when the
+room is an instrument rather than a page, and not before.

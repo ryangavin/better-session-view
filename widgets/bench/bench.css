@@ -343,3 +343,204 @@ font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
 }
 
+
+.patch.tall {
+  height: 460px;
+}
+
+.patch-inlet {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.patch-cut {
+  padding: 0;
+  width: 11px;
+  height: 11px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--wdg-caption);
+  font: inherit;
+  font-size: var(--text-label);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.patch-cut:hover {
+  background: var(--wdg-edge);
+  color: var(--wdg-alarm);
+}
+
+.scale-bare {
+  display: block;
+  padding: 2px 6px;
+  color: var(--wdg-caption);
+  font-size: var(--text-label);
+  text-align: center;
+}
+
+.graph-subject {
+  color: var(--wdg-text);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+}
+
+.wdg-facts.graph-readings {
+  flex: 1 1 260px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 2px;
+  align-content: start;
+  padding: var(--wdg-space);
+  border: 1px solid var(--wdg-edge);
+  border-radius: var(--radius-sm);
+  background: var(--wdg-well);
+}
+
+.graph-readings .wdg-fact {
+  justify-content: space-between;
+  gap: var(--wdg-space);
+  font-size: var(--text-label);
+}
+
+.graph-readings .wdg-fact dd {
+  font-variation-settings: var(--mono-axes);
+}
+
+.graph-account {
+  display: flex;
+  flex: 3 1 420px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.graph-account ol {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  height: 168px;
+  margin: 0;
+  padding: 6px var(--wdg-space);
+  border: 1px solid var(--wdg-edge);
+  border-radius: var(--radius-sm);
+  background: var(--wdg-well);
+  list-style: none;
+}
+
+.graph-account li {
+  display: grid;
+  grid-template-columns: 4.5em 5.5em 1fr;
+  gap: var(--wdg-space);
+  color: var(--wdg-text);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  line-height: 1.6;
+}
+
+.graph-account-at {
+  color: var(--wdg-caption);
+  text-align: right;
+}
+
+.graph-account-kind {
+  color: var(--wdg-caption);
+}
+
+.graph-account-said {
+  min-width: 0;
+  color: var(--wdg-text-strong);
+  overflow-wrap: anywhere;
+}
+
+.graph-account li[data-kind='landed'] .graph-account-kind {
+  color: var(--green, #5fbfa8);
+}
+
+.graph-account li[data-kind='dropped'] .graph-account-kind,
+.graph-account li[data-kind='snagged'] .graph-account-kind {
+  color: var(--wdg-alarm);
+}
+
+.graph-account li[data-kind='snagged'] .graph-account-said {
+  color: var(--wdg-alarm);
+}
+
+.graph-account li[data-kind='refused'] .graph-account-kind,
+.graph-account li[data-kind='escaped'] .graph-account-kind {
+  color: var(--wdg-fill);
+}
+
+.graph-trials-case {
+  display: flex;
+  gap: var(--wdg-space);
+  align-items: stretch;
+  padding: var(--wdg-space);
+}
+
+.graph-trials-case .patch-case {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.graph-trials {
+  display: flex;
+  flex: 0 0 320px;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: 460px;
+  padding: var(--wdg-space);
+  border: 1px solid var(--wdg-edge);
+  border-radius: var(--radius-sm);
+  background: var(--wdg-well);
+}
+
+.graph-trials-score {
+  margin: 0;
+  color: var(--wdg-text-strong);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+}
+
+.graph-trials ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.graph-trials li {
+  display: grid;
+  grid-template-columns: 4.5em 1fr;
+  gap: 0 var(--wdg-space);
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+
+.graph-trial-state {
+  color: var(--wdg-caption);
+  font-variation-settings: var(--mono-axes);
+}
+
+.graph-trials li[data-met] .graph-trial-state {
+  color: var(--green, #5fbfa8);
+}
+
+.graph-trial-task {
+  color: var(--wdg-text-strong);
+}
+
+.graph-trials li[data-met] .graph-trial-task {
+  color: var(--wdg-text);
+}
+
+.graph-trial-how {
+  grid-column: 2;
+  color: var(--wdg-caption);
+}

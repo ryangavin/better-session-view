@@ -1,12 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { FINE_KEY } from '../src/gesture/platform.ts';
 import { format } from '../src/param/format.ts';
-import { enumParam, type Param, type UnitStyle } from '../src/param/param.ts';
+import type { Param, UnitStyle } from '../src/param/param.ts';
 import { Chain } from '../src/chrome/Chain.tsx';
-import { Device, DevicePortRow } from '../src/chrome/Device.tsx';
-import { Graph, GraphNode, type GraphCord } from '../src/chrome/Graph.tsx';
+import { Device } from '../src/chrome/Device.tsx';
 import { Modal } from '../src/chrome/Modal.tsx';
-import { Port } from '../src/chrome/Port.tsx';
 import { Rack } from '../src/chrome/Rack.tsx';
 import { Row } from '../src/chrome/Row.tsx';
 import { Button } from '../src/controls/Button.tsx';
@@ -30,7 +28,25 @@ import {
   WorkspaceCase,
 } from './DebugCases.tsx';
 import { WaveCases } from './WaveCases.tsx';
+import { GRAPH_TABS } from './GraphCases.tsx';
+import {
+  Case,
+  CROSSFADE,
+  DRY_WET,
+  FILTER,
+  FREQ,
+  GAIN,
+  Held,
+  NOTE,
+  PAN,
+  SHAPE,
+  STEPPED,
+  TIME,
+  UNITS,
+  VOICES,
+} from './parts.tsx';
 import { Rooms, type Room } from '../src/debug/Rooms.tsx';
+import type { Experiment } from '../src/debug/Workspace.tsx';
 import { useRemembered } from '../src/debug/useRemembered.ts';
 
 const slug = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
@@ -43,15 +59,31 @@ const slug = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
  * to look at rather than by what the file tree happens to say: a control you
  * put your hand on, a shape a window is built out of, a drawing over time, and
  * the harness this page is itself made of.
+ *
+ * A room is usually a set of section names, each drawn as a grid of cases out
+ * of `Cases` below. **Graph** is the exception and brings its own tabs: a
+ * canvas cannot be judged by looking at it, so that room is an instrument
+ * rather than a page, and it lives in [`GraphCases.tsx`](./GraphCases.tsx).
  */
-const ROOMS = [
+interface RoomSpec {
+  id: string;
+  title: string;
+  note: string;
+  /** Section names, drawn through `Cases`. */
+  sections?: readonly string[];
+  /** A room that owns its own tabs instead. */
+  tabs?: readonly Experiment<null>[];
+}
+
+const ROOMS: readonly RoomSpec[] = [
   {
     id: 'controls',
     title: 'Controls',
     note: 'things you put a hand on',
     sections: ['Knob', 'Slider', 'Number field', 'Toggle', 'Button', 'Meter', 'Segmented', 'Select', 'XY pad'],
   },
-  { id: 'chrome', title: 'Chrome', note: 'what a window is built out of', sections: ['Text', 'Row', 'Device', 'Chain', 'Graph', 'Modal'] },
+  { id: 'chrome', title: 'Chrome', note: 'what a window is built out of', sections: ['Text', 'Row', 'Device', 'Chain', 'Modal'] },
+  { id: 'graph', title: 'Graph', note: 'the canvas, and whether it behaves', tabs: GRAPH_TABS },
   { id: 'drawing', title: 'Drawing', note: 'over a length of time', sections: ['Waveform'] },
   {
     id: 'debug',
@@ -61,28 +93,7 @@ const ROOMS = [
   },
 ];
 
-const SECTIONS = ROOMS.flatMap((room) => room.sections);
-
-/** One widget's own value, so every example on the page is genuinely live. */
-function Held({
-  param,
-  children,
-}: {
-  param: Param;
-  children: (value: number, onChange: (next: number) => void) => ReactNode;
-}) {
-  const [value, setValue] = useState(param.defaultValue);
-  return <>{children(value, setValue)}</>;
-}
-
-function Case({ note, wide, children }: { note: string; wide?: boolean; children: ReactNode }) {
-  return (
-    <div className={`case${wide ? ' wide' : ''}`}>
-      <div className="case-stage">{children}</div>
-      <p className="case-note">{note}</p>
-    </div>
-  );
-}
+const SECTIONS = ROOMS.flatMap((room) => room.sections ?? []);
 
 /** Something for the plane to draw over, standing in for a device's own curve. */
 function PadGrid() {
@@ -118,42 +129,6 @@ function Section({ id, children }: { id: string; children: ReactNode }) {
     </section>
   );
 }
-
-const DRY_WET: Param = {
-  kind: 'float', min: 0, max: 100, defaultValue: 50, unit: 'percent', shortName: 'Dry/Wet',
-};
-const PAN: Param = {
-  kind: 'float', min: -1, max: 1, defaultValue: 0, unit: 'pan', shortName: 'Pan',
-};
-const FREQ: Param = {
-  kind: 'float', min: 20, max: 20000, defaultValue: 440, unit: 'hertz',
-  exponent: 3, shortName: 'Freq',
-};
-const VOICES: Param = {
-  kind: 'int', min: 1, max: 16, defaultValue: 8, unit: 'int', shortName: 'Voices',
-};
-const TIME: Param = {
-  kind: 'float', min: 1, max: 5000, defaultValue: 250, unit: 'time', shortName: 'Time',
-};
-const GAIN: Param = {
-  kind: 'float', min: -70, max: 6, defaultValue: 0, unit: 'decibel', shortName: 'Gain',
-};
-const NOTE: Param = {
-  kind: 'int', min: 0, max: 127, defaultValue: 60, unit: 'midi', shortName: 'Root',
-};
-const CROSSFADE: Param = {
-  kind: 'float', min: -1, max: 1, defaultValue: 0, unit: 'float', shortName: 'Crossfade',
-};
-const STEPPED: Param = {
-  kind: 'float', min: 0, max: 64, defaultValue: 0, steps: 4, shortName: 'Steps',
-};
-const SHAPE = enumParam(['Sine', 'Square', 'Saw', 'Noise'], { defaultIndex: 0, name: 'Shape' });
-const FILTER = enumParam(['LP', 'BP', 'HP', 'Notch'], { defaultIndex: 0, name: 'Filter' });
-
-const UNITS: UnitStyle[] = [
-  'native', 'int', 'float', 'time', 'hertz', 'decibel',
-  'percent', 'pan', 'semitones', 'midi', 'custom',
-];
 
 /** A faceplate worth putting in a shell: real controls, each with its own value. */
 function Faceplate() {
@@ -288,266 +263,6 @@ function Grouped() {
       </Rack>
       <Shell name="Saturator" />
     </Chain>
-  );
-}
-
-/** Small enough that three of them fit on a canvas without scrolling. */
-function PatchFace() {
-  return (
-    <Row>
-      <Held param={FREQ}>{(v, set) => <Knob param={FREQ} value={v} onChange={set} />}</Held>
-      <Held param={DRY_WET}>{(v, set) => <Knob param={DRY_WET} value={v} onChange={set} />}</Held>
-    </Row>
-  );
-}
-
-/**
- * Two kinds, so the host has something to refuse a cord for.
- *
- * The names are deliberately no device in particular: this module has no list
- * of kinds and no opinion about what a port carries, and a bench case naming a
- * real one would be the first place that stopped being true.
- */
-const PATCH = [
-  {
-    id: 'source',
-    name: 'Source',
-    x: 16,
-    y: 28,
-    inlets: [],
-    outlets: [
-      { id: 'source:notes', label: 'Notes', kind: 'note' },
-      { id: 'source:level', label: 'Level', kind: 'signal' },
-    ],
-  },
-  {
-    id: 'shape',
-    name: 'Shape',
-    x: 236,
-    y: 16,
-    inlets: [
-      { id: 'shape:pitch', label: 'Pitch', kind: 'note' },
-      { id: 'shape:size', label: 'Size', kind: 'signal' },
-    ],
-    outlets: [{ id: 'shape:out', label: 'Out', kind: 'signal' }],
-  },
-  {
-    id: 'output',
-    name: 'Output',
-    x: 456,
-    y: 44,
-    inlets: [{ id: 'output:in', label: 'In', kind: 'signal' }],
-    outlets: [],
-  },
-] as const;
-
-const PORTS = PATCH.flatMap((node) => [...node.inlets, ...node.outlets]);
-
-/**
- * The canvas, doing the whole bargain: the graph emits a pair of ids, and this
- * host decides whether the kinds agree and whether the inlet was already taken.
- * Refuse one and watch nothing happen.
- *
- * Note there is nothing here about which end was dragged. The graph hands back
- * the outlet first whichever way round the cord was pulled, so `carries` and
- * `takes` are always the right way round and the one-cord-per-inlet rule below
- * still keys off `to`.
- */
-function Patch() {
-  const [at, setAt] = useState<Record<string, { x: number; y: number }>>(() =>
-    Object.fromEntries(PATCH.map((node) => [node.id, { x: node.x, y: node.y }])),
-  );
-  const [cords, setCords] = useState<GraphCord[]>([
-    { from: 'source:notes', to: 'shape:pitch', kind: 'note' },
-    { from: 'shape:out', to: 'output:in', kind: 'signal' },
-  ]);
-  const [picked, setPicked] = useState<string | null>('shape');
-  const [said, setSaid] = useState('two cords, both landed');
-
-  const connect = (from: string, to: string) => {
-    const carries = PORTS.find((port) => port.id === from)?.kind;
-    const takes = PORTS.find((port) => port.id === to)?.kind;
-    if (carries !== takes) {
-      setSaid(`refused: ${from} carries ${carries}, ${to} takes ${takes}`);
-      return;
-    }
-    setSaid(`${from} to ${to}`);
-    // One cord per inlet, which is this host's rule and not the graph's.
-    setCords((held) => [...held.filter((cord) => cord.to !== to), { from, to, kind: carries }]);
-  };
-
-  return (
-    <div className="patch-case">
-      <Graph
-        className="patch"
-        cords={cords}
-        onConnect={connect}
-        onMove={(id, x, y) => setAt((held) => ({ ...held, [id]: { x, y } }))}
-        onClearSelection={() => setPicked(null)}
-      >
-        {PATCH.map((node) => (
-          <GraphNode key={node.id} id={node.id} x={at[node.id].x} y={at[node.id].y}>
-            <Device
-              name={node.name}
-              on
-              onToggle={() => {}}
-              selected={picked === node.id}
-              onSelect={() => setPicked(node.id)}
-              inlets={node.inlets.map((port) => (
-                <Port
-                  key={port.id}
-                  id={port.id}
-                  side="in"
-                  label={port.label}
-                  kind={port.kind}
-                  connected={cords.some((cord) => cord.to === port.id)}
-                />
-              ))}
-              outlets={node.outlets.map((port) => (
-                <Port
-                  key={port.id}
-                  id={port.id}
-                  side="out"
-                  label={port.label}
-                  kind={port.kind}
-                  connected={cords.some((cord) => cord.from === port.id)}
-                />
-              ))}
-            >
-              <PatchFace />
-            </Device>
-          </GraphNode>
-        ))}
-      </Graph>
-      <p className="patch-out">{said}</p>
-    </div>
-  );
-}
-
-/**
- * A source for a driven row, sampled at a **display's** rate and not a
- * renderer's.
- *
- * Ten readings a second is what a host actually hands a control — anything
- * faster is a number nobody can read changing — and it is the rate the wake
- * exists to smooth. Held, it is the case that decides the drawing: three
- * delayed samples of a sample-and-hold sit at three unrelated values, and a
- * cascade of lags turns the same step into a streak that collapses.
- */
-function useSignal(held: boolean): number {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const timer = window.setInterval(() => setTick((was) => was + 1), 100);
-    return () => window.clearInterval(timer);
-  }, []);
-  const phase = (tick * 0.04) % 1;
-  if (!held) return Math.sin(phase * Math.PI * 2) * 0.5 + 0.5;
-  const step = Math.sin(Math.floor(phase * 4) * 127.1 + 311.7) * 43758.5453;
-  return step - Math.floor(step);
-}
-
-function RowFace() {
-  const [depth, setDepth] = useState(41);
-  const [size, setSize] = useState(62);
-  const [reach, setReach] = useState(0.26);
-  const [held, setHeld] = useState(false);
-  const signal = useSignal(held);
-  return (
-    <div className="row-face-case">
-      <Toggle on={held} onChange={setHeld} name="Source">
-        {held ? 'hold' : 'smooth'}
-      </Toggle>
-      <Device
-      name="Ripple"
-      className="row-face"
-      headerAfterName={<span className="row-face-kind">Shape</span>}
-      onHotSwap={() => {}}
-      screen={<div className="row-face-preview">live picture</div>}
-      chooser={
-        <Select
-          items={['One', 'Two']}
-          index={0}
-          onChange={() => {}}
-          label="Target"
-          width={138}
-        />
-      }
-      outlets={
-        <>
-          <Port id="row-face:point" side="out" label="Point" kind="note" />
-          <Port id="row-face:value" side="out" label="Value" kind="signal" />
-        </>
-      }
-      portRows={
-        <>
-          <DevicePortRow
-            inlet={
-              <Port id="row-face:in" side="in" label="Input" kind="note" showLabel={false} />
-            }
-          >
-            <span className="row-face-label">Input</span>
-          </DevicePortRow>
-          <DevicePortRow
-            inlet={
-              <Port
-                id="row-face:depth"
-                side="in"
-                label="Depth"
-                kind="signal"
-                showLabel={false}
-              />
-            }
-          >
-            <Slider
-              param={DRY_WET}
-              value={depth}
-              onChange={setDepth}
-              name="Depth"
-              orientation="horizontal"
-              layout="inside"
-            />
-          </DevicePortRow>
-          <DevicePortRow
-            inlet={
-              <Port
-                id="row-face:size"
-                side="in"
-                label="Size"
-                kind="signal"
-                showLabel={false}
-                connected
-              />
-            }
-          >
-            <Slider
-              param={DRY_WET}
-              value={size}
-              onChange={setSize}
-              depth={reach}
-              onDepth={setReach}
-              live={signal}
-              name="Size"
-              orientation="horizontal"
-              layout="inside"
-            />
-          </DevicePortRow>
-          <DevicePortRow
-            inlet={
-              <Port
-                id="row-face:energy"
-                side="in"
-                label="Energy"
-                kind="signal"
-                showLabel={false}
-              />
-            }
-          >
-            <Meter value={0.62} name="Energy" layout="inside" showValue />
-          </DevicePortRow>
-        </>
-      }
-      />
-    </div>
   );
 }
 
@@ -998,40 +713,6 @@ function Cases({ only }: { only: string }) {
           </Case>
         </Section>
 
-        <Section id="Graph">
-          <Case note="The opt-in row face: its picture is outside the frame, its chooser and outlet bands stay put, and every inlet dot shares a line with its label, slider or meter. Empty reserved rows keep the frame the same size when its contents change.">
-            <RowFace />
-          </Case>
-          <Case
-            wide
-            note="The canvas the chain leaves room for. Drag a node by anywhere a control hasn't claimed, drag between two ports to connect, scroll to zoom about the cursor, drag the background to pan. A cord pulls from either end — start on Output's In and drop on Shape's Out and you get the same cord as the other way round; the ports that could take it outline themselves while it is out, and the ones on the wrong side dim. Notes only reach Pitch and signals only reach Size: the graph offers the pair, this page refuses it."
-          >
-            <Patch />
-          </Case>
-          <Case
-            wide
-            note="The same connection without a pointer, and from either end too: tab to a port, press Enter to arm it, tab to one on the other side and press Enter again. Arming an inlet marks the outlets exactly as arming an outlet marks the inlets. Escape drops the cord. Arrow keys move a node once its title bar has focus, so a patch needs no tab stop of its own."
-          >
-            <Patch />
-          </Case>
-          <Case note="A device with ports and no graph around it. The rails draw; nothing measures them and nothing connects, because the surface is what owns both.">
-            <Device
-              name="Shape"
-              on
-              onToggle={() => {}}
-              inlets={<Port id="loose:in" side="in" label="In" kind="signal" />}
-              outlets={<Port id="loose:out" side="out" label="Out" kind="signal" connected />}
-            >
-              <PatchFace />
-            </Device>
-          </Case>
-          <Case note="In a chain, where adjacency is the connection and there is nothing to draw. The same shell, no ports passed, exactly as it was.">
-            <Chain>
-              <Shell name="Shape" />
-            </Chain>
-          </Case>
-        </Section>
-
         <Section id="Waveform">
           <WaveCases />
         </Section>
@@ -1081,12 +762,14 @@ export function Bench() {
         id: one.id,
         title: one.title,
         note: one.note,
-        experiments: one.sections.map((name) => ({
-          id: slug(name),
-          title: name,
-          description: '',
-          component: () => <Cases only={name} />,
-        })),
+        experiments:
+          one.tabs ??
+          (one.sections ?? []).map((name) => ({
+            id: slug(name),
+            title: name,
+            description: '',
+            component: () => <Cases only={name} />,
+          })),
       })),
     [],
   );

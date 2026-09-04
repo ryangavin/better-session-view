@@ -259,13 +259,57 @@ The other half of that is already in the catalogue and was written for this day:
 which needs it so a one-switch device doesn't collapse to a sliver in a run. On a canvas a
 node should be the size of what it holds.
 
+## Where to work on it
+
+**The Graph room of the widget bench** — `npm run dev:widgets`, then *Graph* down the side.
+It is not a page of cases like the other rooms, and the reason is that a canvas is the one
+part of this module a screenshot cannot settle. A cord that lands nine times out of ten
+looks exactly like a cord that lands ten times out of ten, and the tenth is the whole of
+the usability.
+
+So the room is an instrument. `bench/trace.ts` watches the canvas from outside — it reads
+the DOM, and asks this module for no API it does not already have — and keeps an account
+of what the hand did against what the graph made of it. The half worth having is **the half
+the host never hears about**: `onConnect` fires when a cord lands and says nothing at all
+when one is let go over empty canvas, so the drop is counted by pairing each pointer-down on
+a port with whether a connection followed.
+
+| tab | for |
+|---|---|
+| **Patch** | four nodes, two kinds, free play. The account and the readings run beside it |
+| **Trials** | the promises on this page, listed, ticked off as you make each one happen |
+| **Scale** | six nodes or two hundred and forty, with a switch that draws the faceplates or doesn't |
+| **Anatomy** | the still half: the rails, the aligned rows, and the same shell in a chain |
+
+The numbers that are about *this module* rather than about the bench:
+
+- **aim** — of every cord picked up, the share that reached a port. It is the number that
+  moves if the seven pixels of landing room in `targetAt` change, or if a port is drawn
+  larger, and it is the honest way to argue about either.
+- **time to land** — from the port going down to the host hearing. A long mean is an
+  invitation that is hard to read, not a hand that is slow.
+- **node dragged by a knob** — the `defaultPrevented` rule, counted. It must stay at zero;
+  if a control is ever built without `useParamGesture` this is where it shows up.
+- **cords drawn / asked** — the skip-an-unmounted-port rule. These disagreeing means a port
+  registered late or a measurement is stale.
+- **worst frame** — the longest gap between frames during the last gesture. Only useful as a
+  comparison, which is what the faceplate switch on **Scale** is for: ablate before
+  concluding that a slow canvas is the graph's fault.
+
+**Trials is the regression net.** Change something here, start a round, and see whether all
+eleven still tick. Six of them are promises this document makes that nothing else checks —
+a cord from the inlet end, the keyboard's two Enters, Escape dropping one in flight.
+
 ## What isn't built
 
 - **Deleting a cord.** The cord layer is `pointer-events: none`, so nothing can be clicked
   yet. Hit-testing a bezier is real work and it should wait for a caller who knows what
   selecting one is supposed to do. The first host works around it without needing anything
   from here: an inlet that has a cord grows a small `×` beside its port, in the host's own
-  `inlets` slot, and the host drops the cord from its own state.
+  `inlets` slot, and the host drops the cord from its own state. **The bench's Patch does the
+  same**, deliberately, so the workaround is something to put a hand on rather than a
+  sentence here. If it turns out to be fine, that is an answer; if it turns out to be
+  awkward, that is the argument for hit-testing a bezier.
 - **Selecting more than one node**, and moving a selection together.
 - **Driving pan and zoom from outside** — fit-to-content, or restoring a saved view. A host
   can read the zoom through `viewRef`, but the graph still owns it; the question of who would

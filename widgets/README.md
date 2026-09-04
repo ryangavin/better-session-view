@@ -20,9 +20,9 @@ with no React, this is React with no domain.
 | [the parameter model](docs/param-model.md) | what a control *is*, ranges, tapers, steps, how a value is spelled | `src/param/param.ts`, `format.ts` |
 | [the gesture](docs/gesture.md) | dragging, the fine modifier, keys, write rate, the local-value hold | `src/gesture/*` |
 | [the catalogue](docs/catalogue.md) | **adding a widget** — what exists, what's next, and what Max for Live does and doesn't tell you | `src/controls/*` |
-| [the graph](docs/graph.md) | the node canvas, ports, cords, or who owns a position | `src/chrome/Graph.tsx`, `Port.tsx`, `graphContext.ts` |
+| [the graph](docs/graph.md) | the node canvas, ports, cords, who owns a position — and the room the bench measures it in | `src/chrome/Graph.tsx`, `Port.tsx`, `graphContext.ts`, `bench/trace.ts` |
 | [notation displays](docs/notation.md) | tablature, a piano roll, their timelines, or the app/widget boundary | `src/notation/*` |
-| [the bench](docs/bench.md) | the dev harness, or adding a case to it | `bench/*`, `vite.config.ts` |
+| [the bench](docs/bench.md) | the dev harness, or adding a case or a room to it | `bench/*`, `vite.config.ts` |
 | [the debug module](docs/debug.md) | building a debugging page in an app: the frame, a time axis, plots, a transport | `src/debug/*` |
 
 ## The shape of it
@@ -75,6 +75,9 @@ src/
   index.ts          the barrel and the package entry — pulls in every stylesheet,
                     so prefer deep imports
 bench/              the harness. Dev-only; never built, never shipped
+  parts.tsx         the card every case sits in, and the parameters they run on
+  GraphCases.tsx    the Graph room: a canvas with an instrument on it, not a page of cases
+  trace.ts          that instrument — what the hand did, against what the graph made of it
 ```
 
 ## Running the bench
