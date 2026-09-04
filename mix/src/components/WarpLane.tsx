@@ -85,6 +85,28 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
   const from = span?.from ?? WHOLE.from;
   const to = span?.to ?? WHOLE.to;
 
+  /**
+   * One paint a frame, however fast the wheel talks.
+   *
+   * `paint` used to run straight out of the effect, so a lane redrew once per
+   * state change — and a state change is one wheel event. A trackpad reports at
+   * 120Hz against a 60Hz screen, so a fast zoom repainted every lane about
+   * three times for each frame anybody saw and threw two of them away. The work
+   * scaled with the input device rather than with the display, which is why it
+   * stuttered under a hand and never under a test that moved one step a frame.
+   *
+   * A frame is the right unit rather than a timer. A debounce would hold the
+   * drawing back after the gesture stopped, which reads as lag; this draws as
+   * often as there is something new to show and no oftener.
+   *
+   * Both of these are refs on purpose. The handle has to outlive one run of the
+   * effect, or two changes in a frame each book their own; and the frame has to
+   * call the newest `paint` there is, because whichever one booked the frame
+   * closed over the zoom as it was when it did.
+   */
+  const pending = useRef(0);
+  const latest = useRef<() => void>(() => {});
+
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
@@ -182,10 +204,22 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
       }
     };
 
-    paint();
-    const watch = new ResizeObserver(paint);
+    latest.current = paint;
+    const schedule = () => {
+      if (pending.current) return;
+      pending.current = requestAnimationFrame(() => {
+        pending.current = 0;
+        latest.current();
+      });
+    };
+    schedule();
+    const watch = new ResizeObserver(schedule);
     watch.observe(el);
-    return () => watch.disconnect();
+    return () => {
+      watch.disconnect();
+      if (pending.current) cancelAnimationFrame(pending.current);
+      pending.current = 0;
+    };
   }, [onsets, bars, height, from, to]);
 
   /** Where a pointer is, as a fraction of the file. */
