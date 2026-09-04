@@ -174,8 +174,14 @@ export function Waveform({
       const tall = height ?? box.height;
       if (box.width < 1 || tall < 1) return;
       const dpr = window.devicePixelRatio || 1;
-      el.width = Math.round(box.width * dpr);
-      el.height = Math.round(tall * dpr);
+      // Only when it actually changed. Assigning either of these reallocates
+      // the backing store and zeroes it even when the number is the same, and
+      // a lane is megabytes: doing it per draw is the whole cost of a zoom,
+      // paid again by every lane. `clearRect` below is what wipes the canvas.
+      const across = Math.round(box.width * dpr);
+      const down = Math.round(tall * dpr);
+      if (el.width !== across) el.width = across;
+      if (el.height !== down) el.height = down;
       const ctx = el.getContext('2d');
       if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -262,6 +268,9 @@ export function Waveform({
         const count = last - first;
         if (count > 0) {
           const columns = Math.min(count, Math.max(1, Math.round(box.width * PER_PIXEL)));
+          // One shape, filled once. Every column is the same colour at the same
+          // alpha, so there was never anything for a draw call each to say.
+          const shape = new Path2D();
           for (let i = 0; i < columns; i++) {
             const a = first + Math.floor((i * count) / columns);
             const b = Math.max(a + 1, first + Math.floor(((i + 1) * count) / columns));
@@ -272,8 +281,9 @@ export function Waveform({
               if (peaks[p].max > high) high = peaks[p].max;
             }
             const x = xOf(a / peaks.length);
-            column(ctx, x, xOf(b / peaks.length) - x, yOf(high), yOf(low));
+            column(shape, x, xOf(b / peaks.length) - x, yOf(high), yOf(low));
           }
+          ctx.fill(shape);
         }
         ctx.globalAlpha = 1;
         return;
@@ -306,6 +316,7 @@ export function Waveform({
         // the same rule `peaksOf` uses — a hard-panned hat at its real height
         // rather than half of it.
         const columns = Math.max(1, Math.round(box.width * PER_PIXEL));
+        const shape = new Path2D();
         for (let i = 0; i < columns; i++) {
           const a = first + Math.floor(((last - first) * i) / columns);
           const b = Math.max(a + 1, first + Math.floor(((last - first) * (i + 1)) / columns));
@@ -319,8 +330,9 @@ export function Waveform({
             }
           }
           const x = xAt(a);
-          column(ctx, x, xAt(b) - x, yOf(high), yOf(low));
+          column(shape, x, xAt(b) - x, yOf(high), yOf(low));
         }
+        ctx.fill(shape);
         ctx.globalAlpha = 1;
         return;
       }
@@ -342,9 +354,11 @@ export function Waveform({
         }
         ctx.stroke();
         if (wide >= DOT) {
+          const dots = new Path2D();
           for (let i = first; i < last; i++) {
-            ctx.fillRect(xAt(i) - 1.5, yOf(channel[i]) - 1.5, 3, 3);
+            dots.rect(xAt(i) - 1.5, yOf(channel[i]) - 1.5, 3, 3);
           }
+          ctx.fill(dots);
         }
       }
       ctx.globalAlpha = 1;
@@ -384,13 +398,11 @@ export function Waveform({
  *
  * At least a pixel of it, because a quiet column that rounds to nothing leaves
  * a gap in the middle of the lane that reads as silence rather than as quiet.
+ *
+ * It adds to a shape rather than painting, because a lane is two thousand of
+ * these and painting each one is two thousand draw calls for one silhouette.
+ * The shape is filled once, by `envelope`.
  */
-const column = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  wide: number,
-  top: number,
-  bottom: number,
-): void => {
-  ctx.fillRect(x, top, Math.max(wide - 0.35, 0.6), Math.max(bottom - top, 1));
+const column = (shape: Path2D, x: number, wide: number, top: number, bottom: number): void => {
+  shape.rect(x, top, Math.max(wide - 0.35, 0.6), Math.max(bottom - top, 1));
 };

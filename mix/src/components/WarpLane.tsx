@@ -94,8 +94,14 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
       if (box.width < 1) return;
       setWidth(box.width);
       const dpr = window.devicePixelRatio || 1;
-      el.width = Math.round(box.width * dpr);
-      el.height = Math.round(height * dpr);
+      // Only when it actually changed. Assigning either of these reallocates
+      // the backing store and zeroes it even when the number is the same, and
+      // a lane is megabytes: doing it per draw is the whole cost of a zoom,
+      // paid again by every lane. `clearRect` below is what wipes the canvas.
+      const wide = Math.round(box.width * dpr);
+      const high = Math.round(height * dpr);
+      if (el.width !== wide) el.width = wide;
+      if (el.height !== high) el.height = high;
       const ctx = el.getContext('2d');
       if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
