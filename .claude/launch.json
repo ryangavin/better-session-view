@@ -33,10 +33,16 @@
     },
     {
       "name": "visuals",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "npx",
       "runtimeArgs": [
-        "run",
-        "dev:visuals-ui"
+        "concurrently",
+        "-k",
+        "-n",
+        "vis-server,vis-ui",
+        "-c",
+        "magenta,gray",
+        "npm:dev:visuals-server",
+        "npm:dev:visuals-ui"
       ],
       "port": 5473,
       "autoPort": false
