@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEAST, rankOf, ruleEvery, rulingOf, shadeEvery, shaded, TICKS_PER_BAR } from './grid.ts';
+import { LEAST, rankOf, ruleEvery, rulingOf, shadeEvery, shaded, SNAP_TICKS, stepFor, TICKS_PER_BAR } from './grid.ts';
 
 /**
  * What this protects is a grid you can play to.
@@ -182,3 +182,34 @@ describe('ruling a span of bars', () => {
     expect(ruling.block % ruling.shade).toBe(0);
   });
 });
+
+/**
+ * A snap is a decision about how long a loop is; the ruling is a fact about
+ * the zoom. Which of the two wins is the whole of this.
+ */
+describe('stepFor', () => {
+  it('takes the ruling when nothing has been asked for', () => {
+    expect(stepFor('grid', 16)).toBe(16);
+    expect(stepFor('grid', 256)).toBe(256);
+  });
+
+  it('holds a cut to what was asked for however far in the view is', () => {
+    // Zoomed to sixteenths, a loop asked for in bars is still bars.
+    expect(stepFor('bar', 4)).toBe(TICKS_PER_BAR);
+    expect(stepFor('phrase', 4)).toBe(4 * TICKS_PER_BAR);
+  });
+
+  it('holds it there when the view is too far out to have drawn it', () => {
+    // The grid is on sixteen-bar lines and beats were asked for: a cut lands
+    // on a beat, whether or not a beat is drawn.
+    expect(stepFor('beat', 1024)).toBe(TICKS_PER_BAR / 4);
+  });
+
+  it('is a rung of the ladder every time, so a cut lands on a line', () => {
+    for (const ticks of Object.values(SNAP_TICKS)) {
+      if (ticks === null) continue;
+      expect(TICKS_PER_BAR % ticks === 0 || ticks % TICKS_PER_BAR === 0).toBe(true);
+    }
+  });
+});
+

@@ -6,6 +6,7 @@ import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
 import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, type Beats } from './warp.ts';
+import type { Snap } from './grid.ts';
 import { fitOf, refitOf, snapped, FASTEST, SLOWEST, type Fit } from './tempo.ts';
 import { hearing, type Heard } from './transients.ts';
 import {
@@ -230,6 +231,16 @@ export function useMix() {
   const [asked, setAsked] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [loop, setLoopState] = useState(kept.loop ?? true);
+  /**
+   * What a cut on the ruler is held to.
+   *
+   * The grid by default, which is what the ruler is drawing under the pointer
+   * and the right answer while a song is being cut up by eye. It stops being
+   * the right answer once a section is a loop: a loop is listened to round and
+   * round, and a cut half a beat out is a stumble every pass. So the rungs are
+   * here to be asked for, and they hold whatever the zoom is doing.
+   */
+  const [snap, setSnapState] = useState<Snap>(kept.snap ?? 'grid');
   /**
    * The slice the loop is round, or null for the whole record.
    *
@@ -1564,7 +1575,7 @@ export function useMix() {
    */
   useEffect(() => {
     const timer = setTimeout(() => {
-      let next: Session = { ...held.current, selected, model, query, loop, warp };
+      let next: Session = { ...held.current, selected, model, query, loop, snap, warp };
       if (song) {
         next = withTrack(next, song.id, {
           levels: level,
@@ -1581,6 +1592,7 @@ export function useMix() {
     model,
     query,
     loop,
+    snap,
     warp,
     song,
     level,
@@ -1645,6 +1657,9 @@ export function useMix() {
     setPlaying: start,
     loop,
     setLoop,
+    /** What a cut on the ruler is held to — `grid.ts`. */
+    snap,
+    setSnap: setSnapState,
     /** The slice the loop is round, or null for the whole record. */
     looped,
     loopSlice,

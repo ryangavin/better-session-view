@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { rulingOf, TICKS_PER_BAR } from '../grid.ts';
+import { rulingOf, stepFor, TICKS_PER_BAR } from '../grid.ts';
 import { barText, lengthText, snappedBar } from '../slices.ts';
 import type { Mix } from '../state.ts';
 import { barAt, placeOf } from '../warp.ts';
@@ -17,12 +17,14 @@ import { useDraft } from './draft.ts';
  * name opens for typing. The name is plain text until then, so that a click
  * anywhere on a slice is a click on the slice and not on a field in it.
  *
- * **A cut lands on the grid that is drawn.** There is no snap setting; the
- * ruling under the ruler already decides how fine the grid is at this zoom —
- * bars across a song, beats across a phrase, sixteenths across a bar — and a
- * cut goes to the nearest line of it. Zoomed out you cannot put a section on
- * a beat, which is right, because at that width you could not see that you
- * had. Zoom in and you can.
+ * **A cut lands on the grid that is drawn**, until somebody says otherwise.
+ * The ruling under the ruler already decides how fine the grid is at this
+ * zoom — bars across a song, beats across a phrase, sixteenths across a bar —
+ * and a cut goes to the nearest line of it, so zoomed out you cannot put a
+ * section on a beat you could not see. That is the right default and the
+ * wrong rule for a loop: a section going round and round wants to be a whole
+ * number of bars whatever the zoom is, so the header's snap can hold a cut to
+ * a rung instead and the ruling stops having the last word.
  */
 
 /**
@@ -56,7 +58,8 @@ export function Ruler({
     if (!box || box.width < 1) return null;
     const from = barAt(grid, view.from);
     const to = barAt(grid, view.from + 1 / view.zoom);
-    const { step } = rulingOf(from, to, box.width);
+    const ruling = rulingOf(from, to, box.width);
+    const step = stepFor(mix.snap, ruling.step);
     const place = under(view, (clientX - box.left) / box.width);
     return { bar: snappedBar(barAt(grid, place), step), least: step / TICKS_PER_BAR };
   };

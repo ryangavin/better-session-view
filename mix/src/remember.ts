@@ -1,3 +1,4 @@
+import type { Snap } from './grid.ts';
 /**
  * What the window is holding, kept across a reload.
  *
@@ -56,6 +57,8 @@ export interface Session {
   model?: string;
   query?: string;
   loop?: boolean;
+  /** What a cut on the ruler is held to. */
+  snap?: Snap;
   /** Whether the stems play stretched to the header tempo, or as they were recorded. */
   warp?: boolean;
   tracks?: Record<string, Remembered>;

@@ -104,6 +104,39 @@ export const shadeEvery = (step: number): number => Math.max(step, TICKS_PER_BAR
 export const shaded = (tick: number, every: number): boolean =>
   Math.floor(tick / every) % 2 !== 0;
 
+/**
+ * What a cut is held to when one is placed, coarsest to finest.
+ *
+ * `grid` is the ruling under the pointer — what the ruler is actually drawing
+ * at this zoom, which is the right answer while you are cutting a song into
+ * sections and looking at what you are doing. The named rungs are for when
+ * the two come apart: a loop wants to be a phrase or a bar long *whatever the
+ * zoom is*, because it is going round and round and a beat's worth of drift
+ * at the top of it is the thing you notice by the fourth pass. Zoomed out to
+ * a whole song the grid is bars, and asking for beats there means a cut you
+ * could not have placed by eye.
+ */
+export type Snap = 'grid' | 'phrase' | 'bar' | 'beat' | 'half';
+
+/** Each snap in ticks, or null for whatever the ruling under the pointer is. */
+export const SNAP_TICKS: Record<Snap, number | null> = {
+  grid: null,
+  phrase: 4 * TICKS_PER_BAR,
+  bar: TICKS_PER_BAR,
+  beat: TICKS_PER_BAR / 4,
+  half: TICKS_PER_BAR / 8,
+};
+
+/**
+ * The step a cut lands on: the one asked for, or the ruling's own.
+ *
+ * Never finer than the ruling when the ruling is coarse — a phrase asked for
+ * on a grid drawing sixteen-bar lines is still a phrase, because a coarse
+ * *snap* is a decision and a coarse *grid* is only the zoom. It is the other
+ * way for `grid`, which has no opinion of its own.
+ */
+export const stepFor = (snap: Snap, ruling: number): number => SNAP_TICKS[snap] ?? ruling;
+
 /** How a span of bars is ruled at the width it is drawn at. */
 export interface Ruling {
   /** Ticks between lines. */

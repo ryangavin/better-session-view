@@ -175,6 +175,23 @@
   color: var(--green);
 }
 
+.mf-group .mf-looping-part {
+  color: var(--amber);
+}
+
+.mf-snap .wdg-segmented-body button {
+  min-width: 20px;
+  padding: 0 5px;
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  color: var(--caption);
+}
+
+.mf-snap .wdg-segmented-body button[aria-checked='true'] {
+  color: var(--amber);
+  background: var(--sel);
+}
+
 .mf-group-label,
 .mf-clock {
   padding: 0 8px;

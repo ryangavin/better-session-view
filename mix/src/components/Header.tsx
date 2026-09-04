@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
+import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
+import type { Snap } from '../grid.ts';
 import type { Ready } from '../openflow.ts';
 import { QuietField } from './Editable.tsx';
 import { Analysis } from '../debug/Analysis.tsx';
@@ -16,7 +18,7 @@ import './Header.css';
  * One bar, and the whole problem with it was that eleven things sat on it as
  * eleven things.
  *
- *   [demucs] mix[flow] │ Title · Artist ⋯⋯ [▶ ■ ↻ 1.1.1] [snap ⅟₁ ⅟₂ ⅟₄ warp ⊹] [Export]
+ *   [demucs] mix[flow] │ Title · Artist ⋯⋯ [▶ ■ ↻ 1.1.1 snap ⌗ 4 1 ♩ ½] [tempo …] [Export]
  *
  * **Controls that belong together are one bordered object, not several beside
  * each other.** The group owns the border and the dividers; its children own
@@ -137,6 +139,21 @@ function clockOf(seconds: number): string {
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 }
 
+/**
+ * The rungs a cut can be held to, coarsest first.
+ *
+ * Marked rather than named, because five words would take the width of the
+ * transport and the marks are the ones a musician already reads: the grid's
+ * own hatch, four bars, one bar, a beat, half of one.
+ */
+const SNAPS: readonly { id: Snap; mark: string; says: string }[] = [
+  { id: 'grid', mark: '⌗', says: 'Cuts land on the grid the ruler is drawing at this zoom' },
+  { id: 'phrase', mark: '4', says: 'Cuts land on four bars, whatever the zoom' },
+  { id: 'bar', mark: '1', says: 'Cuts land on a bar, whatever the zoom' },
+  { id: 'beat', mark: '♩', says: 'Cuts land on a beat, whatever the zoom' },
+  { id: 'half', mark: '½', says: 'Cuts land on half a beat, whatever the zoom' },
+];
+
 export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
   const live = mix.phase === 'ready';
   const song = mix.song;
@@ -222,9 +239,31 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
             >
               {stopMark}
             </Button>
-            <Toggle on={mix.loop} onChange={mix.setLoop} label="Loop" title="Loop the whole track" width={26}>
+            <Toggle
+              on={mix.loop}
+              onChange={mix.setLoop}
+              label="Loop"
+              title={
+                mix.looped === null
+                  ? 'Loop the whole track. Command-L loops the selected section'
+                  : `Looping ${mix.slices[mix.looped]?.name ?? 'a section'}. Command-L lets it go`
+              }
+              width={26}
+              className={mix.looped === null ? undefined : 'mf-looping-part'}
+            >
               {loopMark}
             </Toggle>
+            {/* Where a cut lands, next to the loop rather than by the tempo:
+                what it is for is placing the ends of one. */}
+            <span className="mf-group-label">snap</span>
+            <Segmented
+              items={SNAPS.map((s) => s.mark)}
+              index={SNAPS.findIndex((s) => s.id === mix.snap)}
+              onChange={(next) => mix.setSnap(SNAPS[next].id)}
+              label="Snap"
+              title={SNAPS.find((s) => s.id === mix.snap)?.says ?? ''}
+              className="mf-snap"
+            />
             {/* Bars are the grid's claim; the clock is what is true whatever
                 tempo anybody decides on. Both, because a slice is placed in one
                 and heard in the other. */}
