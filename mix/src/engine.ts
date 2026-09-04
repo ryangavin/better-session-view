@@ -1,4 +1,5 @@
 import { FLAT, Split, type Bands } from './eq.ts';
+import { pinnedOf, type Every, type Pinned } from './pinned.ts';
 import { passOf, sourceAt, straight, type Pass, type Span } from './schedule.ts';
 import { channelsOf, stretchOf, type Stretch } from './stretch.ts';
 import type { Beats } from './warp.ts';
@@ -143,6 +144,11 @@ export class Transport {
   /** The map, the tempo to play it at, and whether to. */
   private map: Beats | null = null;
   private tempo = 120;
+  /** How densely the map is pinned to that tempo's grid, and where the cuts are. */
+  private every: Every = 'beat';
+  private cuts: readonly number[] = [];
+  /** The map pinned: what the stretcher plays and the playhead reads. */
+  private pinned: Pinned | null = null;
   private warping = false;
 
   private stretch: Stretch | null = null;
@@ -323,11 +329,14 @@ export class Transport {
    * Nothing happens at all while the plain sources are playing and would go
    * on playing, which is the common case and the one that must not click.
    */
-  warp(map: Beats | null, tempo: number, on: boolean): void {
+  warp(map: Beats | null, tempo: number, on: boolean, every: Every = 'beat', cuts: readonly number[] = []): void {
     const before = this.desired();
     const at = this.going && this.ctx ? this.positionAt(this.ctx.currentTime + this.lead()) : 0;
     this.map = map;
     this.tempo = tempo;
+    this.every = every;
+    this.cuts = cuts;
+    this.pinned = map ? pinnedOf(map, tempo, cuts, every) : null;
     this.warping = on;
     if (on) this.prepare();
     if (!this.going || !this.ctx) return;
@@ -419,8 +428,8 @@ export class Transport {
 
   /** Where the sound will be at a moment on the clock, on whichever graph it is on. */
   private positionAt(when: number): number {
-    if (this.via === 'stretch' && this.map) {
-      return sourceAt(this.map, this.tempo, this.from, when - this.since, this.looping, this.span ?? undefined);
+    if (this.via === 'stretch' && this.pinned) {
+      return sourceAt(this.pinned, this.from, when - this.since, this.looping, this.span ?? undefined);
     }
     const gone = this.from + Math.max(0, when - this.since);
     if (!this.duration) return gone;
@@ -435,7 +444,7 @@ export class Transport {
 
   /** Which graph the sound should be on, given what has been asked for and what there is. */
   private desired(): Via {
-    return this.warping && this.map && this.stretch && !straight(this.map, this.tempo)
+    return this.warping && this.pinned && this.stretch && !straight(this.pinned)
       ? 'stretch'
       : 'straight';
   }
@@ -476,10 +485,10 @@ export class Transport {
   private playStretched(at: number, when: number): void {
     const ctx = this.audio();
     const stretch = this.stretch!;
-    const map = this.map!;
+    const pinned = this.pinned!;
     this.halt();
     const offset = Math.max(0, Math.min(at, this.duration));
-    this.pass = passOf(map, this.tempo, offset, this.span ?? undefined);
+    this.pass = passOf(pinned, offset, this.span ?? undefined);
     this.passAt = when;
     this.next = 1;
     this.done = false;
@@ -518,7 +527,7 @@ export class Transport {
    * that lands late is a jump in the sound.
    */
   private tick(): void {
-    if (!this.going || this.via !== 'stretch' || !this.ctx || !this.stretch || !this.pass || !this.map) {
+    if (!this.going || this.via !== 'stretch' || !this.ctx || !this.stretch || !this.pass || !this.pinned) {
       return;
     }
     const now = this.ctx.currentTime;
@@ -537,7 +546,7 @@ export class Transport {
       if (this.done || !begun(boundaries.length - 1)) return;
       const end = this.passAt + length;
       if (this.looping) {
-        const pass = passOf(this.map, this.tempo, this.spanning().from, this.span ?? undefined);
+        const pass = passOf(this.pinned, this.spanning().from, this.span ?? undefined);
         const first = pass.boundaries[0];
         void node.schedule({ outputTime: end, output: end, input: first.input, rate: first.rate, active: true });
         this.pass = pass;
@@ -591,7 +600,7 @@ export class Transport {
         this.stretch = got;
         this.state = 'ready';
         got = null;
-        if (this.going && this.warping) this.warp(this.map, this.tempo, this.warping);
+        if (this.going && this.warping) this.warp(this.map, this.tempo, this.warping, this.every, this.cuts);
       } catch {
         if (generation === this.generation) this.state = 'failed';
       } finally {

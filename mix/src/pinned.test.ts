@@ -99,6 +99,22 @@ describe('pinnedOf', () => {
     expect(pinned.cuts).toEqual([3]);
   });
 
+  it('pins what comes before 1.1.1 as a section of its own, and counts it back from the one', () => {
+    // Nine beats of count-in at a different tempo, then the song.
+    const samples = beatsFrom(100, [...Array.from({ length: 9 }, () => 400), ...Array.from({ length: 24 }, () => 500)]);
+    const beats = beatsOf(RATE, samples[samples.length - 1] + 500, -9, samples);
+    const bars = (pinned: ReturnType<typeof pinnedOf>) => pinned.pins.map((p) => p.output / pinned.spacing / BEATS_PER_BAR);
+    expect(bars(pinnedOf(beats, 120, [0], 'section'))).toEqual([-2.25, 0, 7]);
+    expect(bars(pinnedOf(beats, 120, [0], 'bar'))).toEqual([-2.25, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(bars(pinnedOf(beats, 120, [0], 'phrase'))).toEqual([-2.25, 0, 4, 7]);
+    expect(pinnedOf(beats, 120, [0], 'beat').pins.length).toBe(9 + 7 * BEATS_PER_BAR + 1);
+    const section = pinnedOf(beats, 120, [0], 'section');
+    // The count-in plays at its own speed — 400-sample beats into 500-sample slots — and lands on the one.
+    expect(speedAt(section, -1000)).toBeCloseTo(0.8, 9);
+    expect(sourceOf(section, 0)).toBe(sampleOf(beats, 0));
+    expect(section.length).toBe(beats.length);
+  });
+
   it('drops a cut past the end and refuses cuts out of order', () => {
     const beats = slowing();
     expect(pinnedOf(beats, 120, [0, 4, 400], 'section').cuts).toEqual([0, 4]);

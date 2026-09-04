@@ -24,7 +24,10 @@ import { beatAt, sampleOf, BEATS_PER_BAR, type Beats } from './warp.ts';
  * Samples, at the map's rate, and real-valued: a pin is a place, and the
  * rounding is the resampler's to do. The cuts are bars counted from bar 1,
  * as the slices are, and beat 0 pins to output 0 whatever the cuts say — a
- * clip starts at 1.1.1.
+ * clip starts at 1.1.1. What the map has before that is a section of its
+ * own, pinned at its first beat and at 1.1.1, so a count-in plays at its own
+ * speed and lands on the one; an export starts at output zero and never
+ * reads it.
  */
 
 export type Every = 'section' | 'phrase' | 'bar' | 'beat';
@@ -39,6 +42,8 @@ export interface Pin {
 
 export interface Pinned {
   rate: number;
+  /** How many samples the record is. */
+  length: number;
   /** Output samples per beat: the grid it is pinned to. */
   spacing: number;
   /** Strictly increasing in both coordinates. At least two. */
@@ -84,8 +89,9 @@ export function pinnedOf(beats: Beats, to: number, cuts: readonly number[], ever
   const bars = barsOf(beats, to);
   const end = bars * BEATS_PER_BAR;
   const starts = cutBeats(cuts, bars);
-  const at = new Set<number>([0, end, ...starts]);
-  const edges = [0, ...starts.filter((b) => b > 0), end];
+  const before = Math.min(0, beats.first);
+  const at = new Set<number>([before, 0, end, ...starts]);
+  const edges = [...(before < 0 ? [before] : []), 0, ...starts.filter((b) => b > 0), end];
   for (let i = 0; i + 1 < edges.length; i++) {
     const from = edges[i];
     const upto = edges[i + 1];
@@ -97,10 +103,15 @@ export function pinnedOf(beats: Beats, to: number, cuts: readonly number[], ever
     // a section pinned to eight bars is two phrases of its own, wherever it
     // falls in the song.
     const first = every === 'phrase' ? Math.ceil(from / BEATS_PER_BAR) * BEATS_PER_BAR : Math.ceil(from / step) * step;
+    // Before 1.1.1 the phrases are counted back from it, as the bars are.
+    if (every === 'phrase' && from < 0) {
+      for (let beat = -step; beat > from; beat -= step) at.add(beat);
+      continue;
+    }
     for (let beat = first; beat < upto; beat += step) if (beat > from) at.add(beat);
   }
   const pins = [...at].sort((a, b) => a - b).map((beat) => ({ source: sampleOf(beats, beat), output: beat * spacing }));
-  return { rate: beats.rate, spacing, pins, every, bars, cuts: starts.map((b) => b / BEATS_PER_BAR) };
+  return { rate: beats.rate, length: beats.length, spacing, pins, every, bars, cuts: starts.map((b) => b / BEATS_PER_BAR) };
 }
 
 /** The segment a value falls in along one coordinate: the pin on its left, held to the ends. */

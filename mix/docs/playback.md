@@ -364,15 +364,20 @@ Then the beats are followed behind it, as they are behind a fit.
 
 ## Playing it warped
 
-With warp on, the stems play at the header's tempo and every beat of the record
-takes the time that tempo gives a beat, whatever it took on the record. That is
-Live's clip following the Set, and `schedule.ts` is the maths of it with
-nothing of Web Audio inside: a **pass** through the file is a list of
-boundaries — from this output second, read the file from here, this fast — one
-where the pass starts and one at every beat after it, the rate in each beat
-being the record's seconds for that beat over the target's. The playhead is the
-inverse, worked out from the same map on the audio clock, so the sound and the
-line cannot disagree and both can be tested at a desk.
+With warp on, the stems play at the header's tempo, and the record is
+**pinned** to that tempo's grid — `pinned.ts`: a pin is a sample of the record
+that plays at a sample of the output, and between two pins the record runs at
+one speed. Pinned at every beat, every beat takes the time the tempo gives a
+beat, whatever it took on the record, which is Live's clip following the Set;
+pinned at the sections only, each section lands on its bars and the beats
+inside it keep the spacing they were played at. `schedule.ts` is the maths of
+playing it with nothing of Web Audio inside: a **pass** through the file is a
+list of boundaries — from this output second, read the file from here, this
+fast — one where the pass starts and one at every pin after it. The playhead is
+the inverse, worked out from the same pins on the audio clock, so the sound and
+the line cannot disagree and both can be tested at a desk. The exporter lays
+the stems from the same pins, so what loops in the window is what the file
+holds.
 
 **The stretcher is Signalsmith Stretch**, the author's own Web Audio build —
 one self-contained module with the WASM inside it, MIT — and it is **one node
