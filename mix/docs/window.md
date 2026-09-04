@@ -28,32 +28,45 @@ waveform from navigating the renderer away from the app.
 
 ## The header
 
-    [!] mix[flow] │ Title · Artist  ⋯⋯  [▶ ■ ↻] 1.1.1 │ tempo 128 warp Auto-warp 126–131 · 91% ⊹ │ Export
+    [!] mix[flow] │ Title · Artist ⋯⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [beats Auto-warp 126–131 · 91% × ✛ warp] │ Export
 
-Four groups, in the order they are read: what this is, what you are looking at, what you
-can do to it, where it goes. Three departures from the mockup, each one a thing the
-mockup was fighting:
+Five groups, in the order they are read: what this is, what you are looking at, what you
+can do to it, what you can find out about it, where it goes.
+
+**The three control clusters are three jobs, and each one is named on its left.**
+
+*Playback* is the buttons, the tempo and the reading. **The tempo is in the transport,
+not beside Auto-warp**, because with warp on it is the speed the record plays at:
+pressing play is what the number does. Measuring a tempo and choosing one are different
+jobs, and grouping by which subsystem computed a number rather than by what it does to
+the song is how the bar got hard to read.
+
+*Snap* is alone, because it is neither of the other two. It is what the pointer is
+allowed to do to the timeline, and it holds whether or not anything is playing and
+whether or not a beat has ever been found.
+
+*Beats* is everything that only means something once the beats are known: making a beat
+map, judging it, clearing it, laying it by hand, and the warp switch that plays the
+record through it.
 
 **The clock sits with the transport.** Between the wordmark and the buttons it read as
 part of the brand, and the one control it describes was two groups away.
 
-**Playback and the grid are separated by a rule, and both disappear unless the track has
-stems.** Every control was the same 22px outlined pill, so nothing said that play and
-tempo belong to different subsystems — and in the two states where there is nothing to
-play they were all still there, dead. An idle header is a wordmark, a title and a
-disabled Export, which is the honest amount.
+**The groups disappear unless the track has stems.** Every control was the same 22px
+outlined pill, so nothing said which subsystem a control belonged to — and in the two
+states where there is nothing to play they were all still there, dead. An idle header is
+a wordmark, a title and a disabled Export, which is the honest amount.
 
 **Nothing wraps.** The mockup is `flex-wrap` over a `min-height`, so a narrow window
 silently becomes two rows of chrome. Here the title is the only thing that gives, and it
 gives by ellipsis.
 
-**The tempo is on the bar, beside the button that measures it.** It used to be
-in the export dialog, which made it the one number ruling every line in the
-window and reachable only from the thing you press when you have finished. It is
-also the whole of Auto-warp's feedback: pressing it is a number appearing and the
-ticks lining up, and without the number on screen half of that is missing. Beside
-it is what the fit agreed with — `91%` of the drumming landing on a grid line, or
-`no fit`, so a press always has an answer.
+**The tempo is on the bar at all.** It used to be in the export dialog, which made it
+the one number ruling every line in the window and reachable only from the thing you
+press when you have finished. It is also half of Auto-warp's feedback: pressing it is a
+number appearing and the ticks lining up. The other half stayed with the button —
+what the fit agreed with, `91%` of the drumming landing on a grid line, or `no fit`, so
+a press always has an answer.
 
 **Once the beats have been found the field changes meaning, and `warp` is the
 switch that changes it.** The readout beside the button becomes the tempo the
@@ -61,21 +74,28 @@ record actually runs at — `128`, or `126–131` where it moved — read off th
 spacing of the beats and stored nowhere, and the field is what the stems *play*
 at: with warp on, every beat of the record in the time this tempo gives a beat,
 pitch kept. Until the beats have been found the field rules the grid as it
-always did, since a typed tempo is then the only claim there is. The switch sits
-between the two numbers because it is what makes them two, and it says what it
-is waiting on — the beat map, or the stretcher — rather than doing nothing.
+always did, since a typed tempo is then the only claim there is. The switch sits with
+the beat map rather than with the field it changes, because without a beat map it can do
+nothing at all, and it says what it is waiting on — the beat map, or the stretcher —
+rather than doing nothing quietly.
 
-One smaller thing worth keeping: `tempo` is a leading label rather than a `Widget`
+**The tempo field carries no label.** `snap` and `beats` do, because each names a
+cluster of marks and buttons that would otherwise be a rebus. A three-digit number in a
+draggable field, sitting between the transport buttons and the clock, is the only thing
+it could be — and the word was a sixth of that group's width spent saying so.
+
+Where a group *is* labelled, the label is a leading `span` rather than a `Widget`
 caption. `Widget` puts captions *above*, which in a 34px bar makes that one control two
 rows tall in a line of things one row tall — and a ragged baseline is most of what
 "messy header" means.
 
-**There is no snap control.** There was one, and it was a setting for a gesture that
-did not exist yet. When the gesture arrived — dragging a cut on the slice ruler — the
-ruling already drawn under the ruler was the right answer to where it should land:
-bars across a song, beats across a phrase, sixteenths across a bar. A cut goes to the
-nearest line the grid is showing, so a section cannot be put on a beat you could not
-see, and one control leaves the bar.
+**Snap defaults to the grid you can see.** It began as a setting for a gesture that did
+not exist yet, and when the gesture arrived — dragging a cut on the slice ruler — the
+ruling already under the ruler was the right answer to where a cut should land: bars
+across a song, beats across a phrase, sixteenths across a bar. That is `⌗`, and it is
+the default, so a section cannot be put on a beat you could not see. The four rungs
+beside it — four bars, a bar, a beat, half of one — are for when you want a length the
+zoom is not currently drawing.
 
 **The demucs probe is silent when it passes.** A green light that is always on is a
 thing you stop seeing; a red chip that appears is not. So there is no indicator at all
@@ -442,7 +462,7 @@ countable from.
 | loop, mute, solo | `Toggle` |
 | a stem's level | `Slider`, horizontal, with a length |
 | per-source progress | `Meter` |
-| the tempo, on the header beside Auto-warp | `NumberField`, unfilled |
+| the tempo, in the header transport | `NumberField`, unfilled |
 | the waveform | **not a widget.** `components/Waveform.tsx` |
 
 **The fader takes a `length`, not `layout="inside"`,** and the difference is not

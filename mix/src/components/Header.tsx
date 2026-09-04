@@ -18,13 +18,29 @@ import './Header.css';
  * One bar, and the whole problem with it was that eleven things sat on it as
  * eleven things.
  *
- *   [demucs] mix[flow] │ Title · Artist ⋯⋯ [▶ ■ ↻ 1.1.1 snap ⌗ 4 1 ♩ ½] [tempo …] [Export]
+ *   mix[flow] │ Title · Artist ⋯⋯ [▶ ■ ↻ 124 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [beats Auto-warp 124 92% × ✛ warp] [Export]
  *
  * **Controls that belong together are one bordered object, not several beside
  * each other.** The group owns the border and the dividers; its children own
  * only their content — which is the same `.control-group` idea set[flow] has
  * carried since its own header got crowded. Three clusters read as three
  * things. The same controls loose read as nine, which is what a smattering is.
+ *
+ * **The three clusters are three jobs**, and each one is named on its left:
+ *
+ * - *Playback* — the buttons, the tempo, the reading. The tempo is here and
+ *   not beside Auto-warp because with warp on it is the speed the record
+ *   plays at: pressing play is what it does. Measuring a tempo is a different
+ *   job from choosing one, and it has its own group. It carries no `tempo`
+ *   label: a three-digit number between the transport and the clock, in a
+ *   field you can drag, is the only thing it could be, and the word was a
+ *   sixth of the group's width spent saying so.
+ * - *Snap* — alone, because it is neither. It is what the pointer is allowed
+ *   to do to the timeline, and it applies whether or not anything is playing
+ *   and whether or not a beat has ever been found.
+ * - *Beats* — making a beat map, judging it, clearing it, laying it by hand,
+ *   and the warp switch that plays the record through it. Everything that
+ *   only means something once the beats are known, in one place.
  *
  * **Everything on the bar is exactly 22px.** `DESIGN.md` has said so all along
  * — "header controls share a 22px height" — and this header was not doing it:
@@ -104,7 +120,10 @@ const clearMark = (
 );
 
 /**
- * The tempo, beside the button that measures it.
+ * The tempo, in the transport, because it is the speed the record plays at.
+ *
+ * Unlabelled, and the group is not: `snap` and `beats` name a cluster of marks
+ * and buttons that would otherwise be a rebus. A BPM does not need naming.
  *
  * It used to live in the export dialog, which was the only place a tempo could
  * be seen or changed — a number that rules every line in the window, reachable
@@ -211,7 +230,13 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
 
       {live && (
         <>
-          <div className="mf-group" role="group" aria-label="Transport">
+          {/* Playback: the buttons, the tempo they run at, and the reading.
+
+              Tempo is here rather than beside Auto-warp because with warp on
+              it is the speed the song plays at — the one number on the bar
+              that changes what you hear. Measuring it is a separate job, and
+              it has a separate group. */}
+          <div className="mf-group" role="group" aria-label="Playback">
             <Button
               onPress={() => mix.setPlaying(!mix.playing)}
               label={mix.playing ? 'Pause' : 'Play'}
@@ -253,26 +278,6 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
             >
               {loopMark}
             </Toggle>
-            {/* Where a cut lands, next to the loop rather than by the tempo:
-                what it is for is placing the ends of one. */}
-            <span className="mf-group-label">snap</span>
-            <Segmented
-              items={SNAPS.map((s) => s.mark)}
-              index={SNAPS.findIndex((s) => s.id === mix.snap)}
-              onChange={(next) => mix.setSnap(SNAPS[next].id)}
-              label="Snap"
-              title={SNAPS.find((s) => s.id === mix.snap)?.says ?? ''}
-              className="mf-snap"
-            />
-            {/* Bars are the grid's claim; the clock is what is true whatever
-                tempo anybody decides on. Both, because a slice is placed in one
-                and heard in the other. */}
-            <span className="mf-clock">{position(mix.bar, mix.bars)}</span>
-            <span className="mf-clock mf-clock-time">{clockOf(mix.position)}</span>
-          </div>
-
-          <div className="mf-group" role="group" aria-label="Grid">
-            <span className="mf-group-label">tempo</span>
             <NumberField
               param={TEMPO}
               value={mix.targetBpm}
@@ -288,28 +293,34 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                   : 'The tempo the grid is ruled at, until the kick has been followed. Drag it, or type one in'
               }
             />
-            {/* Live's warp switch: on, every bar of the record plays in the
-                time this tempo gives a bar. It needs the beat map to know where
-                the record's bars are, and a stretcher to play them through,
-                and it says which of those it is waiting on. */}
-            <Toggle
-              on={mix.warp}
-              onChange={mix.setWarp}
-              label="Warp"
-              title={
-                !mix.beats
-                  ? 'Warp: play the stems stretched to this tempo. Follow the beat first'
-                  : mix.stretching === 'failed'
-                    ? 'Warp: the stretcher could not be loaded, so the stems play as they were recorded'
-                    : mix.stretching === 'loading'
-                      ? 'Warp: loading the stretcher'
-                      : 'Warp: play every bar of the record in the time this tempo gives it'
-              }
-              disabled={!mix.beats || mix.stretching === 'failed'}
-              width={38}
-            >
-              warp
-            </Toggle>
+            {/* Bars are the grid's claim; the clock is what is true whatever
+                tempo anybody decides on. Both, because a slice is placed in one
+                and heard in the other. */}
+            <span className="mf-clock">{position(mix.bar, mix.bars)}</span>
+            <span className="mf-clock mf-clock-time">{clockOf(mix.position)}</span>
+          </div>
+
+          {/* Where a cut lands. Its own group and nothing else in it: it is not
+              playback and it is not the beat map, it is the one setting that
+              says what the pointer is allowed to do to the timeline. */}
+          <div className="mf-group" role="group" aria-label="Snap">
+            <span className="mf-group-label">snap</span>
+            <Segmented
+              items={SNAPS.map((s) => s.mark)}
+              index={SNAPS.findIndex((s) => s.id === mix.snap)}
+              onChange={(next) => mix.setSnap(SNAPS[next].id)}
+              label="Snap"
+              title={SNAPS.find((s) => s.id === mix.snap)?.says ?? ''}
+              className="mf-snap"
+            />
+          </div>
+
+          {/* The beat map: making one, judging it, throwing it away, laying it
+              by hand — and the switch that plays the record through it. Every
+              control here is about where the beats are, which is why the tempo
+              is not among them. */}
+          <div className="mf-group" role="group" aria-label="Beats">
+            <span className="mf-group-label">beats</span>
             <Button
               onPress={mix.autoWarp}
               title={
@@ -378,6 +389,30 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               width={26}
             >
               {crosshair}
+            </Toggle>
+            {/* Live's warp switch: on, every bar of the record plays in the
+                time the tempo gives a bar. It needs the beat map to know where
+                the record's bars are, and a stretcher to play them through,
+                and it says which of those it is waiting on. It sits with the
+                beat map rather than with playback because without one it can
+                do nothing at all. */}
+            <Toggle
+              on={mix.warp}
+              onChange={mix.setWarp}
+              label="Warp"
+              title={
+                !mix.beats
+                  ? 'Warp: play the stems stretched to the tempo. Follow the beat first'
+                  : mix.stretching === 'failed'
+                    ? 'Warp: the stretcher could not be loaded, so the stems play as they were recorded'
+                    : mix.stretching === 'loading'
+                      ? 'Warp: loading the stretcher'
+                      : 'Warp: play every bar of the record in the time the tempo gives it'
+              }
+              disabled={!mix.beats || mix.stretching === 'failed'}
+              width={38}
+            >
+              warp
             </Toggle>
           </div>
         </>
