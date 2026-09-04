@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { straightened } from './straighten.ts';
-import { beatsOf, evenBeats, tempoOf } from './warp.ts';
+import { beatsOf, evenBeats, sampleOf, tempoOf } from './warp.ts';
 
 const RATE = 1000;
 
@@ -111,6 +111,48 @@ describe('straightened', () => {
     expect(mapped.seconds).toBe(plain.seconds);
     expect(mapped.speed).toBeCloseTo(plain.speed, 12);
     expect(mapped.channels[0]).toEqual(plain.channels[0]);
+  });
+
+  it('pinned per section lands the cuts and leaves every beat between them where the drummer put it', () => {
+    // The same slowing record, pinned at bar 1 and bar 6 only: those two land
+    // to the sample, the beats between them are as far off the grid as the
+    // slowing put them, and each beat is still exactly as long, relative to
+    // the next, as it was played.
+    const spacings = Array.from({ length: 40 }, (_, k) => Math.round(500 + (k * 100) / 40));
+    const samples = beatsFrom(500, spacings);
+    const length = samples[samples.length - 1] + 500;
+    const beats = beatsOf(RATE, length, 0, samples);
+    const laid = straightened([clicksAt(samples, length)], RATE, {
+      bpm: tempoOf(beats),
+      offset: samples[0] / RATE,
+      to: 120,
+      beats,
+      every: 'section',
+      cuts: [0, 5],
+    });
+    const found = peaksIn(laid.channels[0]);
+    const period = (60 * RATE) / 120;
+    expect(found[0]).toBe(0);
+    expect(Math.abs(found[20] - 20 * period)).toBeLessThanOrEqual(1);
+    expect(found.slice(1, 20).some((at, k) => Math.abs(at - (k + 1) * period) > 5)).toBe(true);
+    for (let k = 1; k < 18; k++) {
+      const played = (samples[k + 1] - samples[k]) / (samples[k + 2] - samples[k + 1]);
+      const laidOut = (found[k + 1] - found[k]) / (found[k + 2] - found[k + 1]);
+      expect(laidOut).toBeCloseTo(played, 2);
+    }
+    expect(laid.pinned?.every).toBe('section');
+    expect(laid.pinned?.pins.map((p) => p.source)).toEqual([0, 20, laid.bars * 4].map((b) => sampleOf(beats, b)));
+  });
+
+  it('is pinned per beat when the ruling does not say', () => {
+    const spacings = Array.from({ length: 24 }, (_, k) => 500 + (k % 3) * 20);
+    const samples = beatsFrom(100, spacings);
+    const length = samples[samples.length - 1] + 500;
+    const beats = beatsOf(RATE, length, 0, samples);
+    const ruling = { bpm: tempoOf(beats), offset: samples[0] / RATE, to: 120, beats };
+    const clicks = clicksAt(samples, length);
+    expect(straightened([clicks], RATE, ruling).channels[0]).toEqual(straightened([clicks], RATE, { ...ruling, every: 'beat' }).channels[0]);
+    expect(straightened([clicks], RATE, ruling).pinned?.pins.length).toBe(straightened([clicks], RATE, ruling).bars * 4 + 1);
   });
 
   it('pads to the end of the bar the record ends in, not the beat', () => {

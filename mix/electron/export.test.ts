@@ -197,6 +197,49 @@ describe('exportStems', () => {
     }
   });
 
+  it('pins each section at its cut and leaves the beats inside where they were played', async () => {
+    // The same bent record, cut so the tempo step falls inside section B and
+    // pinned per section: every cut still opens on a click, section C's
+    // slow beats are laid at one speed so they land a quarter-bar apart, and
+    // section B holds a step that one speed cannot straighten — its beats
+    // keep the spacing they had, which is the point.
+    const anchors = [0];
+    for (let k = 0; k < 32; k++) anchors.push(anchors[k] + (k < 16 ? BAR / 4 : 5000));
+    const length = anchors[anchors.length - 1] + BAR / 4;
+    const marks = new Float32Array(length);
+    for (const at of anchors) marks[at] = 1;
+    const beats = beatsOf(RATE, length, 0, anchors);
+    put(root, 'vocals', marks);
+    const done = await exportStems(
+      root,
+      ask({
+        sources: ['vocals'],
+        bpm: tempoOf(beats),
+        beats,
+        every: 'section',
+        slices: [{ bar: 0, name: 'A' }, { bar: 2, name: 'B' }, { bar: 5, name: 'C' }],
+      }),
+    );
+    expect(done.every).toBe('section');
+    expect(done.worst).toBeGreaterThan(0);
+    const spans = done.files.map(read);
+    expect(spans[1][0]).toBeCloseTo(1, 5);
+    expect(spans[2][0]).toBeCloseTo(1, 5);
+    // 5000-sample beats laid to 4000 at one speed: every click 4000 apart to the sample.
+    const clicks: number[] = [];
+    for (let i = 0; i < spans[2].length; i++) if (spans[2][i] > 0.5) clicks.push(i);
+    expect(clicks.slice(0, 5)).toEqual([0, 4000, 8000, 12000, 16000]);
+    // Section B holds the tempo step: its clicks are not all on the quarter-bar.
+    const inB: number[] = [];
+    for (let i = 0; i < spans[1].length; i++) if (spans[1][i] > 0.5) inB.push(i);
+    expect(inB.some((at) => at % (BAR / 4) !== 0)).toBe(true);
+  });
+
+  it('refuses a density it does not know', async () => {
+    put(root, 'vocals', ramp(8 * BAR));
+    await expect(exportStems(root, ask({ every: 'phrase-ish' as never }))).rejects.toThrow('not a density');
+  });
+
   it('refuses slices that are not in order', async () => {
     put(root, 'vocals', ramp(8 * BAR));
     await expect(

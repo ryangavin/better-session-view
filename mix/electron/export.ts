@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readWav, wavOf } from '../src/audio.ts';
+import { DENSITIES, errorsOf, type Every } from '../src/pinned.ts';
 import { straightened, type Ruling } from '../src/straighten.ts';
-import { BEATS_PER_BAR } from '../src/warp.ts';
+import { resampled, BEATS_PER_BAR } from '../src/warp.ts';
 import { destination } from './destination.ts';
 
 /**
@@ -28,6 +29,12 @@ import { destination } from './destination.ts';
  * section gets a numbered folder holding the same numbered stems, because the
  * two orders are different questions — which section, then which stem — and a
  * single flat list of `stems × sections` files answers neither.
+ *
+ * **The cuts are pinned whether or not the stems are cut there.** A slice is
+ * a bar on the grid, and a record laid from its map is pinned at every slice
+ * so that each section lands exactly on its bars; how densely it is pinned
+ * between them is the ask's `every` — `pinned.ts` — and per beat where the
+ * ask says nothing, which is what an export was before it could say.
  */
 export interface ExportAsk extends Ruling {
   trackId: string;
@@ -53,6 +60,10 @@ export interface Written {
   speed: number;
   /** How many sections each stem was cut into. One means it was not cut. */
   parts: number;
+  /** How densely the record was pinned, when it was laid from a map. */
+  every?: Every;
+  /** How far the worst bar line inside a section landed from the grid, in seconds, when there was a map. */
+  worst?: number;
 }
 
 /** One span of a straightened stem, and the folder and name it goes out under. */
@@ -109,6 +120,8 @@ export async function exportStems(root: string, ask: ExportAsk): Promise<Written
     if (!(slice.bar >= 0) || !Number.isFinite(slice.bar)) throw new Error(`not a slice: bar ${slice.bar}`);
     if (index > 0 && slice.bar < ask.slices![index - 1].bar) throw new Error('slices out of order');
   }
+  if (ask.every !== undefined && !DENSITIES.includes(ask.every)) throw new Error(`not a density: ${ask.every}`);
+  const pinnedAt = (ask.slices ?? []).map((slice) => slice.bar);
   const label = tempoLabel(ask.to);
   const where = path.join(await destination(), `${tidy(ask.title)} ${label}bpm`);
   fs.mkdirSync(where, { recursive: true });
@@ -117,12 +130,20 @@ export async function exportStems(root: string, ask: ExportAsk): Promise<Written
   let seconds = 0;
   let speed = 1;
   let parts = 1;
+  let every: Every | undefined;
+  let worst: number | undefined;
   for (const [index, source] of ask.sources.entries()) {
     if (!/^[a-z0-9_-]+$/i.test(source)) throw new Error(`not a source: ${source}`);
     const bytes = fs.readFileSync(path.join(root, ask.stems, `${source}.wav`));
     const read = readWav(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
     if (!read) throw new Error(`${source}.wav: not a wav this reads`);
-    const laid = straightened(read.channels, read.rate, ask);
+    const laid = straightened(read.channels, read.rate, { ...ask, cuts: pinnedAt });
+    if (laid.pinned && ask.beats) {
+      every = laid.pinned.every;
+      const errors = errorsOf(resampled(ask.beats, laid.rate, read.channels[0]?.length ?? 0), laid.pinned);
+      worst = 0;
+      for (let beat = 0; beat < errors.length; beat += BEATS_PER_BAR) worst = Math.max(worst, errors[beat] / laid.rate);
+    }
     const total = laid.channels[0]?.length ?? 0;
     const cuts = cutsFor(ask.slices, (BEATS_PER_BAR * 60 * laid.rate) / ask.to, total);
     for (const cut of cuts) {
@@ -139,5 +160,5 @@ export async function exportStems(root: string, ask: ExportAsk): Promise<Written
     speed = laid.speed;
     parts = cuts.length;
   }
-  return { where, files, bars, seconds, speed, parts };
+  return { where, files, bars, seconds, speed, parts, every, worst };
 }

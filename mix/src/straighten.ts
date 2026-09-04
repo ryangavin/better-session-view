@@ -1,5 +1,6 @@
+import { pinnedOf, type Every, type Pinned } from './pinned.ts';
 import { resample } from './resample.ts';
-import { beatAt, resampled, tempoOf, BEATS_PER_BAR, type Beats } from './warp.ts';
+import { resampled, tempoOf, BEATS_PER_BAR, type Beats } from './warp.ts';
 
 /**
  * A record laid straight at a whole tempo, from its first downbeat.
@@ -12,21 +13,24 @@ import { beatAt, resampled, tempoOf, BEATS_PER_BAR, type Beats } from './warp.ts
  * 1.41 s at 128/128.055 of its speed — four hundredths of a percent, which
  * is a varispeed nobody can hear — so that its beats land exactly a
  * sixtieth of 128 apart, and it is padded with silence to the end of its
- * last bar rather than cut, so nothing of the outro is lost. Push and pull
- * inside the beats are left exactly as they were played: this is a
- * straightening of the grid, not of the drummer.
+ * last bar rather than cut, so nothing of the outro is lost.
  *
  * **One tempo is a special case, not the case.** A band slows into the last
  * chorus and a record cut to tape wanders all night; a single speed lays such
  * a song's average on the grid and everything else beside it, a bar out by
- * the end. So a ruling may carry the beat map instead, and then the record is
- * played a beat at a time — each beat's span at whatever speed puts its far
- * end on the next line of the output grid. The speed changes at the beats
- * and nowhere else, which is where the tempo changed; between two beats
- * nothing is touched, so the drummer is left alone exactly as before.
+ * the end. So a ruling may carry the beat map instead, and then the record
+ * is pinned to the grid — `pinned.ts` — and played a pin at a time, each
+ * span at the one speed that puts its far end on the next pin. The speed
+ * changes at the pins and nowhere else; between two pins nothing is touched.
  *
- * A varispeed that moves is still a varispeed nobody can hear, because the
- * thing it is following is what the record already did.
+ * **How densely it is pinned is the whole of the difference between a loop
+ * and a squash.** Pinned per beat, every beat lands on its line, and what
+ * was heard as the beat is what is moved: on a record made to a click that
+ * is the detector's few milliseconds of scatter turned into a speed change
+ * on every beat. Pinned per section, only the cuts land, and every push and
+ * pull inside them is left exactly as it was played at one speed. The
+ * ruling says which, and the cuts, and says nothing to mean per beat, which
+ * is what this did before it could be asked.
  */
 
 export interface Straightened {
@@ -37,6 +41,8 @@ export interface Straightened {
   seconds: number;
   /** How much slower than the record it plays: `to / bpm`, and its average where the map moves. */
   speed: number;
+  /** Where it was pinned, when it was laid from a map. */
+  pinned?: Pinned;
 }
 
 export interface Ruling {
@@ -55,11 +61,18 @@ export interface Ruling {
    * map is read across.
    */
   beats?: Beats;
+  /** How densely the map is pinned to the grid: per beat unless asked. */
+  every?: Every;
+  /** The cuts, in bars from 1.1.1, pinned whatever the density. */
+  cuts?: readonly number[];
 }
 
 export function straightened(channels: readonly Float32Array[], rate: number, ruling: Ruling): Straightened {
   const longest = Math.max(0, ...channels.map((c) => c.length));
-  if (ruling.beats) return following(channels, rate, ruling.to, resampled(ruling.beats, rate, longest), longest);
+  if (ruling.beats) {
+    const beats = resampled(ruling.beats, rate, longest);
+    return laid(channels, rate, pinnedOf(beats, ruling.to, ruling.cuts ?? [], ruling.every ?? 'beat'), ruling.to / tempoOf(beats));
+  }
   const speed = ruling.to / ruling.bpm;
   // Laid at its own tempo, the record is not resampled at all: from a whole
   // sample at a speed of one, the output is the input, bit for bit.
@@ -78,40 +91,31 @@ export function straightened(channels: readonly Float32Array[], rate: number, ru
 }
 
 /**
- * The same laying, followed beat by beat.
+ * The same laying, a pin at a time.
  *
- * The output grid is fixed — beat `b` of the song is `b × spacing` samples in,
- * from 1.1.1 at zero — so each beat's span is read at the one speed that fills
- * it: the beats' distance over the grid's. Beats past the last beat carry
- * on at the last spacing, which is what the map says about them.
+ * The output grid is fixed — beat `b` of the song is `b × spacing` samples
+ * in, from 1.1.1 at zero — and each span between two pins is read at the one
+ * speed that fills it: the pins' distance in the record over their distance
+ * on the grid. Pinned per beat that is one span a beat, which is what the
+ * map says about them; pinned per section it is one span a section.
  *
  * The spans are resampled against the whole channel rather than against a
- * copy of themselves, so a boundary is a change of speed and not an edit:
- * the sinc still reaches either side of it and no join can be heard.
+ * copy of themselves, so a pin is a change of speed and not an edit: the
+ * sinc still reaches either side of it and no join can be heard.
  */
-function following(
-  channels: readonly Float32Array[],
-  rate: number,
-  to: number,
-  beats: Beats,
-  longest: number,
-): Straightened {
-  const spacing = (60 * rate) / to;
-  const bar = BEATS_PER_BAR * spacing;
-  const bars = Math.max(1, Math.ceil((beatAt(beats, longest) * spacing) / bar - 1e-6));
-  const length = Math.round(bars * bar);
+function laid(channels: readonly Float32Array[], rate: number, pinned: Pinned, speed: number): Straightened {
+  const { pins, spacing, bars } = pinned;
+  const length = Math.round(bars * BEATS_PER_BAR * spacing);
   const out = channels.map(() => new Float32Array(length));
-  const { samples, first } = beats;
-  for (let beat = 0; beat * spacing < length; beat++) {
-    const i = Math.max(0, Math.min(samples.length - 2, beat - first));
-    const step = samples[i + 1] - samples[i];
-    const speed = step / spacing;
-    const source = samples[i] + (beat - first - i) * step;
-    const start = Math.max(0, Math.ceil(beat * spacing));
-    const upto = Math.min(length, Math.ceil((beat + 1) * spacing));
+  for (let i = 0; i + 1 < pins.length; i++) {
+    const a = pins[i];
+    const b = pins[i + 1];
+    const speed = (b.source - a.source) / (b.output - a.output);
+    const start = Math.max(0, Math.ceil(a.output));
+    const upto = Math.min(length, Math.ceil(b.output));
     if (upto <= start) continue;
-    const from = source + (start - beat * spacing) * speed;
+    const from = a.source + (start - a.output) * speed;
     channels.forEach((channel, c) => out[c].set(resample(channel, speed, from, upto - start), start));
   }
-  return { channels: out, rate, bars, seconds: length / rate, speed: to / tempoOf(beats) };
+  return { channels: out, rate, bars, seconds: length / rate, speed, pinned };
 }

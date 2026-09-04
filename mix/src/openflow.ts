@@ -203,6 +203,8 @@ export interface ExportAsk {
   offset: number;
   /** The tempo to lay it at. */
   to: number;
+  /** How densely the map is pinned to the grid: per section, phrase, bar or beat. Per beat if unsaid. */
+  every?: 'section' | 'phrase' | 'bar' | 'beat';
   /** Where the beats actually fall, so a record that moves is followed rather than averaged. */
   beats?: Beats;
 }
@@ -215,6 +217,10 @@ export interface Written {
   speed: number;
   /** How many sections each stem was cut into. One means it was not cut. */
   parts: number;
+  /** How densely the record was pinned, when it was laid from a map. */
+  every?: 'section' | 'phrase' | 'bar' | 'beat';
+  /** How far the worst bar line inside a section landed from the grid, in seconds, when there was a map. */
+  worst?: number;
 }
 
 /** One separation's drawing, interleaved min and max per column, per source. */
