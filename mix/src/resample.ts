@@ -6,9 +6,12 @@
  * speed`, so a speed under one plays slower and longer. Speeds near one are
  * the whole use — a record measured at 128.055 laid at 128 — and the point
  * of sixty-four taps under a Kaiser window is that nothing is lost on the
- * way: flat to twenty kilohertz within a hundredth of a decibel, and the
- * error a hundred decibels under the signal. A five-minute stem is a few
- * seconds, which an export can afford and a stem cannot afford to lose.
+ * way: flat to twenty kilohertz within a thousandth of a decibel, and the
+ * error a hundred and thirty decibels under the signal at the bottom of the
+ * band. Not at the top of it — what sets the floor up there is the phase
+ * table rather than the taps, and `resample.test.ts` has the measurements and
+ * the reason. A five-minute stem is a few seconds, which an export can afford
+ * and a stem cannot afford to lose.
  *
  * At a speed of exactly one from a whole sample the kernel is a single one
  * and the output is the input, bit for bit.
