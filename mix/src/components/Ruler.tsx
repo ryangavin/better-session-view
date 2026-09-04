@@ -1,20 +1,21 @@
-import { useRef, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { rulingOf, TICKS_PER_BAR } from '../grid.ts';
 import { barText, lengthText, snappedBar } from '../slices.ts';
 import type { Mix } from '../state.ts';
 import { barAt, placeOf } from '../warp.ts';
 import { shows, under, type View } from '../zoom.ts';
-import { QuietField } from './Editable.tsx';
+import { useDraft } from './draft.ts';
 
 /**
  * The slice ruler: the strip above the lanes you navigate by, and where the
  * arrangement is cut.
  *
- * Every slice is a span you click to go to the top of, with its name typed
- * straight into it. The cut at its left edge is a handle: drag it and the slice
- * starts somewhere else, drag it back onto the cut before it and the slice
- * goes. Double-click the empty part of a slice and it is cut in two under the
- * pointer.
+ * Every slice is a span you click to go to the top of. The cut at its left
+ * edge is a handle: drag it and the slice starts somewhere else, drag it back
+ * onto the cut before it and the slice goes. Double-click the empty part of a
+ * slice and it is cut in two under the pointer; double-click its name and the
+ * name opens for typing. The name is plain text until then, so that a click
+ * anywhere on a slice is a click on the slice and not on a field in it.
  *
  * **A cut lands on the grid that is drawn.** There is no snap setting; the
  * ruling under the ruler already decides how fine the grid is at this zoom —
@@ -46,6 +47,8 @@ export function Ruler({
 }) {
   const grid = mix.grid;
   const drag = useRef<{ index: number; pointer: number } | null>(null);
+  /** The slice whose name is open for typing, if one is. */
+  const [editing, setEditing] = useState<number | null>(null);
 
   /** The bar under a pointer, on the nearest line the ruler is drawing there. */
   const barUnder = (clientX: number): { bar: number; least: number } | null => {
@@ -112,7 +115,14 @@ export function Ruler({
             onClick={(event) => {
               if ((event.target as HTMLElement).tagName !== 'INPUT') mix.pickSlice(i);
             }}
-            onDoubleClick={split}
+            onDoubleClick={(event) => {
+              if ((event.target as HTMLElement).tagName === 'INPUT') return;
+              if ((event.target as HTMLElement).classList.contains('mf-slice-name')) {
+                setEditing(i);
+                return;
+              }
+              split(event);
+            }}
             title={`${slice.name} — bar ${barText(slice.bar)}, ${lengthText(next - slice.bar)} bars. Double-click to cut here`}
           >
             {i > 0 && (
@@ -130,16 +140,50 @@ export function Ruler({
               />
             )}
             <span className="mf-slice-num">{String(i + 1).padStart(2, '0')}</span>
-            <QuietField
-              value={slice.name}
-              onCommit={(name) => mix.rename(i, name)}
-              label={`Name of slice ${i + 1}`}
-              className="mf-slice-name"
-              required
-            />
+            {editing === i ? (
+              <Name
+                value={slice.name}
+                label={`Name of slice ${i + 1}`}
+                onCommit={(name) => mix.rename(i, name)}
+                onDone={() => setEditing(null)}
+              />
+            ) : (
+              <span className="mf-slice-name" title="Double-click to rename">
+                {slice.name}
+              </span>
+            )}
           </div>
         );
       })}
     </div>
+  );
+}
+
+/** The name, open for typing: everything selected, and gone again on Enter, Escape or a click elsewhere. */
+function Name({
+  value,
+  label,
+  onCommit,
+  onDone,
+}: {
+  value: string;
+  label: string;
+  onCommit(next: string): void;
+  onDone(): void;
+}) {
+  const props = useDraft(value, onCommit, true);
+  return (
+    <input
+      {...props}
+      className="mf-slice-name mf-slice-field"
+      aria-label={label}
+      autoFocus
+      onFocus={(event) => event.currentTarget.select()}
+      onBlur={(event) => {
+        props.onBlur?.(event);
+        onDone();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+    />
   );
 }

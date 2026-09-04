@@ -158,6 +158,19 @@
   text-overflow: ellipsis;
 }
 
+.mf-slice-field {
+  flex: 1;
+  height: 17px;
+  padding: 0 3px;
+  margin-right: 4px;
+  border: 1px solid var(--focus);
+  border-radius: var(--radius-sm);
+  background: var(--surface-control);
+  color: var(--fg);
+  font: inherit;
+  outline: none;
+}
+
 .mf-warplane {
   flex: 1;
   position: relative;
