@@ -76,3 +76,53 @@ describe('what a stem comes to', () => {
     expect(gainOf('vocals', levels, FOUR)).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Enough of an `AudioContext` to build the strips on: gains with a value,
+ * filters, and nodes that connect. Nothing plays.
+ */
+class FakeParam {
+  value = 0;
+  setValueAtTime(v: number) {
+    this.value = v;
+  }
+  linearRampToValueAtTime(v: number) {
+    this.value = v;
+  }
+  cancelScheduledValues() {}
+}
+class FakeNode {
+  gain = new FakeParam();
+  frequency = new FakeParam();
+  Q = new FakeParam();
+  type = '';
+  connect() {
+    return this;
+  }
+  disconnect() {}
+}
+class FakeContext {
+  currentTime = 0;
+  destination = new FakeNode();
+  createGain = () => new FakeNode();
+  createBiquadFilter = () => new FakeNode();
+}
+
+describe('the mix across a load', () => {
+  it('stands a fresh set of stems at the mix it was last given, not at silence', async () => {
+    const had = globalThis.AudioContext;
+    (globalThis as { AudioContext: unknown }).AudioContext = FakeContext;
+    try {
+      const { Transport } = await import('./engine.ts');
+      const transport = new Transport();
+      transport.apply(mix({ drums: { muted: true } }), FOUR);
+      const buffer = { duration: 1 } as AudioBuffer;
+      transport.load({ vocals: buffer, drums: buffer });
+      const gains = (transport as unknown as { gains: Map<string, FakeNode> }).gains;
+      expect(gains.get('vocals')?.gain.value).toBe(1);
+      expect(gains.get('drums')?.gain.value).toBe(0);
+    } finally {
+      (globalThis as { AudioContext: unknown }).AudioContext = had;
+    }
+  });
+});

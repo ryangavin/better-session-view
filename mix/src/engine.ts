@@ -113,6 +113,15 @@ export class Transport {
   private splits = new Map<string, Split>();
   private playingSources: AudioBufferSourceNode[] = [];
   private buffers = new Map<string, AudioBuffer>();
+  /**
+   * The mix as last given, so a fresh set of stems starts at it.
+   *
+   * The window pushes the mix in whenever the faders move, and the faders do
+   * not move because a track finished decoding. Without this a load stood
+   * every gain at zero and waited for a nudge that might never come — no
+   * sound until somebody pressed mute twice.
+   */
+  private mix: { levels: Record<string, Level>; sources: readonly string[] } | null = null;
   /** Where the head was when playback last started, and the clock reading then. */
   private from = 0;
   private since = 0;
@@ -204,10 +213,11 @@ export class Transport {
       this.buffers.set(id, buffer);
       this.duration = Math.max(this.duration, buffer.duration);
       const gain = ctx.createGain();
-      gain.gain.value = 0;
+      gain.gain.value = this.mix ? gainOf(id, this.mix.levels, this.mix.sources) : 0;
       gain.connect(this.master!);
       this.gains.set(id, gain);
       const split = new Split(ctx);
+      if (this.mix) split.apply(this.mix.levels[id]?.bands ?? FLAT, ctx.currentTime, 0);
       split.output.connect(gain);
       this.splits.set(id, split);
     }
@@ -235,6 +245,7 @@ export class Transport {
 
   /** Apply the mix. Cheap enough to call on every fader frame, and ramped so it does not click. */
   apply(levels: Record<string, Level>, sources: readonly string[]): void {
+    this.mix = { levels, sources };
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     for (const [id, gain] of this.gains) {
