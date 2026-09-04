@@ -106,13 +106,13 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run build` | a bundled bridge.js, lom.js, and the device |
 | `npm run set` | the session manager, set[flow] — builds it and opens the window |
 | `npm run visuals` | the VJ rig, visual[flow] — its server and its window |
-| `npm run mix` | stem separation, mix[flow] — a skeleton; it does not separate anything yet |
+| `npm run mix` | stem separation, mix[flow] — builds it and opens the window |
 | `npm run pack` | every app as a `.app` and a `.dmg` under `release/` |
 | `npm run install:apps` | copies those into `/Applications/open[flow]`, together in one folder |
 | `npm run install:device` | the device into the Ableton User Library, as `SessionBridge-qa` |
 | `npm run qa` | all of the above at once — built and installed, ready to try. Packs the `.app` alone and unsigned, which is what installing locally needs and about twenty times quicker, and empties `release/` first so what is in there is what it built |
 | `npm run dev` | every watcher and dev server at once — set[flow] on :5173, the widget bench on :5273 |
-| `npm run dev:set` | just set[flow]: its dev server and its window, one command, closing either closes both. `npm run dev:visuals` and `npm run dev:mix` are the same for the other two |
+| `npm run dev:set` | just set[flow]: its dev server and its window, one command, closing either closes both. `npm run dev:visuals` and `npm run dev:mix` are the same for the other two. `dev:mix` also opens [the reach view](#the-reach-view) |
 | `npm run dev:set-ui` | the set[flow] dev server alone, against a device someone else is running |
 | `npm run dev:set-app` | the set[flow] window alone, on a dev server that is already up — hot reload, in the real app |
 | `npm run dev:widgets` | the widget bench alone — no device needed |
@@ -122,6 +122,38 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run typecheck` | every project |
 
 A fresh clone needs `npm install && npm run build` before the device exists.
+
+### The reach view
+
+`npm run dev:mix` opens the window **and** serves the same app to a browser, at
+<http://localhost:5673/harness/reach.html>. It is the real app, not a screenshot of one:
+your library, your settings, the stems you have already separated.
+
+That takes explaining, because the obvious version of it does not work. A tab pointed at
+`http://localhost:5673` runs the same bundle and shows the empty first-run app — the
+library lives in the main process, the renderer asks for it over IPC, and IPC arrives
+through a preload that only a window gets. What is missing there is not the window, it is
+the transport.
+
+So the reach view runs the app's own `preload.ts`, unchanged, with `electron` resolved to
+a browser stand-in: `invoke` becomes a POST and events become one server-sent stream,
+both answered by the running main process. One preload, two transports, and no second
+description of the API to drift from the first.
+
+Worth having because a browser is a better place to work than a shell around a page —
+real devtools, a readable DOM for anything driving the app, several tabs at once, and it
+outlives the window. It is also less forgiving: a cost the desktop shell absorbs shows up
+here first, which is how the canvas in every lane turned out to be reallocated on every
+frame.
+
+Two things it cannot do, both for the same reason a browser is a browser. Dropped files
+have no path, so **drag-and-drop does nothing** — use Import. And the native dialogs open
+on the app rather than in the tab.
+
+It is open exactly while the window is on a dev server, bound to loopback, and locked to
+that dev server's origin. A packaged build opens no port at all. Be clear about what it
+is, though: the window's whole API on a port, with no Chromium in front of it. It belongs
+in a dev loop and nowhere else.
 
 ## Contributing
 
