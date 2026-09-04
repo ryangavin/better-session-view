@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { App } from './apps.ts';
 import { within } from './within.ts';
+import { TYPES } from './mime.ts';
 
 /**
  * An app's own build, served over a scheme of its own rather than `file://`.
@@ -30,28 +31,6 @@ import { within } from './within.ts';
  * different origin the page cannot fetch from. A mount is neither — the same
  * origin the page is already on, streamed by the same handler.
  */
-
-const TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.woff2': 'font/woff2',
-  '.wav': 'audio/wav',
-  '.flac': 'audio/flac',
-  '.aiff': 'audio/aiff',
-  '.aif': 'audio/aiff',
-  '.mp3': 'audio/mpeg',
-  '.m4a': 'audio/mp4',
-  '.aac': 'audio/aac',
-  '.ogg': 'audio/ogg',
-  '.opus': 'audio/ogg',
-};
 
 /**
  * Extra directories this scheme answers for, by URL prefix.

@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import { APPS } from '@openflow/desktop/apps.ts';
 import { devUrl } from '@openflow/desktop/dev.ts';
+import { reach } from '@openflow/desktop/reach.ts';
 import { scheme, serve } from '@openflow/desktop/serve.ts';
 import { state } from '@openflow/desktop/state.ts';
 import { updates } from '@openflow/desktop/update.ts';
@@ -92,6 +93,12 @@ const window = (): void => {
  * doing it.
  */
 if (only(app)) {
+  // Before the first `handle`, because what it records is what it forwards: a
+  // handler registered earlier would exist for the window and not for a tab.
+  // The same mounts the scheme gets, so both are one description of what may
+  // be fetched.
+  const tabs = reach(MIX, { ipcMain, mounts: { [MOUNT]: root } });
+
   ipcMain.handle('openflow:demucs', () => ready(RUNTIME));
 
   // The library is the main process's, because it is a folder. Everything the
@@ -113,7 +120,9 @@ if (only(app)) {
   ipcMain.handle('openflow:library-artwork', (_event, ask: { id: string; url: string }) =>
     artwork(ask.id, ask.url),
   );
-  ipcMain.handle('openflow:library-base', () => `${MIX.name}://app${MOUNT}`);
+  ipcMain.handle('openflow:library-base', (event) =>
+    `${tabs.origin(event, `${MIX.name}://app`)}${MOUNT}`,
+  );
 
   // The analysis beside a track: the grid, and the peaks of one separation.
   // Every answer is null without a library folder, which the renderer treats
@@ -175,6 +184,7 @@ if (only(app)) {
   const push = (channel: string, payload: unknown): void => {
     const win = window_();
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
+    tabs.push(channel, payload);
   };
 
   ipcMain.handle(
