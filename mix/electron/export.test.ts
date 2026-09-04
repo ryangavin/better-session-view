@@ -4,6 +4,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { readWav, wavOf } from '../src/audio.ts';
+import { straightened } from '../src/straighten.ts';
 import { cutsFor, exportStems, tidy } from './export.ts';
 
 /**
@@ -11,6 +12,13 @@ import { cutsFor, exportStems, tidy } from './export.ts';
  * cannot check by ear: a section that starts a few hundred samples late still
  * sounds like the section. So the spans are read back and pieced together — a
  * cut folder holds the record and nothing else, in the order it was played.
+ *
+ * Pieced together against what `straighten.ts` returned, never against the
+ * file on disk. Straightening is its own step with its own tests, and cutting
+ * happens after it: a section is a subarray of the straightened record, so the
+ * spans join back into it exactly, and any difference is the cut's own. Held
+ * against the source wav instead, this would be marking the resampler's
+ * homework and would have to allow for it.
  */
 
 let here = '';
@@ -142,12 +150,10 @@ describe('exportStems', () => {
     // a boundary placed late hands the samples it took to the span before it,
     // and the two still piece back together.
     expect(spans.map((span) => span.length)).toEqual([2.5 * BAR, 3.5 * BAR, 2 * BAR]);
-    // And then sample for sample, in order, with nothing dropped or doubled at
-    // a join. The dust is the resampler's: laying a record at its own tempo is
-    // meant to be the input back, and it is, to within a millionth of nothing.
-    const back = spans.flatMap((span) => [...span]);
-    expect(back.length).toBe(whole.length);
-    for (let i = 0; i < whole.length; i++) expect(back[i]).toBeCloseTo(whole[i], 6);
+    // And then bit for bit against the record the cut was made in, with
+    // nothing dropped or doubled at a join.
+    const laid = straightened([whole], RATE, { bpm: 120, offset: 0, to: 120 });
+    expect(Float32Array.from(spans.flatMap((span) => [...span]))).toEqual(laid.channels[0]);
   });
 
   it('pads the last section to the end of the record, not to the last slice', async () => {
