@@ -21,9 +21,15 @@ const BAR = RATE * 2;
 
 vi.mock('./destination.ts', () => ({ destination: async () => here }));
 
-/** A ramp, so every sample says where in the file it came from. */
+/**
+ * A ramp over the whole file, so every sample says where it came from.
+ *
+ * No value repeats, which is what makes a reassembled record worth comparing:
+ * against a signal that came round again, a span taken from the wrong place
+ * would read back as the right one.
+ */
 const ramp = (length: number): Float32Array =>
-  Float32Array.from({ length }, (_, i) => (i % 1000) / 1000);
+  Float32Array.from({ length }, (_, i) => i / length);
 
 const put = (root: string, source: string, samples: Float32Array): void => {
   fs.mkdirSync(path.join(root, STEMS), { recursive: true });
@@ -131,11 +137,16 @@ describe('exportStems', () => {
       { bar: 6, name: 'Outro' },
     ];
     const done = await exportStems(root, ask({ sources: ['vocals'], slices }));
-    const back = done.files.flatMap((file) => [...read(file)]);
+    const spans = done.files.map(read);
+    // Where each cut fell, which is the half of this the joining cannot show:
+    // a boundary placed late hands the samples it took to the span before it,
+    // and the two still piece back together.
+    expect(spans.map((span) => span.length)).toEqual([2.5 * BAR, 3.5 * BAR, 2 * BAR]);
+    // And then sample for sample, in order, with nothing dropped or doubled at
+    // a join. The dust is the resampler's: laying a record at its own tempo is
+    // meant to be the input back, and it is, to within a millionth of nothing.
+    const back = spans.flatMap((span) => [...span]);
     expect(back.length).toBe(whole.length);
-    // Sample for sample, not merely the same length: a span that started a
-    // hair late would still be the right size. The dust is the resampler's,
-    // which lays a record at its own tempo to within a millionth of nothing.
     for (let i = 0; i < whole.length; i++) expect(back[i]).toBeCloseTo(whole[i], 6);
   });
 
