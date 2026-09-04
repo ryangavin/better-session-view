@@ -1,4 +1,4 @@
-import { edgeInk } from './outline.ts';
+import { edgeInk } from '../../render/outline.ts';
 
 /**
  * How a silhouette is painted, kept apart from how it is built.

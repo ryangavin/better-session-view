@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Peak } from '../../audio.ts';
+import type { Peak } from '../audio.ts';
 import { levelsOf, packedOf } from './levels.ts';
-import { densityFor, edgeInk, edgesOf } from './outline.ts';
+import { densityFor, edgeInk, edgesOf, samplesFrom } from './outline.ts';
 
 const ask = (over: Partial<Parameters<typeof edgesOf>[1]> = {}) => ({
   from: 0,
@@ -117,5 +117,49 @@ describe('how strongly to draw the edge', () => {
     // Across a whole track the shape is smooth and the edge is what says where
     // it is; that is the one place the border should be assertive.
     expect(edgeInk(densityFor(1))).toBeCloseTo(0.9, 2);
+  });
+});
+
+describe('a shape that would enclose nothing', () => {
+  it('draws silence as a line rather than as a gap', () => {
+    // Min and max both zero: the edges meet, the fill has no area, and the lane
+    // showed nothing at all where the track was simply quiet.
+    const silent = levelsOf(packedOf(Array.from({ length: 4096 }, () => ({ min: 0, max: 0 }))), 512);
+    const shape = edgesOf(silent, ask());
+    for (let i = 0; i < shape.points; i++) {
+      expect(shape.lowY[i] - shape.topY[i]).toBeGreaterThanOrEqual(1);
+      // And it sits on the middle, because that is where silence is.
+      expect((shape.topY[i] + shape.lowY[i]) / 2).toBeCloseTo(50, 5);
+    }
+  });
+
+  it('keeps a single sample visible when every point is one', () => {
+    // Zoomed far enough in, a point covers one sample, whose own min and max
+    // are the same number — the whole waveform used to disappear here.
+    const wave = new Float32Array(64).map((_, i) => Math.sin(i / 3) * 0.5);
+    const shape = samplesFrom([wave], { ...ask({ width: 800 }), length: wave.length });
+    expect(shape.points).toBeGreaterThan(1);
+    for (let i = 0; i < shape.points; i++) {
+      expect(shape.lowY[i] - shape.topY[i]).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('holds a hair-thin shape apart about its own middle', () => {
+    // An excursion far too small to fill a pixel. It must become a pixel
+    // without being moved: a quiet passage belongs where it happened.
+    const wave = new Float32Array(64).map((_, i) => (i % 2 ? 0.0008 : -0.0008));
+    const shape = samplesFrom([wave], { ...ask({ height: 100, headroom: 0.86 }), length: 64 });
+    for (let i = 0; i < shape.points; i++) {
+      expect(shape.lowY[i] - shape.topY[i]).toBeCloseTo(1, 5);
+      expect((shape.topY[i] + shape.lowY[i]) / 2).toBeCloseTo(50, 1);
+    }
+  });
+
+  it('leaves a shape that already has room alone', () => {
+    const loudEnough = levelsOf(packedOf(loud(4096)), 512);
+    const shape = edgesOf(loudEnough, ask());
+    let widest = 0;
+    for (let i = 0; i < shape.points; i++) widest = Math.max(widest, shape.lowY[i] - shape.topY[i]);
+    expect(widest).toBeGreaterThan(10);
   });
 });

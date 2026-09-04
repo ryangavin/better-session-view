@@ -63,7 +63,29 @@ export interface OutlineAsk {
   smooth: number;
   /** How much of the half-height the loudest point is allowed to reach. */
   headroom: number;
+  /**
+   * The least a shape may be, in pixels. One by default, and it is not a
+   * nicety.
+   *
+   * A silhouette whose edges meet encloses nothing, and a fill of nothing is
+   * invisible — so silence drew as a gap rather than as a line, and zoomed far
+   * enough in that every point covers a single sample the whole waveform
+   * vanished, because a sample's own min and max are the same number. The lanes
+   * never had the fault: their columns clamp to a pixel.
+   */
+  thinnest?: number;
 }
+
+/** Hold two edges apart about their own middle, so the shape stays on the sound. */
+const apart = (top: Float32Array, low: Float32Array, count: number, least: number): void => {
+  for (let i = 0; i < count; i++) {
+    const gap = low[i] - top[i];
+    if (gap >= least) continue;
+    const middle = (top[i] + low[i]) / 2;
+    top[i] = middle - least / 2;
+    low[i] = middle + least / 2;
+  }
+};
 
 /**
  * How fine to draw, given how much of the track is on screen.
@@ -178,6 +200,7 @@ export function edgesOf(levels: readonly Steps[], ask: OutlineAsk): Edges {
     lowY[i] = middle - low * reach;
   }
 
+  apart(topY, lowY, count, ask.thinnest ?? 1);
   return { topX, topY, lowX, lowY, points: count, level: chosen.level, read: span };
 }
 
@@ -231,6 +254,7 @@ export function samplesFrom(
     lowX[i] = x;
     lowY[i] = middle - low * reach;
   }
+  apart(topY, lowY, count, ask.thinnest ?? 1);
   return { topX, topY, lowX, lowY, points: count, level: -1, read: span };
 }
 

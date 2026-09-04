@@ -1,4 +1,4 @@
-import type { Peak } from '../../audio.ts';
+import type { Peak } from '../audio.ts';
 
 /**
  * One master reading of a stem, and a few progressively coarser copies of it.

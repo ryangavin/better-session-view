@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Peak } from '../../audio.ts';
+import type { Peak } from '../audio.ts';
 import { cellsIn, coarser, levelFor, levelsOf, packedOf } from './levels.ts';
 
 const ramp = (n: number): Peak[] =>

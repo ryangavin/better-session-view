@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Peak } from '../audio.ts';
+import { levelsOf, packedOf } from '../render/levels.ts';
+import { densityFor, edgesOf, pathOf, samplesFrom } from '../render/outline.ts';
 import { rankOf, rulingOf, shaded, TICKS_PER_BAR, type Rank } from '../grid.ts';
 import { barAt, placeOf, type Beats } from '../warp.ts';
 import type { Span } from '../zoom.ts';
@@ -184,6 +186,16 @@ export function Waveform({
    * call the newest `paint` there is, because whichever one booked the frame
    * closed over the zoom as it was when it did.
    */
+  /**
+   * The stem at halving resolutions, built once when the peaks arrive.
+   *
+   * A wide view reads a short copy instead of the whole track, and — the part
+   * that shows — the drawing stops being a comb of columns whose fine hair at a
+   * wide zoom is the loudest sample of a twentieth of a second standing beside
+   * its neighbour.
+   */
+  const levels = useMemo(() => levelsOf(packedOf(peaks)), [peaks]);
+
   const pending = useRef(0);
   const latest = useRef<() => void>(() => {});
   const schedule = useCallback(() => {
@@ -289,30 +301,21 @@ export function Waveform({
       const drawing = drawingOf(peaks.length, length, to - from, box.width);
 
       if (drawing === 'peaks') {
-        // The peaks that fall inside the view, folded down to what the lane can
-        // actually show. Folding is what keeps a transient from being drawn
-        // over and then lost.
-        const first = Math.max(0, Math.floor(from * peaks.length));
-        const last = Math.min(peaks.length, Math.ceil(to * peaks.length));
-        const count = last - first;
-        if (count > 0) {
-          const columns = Math.min(count, Math.max(1, Math.round(box.width * PER_PIXEL)));
-          // One shape, filled once. Every column is the same colour at the same
-          // alpha, so there was never anything for a draw call each to say.
-          const shape = new Path2D();
-          for (let i = 0; i < columns; i++) {
-            const a = first + Math.floor((i * count) / columns);
-            const b = Math.max(a + 1, first + Math.floor(((i + 1) * count) / columns));
-            let low = 0;
-            let high = 0;
-            for (let p = a; p < b; p++) {
-              if (peaks[p].min < low) low = peaks[p].min;
-              if (peaks[p].max > high) high = peaks[p].max;
-            }
-            const x = xOf(a / peaks.length);
-            column(shape, x, xOf(b / peaks.length) - x, yOf(high), yOf(low));
-          }
-          ctx.fill(shape);
+        // One silhouette off the ladder: along the top of what the sound
+        // reached, back along the bottom, filled once. Detail rides the zoom,
+        // because a point per pixel across a whole track draws hair that says
+        // only that the summary moved.
+        if (peaks.length) {
+          const edges = edgesOf(levels, {
+            from,
+            to,
+            width: box.width,
+            height: tall,
+            density: densityFor(to - from),
+            smooth: 1,
+            headroom: HEADROOM,
+          });
+          ctx.fill(pathOf(edges, 1));
         }
         ctx.globalAlpha = 1;
         return;
@@ -340,28 +343,22 @@ export function Waveform({
       const xAt = (i: number) => (i - from * length) * wide;
 
       if (drawing === 'envelope') {
-        // Still more samples than pixels: an envelope, but of the audio itself
-        // rather than of a summary of it. Channels fold by widest excursion,
-        // the same rule `peaksOf` uses — a hard-panned hat at its real height
-        // rather than half of it.
-        const columns = Math.max(1, Math.round(box.width * PER_PIXEL));
-        const shape = new Path2D();
-        for (let i = 0; i < columns; i++) {
-          const a = first + Math.floor(((last - first) * i) / columns);
-          const b = Math.max(a + 1, first + Math.floor(((last - first) * (i + 1)) / columns));
-          let low = 0;
-          let high = 0;
-          for (const channel of channels) {
-            for (let s = a; s < b; s++) {
-              const value = channel[s];
-              if (value < low) low = value;
-              else if (value > high) high = value;
-            }
-          }
-          const x = xAt(a);
-          column(shape, x, xAt(b) - x, yOf(high), yOf(low));
-        }
-        ctx.fill(shape);
+        // Past what the peaks can say, the same silhouette off the audio
+        // itself, so nothing about the drawing changes at the handover except
+        // where its numbers came from. Channels fold by widest excursion, the
+        // rule `peaksOf` uses — a hard-panned hat at its real height rather
+        // than half of it.
+        const edges = samplesFrom(channels, {
+          from,
+          to,
+          width: box.width,
+          height: tall,
+          density: densityFor(to - from),
+          smooth: 1,
+          headroom: HEADROOM,
+          length,
+        });
+        ctx.fill(pathOf(edges, 1));
         ctx.globalAlpha = 1;
         return;
       }
@@ -443,18 +440,3 @@ export function Waveform({
     />
   );
 }
-
-/**
- * One column of an envelope: how far the signal reached either side of zero
- * across the span of time this bit of the lane is holding.
- *
- * At least a pixel of it, because a quiet column that rounds to nothing leaves
- * a gap in the middle of the lane that reads as silence rather than as quiet.
- *
- * It adds to a shape rather than painting, because a lane is two thousand of
- * these and painting each one is two thousand draw calls for one silhouette.
- * The shape is filled once, by `envelope`.
- */
-const column = (shape: Path2D, x: number, wide: number, top: number, bottom: number): void => {
-  shape.rect(x, top, Math.max(wide - 0.35, 0.6), Math.max(bottom - top, 1));
-};
