@@ -127,6 +127,7 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 | [`Graph`](../src/chrome/Graph.tsx) | neither — a DAW of our own | the canvas layout, the cords, pan and zoom. See [the graph](graph.md) |
 | [`Port`](../src/chrome/Port.tsx) | neither | where a cord ends. `Device` grew two slots for them |
 | [`Modal`](../src/chrome/Modal.tsx) | neither — an editor's, not a device's | a `<dialog>`: the top layer, the scrim, the focus trap and escape |
+| [`Popup`](../src/chrome/Popup.tsx) | neither | a panel hung off a control: the top layer, the flip, and the three ways it goes away |
 
 `Modal` is in this tier for the reason `Button` is in the last one: it belongs to the
 vocabulary of an *editor* rather than of a device, and every app had rolled its own — the
@@ -135,6 +136,28 @@ different corner of it right. It is a native `<dialog>`, so the top layer, the f
 the return of focus, `aria-modal` and inertness behind it are the browser's rather than
 ours. It opens by being mounted and has no `open` prop, because a shut modal is state the
 DOM was already keeping.
+
+`Popup` is the same argument one rung down. A menu, a palette or a picker opened from a
+control has to escape a `transform`, an `overflow: hidden` and every stacking context
+between it and the page — and inside a `Modal` it has to paint above a `<dialog>`, which
+no `z-index` can do. Portalling to `document.body` looks like it solves that and does not:
+a portalled div is still bidding for a layer with a number, and the top layer is not a
+number. `popover` promotes the panel out of all of it, and it stays a DOM child of the
+control while it floats, so the caller's tokens still reach it and the tab order still
+runs trigger → panel.
+
+It is **`manual`, not `auto`**. Light dismiss closes on the pointerdown heading for the
+trigger and the click behind it opens the panel again, which reads as a menu refusing to
+open. Dismissal is the widget's instead, and it is the three events a menu has always
+answered: a pointer elsewhere, a wheel elsewhere, escape. Which one it was reaches the
+caller, because only escape has somewhere obvious to put focus back — a pointer elsewhere
+has already chosen where it is going. Everything the panel *looks* like is the caller's
+`className`; what `Popup` tells it is where it may go, as `--wdg-popup-anchor` (the
+trigger's width, for a menu that wants to be at least as wide as its field) and
+`--wdg-popup-room` (the height left on the side it landed on). Both are measured on every
+placement rather than remembered, because the trigger may be on a canvas that has panned
+or zoomed since the panel last opened. [`Select`](../src/controls/Select.tsx) is the menu
+built on it; `set/`'s colour picker is the palette.
 
 `Row` and `Panel` solve perpendicular alignment problems. A row aligns the caption,
 control and reading *inside* unlike widgets. A panel aligns the sections *between*
@@ -383,6 +406,32 @@ all three bands, so "the bottom of it" is the bottom of an empty readout band an
 sat under the field it belongs to. Three explicit rows on `.wdg-select` make the placement
 the same in a row and out of one. Device compositions make room around these
 fixed boxes; they never scale or restyle them.
+
+**And the menu it opens is ours as well.** For a long time only the shut half was: the
+field matched every other field, and pressing it opened a system popup in the system's
+colours, at the system's row height, over a canvas it knew nothing about. On a page of
+forty nodes that was the one surface nobody here had chosen. It is drawn in
+[`Select`](../src/controls/Select.tsx) now. Where it floats, how it flips and how it goes
+away are [`Popup`](../src/chrome/Popup.tsx)'s, above — the top layer through `popover`, and
+the three events a menu has always answered. It is drawn at its own size, too: a node at
+0.4× zoom is unreadable, and a menu that shrank with it would be as well. What is left in
+`Select` is the part that is a *select* — the rows, the highlight and the keyboard.
+
+Focus stays on the trigger and the active row is named with `aria-activedescendant` —
+ARIA's select-only combobox, and the pattern with no focus to restore when a host unmounts
+the node a menu was opened from. Every key it handles is stopped as well as defaulted, for
+the reason [the gesture](gesture.md#the-keyboard-and-who-owns-a-keystroke) stops its own:
+a focused control owns its keystroke, and a graph is usually listening for the arrows. A
+key it does *not* handle still goes on to the host, so escape on a shut menu is never the
+reason a modal stops closing.
+
+**Type-ahead reads what you meant off the buffer, not off the clock.** One letter walks the
+members that start with it and a word searches for the word, and which of the two you were
+doing is decided by whether the buffer is one letter repeated — `sss` is a walk however
+fast it arrived, and is never a word anybody was typing. Deciding it on timing alone got it
+wrong in exactly the case that matters: press a letter three times quickly and the second
+press searched for `ss`, matched nothing, and left the walk dead on its first step. The
+700ms window still exists, and all it now does is decide when a *word* has been abandoned.
 
 **Fills grow from the middle when zero is the middle.** A pan at center is not a pan
 turned all the way down, and Live draws the distinction — `live.dial` calls it the needle

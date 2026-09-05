@@ -1,9 +1,6 @@
-import { useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useRef, useState } from 'react';
 import { hex } from '@openflow/core/color.ts';
-import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.ts';
-import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
-import { useDismissOnScroll } from '../hooks/useDismissOnScroll.ts';
+import { Popup, type Dismissal } from '@openflow/widgets/chrome/Popup.tsx';
 import { SwatchGrid } from './SwatchGrid.tsx';
 import { ControlButton } from './Control.tsx';
 import './ColorSelect.css';
@@ -23,72 +20,18 @@ interface Props {
   titleFor?: (index: number, rgb: number) => string;
 }
 
-interface PopoverProps extends Props {
-  anchor: Anchor;
-  onClose: () => void;
-}
-
-/** The floating half of ColorSelect, split out so its dismissal hooks only exist while open. */
-function ColorPopover({
-  palette,
-  current,
-  onPick,
-  onClear,
-  label,
-  titleFor,
-  anchor,
-  onClose,
-}: PopoverProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const pos = useAnchoredPosition(anchor, ref);
-
-  useCloseOnEscape(onClose);
-  useDismissOnScroll(onClose);
-
-  return createPortal(
-    <div className="viewport-overlay color-select-back" onClick={onClose}>
-      <div
-        ref={ref}
-        className="color-select-popover"
-        style={{ left: `${pos.left}px`, top: `${pos.top}px` }}
-        role="dialog"
-        aria-label={label}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="color-select-heading">{label}</div>
-        <SwatchGrid
-          palette={palette}
-          current={current}
-          titleFor={titleFor}
-          onPick={(index) => {
-            onClose();
-            onPick(index);
-          }}
-        />
-        {onClear && (
-          <ControlButton
-            type="button"
-            className="color-select-none"
-            onClick={() => {
-              onClose();
-              onClear();
-            }}
-          >
-            No color
-          </ControlButton>
-        )}
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
 /**
  * A compact, single-select color control.
  *
  * The full palette only appears while choosing. A swatch commits immediately
- * and closes the popover, preserving the write-on-click behavior of the old
+ * and closes the popup, preserving the write-on-click behavior of the old
  * always-open grid without making the rail carry all seventy colors at once.
+ *
+ * The palette floats in [`Popup`](@openflow/widgets/chrome/Popup.tsx) rather
+ * than in a portal to `document.body`. A portalled div wins its layer with a
+ * `z-index`, and there is no number that puts one above a `<dialog>` — so a
+ * picker opened from a modal would have been drawn behind the sheet that opened
+ * it. The top layer is not something to bid for.
  */
 export function ColorSelect({
   palette,
@@ -100,18 +43,31 @@ export function ColorSelect({
   showLabel = true,
   titleFor,
 }: Props) {
-  const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const rgb = current !== null && current >= 0 ? palette[current] : undefined;
 
-  const trigger = (
+  const close = useCallback(() => {
+    setOpen(false);
+    trigger.current?.focus();
+  }, []);
+
+  // A pointer elsewhere has already chosen where it is going; escape has not.
+  const dismiss = useCallback((how: Dismissal) => {
+    setOpen(false);
+    if (how === 'escape') trigger.current?.focus();
+  }, []);
+
+  const button = (
     <ControlButton
+      ref={trigger}
       type="button"
       className={`color-select${rgb === undefined ? ' empty' : ''}`}
       style={rgb === undefined ? undefined : { background: hex(rgb) }}
       disabled={disabled || palette.length === 0}
       aria-label={`Choose ${label.toLowerCase()}`}
       aria-haspopup="dialog"
-      aria-expanded={anchor !== null}
+      aria-expanded={open}
       title={
         palette.length === 0
           ? 'Built-in palette unavailable'
@@ -119,14 +75,7 @@ export function ColorSelect({
             ? `Choose ${label.toLowerCase()}`
             : `Change ${label.toLowerCase()} — index ${current}`
       }
-      onClick={(e) => {
-        if (anchor !== null) {
-          setAnchor(null);
-          return;
-        }
-        const r = e.currentTarget.getBoundingClientRect();
-        setAnchor({ left: r.left, top: r.top, bottom: r.bottom });
-      }}
+      onClick={() => setOpen((was) => !was)}
     />
   );
 
@@ -135,23 +84,43 @@ export function ColorSelect({
       {showLabel ? (
         <div className="color-select-row">
           <span className="lbl">{label}</span>
-          {trigger}
+          {button}
         </div>
       ) : (
-        trigger
+        button
       )}
 
-      {anchor !== null && (
-        <ColorPopover
-          palette={palette}
-          current={current}
-          onPick={onPick}
-          onClear={onClear}
+      {open && (
+        <Popup
+          anchor={trigger}
+          onDismiss={dismiss}
+          className="color-select-popover"
+          role="dialog"
           label={label}
-          titleFor={titleFor}
-          anchor={anchor}
-          onClose={() => setAnchor(null)}
-        />
+        >
+          <div className="color-select-heading">{label}</div>
+          <SwatchGrid
+            palette={palette}
+            current={current}
+            titleFor={titleFor}
+            onPick={(index) => {
+              close();
+              onPick(index);
+            }}
+          />
+          {onClear && (
+            <ControlButton
+              type="button"
+              className="color-select-none"
+              onClick={() => {
+                close();
+                onClear();
+              }}
+            >
+              No color
+            </ControlButton>
+          )}
+        </Popup>
       )}
     </>
   );

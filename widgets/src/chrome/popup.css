@@ -1,0 +1,7 @@
+.wdg-popup {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  max-height: var(--wdg-popup-room, none);
+  overflow: auto;
+}

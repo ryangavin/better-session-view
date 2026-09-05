@@ -28,7 +28,6 @@
 /* Wider than the rail on purpose: fourteen swatches keep Live's row-major hue
    progression intact without making the individual colors harder to hit. */
 .color-select-popover {
-  position: fixed;
   width: 320px;
   max-width: calc(100vw - 16px);
   padding: 8px;
@@ -36,6 +35,7 @@
   border: 1px solid var(--bd3);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-menu);
+  color: var(--fg);
 }
 .color-select-heading {
   font-family: var(--mono);

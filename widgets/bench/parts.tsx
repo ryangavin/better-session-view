@@ -70,6 +70,21 @@ export const STEPPED: Param = {
 export const SHAPE = enumParam(['Sine', 'Square', 'Saw', 'Noise'], { defaultIndex: 0, name: 'Shape' });
 export const FILTER = enumParam(['LP', 'BP', 'HP', 'Notch'], { defaultIndex: 0, name: 'Filter' });
 
+/** Longer than a menu's room, for the scroll and the flip above the field. */
+export const LENS = enumParam(
+  [
+    'zoom', 'swirl', 'fold', 'wobble', 'tile', 'mirror', 'kaleido', 'twist',
+    'ripple', 'slice', 'pixelate', 'creep', 'shear', 'bloom', 'smear', 'drift',
+  ],
+  { defaultIndex: 6, name: 'Lens' },
+);
+
+/** Members wider than the field they are picked in. */
+export const ROUTE = enumParam(
+  ['Master', 'Return A — long plate', 'Return B — tape delay', 'Sidechain bus'],
+  { defaultIndex: 1, name: 'Send to' },
+);
+
 export const UNITS: UnitStyle[] = [
   'native', 'int', 'float', 'time', 'hertz', 'decibel',
   'percent', 'pan', 'semitones', 'midi', 'custom',

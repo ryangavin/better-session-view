@@ -34,6 +34,8 @@ import {
   CROSSFADE,
   DRY_WET,
   FILTER,
+  LENS,
+  ROUTE,
   FREQ,
   GAIN,
   Held,
@@ -518,7 +520,7 @@ function Cases({ only }: { only: string }) {
         </Section>
 
         <Section id="Select">
-          <Case note="A compact enum for a panel that cannot show every member at once.">
+          <Case note="A compact enum for a panel that cannot show every member at once. The menu is the widget's own, drawn in the top layer — so it is the same menu on every platform, it clears a node's transform and overflow, and it opens above a modal. Arrows pick straight away while it is shut; enter opens it, and then they move a highlight instead. Type the first letters of a member to jump to it, and press the same letter again to walk the ones that share it.">
             <Held param={FILTER}>
               {(v, set) => (
                 <Select
@@ -526,6 +528,26 @@ function Cases({ only }: { only: string }) {
                   index={Math.round(v)}
                   onChange={set}
                   name="Filter"
+                />
+              )}
+            </Held>
+          </Case>
+          <Case note="A list longer than the room under it: the menu scrolls, keeps the held member in view when it opens, and flips above the field when that is where the space is.">
+            <Held param={LENS}>
+              {(v, set) => (
+                <Select items={LENS.items ?? []} index={Math.round(v)} onChange={set} name="Lens" />
+              )}
+            </Held>
+          </Case>
+          <Case note="Members longer than the field. The field clips to the width a panel was built around; the menu is free to be as wide as the words, up to a limit of its own.">
+            <Held param={ROUTE}>
+              {(v, set) => (
+                <Select
+                  items={ROUTE.items ?? []}
+                  index={Math.round(v)}
+                  onChange={set}
+                  name="Send to"
+                  width={92}
                 />
               )}
             </Held>
@@ -787,8 +809,9 @@ export function Bench() {
           <div className="bench-aside">
             <h1>Widget bench</h1>
             <p>
-              Drag any control. Hold <kbd>{FINE_KEY}</kbd> for fine, double-click for the
-              parameter&rsquo;s default, arrow keys once focused.
+              Drag any control. Hold <kbd>{FINE_KEY}</kbd> for fine, <kbd>esc</kbd> to put a
+              drag back where it started, double-click for the parameter&rsquo;s default,
+              arrow keys once focused.
             </p>
             <button type="button" onClick={() => setHosted((on) => !on)}>
               {hosted ? 'host tokens: on' : 'host tokens: off'}

@@ -2,6 +2,7 @@ import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
   LabelHTMLAttributes,
+  Ref,
   SelectHTMLAttributes,
 } from 'react';
 import './Control.css';
@@ -15,6 +16,7 @@ interface ControlButtonProps
   icon?: boolean;
   intent?: 'default' | 'primary';
   pressed?: boolean;
+  ref?: Ref<HTMLButtonElement>;
   surface?: 'clear' | 'filled';
 }
 
