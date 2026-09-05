@@ -46,6 +46,17 @@ written, fine slows the control from wherever it currently is, which is what Liv
 rather than the element's size on purpose — an absolute mapping is unusable on anything
 small, which is the same reason the range inputs were wrong.
 
+**Those pixels are the element's own, not the screen's**, and on a canvas that has been
+zoomed the two are different units. A pointer only ever reports the screen's, so the grab
+measures the ratio between the drawn box and the laid-out one —
+`getBoundingClientRect().width ÷ offsetWidth`, whatever stack of transforms produced it —
+and divides by it for the rest of the drag. Comparing the two directly is what made a
+handle slide out from under the pointer at any zoom but 1, which is the promise the
+paragraph above makes and the one thing `anchor: 'pointer'` exists for: on a graph at
+0.5× a drag across the whole drawn plane moved the handle half way. It is measured once,
+at the grab, because a drag that re-measured could be re-scaled underneath itself by a
+wheel the other hand is turning.
+
 **Shift drags the range instead of the value**, on any control given a `depth` and an
 `onDepth`. Both accrue from wherever the pointer last was, so taking or dropping shift
 halfway through carries on from where the control is rather than jumping — the same
@@ -66,12 +77,44 @@ a host. In the app the two happen to be the same key meaning different things in
 places — ⌘ on a clip makes a sound, ⌘ on a fader means fine — and they never meet, because
 one is a grid cell and the other is a control.
 
+## Letting go, and the three ways it happens
+
+**A pointerup ends it.** So does a `pointercancel`, and so does losing the capture.
+
+That third one is not the same event as the first two, and leaving it out is the bug that
+makes a control feel possessed. Capture can go without a pointerup ever arriving — the
+element is unmounted, a host swaps the faceplate under the hand, the platform takes the
+pointer for a gesture of its own — and a drag nobody closed is a drag that resumes the
+moment the pointer crosses the control again with no button held. `Graph`'s node drag had
+the same hole and now answers the same event. On an ordinary release the browser drops
+capture straight after the pointerup, so this usually arrives at a gesture that is already
+closed and finds nothing to do.
+
+**Escape puts it back.** A value under a pointer has been written to the engine several
+times over by the time you think better of it, so there is no undo to reach for and nothing
+else in a mixer that means *not that*. Abandoning restores the value the drag anchored on,
+and the range with it if shift is what moved. Escape with no drag in hand is left alone and
+goes on to the host — a control inside a modal must not be the reason the modal stops
+closing.
+
+**A double-click only resets what didn't move.** Two quick drags land inside the platform's
+double-click time and are reported as one `dblclick`, and taking the parameter to its
+default on that pair throws away both of them — the one gesture in a mixer that loses work
+you meant to keep. The pointer has to have stayed within a few pixels of where it went down
+for the reset to be what you meant.
+
 ## Writes are limited to one per frame
 
 A pointer can report faster than the browser paints, and on the far end of this is a
 WebSocket and a Live Set. `onChange` fires at most once per animation frame with the
 latest value, and a pending write is flushed synchronously when the drag ends. Repeating
 the same value doesn't schedule anything.
+
+**Every ending flushes, including the ones with no drag to end.** A double-click reset
+happens after its own pointerup has already closed the gesture, so there is nothing in hand
+to finish — and the reset used to sit on the frame queue with no release behind it, leaving
+a host that keeps a local value waiting out its deadline before it believed the default had
+happened.
 
 The mixer used to do this itself, once per component. It doesn't need to any more, which
 is also why `TrackSends` no longer coalesces across a column — each control limits itself,

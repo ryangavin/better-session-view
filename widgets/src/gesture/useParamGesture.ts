@@ -54,6 +54,16 @@ const FINE_FACTOR = 10;
  */
 const DEPTH_REACH = 1.5;
 
+/**
+ * How far a pointer may wander and still have been a click.
+ *
+ * Only the double-click reads this. Two quick drags land inside the platform's
+ * double-click time and the browser reports a `dblclick` for the pair, which
+ * used to throw both of them away and reset the parameter — the one gesture in
+ * a mixer that loses work you meant to keep.
+ */
+const CLICK_SLOP = 3;
+
 export interface ParamGestureOptions {
   param: Param;
   /** What the control currently holds. A drag anchors here and then ignores it. */
@@ -96,6 +106,7 @@ export interface ParamSurfaceProps {
   onPointerMove(e: PointerEvent<HTMLElement>): void;
   onPointerUp(e: PointerEvent<HTMLElement>): void;
   onPointerCancel(e: PointerEvent<HTMLElement>): void;
+  onLostPointerCapture(e: PointerEvent<HTMLElement>): void;
   onDoubleClick(e: MouseEvent<HTMLElement>): void;
   onKeyDown(e: KeyboardEvent<HTMLElement>): void;
 }
@@ -136,9 +147,19 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     id: number;
     x: number;
     y: number;
+    /** Where the grab was, which is what the wander is measured from. */
+    ox: number;
+    oy: number;
     fraction: number;
     depth: number;
+    /** Screen pixels per CSS pixel here, measured once at the grab. */
+    scale: number;
+    /** What to put back if the drag is abandoned. */
+    from: number;
+    fromDepth: number;
   } | null>(null);
+  /** Whether the last gesture moved at all, which is what a double-click asks. */
+  const wandered = useRef(false);
   const pending = useRef<number | null>(null);
   const frame = useRef<number | null>(null);
   const sent = useRef(Number.NaN);
@@ -171,16 +192,29 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     [],
   );
 
-  const finish = useCallback(() => {
-    if (drag.current === null) return;
-    drag.current = null;
+  /**
+   * Deliver whatever is waiting on the frame, now, and say the gesture is over.
+   *
+   * Separate from `finish` because the gesture that has no drag to end still
+   * has a write to land: a double-click leaves nothing in hand — the pointerup
+   * before it already closed the drag — and its reset used to sit on the frame
+   * queue with no release behind it, so a host holding a local value waited out
+   * its deadline before believing the default had happened.
+   */
+  const settle = useCallback(() => {
     if (frame.current !== null) {
       cancelAnimationFrame(frame.current);
       flush();
     }
-    setDragging(false);
     latest.current.onRelease?.();
   }, [flush]);
+
+  const finish = useCallback(() => {
+    if (drag.current === null) return;
+    drag.current = null;
+    setDragging(false);
+    settle();
+  }, [settle]);
 
   const onPointerDown = useCallback(
     (e: PointerEvent<HTMLElement>) => {
@@ -199,9 +233,16 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
       e.currentTarget.focus();
       e.currentTarget.setPointerCapture(e.pointerId);
       sent.current = now.value;
+      const box = e.currentTarget.getBoundingClientRect();
+      // A pointer reports screen pixels; `travel` is in the element's own. On a
+      // canvas that has been zoomed those are not the same unit, and comparing
+      // them directly is what made a handle slide out from under the pointer at
+      // any zoom but 1. The ratio of the drawn box to the laid-out box is the
+      // whole of the difference, whatever stack of transforms produced it.
+      const drawn = e.currentTarget.offsetWidth;
+      const scale = drawn > 0 ? box.width / drawn : 1;
       let fraction = fractionOf(now.param, now.value);
       if (anchor === 'pointer') {
-        const box = e.currentTarget.getBoundingClientRect();
         const along =
           axis === 'vertical'
             ? (box.bottom - e.clientY) / (box.height || 1)
@@ -209,7 +250,19 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
         fraction = Math.max(0, Math.min(1, along));
         emit(valueAt(now.param, fraction));
       }
-      drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, fraction, depth: now.depth ?? 1 };
+      wandered.current = false;
+      drag.current = {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        ox: e.clientX,
+        oy: e.clientY,
+        fraction,
+        depth: now.depth ?? 1,
+        scale: scale > 0 ? scale : 1,
+        from: now.value,
+        fromDepth: now.depth ?? 1,
+      };
       setDragging(true);
     },
     [anchor, axis, emit],
@@ -219,7 +272,11 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     (e: PointerEvent<HTMLElement>) => {
       const held = drag.current;
       if (held === null || held.id !== e.pointerId) return;
-      const moved = axis === 'vertical' ? held.y - e.clientY : e.clientX - held.x;
+      const shift = axis === 'vertical' ? held.y - e.clientY : e.clientX - held.x;
+      if (Math.abs(e.clientX - held.ox) > CLICK_SLOP || Math.abs(e.clientY - held.oy) > CLICK_SLOP) {
+        wandered.current = true;
+      }
+      const moved = shift / held.scale;
       held.x = e.clientX;
       held.y = e.clientY;
       // Distance accrues onto the fraction rather than being measured from the
@@ -250,24 +307,70 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     [finish],
   );
 
+  /**
+   * A drag that is still in hand, put back where it was found.
+   *
+   * Escape is the one way out of a gesture that does not commit to a number,
+   * and every drag in a DAW wants it: the value under a pointer has already
+   * been written to the engine several times over, so there is no undo to
+   * reach for and nothing else that says "not that".
+   */
+  const abandon = useCallback(() => {
+    const held = drag.current;
+    if (held === null) return;
+    const now = latest.current;
+    if (now.onDepth && held.fromDepth !== held.depth) now.onDepth(held.fromDepth);
+    sent.current = Number.NaN;
+    emit(quantize(now.param, held.from));
+    finish();
+  }, [emit, finish]);
+
+  /**
+   * Capture can go without a pointerup ever arriving — the element is
+   * unmounted, a host swaps the face under the hand, the platform takes the
+   * pointer for a gesture of its own. Without this the drag stays open, and
+   * the control follows a pointer with no button held the moment it comes
+   * back. `pointerup` releases capture too, so this usually arrives on a
+   * gesture `finish` has already closed, and finds nothing to do.
+   */
+  const onLostPointerCapture = useCallback(
+    (e: PointerEvent<HTMLElement>) => {
+      if (drag.current?.id === e.pointerId) finish();
+    },
+    [finish],
+  );
+
   const onDoubleClick = useCallback((e: MouseEvent<HTMLElement>) => {
     const now = latest.current;
     if (now.disabled) return;
+    // Two quick drags land inside the platform's double-click time and are
+    // reported as one, and taking the parameter to its default on that pair
+    // throws away both of them.
+    if (wandered.current) return;
     // Shift is the range on the way down, so it is the range on the way back:
     // shift-double-click takes the depth to nothing and leaves the value alone.
     if (e.shiftKey && now.onDepth) {
       now.onDepth(0);
-      finish();
+      if (drag.current !== null) finish();
+      else settle();
       return;
     }
     emit(quantize(now.param, now.param.defaultValue));
-    finish();
-  }, [emit, finish]);
+    if (drag.current !== null) finish();
+    else settle();
+  }, [emit, finish, settle]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLElement>) => {
       const now = latest.current;
       if (now.disabled) return;
+      if (e.key === 'Escape') {
+        if (drag.current === null) return;
+        e.preventDefault();
+        e.stopPropagation();
+        abandon();
+        return;
+      }
       const step = stepSize(now.param, isFine(e));
       let next: number;
       switch (e.key) {
@@ -303,7 +406,7 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
       emit(quantize(now.param, clamp(now.param, next)));
       now.onRelease?.();
     },
-    [emit],
+    [abandon, emit],
   );
 
   return {
@@ -325,6 +428,7 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
       onPointerMove,
       onPointerUp,
       onPointerCancel: onPointerUp,
+      onLostPointerCapture,
       onDoubleClick,
       onKeyDown,
     },

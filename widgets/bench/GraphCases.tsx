@@ -554,6 +554,12 @@ const TRIALS: readonly Trial[] = [
     met: (r) => Math.abs(r.scale - 1) > 0.01,
   },
   {
+    id: 'turned-zoomed',
+    task: 'Turn a control while the canvas is zoomed',
+    how: 'Zoom out, then drag a knob. The fill has to keep up with the hand — a control drawn half size takes half the hand to cross.',
+    met: (r) => r.turnedZoomed > 0,
+  },
+  {
     id: 'panned',
     task: 'Pan the empty background',
     how: 'Drag the canvas itself. Only the background pans; a node is its own target.',
@@ -609,7 +615,7 @@ export function TrialRoom() {
   return (
     <Harness
       title="Trials"
-      subject={<span className="graph-subject">eleven promises, on one patch</span>}
+      subject={<span className="graph-subject">{TRIALS.length} promises, on one patch</span>}
       status={<Verdict watch={watch} asked={patch.cords.length} />}
     >
       <Toolbar>

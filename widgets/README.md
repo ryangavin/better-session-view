@@ -150,5 +150,8 @@ needs something one of those has, it needs a prop instead.
 ## Verifying a change
 
 `npm run typecheck` covers this module, and `npm test` runs `src/param/`'s suite alongside
-the core one. The gesture and the controls have no automated coverage — they need a
-pointer — so the bench is where they're checked, and a change to either should say so.
+the core one. The gesture and the menu are covered too, under happy-dom — but only where
+there is an exact answer: what a lost capture does, what escape puts back, what a drag
+measures against under a transform, which member a repeated letter walks to. **How a
+gesture feels is still the bench's** — the reach, the taper, whether the fine modifier is
+worth the finger — so a change to a control should still say which room it was checked in.

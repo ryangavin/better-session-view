@@ -599,6 +599,12 @@
 .wdg-graph-node {
   position: absolute;
   touch-action: none;
+  user-select: none;
+}
+
+.wdg-graph-node input,
+.wdg-graph-node textarea {
+  user-select: text;
 }
 
 .wdg-device-ports:empty {

@@ -533,6 +533,14 @@ export function GraphNode({ id, x, y, children, className }: GraphNodeProps) {
   };
 
   /**
+   * The same recovery a control's gesture keeps. Capture can be lost without a
+   * pointerup — the node is unmounted, a host swaps the face under the hand —
+   * and a drag left open is one that resumes the next time the pointer crosses
+   * the node with no button held.
+   */
+  const lost = up;
+
+  /**
    * Arrows move the node, and the tab stop they need is the one the device head
    * already has. A wrapper with a `tabIndex` of its own would double the stops
    * in a patch, which is the kind of accessibility that makes a page worse.
@@ -554,6 +562,7 @@ export function GraphNode({ id, x, y, children, className }: GraphNodeProps) {
       onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={up}
+      onLostPointerCapture={lost}
       onKeyDown={key}
     >
       {children}

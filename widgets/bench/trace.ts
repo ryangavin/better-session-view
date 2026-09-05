@@ -108,6 +108,15 @@ export interface Reading {
   /** A control turned inside a node, and the node stayed put — or didn't. */
   turnedClean: number;
   snagged: number;
+  /**
+   * Of those clean turns, the ones made while the canvas was not at 1×.
+   *
+   * A pointer reports screen pixels and a control's reach is written in its
+   * own, so a zoomed canvas is the one place the two disagree — and it is the
+   * hardest thing here to catch by eye, because the control still moves. It
+   * just moves the wrong distance.
+   */
+  turnedZoomed: number;
   /** Nudged with the arrow keys, and cords dropped with Escape. */
   nudged: number;
   escaped: number;
@@ -178,6 +187,7 @@ const blank = () => ({
   reaches: [] as number[],
   turnedClean: 0,
   snagged: 0,
+  turnedZoomed: 0,
   nudged: 0,
   escaped: 0,
   reachedPort: false,
@@ -266,7 +276,14 @@ function makeWatch(trace: Trace): Watch {
         );
       } else {
         tally.turnedClean++;
-        trace.say('turned', `${gesture.turns} on a control, and the node stayed put`);
+        const at = published ? published() : 1;
+        const zoomed = Math.abs(at - 1) > 0.01;
+        if (zoomed) tally.turnedZoomed++;
+        trace.say(
+          'turned',
+          `${gesture.turns} on a control, and the node stayed put` +
+            (zoomed ? ` — at ${at.toFixed(2)}×` : ''),
+        );
       }
       return;
     }
@@ -426,6 +443,7 @@ function makeWatch(trace: Trace): Watch {
           : null,
         turnedClean: tally.turnedClean,
         snagged: tally.snagged,
+        turnedZoomed: tally.turnedZoomed,
         nudged: tally.nudged,
         escaped: tally.escaped,
         reachedPort: tally.reachedPort,
