@@ -72,7 +72,7 @@ Metadata remains in `Details.tsx`, committing on blur and reverting with Escape.
 cards report useful source/speed tradeoffs, not scores. Successful separation follows the
 existing path to the mixer; beat review can be reopened with Analyze.
 
-The debug workspace is opened by the bug button in the library footer, beside the folder
+The debug workspace is opened by the bug button at the left edge of the library footer, beside the folder
 control. `DebugButton.tsx` owns that button and its modal.
 
 ## The lane head is 88px, and that is the whole layout

@@ -132,6 +132,7 @@ export function Library({ mix }: { mix: Mix }) {
       </div>
 
       <div className="mf-library-foot" data-bad={mix.noteBad || undefined}>
+        <DebugButton mix={mix} />
         {!mix.noteBad && (
           <span>
             {mix.songs.length === mix.total
@@ -158,7 +159,6 @@ export function Library({ mix }: { mix: Mix }) {
             {library.root ? library.root.split('/').slice(-1)[0] : '—'}
           </button>
         )}
-        <DebugButton mix={mix} />
       </div>
     </aside>
   );
