@@ -52,11 +52,6 @@ function TrackLab({ mix }: { mix: Mix }) {
   const direction = DIRECTIONS[focus - 4];
   const ruler = useCallback((g: CanvasRenderingContext2D, v: View) => drawRuler(g, v, mix.grid, inksOf(g.canvas)), [mix.grid]);
   return <>
-    <div className="mf-wave-directions" aria-label="New waveform directions">
-      {DIRECTIONS.map((d, i) => <button type="button" key={d.id} aria-pressed={focus === i + 4} onClick={() => setFocus(i + 4)}>
-        <span>{d.name}</span><small>{d.intent}</small>
-      </button>)}
-    </div>
     <Toolbar>
       <Group caption="View"><Select label="Waveform comparison" items={['Compare originals', ...names, ...DIRECTIONS.map((d) => d.name), 'Compare structured directions']} index={focus} onChange={setFocus} width={180} /></Group>
       {direction?.id === 'lasagna' && <Group caption="Layers"><Select label="Lasagna layout" items={['Stems', 'Collapsed RGB', 'Compare both', 'Pocket studies']} index={lasagnaLayout} onChange={setLasagnaLayout} width={145} /></Group>}

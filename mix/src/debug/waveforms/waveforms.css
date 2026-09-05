@@ -15,11 +15,6 @@
 .mf-wave-explanations b { display:block; color:var(--fg); }
 @media (max-width:700px) { .mf-wave-explanations { grid-template-columns:1fr; gap:8px; } }
 .mf-wave-lab .wdg-scope-label { white-space:normal; line-height:1.6; letter-spacing:0.04em; }
-.mf-wave-directions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:12px; }
-.mf-wave-directions button { text-align:left; border:1px solid var(--bd); background:var(--bg); color:var(--fg); padding:12px 14px; font:inherit; cursor:pointer; }
-.mf-wave-directions button[aria-pressed=true] { border-color:var(--amber); background:color-mix(in srgb,var(--amber) 5%,var(--bg)); }
-.mf-wave-directions button span { display:block; font-size:14px; }
-.mf-wave-directions small { display:block; color:var(--detail); font-size:11px; margin-top:5px; }
 .mf-wave-direction-intro { display:flex; flex-direction:column; gap:5px; padding:10px 12px 18px; font-size:12px; line-height:1.6; }
 .mf-wave-direction-intro b { color:var(--fg); font-size:15px; font-weight:500; }
 .mf-wave-direction-intro span { max-width:900px; color:var(--detail); }
@@ -31,7 +26,6 @@
 .mf-wave-reading-key button { font:inherit; font-size:11px; color:var(--detail); border:1px solid var(--bd); border-radius:3px; background:transparent; padding:5px 9px; cursor:pointer; }
 .mf-wave-reading-key button[aria-pressed=true] { color:var(--fg); border-color:var(--amber); }
 .mf-wave-reading-key span { color:var(--detail); font-size:11px; margin-left:6px; }
-.mf-wave-directions { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
 .mf-wave-aurora-caption { padding:18px 16px; color:#bdabc7; }
 .mf-wave-aurora-caption span { font:italic 21px Georgia,serif; color:#eedaf1; }
 .mf-wave-aurora-caption p { max-width:780px; font:12px/1.8 system-ui,sans-serif; color:#9d90a8; margin:10px 0 0; }

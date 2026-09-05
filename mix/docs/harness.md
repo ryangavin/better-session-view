@@ -132,7 +132,7 @@ stay here until their design earns a place in the main interface.
 
 ### Combined visual directions
 
-The lab includes **D · Prism**, **E · Threads**, and **F · Emblems**, with the more
+The **View** dropdown includes **D · Prism**, **E · Threads**, and **F · Emblems**, with the more
 expressive **G · Aurora** selected by default.
 Each puts spectrum, source activity, peak shape, sustained level, sections and the current
 grid into one drawing. The earlier studies remain in the View menu, which also offers
