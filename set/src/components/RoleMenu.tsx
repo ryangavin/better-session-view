@@ -2,8 +2,7 @@ import { useRef } from 'react';
 import './RoleMenu.css';
 import { hex } from '@openflow/core/color.ts';
 import { roleKey, type Role } from '@openflow/core/roles.ts';
-import { useAnchoredPosition, type Anchor } from '../hooks/useAnchoredPosition.ts';
-import { useDismissOnScroll } from '../hooks/useDismissOnScroll.ts';
+import { Popup, type PopupBox } from '@openflow/widgets/chrome/Popup.tsx';
 import { useMenuKeyboard } from '../hooks/useMenuKeyboard.ts';
 import { ControlButton } from './Control.tsx';
 
@@ -12,7 +11,7 @@ interface Props {
   vocabulary: Role[];
   palette: number[];
   /** The chip's own box, in viewport coordinates. */
-  anchor: Anchor;
+  anchor: PopupBox;
   /** How many scenes a pick would write. Said out loud rather than assumed. */
   count: number;
   /** What those scenes already share, or null for none / a mixed selection. */
@@ -48,7 +47,7 @@ export function RoleMenu({
   onManage,
   onClose,
 }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
+  const shield = useRef<HTMLDivElement>(null);
   const currentKey = current === null ? null : roleKey(current);
 
   // Roles, then "no role" last — the same order the rail's chips are in, so the
@@ -69,19 +68,29 @@ export function RoleMenu({
     onClose,
   });
 
-  const pos = useAnchoredPosition(anchor, ref);
-  // The menu is positioned against the viewport, so anything that moves the
-  // chip out from under it closes it rather than leaving it pointing at the
-  // wrong row.
-  useDismissOnScroll(onClose);
-
   return (
-    <div className="viewport-overlay menu-back" onClick={onClose} onContextMenu={onClose}>
-      <div
-        ref={ref}
+    // The backdrop still owns dismissal, and `Popup` is told so with `within`.
+    // The grid fires a clip on click, so something has to be over it while the
+    // press completes — closing on the pointerdown would take this away and let
+    // the click reach the very thing it is here to cover. Only a press on the
+    // backdrop itself closes, since the panel is a child of it.
+    <div
+      ref={shield}
+      className="viewport-overlay menu-back"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onContextMenu={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <Popup
+        anchor={anchor}
+        onDismiss={onClose}
+        within={shield}
         className="menu"
-        style={{ left: `${pos.left}px`, top: `${pos.top}px` }}
-        onClick={(e) => e.stopPropagation()}
+        role="menu"
+        label="Role"
       >
         <div className="menu-h">
           Role · {count} scene{count === 1 ? '' : 's'}
@@ -142,7 +151,7 @@ export function RoleMenu({
         <ControlButton className="menu-manage" onClick={onManage}>
           Manage roles…
         </ControlButton>
-      </div>
+      </Popup>
     </div>
   );
 }

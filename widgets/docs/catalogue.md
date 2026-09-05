@@ -159,6 +159,19 @@ placement rather than remembered, because the trigger may be on a canvas that ha
 or zoomed since the panel last opened. [`Select`](../src/controls/Select.tsx) is the menu
 built on it; `set/`'s colour picker is the palette.
 
+**It will hang off a box as well as a control.** A chip in a scrolling grid may be
+unmounted by the time the panel it opened is drawn, so there is nothing left to measure —
+those callers pass the box they measured when it opened. What can be measured is followed;
+a box cannot be, so a scroll or a resize dismisses it with `stale` rather than leaving it
+pointing at the wrong row.
+
+**And it will share dismissal with a shield.** Normally a pointer elsewhere closes the
+panel, which is wrong over a surface that acts on the press itself — `set/`'s grid fires a
+clip on click, so those menus put a full-screen shield underneath to be what the dismissing
+press lands on. Closing on the pointerdown would unmount that shield before the click
+arrived and let it through to the clip. `within` names the shield, the panel treats it as
+part of itself, and dismissal stays where the caller put it.
+
 `Row` and `Panel` solve perpendicular alignment problems. A row aligns the caption,
 control and reading *inside* unlike widgets. A panel aligns the sections *between*
 repeated vertical lanes: every first section has one height, every second section another,

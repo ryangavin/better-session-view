@@ -8,7 +8,7 @@ import {
   type Role,
   type SceneFields,
 } from '@openflow/core/roles.ts';
-import type { Anchor } from './useAnchoredPosition.ts';
+import type { PopupBox } from '@openflow/widgets/chrome/Popup.tsx';
 import type { BridgeState } from './useBridge.ts';
 
 interface Args {
@@ -98,8 +98,8 @@ export function useRoleAssignment({
    * as it stands, and `onRoleMenu` stays identity-stable so opening the menu
    * doesn't re-render all 848 memoized rows.
    */
-  const [roleMenu, setRoleMenu] = useState<{ s: number; anchor: Anchor } | null>(null);
-  const onRoleMenu = useCallback((s: number, anchor: Anchor) => {
+  const [roleMenu, setRoleMenu] = useState<{ s: number; anchor: PopupBox } | null>(null);
+  const onRoleMenu = useCallback((s: number, anchor: PopupBox) => {
     setRoleMenu({ s, anchor });
   }, []);
   const closeRoleMenu = useCallback(() => setRoleMenu(null), []);

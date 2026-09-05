@@ -26,13 +26,49 @@ import './popup.css';
  * least as wide as its field, and `--wdg-popup-room` is the height left on the
  * side it landed on.
  */
-export type Dismissal = 'pointer' | 'wheel' | 'escape';
+export type Dismissal = 'pointer' | 'wheel' | 'escape' | 'stale';
+
+/**
+ * A box the panel hangs from, in viewport coordinates, measured when it opened.
+ *
+ * The second-best anchor, and sometimes the only one there is: a chip in a
+ * scrolling grid may be unmounted by the time the panel it opened is drawn, so
+ * there is no element left to measure. What can be measured is followed; a
+ * remembered box cannot be, so anything that would move it out from under the
+ * panel dismisses instead of chasing it.
+ */
+export interface PopupBox {
+  left: number;
+  top: number;
+  bottom: number;
+  /** Only for a panel that wants to be at least as wide as what it hangs from. */
+  width?: number;
+}
+
+export type PopupAnchor = RefObject<HTMLElement | null> | PopupBox;
+
+/** Whether this anchor can be asked again where it is. */
+const isLive = (anchor: PopupAnchor): anchor is RefObject<HTMLElement | null> =>
+  'current' in anchor;
 
 export interface PopupProps {
-  /** The control it hangs from. Measured on every placement, never remembered. */
-  anchor: RefObject<HTMLElement | null>;
+  /**
+   * What it hangs from: a live control, re-measured on every placement, or a
+   * [box](#PopupBox) that was measured once when the panel opened.
+   */
+  anchor: PopupAnchor;
   /** Mounted is open, so this is the one way it asks to go away. */
   onDismiss(how: Dismissal): void;
+  /**
+   * A shield the caller has put under the panel, which counts as part of it.
+   *
+   * For a panel over something that acts on a press — a grid that fires a clip
+   * on click — where the shield is what catches that press. Dismissal there
+   * belongs to the shield, on the click, rather than to this on the pointerdown:
+   * closing first would unmount the shield and let the click through to the very
+   * thing it was put there to cover.
+   */
+  within?: RefObject<HTMLElement | null>;
   role?: string;
   /** The panel's accessible name. */
   label?: string;
@@ -47,7 +83,7 @@ const MARGIN = 4;
 /** The shortest panel worth flipping for, so a cramped edge doesn't win. */
 const LEAST_ROOM = 64;
 
-export function Popup({ anchor, onDismiss, role, label, id, className, children }: PopupProps) {
+export function Popup({ anchor, onDismiss, within, role, label, id, className, children }: PopupProps) {
   const box = useRef<HTMLDivElement>(null);
 
   /**
@@ -56,11 +92,12 @@ export function Popup({ anchor, onDismiss, role, label, id, className, children 
    * that has panned, zoomed or scrolled since this last opened.
    */
   const place = useCallback(() => {
-    const from = anchor.current;
     const el = box.current;
-    if (!from || !el) return;
-    const at = from.getBoundingClientRect();
-    el.style.setProperty('--wdg-popup-anchor', `${at.width}px`);
+    if (!el) return;
+    const from = isLive(anchor) ? anchor.current : anchor;
+    if (!from) return;
+    const at = 'getBoundingClientRect' in from ? from.getBoundingClientRect() : from;
+    el.style.setProperty('--wdg-popup-anchor', `${at.width ?? 0}px`);
     const under = window.innerHeight - at.bottom - MARGIN;
     const over = at.top - MARGIN;
     const above = under < Math.min(el.scrollHeight, over);
@@ -85,7 +122,9 @@ export function Popup({ anchor, onDismiss, role, label, id, className, children 
     const el = box.current;
     const inside = (target: EventTarget | null) =>
       target instanceof Node &&
-      (box.current?.contains(target) === true || anchor.current?.contains(target) === true);
+      (box.current?.contains(target) === true ||
+        within?.current?.contains(target) === true ||
+        (isLive(anchor) && anchor.current?.contains(target) === true));
     const elsewhere = (how: Dismissal) => (e: Event) => {
       if (!inside(e.target)) onDismiss(how);
     };
@@ -106,17 +145,21 @@ export function Popup({ anchor, onDismiss, role, label, id, className, children 
     document.addEventListener('pointerdown', pointer, true);
     window.addEventListener('wheel', wheel, true);
     window.addEventListener('keydown', escape, true);
-    window.addEventListener('resize', place);
-    document.addEventListener('scroll', place, true);
+    // A live anchor is followed; a remembered box is given up on, because the
+    // thing it was a box of has moved and this would be pointing at the wrong
+    // row. Capture, because a scroll inside an inner box does not bubble.
+    const shifted = isLive(anchor) ? place : () => onDismiss('stale');
+    window.addEventListener('resize', shifted);
+    document.addEventListener('scroll', shifted, true);
     return () => {
       el?.removeEventListener('wheel', keep);
       document.removeEventListener('pointerdown', pointer, true);
       window.removeEventListener('wheel', wheel, true);
       window.removeEventListener('keydown', escape, true);
-      window.removeEventListener('resize', place);
-      document.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', shifted);
+      document.removeEventListener('scroll', shifted, true);
     };
-  }, [anchor, onDismiss, place]);
+  }, [anchor, onDismiss, place, within]);
 
   return (
     <div

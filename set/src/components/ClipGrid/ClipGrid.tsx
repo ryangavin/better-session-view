@@ -18,7 +18,7 @@ import { useTrackStatus } from '../../hooks/useTrackStatus.ts';
 import { useMixer } from '../../hooks/useMixer.ts';
 import { useViewportColumnWidth } from '../../hooks/useViewportColumnWidth.ts';
 import { armedTracks, marksByScene } from '../../lib/rowMarks.ts';
-import type { Anchor } from '../../hooks/useAnchoredPosition.ts';
+import type { PopupBox } from '@openflow/widgets/chrome/Popup.tsx';
 import { NO_SHAPES, STOP_FIRED } from './constants.ts';
 import {
   IconAddSong,
@@ -123,7 +123,7 @@ export interface Props {
    * the chip is the only thing that knows where it ended up; the menu itself is
    * rendered by `App`, so opening one doesn't re-render 848 memoized rows.
    */
-  onRoleMenu: (s: number, anchor: Anchor) => void;
+  onRoleMenu: (s: number, anchor: PopupBox) => void;
   onStopTrack: (t: number) => void;
   onStopAll: () => void;
   onToggleGroup: (trackIndex: number) => void;

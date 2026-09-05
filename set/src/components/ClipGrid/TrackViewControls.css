@@ -73,7 +73,6 @@
 }
 
 .tvc-menu {
-  position: fixed;
   display: flex;
   flex-direction: column;
   gap: 1px;

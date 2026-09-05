@@ -1,8 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Popup, type PopupBox } from '@openflow/widgets/chrome/Popup.tsx';
 import { COLUMN_WIDTHS, type ColumnWidth } from '../../lib/columnWidth.ts';
-import { useAnchoredPosition, type Anchor } from '../../hooks/useAnchoredPosition.ts';
-import { useDismissOnScroll } from '../../hooks/useDismissOnScroll.ts';
 import { useMenuKeyboard } from '../../hooks/useMenuKeyboard.ts';
 import { IconMeter, IconSends } from '../Icon.tsx';
 import './TrackViewControls.css';
@@ -52,9 +50,11 @@ const widthTitle = (width: ColumnWidth): string | undefined => {
  * here), dismissed by a scroll that would move the trigger out from under it,
  * and driven by ↑↓/Enter/Esc.
  *
- * Portalled to the body rather than rendered in place. Its cell is a sticky one
- * with a `z-index`, which makes it a stacking context — a fixed child of it
- * would be trapped in the grid's paint order rather than floating over it.
+ * It floats in a `Popup`, which is what settles the stacking question its cell
+ * used to raise: that cell is sticky and carries a `z-index`, so a fixed child
+ * of it would be trapped in the grid's paint order. Portalling to the body was
+ * the answer while a `z-index` was the only currency; the top layer is not a
+ * number, so nothing has to leave the tree to get above the grid.
  */
 function WidthMenu({
   anchor,
@@ -62,14 +62,12 @@ function WidthMenu({
   onPick,
   onClose,
 }: {
-  anchor: Anchor;
+  anchor: PopupBox;
   value: ColumnWidth;
   onPick: (width: ColumnWidth) => void;
   onClose: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const pos = useAnchoredPosition(anchor, ref);
-  useDismissOnScroll(onClose);
+  const shield = useRef<HTMLDivElement>(null);
   const [cursor, setCursor] = useMenuKeyboard({
     itemCount: COLUMN_WIDTHS.length,
     initialCursor: COLUMN_WIDTHS.indexOf(value),
@@ -79,19 +77,27 @@ function WidthMenu({
     onClose,
   });
 
-  return createPortal(
-    /* A full-screen backdrop rather than a document click listener, for the
-       reason the role menu has one: it catches the click that dismisses the
-       menu before the grid underneath can act on it, so closing this can't
-       also select a scene or fire a clip. */
-    <div className="viewport-overlay" onClick={onClose} onContextMenu={onClose}>
-      <div
-        ref={ref}
+  return (
+    /* The backdrop still owns dismissal, and `Popup` is told so with `within`,
+       for the reason the role menu keeps one: the grid fires a clip on click,
+       so the shield has to outlive the press that lets the menu go. */
+    <div
+      ref={shield}
+      className="viewport-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onContextMenu={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <Popup
+        anchor={anchor}
+        onDismiss={onClose}
+        within={shield}
         className="tvc-menu"
         role="menu"
-        aria-label="Track column display mode"
-        style={{ left: `${pos.left}px`, top: `${pos.top}px` }}
-        onClick={(e) => e.stopPropagation()}
+        label="Track column display mode"
       >
         {COLUMN_WIDTHS.map((w, i) => (
           <button
@@ -109,9 +115,8 @@ function WidthMenu({
             {optionText(w)}
           </button>
         ))}
-      </div>
-    </div>,
-    document.body,
+      </Popup>
+    </div>
   );
 }
 
@@ -156,7 +161,7 @@ export function TrackViewControls({
   showSends,
   onToggleSends,
 }: Props) {
-  const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const [anchor, setAnchor] = useState<PopupBox | null>(null);
   const close = useCallback(() => setAnchor(null), []);
   const pick = useCallback(
     (w: ColumnWidth) => {

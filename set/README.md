@@ -118,8 +118,9 @@ src/hooks/            one hook per file
   useClipInspector.ts clip color + rename pattern
   useMeters.ts        the high-frequency meter stream, as an external store
   useMixer.ts         mixer strip state over that store
-  useCloseOnEscape.ts / useDismissOnScroll.ts /
-  useAnchoredPosition.ts / useMenuKeyboard.ts   generic overlay behavior
+  useCloseOnEscape.ts / useMenuKeyboard.ts     generic overlay behavior
+                      (where a panel floats and how it goes away is
+                       widgets' Popup — see chrome/Popup.tsx)
 src/lib/
   client.ts           typed WebSocket client, framework-free
   selection.ts        clip addressing + selection set
