@@ -253,7 +253,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
           </div>
 
           <div className="mf-group" role="group" aria-label="Analysis">
-            <Button onPress={mix.resetup} title="Review the beat grid, choose an analysis algorithm, or change stems">Analyze</Button>
+            <Button onPress={mix.resetup} title="Check the beat grid, find sections, or change stems">Analyze</Button>
             {/* The numbers that say whether to believe the grid, next to the
                 button that made it: the tempo the song runs at — a range
                 where it moved — and how much of the kick sits on a line. A

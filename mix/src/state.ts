@@ -6,7 +6,7 @@ import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
 import { loosest, type Every } from './pinned.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
-import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, type Beats } from './warp.ts';
+import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, sampleOf, tempoOf, type Beats } from './warp.ts';
 import type { Snap } from './grid.ts';
 import { fitOf, refitOf, snapped, FASTEST, SLOWEST, type Fit } from './tempo.ts';
 import { hearing, type Heard } from './transients.ts';
@@ -1306,6 +1306,27 @@ export function useMix() {
     [seconds, audio],
   );
 
+  /** Commit a reviewed map without presenting the old detector's confidence as its own. */
+  const saveReview = useCallback((reviewed: Beats, sections?: Slice[]) => {
+    if (reviewed !== grid) {
+      setWantFit(false);
+      setDetected(null);
+      setFitFailed(false);
+      setTargetBpm(tempoOf(reviewed));
+      setOffset(sampleOf(reviewed, 0) / reviewed.rate);
+      setBeats(reviewed);
+      setBpmAuto(true);
+      setManual(null);
+      const held = countOf(reviewed);
+      setBarMarks([{ at: 0, label: '1' }, { at: held - 1, label: String(held) }]);
+    }
+    if (sections) {
+      setSlices(sections);
+      setSlicesAuto(false);
+      setActiveSlice(0);
+    }
+  }, [grid]);
+
   /**
    * The grid, read off the audio: a seed fitted to the whole song, and the
    * kick followed behind it. The follow is what gets applied when there is
@@ -1698,6 +1719,7 @@ export function useMix() {
     cutSlice,
     removeSlice,
     resetSlices,
+    saveReview,
     pickSlice,
     slicesAuto,
     targetBpm,

@@ -7,12 +7,11 @@ same decoded stems the lanes are drawn from.
 
 ## Beat analysis
 
-The same component now also supplies the normal **Analyze → Beat grid** view through
-its `editing` presentation. That view starts with the saved map and only reads transient
-evidence until Find beats is pressed. It hides evidence tables/diagnostic plots and the
-experimental export controls; Apply grid persists the candidate's exact beat samples,
-including irregular edits. The debug tab retains its automatic first run and full tools.
-Both cancel pending analysis timers and release audition sources when unmounted.
+The normal **Analyze → Song overview** is a separate product component,
+`components/TrackReview.tsx`; see [track-review.md](track-review.md). The diagnostic
+component retains its full algorithms, band controls and evidence. Its optional `editing`
+presentation remains covered for exact-map application but no longer supplies the product
+page. Pending analysis timers and audition sources are released when unmounted.
 
 The **Beat analysis** tab is `src/debug/Analysis.tsx`, built on [`widgets/src/debug`](../../widgets/docs/debug.md).
 

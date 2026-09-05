@@ -32,9 +32,8 @@ waveform from navigating the renderer away from the app.
 
 Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
 **Analyze** opens the track analysis home. The compact detected tempo/agreement summary
-and Warp remain in the mixer header. Find beats, algorithm choice, candidate application,
-straight-grid reset and manual-grid entry live in analysis, rather than competing for
-header space. The tiny Separate again action above the lanes is gone.
+and Warp remain in the mixer header. Grid review, automatic reset and section suggestions live in analysis.
+Algorithm selection remains in the debug workspace. The tiny Separate again action above the lanes is gone.
 
 The title yields by ellipsis rather than wrapping the header. In analysis the page owns
 its listening controls and Back to mix; the header shows Analysis as the current location.
@@ -43,25 +42,19 @@ only when there is something wrong.
 
 ## Track analysis, on import and on return
 
-`TrackAnalysis.tsx` wraps the existing setup view and beat-analysis component. A newly
-imported track with no stems starts on **Stems & details**: metadata, model cards and
-Generate stems. Beat grid explains that it needs decoded stems and links back to that
-choice. Separation still runs only on an explicit Generate/Separate again press.
+`TrackAnalysis.tsx` wraps setup and the product song review. A newly imported track
+with no stems starts on **Stems & details**: metadata, model cards and Generate stems.
+Song overview explains that it needs decoded stems and links back to that choice.
+Separation still runs only on an explicit Generate/Separate again press.
 
-An existing track opened through Analyze starts on **Beat grid**. It opens the kept map,
-including hand edits, and measures only transient evidence for the listening/edit tools;
-it does not run a beat algorithm again just because the page opened. The algorithm menu
-names the existing seven analysis arms. **Find beats** explicitly builds a candidate;
-**Apply grid** persists its exact samples. A refused analysis leaves the current candidate
-and saved grid intact. **Use saved grid** discards the preview; **Straight grid** makes a
-uniform candidate, still requiring Apply. Candidates are local to the mounted view and
-must be applied before leaving it. These controls reuse `debug/Analysis.tsx` in its editing
-presentation, with experimental scores and pipeline plots kept in the debug workspace.
-
-**Set grid by hand…** returns to the mixer in the counted-downbeat editing mode.
-**Edit beat markers…** returns to the timeline, whose markers already support dragging.
-Beat analysis itself supports listening with a click, source/band isolation, zoom, loops,
-Alt-click to set bar 1, two-beat tempo refinement and tempo sweep.
+An existing track opens on **Song overview**. `TrackReview.tsx` shows the whole song,
+vocal activity, a labeled first-downbeat waveform and sustained-change section suggestions.
+First/middle/end checkpoints play four bars with an optional metronome. Grid correction
+is inline: set bar 1, move it a beat, nudge or enter a steady tempo. Reset previews a fresh
+automatic result; discard restores the exact saved map. No algorithm menu or buttons
+that pretend to edit here but navigate to the mixer. **Save & return to mix** commits
+the map and, only when selected, replaces existing sections with numbered suggestions.
+See [track-review.md](track-review.md) for measurement, thresholds, playback and persistence.
 
 **Stems & details** remains available for separated tracks. The model that produced the
 stems is preselected when Analyze opens; the cache/engine estimates are the existing
