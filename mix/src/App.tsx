@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Empty } from './components/Empty.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
 import { Header } from './components/Header.tsx';
-import { Idle } from './components/Idle.tsx';
+import { TrackAnalysis } from './components/TrackAnalysis.tsx';
 import { Lanes } from './components/Lanes.tsx';
 import { Library } from './components/Library.tsx';
 import { Running } from './components/Running.tsx';
@@ -20,10 +20,9 @@ import './App.css';
  * actually name slices. What is left is two columns instead of three, and a
  * lane that is nearly two hundred pixels wider for it.
  *
- * The middle is one of three things and never two: a track with no stems is a
- * choice of model, a track being separated is a progress report, and a track
- * with stems is the lanes. Nothing here is a tab, because they are states of
- * one track rather than views of it — you do not choose to be separating.
+ * A new track opens its analysis home: stems/details first, then beat-grid
+ * review. Analyze reopens that home for existing tracks. Running separation
+ * remains a derived job state, and Back to mix returns to the lanes.
  *
  * **Nothing on screen is pretend any more except the slices.** The tracks come
  * from a folder on disk, pressing Generate runs Demucs against the file
@@ -64,7 +63,7 @@ export function App() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
+      if (mix.phase !== 'ready' || e.defaultPrevented || target?.closest('input, textarea, select, button, [role=dialog]')) return;
       if (e.key === ' ') {
         e.preventDefault();
         mix.setPlaying(!mix.playing);
@@ -81,7 +80,7 @@ export function App() {
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
+  }, [mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
 
   const carriesFiles = (event: DragEvent): boolean =>
     Array.from(event.dataTransfer.types).includes('Files');
@@ -131,7 +130,7 @@ export function App() {
         <Library mix={mix} />
         <section className="mf-centre">
           {mix.phase === 'empty' && <Empty mix={mix} />}
-          {mix.phase === 'idle' && <Idle mix={mix} ready={ready} />}
+          {mix.phase === 'idle' && <TrackAnalysis key={mix.song?.id} mix={mix} ready={ready} />}
           {mix.phase === 'running' && <Running mix={mix} />}
           {mix.phase === 'ready' && <Lanes mix={mix} />}
         </section>

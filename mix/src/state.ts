@@ -995,23 +995,18 @@ export function useMix() {
     if (!outcome.ok && !outcome.cancelled) setProblem(outcome.says);
   }, [song, model]);
 
-  /**
-   * Set this track's separation up again.
-   *
-   * Not *run* it again: pressing a button that re-ran the model already on disk
-   * would answer from the cache in a second and look like nothing happened,
-   * which is exactly what the old ⟳ did. What a person wants here is the model
-   * cards back — and while they are there, the metadata for this track, which
-   * is the other thing that screen is now for.
-   */
+  /** Open this track's analysis home, keeping its grid and preselecting its separation model. */
   const resetup = useCallback(() => {
     if (!song) return;
+    audio.stop();
+    setPlaying(false);
+    setManual(null);
     setProblem(null);
     setModel(song.model ?? model);
     setSetupFor(song.id);
-  }, [song, model]);
+  }, [song, model, audio]);
 
-  /** Leave the setup screen without separating, for a track that already has stems. */
+  /** Leave analysis for the mixer without running another separation. */
   const keepStems = useCallback(() => setSetupFor(null), []);
 
   /**
@@ -1288,19 +1283,20 @@ export function useMix() {
    * one.
    */
   const fit = useCallback(
-    (found: Fit | Follow | null) => {
+    // Analysis can supply an exact edited map independently of its summary fit.
+    (found: Fit | Follow | null, exact?: Beats) => {
       setWantFit(false);
       setDetected(found);
       setFitFailed(found === null);
       if (!found) return;
       setTargetBpm(found.bpm);
       setOffset(found.offset);
-      setBeats('beats' in found ? found.beats : null);
+      setBeats(exact ?? ('beats' in found ? found.beats : null));
       setBpmAuto(true);
       setManual(null);
       const rate = audio.rate || NOMINAL_RATE;
       const held = countOf(
-        'beats' in found ? found.beats : evenBeats(rate, Math.round(seconds * rate), found.bpm, found.offset),
+        exact ?? ('beats' in found ? found.beats : evenBeats(rate, Math.round(seconds * rate), found.bpm, found.offset)),
       );
       setBarMarks([
         { at: 0, label: '1' },

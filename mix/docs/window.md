@@ -28,115 +28,54 @@ waveform from navigating the renderer away from the app.
 
 ## The header
 
-    [!] mix[flow] │ Title · Artist ⋯⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [beats Auto-warp 126–131 · 91% × ✛ warp] │ Export
+    mix[flow] │ Title · Artist ⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [Analyze 126–131 · 91% warp] │ Export
 
-Five groups, in the order they are read: what this is, what you are looking at, what you
-can do to it, what you can find out about it, where it goes.
+Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
+**Analyze** opens the track analysis home. The compact detected tempo/agreement summary
+and Warp remain in the mixer header. Find beats, algorithm choice, candidate application,
+straight-grid reset and manual-grid entry live in analysis, rather than competing for
+header space. The tiny Separate again action above the lanes is gone.
 
-**The three control clusters are three jobs, and each one is named on its left.**
+The title yields by ellipsis rather than wrapping the header. In analysis the page owns
+its listening controls and Back to mix; the header shows Analysis as the current location.
+The normal playback and export controls return with the mixer. Engine faults still appear
+only when there is something wrong.
 
-*Playback* is the buttons, the tempo and the reading. **The tempo is in the transport,
-not beside Auto-warp**, because with warp on it is the speed the record plays at:
-pressing play is what the number does. Measuring a tempo and choosing one are different
-jobs, and grouping by which subsystem computed a number rather than by what it does to
-the song is how the bar got hard to read.
+## Track analysis, on import and on return
 
-*Snap* is alone, because it is neither of the other two. It is what the pointer is
-allowed to do to the timeline, and it holds whether or not anything is playing and
-whether or not a beat has ever been found.
+`TrackAnalysis.tsx` wraps the existing setup view and beat-analysis component. A newly
+imported track with no stems starts on **Stems & details**: metadata, model cards and
+Generate stems. Beat grid explains that it needs decoded stems and links back to that
+choice. Separation still runs only on an explicit Generate/Separate again press.
 
-*Beats* is everything that only means something once the beats are known: making a beat
-map, judging it, clearing it, laying it by hand, and the warp switch that plays the
-record through it.
+An existing track opened through Analyze starts on **Beat grid**. It opens the kept map,
+including hand edits, and measures only transient evidence for the listening/edit tools;
+it does not run a beat algorithm again just because the page opened. The algorithm menu
+names the existing seven analysis arms. **Find beats** explicitly builds a candidate;
+**Apply grid** persists its exact samples. A refused analysis leaves the current candidate
+and saved grid intact. **Use saved grid** discards the preview; **Straight grid** makes a
+uniform candidate, still requiring Apply. Candidates are local to the mounted view and
+must be applied before leaving it. These controls reuse `debug/Analysis.tsx` in its editing
+presentation, with experimental scores and pipeline plots kept in the debug workspace.
 
-**The clock sits with the transport.** Between the wordmark and the buttons it read as
-part of the brand, and the one control it describes was two groups away.
+**Set grid by hand…** returns to the mixer in the counted-downbeat editing mode.
+**Edit beat markers…** returns to the timeline, whose markers already support dragging.
+Beat analysis itself supports listening with a click, source/band isolation, zoom, loops,
+Alt-click to set bar 1, two-beat tempo refinement and tempo sweep.
 
-**The groups disappear unless the track has stems.** Every control was the same 22px
-outlined pill, so nothing said which subsystem a control belonged to — and in the two
-states where there is nothing to play they were all still there, dead. An idle header is
-a wordmark, a title and a disabled Export, which is the honest amount.
+**Stems & details** remains available for separated tracks. The model that produced the
+stems is preselected when Analyze opens; the cache/engine estimates are the existing
+ones. **Back to mix** leaves without separating or applying a preview.
 
-**Nothing wraps.** The mockup is `flex-wrap` over a `min-height`, so a narrow window
-silently becomes two rows of chrome. Here the title is the only thing that gives, and it
-gives by ellipsis.
+The underlying phases remain derived: `empty`, `idle` (analysis home), `running`
+(separation progress), `ready` (mixer). `setupFor` holds a track ID, so reopening analysis
+for one song does not put every other song there. Opening analysis stops main playback;
+analysis audition owns its own clock and stops on unmount. Mixer keyboard shortcuts only
+run in the mixer and do not also trigger while analysis is listening or a control is focused.
 
-**The tempo is on the bar at all.** It used to be in the export dialog, which made it
-the one number ruling every line in the window and reachable only from the thing you
-press when you have finished. It is also half of Auto-warp's feedback: pressing it is a
-number appearing and the ticks lining up. The other half stayed with the button —
-what the fit agreed with, `91%` of the drumming landing on a grid line, or `no fit`, so
-a press always has an answer.
-
-**Once the beats have been found the field changes meaning, and `warp` is the
-switch that changes it.** The readout beside the button becomes the tempo the
-record actually runs at — `128`, or `126–131` where it moved — read off the
-spacing of the beats and stored nowhere, and the field is what the stems *play*
-at: with warp on, every beat of the record in the time this tempo gives a beat,
-pitch kept. Until the beats have been found the field rules the grid as it
-always did, since a typed tempo is then the only claim there is. The switch sits with
-the beat map rather than with the field it changes, because without a beat map it can do
-nothing at all, and it says what it is waiting on — the beat map, or the stretcher —
-rather than doing nothing quietly.
-
-**The tempo field carries no label.** `snap` and `beats` do, because each names a
-cluster of marks and buttons that would otherwise be a rebus. A three-digit number in a
-draggable field, sitting between the transport buttons and the clock, is the only thing
-it could be — and the word was a sixth of that group's width spent saying so.
-
-Where a group *is* labelled, the label is a leading `span` rather than a `Widget`
-caption. `Widget` puts captions *above*, which in a 34px bar makes that one control two
-rows tall in a line of things one row tall — and a ragged baseline is most of what
-"messy header" means.
-
-**Snap defaults to the grid you can see.** It began as a setting for a gesture that did
-not exist yet, and when the gesture arrived — dragging a cut on the slice ruler — the
-ruling already under the ruler was the right answer to where a cut should land: bars
-across a song, beats across a phrase, sixteenths across a bar. That is `⌗`, and it is
-the default, so a section cannot be put on a beat you could not see. The four rungs
-beside it — four bars, a bar, a beat, half of one — are for when you want a length the
-zoom is not currently drawing.
-
-**The demucs probe is silent when it passes.** A green light that is always on is a
-thing you stop seeing; a red chip that appears is not. So there is no indicator at all
-until there is something wrong, and then it is a word.
-
-## Three states, and never two
-
-The middle is one of three things:
-
-| | |
-|---|---|
-| **idle** | no stems on disk: what the track is called, the models, what each trades away, and one button |
-| **running** | a separation in flight, per source |
-| **ready** | the lanes |
-
-Not tabs. They are states of one track rather than views of it — you do not *choose* to
-be separating — so `phase` is derived in `state.ts` from what is on disk and whether a
-job is running, and nothing can select a state that is not true.
-
-**The model cards say the trade, not the score.** A model's SDR figure is not something
-you can act on standing at a laptop; "the piano bleeds badly" is. The numbers that are
-there — sources, and speed against the clock — are the two that change what you do next,
-and they come from the bench in `demucs/README.md`.
-
-**Redoing a separation is reaching the idle state again, not pressing a button.** A job
-is keyed on the file's content hash and the model — `electron/job.ts` — so re-running
-what is already on disk is answered from the cache in a moment and looks like nothing
-happened. That is exactly what the ⟳ above the lanes used to do. It now sets `setupFor`
-and puts the model cards back, with the model that made the current stems already
-selected and the estimate saying it is on disk, so the only way to spend minutes is to
-choose something different. **Keep these stems** is the way out.
-
-`setupFor` holds an id rather than a boolean, because `phase` is a state of *this track*:
-opening a different one has to show that track's own state and not the setup somebody
-opened over here.
-
-**The metadata lives on that screen** — `Details.tsx`. It is the one moment a person is
-looking at a track and not yet listening to it; every other screen is about the audio,
-and a form on any of them is a form in the way. There is no Save, because a wrong value
-here breaks nothing and a Save button on a three-field form is a button that exists to be
-forgotten: a field commits when you leave it, and Escape puts it back.
+Metadata remains in `Details.tsx`, committing on blur and reverting with Escape. The model
+cards report useful source/speed tradeoffs, not scores. Successful separation follows the
+existing path to the mixer; beat review can be reopened with Analyze.
 
 ## The lane head is 88px, and that is the whole layout
 
@@ -250,8 +189,7 @@ a lane that reached for them would draw the song you just left.
 
 **The fact belongs to the model, and the model is already on screen** — named on this
 band, and described at the point where somebody chooses it, which is the moment the trade
-is actually being made. Wanting guitar on its own means separating again, and the button
-for that is on the same band.
+is actually being made. Wanting guitar on its own means choosing another model in **Analyze → Stems & details**.
 
 The one place a *missing* stem is still worth drawing is the library's badge strip, and
 for the opposite reason: there the question is which of a hundred tracks have one, so a

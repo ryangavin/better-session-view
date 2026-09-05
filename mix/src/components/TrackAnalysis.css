@@ -1,0 +1,9 @@
+.mf-track-analysis { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.mf-analysis-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:22px 24px 14px; }
+.mf-analysis-heading h2 { margin:5px 0; font-size:var(--text-title); font-weight:var(--weight-medium); }
+.mf-analysis-heading p:not(.mf-eyebrow) { margin:6px 0 0; color:var(--detail); font-size:var(--text-body); }
+.mf-analysis-nav { display:flex; gap:14px; flex-wrap:wrap; align-items:center; padding:0 24px 16px; border-bottom:1px solid var(--bd); }
+.mf-analysis-empty { padding:24px; color:var(--detail); }
+.mf-track-analysis > .mf-analysis { padding:10px 14px 0; box-sizing:border-box; }
+.mf-track-analysis .mf-page { padding:20px 24px; }
+.mf-grid-guidance { margin:6px 10px 12px; color:var(--detail); font-size:var(--text-body); line-height:1.6; }

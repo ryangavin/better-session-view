@@ -137,11 +137,6 @@ const seen = (seconds: number): string => {
   return `${(seconds * 1000).toFixed(1)}ms`;
 };
 
-const again = (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-    <path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4h-4" />
-  </svg>
-);
 
 export function Lanes({ mix }: { mix: Mix }) {
   const song = mix.song;
@@ -329,15 +324,7 @@ export function Lanes({ mix }: { mix: Mix }) {
             >
               {seen(mix.seconds / view.zoom)}
             </Button>
-            <Button
-              onPress={mix.resetup}
-              label="Separate again"
-              title="Set this song up again — the models, and what it is called"
-              width={22}
-              disabled={mix.engineBusy}
-            >
-              {again}
-            </Button>
+
           </div>
           <div className="mf-band-bottom">
             <Button

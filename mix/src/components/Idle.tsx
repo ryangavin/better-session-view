@@ -26,7 +26,7 @@ import './Idle.css';
  * the page there is nothing to offer and the page says so — which is honest, and
  * is what a `vite` session in a browser tab gets.
  */
-export function Idle({ mix, ready }: { mix: Mix; ready: Ready | null }) {
+export function Idle({ mix, ready, embedded = false }: { mix: Mix; ready: Ready | null; embedded?: boolean }) {
   const song = mix.song;
   const chosen = mix.chosenModel;
   const wait = roughly(estimate(chosen, song?.seconds ?? null));
@@ -51,8 +51,8 @@ export function Idle({ mix, ready }: { mix: Mix; ready: Ready | null }) {
   return (
     <div className="mf-page">
       <div className="mf-page-body">
-        <p className="mf-eyebrow">{again ? 'separate again' : 'no stems on disk'}</p>
-        <h2 className="mf-page-title">{song.title}</h2>
+        <p className="mf-eyebrow">{again ? `${mix.labelOf(song.model)} · stems on disk` : 'Choose your stems'}</p>
+        {!embedded && <h2 className="mf-page-title">{song.title}</h2>}
 
         <Details mix={mix} song={song} />
 
@@ -112,7 +112,7 @@ export function Idle({ mix, ready }: { mix: Mix; ready: Ready | null }) {
           >
             {again ? 'Separate again' : 'Generate stems'}
           </Button>
-          {mix.resetting && (
+          {mix.resetting && !embedded && (
             <Button onPress={mix.keepStems} title="Go back to the mix without separating again">
               Keep these stems
             </Button>

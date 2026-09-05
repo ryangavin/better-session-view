@@ -19,8 +19,8 @@ import { openflow } from '../openflow.ts';
 import type { Mix, Track } from '../state.ts';
 import { countedOf, refitOf, sweepOf, type Fit, type Sweep } from '../tempo.ts';
 import type { Trace } from '../trace.ts';
-import type { Heard } from '../transients.ts';
-import { BEATS_PER_BAR, beatAt, tempoAt, tempoOf, countOf, renumbered, type Beats } from '../warp.ts';
+import { heardIn, type Heard } from '../transients.ts';
+import { BEATS_PER_BAR, beatAt, tempoAt, tempoOf, countOf, renumbered, sampleOf, type Beats } from '../warp.ts';
 import { ARMS, INPUTS, run, SAYS, straight, type Arm, type Input } from './arms.ts';
 import { Audition, type Click } from './audition.ts';
 import * as D from './draw.ts';
@@ -63,6 +63,11 @@ interface Map {
   followed: boolean;
 }
 
+const ARM_TITLES: Record<Arm, string> = {
+  ours: 'Adaptive beat follower', line: 'Fitted straight grid', whole: 'Whole-tempo grid',
+  flux: 'Spectral onset follower', comb: 'Comb-seeded follower', ellis: 'Dynamic beat tracker', grid: 'Comb straight grid',
+};
+
 const BANDS = [
   ['low', 'kick', 'below 120 Hz, as the kick was heard'],
   ['mid', 'snare', '200 to 2500 Hz, as the snare was heard'],
@@ -95,7 +100,7 @@ function summed(buffers: AudioBuffer[]): Float32Array[] {
   });
 }
 
-export function Analysis({ mix }: { mix: Mix }) {
+export function Analysis({ mix, editing = false }: { mix: Mix; editing?: boolean }) {
   const song = mix.song;
   const withStems = mix.songs.filter((t) => t.stems && t.sources.length > 0);
   const subject = (
@@ -112,10 +117,10 @@ export function Analysis({ mix }: { mix: Mix }) {
       <Harness title="analysis" subject={subject} status={<Status tone="quiet">open a track with stems</Status>} />
     );
   }
-  return <Track key={song.id} mix={mix} song={song} subject={subject} />;
+  return <Track key={song.id} mix={mix} song={song} subject={editing ? undefined : subject} editing={editing} />;
 }
 
-function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.ReactNode }) {
+function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject: React.ReactNode; editing: boolean }) {
   const seconds = mix.seconds;
   const axis = useAxis({ seconds: Math.max(seconds, 1) });
   const box = useRef<HTMLDivElement>(null);
@@ -129,7 +134,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
   const [click, setClick] = useRemembered('mix-analysis-click', true);
   const [ran, setRan] = useState<Run | null>(null);
   const [running, setRunning] = useState(false);
-  const [map, setMap] = useState<Map | null>(null);
+  const [map, setMap] = useState<Map | null>(() => editing ? { beats: mix.grid, bpm: tempoOf(mix.grid), offset: sampleOf(mix.grid, 0) / mix.grid.rate, followed: Boolean(mix.beats) } : null);
   const [swept, setSwept] = useState<Sweep | null>(null);
   const [candidate, setCandidate] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -139,6 +144,9 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
   const [under, setUnder] = useState('');
   const [exportBpm, setExportBpm] = useState(120);
   const [exporting, setExporting] = useState(false);
+
+  const pendingRun = useRef<number | null>(null);
+  useEffect(() => () => { if (pendingRun.current !== null) window.clearTimeout(pendingRun.current); }, []);
 
   const say = useCallback((text: string, bad = false) => setNote({ text, bad }), []);
 
@@ -170,44 +178,50 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
 
   const analyse = useCallback(
     (which: Arm, on: Input) => {
+      const name = editing ? ARM_TITLES[which] : which;
       const channels = channelsFor(on);
       if (!channels) {
         say('the stems are not decoded yet', true);
         return;
       }
       setRunning(true);
-      say(`running ${which} on ${on}…`);
-      window.setTimeout(() => {
-        const trace: Trace = { tempo: { frame: 0.004 }, follow: { frame: 0.004 } };
-        const started = performance.now();
-        const got = run(which, channels, rate, trace);
-        const ms = Math.round(performance.now() - started);
-        setRunning(false);
-        if (!got) {
-          setRan(null);
-          setMap(null);
-          say(`${which}: heard nothing to work with`, true);
-          return;
-        }
-        setRan({ arm: which, input: on, heard: got.heard, fit: got.fit, follow: got.follow, trace, ms });
-        setSwept(null);
-        setCandidate(trace.tempo?.chosen?.candidate ?? 0);
-        if (got.beats) {
-          setMap({
-            beats: got.beats,
-            bpm: got.fit?.bpm ?? tempoOf(got.beats),
-            offset: got.fit?.offset ?? got.beats.samples[0] / got.beats.rate,
-            followed: got.follow !== null,
-          });
-          setExportBpm(Math.round(got.fit?.bpm ?? tempoOf(got.beats)));
-          say(`${which} on ${on}: ${got.fit ? `${got.fit.bpm} bpm` : 'no fit'}${got.follow ? ', followed' : ''} in ${ms} ms`);
-        } else {
-          setMap(null);
-          say(`${which} on ${on}: ${trace.tempo?.refused ?? trace.follow?.refused ?? 'no beats'} (${ms} ms)`, true);
+      say(`running ${name} on ${on}…`);
+      pendingRun.current = window.setTimeout(() => {
+        pendingRun.current = null;
+        try {
+          const trace: Trace = { tempo: { frame: 0.004 }, follow: { frame: 0.004 } };
+          const started = performance.now();
+          const got = run(which, channels, rate, trace);
+          const ms = Math.round(performance.now() - started);
+          setRunning(false);
+          if (!got) {
+            if (!editing) setRan(null);
+            if (!editing) setMap(null);
+            say(`${name}: heard nothing to work with`, true);
+            return;
+          }
+          setRan({ arm: which, input: on, heard: got.heard, fit: got.fit, follow: got.follow, trace, ms });
+          setSwept(null);
+          setCandidate(trace.tempo?.chosen?.candidate ?? 0);
+          if (got.beats) {
+            setMap({
+              beats: got.beats,
+              bpm: got.fit?.bpm ?? tempoOf(got.beats),
+              offset: got.fit?.offset ?? got.beats.samples[0] / got.beats.rate,
+              followed: got.follow !== null,
+            });
+            setExportBpm(Math.round(got.fit?.bpm ?? tempoOf(got.beats)));
+            say(`${name} on ${on}: ${got.fit ? `${got.fit.bpm} bpm` : 'no fit'}${got.follow ? ', followed' : ''} in ${ms} ms`);
+          } else {
+            if (!editing) setMap(null);
+            say(`${name} on ${on}: ${trace.tempo?.refused ?? trace.follow?.refused ?? 'no beats'} (${ms} ms)`, true);
+          }
+        } catch (error) {
+          setRunning(false); say(error instanceof Error ? error.message : String(error), true);
         }
       }, 0);
     },
-    [channelsFor, rate, say],
+    [channelsFor, rate, say, editing],
   );
 
   // The first look is the app's own pipeline on the drums, as soon as they are decoded.
@@ -216,8 +230,13 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
   useEffect(() => {
     if (looked.current || !drumsReady) return;
     looked.current = true;
-    analyse(arm, input);
-  }, [drumsReady, analyse, arm, input]);
+    if (editing) {
+      const channels = channelsFor('drums');
+      const heard = channels && heardIn(channels, rate);
+      if (heard) setRan({ arm: 'ours', input: 'drums', heard, fit: mix.detected, follow: mix.detected && 'beats' in mix.detected ? mix.detected : null, trace: {}, ms: 0 });
+      say('Showing the current grid. Find beats to compare a new candidate; Apply grid keeps your changes.');
+    } else analyse(arm, input);
+  }, [drumsReady, analyse, arm, input, editing, channelsFor, rate, mix.detected, say]);
 
   /* ---------- the map by hand ---------- */
 
@@ -414,7 +433,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
 
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.target instanceof HTMLInputElement || ev.target instanceof HTMLSelectElement) return;
+      if (ev.target instanceof HTMLElement && ev.target.closest('input, select, textarea, button')) return;
       if (ev.code === 'Space') {
         ev.preventDefault();
         toggle();
@@ -452,7 +471,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
       map.followed && ran.follow
         ? { ...ran.follow, beats: map.beats }
         : { bpm: map.bpm, offset: map.offset, agreement: ran.fit?.agreement ?? 0 };
-    mix.take(found);
+    mix.take(found, map.beats);
     say(`taken: ${map.bpm} bpm from ${map.offset.toFixed(3)} s${map.followed ? ', followed' : ', straight'} — the lanes have it, and it is kept beside the track`);
   }, [ran, map, mix, say]);
 
@@ -629,13 +648,14 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
 
   return (
     <div ref={box} className="mf-analysis">
-      <Harness title="analysis" subject={subject} status={status}>
+      <Harness title={editing ? "Beat grid" : "analysis"} subject={subject} status={status}>
+        {editing && <p className="mf-grid-guidance">Listen with a click, compare the proposed beats with the saved grid, then <b>Apply grid</b>. Alt-click a hit or beat to set bar 1; use two beats to refine the tempo. Apply before leaving this view to keep your candidate.</p>}
         <Toolbar>
-          <Group caption="run" title={SAYS[arm]}>
-            <Select items={[...ARMS]} index={ARMS.indexOf(arm)} onChange={(i) => setArm(ARMS[i])} width={72} label="arm" />
+          <Group caption={editing ? "Algorithm" : "run"} title={editing ? undefined : SAYS[arm]}>
+            <Select items={editing ? ARMS.map((a) => ARM_TITLES[a]) : [...ARMS]} index={ARMS.indexOf(arm)} onChange={(i) => setArm(ARMS[i])} width={editing ? 174 : 72} label={editing ? "Beat analysis algorithm" : "arm"} />
             <Segmented items={[...INPUTS]} index={INPUTS.indexOf(input)} onChange={(i) => setInput(INPUTS[i])} label="input" />
             <Button onPress={() => analyse(arm, input)} disabled={running || !drumsReady}>
-              run
+              {editing ? 'Find beats' : 'run'}
             </Button>
           </Group>
           <Group caption="listen">
@@ -686,19 +706,25 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
             <Button onPress={() => sweep()} disabled={!map} title="hold 1.1.1 and walk the tempo a beat per minute either side">
               sweep
             </Button>
-            <Button onPress={take} disabled={!map} title="hand this grid to the app, as if Auto-warp had found it">
-              take
+            <Button onPress={take} disabled={!map || !ran || running} title="Save this candidate as the track's beat grid">
+              {editing ? 'Apply grid' : 'take'}
             </Button>
+            {editing && <>
+              <Button onPress={() => { setMap({ beats: mix.grid, bpm: tempoOf(mix.grid), offset: sampleOf(mix.grid, 0) / mix.grid.rate, followed: Boolean(mix.beats) }); say('Showing the saved grid again.'); }}>Use saved grid</Button>
+              <Button onPress={() => { if (!map) return; const ruled = straight(map.bpm, map.offset, map.beats.rate, map.beats.length); if (ruled) replaceMap(ruled, map.bpm, map.offset); say('Straight-grid candidate. Apply grid to keep it.'); }} disabled={!map || running}>Straight grid</Button>
+            </>}
           </Group>
+          {!editing && <>
           <Group caption="export">
             <NumberField param={EXPORT_TEMPO} value={exportBpm} onChange={setExportBpm} showFill={false} width={64} label="export tempo" />
             <Button onPress={() => void exportStems()} disabled={!map || exporting} title="lay every stem straight from 1.1.1 at that tempo, padded to whole bars, into the export folder">
               export stems
             </Button>
           </Group>
+          </>}
         </Toolbar>
-        <Facts items={facts} />
-        <AnalysisEvidence mix={mix} beats={beats} heard={ran?.heard ?? null} axis={axis} head={head ?? undefined} runLabel={ran ? `${ran.arm} on ${ran.input}${map?.followed ? ' · followed' : ' · edited/straight'}` : 'No run'} />
+        <Facts items={editing ? [{ name: "candidate tempo", value: map ? `${map.bpm.toFixed(2)} BPM` : "—" }, { name: "bar 1", value: map ? `${map.offset.toFixed(3)} s` : "—" }, { name: "beats", value: map?.beats.samples.length ?? "—" }] : facts} />
+        {!editing && <AnalysisEvidence mix={mix} beats={beats} heard={ran?.heard ?? null} axis={axis} head={head ?? undefined} runLabel={ran ? `${ran.arm} on ${ran.input}${map?.followed ? ' · followed' : ' · edited/straight'}` : 'No run'} />}
         <Scope axis={axis} head={head ?? undefined} scrub={scrub}>
           <ScopeRow label="time" height={26} draw={drawRuler} ruler />
           <ScopeRow
@@ -724,7 +750,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
             }
           />
           <ScopeRow
-            label="beats"
+            label={editing ? "candidate" : "beats"}
             height={48}
             draw={drawBeats}
             onPointer={(ev) => {
@@ -743,7 +769,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
             }
           />
           <ScopeRow
-            label="kept"
+            label={editing ? "saved" : "kept"}
             height={28}
             draw={drawKept}
             legend={<Legend items={[{ kind: 'line', ink: 'var(--preview)', label: 'the grid the app holds now' }]} />}
@@ -768,7 +794,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
         <Status tone="quiet" className="mf-analysis-under">
           {under || 'click the time row to seek · drag to pan · shift-drag for a loop · drag the head or alt-drag to scrub · scroll pans, shift-scroll zooms · space plays'}
         </Status>
-        <Shelf>
+        {!editing && <Shelf>
           <Plot title="autocorrelation" draw={drawAcf} caption={acfText} height={110} />
           <Plot
             title="phase sweep"
@@ -798,7 +824,7 @@ function Track({ mix, song, subject }: { mix: Mix; song: Track; subject: React.R
             caption={driftText}
             height={110}
           />
-        </Shelf>
+        </Shelf>}
       </Harness>
     </div>
   );

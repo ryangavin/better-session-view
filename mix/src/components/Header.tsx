@@ -15,62 +15,10 @@ import { bpmText, rangeText } from '../warp.ts';
 import './Header.css';
 
 /**
- * One bar, and the whole problem with it was that eleven things sat on it as
- * eleven things.
- *
- *   mix[flow] │ Title · Artist ⋯⋯ [▶ ■ ↻ 124 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [beats Auto-warp 124 92% × ✛ warp] [Export]
- *
- * **Controls that belong together are one bordered object, not several beside
- * each other.** The group owns the border and the dividers; its children own
- * only their content — which is the same `.control-group` idea set[flow] has
- * carried since its own header got crowded. Three clusters read as three
- * things. The same controls loose read as nine, which is what a smattering is.
- *
- * **The three clusters are three jobs**, and each one is named on its left:
- *
- * - *Playback* — the buttons, the tempo, the reading. The tempo is here and
- *   not beside Auto-warp because with warp on it is the speed the record
- *   plays at: pressing play is what it does. Measuring a tempo is a different
- *   job from choosing one, and it has its own group. It carries no `tempo`
- *   label: a three-digit number between the transport and the clock, in a
- *   field you can drag, is the only thing it could be, and the word was a
- *   sixth of the group's width spent saying so.
- * - *Snap* — alone, because it is neither. It is what the pointer is allowed
- *   to do to the timeline, and it applies whether or not anything is playing
- *   and whether or not a beat has ever been found.
- * - *Beats* — making a beat map, judging it, clearing it, laying it by hand,
- *   and the warp switch that plays the record through it. Everything that
- *   only means something once the beats are known, in one place.
- *
- * **Everything on the bar is exactly 22px.** `DESIGN.md` has said so all along
- * — "header controls share a 22px height" — and this header was not doing it:
- * `Widget` defaults to a 16px field, so the controls floated at different
- * optical weights in a 34px bar with no shared edge. One override at the top
- * of the file fixes every control on it, and that single line is most of what
- * "no real alignment" was.
- *
- * **The clock is inside the transport cluster**, because it is the transport's
- * reading. Loose between the wordmark and the buttons it read as part of the
- * brand.
- *
- * **Playback and the grid vanish unless the track has stems.** Neither can do
- * anything in the other two states, and a bar full of dead controls is the
- * other half of the clutter. An idle header is the wordmark, the title and a
- * disabled Export, which is the honest amount.
- *
- * **Nothing wraps.** The mockup is `flex-wrap` over a `min-height`, so a narrow
- * window silently becomes two rows of chrome. The title is the only thing that
- * gives, and it gives by ellipsis.
- *
- * The track name is here because the right rail that used to carry it is gone,
- * and a window that never says what is open is one you can only orient in by
- * looking at which library row is highlighted. **It is also where the name gets
- * fixed.** `Details.tsx` is the form, and it is on the setup screen — which is
- * behind you the moment a track has stems, so a name you only notice is wrong
- * once you are listening to it meant going back through the library to correct
- * it. The two words are already on the bar; typing over them is the shortest
- * path there is, and `QuietField` keeps them looking like the label they also
- * are until you reach for one.
+ * Playback and snap stay at hand; Analyze opens the track's analysis home.
+ * The compact grid readout and warp switch remain visible in the mixer.
+ * Algorithm selection, candidate review and manual-grid entry live on the
+ * analysis page rather than in a row of competing header buttons.
  */
 
 const play = (
@@ -98,12 +46,6 @@ const loopMark = (
   </svg>
 );
 
-const crosshair = (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-    <path d="M12 3v6M12 15v6M3 12h6M15 12h6" />
-    <circle cx="12" cy="12" r="2.2" />
-  </svg>
-);
 
 /** A bug: the analysis harness, which is a debugging page and says so. */
 const bugMark = (
@@ -113,11 +55,6 @@ const bugMark = (
   </svg>
 );
 
-const clearMark = (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-    <path d="M6 6l12 12M18 6L6 18" />
-  </svg>
-);
 
 /**
  * The tempo, in the transport, because it is the speed the record plays at.
@@ -315,31 +252,8 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
             />
           </div>
 
-          {/* The beat map: making one, judging it, throwing it away, laying it
-              by hand — and the switch that plays the record through it. Every
-              control here is about where the beats are, which is why the tempo
-              is not among them. */}
-          <div className="mf-group" role="group" aria-label="Beats">
-            <span className="mf-group-label">beats</span>
-            <Button
-              onPress={mix.autoWarp}
-              title={
-                mix.detected && 'beats' in mix.detected
-                  ? `Followed the beat through ${mix.detected.beats.samples.length} beats at ${rangeText(
-                      mix.grid,
-                    )} BPM — ${Math.round(mix.detected.tracked * 100)}% of them on a hit, ${Math.round(
-                      mix.detected.agreement * 100,
-                    )}% of the kit on the grid. Press to follow it again`
-                  : mix.detected
-                    ? `Fitted ${bpmText(mix.detected.bpm)} BPM to the kick — ${Math.round(
-                        mix.detected.agreement * 100,
-                      )}% of the kicks land on the grid. Press to fit it again`
-                    : 'Find the tempo and the downbeat, and follow the beat through the song'
-              }
-              disabled={mix.decoding}
-            >
-              Auto-warp
-            </Button>
+          <div className="mf-group" role="group" aria-label="Analysis">
+            <Button onPress={mix.resetup} title="Review the beat grid, choose an analysis algorithm, or change stems">Analyze</Button>
             {/* The numbers that say whether to believe the grid, next to the
                 button that made it: the tempo the song runs at — a range
                 where it moved — and how much of the kick sits on a line. A
@@ -365,31 +279,6 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                 no fit
               </span>
             ) : null}
-            {/* The way back: every found beat gone, and a straight grid at this
-                tempo and downbeat to start over from. Beside the button that
-                finds the beats, because it undoes exactly that. */}
-            <Button
-              onPress={mix.clearBeats}
-              label="Clear the beat map"
-              title={
-                mix.beats
-                  ? 'Clear the beat map: back to an even grid at this tempo, to start over'
-                  : 'No beat map to clear'
-              }
-              width={26}
-              disabled={!mix.beats}
-            >
-              {clearMark}
-            </Button>
-            <Toggle
-              on={mix.manual !== null}
-              onChange={(on) => (on ? mix.startManual() : mix.endManual())}
-              label="Set the grid by hand"
-              title="Set the grid by hand: click the downbeat of bar 1, then a downbeat late in the song"
-              width={26}
-            >
-              {crosshair}
-            </Toggle>
             {/* Live's warp switch: on, every bar of the record plays in the
                 time the tempo gives a bar. It needs the beat map to know where
                 the record's bars are, and a stretcher to play them through,
@@ -418,10 +307,12 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
         </>
       )}
 
+      {!live && song && <Button onPress={mix.resetup} disabled title="You are in track analysis">Analysis</Button>}
+
       <Button
         onPress={() => mix.setExporting(true)}
         disabled={!live}
-        title={live ? 'Choose what to write out: the stems, and the full track with them' : 'Separate the track first'}
+        title={live ? 'Choose what to write out: the stems, and the full track with them' : song?.sources.length ? 'Return to the mix to export' : 'Separate the track first'}
       >
         Export
       </Button>
