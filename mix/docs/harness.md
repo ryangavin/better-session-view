@@ -228,3 +228,12 @@ focus controls. Their canvases are also the time ruler, so dragging pans and mod
 zooms without adding clinical ruling over the artwork. The View menu keeps every earlier
 study available. `waveforms/excursions.ts` owns these drawings and caches their smoothed
 measurements by decoded track; it does not alter audio, sections, analysis or playback.
+
+## Waveform rendering: stem identity
+
+`debug/render/rows.ts` puts decoded sources in the same order as the mixer and derives
+label, tint and buffer ID from that source ID. Manifest order and asynchronous decode
+completion must not change which audio a named lane displays. **Track stems** shows all
+available stems. **6-lane stress test** fills six rows for timing; repeated sources retain
+their real names and colors and explicitly say **(copy)**. A four-source track has Other,
+not an invented Guitar lane. Both the vector path and column comparison read the same ID.

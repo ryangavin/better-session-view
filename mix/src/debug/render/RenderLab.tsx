@@ -9,7 +9,7 @@ import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Mix } from '../../state.ts';
-import { STEMS } from '../../mock.ts';
+import { renderRows } from './rows.ts';
 import type { Peak } from '../../audio.ts';
 import { cellsIn, levelsOf, packedOf, type Steps } from '@openflow/widgets/wave/levels.ts';
 import { densityFor, edgesOf, pathOf, samplesFrom } from '@openflow/widgets/wave/outline.ts';
@@ -85,25 +85,11 @@ function Lab({ mix }: { mix: Mix }) {
   const [smooth, setSmooth] = useState(2);
   const [fill, setFill] = useState(1);
   const [ladder, setLadder] = useState(true);
-  const lanes = count === 0 ? 4 : 6;
   const axis = useAxis({ seconds: mix.seconds, narrowest: 0.02 });
 
-  /**
-   * As many lanes as asked for, in the window's own colours.
-   *
-   * A track separates into four, so six repeats the first two rather than
-   * inventing sound — what the sixth lane is for is the cost of a sixth lane,
-   * and that is the same whatever is drawn in it.
-   */
-  const rows = useMemo(() => {
-    const ids = Object.keys(mix.peaks);
-    if (!ids.length) return [];
-    return Array.from({ length: lanes }, (_, i) => {
-      const id = ids[i % ids.length];
-      const stem = STEMS[i % STEMS.length];
-      return { key: `${id}-${i}`, id, label: stem.name.toLowerCase(), ink: stem.ink };
-    });
-  }, [mix.peaks, lanes]);
+  // Canonical source order; only stress mode may repeat a real stem, visibly labeled.
+  const rows = useMemo(() => renderRows(Object.keys(mix.peaks), count === 1), [mix.peaks, count]);
+  const lanes = rows.length;
 
   // One ladder per stem, built once. This is the cost the whole idea rests on
   // being paid on open rather than on every frame.
@@ -331,7 +317,7 @@ function Lab({ mix }: { mix: Mix }) {
           />
         </Group>
         <Group caption="Lanes">
-          <Segmented items={['4', '6']} index={count} onChange={setCount} label="How many lanes" />
+          <Segmented items={['Track stems', '6-lane stress test']} index={count} onChange={setCount} label="How many lanes" />
         </Group>
         {mode === 0 && (
           <>
