@@ -206,6 +206,7 @@ export function Select({
         onKeyDown={onKeyDown}
       >
         <span className="wdg-select-label">{items[at] ?? ''}</span>
+        <span className="wdg-select-caret" aria-hidden="true" />
       </button>
       {open && (
         <Popup

@@ -466,6 +466,10 @@
   width: 100%;
 }
 
+.wdg-device-row-control > .wdg-select {
+  justify-items: start;
+}
+
 .wdg-device-row-port:empty {
   padding: 0;
 }

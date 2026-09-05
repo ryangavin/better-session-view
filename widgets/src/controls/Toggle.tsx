@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import type { WidgetLayout } from './Widget.tsx';
 import './controls.css';
 
 /**
@@ -29,6 +30,19 @@ export interface ToggleProps {
    * is settled in advance. Wide enough for four characters by default.
    */
   width?: number;
+  /**
+   * `inside` puts the switch on a line with everything else on it: the name at
+   * the left of the field and the state at the right, exactly where a
+   * [`Slider`](./Slider.tsx) row puts its caption and its reading.
+   *
+   * Stacked, a switch is a caption over a lit pill, which is right in a panel
+   * of them and wrong on a row — it makes that one row taller than its
+   * neighbours and centres a control the rest of them start at the left. Lit,
+   * it also stops filling: on a line of quiet rows a whole bar going amber says
+   * far more than a switch being on is worth, so the state moves into the
+   * reading and the reading is what lights.
+   */
+  layout?: Extract<WidgetLayout, 'stacked' | 'inside'>;
   className?: string;
   title?: string;
   /** The colour it lights in. See `WidgetProps.ink`. */
@@ -44,14 +58,39 @@ export function Toggle({
   name,
   momentary = false,
   width,
+  layout = 'stacked',
   className,
   title,
   ink,
   children,
 }: ToggleProps) {
+  const inside = layout === 'inside';
+  const face = (
+    <button
+      type="button"
+      className="wdg-toggle-body wdg-body"
+      {...(on ? { 'data-on': '' } : {})}
+      aria-pressed={momentary ? undefined : on}
+      aria-label={label ?? name}
+      disabled={disabled}
+      title={title}
+      onPointerDown={momentary ? () => onChange(true) : undefined}
+      onPointerUp={momentary ? () => onChange(false) : undefined}
+      onPointerLeave={momentary && on ? () => onChange(false) : undefined}
+      onClick={momentary ? undefined : () => onChange(!on)}
+    >
+      {inside ? null : children}
+    </button>
+  );
+
   return (
     <div
-      className={`wdg wdg-toggle${className ? ` ${className}` : ''}`}
+      className={
+        `wdg${inside ? ' wdg-widget' : ''} wdg-toggle${className ? ` ${className}` : ''}`
+      }
+      {...(inside ? { 'data-layout': 'inside' } : {})}
+      {...(inside && on ? { 'data-on': '' } : {})}
+      {...(inside && disabled ? { 'data-disabled': '' } : {})}
       style={
         {
           ...(width === undefined ? {} : { '--wdg-toggle-width': `${width}px` }),
@@ -60,21 +99,8 @@ export function Toggle({
       }
     >
       {name && <span className="wdg-caption">{name}</span>}
-      <button
-        type="button"
-        className="wdg-toggle-body wdg-body"
-        {...(on ? { 'data-on': '' } : {})}
-        aria-pressed={momentary ? undefined : on}
-        aria-label={label ?? name}
-        disabled={disabled}
-        title={title}
-        onPointerDown={momentary ? () => onChange(true) : undefined}
-        onPointerUp={momentary ? () => onChange(false) : undefined}
-        onPointerLeave={momentary && on ? () => onChange(false) : undefined}
-        onClick={momentary ? undefined : () => onChange(!on)}
-      >
-        {children}
-      </button>
+      {face}
+      {inside && children !== undefined && <span className="wdg-readout">{children}</span>}
     </div>
   );
 }

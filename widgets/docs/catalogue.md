@@ -32,7 +32,7 @@ Built.
 | [`Knob`](../src/controls/Knob.tsx) | `live.dial` | 270° sweep opening at the bottom, like Ableton's |
 | [`Slider`](../src/controls/Slider.tsx) | `live.slider` | a fader; horizontal too, for the crossfader's shape |
 | [`NumberField`](../src/controls/NumberField.tsx) | `live.numbox` | drag, or type a digit / press Enter to edit |
-| [`Toggle`](../src/controls/Toggle.tsx) | `live.toggle`, `live.button` | `momentary` gives the second |
+| [`Toggle`](../src/controls/Toggle.tsx) | `live.toggle`, `live.button` | `momentary` gives the second; `layout="inside"` puts it on a row |
 | [`Segmented`](../src/controls/Segmented.tsx) | `live.tab` | an enum with every member on screen |
 | [`Select`](../src/controls/Select.tsx) | compact enum menu | an enum with one member on screen |
 | [`Label`](../src/controls/Label.tsx) | `live.comment` | carries the type rhythm for a whole panel |
@@ -406,6 +406,16 @@ drag. Nothing in a widget wraps, either: a reading that outgrows its box is clip
 because a control that changes height moves the row it's in. `Toggle` is the exception
 and has to be — its label is the caller's, so it takes a `width`.
 
+**A switch on a row is a row, not a switch with a caption over it.** Stacked is right in a
+panel of them and wrong on a line: it makes that one row taller than its neighbours and
+centres a control every other row starts at the left, and on a face where the port name is
+already the caption it prints the same word twice. `layout="inside"` gives `Toggle` the
+anatomy a [`Slider`](../src/controls/Slider.tsx) row has — the name at the left of the
+field, the state at the right — so a switch reads as one more line of `name … value`. Lit,
+it also stops filling: on a column of quiet rows a whole bar going amber says far more than
+a switch being on is worth, so the state moves into the reading and the reading is what
+lights.
+
 The compact fields still share one physical box: `NumberField`, `Toggle` and `Select`
 all use the 16px `--wdg-field-height`, `--wdg-radius` and the same edge. `Segmented` uses
 that height too. It is separate from the 17px chrome height, so making fields dense cannot
@@ -413,12 +423,14 @@ silently shrink a device header or folded strip. A lit toggle changes its fill a
 not its outside geometry or border, so it cannot grow or appear rounder when it turns on.
 `Select` draws the same small arrow on every platform instead of surrendering half a
 narrow field to native menu chrome. That arrow, its padding and its font belong to the
-control rather than to a device stylesheet. It is a **grid item placed in the field's own
-band**, not something positioned against the widget's box: inside a `Row` that box spans
-all three bands, so "the bottom of it" is the bottom of an empty readout band and the arrow
-sat under the field it belongs to. Three explicit rows on `.wdg-select` make the placement
-the same in a row and out of one. Device compositions make room around these
-fixed boxes; they never scale or restyle them.
+control rather than to a device stylesheet, and **it is drawn inside the field** — a child
+of the button, after the label. It used to be a pseudo-element on the widget's box, placed
+into the field's own grid band to keep it off an empty readout band underneath. That kept
+it at the right height and said nothing about the width: a `Select` stretched by its
+container — a node's port row does exactly this — left the button at its own size and the
+arrow out at the container's far edge, a caret floating in space a good twenty pixels from
+the field it belonged to. Inside the button there is no such gap to open. Device
+compositions make room around these fixed boxes; they never scale or restyle them.
 
 **And the menu it opens is ours as well.** For a long time only the shut half was: the
 field matched every other field, and pressing it opened a system popup in the system's
