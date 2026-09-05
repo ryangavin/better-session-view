@@ -1,13 +1,13 @@
 # Debugging and experiments
 
-The bug button beside the open track’s title opens a tabbed debug workspace over the window
+The bug button in the library footer opens a tabbed debug workspace over the window
 — in a dev build and a packed one alike. Beat analysis runs the app’s pipeline and
 can hand a corrected map back to the app. Waveform lab compares designs using the
 same decoded stems the lanes are drawn from.
 
 ## Beat analysis
 
-The normal **Analyze → Song overview** is a separate product component,
+The normal **Analyze** is a separate product component,
 `components/TrackReview.tsx`; see [track-review.md](track-review.md). The diagnostic
 component retains its full algorithms, band controls and evidence. Its optional `editing`
 presentation remains covered for exact-map application but no longer supplies the product

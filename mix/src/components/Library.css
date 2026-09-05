@@ -59,6 +59,8 @@ font-variation-settings: var(--mono-axes);
 }
 
 .mf-library-foot {
+  align-items: center;
+  gap: 8px;
   flex: none;
   display: flex;
   justify-content: space-between;

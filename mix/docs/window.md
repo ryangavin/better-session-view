@@ -43,21 +43,23 @@ only when there is something wrong.
 ## Track analysis, on import and on return
 
 `TrackAnalysis.tsx` wraps setup and the product song review. A newly imported track
-with no stems starts on **Stems & details**: metadata, model cards and Generate stems.
-Song overview explains that it needs decoded stems and links back to that choice.
+with no stems starts on the source setup section: metadata, model cards and Generate stems.
+The same page shows beat and section review when decoded stems are available.
 Separation still runs only on an explicit Generate/Separate again press.
 
-An existing track opens on **Song overview**. `TrackReview.tsx` shows the whole song,
+An existing track opens with the song overview. `TrackReview.tsx` shows the whole song,
 vocal activity, a labeled first-downbeat waveform and sustained-change section suggestions.
-First/middle/end checkpoints play four bars with an optional metronome. Grid correction
+First/middle/end checkpoints select passages. Playback starts at the visible white cursor
+and lasts sixteen mapped beats, with an optional metronome. Grid correction
 is inline: set bar 1, move it a beat, nudge or enter a steady tempo. Reset previews a fresh
 automatic result; discard restores the exact saved map. No algorithm menu or buttons
 that pretend to edit here but navigate to the mixer. **Save & return to mix** commits
 the map and, only when selected, replaces existing sections with numbered suggestions.
 See [track-review.md](track-review.md) for measurement, thresholds, playback and persistence.
 
-**Stems & details** remains available for separated tracks. The model that produced the
-stems is preselected when Analyze opens; the cache/engine estimates are the existing
+Source setup and metadata follow the review on the same page. There is no tab switch
+and no footer; Save, Back and draft status share the top heading. The model that produced
+the stems is preselected when Analyze opens; the cache/engine estimates are the existing
 ones. **Back to mix** leaves without separating or applying a preview.
 
 The underlying phases remain derived: `empty`, `idle` (analysis home), `running`
@@ -69,6 +71,9 @@ run in the mixer and do not also trigger while analysis is listening or a contro
 Metadata remains in `Details.tsx`, committing on blur and reverting with Escape. The model
 cards report useful source/speed tradeoffs, not scores. Successful separation follows the
 existing path to the mixer; beat review can be reopened with Analyze.
+
+The debug workspace is opened by the bug button in the library footer, beside the folder
+control. `DebugButton.tsx` owns that button and its modal.
 
 ## The lane head is 88px, and that is the whole layout
 
@@ -182,7 +187,7 @@ a lane that reached for them would draw the song you just left.
 
 **The fact belongs to the model, and the model is already on screen** — named on this
 band, and described at the point where somebody chooses it, which is the moment the trade
-is actually being made. Wanting guitar on its own means choosing another model in **Analyze → Stems & details**.
+is actually being made. Wanting guitar on its own means choosing another model in **Analyze**, below the song review.
 
 The one place a *missing* stem is still worth drawing is the library's badge strip, and
 for the opposite reason: there the question is which of a hundred tracks have one, so a

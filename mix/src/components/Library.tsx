@@ -3,6 +3,7 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS } from '../mock.ts';
 import { facts } from '../openflow.ts';
 import type { Mix } from '../state.ts';
+import { DebugButton } from './DebugButton.tsx';
 import './Library.css';
 
 /**
@@ -157,6 +158,7 @@ export function Library({ mix }: { mix: Mix }) {
             {library.root ? library.root.split('/').slice(-1)[0] : '—'}
           </button>
         )}
+        <DebugButton mix={mix} />
       </div>
     </aside>
   );

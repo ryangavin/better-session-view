@@ -1,5 +1,3 @@
-import { useState } from 'react';
-import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
@@ -8,7 +6,6 @@ import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Snap } from '../grid.ts';
 import type { Ready } from '../openflow.ts';
 import { QuietField } from './Editable.tsx';
-import { DebugWorkspace } from '../debug/Workspace.tsx';
 import type { Mix } from '../state.ts';
 import { FASTEST, SLOWEST } from '../tempo.ts';
 import { bpmText, rangeText } from '../warp.ts';
@@ -17,8 +14,8 @@ import './Header.css';
 /**
  * Playback and snap stay at hand; Analyze opens the track's analysis home.
  * The compact grid readout and warp switch remain visible in the mixer.
- * Algorithm selection, candidate review and manual-grid entry live on the
- * analysis page rather than in a row of competing header buttons.
+ * Grid review and correction live on the analysis page. Debugging tools are
+ * reached from the library footer.
  */
 
 const play = (
@@ -47,13 +44,6 @@ const loopMark = (
 );
 
 
-/** A bug: the analysis harness, which is a debugging page and says so. */
-const bugMark = (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-    <rect x="8" y="8" width="8" height="11" rx="4" />
-    <path d="M10 8V6.5a2 2 0 0 1 4 0V8M4 13h4M16 13h4M5 19l3-2M19 19l-3-2M5 8l3 2M19 8l-3 2" />
-  </svg>
-);
 
 
 /**
@@ -114,8 +104,6 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
   const live = mix.phase === 'ready';
   const song = mix.song;
 
-  const [harness, setHarness] = useState(false);
-
   return (
     <header className="mf-header">
       {/* Silent when the toolchain is fine. A green light that is always on is
@@ -150,15 +138,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               title="Who it is by. Type over it to correct it"
               onCommit={(next) => void mix.editTrack(song.id, { artist: next.trim() || null })}
             />
-            <button
-              type="button"
-              className="mf-debug"
-              onClick={() => setHarness(true)}
-              title="Open debugging and experiments — see mix/docs/harness.md"
-              aria-label="Open debug workspace"
-            >
-              {bugMark}
-            </button>
+
           </>
         ) : (
           <span className="mf-open-none">nothing open</span>
@@ -316,11 +296,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
       >
         Export
       </Button>
-      {harness && song && (
-        <Modal title="debug & experiments" label="Debug workspace" className="mf-harness" onClose={() => setHarness(false)}>
-          <DebugWorkspace mix={mix} />
-        </Modal>
-      )}
+
     </header>
   );
 }

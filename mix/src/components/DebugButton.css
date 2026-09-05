@@ -1,0 +1,34 @@
+.mf-debug {
+  display: inline-flex;
+  align-self: center;
+  padding: 2px;
+  color: var(--caption);
+  border-radius: var(--radius-sm);
+}
+
+.mf-debug:hover {
+  color: var(--fg);
+  background: var(--bd);
+}
+
+.mf-debug {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.mf-harness .wdg-modal-box {
+  width: 100%;
+  height: 100%;
+}
+
+.mf-harness .wdg-modal-body {
+  flex: 1;
+}
+
+.mf-harness .wdg-modal-body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mf-debug:disabled { opacity:0.4; cursor:default; }
