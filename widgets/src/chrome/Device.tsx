@@ -166,14 +166,23 @@ export function Device({
             </svg>
           </button>
         )}
-        <button
-          type="button"
-          className="wdg-device-power"
-          {...(on ? { 'data-on': '' } : {})}
-          aria-pressed={on}
-          aria-label={`${name} active`}
-          onClick={() => onToggle?.(!on)}
-        />
+        {/* A control only where there is something to control. Without a
+            `onToggle` this was still a button with a click that did nothing —
+            a dot that invites the press it will not answer, which is worse on a
+            canvas of forty small nodes than no dot at all. As a span it keeps
+            the anatomy and stops making the offer. */}
+        {onToggle ? (
+          <button
+            type="button"
+            className="wdg-device-power"
+            {...(on ? { 'data-on': '' } : {})}
+            aria-pressed={on}
+            aria-label={`${name} active`}
+            onClick={() => onToggle(!on)}
+          />
+        ) : (
+          <span className="wdg-device-power" {...(on ? { 'data-on': '' } : {})} aria-hidden="true" />
+        )}
         {headerStart}
         <span className="wdg-device-name">{name}</span>
         {headerAfterName}
