@@ -31,6 +31,7 @@ const note = (over: Partial<GridNote> = {}): GridNote => ({
   fastest: null,
   byHand: false,
   failed: false,
+  algorithm: null,
   ...over,
 });
 

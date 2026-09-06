@@ -72,6 +72,16 @@ export const OFFERED: readonly Algorithm[] = ['ellis', 'ours', 'line', 'flux', '
 /** What an import runs when nobody has chosen. */
 export const FIRST_CHOICE: Algorithm = 'ellis';
 
+/**
+ * What laid a grid: one of the algorithms, or a hand.
+ *
+ * `'hand'` is written down rather than left as an absence, because absence
+ * already means something else — a file from before this was recorded, whose
+ * grid an algorithm certainly made and nobody can now say which. Claiming
+ * those were made by hand would be inventing a fact about somebody's work.
+ */
+export type Made = Algorithm | 'hand';
+
 export const describe = (id: Algorithm): Described =>
   ALGORITHMS.find((a) => a.id === id) ?? ALGORITHMS[0];
 

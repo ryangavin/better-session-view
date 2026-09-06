@@ -191,6 +191,8 @@ export interface Analysis {
    * header say `no fit` in the meantime instead of drawing 120 as a fact.
    */
   fitFailed?: boolean;
+  /** Which algorithm laid this grid, or absent where a hand did. */
+  algorithm?: string;
   /** The slices somebody made, or null (or absent) while they are the window's to read off the stems. */
   slices?: { bar: number; name: string }[] | null;
   produced: string;
@@ -245,6 +247,8 @@ export interface GridNote {
   byHand: boolean;
   /** A fit ran and found nothing steady. */
   failed: boolean;
+  /** The algorithm that laid it, or null for a hand-made grid or an older file. */
+  algorithm: string | null;
 }
 
 /** One separation's drawing, interleaved min and max per column, per source. */
@@ -277,6 +281,7 @@ interface Bridge {
       fit: Reading | null,
       slices: { bar: number; name: string }[] | null,
       fitFailed?: boolean,
+      algorithm?: string | null,
     ): Promise<void>;
     notes(trackIds: string[]): Promise<Record<string, GridNote>>;
     peaks(trackId: string, stems: string): Promise<KeptPeaks | null>;
@@ -366,9 +371,13 @@ export const gridFact = (track: Track, note: GridNote | undefined, tempo: string
   // rail inventing the very fact it exists to report.
   if (!known) return said(type, 'none', 'Reading what has been found about this track');
   if (tempo) {
+    // The rail has room for a tempo and not for a sentence, so which algorithm
+    // found it goes in the tooltip — where it answers the question the rail
+    // provokes, which is why two tracks read differently.
+    const by = note?.algorithm && note.algorithm !== 'hand' ? ` Laid by ${note.algorithm}.` : '';
     return note?.byHand
-      ? said(tempo, 'byHand', 'The tempo of the grid, which was set or corrected by hand')
-      : said(tempo, 'measured', 'The tempo the beats run at, read off their spacing');
+      ? said(tempo, 'byHand', `The tempo of the grid, which was set or corrected by hand.${by}`)
+      : said(tempo, 'measured', `The tempo the beats run at, read off their spacing.${by}`);
   }
   if (track.sources.length === 0) return said(type, 'none', 'Separate this track to find its beats');
   if (note?.failed) {

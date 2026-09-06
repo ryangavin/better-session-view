@@ -245,16 +245,27 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               <span
                 className="mf-fit"
                 title={
-                  mix.beats && mix.detected
-                    ? 'The tempo the beats run at, read off their spacing, and how much of the kit lands on a grid line'
-                    : mix.beats
-                      ? 'The tempo the beats run at, read off their spacing'
-                      : 'How much of the kit lands on a grid line'
+                  // Which laid it, now that there is a choice of five: a
+                  // reading with no name on it cannot be compared with the one
+                  // on the next track, or asked for again. Silent where the
+                  // file predates recording it, rather than guessing.
+                  [
+                    mix.beats ? 'The tempo the beats run at, read off their spacing' : '',
+                    mix.detected ? 'how much of the kit lands on a grid line' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(', ') +
+                  (mix.madeByName ? `. Laid by ${mix.madeByName}` : '')
                 }
               >
                 {mix.beats ? rangeText(mix.grid) : ''}
                 {mix.beats && mix.detected ? ' · ' : ''}
                 {mix.detected ? `${Math.round(mix.detected.agreement * 100)}%` : ''}
+                {/* The id rather than the name: `ellis` is five characters in a
+                    group that is already four controls wide, and it is the word
+                    the harness and the reports use for the same thing. Nothing
+                    at all where the file never recorded one. */}
+                {mix.madeBy && <i>{mix.madeBy}</i>}
               </span>
             ) : mix.fitFailed ? (
               <span className="mf-fit mf-fit-none" title="Nothing steady enough to fit a tempo to">

@@ -86,6 +86,15 @@ export interface Analysis {
    */
   fitFailed?: boolean;
   /**
+   * Which algorithm laid this grid — `mix/src/algorithms.ts`'s id — or absent
+   * where a hand did, and on every file written before there was a choice.
+   *
+   * Kept because there is a choice now. Two tracks whose grids sit differently
+   * is a question with no answer unless the file says what made each one, and
+   * "run the same one again" is not a thing that can be offered otherwise.
+   */
+  algorithm?: string;
+  /**
    * The slices somebody made, in order of bar. Null while nobody has, which
    * the window takes as: read them off the stems again. A file from before
    * there were slices has no field, and reads the same.
@@ -112,6 +121,8 @@ export interface GridNote {
   byHand: boolean;
   /** A fit ran and found nothing steady. */
   failed: boolean;
+  /** The algorithm that laid it, or null for a hand-made grid or an older file. */
+  algorithm: string | null;
 }
 
 /** The average tempo of a map, matching `src/warp.ts`'s `tempoOf`. */
@@ -137,18 +148,19 @@ function endsOf(beats: BeatMap): { slowest: number; fastest: number } {
 /** One track's note, from its sidecar. Absent, unreadable and ungridded read alike. */
 export async function gridNote(root: string, trackId: string): Promise<GridNote> {
   const held = await readAnalysis(root, trackId);
-  const none: GridNote = { bpm: null, slowest: null, fastest: null, byHand: false, failed: false };
+  const none: GridNote = { bpm: null, slowest: null, fastest: null, byHand: false, failed: false, algorithm: null };
   if (!held) return none;
   const failed = held.fitFailed === true;
+  const algorithm = held.algorithm ?? null;
   if (!held.grid) return { ...none, failed };
   const byHand = !held.grid.bpmAuto;
   const map = held.grid.beats;
   if (!map) {
     const { bpm } = held.grid;
-    return { bpm, slowest: bpm, fastest: bpm, byHand, failed };
+    return { bpm, slowest: bpm, fastest: bpm, byHand, failed, algorithm };
   }
   const whole = wholeOf(map);
-  if (whole === null) return { ...none, byHand, failed };
+  if (whole === null) return { ...none, byHand, failed, algorithm };
   const { slowest, fastest } = endsOf(map);
   return {
     bpm: whole,
@@ -156,6 +168,7 @@ export async function gridNote(root: string, trackId: string): Promise<GridNote>
     fastest: Number.isFinite(fastest) && fastest > 0 ? fastest : whole,
     byHand,
     failed,
+    algorithm,
   };
 }
 
@@ -220,7 +233,7 @@ export async function readAnalysis(root: string, trackId: string): Promise<Analy
     if (held.grid && !(held.grid.bpm > 0 && Number.isFinite(held.grid.offset))) return null;
     if (held.grid?.beats && !Array.isArray(held.grid.beats.samples)) return null;
     if (held.slices != null && !slicesSound(held.slices)) return null;
-    if (undecided(held.grid)) return { ...held, grid: null, fitFailed: true };
+    if (undecided(held.grid)) return { ...held, grid: null, fitFailed: true, algorithm: undefined };
     return { ...held, fitFailed: held.fitFailed === true };
   } catch {
     return null;
@@ -255,7 +268,7 @@ const slicesSound = (slices: unknown): slices is SliceKept[] =>
 export async function writeAnalysis(
   root: string,
   trackId: string,
-  it: { grid: Grid | null; fit: Reading | null; fitFailed?: boolean; slices?: SliceKept[] | null },
+  it: { grid: Grid | null; fit: Reading | null; fitFailed?: boolean; algorithm?: string | null; slices?: SliceKept[] | null },
 ): Promise<void> {
   const analysis: Analysis = {
     openflow: 'mix-analysis',
@@ -264,6 +277,7 @@ export async function writeAnalysis(
     grid: it.grid,
     fit: it.fit,
     fitFailed: it.fitFailed === true,
+    algorithm: it.algorithm ?? undefined,
     slices: it.slices ?? null,
     produced: new Date().toISOString(),
   };

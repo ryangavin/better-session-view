@@ -105,7 +105,9 @@ export function TrackReview({ mix, details }: { mix: Mix; details?: ReactNode })
   const saved = () => { change(mix.grid); setDirty(false); jump(sampleOf(mix.grid, 0) / mix.grid.rate); setNote('Saved grid restored.'); };
   const save = () => {
     player.stop();
-    mix.saveReview(grid, useSections ? [{ bar: 0, name: 'Section 1' }, ...chosen.map((s, i) => ({ bar: s.bar, name: `Section ${i + 2}` }))] : undefined);
+    // Only when this preview is what is being applied: an untouched grid keeps
+    // whatever laid it, and a hand-corrected one is nobody's algorithm.
+    mix.saveReview(grid, useSections ? [{ bar: 0, name: 'Section 1' }, ...chosen.map((s, i) => ({ bar: s.bar, name: `Section ${i + 2}` }))] : undefined, dirty ? OFFERED[algorithm] : mix.madeBy);
     mix.keepStems();
   };
   return <div className="mf-review-layout">

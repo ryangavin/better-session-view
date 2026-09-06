@@ -142,6 +142,7 @@ if (only(app)) {
         fit: Reading | null;
         slices: SliceKept[] | null;
         fitFailed?: boolean;
+        algorithm?: string | null;
       },
     ) => {
       const where = await root();
@@ -150,6 +151,7 @@ if (only(app)) {
           grid: ask.grid,
           fit: ask.fit,
           fitFailed: ask.fitFailed,
+          algorithm: ask.algorithm,
           slices: ask.slices,
         });
       }

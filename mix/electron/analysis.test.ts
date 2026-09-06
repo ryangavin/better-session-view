@@ -167,8 +167,8 @@ describe('the note a library row reads', () => {
   it('separates a refused fit from a track nobody has opened', async () => {
     await writeAnalysis(root, 'refused', { grid: null, fit: null, fitFailed: true });
     const notes = await gridNotes(root, ['refused', 'never']);
-    expect(notes.refused).toEqual({ bpm: null, slowest: null, fastest: null, byHand: false, failed: true });
-    expect(notes.never).toEqual({ bpm: null, slowest: null, fastest: null, byHand: false, failed: false });
+    expect(notes.refused).toEqual({ bpm: null, slowest: null, fastest: null, byHand: false, failed: true, algorithm: null });
+    expect(notes.never).toEqual({ bpm: null, slowest: null, fastest: null, byHand: false, failed: false, algorithm: null });
   });
 });
 

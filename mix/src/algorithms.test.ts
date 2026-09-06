@@ -1,5 +1,5 @@
 import { describe as group, expect, it } from 'vitest';
-import { agreementOf, ALGORITHMS, describe, IDS, secondsOf, straight } from './algorithms.ts';
+import { agreementOf, ALGORITHMS, describe, FIRST_CHOICE, IDS, OFFERED, secondsOf, straight, type Made } from './algorithms.ts';
 import type { Beats } from './warp.ts';
 
 const RATE = 48000;
@@ -65,5 +65,29 @@ group('whether two algorithms agree', () => {
     const slow: Beats = { rate: 24000, length: 24000 * 30, first: 0, samples: [0, 11250, 22500] };
     expect(secondsOf(slow)).toEqual([0, 0.46875, 0.9375]);
     expect(agreementOf(slow, at(128)).together).toBe(1);
+  });
+});
+
+group('naming what laid a grid', () => {
+  it('every id is short enough to sit in the header beside the tempo', () => {
+    // The readout shows the id, not the name: the group is already four
+    // controls wide before it.
+    for (const one of ALGORITHMS) expect(one.id.length).toBeLessThanOrEqual(5);
+  });
+
+  it('offers only algorithms that exist, with the first choice among them', () => {
+    for (const id of OFFERED) expect(IDS).toContain(id);
+    expect(OFFERED).toContain(FIRST_CHOICE);
+    expect(OFFERED[0]).toBe(FIRST_CHOICE);
+  });
+});
+
+group('what laid a grid', () => {
+  it('keeps a hand apart from an algorithm and from not knowing', () => {
+    // Three states on purpose. A file written before this was recorded has an
+    // absent value, and calling that one "by hand" invents a fact.
+    const made: Made[] = [...IDS, 'hand'];
+    expect(made).toContain('hand');
+    expect((IDS as readonly string[])).not.toContain('hand');
   });
 });

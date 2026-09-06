@@ -20,14 +20,14 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 const grid: Beats = { rate: 8000, length: 20000, first: 0, samples: [160, 4200, 8160, 12300, 16200] };
 function fixture() {
   const buffer = { numberOfChannels: 1, length: 20000, sampleRate: 8000, getChannelData: () => new Float32Array(20000) } as unknown as AudioBuffer;
-  return { song: { id: 'review', sources: ['drums'] }, grid, beats: grid, audioOf: () => buffer, rate: 8000, seconds: 2.5, slices: [{ bar: 0, name: 'My cut' }], saveReview: vi.fn(), keepStems: vi.fn() } as unknown as Mix;
+  return { song: { id: 'review', sources: ['drums'] }, grid, beats: grid, audioOf: () => buffer, rate: 8000, seconds: 2.5, slices: [{ bar: 0, name: 'My cut' }], madeBy: null, saveReview: vi.fn(), keepStems: vi.fn() } as unknown as Mix;
 }
 describe('song review', () => {
   it('opens without rerunning beats, and saves exact irregular samples while preserving existing sections', () => {
     const mix = fixture(); render(createElement(TrackReview, { mix }));
     expect(run).not.toHaveBeenCalled(); expect(measure).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
-    expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
+    expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined, null);
     expect(mix.keepStems).toHaveBeenCalledOnce();
   });
   it('exposes inspection and detection without manual timing controls', () => {
@@ -44,7 +44,7 @@ describe('song review', () => {
     expect(screen.getByText(/found no steady beat/)).toBeTruthy();
     expect(mix.saveReview).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
-    expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
+    expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined, null);
   });
   it('previews a successful detection against the saved grid, and discards it without applying', async () => {
     vi.mocked(run).mockReturnValueOnce(found(evenBeats(grid.rate, grid.length, 120, .12), 120));
@@ -57,7 +57,7 @@ describe('song review', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Discard beat preview' }));
     expect(screen.queryByText('Beat detection preview')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
-    expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
+    expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined, null);
   });
   it('applies the proposed map only after the explicit Apply action', async () => {
     vi.mocked(run).mockReturnValueOnce(found(evenBeats(grid.rate, grid.length, 120, .12), 120));
@@ -66,7 +66,8 @@ describe('song review', () => {
     await screen.findByText('Beat detection preview');
     expect(mix.saveReview).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
-    expect(mix.saveReview).toHaveBeenCalledWith(evenBeats(grid.rate, grid.length, 120, .12), undefined);
+    // applied from a preview, so it is credited to the algorithm that ran
+    expect(mix.saveReview).toHaveBeenCalledWith(evenBeats(grid.rate, grid.length, 120, .12), undefined, OFFERED[0]);
   });
   it('only replaces existing sections after explicit selection, with numbered cuts', async () => {
     const mix = fixture();
@@ -79,7 +80,7 @@ describe('song review', () => {
     expect(mix.saveReview).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Use these 3 sections when applying' }));
     fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
-    expect(mix.saveReview).toHaveBeenCalledWith(mix.grid, [{ bar: 0, name: 'Section 1' }, { bar: 16, name: 'Section 2' }, { bar: 32, name: 'Section 3' }]);
+    expect(mix.saveReview).toHaveBeenCalledWith(mix.grid, [{ bar: 0, name: 'Section 1' }, { bar: 16, name: 'Section 2' }, { bar: 32, name: 'Section 3' }], null);
   });
 
   it('shows the exact cursor time and starts playback there without changing the grid', () => {
@@ -140,7 +141,7 @@ describe('song review', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss change' }));
     expect(screen.queryByRole('button', { name: 'Review vocals enter at bar 17' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
-    expect(mix.saveReview).toHaveBeenCalledWith(mix.grid, undefined);
+    expect(mix.saveReview).toHaveBeenCalledWith(mix.grid, undefined, null);
   });
 
 });

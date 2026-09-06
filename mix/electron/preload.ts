@@ -69,8 +69,9 @@ expose({
       fit: Reading | null,
       slices: SliceKept[] | null,
       fitFailed?: boolean,
+      algorithm?: string | null,
     ): Promise<void> =>
-      ipcRenderer.invoke('openflow:analysis-write', { trackId, grid, fit, slices, fitFailed }),
+      ipcRenderer.invoke('openflow:analysis-write', { trackId, grid, fit, slices, fitFailed, algorithm }),
     /** What each of these tracks' grids amounts to, for the library rail to say. */
     notes: (trackIds: string[]): Promise<Record<string, GridNote>> =>
       ipcRenderer.invoke('openflow:analysis-notes', trackIds),

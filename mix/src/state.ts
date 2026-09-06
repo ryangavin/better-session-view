@@ -30,7 +30,7 @@ import {
 } from './openflow.ts';
 import { STANDARD_BASS } from './tab.ts';
 import { followOf, type Follow } from './follow.ts';
-import { FIRST_CHOICE, run } from './algorithms.ts';
+import { describe as describeAlgorithm, FIRST_CHOICE, IDS, run, type Algorithm, type Made } from './algorithms.ts';
 
 /**
  * Everything the window knows, in one hook.
@@ -225,6 +225,15 @@ export function useMix() {
    * tried. A button press with no visible answer reads as a broken button.
    */
   const [fitFailed, setFitFailed] = useState(false);
+  /**
+   * Which algorithm laid the grid on screen, or null where a hand did.
+   *
+   * Three states, not two. An algorithm's id, `'hand'` once somebody has moved
+   * a beat or typed a tempo, and null where nobody can say — a grid written
+   * before this was recorded. Collapsing the last two would have the header
+   * telling you that a grid Ellis laid was made by hand.
+   */
+  const [madeBy, setMadeBy] = useState<Made | null>(null);
   /**
    * Whether this track is still owed a fit.
    *
@@ -901,10 +910,10 @@ export function useMix() {
     const mine = !wantFit && !fitFailed;
     const grid: Grid | null = mine ? { bpm: targetBpm, bpmAuto, offset, beats } : null;
     void bridge.analysis
-      .write(song.id, grid, readingOf(detected), slicesAuto ? null : slices, fitFailed)
+      .write(song.id, grid, readingOf(detected), slicesAuto ? null : slices, fitFailed, mine ? madeBy : null)
       .then(() => readNotes(song.id))
       .catch(() => undefined);
-  }, [song, asked, wantFit, fitFailed, targetBpm, bpmAuto, offset, beats, detected, slicesAuto, slices, readNotes]);
+  }, [song, asked, wantFit, fitFailed, madeBy, targetBpm, bpmAuto, offset, beats, detected, slicesAuto, slices, readNotes]);
 
   /**
    * Open a track.
@@ -939,6 +948,7 @@ export function useMix() {
       setManual(null);
       setDetected(null);
       setFitFailed(false);
+      setMadeBy(null);
       setTranscription(null);
       setTranscribeProblem(null);
       const known = forTrack(held.current, id);
@@ -984,6 +994,8 @@ export function useMix() {
         // the header says while the stems are still decoding and the fit that
         // will overwrite it has not run yet.
         setFitFailed(stored?.fitFailed === true);
+        const said = stored?.algorithm;
+        setMadeBy(said === 'hand' || (said && (IDS as readonly string[]).includes(said)) ? (said as Made) : null);
         if (stored?.grid) {
           setTargetBpm(stored.grid.bpm);
           setBpmAuto(stored.grid.bpmAuto);
@@ -1351,10 +1363,11 @@ export function useMix() {
    */
   const fit = useCallback(
     // Analysis can supply an exact edited map independently of its summary fit.
-    (found: Fit | Follow | null, exact?: Beats) => {
+    (found: Fit | Follow | null, exact?: Beats, by: Made | null = null) => {
       setWantFit(false);
       setDetected(found);
       setFitFailed(found === null);
+      setMadeBy(found ? by : null);
       if (!found) return;
       setTargetBpm(found.bpm);
       setOffset(found.offset);
@@ -1374,8 +1387,9 @@ export function useMix() {
   );
 
   /** Commit a reviewed map without presenting the old detector's confidence as its own. */
-  const saveReview = useCallback((reviewed: Beats, sections?: Slice[]) => {
+  const saveReview = useCallback((reviewed: Beats, sections?: Slice[], by: Made | null = null) => {
     if (reviewed !== savedGrid) {
+      setMadeBy(by);
       setWantFit(false);
       setDetected(null);
       setFitFailed(false);
@@ -1410,12 +1424,12 @@ export function useMix() {
    * one; the seed alone is the straight line, and a song with nothing steady
    * in it is a refusal rather than a guess.
    */
-  const measure = useCallback((): { found: Fit | Follow; beats: Beats | null } | null => {
+  const measure = useCallback((): { found: Fit | Follow; beats: Beats | null; by: Made | null } | null => {
     const buffer = audioOf('drums') ?? audioOf('bass');
     if (buffer) {
       const channels = Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c));
       const got = run(FIRST_CHOICE, channels, buffer.sampleRate, {});
-      if (got?.fit) return { found: got.follow ?? got.fit, beats: got.beats };
+      if (got?.fit) return { found: got.follow ?? got.fit, beats: got.beats, by: FIRST_CHOICE };
     }
     // No stem to walk — a track drawn from kept peaks alone. The old path is
     // all there is there, and it is still better than refusing outright.
@@ -1424,12 +1438,12 @@ export function useMix() {
     const seed = fitOf(it);
     if (!seed) return null;
     const followed = followOf(it, seed);
-    return { found: followed ?? seed, beats: followed?.beats ?? null };
+    return { found: followed ?? seed, beats: followed?.beats ?? null, by: 'ours' };
   }, [audioOf, listen]);
 
   const autoWarp = useCallback(() => {
     const got = measure();
-    fit(got?.found ?? null, got?.beats ?? undefined);
+    fit(got?.found ?? null, got?.beats ?? undefined, got?.by ?? null);
   }, [fit, measure]);
 
   /** Playback tempo never changes where the source beats were measured. */
@@ -1442,6 +1456,7 @@ export function useMix() {
     // Typing one is deciding. Whatever a fit did or failed to do before, this
     // grid is now somebody's, and it is written down as somebody's.
     setFitFailed(false);
+    setMadeBy('hand');
   }, [savedGrid, gridEdit.active]);
 
   /**
@@ -1461,7 +1476,7 @@ export function useMix() {
     if (!song || decodedFor !== song.id) return;
     if (Object.keys(peaks).length === 0) return;
     const got = measure();
-    fit(got?.found ?? null, got?.beats ?? undefined);
+    fit(got?.found ?? null, got?.beats ?? undefined, got?.by ?? null);
   }, [wantFit, asked, decoding, decodedFor, song, peaks, seconds, fit, measure]);
 
   const startManual = useCallback(
@@ -1681,6 +1696,7 @@ export function useMix() {
     setDetected(null);
     setFitFailed(false);
     setWantFit(false);
+    setMadeBy('hand');
   }, []);
 
   /** Drag a beat to another second of the file. */
@@ -1812,6 +1828,9 @@ export function useMix() {
     removeSlice,
     resetSlices,
     saveReview,
+    /** Which algorithm laid the grid on screen; null once a hand has touched it. */
+    madeBy,
+    madeByName: madeBy === 'hand' ? 'a hand' : madeBy ? describeAlgorithm(madeBy).name : null,
     editingGrid: gridEdit.active,
     gridEditDirty: gridEdit.dirty,
     beginGridEdit, finishGridEdit, cancelGridEdit,
