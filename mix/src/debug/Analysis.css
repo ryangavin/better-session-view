@@ -30,3 +30,114 @@
 .mf-analysis .wdg-plot-caption {
   font-size: var(--text-label);
 }
+
+.mf-compare {
+  border: 1px solid var(--bd);
+  border-radius: var(--radius-md);
+  background: var(--surface-stats);
+  margin-bottom: 6px;
+}
+
+.mf-compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--bd2);
+  font-size: var(--text-label);
+  color: var(--detail);
+}
+
+.mf-compare-head b {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.mf-compare-pending {
+  color: var(--amber);
+  font-variation-settings: var(--mono-axes);
+}
+
+.mf-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-label);
+  font-variation-settings: var(--mono-axes);
+}
+
+.mf-compare-table th,
+.mf-compare-table td {
+  padding: 3px 8px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mf-compare-table thead th {
+  color: var(--caption);
+  font-weight: 400;
+  border-bottom: 1px solid var(--bd2);
+}
+
+.mf-compare-table tbody th[scope='row'] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  color: var(--ui);
+  font-weight: 400;
+}
+
+.mf-compare-table thead th:first-child {
+  text-align: left;
+}
+
+.mf-compare-table tbody tr {
+  cursor: pointer;
+}
+
+.mf-compare-table tbody tr:hover {
+  background: var(--sel);
+}
+
+.mf-compare-table tbody tr[data-reference] th[scope='row'] {
+  color: var(--fg);
+}
+
+.mf-compare-table tbody tr[data-refused] {
+  color: var(--caption);
+}
+
+.mf-compare-ink {
+  width: 3px;
+  height: 11px;
+  border-radius: 1px;
+  flex: none;
+}
+
+.mf-compare-name {
+  color: var(--caption);
+}
+
+.mf-compare-ref {
+  font: inherit;
+  font-variation-settings: inherit;
+  color: var(--fg);
+  background: none;
+  border: none;
+  border-radius: var(--radius-xs);
+  padding: 0 3px;
+  cursor: pointer;
+}
+
+.mf-compare-ref:hover {
+  background: var(--bd3);
+}
+
+tr[data-reference] .mf-compare-ref {
+  box-shadow: var(--ring) var(--amber-muted);
+}
+
+.mf-compare-no {
+  color: var(--red);
+}

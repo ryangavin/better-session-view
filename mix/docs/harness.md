@@ -22,9 +22,25 @@ detections, metrics and reference scores. All existing analysis and correction t
 
 The first look is the app's own pipeline — `transients.ts` → `tempo.ts` →
 `follow.ts` — on the drums, run with a trace so every decision on the way to the
-answer is kept. The **run** group runs any algorithm of the A/B rig (`src/debug/algorithms.ts`)
+answer is kept. The **run** group runs any one algorithm (`src/debug/algorithms.ts`)
 on the drums or the whole mix summed back together, so a wrong tempo can be
 traced to the stage that lost it.
+
+**compare all** runs every one of them on that input and holds all seven answers
+at once, which is the thing one-at-a-time could not do: telling two apart used to
+mean running one, remembering a number, running the next, and comparing from
+memory. The table reads each against a reference — how much of the reference's
+grid it lands on within 25 ms, the median distance when it does, and whether it
+is really the same tempo or an octave away. Click a row to draw it in the scope
+and hear it; click a tempo to make it the reference, and the table re-reads
+against it without running anything again. Each one also gets its own row on the
+shared axis, inked by whose stages it is made of — green ours, amber a swap of
+the two, blue theirs — with the reference in white, so where they part is
+visible rather than inferred from a number.
+
+There is no truth to score against: `agreementOf` compares the algorithms with
+each other. Seven landing on the same beat is not proof, but two landing
+somewhere else together is a question, and one landing alone is usually wrong.
 
 One time axis, zoomable to the sample: the drums; every transient by band; every
 beat of the map, struck solid and interpolated dashed; the grid the app holds

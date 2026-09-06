@@ -21,7 +21,7 @@ import { countedOf, refitOf, sweepOf, type Fit, type Sweep } from '../tempo.ts';
 import type { Trace } from '../trace.ts';
 import { heardIn, type Heard } from '../transients.ts';
 import { BEATS_PER_BAR, beatAt, tempoAt, tempoOf, countOf, renumbered, sampleOf, type Beats } from '../warp.ts';
-import { ALGORITHMS, describe, IDS, INPUTS, run, straight, type Algorithm, type Input } from './algorithms.ts';
+import { agreementOf, ALGORITHMS, describe, IDS, INPUTS, run, straight, type Algorithm, type Described, type Input } from './algorithms.ts';
 import { Audition, type Click } from './audition.ts';
 import * as D from './draw.ts';
 import { AnalysisEvidence } from './AnalysisEvidence.tsx';
@@ -70,6 +70,37 @@ const BANDS = [
 ] as const;
 
 const EXPORT_TEMPO: Param = { kind: 'float', min: 40, max: 300, defaultValue: 120, unit: 'custom', customUnit: '%0.3f' };
+
+/** One algorithm's answer on this track, kept so all of them can be seen at once. */
+interface Compared {
+  id: Algorithm;
+  beats: Beats | null;
+  fit: Fit | null;
+  follow: Follow | null;
+  heard: Heard;
+  trace: Trace;
+  ms: number;
+  /** What it said when it would not answer, which is a result too. */
+  refused: string | null;
+}
+
+/**
+ * Whose stages an algorithm is made of, as an ink: ours, theirs, or a swap.
+ *
+ * Twice, because the two places that draw it cannot take the same value. CSS
+ * resolves `var(--green)`; a canvas does not — handed one it silently keeps
+ * the colour it already had, which is how seven rows came to be drawn in one
+ * ink. `draw.ts` resolves the palette once per draw and `fromInk` picks out of
+ * that, so both still come from the palette and neither hard-codes a hex.
+ */
+const FROM_VAR: Record<Described['from'], string> = {
+  ours: 'var(--green)',
+  mixed: 'var(--amber)',
+  theirs: 'var(--blue)',
+};
+
+const fromInk = (inks: ReturnType<typeof D.inksOf>, from: Described['from']): string =>
+  from === 'ours' ? inks.beat : from === 'mixed' ? inks.followed : inks.read;
 
 /** Whether a map is a straight ruling: every spacing the same, to a sample. */
 function isStraight(beats: Beats): boolean {
@@ -139,9 +170,26 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
   const [under, setUnder] = useState('');
   const [exportBpm, setExportBpm] = useState(120);
   const [exporting, setExporting] = useState(false);
+  /** Every algorithm's answer on this input, once they have all been asked. */
+  const [compared, setCompared] = useState<Compared[] | null>(null);
+  const [comparing, setComparing] = useState<Algorithm | null>(null);
 
   const pendingRun = useRef<number | null>(null);
-  useEffect(() => () => { if (pendingRun.current !== null) window.clearTimeout(pendingRun.current); }, []);
+  /** Whether the first look has been taken, so opening the page does not re-run it. */
+  const looked = useRef(false);
+  useEffect(
+    () => () => {
+      // Cancelling the pending run has to let go of the first look with it.
+      // React's development double-mount unmounts and comes back on the *same*
+      // fiber, so this ref survives while the run it just cancelled does not —
+      // and the guard then refuses to schedule another. The page sat on
+      // "running…" for ever, with run, compare and export all disabled by it.
+      if (pendingRun.current !== null) window.clearTimeout(pendingRun.current);
+      pendingRun.current = null;
+      looked.current = false;
+    },
+    [],
+  );
 
   const say = useCallback((text: string, bad = false) => setNote({ text, bad }), []);
 
@@ -219,9 +267,84 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
     [channelsFor, rate, say, editing],
   );
 
+  /**
+   * Every algorithm on the same input, one after another.
+   *
+   * Sequential and yielding between each, rather than a `Promise.all` that
+   * cannot exist here anyway: these are synchronous walks over tens of
+   * millions of samples, and seven of them back to back would lock the window
+   * for the better part of a minute with nothing on screen. A yield between
+   * each lets the row that just finished paint, so the table fills in as they
+   * land and a slow one is visibly slow rather than indistinguishable from a
+   * hang.
+   */
+  const compareAll = useCallback(
+    (on: Input) => {
+      const channels = channelsFor(on);
+      if (!channels) {
+        say('the stems are not decoded yet', true);
+        return;
+      }
+      setCompared([]);
+      const done: Compared[] = [];
+      const step = (i: number) => {
+        if (i >= IDS.length) {
+          setComparing(null);
+          const answered = done.filter((d) => d.beats).length;
+          say(`${answered} of ${IDS.length} found a grid on ${on}`);
+          return;
+        }
+        const id = IDS[i];
+        setComparing(id);
+        say(`running ${id} on ${on}… (${i + 1} of ${IDS.length})`);
+        pendingRun.current = window.setTimeout(() => {
+          pendingRun.current = null;
+          const trace: Trace = { tempo: { frame: 0.004 }, follow: { frame: 0.004 } };
+          const started = performance.now();
+          let got: ReturnType<typeof run> = null;
+          let threw: string | null = null;
+          try {
+            got = run(id, channels, rate, trace);
+          } catch (error) {
+            threw = error instanceof Error ? error.message : String(error);
+          }
+          const ms = Math.round(performance.now() - started);
+          if (got) {
+            done.push({
+              id, beats: got.beats, fit: got.fit, follow: got.follow, heard: got.heard, trace, ms,
+              refused: got.beats ? null : (trace.tempo?.refused ?? trace.follow?.refused ?? 'no beats'),
+            });
+          } else {
+            done.push({ id, beats: null, fit: null, follow: null, heard: { transients: [], seconds: 0 } as unknown as Heard, trace, ms, refused: threw ?? 'heard nothing to work with' });
+          }
+          setCompared([...done]);
+          step(i + 1);
+        }, 0);
+      };
+      step(0);
+    },
+    [channelsFor, rate, say],
+  );
+
+  /** Show one of the compared answers in the rows and the plots below. */
+  const show = useCallback((one: Compared) => {
+    setAlgorithm(one.id);
+    setRan({ algorithm: one.id, input, heard: one.heard, fit: one.fit, follow: one.follow, trace: one.trace, ms: one.ms });
+    setSwept(null);
+    setCandidate(one.trace.tempo?.chosen?.candidate ?? 0);
+    if (one.beats) {
+      const bpm = one.fit?.bpm ?? tempoOf(one.beats);
+      setMap({ beats: one.beats, bpm, offset: one.fit?.offset ?? one.beats.samples[0] / one.beats.rate, followed: one.follow !== null });
+      setExportBpm(Math.round(bpm));
+      say(`${describe(one.id).name}: ${bpm.toFixed(2)} bpm in ${one.ms} ms`);
+    } else {
+      setMap(null);
+      say(`${describe(one.id).name}: ${one.refused}`, true);
+    }
+  }, [input, say, setAlgorithm]);
+
   // The first look is the app's own pipeline on the drums, as soon as they are decoded.
   const drumsReady = decoded && mix.audioOf('drums') !== null;
-  const looked = useRef(false);
   useEffect(() => {
     if (looked.current || !drumsReady) return;
     looked.current = true;
@@ -635,6 +758,24 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
     { name: 'kept', value: `${mix.targetBpm.toFixed(3)} bpm off ${mix.offset.toFixed(3)} s${mix.beats ? ' · map' : ' · ruled'}`, tone: 'quiet' },
   ];
 
+  /**
+   * The compared answers with the reference's verdict on each.
+   *
+   * The reference is whichever algorithm is selected, so changing the menu
+   * re-reads the whole table against a different one without running anything
+   * again — which is the question the table exists to answer: *from where this
+   * one is standing, who else is here?*
+   */
+  const reference = compared?.find((c) => c.id === algorithm)?.beats ?? null;
+  const comparison = useMemo(
+    () =>
+      compared?.map((one) => ({
+        one,
+        agrees: reference && one.beats && one.id !== algorithm ? agreementOf(reference, one.beats) : null,
+      })) ?? null,
+    [compared, reference, algorithm],
+  );
+
   const status = running ? (
     <Status tone="quiet">running…</Status>
   ) : (
@@ -652,6 +793,15 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
             <Button onPress={() => analyse(algorithm, input)} disabled={running || !drumsReady}>
               {editing ? 'Find beats' : 'run'}
             </Button>
+            {!editing && (
+              <Button
+                onPress={() => compareAll(input)}
+                disabled={running || comparing !== null || !drumsReady}
+                title="run every algorithm on this input and lay their answers over one another"
+              >
+                {comparing ? `comparing ${comparing}…` : 'compare all'}
+              </Button>
+            )}
           </Group>
           <Group caption="listen">
             <Transport playing={playing} onToggle={toggle} at={head ?? axis.cursor} latency={deck.current.latency()} disabled={!decoded} />
@@ -719,6 +869,16 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
           </>}
         </Toolbar>
         <Facts items={editing ? [{ name: "candidate tempo", value: map ? `${map.bpm.toFixed(2)} BPM` : "—" }, { name: "bar 1", value: map ? `${map.offset.toFixed(3)} s` : "—" }, { name: "beats", value: map?.beats.samples.length ?? "—" }] : facts} />
+        {comparison && (
+          <Comparison
+            rows={comparison}
+            reference={algorithm}
+            running={comparing}
+            onShow={show}
+            onReference={(id: Algorithm) => setAlgorithm(id)}
+            onClear={() => setCompared(null)}
+          />
+        )}
         {!editing && <AnalysisEvidence mix={mix} beats={beats} heard={ran?.heard ?? null} axis={axis} head={head ?? undefined} runLabel={ran ? `${ran.algorithm} on ${ran.input}${map?.followed ? ' · followed' : ' · edited/straight'}` : 'No run'} />}
         <Scope axis={axis} head={head ?? undefined} scrub={scrub}>
           <ScopeRow label="time" height={26} draw={drawRuler} ruler />
@@ -769,6 +929,20 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
             draw={drawKept}
             legend={<Legend items={[{ kind: 'line', ink: 'var(--preview)', label: 'the grid the app holds now' }]} />}
           />
+          {(comparison ?? []).map(({ one }) =>
+            one.beats ? (
+              <ScopeRow
+                key={one.id}
+                label={one.id}
+                height={22}
+                draw={(g, v) => {
+                  const i = inks();
+                  const ink = one.id === algorithm ? i.strong : fromInk(i, describe(one.id).from);
+                  D.drawBeats(g, v, one.beats!, undefined, i, ink, ink);
+                }}
+              />
+            ) : null,
+          )}
           <ScopeRow
             label="tempo"
             height={56}
@@ -821,6 +995,95 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
           />
         </Shelf>}
       </Harness>
+    </div>
+  );
+}
+
+/**
+ * Every algorithm's answer to the same track, in one table.
+ *
+ * The page could always run any one of them; what it could not do was hold
+ * two answers at once, so telling them apart meant running one, remembering
+ * a number, running the next, and comparing from memory. Seven of those is
+ * not a comparison.
+ *
+ * Each row is read from where the reference is standing: how much of the
+ * reference's grid this one lands on, how far off it sits when it does, and
+ * whether it is really the same tempo or an octave away. Click a row to draw
+ * it in the scope and hear it; click its tempo to make it the reference and
+ * the whole table re-reads against it, without running anything again.
+ */
+function Comparison({ rows, reference, running, onShow, onReference, onClear }: {
+  rows: { one: Compared; agrees: ReturnType<typeof agreementOf> | null }[];
+  reference: Algorithm;
+  running: Algorithm | null;
+  onShow(one: Compared): void;
+  onReference(id: Algorithm): void;
+  onClear(): void;
+}) {
+  const pending = IDS.length - rows.length;
+  return (
+    <div className="mf-compare">
+      <div className="mf-compare-head">
+        <span>every algorithm on this input, read against <b>{reference}</b></span>
+        {pending > 0 ? (
+          <span className="mf-compare-pending">{running ? `${running}…` : ''} {pending} to go</span>
+        ) : (
+          <Button onPress={onClear}>clear</Button>
+        )}
+      </div>
+      <table className="mf-compare-table">
+        <thead>
+          <tr>
+            <th>algorithm</th><th>whose</th><th>tempo</th><th>beats</th>
+            <th title="how much of the reference's grid this one lands on, within 25 ms">together</th>
+            <th title="the median distance from the reference's beats; positive is late">offset</th>
+            <th title="a tempo that is a musical multiple of the reference rather than the same tempo">octave</th>
+            <th>ms</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ one, agrees }) => {
+            const it = describe(one.id);
+            const isRef = one.id === reference;
+            return (
+              <tr
+                key={one.id}
+                data-reference={isRef || undefined}
+                data-refused={one.beats ? undefined : true}
+                onClick={() => onShow(one)}
+                title={it.does}
+              >
+                <th scope="row">
+                  <span className="mf-compare-ink" style={{ background: isRef ? 'var(--fg)' : FROM_VAR[it.from] }} />
+                  {one.id}
+                  <span className="mf-compare-name">{it.name}</span>
+                </th>
+                <td>{it.from}</td>
+                <td>
+                  {one.beats ? (
+                    <button
+                      type="button"
+                      className="mf-compare-ref"
+                      onClick={(e) => { e.stopPropagation(); onReference(one.id); }}
+                      title={isRef ? 'the reference the others are read against' : 'read the table against this one'}
+                    >
+                      {(one.fit?.bpm ?? tempoOf(one.beats)).toFixed(2)}
+                    </button>
+                  ) : (
+                    <span className="mf-compare-no">{one.refused}</span>
+                  )}
+                </td>
+                <td>{one.beats ? one.beats.samples.length : '—'}</td>
+                <td>{agrees ? `${Math.round(agrees.together * 100)}%` : isRef ? '—' : '—'}</td>
+                <td>{agrees && agrees.together > 0 ? `${agrees.medianMs > 0 ? '+' : ''}${agrees.medianMs.toFixed(1)}` : '—'}</td>
+                <td>{agrees?.octave ?? (agrees ? '' : '')}</td>
+                <td>{one.ms}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
