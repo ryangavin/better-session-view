@@ -213,7 +213,8 @@
 .play-letter, .play-wave-label b { color: var(--deck-ink); }
 
 /* Captions carry the same identity as their control; level bars need no captions. */
-.play-stem-levels .wdg-caption { color: var(--wdg-fill); }
+.play-stem-levels .wdg-caption { color: color-mix(in srgb, var(--wdg-fill) 45%, var(--wdg-caption)); }
+.play-stem-name { color: color-mix(in srgb, var(--stem-ink) 45%, var(--wdg-caption)); }
 
 .play-effects .wdg-caption { color: var(--wdg-caption); }
 .play-wave-label { border-left: 2px solid var(--deck-ink, transparent); }

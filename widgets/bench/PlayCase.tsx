@@ -195,7 +195,7 @@ function PlayCase() {
 
         <div className="play-performance">
           <div className="play-grid" data-full={d.full}>
-          <span className="play-axis">SECTION</span>{STEMS.map((s, i) => <span className="play-stem-name" style={{ color: INKS[i] }} key={s}>{s}</span>)}
+          <span className="play-axis">SECTION</span>{STEMS.map((s, i) => <span className="play-stem-name" style={{ '--stem-ink': INKS[i] } as CSSProperties} key={s}>{s}</span>)}
           {SECTIONS.map((section, row) => <div className="play-launch-row" key={section}>
             {d.full ? <Toggle width={44} on={d.fullSection === row} label={`Deck ${index + 1}: launch ${section} full mix${d.fullQueued === row ? ', queued' : ''}`} onChange={() => launch(index, row)}>{section}</Toggle> : <Button width={44} label={`Deck ${index + 1}: launch ${section} all stems`} title="Launch this section on all four stems" onPress={() => launch(index, row)}>{section}</Button>}
             {STEMS.map((stem, s) => {

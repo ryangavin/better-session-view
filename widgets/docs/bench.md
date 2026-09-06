@@ -177,8 +177,9 @@ when edited; selecting a named preset restores all roles.
 
 Primary saturation is capped at 12%; Signal hue is constrained to 120–160 degrees.
 Primary drives selection, fader fills, trim, EQ and FX. FX captions stay subdued, with
-no separate identity color. Stem captions, levels and launchers share exclusive hue
-families. Presets/randomization reserve green for signal, and keep stem hues apart from
+no separate identity color. Stem levels and launcher buttons share exclusive hue families; stem captions
+above knobs and launch columns use a muted tint (45% stem ink blended with the caption gray), preserving identity
+without the brightness of the control fill. Presets/randomization reserve green for signal, and keep stem hues apart from
 each other and the two deck families. Manual editing warns when a stem is within 30 hue
 degrees of another saturated role (saturation at least 18%). This is an editing aid,
 not a perceptual or color-vision certification; evaluate the rendered result too.
