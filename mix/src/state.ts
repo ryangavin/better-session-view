@@ -341,6 +341,16 @@ export function useMix() {
   const [peaks, setPeaks] = useState<Record<string, Peak[]>>({});
   const [duration, setDuration] = useState(0);
   const [decoding, setDecoding] = useState(false);
+  /**
+   * The track whose audio the graph is actually holding.
+   *
+   * `decoding` cannot answer this. Selecting a track and starting to decode its
+   * stems are two different commits: in the one where `song` becomes the new
+   * track, `decoding` is still false, `peaks` still the outgoing track's, and
+   * `asked` still true from the track being left. Anything keyed on those runs
+   * once against the previous song's audio under this song's name.
+   */
+  const [decodedFor, setDecodedFor] = useState<string | null>(null);
   /** Why there is no sound, when there is none. */
   const [audioProblem, setAudioProblem] = useState<string | null>(null);
 
@@ -716,6 +726,7 @@ export function useMix() {
   const sourceList = song?.sources.join(',') ?? '';
   const songId = song?.id ?? null;
   useEffect(() => {
+    setDecodedFor(null);
     if (!stemsAt || sourceList === '') {
       audio.clear();
       setPeaks({});
@@ -778,6 +789,7 @@ export function useMix() {
         // four separate handovers is four different ideas of where zero is.
         audio.load(Object.fromEntries(decoded));
         setDuration(audio.duration);
+        setDecodedFor(songId);
       } catch (why) {
         if (!live) return;
         audio.clear();
@@ -1430,9 +1442,13 @@ export function useMix() {
    */
   useEffect(() => {
     if (!wantFit || !asked || decoding || seconds <= 0) return;
+    // The audio has to be *this* track's. Without this the fit fires in the
+    // commit where the track is selected, reads the outgoing song's buffers,
+    // and hands the new one a grid measured off the last one.
+    if (!song || decodedFor !== song.id) return;
     if (Object.keys(peaks).length === 0) return;
     fit(measure());
-  }, [wantFit, asked, decoding, peaks, seconds, fit, measure]);
+  }, [wantFit, asked, decoding, decodedFor, song, peaks, seconds, fit, measure]);
 
   const startManual = useCallback(
     () => setManual((was) => ({ stage: 'first', span: was?.span ?? 4, first: null })),
