@@ -7,6 +7,7 @@
  * `npm run typecheck` covers both.
  */
 import type { TranscribedNote } from './tab.ts';
+import type { Every } from './pinned.ts';
 import type { Beats } from './warp.ts';
 import type { Fit } from './tempo.ts';
 import type { Follow } from './follow.ts';
@@ -213,8 +214,8 @@ export interface ExportAsk {
   offset: number;
   /** The tempo to lay it at. */
   to: number;
-  /** How densely the map is pinned to the grid: per section, phrase, bar or beat. Per beat if unsaid. */
-  every?: 'section' | 'phrase' | 'bar' | 'beat';
+  /** How densely the map is pinned to the grid: per section, every so many bars from 1.1.1, or per beat. Per beat if unsaid. */
+  every?: Every;
   /** The sections, in bars from 1.1.1, pinned whether or not the stems are cut there. The slices, if unsaid. */
   cuts?: number[];
   /** Where the beats actually fall, so a record that moves is followed rather than averaged. */
@@ -230,7 +231,7 @@ export interface Written {
   /** How many sections each stem was cut into. One means it was not cut. */
   parts: number;
   /** How densely the record was pinned, when it was laid from a map. */
-  every?: 'section' | 'phrase' | 'bar' | 'beat';
+  every?: Every;
   /** How far the worst bar line inside a section landed from the grid, in seconds, when there was a map. */
   worst?: number;
 }

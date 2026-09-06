@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DENSITIES, errorsOf, loosest, outputOf, pinnedOf, sourceOf, spacingOf, speedAt, type Every } from './pinned.ts';
+import { DENSITIES, errorsOf, loopOf, loosest, outputOf, pinnedOf, sourceOf, spacingOf, speedAt, worstLineOf, type Every } from './pinned.ts';
 import { beatsOf, evenBeats, sampleOf, BEATS_PER_BAR } from './warp.ts';
 
 const RATE = 1000;
@@ -22,6 +22,14 @@ const wobbling = () => {
   let seed = 7;
   const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
   const samples = beatsFrom(200, Array.from({ length: 64 }, () => Math.round(480 + next() * 40)));
+  return beatsOf(RATE, samples[samples.length - 1] + 300, 0, samples);
+};
+
+/** Fifty bars of the same wobble: long enough for a lattice to reach bar 37. */
+const wobblingLong = () => {
+  let seed = 11;
+  const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const samples = beatsFrom(200, Array.from({ length: 200 }, () => Math.round(480 + next() * 40)));
   return beatsOf(RATE, samples[samples.length - 1] + 300, 0, samples);
 };
 
@@ -109,14 +117,45 @@ describe('pinnedOf', () => {
     }
   });
 
-  it('pins per phrase and per bar from each cut, on whole bars', () => {
+  it('pins on the lattice from 1.1.1, and a cut adds a pin without moving it', () => {
     const beats = evenBeats(RATE, 20000, 120, 0);
     const spacing = spacingOf(RATE, 120);
     const bars = (pinned: ReturnType<typeof pinnedOf>) => pinned.pins.map((p) => p.output / spacing / BEATS_PER_BAR);
-    // Ten bars: phrases count from each cut, on the first whole bar in the section.
-    expect(bars(pinnedOf(beats, 120, [0, 6], 'phrase'))).toEqual([0, 4, 6, 10]);
-    expect(bars(pinnedOf(beats, 120, [0, 1.5], 'phrase'))).toEqual([0, 1.5, 2, 6, 10]);
-    expect(bars(pinnedOf(beats, 120, [0, 2.5], 'bar'))).toEqual([0, 1, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10]);
+    // Ten bars: the four-bar lines are 4 and 8 whatever the cuts, and a cut is one more pin.
+    expect(bars(pinnedOf(beats, 120, [0, 6], 4))).toEqual([0, 4, 6, 8, 10]);
+    expect(bars(pinnedOf(beats, 120, [0, 1.5], 4))).toEqual([0, 1.5, 4, 8, 10]);
+    expect(bars(pinnedOf(beats, 120, [0, 2.5], 1))).toEqual([0, 1, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(bars(pinnedOf(beats, 120, [0, 3], 16))).toEqual([0, 3, 10]);
+  });
+
+  it('counts loops of eight from 1.1.1 past a cut at bar 37, not from the cut', () => {
+    const beats = wobblingLong();
+    const pinned = pinnedOf(beats, 120, [0, 37], 8);
+    const bars = pinned.pins.map((p) => p.output / pinned.spacing / BEATS_PER_BAR);
+    expect(bars.slice(0, 8)).toEqual([0, 8, 16, 24, 32, 37, 40, 48]);
+    expect(bars).not.toContain(45);
+    // Every lattice line's output is exactly the beat times the spacing, and its source is the map's beat.
+    for (const pin of pinned.pins) {
+      const beat = pin.output / pinned.spacing;
+      expect(pin.output).toBe(beat * pinned.spacing);
+      if (Number.isInteger(beat)) expect(pin.source).toBe(sampleOf(beats, beat));
+    }
+    // The same lines, cut or no cut, plus the cut.
+    const uncut = pinnedOf(beats, 120, [0], 8).pins.map((p) => p.output);
+    expect(pinned.pins.map((p) => p.output).filter((o) => o !== 37 * BEATS_PER_BAR * pinned.spacing)).toEqual(uncut);
+  });
+
+  it('lands every line of a loop on the grid, and the finer lines no worse than a sparser pinning', () => {
+    const beats = wobblingLong();
+    for (const every of [4, 8, 16] as const) {
+      expect(worstLineOf(beats, pinnedOf(beats, 120, [0], every), every)).toBe(0);
+    }
+    const at = (every: Every, lines: number) => worstLineOf(beats, pinnedOf(beats, 120, [0], every), lines);
+    expect(at(4, 4)).toBe(0);
+    expect(at(8, 4)).toBeGreaterThan(0);
+    expect(at(16, 4)).toBeGreaterThanOrEqual(at(8, 4));
+    expect(at(4, 1)).toBeLessThanOrEqual(at(8, 1));
+    expect(at(8, 1)).toBeLessThanOrEqual(at(16, 1));
   });
 
   it('is monotonic in both coordinates at every density, on a wobbly map', () => {
@@ -149,8 +188,9 @@ describe('pinnedOf', () => {
     const beats = beatsOf(RATE, samples[samples.length - 1] + 500, -9, samples);
     const bars = (pinned: ReturnType<typeof pinnedOf>) => pinned.pins.map((p) => p.output / pinned.spacing / BEATS_PER_BAR);
     expect(bars(pinnedOf(beats, 120, [0], 'section'))).toEqual([-2.25, 0, 7]);
-    expect(bars(pinnedOf(beats, 120, [0], 'bar'))).toEqual([-2.25, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7]);
-    expect(bars(pinnedOf(beats, 120, [0], 'phrase'))).toEqual([-2.25, 0, 4, 7]);
+    expect(bars(pinnedOf(beats, 120, [0], 1))).toEqual([-2.25, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(bars(pinnedOf(beats, 120, [0], 4))).toEqual([-2.25, 0, 4, 7]);
+    expect(bars(pinnedOf(beats, 120, [0], 8))).toEqual([-2.25, 0, 7]);
     expect(pinnedOf(beats, 120, [0], 'beat').pins.length).toBe(9 + 7 * BEATS_PER_BAR + 1);
     const section = pinnedOf(beats, 120, [0], 'section');
     // The count-in plays at its own speed — 400-sample beats into 500-sample slots — and lands on the one.
@@ -179,10 +219,14 @@ describe('pinnedOf', () => {
   it('corrects more, and never less, as it is pinned more densely', () => {
     const beats = slowing();
     const worst = (every: Every) => Math.max(...errorsOf(beats, pinnedOf(beats, 120, [0], every)));
-    const [section, phrase, bar, beat] = DENSITIES.map(worst);
-    expect(section).toBeGreaterThan(phrase);
-    expect(phrase).toBeGreaterThan(bar);
-    expect(bar).toBeGreaterThan(beat);
+    const down = DENSITIES.map(worst);
+    for (let i = 1; i < down.length; i++) expect(down[i]).toBeLessThanOrEqual(down[i - 1]);
+    // Ten bars: sixteen is the section, eight and four and one each pin something more.
+    const [section, sixteen, eight, four, bar, beat] = down;
+    expect(sixteen).toBe(section);
+    expect(eight).toBeLessThan(sixteen);
+    expect(four).toBeLessThan(eight);
+    expect(bar).toBeLessThan(four);
     expect(beat).toBeLessThan(1e-6);
   });
 });
@@ -198,10 +242,18 @@ describe('loosest', () => {
     // A ten-bar slow-down: half a second out at the middle bar pinned at the
     // ends, tens of milliseconds pinned every four bars, nothing pinned every bar.
     const wide = loosest(beats, 120, [0], 0.2);
-    expect(wide.every).toBe('phrase');
+    expect(wide.every).toBe(4);
     expect(wide.worst).toBeGreaterThan(0.01);
     expect(wide.worst).toBeLessThan(0.2);
     const tight = loosest(beats, 120, [0]);
-    expect(tight).toEqual({ every: 'bar', worst: 0 });
+    expect(tight).toEqual({ every: 1, worst: 0 });
+  });
+
+  it('offers a loop length from what was measured, and eight when the measurement is not one', () => {
+    expect(loopOf('section')).toBe(8);
+    expect(loopOf(16)).toBe(16);
+    expect(loopOf(4)).toBe(4);
+    expect(loopOf(1)).toBe(8);
+    expect(loopOf('beat')).toBe(8);
   });
 });

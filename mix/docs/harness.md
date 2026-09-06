@@ -71,6 +71,8 @@ call the Export sheet makes. The folder drops into Live like a loop off a pack.
 npm run warp:mix                        every track in the library, tempo found vs known
 npm run warp:mix -- --ab --report       every algorithm, scored side by side into harness/reports/ab.md
 npm run warp:mix -- --only=Sandstorm
+npm run loops:mix                       the drums stem of every track laid pinned every 4, 8 and 16 bars,
+                                        heard again, each lattice line against its nearest kick → harness/reports/loops.md
 ```
 
 `tools/mix-warp.ts` runs the algorithms headless over the app's library and, with

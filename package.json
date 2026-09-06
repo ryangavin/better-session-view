@@ -81,7 +81,8 @@
     "frames": "node --disable-warning=ExperimentalWarning tools/frames.ts",
     "footage:frames": "node --disable-warning=ExperimentalWarning tools/footage-frames.ts",
     "demo:mix": "node --disable-warning=ExperimentalWarning tools/mix-demo.ts",
-    "warp:mix": "node --disable-warning=ExperimentalWarning tools/mix-warp.ts"
+    "warp:mix": "node --disable-warning=ExperimentalWarning tools/mix-warp.ts",
+    "loops:mix": "node --disable-warning=ExperimentalWarning tools/mix-loops.ts"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.3",

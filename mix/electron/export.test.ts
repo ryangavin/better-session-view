@@ -6,7 +6,8 @@ import path from 'node:path';
 import { readWav, wavOf } from '../src/audio.ts';
 import { straightened } from '../src/straighten.ts';
 import { beatsOf, tempoOf } from '../src/warp.ts';
-import { cutsFor, exportStems, tidy } from './export.ts';
+import { tidy } from '../src/exportNames.ts';
+import { cutsFor, exportStems } from './export.ts';
 
 /**
  * The cut is the only new arithmetic in an export, and it is the one a person

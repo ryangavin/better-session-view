@@ -1,4 +1,3 @@
-import { PHRASE } from './slices.ts';
 import { beatAt, sampleOf, BEATS_PER_BAR, type Beats } from './warp.ts';
 
 /**
@@ -15,11 +14,17 @@ import { beatAt, sampleOf, BEATS_PER_BAR, type Beats } from './warp.ts';
  * speed wobble on every beat, which is what a squashed export sounds like.
  *
  * So the density is the whole control: **per section**, which is the cuts and
- * the end; **per phrase**, every four bars from each cut; **per bar**; **per
- * beat**. The same map at four densities is four pinnings, and they differ in
- * nothing but how many pins there are. `loosest` picks the sparsest whose bar
+ * the end; **every so many bars** — sixteen, eight, four or one — on a lattice
+ * counted from 1.1.1; **per beat**. The same map at every density is the same
+ * pinning with more or fewer pins. `loosest` picks the sparsest whose bar
  * lines still land within a tolerance, and says how far off the worst one is,
  * so the default is a measurement and not a taste.
+ *
+ * **The lattice is counted from 1.1.1, never from a cut.** Live's global
+ * quantization counts from 1.1.1 too, so a file pinned every eight bars loops
+ * cleanly at every eight-bar line a launch can land on; a section cut at bar
+ * 37 adds a pin at 37 and moves no other. Counted from each cut instead, the
+ * pins after it would sit at 45, 53, 61 — lines nothing in Live ever waits for.
  *
  * Samples, at the map's rate, and real-valued: a pin is a place, and the
  * rounding is the resampler's to do. The cuts are bars counted from bar 1,
@@ -30,9 +35,14 @@ import { beatAt, sampleOf, BEATS_PER_BAR, type Beats } from './warp.ts';
  * reads it.
  */
 
-export type Every = 'section' | 'phrase' | 'bar' | 'beat';
+/** A number is a bar count: pins every so many bars from 1.1.1. */
+export type Every = 'section' | 'beat' | 1 | 4 | 8 | 16;
 
-export const DENSITIES: readonly Every[] = ['section', 'phrase', 'bar', 'beat'];
+/** Sparsest first, which is the order `loosest` tries them in. */
+export const DENSITIES: readonly Every[] = ['section', 16, 8, 4, 1, 'beat'];
+
+/** The loop lengths a person is offered: what a file is for. */
+export const LOOPS: readonly (4 | 8 | 16)[] = [4, 8, 16];
 
 /** A source sample and the output sample it plays at. */
 export interface Pin {
@@ -80,9 +90,12 @@ function cutBeats(cuts: readonly number[], bars: number): number[] {
   return out;
 }
 
+/** Beats between interior pins at a density; zero when there are none. */
+const stepOf = (every: Every): number => (every === 'beat' ? 1 : every === 'section' ? 0 : every * BEATS_PER_BAR);
+
 /**
- * The record pinned at every cut, and inside each section as densely as
- * `every` says.
+ * The record pinned at every cut, and inside each section on the lattice
+ * `every` names, counted from 1.1.1.
  */
 export function pinnedOf(beats: Beats, to: number, cuts: readonly number[], every: Every): Pinned {
   const spacing = spacingOf(beats.rate, to);
@@ -92,23 +105,15 @@ export function pinnedOf(beats: Beats, to: number, cuts: readonly number[], ever
   const before = Math.min(0, beats.first);
   const at = new Set<number>([before, 0, end, ...starts]);
   const edges = [...(before < 0 ? [before] : []), 0, ...starts.filter((b) => b > 0), end];
-  for (let i = 0; i + 1 < edges.length; i++) {
-    const from = edges[i];
-    const upto = edges[i + 1];
-    const step = every === 'beat' ? 1 : every === 'bar' ? BEATS_PER_BAR : every === 'phrase' ? PHRASE * BEATS_PER_BAR : 0;
-    if (step === 0) continue;
-    // Beats and bars are counted from the top, so a cut on a fraction of a
-    // bar still pins the bar lines after it and not a fraction past each. A
-    // phrase is counted from its own section, from the first whole bar in it:
-    // a section pinned to eight bars is two phrases of its own, wherever it
-    // falls in the song.
-    const first = every === 'phrase' ? Math.ceil(from / BEATS_PER_BAR) * BEATS_PER_BAR : Math.ceil(from / step) * step;
-    // Before 1.1.1 the phrases are counted back from it, as the bars are.
-    if (every === 'phrase' && from < 0) {
-      for (let beat = -step; beat > from; beat -= step) at.add(beat);
-      continue;
+  const step = stepOf(every);
+  if (step > 0) {
+    for (let i = 0; i + 1 < edges.length; i++) {
+      const from = edges[i];
+      const upto = edges[i + 1];
+      // The lattice line at or after the section's start; the start itself is
+      // already a pin. Before 1.1.1 this counts back from it, as the bars do.
+      for (let beat = Math.ceil(from / step) * step; beat < upto; beat += step) if (beat > from) at.add(beat);
     }
-    for (let beat = first; beat < upto; beat += step) if (beat > from) at.add(beat);
   }
   const pins = [...at].sort((a, b) => a - b).map((beat) => ({ source: sampleOf(beats, beat), output: beat * spacing }));
   return { rate: beats.rate, length: beats.length, spacing, pins, every, bars, cuts: starts.map((b) => b / BEATS_PER_BAR) };
@@ -165,28 +170,48 @@ export function errorsOf(beats: Beats, pinned: Pinned): Float64Array {
   return out;
 }
 
-/** How far the worst bar line lands from the grid, in seconds. */
-export const worstBarOf = (beats: Beats, pinned: Pinned): number => {
+/**
+ * How far the worst line lands from the grid, in seconds, over the lines
+ * every `bars` bars from 1.1.1: every bar line by default, or the four-bar
+ * lines a shorter loop would want.
+ */
+export function worstLineOf(beats: Beats, pinned: Pinned, bars = 1): number {
   const errors = errorsOf(beats, pinned);
   let worst = 0;
-  for (let beat = 0; beat < errors.length; beat += BEATS_PER_BAR) worst = Math.max(worst, errors[beat]);
+  for (let beat = 0; beat < errors.length; beat += bars * BEATS_PER_BAR) worst = Math.max(worst, errors[beat]);
   return worst / pinned.rate;
-};
+}
 
 /** Ten milliseconds: about a sixty-fourth of a beat at 128, and under what a bar line can be heard to miss by. */
 export const TOLERANCE = 0.01;
 
 /**
  * The sparsest pinning whose bar lines all land within `tolerance` seconds,
- * and how far the worst one is off. Per bar always lands them, so per beat is
- * never chosen here: that one is asked for, not measured into.
+ * and how far the worst one is off. Every bar always lands them, so per beat
+ * is never chosen here: that one is asked for, not measured into.
  */
 export function loosest(beats: Beats, to: number, cuts: readonly number[], tolerance = TOLERANCE): { every: Every; worst: number } {
-  let last = { every: 'bar' as Every, worst: 0 };
-  for (const every of ['section', 'phrase', 'bar'] as const) {
-    const worst = worstBarOf(beats, pinnedOf(beats, to, cuts, every));
+  let last = { every: 1 as Every, worst: 0 };
+  for (const every of DENSITIES) {
+    if (every === 'beat') break;
+    const worst = worstLineOf(beats, pinnedOf(beats, to, cuts, every));
     last = { every, worst };
     if (worst <= tolerance) break;
   }
   return last;
 }
+
+/**
+ * The loop length to offer from what was measured: the measurement when it
+ * is one a person is offered, else eight bars. A record that needs pinning
+ * every bar is not refused the loop it is for — the dialog says what the
+ * finer lines will cost.
+ */
+export const loopOf = (every: Every): 4 | 8 | 16 => (every === 4 || every === 8 || every === 16 ? every : 8);
+
+/** The lattice a loop of this length would be judged on: the bar lines under four, the four-bar lines above. */
+export const finerOf = (every: 4 | 8 | 16): 1 | 4 => (every === 4 ? 1 : 4);
+
+/** *every 8 bars*, *per section*, *per beat*: how a density is said. */
+export const everyText = (every: Every): string =>
+  every === 'section' ? 'per section' : every === 'beat' ? 'per beat' : every === 1 ? 'every bar' : `every ${every} bars`;

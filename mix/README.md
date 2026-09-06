@@ -81,7 +81,8 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | `electron/preload.ts` | the context bridge |
 | `src/audio.ts` | reaching the stems, decoding them, and the peaks that draw them |
 | `src/engine.ts` | the transport and the mixer, which are one Web Audio graph — and the stretcher beside the sources |
-| `src/pinned.ts` | the record pinned to the grid: at the sections always, between them per section, phrase, bar or beat; what the stretcher and the export both read. Tested |
+| `src/pinned.ts` | the record pinned to the grid: at the sections always, between them per section, every so many bars from 1.1.1, or per beat; what the stretcher and the export both read. Tested |
+| `src/exportNames.ts` | what an export is called on disk, so the dialog and the main process agree |
 | `src/schedule.ts` | how a pinned record plays: the boundaries, and the playhead back out of them. Tested |
 | `src/stretch.ts` | Signalsmith Stretch as one worklet node for every stem |
 | `src/remember.ts` | what survives a reload, and what deliberately does not |

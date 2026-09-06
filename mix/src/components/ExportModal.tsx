@@ -4,7 +4,8 @@ import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { laneOrder, stemOf } from '../mock.ts';
 import { openflow } from '../openflow.ts';
-import { DENSITIES, loosest, pinnedOf, worstBarOf, type Every } from '../pinned.ts';
+import { folderOf } from '../exportNames.ts';
+import { LOOPS, everyText, finerOf, loopOf, loosest, pinnedOf, worstLineOf, type Every } from '../pinned.ts';
 import { barText, lengthText } from '../slices.ts';
 import type { Mix } from '../state.ts';
 import { bpmText } from '../warp.ts';
@@ -34,20 +35,23 @@ import './ExportModal.css';
  * between and pads to whole bars, so the folder drops into Live like a loop
  * off a pack. The full track is not summed yet, and the pack is still to come.
  *
- * **Where there is a beat map, the record is pinned to the grid, and how
- * densely is the one choice on the sheet that changes the sound.** The
- * sections are always pinned: each lands exactly on its bars. Between them
- * the record can be pinned per section, which keeps every push and pull the
- * way it was played at one speed; per phrase or per bar, which straightens
- * a drummer who drifts; or per beat, which is every beat on its line and
- * what an export was before it could be asked. The default is measured —
- * `loosest` in `pinned.ts` — the sparsest pinning whose bar lines all land
- * within ten milliseconds, and the sheet says which it is and how far the
- * worst bar line is off, in the words a musician would use rather than a
- * percentage. The choice is the window's rather than the sheet's, so a loop
- * under warp plays exactly what the export will write; it is not written
- * beside the track, because how tightly to pin is a question about what the
- * files are for, and the next export may be for something else.
+ * **Where there is a beat map, the record is pinned to the grid, and the one
+ * choice on the dialog that changes the sound is how long a loop the files
+ * are for.** *Loops of* 4, 8 or 16 bars: the record is pinned at every line
+ * a loop of that length would start on, counted from 1.1.1 as Live's global
+ * quantization counts, and at every section cut, and between those pins it
+ * is left exactly as it was played at one speed — `pinned.ts`. A shorter loop
+ * pins more often. The default is measured — `loosest` — the sparsest pinning
+ * whose bar lines all land within ten milliseconds, offered when it is one
+ * of the three and eight bars otherwise; the sentence beside the control
+ * says how far the finer lines are off, so someone choosing 16 is told what
+ * 4 would cost them, in the words a musician would use rather than a
+ * percentage. Per section, every bar and per beat exist for the stretcher,
+ * the tests and the harness, and are not offered here. The choice is the
+ * window's rather than the dialog's, so a loop under warp plays exactly what
+ * the export will write; it is not written beside the track, because how
+ * tightly to pin is a question about what the files are for, and the next
+ * export may be for something else.
  *
  * **The full track is greyed like the pack.** It was a pick that counted
  * toward the files and was never sent, which is a sheet promising one more
@@ -148,20 +152,26 @@ export function ExportModal({ mix }: { mix: Mix }) {
     [mix.beats, mix.grid, laidAt, cuts],
   );
   const picked = mix.pinEvery;
-  const every: Every = picked ?? measured?.every ?? 'section';
+  const every: Every = picked ?? (measured ? loopOf(measured.every) : 8);
+  const loop = loopOf(every);
+  // The finer lines are what a shorter loop would want: the bar lines under
+  // a loop of four, the four-bar lines above it.
+  const finer = finerOf(loop);
   const worst = useMemo(
-    () => (mix.beats ? worstBarOf(mix.grid, pinnedOf(mix.grid, laidAt, cuts, every)) : 0),
-    [mix.beats, mix.grid, laidAt, cuts, every],
+    () => (mix.beats ? worstLineOf(mix.grid, pinnedOf(mix.grid, laidAt, cuts, every), finer) : 0),
+    [mix.beats, mix.grid, laidAt, cuts, every, finer],
   );
+  const line = finer === 1 ? 'bar line' : `${finer}-bar line`;
+  // The control beside it already says how often the record is pinned; the
+  // sentence says what the finer lines will cost.
   const pinSays = !mix.beats
     ? ''
     : worst < 0.0005
-      ? 'every bar line on the grid'
-      : `the worst bar line ${(worst * 1000).toFixed(worst < 0.01 ? 1 : 0)} ms off`;
+      ? `every ${line} on the grid`
+      : `the worst ${line} ${(worst * 1000).toFixed(worst < 0.01 ? 1 : 0)} ms off`;
   if (!mix.song) return null;
   const song = mix.song;
-  const folder = song.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const at = `${where ?? '~/Music/mixflow'}/${folder}/`;
+  const at = `${where ?? '~/Music/mixflow'}/${folderOf(song.title, laidAt)}/`;
   const sections = sliced ? mix.slices.length : 1;
   const files = chosen.length * sections;
   const parts = [
@@ -203,7 +213,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
       });
       const cut = done.parts > 1 ? ` · ${done.parts} sections` : '';
       const pinned = done.every
-        ? ` · pinned per ${done.every}${done.worst && done.worst >= 0.0005 ? `, worst bar line ${(done.worst * 1000).toFixed(0)} ms off` : ''}`
+        ? ` · pinned ${everyText(done.every)}${done.worst && done.worst >= 0.0005 ? `, worst bar line ${(done.worst * 1000).toFixed(0)} ms off` : ''}`
         : '';
       setWrote(`${done.files.length} wav · ${done.bars} bars${cut}${pinned} · ${done.where}`);
     } catch (error) {
@@ -274,17 +284,18 @@ export function ExportModal({ mix }: { mix: Mix }) {
         />
         {mix.beats && (
           <div className="mf-export-pin">
-            <span className="mf-export-pin-cap">pinned per</span>
+            <span className="mf-export-pin-cap">loops of</span>
             <Segmented
-              items={[...DENSITIES]}
-              index={DENSITIES.indexOf(every)}
-              onChange={(next) => mix.setPinEvery(DENSITIES[next])}
-              label="How densely the record is pinned to the grid"
-              title="Per section keeps the timing inside each section as it was played, at one speed. Per phrase and per bar straighten a record that drifts. Per beat puts every beat on its line, and every push and pull with it."
+              items={LOOPS.map(String)}
+              index={LOOPS.indexOf(loop)}
+              onChange={(next) => mix.setPinEvery(LOOPS[next])}
+              label="How long a loop the files are pinned for"
+              title="The record is pinned to the grid at every line a loop of this length starts on, counted from 1.1.1 as Live counts, and left exactly as it was played between them. A shorter loop pins more often."
             />
+            <span className="mf-export-pin-cap">bars</span>
             <span className="mf-export-pin-says">
               {pinSays}
-              {measured && picked && picked !== measured.every ? ` · measured: per ${measured.every}` : ''}
+              {measured && picked && picked !== loopOf(measured.every) ? ` · measured: ${everyText(measured.every)}` : ''}
             </span>
           </div>
         )}

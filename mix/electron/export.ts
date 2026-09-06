@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readWav, wavOf } from '../src/audio.ts';
+import { folderOf, tempoLabel, tidy } from '../src/exportNames.ts';
 import { DENSITIES, errorsOf, type Every } from '../src/pinned.ts';
 import { straightened, type Ruling } from '../src/straighten.ts';
 import { resampled, BEATS_PER_BAR } from '../src/warp.ts';
@@ -74,12 +75,6 @@ export interface Cut {
   upto: number;
 }
 
-/** A file name Finder and Live will both take: no separators, no colons, one line. */
-export const tidy = (text: string): string => text.replace(/[/\\:]+/g, '-').replace(/\s+/g, ' ').trim() || 'untitled';
-
-/** `128`, or `128.055` for a tempo that was kept exact. */
-export const tempoLabel = (bpm: number): string => (Number.isInteger(bpm) ? String(bpm) : bpm.toFixed(3));
-
 /**
  * Where a straightened stem is cut, in samples.
  *
@@ -126,7 +121,7 @@ export async function exportStems(root: string, ask: ExportAsk): Promise<Written
   // that still lands every section on its bars.
   const pinnedAt = ask.cuts ?? (ask.slices ?? []).map((slice) => slice.bar);
   const label = tempoLabel(ask.to);
-  const where = path.join(await destination(), `${tidy(ask.title)} ${label}bpm`);
+  const where = path.join(await destination(), folderOf(ask.title, ask.to));
   fs.mkdirSync(where, { recursive: true });
   const files: string[] = [];
   let bars = 0;

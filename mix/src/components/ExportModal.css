@@ -15,6 +15,7 @@
 
 .mf-export-pin-cap {
   color: var(--caption);
+  white-space: nowrap;
 }
 
 .mf-export-pin-says {
