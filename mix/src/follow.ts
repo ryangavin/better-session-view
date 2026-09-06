@@ -38,6 +38,14 @@ import { beatAt, beatsOf, type Beats } from './warp.ts';
  * beat are kept, and where the music's one is elsewhere the count is moved
  * rather than the beats — `renumbered` in `warp.ts`. The kick's vote for the
  * heaviest quarter is still taken, and reported, for whoever moves it.
+ *
+ * **And the map covers the file, not the part with drums in it.** Following
+ * can only begin where there is something to follow, so a record with a
+ * minute of intro used to be gridded from the minute mark and everything
+ * before it lay outside the bars. The first beat is ruled backwards to the
+ * top of the file at the spacing it arrived with, and the last forwards to
+ * the end at the spacing it left with — the same straight carry the beats
+ * through a breakdown get, and no more of a claim than that.
  */
 
 export interface Follow extends Fit {
@@ -83,6 +91,8 @@ const FILL = 2.5;
 const BETTER = 1.1;
 /** How far a found beat looks for the transient to sit on, in seconds. */
 const SNAP = 0.02;
+/** Over how many beats the spacing carried into an intro or an outro is read. Eight, so one wobbly beat at the edge does not set it. */
+const CARRY = 8;
 
 /** The onset strength, frame by frame. */
 function strengthOf(heard: Heard): Float32Array {
@@ -357,6 +367,26 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
     for (let j = prev + 1; j < struck.length; j++) samples[j] = Math.round(struck[prev]! + (j - prev) * spacing);
   }
 
+  // Ruled on to both ends of the file at the spacing the beats arrived and
+  // left with. The follower can only start where there was something to
+  // follow, and on a record that takes fifty seconds to bring the drums in
+  // that is fifty seconds of song outside the bars — which is where a DJ does
+  // most of the counting. Nothing is claimed about the intro that the beats
+  // themselves do not say: a spacing carried into it, straight, the way the
+  // beats through a breakdown are. The count moves rather than the beats, as
+  // it does everywhere else here — 1.1.1 is still the first beat followed and
+  // what is ruled before it is negative.
+  const last = samples.length - 1;
+  const carry = Math.min(CARRY, last);
+  const head = (samples[carry] - samples[0]) / carry;
+  const tail = (samples[last] - samples[last - carry]) / carry;
+  const length = Math.round(heard.seconds * heard.rate);
+  const before: number[] = [];
+  for (let s = samples[0] - head; s >= 0; s -= head) before.push(Math.round(s));
+  before.reverse();
+  const after: number[] = [];
+  for (let s = samples[last] + tail; s <= length; s += tail) after.push(Math.round(s));
+
   // The heaviest quarter, voted by how loud the kick got on each of the four
   // — reported, not acted on: the first beat found is 1.1.1, and the count
   // moves from there if somebody says so.
@@ -369,7 +399,7 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
   });
   let downbeat = 0;
   for (let r = 1; r < 4; r++) if (votes[r] > votes[downbeat] * 1.05) downbeat = r;
-  const beats = beatsOf(heard.rate, Math.round(heard.seconds * heard.rate), 0, samples, seed.bpm);
+  const beats = beatsOf(heard.rate, length, -before.length, [...before, ...samples, ...after], seed.bpm);
   if (trace) {
     trace.beats = frames.map((frame, i) => ({
       frame,
@@ -390,8 +420,9 @@ export function followOf(heard: Heard, seed: Fit, trace?: FollowTrace): Follow |
   }
   return {
     bpm: seed.bpm,
-    // 1.1.1 as the map has it: the first beat found.
-    offset: beats.samples[0] / beats.rate,
+    // 1.1.1 as the map has it: the first beat found, which is beat zero however
+    // far back the ruling before it reaches.
+    offset: samples[0] / heard.rate,
     beats,
     agreement: agreementOf(hits, beats),
     tracked: found / struck.length,

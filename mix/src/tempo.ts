@@ -43,10 +43,16 @@ export const FASTEST = 190;
 /**
  * Below this share of the hits landing on the grid there is nothing to lock
  * to. A quarter is what luck alone scores, since the window a hit counts in
- * is a quarter of a beat wide; four-tenths is clear of chance and still well
- * under what loose, hand-played drums manage.
+ * is a quarter of a beat wide, and a grid that does no better than luck is
+ * not a grid. Being clear of luck is `STANDS_OUT` below; this is the floor.
  */
-const HOPELESS = 0.4;
+const HOPELESS = 0.25;
+
+/**
+ * How much more of the hits the grid must hold than the same grid slid
+ * elsewhere, before it is a grid at all.
+ */
+const STANDS_OUT = 1.5;
 
 /** Seconds per frame of the onset strength. Four milliseconds: fine enough for a period, cheap enough to correlate. */
 const FRAME = 0.004;
@@ -305,6 +311,36 @@ function agreementOf(hits: readonly Transient[], line: Line, window = line.perio
   return all > 0 ? on / all : 0;
 }
 
+/** How many phases of one beat the grid is compared against, and how far off the found phase a comparison has to sit. */
+const PHASES = 32;
+const AWAY = 0.25;
+
+/**
+ * How far the grid stands out of the hits: the share sitting on it against the
+ * share the same hits give the same grid slid to another phase of the beat.
+ *
+ * A share on its own is a yardstick only where nearly everything struck is the
+ * kit. Sum the stems back into the whole mix and two hits in three are a bass
+ * note, a synth stab or a word, sitting where the music put them rather than
+ * on the beat: the kicks land on the grid exactly as they did, and the share
+ * falls from three quarters to a third. Half the library was refused a grid
+ * that was right. Clutter lifts every phase together, so what survives it is
+ * the ratio — this grid against the same grid moved. The phases within a
+ * quarter of a beat are left out of the comparison: they see the beat's own
+ * mass through the same window, and would flatter it.
+ */
+function standsOut(hits: readonly Transient[], line: Line, agreement: number): number {
+  const shares: number[] = [];
+  for (let i = 1; i < PHASES; i++) {
+    const away = i / PHASES;
+    if (away < AWAY || away > 1 - AWAY) continue;
+    shares.push(agreementOf(hits, { first: line.first + away * line.period, period: line.period }));
+  }
+  shares.sort((a, b) => a - b);
+  const elsewhere = shares[shares.length >> 1];
+  return elsewhere > 0 ? agreement / elsewhere : Infinity;
+}
+
 /**
  * The line refined through the hits under it, over twice as much of the song
  * each round until it spans the whole of it.
@@ -462,6 +498,8 @@ export function fitOf(heard: Heard, trace?: TempoTrace): Fit | null {
   if (bpm < SLOWEST || bpm > FASTEST) return refuse(`fitted ${bpm} is outside the range`);
   const agreement = agreementOf(hits, line);
   if (agreement < HOPELESS) return refuse(`only ${Math.round(agreement * 100)}% of the hits sit on the grid`);
+  const stands = standsOut(hits, line, agreement);
+  if (stands < STANDS_OUT) return refuse(`the grid holds ${stands.toFixed(2)}× what any other phase of the beat holds`);
   const votes: number[] = [];
   const downbeat = downbeatOf(heard, line, votes);
   const offset = firstBarOf(line, downbeat);
@@ -520,7 +558,7 @@ export function refitOf(heard: Heard, bpm: number, offset: number): Fit | null {
   if (!line) return null;
   if (Math.abs(60 / line.period - bpm) > bpm * 0.03) return null;
   const agreement = agreementOf(hits, line);
-  if (agreement < HOPELESS) return null;
+  if (agreement < HOPELESS || standsOut(hits, line, agreement) < STANDS_OUT) return null;
   return { bpm: wholeOf(hits, line, heard.seconds), offset: firstBarOf(line, 0), agreement };
 }
 
