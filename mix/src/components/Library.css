@@ -171,6 +171,15 @@ font-variation-settings: var(--mono-axes);
   white-space: nowrap;
 }
 
+.mf-song-meta[data-grid='failed'] {
+  color: var(--amber);
+}
+
+.mf-song-meta[data-grid='unread'],
+.mf-song-meta[data-grid='none'] {
+  color: var(--caption);
+}
+
 .mf-strip {
   flex: none;
   display: flex;

@@ -25,6 +25,7 @@ import {
   type Track,
   type Analysis,
   type Grid,
+  type GridNote,
   type Reading,
 } from './openflow.ts';
 import { STANDARD_BASS } from './tab.ts';
@@ -472,6 +473,44 @@ export function useMix() {
   }, [refresh]);
 
   /**
+   * What every row of the rail says about its grid.
+   *
+   * Read for the whole library at once, and again whenever a grid is written
+   * down. The rail is the only place all of the tracks are on screen together,
+   * so it is the only place that can answer *which of these still needs its
+   * beats found* — and a rail that knows it about the open track and nothing
+   * else cannot answer it.
+   */
+  const [notes, setNotes] = useState<Record<string, GridNote> | null>(null);
+  const trackIds = tracks.map((t) => t.id).join(',');
+  const readNotes = useCallback(async (only?: string) => {
+    const bridge = openflow();
+    if (!bridge) {
+      setNotes(null);
+      return;
+    }
+    const ids = only ? [only] : trackIds === '' ? [] : trackIds.split(',');
+    if (ids.length === 0) {
+      setNotes({});
+      return;
+    }
+    const answer = await bridge.analysis.notes(ids).catch(() => null);
+    // Null on a refusal rather than emptied. An empty map reads as *every one
+    // of these has no grid*, which is a louder claim than the one thing that
+    // is actually true, which is that nobody has been able to say. One track's
+    // refusal says nothing about the rest, so it leaves the others standing.
+    if (!answer) {
+      if (!only) setNotes(null);
+      return;
+    }
+    setNotes((was) => (only ? { ...(was ?? {}), ...answer } : answer));
+  }, [trackIds]);
+
+  useEffect(() => {
+    void readNotes();
+  }, [readNotes]);
+
+  /**
    * The models this build will run, asked for rather than restated.
    *
    * Without an app around the page there are none, and the window says so —
@@ -843,11 +882,16 @@ export function useMix() {
   const keepGrid = useCallback(() => {
     const bridge = openflow();
     if (!bridge || !song || !asked) return;
-    const grid: Grid | null = wantFit ? null : { bpm: targetBpm, bpmAuto, offset, beats };
+    // Null while the grid on screen is nobody's — a track still owed a fit, or
+    // one a fit has already refused. The refusal travels as `fitFailed`, so a
+    // 120 fallback is never written down where it would read back as a choice.
+    const mine = !wantFit && !fitFailed;
+    const grid: Grid | null = mine ? { bpm: targetBpm, bpmAuto, offset, beats } : null;
     void bridge.analysis
-      .write(song.id, grid, readingOf(detected), slicesAuto ? null : slices)
+      .write(song.id, grid, readingOf(detected), slicesAuto ? null : slices, fitFailed)
+      .then(() => readNotes(song.id))
       .catch(() => undefined);
-  }, [song, asked, wantFit, targetBpm, bpmAuto, offset, beats, detected, slicesAuto, slices]);
+  }, [song, asked, wantFit, fitFailed, targetBpm, bpmAuto, offset, beats, detected, slicesAuto, slices, readNotes]);
 
   /**
    * Open a track.
@@ -923,6 +967,10 @@ export function useMix() {
       .catch(() => null)
       .then((stored) => {
         if (!live) return;
+        // Restored before the grid, and whether or not there is one: it is what
+        // the header says while the stems are still decoding and the fit that
+        // will overwrite it has not run yet.
+        setFitFailed(stored?.fitFailed === true);
         if (stored?.grid) {
           setTargetBpm(stored.grid.bpm);
           setBpmAuto(stored.grid.bpmAuto);
@@ -1366,6 +1414,9 @@ export function useMix() {
     setTargetBpm(bpm);
     setBpmAuto(false);
     setWantFit(false);
+    // Typing one is deciding. Whatever a fit did or failed to do before, this
+    // grid is now somebody's, and it is written down as somebody's.
+    setFitFailed(false);
   }, [savedGrid, gridEdit.active]);
 
   /**
@@ -1703,6 +1754,8 @@ export function useMix() {
     songs: shown,
     total: tracks.length,
     withStems: tracks.filter((t) => t.sources.length > 0).length,
+    /** What each track's grid amounts to, keyed by track id, or null until asked. */
+    notes,
     song,
     phase,
     selected,

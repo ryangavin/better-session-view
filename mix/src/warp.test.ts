@@ -9,6 +9,7 @@ import {
   moved,
   placeOf,
   rangeText,
+  tempoText,
   resampled,
   sampleOf,
   renumbered,
@@ -110,6 +111,14 @@ describe('a map that bends', () => {
     expect(slowest).toBeCloseTo(120, 1);
     expect(fastest).toBeCloseTo(132, 1);
     expect(rangeText(map)).toBe('120–132');
+  });
+
+  it('reads the same from the three numbers as from the map', () => {
+    const { slowest, fastest } = tempoRange(map);
+    expect(tempoText(tempoOf(map), slowest, fastest)).toBe(rangeText(map));
+    expect(tempoText(tempoOf(straight), 128, 128)).toBe('128');
+    expect(tempoText(128.05, 128.05, 128.05)).toBe('128.05');
+    expect(tempoText(128, Infinity, 0)).toBe('');
   });
 
   it('counts the bars by the spacing it ends on', () => {

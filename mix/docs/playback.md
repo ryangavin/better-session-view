@@ -438,7 +438,7 @@ facts about the audio and go beside it in `analysis/`. **Not** the
 library and not the stems — those are on disk and are read back every time,
 because a second copy of the truth is the copy that goes stale.
 
-Three things it has to get right, and each was a bug first:
+Four things it has to get right, and each was a bug first:
 
 **Switching tracks writes the outgoing one synchronously.** The settled write is
 400 ms behind, and its dependencies change the instant a new track is selected —
@@ -455,6 +455,18 @@ stopped.
 **Clicking the row that is already open does nothing.** Falling through would
 reload the mix from what was last written down, so a fader moved a moment ago
 would spring back for no visible reason.
+
+**A fit that found nothing is never written down as a grid.** The window rules
+an even 120 from sample zero when it has nothing better, and that ruling is a
+placeholder, not a decision — so `grid` stays null and the refusal travels as
+`fitFailed` beside it. Writing the placeholder was the bug: it came back as
+somebody's 120, `wantFit` went false on the strength of it, and the track opened
+at 120 forever with the header showing no reading at all to say where it came
+from. Null means *still owed a fit*, so the next open measures again; `fitFailed`
+is what lets the header say `no fit` in the meantime. A grid with no map and a
+tempo nobody measured is read back as the refusal it was, which is how tracks
+written by an older build heal themselves. Typing a tempo or dragging a beat
+clears it, because both leave a map behind and both are somebody's decision.
 
 A reload during a separation reattaches rather than restarting: the renderer
 restarting does not stop the main process, so the window asks `busy()` on mount

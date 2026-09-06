@@ -6,6 +6,7 @@ import { SIDECAR } from './job.ts';
 import {
   ANALYSIS_FILE,
   analysisAt,
+  gridNotes,
   peaksFile,
   readAnalysis,
   readPeaks,
@@ -88,6 +89,89 @@ describe('the grid', () => {
   });
 });
 
+describe('a fit that found nothing', () => {
+  it('is kept as a refusal rather than as a grid', async () => {
+    await writeAnalysis(root, TRACK, { grid: null, fit: null, fitFailed: true });
+    const held = await readAnalysis(root, TRACK);
+    expect(held?.grid).toBeNull();
+    expect(held?.fitFailed).toBe(true);
+  });
+
+  it('reads an older build\'s 120 fallback as the refusal it was', async () => {
+    await writeAnalysis(root, TRACK, {
+      grid: { bpm: 120, bpmAuto: false, offset: 0, beats: null },
+      fit: null,
+    });
+    const held = await readAnalysis(root, TRACK);
+    expect(held?.grid).toBeNull();
+    expect(held?.fitFailed).toBe(true);
+  });
+
+  it('leaves a measured grid and a hand-made map alone', async () => {
+    await writeAnalysis(root, TRACK, {
+      grid: { bpm: 128.05, bpmAuto: true, offset: 0.35, beats: null },
+      fit: null,
+    });
+    expect((await readAnalysis(root, TRACK))?.grid?.bpm).toBe(128.05);
+
+    const map = { rate: 48000, length: 480000, first: 0, samples: [0, 22500, 45000] };
+    await writeAnalysis(root, 'track-2', {
+      grid: { bpm: 128, bpmAuto: false, offset: 0, beats: map },
+      fit: null,
+    });
+    const byHand = await readAnalysis(root, 'track-2');
+    expect(byHand?.grid?.beats).toEqual(map);
+    expect(byHand?.fitFailed).toBe(false);
+  });
+
+  it('is measured again on the next open, because the grid is still null', async () => {
+    await writeAnalysis(root, TRACK, { grid: null, fit: null, fitFailed: true });
+    // What the window keys `wantFit` on: a null grid is a track still owed one.
+    expect((await readAnalysis(root, TRACK))?.grid).toBeNull();
+  });
+});
+
+describe('the note a library row reads', () => {
+  const map = (rate: number, samples: number[]) => ({ rate, length: rate * 20, first: 0, samples });
+
+  it('gives one tempo for a steady map and its ends for a bent one', async () => {
+    await writeAnalysis(root, TRACK, {
+      grid: { bpm: 120, bpmAuto: true, offset: 0, beats: map(48000, [0, 22500, 45000, 67500]) },
+      fit: null,
+    });
+    const steady = (await gridNotes(root, [TRACK]))[TRACK];
+    expect(steady.bpm).toBeCloseTo(128, 5);
+    expect(steady.slowest).toBeCloseTo(128, 5);
+    expect(steady.fastest).toBeCloseTo(128, 5);
+    expect(steady.byHand).toBe(false);
+    expect(steady.failed).toBe(false);
+
+    await writeAnalysis(root, 'bent', {
+      grid: { bpm: 120, bpmAuto: true, offset: 0, beats: map(48000, [0, 24000, 45000, 67000]) },
+      fit: null,
+    });
+    const bent = (await gridNotes(root, ['bent'])).bent;
+    expect(bent.slowest).toBeLessThan(bent.bpm as number);
+    expect(bent.fastest).toBeGreaterThan(bent.bpm as number);
+  });
+
+  it('says the ruling of an even grid, and who ruled it', async () => {
+    await writeAnalysis(root, TRACK, {
+      grid: { bpm: 128.05, bpmAuto: false, offset: 0, beats: map(48000, [0, 22500]) },
+      fit: null,
+    });
+    const note = (await gridNotes(root, [TRACK]))[TRACK];
+    expect(note.byHand).toBe(true);
+  });
+
+  it('separates a refused fit from a track nobody has opened', async () => {
+    await writeAnalysis(root, 'refused', { grid: null, fit: null, fitFailed: true });
+    const notes = await gridNotes(root, ['refused', 'never']);
+    expect(notes.refused).toEqual({ bpm: null, slowest: null, fastest: null, byHand: false, failed: true });
+    expect(notes.never).toEqual({ bpm: null, slowest: null, fastest: null, byHand: false, failed: false });
+  });
+});
+
 describe('the peaks', () => {
   it('come back as floats, per source, in the order they went in', async () => {
     await sidecar('abc:htdemucs');
@@ -129,7 +213,7 @@ describe('the peaks', () => {
 });
 
 describe('the slices', () => {
-  const grid = { bpm: 120, bpmAuto: false, offset: 0, beats: null };
+  const grid = { bpm: 120, bpmAuto: true, offset: 0, beats: null };
 
   it('keeps the slices somebody made beside the grid', async () => {
     const slices = [

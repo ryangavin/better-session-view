@@ -183,6 +183,14 @@ export interface Analysis {
   track: string;
   grid: Grid | null;
   fit: Reading | null;
+  /**
+   * A fit ran over this track and found nothing steady.
+   *
+   * Kept apart from the grid because a failure is not a decision: the grid
+   * stays null so the next open measures again, and this is what lets the
+   * header say `no fit` in the meantime instead of drawing 120 as a fact.
+   */
+  fitFailed?: boolean;
   /** The slices somebody made, or null (or absent) while they are the window's to read off the stems. */
   slices?: { bar: number; name: string }[] | null;
   produced: string;
@@ -225,6 +233,20 @@ export interface Written {
   worst?: number;
 }
 
+/**
+ * What the library rail says about a track's grid without opening it —
+ * `mix/electron/analysis.ts`'s shape. `warp.ts`'s `tempoText` reads it.
+ */
+export interface GridNote {
+  bpm: number | null;
+  slowest: number | null;
+  fastest: number | null;
+  /** A grid a hand made or corrected, rather than one a fit measured. */
+  byHand: boolean;
+  /** A fit ran and found nothing steady. */
+  failed: boolean;
+}
+
 /** One separation's drawing, interleaved min and max per column, per source. */
 export interface KeptPeaks {
   stems: string;
@@ -254,7 +276,9 @@ interface Bridge {
       grid: Grid | null,
       fit: Reading | null,
       slices: { bar: number; name: string }[] | null,
+      fitFailed?: boolean,
     ): Promise<void>;
+    notes(trackIds: string[]): Promise<Record<string, GridNote>>;
     peaks(trackId: string, stems: string): Promise<KeptPeaks | null>;
     keepPeaks(
       trackId: string,
@@ -307,15 +331,50 @@ export const duration = (seconds: number | null): string => {
   return `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`;
 };
 
+/** What a row's second fact is saying, so the rail can draw the bad ones differently. */
+export type GridState = 'measured' | 'byHand' | 'failed' | 'unread' | 'none';
+
+/** One row's second fact: what to write, what kind of thing it is, and why. */
+export interface Fact {
+  says: string;
+  state: GridState;
+  why: string;
+}
+
 /**
- * The two facts a library row sorts by, or the file's own type when neither has
- * been worked out yet — which is every track on the day it is imported.
+ * The fact a library row carries beside the artist: the track's key, and where
+ * its grid stands.
+ *
+ * The grid rather than the file's type, because the type is the one thing about
+ * a track nobody is ever looking for. What a person scanning this rail wants to
+ * know is which of forty imports still needs its beats found — so a track with
+ * a grid says the tempo, and a track without says *which kind of without*. A
+ * fit that ran and found nothing needs a hand on it; a track nobody has opened
+ * only needs opening; and a track with no stems has nothing to have found yet,
+ * so it falls back to the type as it always did.
  */
-export const facts = (track: Track): string => {
-  if (track.bpm === null && track.key === null) {
-    return track.file.slice(track.file.lastIndexOf('.') + 1);
+export const gridFact = (track: Track, note: GridNote | undefined, tempo: string, known: boolean): Fact => {
+  const type = track.file.slice(track.file.lastIndexOf('.') + 1);
+  const said = (says: string, state: GridState, why: string): Fact => ({
+    says: [track.key, says].filter(Boolean).join(' · '),
+    state,
+    why,
+  });
+  // Before the notes have been read — and where the process that holds them
+  // cannot answer — the row says the one thing it knows for itself. Claiming
+  // `no grid` about a track whose grid nobody has looked up yet would be the
+  // rail inventing the very fact it exists to report.
+  if (!known) return said(type, 'none', 'Reading what has been found about this track');
+  if (tempo) {
+    return note?.byHand
+      ? said(tempo, 'byHand', 'The tempo of the grid, which was set or corrected by hand')
+      : said(tempo, 'measured', 'The tempo the beats run at, read off their spacing');
   }
-  return [track.key, track.bpm].filter((f) => f !== null).join(' · ');
+  if (track.sources.length === 0) return said(type, 'none', 'Separate this track to find its beats');
+  if (note?.failed) {
+    return said('no fit', 'failed', 'Nothing steady enough to fit a tempo to. Open it and correct the grid by hand');
+  }
+  return said('no grid', 'unread', 'Its beats have not been found yet. Open it to measure them');
 };
 
 /**

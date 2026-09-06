@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS } from '../mock.ts';
-import { facts } from '../openflow.ts';
+import { gridFact, type GridNote, type Track } from '../openflow.ts';
+import { tempoText } from '../warp.ts';
 import type { Mix } from '../state.ts';
 import { DebugButton } from './DebugButton.tsx';
 import './Library.css';
@@ -15,10 +16,12 @@ import './Library.css';
  * to redo. One letter each rather than three, because six three-letter badges
  * is a second line of text on every row and a hundred rows of that is a wall.
  *
- * A row is two lines: the title with the strip, and the artist with the facts
- * you sort by. On the day a track is imported nothing has read its tags or its
- * tempo, so the second fact is the file's own type until something better is
- * known — which is honest, and better than four columns of dashes.
+ * A row is two lines: the title with the strip, and the artist with where the
+ * track's grid stands. That second fact is the rail's other job: the strip says
+ * what has been separated, and this says what has been *gridded*, which is the
+ * half of the import flow that used to finish invisibly or not at all. A tempo
+ * means the beats are found; `no fit` and `no grid` are the two ways they are
+ * not, and they want different things done about them.
  */
 export function Library({ mix }: { mix: Mix }) {
   const { library } = mix;
@@ -120,7 +123,7 @@ export function Library({ mix }: { mix: Mix }) {
               </span>
               <span className="mf-song-line">
                 <span className="mf-song-artist">{song.artist ?? 'unknown artist'}</span>
-                <span className="mf-song-meta">{facts(song)}</span>
+                <GridMeta song={song} notes={mix.notes} />
               </span>
             </span>
           </button>
@@ -161,6 +164,27 @@ export function Library({ mix }: { mix: Mix }) {
         )}
       </div>
     </aside>
+  );
+}
+
+/**
+ * Where this track's grid stands, in the width of a tempo.
+ *
+ * The reading is the header's: `warp.ts` decides whether a map is one number
+ * or a range, and it decides it here too, so a track cannot be `128.05` in one
+ * place and `125–132` in the other.
+ */
+function GridMeta({ song, notes }: { song: Track; notes: Record<string, GridNote> | null }) {
+  const note = notes?.[song.id];
+  const tempo =
+    note && note.bpm !== null
+      ? tempoText(note.bpm, note.slowest ?? note.bpm, note.fastest ?? note.bpm)
+      : '';
+  const fact = gridFact(song, note, tempo, notes !== null);
+  return (
+    <span className="mf-song-meta" data-grid={fact.state} title={fact.why}>
+      {fact.says}
+    </span>
   );
 }
 

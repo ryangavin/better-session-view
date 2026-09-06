@@ -26,6 +26,7 @@ import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
 import { stopYoutube } from './youtube.ts';
 import {
+  gridNotes,
   readAnalysis,
   readPeaks,
   writeAnalysis,
@@ -135,14 +136,31 @@ if (only(app)) {
     'openflow:analysis-write',
     async (
       _event,
-      ask: { trackId: string; grid: Grid | null; fit: Reading | null; slices: SliceKept[] | null },
+      ask: {
+        trackId: string;
+        grid: Grid | null;
+        fit: Reading | null;
+        slices: SliceKept[] | null;
+        fitFailed?: boolean;
+      },
     ) => {
       const where = await root();
       if (where) {
-        await writeAnalysis(where, ask.trackId, { grid: ask.grid, fit: ask.fit, slices: ask.slices });
+        await writeAnalysis(where, ask.trackId, {
+          grid: ask.grid,
+          fit: ask.fit,
+          fitFailed: ask.fitFailed,
+          slices: ask.slices,
+        });
       }
     },
   );
+  // What every row of the rail says about its grid, in one answer: a rail that
+  // asked per track would be a request per row and a list that fills in.
+  ipcMain.handle('openflow:analysis-notes', async (_event, trackIds: string[]) => {
+    const where = await root();
+    return where ? gridNotes(where, trackIds) : {};
+  });
   ipcMain.handle('openflow:peaks-read', async (_event, ask: { trackId: string; stems: string }) => {
     const where = await root();
     return where ? readPeaks(where, ask.trackId, ask.stems) : null;

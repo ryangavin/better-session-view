@@ -184,6 +184,27 @@ the stems but not the balance. The grid and the slices are beside the track in
 `analysis/`, which does travel. [`playback.md`](playback.md) has why, and what it would
 take to change.
 
+## What a row says about the grid
+
+The strip on a row's first line says what has been separated. The fact on its second
+line says what has been **gridded**, which is the other half of getting a track ready
+and used to finish invisibly: a tempo where the beats have been found, and where they
+have not, which kind of not.
+
+- a tempo — `128.05`, or `125–132` where the map moves. The reading is `warp.ts`'s
+  `tempoText`, the same one the header uses, so a track cannot be one number in the rail
+  and a range in the window.
+- **no fit** — a fit ran over the stems and found nothing steady. This one needs a hand:
+  open it and correct the grid.
+- **no grid** — nobody has measured it yet. It only needs opening.
+- the file's type — there are no stems yet, so there is nothing to have found.
+
+`gridNotes` in [`analysis.ts`](../electron/analysis.ts) reads all of them at once — three
+numbers and two flags per track, not the beat maps, because a rail of two hundred rows is
+not two hundred beat maps in the renderer to show two hundred tempos. Where that answer
+cannot be had, a row falls back to the file's type rather than claiming `no grid`: an
+empty answer means nobody could say, not that nothing is there.
+
 ## Not yet
 
 - **Reading the file's own tags**, which would beat both the filename and the catalogue

@@ -168,8 +168,18 @@ export const bpmText = (bpm: number): string =>
  */
 export function rangeText(beats: Beats): string {
   const { slowest, fastest } = tempoRange(beats);
-  if (!Number.isFinite(slowest)) return '';
-  const whole = tempoOf(beats);
+  return tempoText(tempoOf(beats), slowest, fastest);
+}
+
+/**
+ * The same reading, from the three numbers rather than from the map.
+ *
+ * The library rail says this about a track it has not opened, and the numbers
+ * are all it is given — sending seven hundred samples a row to re-derive them
+ * would be the map arriving so a header could round it.
+ */
+export function tempoText(whole: number, slowest: number, fastest: number): string {
+  if (!Number.isFinite(slowest) || !Number.isFinite(whole)) return '';
   if (fastest - slowest < whole * 0.02) return bpmText(Number(whole.toFixed(2)));
   const lo = Math.round(slowest);
   const hi = Math.round(fastest);

@@ -72,12 +72,106 @@ export interface Analysis {
   grid: Grid | null;
   fit: Reading | null;
   /**
+   * A fit that ran over this track's stems and found nothing steady.
+   *
+   * It rides beside `grid: null` rather than in place of it, because the two
+   * say different things and the window needs both: the null is *still owed a
+   * grid*, so opening the track measures again, and this is *the last time we
+   * looked there was nothing there*, so the header can say so before the
+   * stems have finished decoding rather than after.
+   *
+   * What must never be written is the other thing — a `{ bpm: 120 }` standing
+   * in for a failure. That reads back as somebody's decision, and the track
+   * opens at 120 forever with nothing on screen admitting where it came from.
+   */
+  fitFailed?: boolean;
+  /**
    * The slices somebody made, in order of bar. Null while nobody has, which
    * the window takes as: read them off the stems again. A file from before
    * there were slices has no field, and reads the same.
    */
   slices?: SliceKept[] | null;
   produced: string;
+}
+
+/**
+ * What a library row can say about a track's grid without opening it.
+ *
+ * Three numbers and a flag rather than the map: a rail of two hundred rows
+ * would otherwise be two hundred beat maps in the renderer's memory to show
+ * two hundred tempos. `src/warp.ts`'s `tempoText` turns these back into the
+ * same reading the header gives.
+ */
+export interface GridNote {
+  /** The tempo the grid runs at, or null where the track has none. */
+  bpm: number | null;
+  /** The ends of a map that moves. Both equal `bpm` for an even ruling. */
+  slowest: number | null;
+  fastest: number | null;
+  /** Whether a hand made or corrected this grid, rather than a fit measuring it. */
+  byHand: boolean;
+  /** A fit ran and found nothing steady. */
+  failed: boolean;
+}
+
+/** The average tempo of a map, matching `src/warp.ts`'s `tempoOf`. */
+function wholeOf(beats: BeatMap): number | null {
+  const { samples } = beats;
+  if (samples.length < 2 || !(beats.rate > 0)) return null;
+  const span = samples[samples.length - 1] - samples[0];
+  return span > 0 ? (60 * beats.rate * (samples.length - 1)) / span : null;
+}
+
+/** The slowest and fastest a map runs at, matching `src/warp.ts`'s `tempoRange`. */
+function endsOf(beats: BeatMap): { slowest: number; fastest: number } {
+  let slowest = Infinity;
+  let fastest = 0;
+  for (let i = 0; i + 1 < beats.samples.length; i++) {
+    const bpm = (60 * beats.rate) / (beats.samples[i + 1] - beats.samples[i]);
+    if (bpm < slowest) slowest = bpm;
+    if (bpm > fastest) fastest = bpm;
+  }
+  return { slowest, fastest };
+}
+
+/** One track's note, from its sidecar. Absent, unreadable and ungridded read alike. */
+export async function gridNote(root: string, trackId: string): Promise<GridNote> {
+  const held = await readAnalysis(root, trackId);
+  const none: GridNote = { bpm: null, slowest: null, fastest: null, byHand: false, failed: false };
+  if (!held) return none;
+  const failed = held.fitFailed === true;
+  if (!held.grid) return { ...none, failed };
+  const byHand = !held.grid.bpmAuto;
+  const map = held.grid.beats;
+  if (!map) {
+    const { bpm } = held.grid;
+    return { bpm, slowest: bpm, fastest: bpm, byHand, failed };
+  }
+  const whole = wholeOf(map);
+  if (whole === null) return { ...none, byHand, failed };
+  const { slowest, fastest } = endsOf(map);
+  return {
+    bpm: whole,
+    slowest: Number.isFinite(slowest) ? slowest : whole,
+    fastest: Number.isFinite(fastest) && fastest > 0 ? fastest : whole,
+    byHand,
+    failed,
+  };
+}
+
+/**
+ * Every track's note, read together.
+ *
+ * One small file per track and they are read at once: a library of a few
+ * hundred is a few hundred reads of a couple of hundred bytes, which is the
+ * same order as the directory listing that named them.
+ */
+export async function gridNotes(
+  root: string,
+  trackIds: readonly string[],
+): Promise<Record<string, GridNote>> {
+  const notes = await Promise.all(trackIds.map((id) => gridNote(root, id)));
+  return Object.fromEntries(trackIds.map((id, i) => [id, notes[i]]));
 }
 
 /** The drawing of one separation's stems, one column per `Peak` of `src/audio.ts`. */
@@ -126,11 +220,25 @@ export async function readAnalysis(root: string, trackId: string): Promise<Analy
     if (held.grid && !(held.grid.bpm > 0 && Number.isFinite(held.grid.offset))) return null;
     if (held.grid?.beats && !Array.isArray(held.grid.beats.samples)) return null;
     if (held.slices != null && !slicesSound(held.slices)) return null;
-    return held;
+    if (undecided(held.grid)) return { ...held, grid: null, fitFailed: true };
+    return { ...held, fitFailed: held.fitFailed === true };
   } catch {
     return null;
   }
 }
+
+/**
+ * A grid from before a refused fit had anywhere to be recorded.
+ *
+ * An even ruling with no map and a tempo nobody measured is the shape the
+ * window used to write when a fit found nothing — 120 at sample zero, wearing
+ * a decision's clothes. It cannot be anything else: measuring sets `bpmAuto`,
+ * and typing a tempo or dragging a beat leaves a map behind, so a grid with
+ * neither was never anybody's. Read as the refusal it is, so the track is
+ * measured again on its next open instead of opening at 120 for good.
+ */
+const undecided = (grid: Grid | null): boolean =>
+  grid !== null && grid.beats === null && !grid.bpmAuto;
 
 /** Slices the window can draw: a list in bar order, each a finite bar and a name. */
 const slicesSound = (slices: unknown): slices is SliceKept[] =>
@@ -147,7 +255,7 @@ const slicesSound = (slices: unknown): slices is SliceKept[] =>
 export async function writeAnalysis(
   root: string,
   trackId: string,
-  it: { grid: Grid | null; fit: Reading | null; slices?: SliceKept[] | null },
+  it: { grid: Grid | null; fit: Reading | null; fitFailed?: boolean; slices?: SliceKept[] | null },
 ): Promise<void> {
   const analysis: Analysis = {
     openflow: 'mix-analysis',
@@ -155,6 +263,7 @@ export async function writeAnalysis(
     track: trackId,
     grid: it.grid,
     fit: it.fit,
+    fitFailed: it.fitFailed === true,
     slices: it.slices ?? null,
     produced: new Date().toISOString(),
   };
