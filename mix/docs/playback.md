@@ -156,9 +156,16 @@ section is ruled for the width it actually has. Samples rather than seconds
 because a sample is exact and a second is a measurement of one, and the rate
 travels with the map so a beat means one thing on any device.
 
-Before anything has been measured the map is the even ruling a typed tempo
-makes — `evenBeats`, a beat every `60 × rate / bpm` samples — and a typed
-tempo rules the grid. Once the beats have been found it rules only what plays.
+Before anything has been measured the map is an even fallback — `evenBeats`, a beat
+every `60 × rate / bpm` samples. The header tempo controls playback; changing it first
+materializes that fallback so source beat positions stay fixed. Deliberately replacing
+the source grid with a steady tempo is an action inside **Edit beat grid**.
+
+Beat handles are hidden during normal mixing. **Edit beat grid** exposes manual correction
+with a separate `beatEdit.ts` draft: the waveform and playback may read it, while sidecar
+and session writes continue to read the saved map. Done commits, Cancel abandons, and
+Undo groups a pointer drag into one action. Analyze generates algorithm previews and
+section suggestions; it has no manual timing controls. See [track-review.md](track-review.md).
 
 **The bar count is not the map, and it used to be.** The lanes drew
 `ceil(seconds × bpm / 240)` bars across the width of the file, which silently
@@ -349,10 +356,10 @@ to be true, from `tools/mix-warp-truth.json`. A truth is a tempo, and for a
 song that changes tempo, the sections it changes at. The worst eight-bar
 stretch of each track is what it flags, outside the bars around a change.
 
-### Two clicks, and then the same machinery
+### Tempo refinement from a counted span
 
-`refitOf` is the hand path's half of this, and it is what makes counting out
-four bars enough. Two clicks over four bars is fifteen seconds of evidence, and
+`refitOf` accepts a tempo and phase seed from a counted span. The helper is retained
+for seeded analysis; the product editing toolbar directly edits beat samples. Two clicks over four bars is fifteen seconds of evidence, and
 a click twenty milliseconds out is a third of a BPM — a bar and a half of drift
 by the end of a song. But it is *exactly* enough to say which beat and which
 downbeat are meant, which is the half a fit gets wrong. So the clicks seed the

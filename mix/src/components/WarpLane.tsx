@@ -47,6 +47,8 @@ export interface WarpLaneProps {
   onPlace?(place: number): void;
   /** Manual mode: the pointer is placing a downbeat rather than scrubbing. */
   placing?: boolean;
+  onMoveStart?(): void;
+  onMoveEnd?(): void;
   /**
    * Which slice of the track to draw, as fractions — the whole of it by
    * default, and whatever the lanes are zoomed into otherwise.
@@ -76,7 +78,7 @@ const nameOf = (beat: number): string => {
   return inBar === 0 ? String(bar + 1) : `${bar + 1}.${inBar + 1}`;
 };
 
-export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, onPlace, placing, span }: WarpLaneProps) {
+export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, onPlace, placing, span, onMoveStart, onMoveEnd }: WarpLaneProps) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const lane = useRef<HTMLDivElement | null>(null);
   /** How wide the strip is, so the markers can decide how many of them fit. */
@@ -262,6 +264,7 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
     event.stopPropagation();
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
+    onMoveStart?.();
     drag.current = { beat, pointer: event.pointerId };
   };
 
@@ -288,6 +291,7 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
     const held = drag.current;
     if (!held) return;
     drag.current = null;
+    onMoveEnd?.();
     if (event.currentTarget.hasPointerCapture(held.pointer)) {
       event.currentTarget.releasePointerCapture(held.pointer);
     }
@@ -326,6 +330,16 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
           style={{ left: `${marker.where * 100}%` }}
         >
           <i
+            role="slider" tabIndex={0} aria-label={`Beat ${nameOf(marker.beat)} position`}
+            aria-valuenow={beats!.samples[marker.beat - beats!.first] / beats!.rate}
+            aria-valuemin={(beats!.samples[marker.beat - beats!.first - 1] ?? 0) / beats!.rate}
+            aria-valuemax={(beats!.samples[marker.beat - beats!.first + 1] ?? beats!.length) / beats!.rate}
+            onKeyDown={(e) => {
+              if (!onMove || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+              e.preventDefault(); e.stopPropagation();
+              const at = beats!.samples[marker.beat - beats!.first] / beats!.rate;
+              onMove(marker.beat, at + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? .001 : .01));
+            }}
             title={`Beat ${nameOf(marker.beat)}. Drag to move it; ⌥ to skip the hits`}
             onPointerDown={take(marker.beat)}
             onPointerMove={carry}

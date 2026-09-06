@@ -14,7 +14,7 @@ import './Header.css';
 /**
  * Playback and snap stay at hand; Analyze opens the track's analysis home.
  * The compact grid readout and warp switch remain visible in the mixer.
- * Grid review and correction live on the analysis page. Debugging tools are
+ * Detection lives in Analyze; manual corrections require Edit beat grid. Debugging tools are
  * reached from the library footer.
  */
 
@@ -204,10 +204,11 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               showFill={false}
               width={44}
               label="Tempo"
+              disabled={mix.editingGrid}
               title={
                 mix.beats
                   ? 'The tempo the stems play at with warp on. The grid is where the beats are'
-                  : 'The tempo the grid is ruled at, until the kick has been followed. Drag it, or type one in'
+                  : 'Playback tempo with Warp on. To change the source timing, use Edit beat grid'
               }
             />
             {/* Bars are the grid's claim; the clock is what is true whatever
@@ -233,13 +234,14 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
           </div>
 
           <div className="mf-group" role="group" aria-label="Analysis">
-            <Button onPress={mix.resetup} title="Check the beat grid, find sections, or change stems">Analyze</Button>
+            <Button onPress={mix.resetup} disabled={mix.editingGrid} title="Preview automatic beat and section detection, or change stems">Analyze</Button>
+            <Button onPress={mix.beginGridEdit} disabled={mix.editingGrid || !mix.playable} title="Show beat handles and edit timing in the main view">Edit beat grid</Button>
             {/* The numbers that say whether to believe the grid, next to the
                 button that made it: the tempo the song runs at — a range
                 where it moved — and how much of the kick sits on a line. A
                 fit that found nothing says so rather than leaving a press
                 with no answer. */}
-            {mix.beats || mix.detected ? (
+            {mix.editingGrid ? <span className="mf-fit">Timing preview</span> : mix.beats || mix.detected ? (
               <span
                 className="mf-fit"
                 title={
@@ -291,7 +293,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
 
       <Button
         onPress={() => mix.setExporting(true)}
-        disabled={!live}
+        disabled={!live || mix.editingGrid}
         title={live ? 'Choose what to write out: the stems, and the full track with them' : song?.sources.length ? 'Return to the mix to export' : 'Separate the track first'}
       >
         Export

@@ -67,7 +67,7 @@ export function App() {
       if (e.key === ' ') {
         e.preventDefault();
         mix.setPlaying(!mix.playing);
-      } else if ((e.key === 'Backspace' || e.key === 'Delete') && mix.activeSlice > 0) {
+      } else if ((e.key === 'Backspace' || e.key === 'Delete') && mix.activeSlice > 0 && !mix.editingGrid) {
         e.preventDefault();
         mix.removeSlice(mix.activeSlice);
       } else if (e.key.toLowerCase() === 'l' && (e.metaKey || e.ctrlKey)) {
@@ -80,7 +80,7 @@ export function App() {
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
+  }, [mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
 
   const carriesFiles = (event: DragEvent): boolean =>
     Array.from(event.dataTransfer.types).includes('Files');

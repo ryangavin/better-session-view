@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useBeatEdit } from './beatEdit.ts';
 import { STEMS } from './mock.ts';
 import { cut, dragged, removed, slicesFor, slicesOf, type Slice } from './slices.ts';
 import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak } from './audio.ts';
@@ -419,7 +420,7 @@ export function useMix() {
    * Change either and this changes with it, which is the whole point of the
    * warp lane underneath — the ticks stop lining up.
    */
-  const grid = useMemo<Beats>(() => {
+  const savedGrid = useMemo<Beats>(() => {
     if (!(seconds > 0)) return UNKNOWN;
     const rate = audio.rate || NOMINAL_RATE;
     const length = Math.round(seconds * rate);
@@ -427,6 +428,10 @@ export function useMix() {
     // `peaks` is here because the graph's rate is only known once something
     // has been decoded, and decoding is what fills them in.
   }, [seconds, targetBpm, offset, beats, audio, peaks]);
+
+  // Rendering and audition may use a draft; persistence reads beats/offset above.
+  const gridEdit = useBeatEdit(selected, savedGrid);
+  const grid = gridEdit.grid;
 
   /**
    * How many bars the song holds, counting bar 1 as the first.
@@ -871,6 +876,7 @@ export function useMix() {
       }
       audio.stop();
       setPlaying(false);
+      gridEdit.cancel();
       setSelected(id);
       setBarMarks([]);
       setManual(null);
@@ -893,7 +899,7 @@ export function useMix() {
       // measured — and it will be, as soon as there are stems to measure.
       setWantFit(known.bpm == null);
     },
-    [tracks, audio, song, selected, level, gridHeld, keepGrid],
+    [tracks, audio, song, selected, level, gridHeld, keepGrid, gridEdit.cancel],
   );
 
   /**
@@ -997,14 +1003,14 @@ export function useMix() {
 
   /** Open this track's analysis home, keeping its grid and preselecting its separation model. */
   const resetup = useCallback(() => {
-    if (!song) return;
+    if (!song || gridEdit.active) return;
     audio.stop();
     setPlaying(false);
     setManual(null);
     setProblem(null);
     setModel(song.model ?? model);
     setSetupFor(song.id);
-  }, [song, model, audio]);
+  }, [song, model, audio, gridEdit.active]);
 
   /** Leave analysis for the mixer without running another separation. */
   const keepStems = useCallback(() => setSetupFor(null), []);
@@ -1308,7 +1314,7 @@ export function useMix() {
 
   /** Commit a reviewed map without presenting the old detector's confidence as its own. */
   const saveReview = useCallback((reviewed: Beats, sections?: Slice[]) => {
-    if (reviewed !== grid) {
+    if (reviewed !== savedGrid) {
       setWantFit(false);
       setDetected(null);
       setFitFailed(false);
@@ -1325,7 +1331,17 @@ export function useMix() {
       setSlicesAuto(false);
       setActiveSlice(0);
     }
-  }, [grid]);
+  }, [savedGrid]);
+
+  const beginGridEdit = () => {
+    audio.stop(); setPlaying(false); setManual(null); gridEdit.begin();
+  };
+  const finishGridEdit = () => {
+    audio.stop(); setPlaying(false);
+    if (gridEdit.dirty) saveReview(gridEdit.grid);
+    gridEdit.cancel();
+  };
+  const cancelGridEdit = () => { audio.stop(); setPlaying(false); gridEdit.cancel(); };
 
   /**
    * The grid, read off the audio: a seed fitted to the whole song, and the
@@ -1343,21 +1359,14 @@ export function useMix() {
 
   const autoWarp = useCallback(() => fit(measure()), [fit, measure]);
 
-  /**
-   * A tempo somebody set, which is a different thing from one that was
-   * measured — so the fit stops being on screen along with it.
-   *
-   * The agreement beside Auto-warp describes the grid the fit produced. Left up
-   * while the tempo is dragged, it would be a percentage about a grid that is
-   * no longer there, which is the one kind of readout worse than none.
-   */
+  /** Playback tempo never changes where the source beats were measured. */
   const setTempo = useCallback((bpm: number) => {
+    if (gridEdit.active) return;
+    setBeats((was) => was ?? savedGrid);
     setTargetBpm(bpm);
     setBpmAuto(false);
-    setDetected(null);
-    setFitFailed(false);
     setWantFit(false);
-  }, []);
+  }, [savedGrid, gridEdit.active]);
 
   /**
    * The fit a freshly opened track gets without being asked.
@@ -1538,8 +1547,8 @@ export function useMix() {
    */
   useEffect(() => {
     if (!slicesAuto) return;
-    setSlices(Object.keys(peaks).length > 0 ? slicesOf(peaks, grid) : slicesFor(8, bars));
-  }, [slicesAuto, bars, peaks, grid]);
+    setSlices(Object.keys(peaks).length > 0 ? slicesOf(peaks, savedGrid) : slicesFor(8, countOf(savedGrid)));
+  }, [slicesAuto, peaks, savedGrid]);
 
   const resetMix = useCallback(() => setLevel(levels()), []);
 
@@ -1596,10 +1605,10 @@ export function useMix() {
   /** Drag a beat to another second of the file. */
   const moveBeat = useCallback(
     (beat: number, at: number) => {
-      setBeats((was) => moved(was ?? grid, beat, at * grid.rate));
-      decided();
+      if (!gridEdit.active) return;
+      gridEdit.change(moved(grid, beat, at * grid.rate));
     },
-    [grid, decided],
+    [grid, gridEdit.active, gridEdit.change],
   );
 
   /**
@@ -1720,6 +1729,11 @@ export function useMix() {
     removeSlice,
     resetSlices,
     saveReview,
+    editingGrid: gridEdit.active,
+    gridEditDirty: gridEdit.dirty,
+    beginGridEdit, finishGridEdit, cancelGridEdit,
+    editGrid: gridEdit.change, undoGridEdit: gridEdit.undo,
+    beginBeatDrag: gridEdit.beginGesture, endBeatDrag: gridEdit.endGesture,
     pickSlice,
     slicesAuto,
     targetBpm,

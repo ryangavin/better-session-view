@@ -8,7 +8,7 @@ import type { Peak } from '../audio.ts';
 import { rulingOf, stepFor } from '../grid.ts';
 import { STEMS } from '../mock.ts';
 import { snappedBar } from '../slices.ts';
-import { SPANS, type Mix } from '../state.ts';
+import type { Mix } from '../state.ts';
 import { BASS_TRANSPOSE } from '../tab.ts';
 import { barAt, placeOf } from '../warp.ts';
 import { factorOf, limitOf, shows, spanOf, useView, type Span } from '../zoom.ts';
@@ -16,6 +16,7 @@ import { Tablature } from './Tablature.tsx';
 import { Tone } from './Tone.tsx';
 import { Waveform } from './Waveform.tsx';
 import { Ruler } from './Ruler.tsx';
+import { BeatGridEditor } from './BeatGridEditor.tsx';
 import { WarpLane } from './WarpLane.tsx';
 import './Lanes.css';
 
@@ -310,7 +311,10 @@ export function Lanes({ mix }: { mix: Mix }) {
 
   return (
     <div className="mf-lanes" ref={root}>
-      {mix.manual && <ManualBar mix={mix} />}
+      {mix.editingGrid && <BeatGridEditor mix={mix} inspect={(at) => {
+        mix.seek(Math.max(0, at));
+        whole(); zoomAbout(Math.max(1, mix.seconds / 4), 0); panBy(Math.max(0, at - 1) / 4);
+      }} />}
 
       <div className="mf-band">
         <div className="mf-head mf-band-head">
@@ -348,12 +352,13 @@ export function Lanes({ mix }: { mix: Mix }) {
             onsets={mix.onsets}
             bars={grid}
             height={24}
-            barMarks={mix.barMarks}
-            beats={mix.beats ? grid : undefined}
+            barMarks={mix.editingGrid ? mix.barMarks : []}
+            beats={mix.editingGrid ? grid : undefined}
             hits={mix.hits}
-            onMove={mix.moveBeat}
-            onPlace={mix.place}
-            placing={mix.manual !== null}
+            onMove={mix.editingGrid ? mix.moveBeat : undefined}
+            onMoveStart={mix.beginBeatDrag}
+            onMoveEnd={mix.endBeatDrag}
+            onPlace={(fraction) => mix.scrubTo(fraction * mix.seconds)}
             span={span}
           />
         </div>
@@ -588,59 +593,5 @@ function Outside({ opens, closes, inset }: { opens: number; closes: number; inse
         />
       )}
     </>
-  );
-}
-
-/**
- * The bar that appears while the grid is being set by hand.
- *
- * It exists because in this mode a click in a lane means something else, and a
- * mode you cannot see is a mode that surprises you. Amber and pulsing at the
- * top of the thing whose behaviour changed, with the way out on the same line.
- *
- * **What it asks for is a counted span, not the two ends of the song.** Finding
- * bar 97 of a song nobody has gridded yet is the one thing a person is worst at;
- * counting four bars is a thing they do without thinking. The precision that
- * gives up comes straight back — `state.ts` seeds a fit with the two clicks and
- * lets a line through every kick in the track set the tempo.
- */
-function ManualBar({ mix }: { mix: Mix }) {
-  const manual = mix.manual;
-  if (!manual) return null;
-  const step = manual.stage === 'first' ? 'step 1 / 2' : manual.stage === 'late' ? 'step 2 / 2' : 'tune';
-  const later = `${manual.span} bar${manual.span === 1 ? '' : 's'} later`;
-  const hint =
-    manual.stage === 'first'
-      ? 'Click any downbeat — the first beat of a bar'
-      : manual.stage === 'late'
-        ? `Now click the downbeat ${later} — count it out`
-        : `Nudge the grid ten milliseconds either way, or click the downbeat ${later} again`;
-
-  return (
-    <div className="mf-manual">
-      <span className="mf-manual-step">{step}</span>
-      <span className="mf-manual-count">
-        <span className="mf-cap">count</span>
-        <Segmented
-          items={SPANS.map(String)}
-          index={SPANS.indexOf(manual.span)}
-          onChange={(next) => mix.setSpan(SPANS[next])}
-          label="How many bars to count"
-          title="How many bars apart the two clicks are"
-        />
-      </span>
-      <span className="mf-manual-hint">{hint}</span>
-      <div className="mf-manual-nudge">
-        <Button onPress={() => mix.nudge(-1)} label="Earlier" title="Pull the reference 10 ms earlier" width={22}>
-          ◀
-        </Button>
-        <Button onPress={() => mix.nudge(1)} label="Later" title="Push the reference 10 ms later" width={22}>
-          ▶
-        </Button>
-      </div>
-      <Button onPress={mix.endManual} className="mf-primary">
-        Done
-      </Button>
-    </div>
   );
 }

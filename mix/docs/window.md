@@ -32,8 +32,9 @@ waveform from navigating the renderer away from the app.
 
 Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
 **Analyze** opens the track analysis home. The compact detected tempo/agreement summary
-and Warp remain in the mixer header. Grid review, automatic reset and section suggestions live in analysis.
-Algorithm selection remains in the debug workspace. The tiny Separate again action above the lanes is gone.
+and Warp remain in the mixer header. Automatic beat detection, algorithm previews and section suggestions live in analysis.
+Manual timing corrections live in the main view behind **Edit beat grid**, which reveals
+beat handles and an explicit Done/Cancel toolbar. Warp controls playback, not editability. The tiny Separate again action above the lanes is gone.
 
 The title yields by ellipsis rather than wrapping the header. In analysis the page owns
 its listening controls and Back to mix; the header shows Analysis as the current location.
@@ -47,18 +48,22 @@ with no stems starts on the source setup section: metadata, model cards and Gene
 The same page shows beat and section review when decoded stems are available.
 Separation still runs only on an explicit Generate/Separate again press.
 
-An existing track opens with the song overview. `TrackReview.tsx` shows the whole song,
-vocal activity, a labeled first-downbeat waveform and sustained-change section suggestions.
-First/middle/end checkpoints select passages. Playback starts at the visible white cursor
-and lasts sixteen mapped beats, with an optional metronome. Grid correction
-is inline: set bar 1, move it a beat, nudge or enter a steady tempo. Reset previews a fresh
-automatic result; discard restores the exact saved map. No algorithm menu or buttons
-that pretend to edit here but navigate to the mixer. **Save & return to mix** commits
-the map and, only when selected, replaces existing sections with numbered suggestions.
+An existing track opens with one zoomable timeline and aligned stems. `TrackReview.tsx`
+provides first/middle/end inspection, four-bar listening with an optional metronome, beat
+algorithm selection and section suggestions. Run beat analysis proposes a replacement;
+Compare saved grid overlays the current bar positions at close zoom. **Apply analysis &
+return** keeps the proposed map and, only when selected, numbered section suggestions.
+Back to mix abandons the preview. No manual timing controls live on this page.
+
+In the main view, **Edit beat grid** reveals draggable beat handles, bar-1 placement,
+renumbering, nudges and an explicit steady-grid replacement. Undo, Cancel and Done govern
+one temporary editing session; unfinished changes never reach the saved grid. Normal
+waveform clicks seek and the main Warp switch only changes playback. Section placement
+and naming stay on the main ruler; section mutations pause while a beat draft is active.
 See [track-review.md](track-review.md) for measurement, thresholds, playback and persistence.
 
 Source setup and metadata follow the review on the same page. There is no tab switch
-and no footer; Save, Back and draft status share the top heading. The model that produced
+and no footer; Apply, Back and preview status share the top heading. The model that produced
 the stems is preselected when Analyze opens; the cache/engine estimates are the existing
 ones. **Back to mix** leaves without separating or applying a preview.
 
@@ -310,8 +315,8 @@ what a line *is* rather than by where it falls in the current step, so a bar lin
 bar line while the grid thins around it — and the lanes draw the four ranks in four
 weights, while the warp lane, being 24px of strip, says it in height instead.
 
-Their bar positions are the grid's claim rather than a property of the audio, so changing
-the tempo walks them off the lines or onto them. That is the lane doing its job.
+Their bar positions are the grid's claim rather than a property of the audio, so editing
+source beat positions walks them off the lines or onto them. That is the lane doing its job.
 
 **A grid is the sample of every beat, and the window used to hold it as two
 numbers.** Every beat has its sample, the bars are drawn straight between one
@@ -324,13 +329,13 @@ second of air in front of it could not be gridded at all when bar 1 was the top
 of the file. `warp.ts` holds the map, and `playback.md` has how the beats are
 found.
 
-**Auto-warp finds every beat and places it.** The drums are heard in three
+**Automatic analysis finds every beat and places it.** The drums are heard in three
 bands — kick, snare, hats — each hit placed at the start of its attack to the
 exact sample; the tempo and which pulse is the beat are read off all of them,
 with no lean toward any tempo; and the beats are then found for the whole song
 at once, matched to the hits under a smoothness cost, so a breakdown is counted
 through at the spacing it had and the first kick after it lands on the beat it
-is. The markers on the warp lane are those beats — every one when a beat has
+is. In Edit beat grid mode, the markers on the warp lane are those beats — every one when a beat has
 room, else every bar — and they are the map, not marks on it: drag one and the
 grid bends under the pointer. The readout beside the button says the tempo the
 beats run at, and a range where they moved.
@@ -342,48 +347,16 @@ default so much as a wrong answer nobody asked for. Anything written down — a 
 that was nudged, a tempo typed in — is a decision, and a decision is not re-taken
 behind somebody's back.
 
-**Manual is two clicks a counted span apart, and then a nudge.** It is the other
-half of the feature rather than a fallback: the first click says *this is a downbeat*
-and sets where the bars fall, the second says *this is the downbeat four bars later*
-and the tempo follows. Neither click is bar 1 — bar 1 is the first downbeat in the
-file, as it is for a fit, and the marks are numbered with whatever bars the clicks
-landed on.
+**Manual correction requires Edit beat grid.** Its toolbar sits above the mixer lanes,
+and the marker handles exist only while it is open. A marker drags to the nearest hit
+unless Option is held; its neighbours hold and only the two adjacent intervals change.
+Set bar 1, renumbering and whole-grid nudges are explicit buttons. A steady-grid
+replacement is a disclosure because it intentionally removes tempo variation.
 
-**It asks for a counted span rather than for the last bar of the song**, and that
-is the whole difference between a control somebody uses and one they do not. Asking
-for the last downbeat is asking somebody to find bar 97 of a song they have not
-gridded yet — the one thing a person is worst at and a machine is best at. Counting
-four is a thing they do without thinking, and the count is on the bar: 1, 2, 4 or 8.
-
-The accuracy that gives up is handed straight back. Four bars is fifteen seconds and
-a click twenty milliseconds out is a third of a BPM, which would be a bar and a half
-of drift by the end — so the two clicks *seed* a fit rather than being the answer,
-and the same least-squares line over every kick in the track sets the tempo from
-there. The hand supplies the octave and the phase, which is the half a fit gets
-wrong; the audio supplies the precision, which is the half it gets right. A
-refinement that wanders three per cent off what was measured is refused, and what
-was clicked stands.
-
-The nudge moves the grid by ten milliseconds, keeping the tempo — the fix for ticks
-sitting evenly *beside* the bar lines rather than drifting off them.
-
-**And then the beats themselves.** Live's workflow is auto-warp, then fix by hand
-what it got wrong, and the markers are where that happens. There is one gesture: a
-marker drags. Its sample moves and its beat stays, which is saying *the audio under
-the pointer is this beat*; its neighbours hold, the two spacings beside it take
-up the difference, and nothing further away can tell. It lands on the nearest
-kick unless ⌥ is held. Nothing is added or deleted, because every beat already
-has a marker. The × beside Auto-warp lets the whole map go — back to an even grid
-at the tempo and downbeat there are, which is how you start over, and Auto-warp
-is how you ask for the beats again. A drag is a decision, so the fit's
-percentage goes with it and the tempo range stays.
-
-It gets a bar of its own at the top of the lanes because in that mode a click in a
-lane means something else. A mode you cannot see is a mode that surprises you.
-
-Bar numbers appear every eight bars, and only when eight bars is wide enough to hold one.
-Sixteen numbers in a 24px strip is a grey band, and the point of a number is to be
-countable from.
+Waveform clicks continue to seek. First downbeat zooms the main axis, and Listen with
+click checks the drums against the draft at original speed. The draft is separate from
+saved state: Undo steps back through actions, Cancel abandons, and Done commits. Analyze
+and Export wait for the edit session to end. See [track-review.md](track-review.md).
 
 ## What is a widget and what is not
 

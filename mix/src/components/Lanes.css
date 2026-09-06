@@ -636,3 +636,12 @@
   display: inline-flex;
   gap: 2px;
 }
+
+.mf-grid-editor { flex:none; padding:10px 12px; background:var(--surface-manual); border-bottom:1px solid var(--amber); }
+.mf-grid-editor-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:4px 0; }
+.mf-grid-editor-row > strong { color:var(--amber); }
+.mf-grid-editor-row > [role='status'] { flex:1; }
+.mf-grid-editor p, .mf-grid-editor-row > span { color:var(--detail); font-size:var(--text-label); }
+.mf-grid-editor p { margin:8px 0; line-height:1.5; }
+.mf-grid-editor summary { cursor:pointer; color:var(--caption); font-size:var(--text-label); }
+.mf-grid-editor .wdg { flex:none; }

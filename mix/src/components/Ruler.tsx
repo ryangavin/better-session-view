@@ -93,7 +93,7 @@ export function Ruler({
   };
 
   const split = (event: React.MouseEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).tagName === 'INPUT') return;
+    if (mix.editingGrid || (event.target as HTMLElement).tagName === 'INPUT') return;
     const at = barUnder(event.clientX);
     if (at && at.bar > 0 && at.bar < mix.bars) mix.cutSlice(at.bar);
   };
@@ -135,7 +135,7 @@ export function Ruler({
               if ((event.target as HTMLElement).tagName !== 'INPUT') mix.pickSlice(i);
             }}
             onDoubleClick={(event) => {
-              if ((event.target as HTMLElement).tagName === 'INPUT') return;
+              if (mix.editingGrid || (event.target as HTMLElement).tagName === 'INPUT') return;
               if ((event.target as HTMLElement).classList.contains('mf-slice-name')) {
                 setEditing(i);
                 return;
@@ -144,7 +144,7 @@ export function Ruler({
             }}
             title={`${slice.name} — bar ${barText(slice.bar)}, ${lengthText(next - slice.bar)} bars. Double-click to cut here`}
           >
-            {i > 0 && (
+            {i > 0 && !mix.editingGrid && (
               <span
                 className="mf-slice-cut"
                 role="separator"

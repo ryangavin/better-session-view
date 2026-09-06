@@ -3,10 +3,13 @@ import { createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { TrackReview } from './TrackReview.tsx';
+import { fitOf } from '../tempo.ts';
 import { heardIn } from '../transients.ts';
 import { measure } from '../debug/waveforms/measure.ts';
 import type { Mix } from '../state.ts';
 import { evenBeats, type Beats } from '../warp.ts';
+vi.mock('../tempo.ts', () => ({ fitOf: vi.fn(() => null) }));
+vi.mock('../follow.ts', () => ({ followOf: vi.fn(() => null) }));
 vi.mock('../transients.ts', () => ({ heardIn: vi.fn(() => null) }));
 vi.mock('../debug/waveforms/measure.ts', () => ({ measure: vi.fn(() => new Promise(() => {})) }));
 const playback = vi.hoisted(() => ({ play: vi.fn(async () => {}), stop: vi.fn() }));
@@ -21,27 +24,49 @@ describe('song review', () => {
   it('opens without rerunning beats, and saves exact irregular samples while preserving existing sections', () => {
     const mix = fixture(); render(createElement(TrackReview, { mix }));
     expect(heardIn).not.toHaveBeenCalled(); expect(measure).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: 'Save & return to mix' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
     expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
     expect(mix.keepStems).toHaveBeenCalledOnce();
   });
-  it('keeps nudge edits local, and discard restores every original sample', () => {
-    const mix = fixture(); render(createElement(TrackReview, { mix }));
-    fireEvent.click(screen.getByText('Correct the beat grid'));
-    fireEvent.click(screen.getByRole('button', { name: '+10 ms' }));
-    expect(mix.saveReview).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Discard grid changes' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save & return to mix' }));
-    expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
+  it('exposes inspection and detection without manual timing controls', () => {
+    render(createElement(TrackReview, { mix: fixture() }));
+    expect(screen.queryByText('Correct the beat grid')).toBeNull();
+    expect(screen.queryByRole('button', { name: '+10 ms' })).toBeNull();
+    expect(screen.queryByRole('slider', { name: 'Steady tempo BPM' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Run beat analysis' })).toBeTruthy();
   });
   it('a failed reset leaves the candidate intact and never writes to the library', async () => {
     const mix = fixture(); render(createElement(TrackReview, { mix }));
-    fireEvent.click(screen.getByRole('button', { name: 'Reset grid to automatic' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run beat analysis' }));
     await waitFor(() => expect(heardIn).toHaveBeenCalledOnce());
     expect(screen.getByText(/No steady beat found/)).toBeTruthy();
     expect(mix.saveReview).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Save & return to mix' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
     expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
+  });
+  it('previews a successful detection against the saved grid, and discards it without applying', async () => {
+    vi.mocked(heardIn).mockReturnValueOnce({} as NonNullable<ReturnType<typeof heardIn>>);
+    vi.mocked(fitOf).mockReturnValueOnce({ bpm: 120, offset: .12, agreement: .9 });
+    const mix = fixture(); render(createElement(TrackReview, { mix }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run beat analysis' }));
+    await screen.findByText('Beat detection preview');
+    expect(screen.getByText(/Apply replaces the saved beat map/)).toBeTruthy();
+    expect(document.querySelector('[data-saved-bar="1"]')).toBeTruthy();
+    expect(mix.saveReview).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Discard beat preview' }));
+    expect(screen.queryByText('Beat detection preview')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
+    expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
+  });
+  it('applies the proposed map only after the explicit Apply action', async () => {
+    vi.mocked(heardIn).mockReturnValueOnce({} as NonNullable<ReturnType<typeof heardIn>>);
+    vi.mocked(fitOf).mockReturnValueOnce({ bpm: 120, offset: .12, agreement: .9 });
+    const mix = fixture(); render(createElement(TrackReview, { mix }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run beat analysis' }));
+    await screen.findByText('Beat detection preview');
+    expect(mix.saveReview).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
+    expect(mix.saveReview).toHaveBeenCalledWith(evenBeats(grid.rate, grid.length, 120, .12), undefined);
   });
   it('only replaces existing sections after explicit selection, with numbered cuts', async () => {
     const mix = fixture();
@@ -50,16 +75,16 @@ describe('song review', () => {
     const rms = Float32Array.from({ length: 960 }, () => 0.5);
     vi.mocked(measure).mockResolvedValueOnce({ seconds: 96, step: 0.1, rms, peak: rms, bands: [rms, rms, rms], stems: [{ id: 'vocals', rms: Float32Array.from({ length: 960 }, (_, i) => i >= 320 && i < 640 ? 0.3 : 0) }] });
     render(createElement(TrackReview, { mix }));
-    await screen.findByRole('button', { name: 'Use these 3 sections when saving' });
+    await screen.findByRole('button', { name: 'Use these 3 sections when applying' });
     expect(mix.saveReview).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Use these 3 sections when saving' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save & return to mix' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use these 3 sections when applying' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
     expect(mix.saveReview).toHaveBeenCalledWith(mix.grid, [{ bar: 0, name: 'Section 1' }, { bar: 16, name: 'Section 2' }, { bar: 32, name: 'Section 3' }]);
   });
 
   it('shows the exact cursor time and starts playback there without changing the grid', () => {
     const mix = fixture(); render(createElement(TrackReview, { mix }));
-    const wave = screen.getByRole('slider', { name: 'Listening position in drum waveform' });
+    const wave = screen.getByRole('slider', { name: 'Listening position in song timeline' });
     fireEvent.keyDown(wave, { key: 'ArrowRight' });
     expect(screen.getByText('0:00.030')).toBeTruthy();
     expect(wave.getAttribute('aria-valuenow')).toBe('0.03');
@@ -71,10 +96,49 @@ describe('song review', () => {
     const mix = fixture();
     const { container } = render(createElement(TrackReview, { mix, details: createElement('h3', {}, 'Track details and separation') }));
     expect(screen.getByRole('heading', { name: 'Track details and separation' })).toBeTruthy();
-    const save = screen.getByRole('button', { name: 'Save & return to mix' });
+    const save = screen.getByRole('button', { name: 'Apply analysis & return' });
     expect(save.closest('header')).toBe(screen.getByRole('button', { name: 'Back to mix' }).closest('header'));
     expect(container.querySelector('footer')).toBeNull();
     expect(screen.queryByRole('slider', { name: 'Position in detail waveform' })).toBeNull();
+  });
+
+  it('zooms the same timeline from the whole song to a downbeat while retaining every stem', () => {
+    const mix = fixture(); mix.seconds = 96; mix.grid = evenBeats(8000, 96 * 8000, 120, 1);
+    mix.song!.sources = ['drums', 'bass', 'other', 'vocals'];
+    render(createElement(TrackReview, { mix }));
+    const wave = screen.getByRole('slider', { name: 'Listening position in song timeline' });
+    expect(wave.getAttribute('aria-valuemax')).toBe('96');
+    fireEvent.click(screen.getByRole('button', { name: /First downbeat ·/ }));
+    expect(wave.getAttribute('aria-valuemax')).toBe('4');
+    expect(screen.getByText('VOCALS · samples')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Whole song' }));
+    expect(wave.getAttribute('aria-valuemax')).toBe('96');
+    expect(screen.getAllByRole('slider', { name: 'Listening position in song timeline' })).toHaveLength(1);
+    expect(mix.saveReview).not.toHaveBeenCalled();
+  });
+  it('choosing an algorithm does not analyze or alter the saved grid until explicitly run', async () => {
+    const mix = fixture(); render(createElement(TrackReview, { mix }));
+    fireEvent.click(screen.getByRole('combobox', { name: 'Beat analysis algorithm' }));
+    fireEvent.click(document.querySelectorAll('[role="option"]')[1] as Element);
+    expect(heardIn).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Run beat analysis' }));
+    await waitFor(() => expect(heardIn).toHaveBeenCalledOnce());
+    expect(mix.saveReview).not.toHaveBeenCalled();
+  });
+
+  it('reviews and dismisses a graph marker without replacing saved sections', async () => {
+    const mix = fixture(); mix.grid = evenBeats(8000, 96 * 8000, 120, 0); mix.seconds = 96;
+    const rms = Float32Array.from({ length: 960 }, () => 0.5);
+    vi.mocked(measure).mockResolvedValueOnce({ seconds: 96, step: 0.1, rms, peak: rms, bands: [rms, rms, rms], stems: [{ id: 'vocals', rms: Float32Array.from({ length: 960 }, (_, i) => i >= 320 && i < 640 ? 0.3 : 0) }] });
+    render(createElement(TrackReview, { mix }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Review vocals enter at bar 17' }));
+    expect(playback.play).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Listen to change' }));
+    expect(playback.play).toHaveBeenCalledWith(expect.any(Array), mix.grid, 31, 39, true);
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss change' }));
+    expect(screen.queryByRole('button', { name: 'Review vocals enter at bar 17' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
+    expect(mix.saveReview).toHaveBeenCalledWith(mix.grid, undefined);
   });
 
 });
