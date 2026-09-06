@@ -87,11 +87,12 @@ describe('the edits', () => {
 });
 
 describe('what is heard', () => {
-  it('puts each column in the bar it falls in, scaled to the loudest bar', () => {
+  it('puts each column in the beat it falls in, scaled to the loudest beat', () => {
     const grid = gridOf(8);
-    const { levels, bars } = heard({ drums: stem(8, (bar) => (bar < 4 ? 0.2 : 0.4)) }, grid);
+    const { levels, bars, beats } = heard({ drums: stem(8, (bar) => (bar < 4 ? 0.2 : 0.4)) }, grid);
     expect(bars).toBe(8);
-    expect(Array.from(levels.drums)).toEqual([0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1]);
+    expect(beats).toBe(32);
+    expect(Array.from(levels.drums)).toEqual([...Array(16).fill(0.5), ...Array(16).fill(1)]);
   });
 });
 
@@ -112,6 +113,17 @@ describe('where the cuts fall', () => {
       vocals: stem(64, between(32, 64, 0.3)),
     };
     expect(cutsOf(heard(peaks, grid))).toEqual([32]);
+  });
+
+  it('cuts on the beat the change is on, not the bar line after it', () => {
+    // The vocal comes in on the third beat of bar 33: sixty-four bars of
+    // columns, eight to a beat, loud from beat 130 on.
+    const grid = gridOf(64);
+    const peaks = {
+      drums: stem(64, () => 1),
+      vocals: Array.from({ length: 64 * 32 }, (_, i) => (i / 8 >= 130 ? { min: -0.3, max: 0.3 } : { min: 0, max: 0 })),
+    };
+    expect(cutsOf(heard(peaks, grid))).toEqual([32.5]);
   });
 
   it('ignores a one-bar fill', () => {

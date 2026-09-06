@@ -73,18 +73,24 @@ mix-specific actions and belongs in this module.
 
 ## Section suggestions
 
-`sections.ts` computes per-bar RMS from the measured mix and each stem, using the draft
-map to place samples into bars. It compares four bars before and after each potential
-change. The mixture needs a 1.8× level ratio and a 20% change relative to its peak bar;
-vocals need 2.5× and 22%, other stems 3× and 40%. The change must hold on at least three
-of four bars on both sides. Sources peaking below 0.008 RMS are ignored. These are
-heuristics for sustained contrast, not a calibrated confidence score or semantic model.
+`sections.ts` computes per-beat RMS from the measured mix and each stem, using the draft
+map to place samples into beats. It compares a phrase — four bars — before and after
+every beat. The mixture needs a 1.8× level ratio and a 20% change relative to its peak;
+vocals need 2.5× and 22%, other stems 3× and 40%. The change must hold on three beats
+in four on both sides. Sources peaking below 0.008 RMS are ignored. The tempo the map
+runs at is read the same way: a median tempo that moves by 3% or more across a beat is
+a section change on its own — *Tempo rises*, *Tempo falls* — because a steady section
+is what loops and a ramp is where two of them meet. These are heuristics for sustained
+contrast, not a calibrated confidence score or semantic model.
 
-Local peaks are selected before rounding to four- or eight-bar phrases, so one change
-between two phrase boundaries is not offered twice. Cuts are relative to bar 1 and leave
-at least one phrase at each end. Reasons describe energy or stem arrivals/recessions;
-labels do not claim to know intro, verse or chorus. Short fills, very gradual changes,
-quiet vocal passages, bleed and inaccurate grids remain limitations.
+**A section starts on whatever beat the change is on.** Nothing is snapped to a lattice
+from bar 1: a vocal arriving on the third beat of bar 33 is offered at 33.3. What keeps
+one change from being offered four times is that a candidate must be the strongest
+within two bars of itself. The import-time detector in `slices.ts` works the same way,
+on the drawn peaks, and its cuts may fall on any beat too. Reasons describe energy,
+tempo or stem arrivals/recessions; labels do not claim to know intro, verse or chorus.
+Short fills, very gradual changes, quiet vocal passages, bleed and inaccurate grids
+remain limitations, and a tempo change is only as real as the grid that reports it.
 
 Suggestions are numbered buttons on the graph. Selecting one moves the listening cursor
 and opens contextual actions below; a selector also reaches markers hidden by zoom or
@@ -92,7 +98,7 @@ crowding. Listen to change starts one second before the boundary and plays four 
 Inspect change frames four seconds around it. Dismiss removes it from this draft. No
 sections are replaced automatically. **Use these sections when applying** opts into replacing
 existing cuts and names with Section 1, Section 2, etc. Otherwise existing cuts remain.
-Changing the grid or phrase spacing clears that opt-in so stale proposals cannot be kept.
+Changing the grid clears that opt-in so stale proposals cannot be kept.
 The legacy automatic mixer sections remain the default until the user keeps suggestions.
 
 `state.saveReview` commits exact samples and optional section cuts using the existing

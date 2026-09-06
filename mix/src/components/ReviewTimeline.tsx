@@ -3,6 +3,7 @@ import type { Axis } from '@openflow/widgets/debug/useAxis.ts';
 import { sampleOf, type Beats } from '../warp.ts';
 import type { Measurement } from '../debug/waveforms/measure.ts';
 import type { SectionSuggestion } from '../sections.ts';
+import { barText } from '../slices.ts';
 
 const COLORS: Record<string, string> = { drums: '#ffb84c', bass: '#7974ff', other: '#52e1ca', vocals: '#ff66b0', guitar: '#a5df59', piano: '#c99aff' };
 const stamp = (t: number) => `${Math.floor(Math.max(0, t) / 60)}:${(Math.max(0, t) % 60).toFixed(2).padStart(5, '0')}`;
@@ -86,7 +87,7 @@ export function ReviewTimeline({ data, grid, referenceGrid, axis, cursor, audioO
         const at = sampleOf(grid, s.bar * 4) / grid.rate, x = xOf(at);
         if (x < 0 || x >= width) return null;
         const next = suggestions[i + 1] ? xOf(sampleOf(grid, suggestions[i + 1].bar * 4) / grid.rate) : width;
-        return <button key={s.bar} className={selected === s.bar ? 'is-selected' : ''} style={{ left: `${x / width * 100}%`, maxWidth: Math.max(26, Math.min(width - x, next - x - 3)) }} aria-pressed={selected === s.bar} aria-label={`Review ${s.reason.toLowerCase()} at bar ${s.bar + 1}`} title={`${s.reason} · Bar ${s.bar + 1} · ${stamp(at)}`} onClick={() => onSelect(s.bar)}><b>{i + 2}</b><span>{s.reason}</span></button>;
+        return <button key={s.bar} className={selected === s.bar ? 'is-selected' : ''} style={{ left: `${x / width * 100}%`, maxWidth: Math.max(26, Math.min(width - x, next - x - 3)) }} aria-pressed={selected === s.bar} aria-label={`Review ${s.reason.toLowerCase()} at bar ${barText(s.bar)}`} title={`${s.reason} · Bar ${barText(s.bar)} · ${stamp(at)}`} onClick={() => onSelect(s.bar)}><b>{i + 2}</b><span>{s.reason}</span></button>;
       })}
     </div>
     <svg viewBox={`0 0 ${width} ${height}`} style={{ height }} role="slider" tabIndex={0} aria-label="Listening position in song timeline" aria-valuemin={from} aria-valuemax={to} aria-valuenow={cursor} aria-valuetext={stamp(cursor)}

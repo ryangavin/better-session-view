@@ -1,6 +1,6 @@
 import type { Peak } from './audio.ts';
 import { TICKS_PER_BAR } from './grid.ts';
-import { barAt, countOf, type Beats } from './warp.ts';
+import { beatAt, countOf, BEATS_PER_BAR, type Beats } from './warp.ts';
 
 /**
  * A slice is a span of bars with a name — what becomes one Session row when the
@@ -85,10 +85,18 @@ export const removed = (slices: readonly Slice[], index: number): Slice[] =>
   index <= 0 ? [...slices] : slices.filter((_, i) => i !== index);
 
 /**
- * Sections change on phrase boundaries, and a phrase is four bars: every cut
- * the detector considers is a multiple of this from bar 1.
+ * How far either side of a beat the detector listens when asking whether the
+ * song changes there: a phrase, four bars. The cut itself may fall on any
+ * beat — a section starts where the music changes, not where a lattice
+ * from bar 1 happens to land — and it is the *window* that is a phrase,
+ * because a fill at the end of a phrase is a change in one bar and not a
+ * section.
  */
 export const PHRASE = 4;
+/** The window, in beats. */
+const WINDOW = PHRASE * BEATS_PER_BAR;
+/** No two cuts within a bar of each other: one change is one cut. */
+const APART = BEATS_PER_BAR;
 
 /** How much a slice has to differ from its neighbour to be one, against the biggest difference heard. */
 const STANDS_OUT = 0.25;
@@ -102,44 +110,48 @@ const BREAK = 0.45;
 /** How much louder a slice has to end than it began to be a build. */
 const RISING = 1.2;
 
-/** What each stem is doing in each bar: its loudness, 0 to 1 against its own loudest bar. */
+/** What each stem is doing on each beat: its loudness, 0 to 1 against its own loudest beat. */
 export interface Heard {
-  /** Per stem, one value per bar. */
+  /** Per stem, one value per beat from 1.1.1. */
   levels: Record<string, Float32Array>;
+  /** Whole bars on the grid. */
   bars: number;
+  /** Beats on the grid: the length of every level. */
+  beats: number;
 }
 
 /**
- * Each stem's loudness per bar, read off the same peaks the lanes draw.
+ * Each stem's loudness per beat, read off the same peaks the lanes draw.
  *
- * Columns are placed on the grid by where their centre falls, so a bar in a
+ * Columns are placed on the grid by where their centre falls, so a beat in a
  * slow passage collects more columns than one in a fast passage and each gets
- * its mean. Every stem is scaled to its own loudest bar rather than to the
+ * its mean. Every stem is scaled to its own loudest beat rather than to the
  * mix's, because what marks a section is a stem *arriving* — the vocal coming
  * in, the bass dropping out — and a quiet stem's arrival is as much of a cut
  * as a loud one's.
  */
 export function heard(peaks: Record<string, readonly Peak[]>, grid: Beats): Heard {
   const bars = countOf(grid);
+  const beats = bars * BEATS_PER_BAR;
   const levels: Record<string, Float32Array> = {};
   for (const [stem, columns] of Object.entries(peaks)) {
-    const sum = new Float32Array(bars);
-    const count = new Float32Array(bars);
+    const sum = new Float32Array(beats);
+    const count = new Float32Array(beats);
     for (let i = 0; i < columns.length; i++) {
-      const bar = Math.floor(barAt(grid, (i + 0.5) / columns.length));
-      if (bar < 0 || bar >= bars) continue;
-      sum[bar] += Math.max(columns[i].max, -columns[i].min);
-      count[bar] += 1;
+      const beat = Math.floor(beatAt(grid, ((i + 0.5) / columns.length) * grid.length));
+      if (beat < 0 || beat >= beats) continue;
+      sum[beat] += Math.max(columns[i].max, -columns[i].min);
+      count[beat] += 1;
     }
     let loudest = 0;
-    for (let b = 0; b < bars; b++) {
+    for (let b = 0; b < beats; b++) {
       sum[b] = count[b] > 0 ? sum[b] / count[b] : 0;
       loudest = Math.max(loudest, sum[b]);
     }
-    if (loudest > 0) for (let b = 0; b < bars; b++) sum[b] /= loudest;
+    if (loudest > 0) for (let b = 0; b < beats; b++) sum[b] /= loudest;
     levels[stem] = sum;
   }
-  return { levels, bars };
+  return { levels, bars, beats };
 }
 
 /** The mean of every stem's level across `from` up to `to`. */
@@ -150,49 +162,54 @@ const meanOf = (level: Float32Array, from: number, to: number): number => {
 };
 
 /**
- * How different the phrase after a bar is from the phrase before it.
+ * How different the phrase after a beat is from the phrase before it.
  *
  * Per stem, the change in mean level across the boundary, averaged over the
  * stems — so the vocal arriving over an unchanged beat scores as much as the
- * whole mix getting louder. A phrase either side rather than a bar, because a
- * fill at the end of a phrase is a change in one bar and not a section.
+ * whole mix getting louder.
  */
-export function novelty(heard: Heard, bar: number): number {
+export function novelty(heard: Heard, beat: number): number {
   const stems = Object.values(heard.levels);
   if (stems.length === 0) return 0;
   let total = 0;
   for (const level of stems) {
-    total += Math.abs(meanOf(level, bar, bar + PHRASE) - meanOf(level, bar - PHRASE, bar));
+    total += Math.abs(meanOf(level, beat, beat + WINDOW) - meanOf(level, beat - WINDOW, beat));
   }
   return total / stems.length;
 }
 
 /**
- * Where the sections change: every phrase boundary that stands out from the
- * ones either side of it and from the track as a whole.
+ * Where the sections change, in bars from 1.1.1, on whatever beat the change
+ * is on: every beat that stands out from the bar either side of it and from
+ * the track as a whole.
  */
 export function cutsOf(heard: Heard): number[] {
-  const { bars } = heard;
-  const scores = new Map<number, number>();
-  for (let bar = PHRASE; bar + PHRASE <= bars; bar += PHRASE) scores.set(bar, novelty(heard, bar));
-  const most = Math.max(0, ...scores.values());
+  const { beats } = heard;
+  const scores = new Float32Array(beats);
+  for (let beat = WINDOW; beat + WINDOW <= beats; beat++) scores[beat] = novelty(heard, beat);
+  const most = Math.max(0, ...scores);
   const enough = Math.max(LEAST_CHANGE, most * STANDS_OUT);
   const cuts: number[] = [];
-  for (const [bar, score] of scores) {
+  for (let beat = WINDOW; beat + WINDOW <= beats; beat++) {
+    const score = scores[beat];
     if (score < enough) continue;
-    const before = scores.get(bar - PHRASE) ?? 0;
-    const after = scores.get(bar + PHRASE) ?? 0;
-    // A local peak, ties going to the earlier bar so one change is one cut.
-    if (score > before && score >= after) cuts.push(bar);
+    // The peak of its bar either side, ties going to the earlier beat, so a
+    // change that takes a bar to land is one cut and not four.
+    let peak = true;
+    for (let k = beat - APART; k <= beat + APART && peak; k++) {
+      if (k === beat || k < 0 || k >= beats) continue;
+      if (scores[k] > score || (scores[k] === score && k < beat)) peak = false;
+    }
+    if (peak) cuts.push(beat / BEATS_PER_BAR);
   }
   return cuts;
 }
 
-/** The mean level of the whole mix per bar. */
+/** The mean level of the whole mix per beat. */
 const loudness = (heard: Heard): Float32Array => {
   const stems = Object.values(heard.levels);
-  const out = new Float32Array(heard.bars);
-  for (const level of stems) for (let b = 0; b < heard.bars; b++) out[b] += level[b] / stems.length;
+  const out = new Float32Array(heard.beats);
+  for (const level of stems) for (let b = 0; b < heard.beats; b++) out[b] += level[b] / stems.length;
   return out;
 };
 
@@ -210,13 +227,14 @@ export function named(heard: Heard, cuts: readonly number[]): Slice[] {
   const starts = [0, ...cuts];
   const loud = loudness(heard);
   const spans = starts.map((bar, i) => {
-    const to = starts[i + 1] ?? heard.bars;
-    const head = Math.max(1, Math.floor((to - bar) / 4));
+    const from = Math.round(bar * BEATS_PER_BAR);
+    const to = Math.round((starts[i + 1] ?? heard.bars) * BEATS_PER_BAR);
+    const head = Math.max(1, Math.floor((to - from) / 4));
     return {
       bar,
       to,
-      level: meanOf(loud, bar, to),
-      rises: meanOf(loud, to - head, to) > meanOf(loud, bar, bar + head) * RISING,
+      level: meanOf(loud, from, to),
+      rises: meanOf(loud, to - head, to) > meanOf(loud, from, from + head) * RISING,
     };
   });
   const peak = Math.max(0, ...spans.map((s) => s.level));

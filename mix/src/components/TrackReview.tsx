@@ -9,6 +9,7 @@ import { evenBeats, beatAt, sampleOf, rangeText, tempoOf, type Beats } from '../
 import { measure, type Measurement } from '../debug/waveforms/measure.ts';
 import { describe, OFFERED, run } from '../algorithms.ts';
 import { sectionSuggestions } from '../sections.ts';
+import { barText } from '../slices.ts';
 import { useReviewPlayback } from './reviewPlayback.ts';
 import './TrackReview.css';
 
@@ -26,7 +27,6 @@ export function TrackReview({ mix, details }: { mix: Mix; details?: ReactNode })
   const [data, setData] = useState<Measurement | null>(null);
   const [note, setNote] = useState('');
   const [running, setRunning] = useState(false);
-  const [quantum, setQuantum] = useState<4 | 8>(8);
   const [useSections, setUseSections] = useState(false);
   const [dismissed, setDismissed] = useState<number[]>([]);
   const [click, setClick] = useState(true);
@@ -50,7 +50,7 @@ export function TrackReview({ mix, details }: { mix: Mix; details?: ReactNode })
     return () => abort.abort();
   }, [audioOf, sources, mix.rate]);
   useEffect(() => () => { if (pending.current !== null) clearTimeout(pending.current); }, []);
-  const suggestions = useMemo(() => data ? sectionSuggestions(data, grid, quantum) : [], [data, grid, quantum]);
+  const suggestions = useMemo(() => data ? sectionSuggestions(data, grid) : [], [data, grid]);
   const chosen = suggestions.filter((s) => !dismissed.includes(s.bar));
   const change = (next: Beats) => {
     player.stop(); setGrid(next); setDirty(true); setUseSections(false); setDismissed([]); setSelected(null);
@@ -133,15 +133,15 @@ export function TrackReview({ mix, details }: { mix: Mix; details?: ReactNode })
       </div>
       <p className="mf-review-hint">Click or drag to listen from a point; ← → fine-tunes it. Zoom reveals samples and beats. Shift-scroll to zoom, scroll to move. Gold lines mark bars. {showStems ? (to - from <= 8 ? 'Sample heights use the original audio level.' : 'Each stem is scaled to its own peak RMS for readability.') : (to - from <= 8 ? 'Detail shows drums.' : 'Mix color follows the spectrum; pink marks vocal activity.')}</p>
       <div className="mf-review-section-controls">
-        <div className="mf-review-actions"><span>Section changes</span><Select items={['4-bar phrases', '8-bar phrases']} index={quantum === 4 ? 0 : 1} label="Section spacing" onChange={(index) => { setQuantum(index === 0 ? 4 : 8); setDismissed([]); setSelected(null); setUseSections(false); }} />
-          <Select items={['Choose a change', ...chosen.map((s, i) => `${i + 2} · ${s.reason} · bar ${s.bar + 1}`)]} index={selection ? chosen.indexOf(selection) + 1 : 0} label="Review section change" onChange={(index) => index ? selectSection(chosen[index - 1].bar) : setSelected(null)} />
+        <div className="mf-review-actions"><span>Section changes</span>
+          <Select items={['Choose a change', ...chosen.map((s, i) => `${i + 2} · ${s.reason} · bar ${barText(s.bar)}`)]} index={selection ? chosen.indexOf(selection) + 1 : 0} label="Review section change" onChange={(index) => index ? selectSection(chosen[index - 1].bar) : setSelected(null)} />
           <Toggle className="mf-review-keep" on={useSections} disabled={!chosen.length} onChange={setUseSections} label={`Use these ${chosen.length + 1} sections when applying`} width={190}>Use these {chosen.length + 1} sections</Toggle>
         </div>
-        {selection && <div className="mf-review-actions mf-review-selected"><strong>{selection.reason}</strong><span>Bar {selection.bar + 1} · {time(sampleOf(grid, selection.bar * 4) / grid.rate)}</span>
+        {selection && <div className="mf-review-actions mf-review-selected"><strong>{selection.reason}</strong><span>Bar {barText(selection.bar)} · {time(sampleOf(grid, selection.bar * 4) / grid.rate)}</span>
           <Button onPress={() => { const at = Math.max(0, sampleOf(grid, selection.bar * 4) / grid.rate - 1); jump(at); playFrom(at); }}>Listen to change</Button>
           <Button onPress={() => inspect(sampleOf(grid, selection.bar * 4) / grid.rate)}>Inspect change</Button>
           <Button onPress={() => { setDismissed([...dismissed, selection.bar]); setSelected(null); setUseSections(false); }}>Dismiss change</Button></div>}
-        <p className="mf-review-hint">{useSections ? 'Applying replaces your current cuts and names with numbered sections.' : `Your ${mix.slices.length} current sections stay until you choose to use these suggestions.`} {!data ? 'Reading song structure…' : !chosen.length ? 'No clear changes at this spacing.' : 'Select a numbered marker to review the change.'}</p>
+        <p className="mf-review-hint">{useSections ? 'Applying replaces your current cuts and names with numbered sections.' : `Your ${mix.slices.length} current sections stay until you choose to use these suggestions.`} {!data ? 'Reading song structure…' : !chosen.length ? 'No clear changes heard.' : 'Select a numbered marker to review the change.'}</p>
       </div>
       <p className="mf-review-hint">To move beats or set bar 1 by hand, return to the mix and choose Edit beat grid.</p>
     </section>
