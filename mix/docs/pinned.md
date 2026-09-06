@@ -74,9 +74,12 @@ is a question about what the files are for, and the next export may be for
 something else.
 
 **The folder is named once.** `src/exportNames.ts` says what an export is
-called — `Some Chords 128bpm` — and the dialog, the main process and the
-harness all read it, so the dialog never names a folder the export does not
-write.
+called — `Some Chords 128bpm` — and the dialog and the main process both read
+it, so the dialog never names a folder the export does not write. Cut into
+sections, each stem gets a numbered folder holding its sections in order —
+`2 - drums/04 Drop - Some Chords - drums - 128bpm.wav` — so one drag of a
+stem's folder onto one Live track lands every section of it as clips in the
+running order: four drags for a song, not one per section.
 
 ## What holds
 

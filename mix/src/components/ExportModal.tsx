@@ -311,7 +311,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
             on={sliced}
             onPick={() => setSliced(!sliced)}
             name={`Cut into ${mix.slices.length} sections`}
-            blurb="A folder per section, each holding the same stems, cut on the grid"
+            blurb="A folder per stem holding its sections in order: one drag per stem into Live"
           />
         )}
       </div>

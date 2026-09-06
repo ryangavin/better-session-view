@@ -27,9 +27,11 @@ import { destination } from './destination.ts';
  * audio is resampled once per stem however many sections come out of it, and a
  * cut is a subarray, so a section boundary is sample-exact against the whole
  * file and two sections butted back together are the record again. Each
- * section gets a numbered folder holding the same numbered stems, because the
- * two orders are different questions — which section, then which stem — and a
- * single flat list of `stems × sections` files answers neither.
+ * *stem* gets a numbered folder holding its sections in order, because that
+ * is the shape Live takes: one drag of a stem's folder onto one track lands
+ * every section of it as clips in the running order, and a song is four
+ * drags rather than one per section. The section number leads the file name
+ * so the folder sorts the way the song plays.
  *
  * **The cuts are pinned whether or not the stems are cut there.** A slice is
  * a bar on the grid, and a record laid from its map is pinned at every slice
@@ -77,7 +79,7 @@ export interface ExportProgress {
 
 /** One span of a straightened stem, and the folder and name it goes out under. */
 export interface Cut {
-  /** `01 Intro`, or null for the whole record, which needs no folder. */
+  /** `01 Intro`, or null for the whole record, which needs no folder or section name. */
   label: string | null;
   from: number;
   upto: number;
@@ -163,11 +165,15 @@ export async function exportStems(root: string, ask: ExportAsk, progress?: (at: 
     }
     const total = laid.channels[0]?.length ?? 0;
     const cuts = cutsFor(ask.slices, (BEATS_PER_BAR * 60 * laid.rate) / ask.to, total);
+    const folder = cuts.length > 1 || cuts[0]?.label ? path.join(where, `${index + 1} - ${source}`) : where;
+    if (folder !== where) fs.mkdirSync(folder, { recursive: true });
     for (const cut of cuts) {
-      const folder = cut.label ? path.join(where, cut.label) : where;
-      if (cut.label) fs.mkdirSync(folder, { recursive: true });
-      const part = cut.label ? ` - ${cut.label}` : '';
-      const file = path.join(folder, `${index + 1} - ${tidy(ask.title)} - ${source}${part} - ${label}bpm.wav`);
+      const file = path.join(
+        folder,
+        cut.label
+          ? `${cut.label} - ${tidy(ask.title)} - ${source} - ${label}bpm.wav`
+          : `${index + 1} - ${tidy(ask.title)} - ${source} - ${label}bpm.wav`,
+      );
       const channels = laid.channels.map((channel) => channel.subarray(cut.from, cut.upto));
       fs.writeFileSync(file, Buffer.from(wavOf(channels, laid.rate)));
       files.push(file);

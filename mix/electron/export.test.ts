@@ -122,7 +122,7 @@ describe('exportStems', () => {
     ]);
   });
 
-  it('writes a numbered folder per section, holding the numbered stems', async () => {
+  it('writes a numbered folder per stem, holding its sections in order', async () => {
     put(root, 'vocals', ramp(8 * BAR));
     put(root, 'drums', ramp(8 * BAR));
     const done = await exportStems(
@@ -131,10 +131,10 @@ describe('exportStems', () => {
     );
     expect(done.parts).toBe(2);
     expect(done.files.length).toBe(4);
-    expect(fs.readdirSync(done.where).sort()).toEqual(['01 Intro', '02 Drop']);
-    expect(fs.readdirSync(path.join(done.where, '02 Drop')).sort()).toEqual([
-      '1 - A Song - vocals - 02 Drop - 120bpm.wav',
-      '2 - A Song - drums - 02 Drop - 120bpm.wav',
+    expect(fs.readdirSync(done.where).sort()).toEqual(['1 - vocals', '2 - drums']);
+    expect(fs.readdirSync(path.join(done.where, '2 - drums')).sort()).toEqual([
+      '01 Intro - A Song - drums - 120bpm.wav',
+      '02 Drop - A Song - drums - 120bpm.wav',
     ]);
   });
 
