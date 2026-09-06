@@ -14,6 +14,7 @@ import type { Peak } from '../../audio.ts';
 import { cellsIn, levelsOf, packedOf, type Steps } from '@openflow/widgets/wave/levels.ts';
 import { densityFor, edgesOf, pathOf, samplesFrom } from '@openflow/widgets/wave/outline.ts';
 import { FILLS, paintShape } from './fills.ts';
+import { DesignBrowser } from './DesignBrowser.tsx';
 import './render.css';
 
 /**
@@ -54,12 +55,14 @@ const DENSITIES = [null, 0.25, 0.5, 1, 2];
 const SMOOTHS = [0, 0.5, 1];
 
 export function RenderLab({ mix }: { mix: Mix }) {
+  const [browser, setBrowser] = useState(0);
   const songs = mix.songs.filter((s) => s.stems && s.sources.length);
   return (
     <Harness
       className="mf-render-lab"
       title="Waveform rendering"
       subject={
+        <>
         <Select
           label="Experiment track"
           items={songs.map((s) => s.title)}
@@ -67,10 +70,12 @@ export function RenderLab({ mix }: { mix: Mix }) {
           onChange={(i) => mix.select(songs[i].id)}
           width={240}
         />
+        <Segmented label="Rendering workspace" items={['Design browser', 'Performance bench']} index={browser} onChange={setBrowser} />
+        </>
       }
     >
       {mix.song && Object.keys(mix.peaks).length ? (
-        <Lab key={mix.song.id} mix={mix} />
+        browser === 0 ? <DesignBrowser key={mix.song.id} mix={mix} /> : <Lab key={mix.song.id} mix={mix} />
       ) : (
         <p className="mf-render-note">Open a separated track to compare drawings of it.</p>
       )}

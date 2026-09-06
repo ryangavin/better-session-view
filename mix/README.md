@@ -52,6 +52,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | playback, the mixer, the waveforms, the beat map, finding the beats, the stretcher, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `warp.ts`, `transients.ts`, `tempo.ts`, `follow.ts`, `schedule.ts`, `stretch.ts`, `remember.ts` |
 | how a record is held to the grid for playing and export, how densely, and why not every beat | [`docs/pinned.md`](docs/pinned.md) — `src/pinned.ts`, `straighten.ts`, `schedule.ts`, `components/ExportModal.tsx` |
 | whether the beats it found are right: the analysis harness in the app, the arms, the batch run | [`docs/harness.md`](docs/harness.md) — `src/debug/`, `tools/mix-warp.ts`, `src/trace.ts` |
+| vector waveform designs, spectral fills, and preset comparisons | [`docs/vector-designs.md`](docs/vector-designs.md) — `src/debug/render/DesignBrowser.tsx`, `musicalVector.ts` |
 | comparing grids, inspecting onset agreement, or loading beat references | [`docs/grid-evidence.md`](docs/grid-evidence.md) — `src/debug/AnalysisEvidence.tsx`, `gridEvidence.ts`, `truthReference.ts` |
 | choosing required musical alignment boundaries and auditioning the proof of concept | [`docs/alignment.md`](docs/alignment.md) — `src/debug/alignment/` |
 | how al Dente measures audio and draws its vivid stems and collapsed RGB waveform | [`docs/waveform-lasagna.md`](docs/waveform-lasagna.md) — `src/debug/waveforms/measure.ts`, `features.ts`, `excursions.ts` |

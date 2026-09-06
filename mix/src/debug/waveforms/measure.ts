@@ -1,6 +1,8 @@
 /** Preview measurements only: channel-preserving sum, broad crossover energy and stem RMS. */
 export interface AudioSource { id: string; channels: readonly Float32Array[] }
 export interface Measurement {
+  /** Optional design-browser FFT coverage; original measurements remain unchanged. */
+  coverage?: Float32Array;
   seconds: number;
   step: number;
   peak: Float32Array;

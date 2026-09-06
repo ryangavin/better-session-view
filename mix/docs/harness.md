@@ -231,6 +231,10 @@ measurements by decoded track; it does not alter audio, sections, analysis or pl
 
 ## Waveform rendering: stem identity
 
+Waveform rendering now opens a [vector design browser](vector-designs.md), including the
+collapsed RGB peak/RMS treatment and combinable geometry, palette and paint controls.
+The original controls described below remain under **Performance bench**.
+
 `debug/render/rows.ts` puts decoded sources in the same order as the mixer and derives
 label, tint and buffer ID from that source ID. Manifest order and asynchronous decode
 completion must not change which audio a named lane displays. **Track stems** shows all
