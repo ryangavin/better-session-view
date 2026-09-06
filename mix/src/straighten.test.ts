@@ -35,6 +35,26 @@ const peaksIn = (channel: Float32Array): number[] => {
 };
 
 describe('straightened', () => {
+  it('lays a span of the output as the whole laying holds it', () => {
+    const spacings = Array.from({ length: 40 }, (_, k) => Math.round(500 + (k * 100) / 40));
+    const samples = beatsFrom(500, spacings);
+    const length = samples[samples.length - 1] + 500;
+    const beats = beatsOf(RATE, length, 0, samples);
+    const marks = clicksAt(samples, length);
+    const ruling = { bpm: tempoOf(beats), offset: samples[0] / RATE, to: 120, beats, every: 4 as const, cuts: [0, 5] };
+    const whole = straightened([marks], RATE, ruling);
+    const part = straightened([marks], RATE, ruling, { from: 1234, upto: 4321 });
+    expect(part.channels[0].length).toBe(4321 - 1234);
+    expect(part.seconds).toBeCloseTo((4321 - 1234) / RATE, 9);
+    for (let i = 0; i < part.channels[0].length; i++) expect(Math.abs(part.channels[0][i] - whole.channels[0][1234 + i])).toBeLessThan(1e-6);
+    const flat = { bpm: 120.5, offset: 0.7, to: 120 };
+    const all = straightened([marks], RATE, flat);
+    const some = straightened([marks], RATE, flat, { from: 1000, upto: 3000 });
+    for (let i = 0; i < some.channels[0].length; i++) expect(Math.abs(some.channels[0][i] - all.channels[0][1000 + i])).toBeLessThan(1e-6);
+    // Past the end is held inside it.
+    expect(straightened([marks], RATE, ruling, { from: whole.channels[0].length - 10, upto: whole.channels[0].length + 500 }).channels[0].length).toBe(10);
+  });
+
   it('starts on 1.1.1 and lands every beat a sixtieth of the tempo apart', () => {
     const laid = straightened([clicks(120.5, 0.7, 20)], RATE, { bpm: 120.5, offset: 0.7, to: 120 });
     const found = peaksIn(laid.channels[0]);

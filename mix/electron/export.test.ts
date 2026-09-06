@@ -193,15 +193,20 @@ describe('exportStems', () => {
     const spans = done.files.map(read);
     expect(spans[0].length).toBe(2 * BAR);
     expect(spans[1][0]).toBeCloseTo(1, 5);
-    for (let k = 0; k * BAR / 4 < spans[1].length && k < 8; k++) {
-      expect(spans[1][k * (BAR / 4)]).toBeCloseTo(1, 5);
+    // Section B holds the step and is laid at its own tempo — the slow one,
+    // which most of its beats are at — pinned every beat, so its clicks sit a
+    // beat of that tempo apart from its first sample.
+    expect(done.tempos).toEqual([120, 96]);
+    const beat = (60 * RATE) / 96;
+    for (let k = 0; k * beat < spans[1].length && k < 8; k++) {
+      expect(spans[1][k * beat]).toBeCloseTo(1, 5);
     }
   });
 
   it('pins each section at its cut and leaves the beats inside where they were played', async () => {
     // The same bent record, cut so the tempo step falls inside section B and
-    // pinned per section: every cut still opens on a click, section C's
-    // slow beats are laid at one speed so they land a quarter-bar apart, and
+    // pinned per section: every cut still opens on a click, section C is
+    // laid at its own tempo so its slow beats are the record untouched, and
     // section B holds a step that one speed cannot straighten — its beats
     // keep the spacing they had, which is the point.
     const anchors = [0];
@@ -223,17 +228,49 @@ describe('exportStems', () => {
     );
     expect(done.every).toBe('section');
     expect(done.worst).toBeGreaterThan(0);
+    // A at 120, B mostly at 120, C at 96: each section at its own tempo, the folder for the range.
+    expect(done.tempos).toEqual([120, 120, 96]);
+    expect(path.basename(done.where)).toBe('A Song 96-120bpm');
+    expect(done.files.map((f) => path.basename(f))).toEqual([
+      '01 A - A Song - vocals - 120bpm.wav',
+      '02 B - A Song - vocals - 120bpm.wav',
+      '03 C - A Song - vocals - 96bpm.wav',
+    ]);
     const spans = done.files.map(read);
     expect(spans[1][0]).toBeCloseTo(1, 5);
     expect(spans[2][0]).toBeCloseTo(1, 5);
-    // 5000-sample beats laid to 4000 at one speed: every click 4000 apart to the sample.
+    // 5000-sample beats laid at 96, which is 5000 samples a beat: the record itself, a click every 5000.
     const clicks: number[] = [];
     for (let i = 0; i < spans[2].length; i++) if (spans[2][i] > 0.5) clicks.push(i);
-    expect(clicks.slice(0, 5)).toEqual([0, 4000, 8000, 12000, 16000]);
+    expect(clicks.slice(0, 5)).toEqual([0, 5000, 10000, 15000, 20000]);
     // Section B holds the tempo step: its clicks are not all on the quarter-bar.
     const inB: number[] = [];
     for (let i = 0; i < spans[1].length; i++) if (spans[1][i] > 0.5) inB.push(i);
     expect(inB.some((at) => at % (BAR / 4) !== 0)).toBe(true);
+  });
+
+  it('lays a record that changes tempo as one section per tempo, each untouched', async () => {
+    // Eight bars at 120, then eight at 96; cut at the change. Neither section
+    // is warped: laid at its own tempo, each is the record bit for bit.
+    const anchors = [0];
+    for (let k = 0; k < 64; k++) anchors.push(anchors[k] + (k < 32 ? BAR / 4 : 5000));
+    const length = anchors[anchors.length - 1];
+    const marks = new Float32Array(length);
+    for (const at of anchors) if (at < length) marks[at] = 1;
+    const beats = beatsOf(RATE, length, 0, anchors);
+    put(root, 'vocals', marks);
+    const done = await exportStems(
+      root,
+      ask({ sources: ['vocals'], bpm: tempoOf(beats), beats, every: 8, slices: [{ bar: 0, name: 'Fast' }, { bar: 8, name: 'Slow' }] }),
+    );
+    expect(done.tempos).toEqual([120, 96]);
+    expect(done.bars).toBe(16);
+    expect(done.worst).toBeLessThan(1e-9);
+    const [fast, slow] = done.files.map(read);
+    expect(fast.length).toBe(8 * BAR);
+    expect(slow.length).toBe(32 * 5000);
+    expect(fast).toEqual(marks.slice(0, 8 * BAR));
+    expect(slow).toEqual(marks.slice(8 * BAR));
   });
 
   it('refuses a density it does not know', async () => {

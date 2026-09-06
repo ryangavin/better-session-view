@@ -8,7 +8,7 @@ import { folderOf } from '../exportNames.ts';
 import { OFFERED, everyText, finerOf, loosest, offeredOf, pinnedOf, worstLineOf, type Every } from '../pinned.ts';
 import { barText, lengthText } from '../slices.ts';
 import type { Mix } from '../state.ts';
-import { bpmText } from '../warp.ts';
+import { BEATS_PER_BAR, bpmText, tempoBetween } from '../warp.ts';
 import './ExportModal.css';
 
 /**
@@ -74,13 +74,15 @@ import './ExportModal.css';
  * window there is no dialog to open, so it says the default and the button is
  * dead rather than lying.
  *
- * **Sections are a cut, not a second render.** Asked for them, the stems are
- * laid straight exactly as they always were and then cut where the slices fall
- * — so a section costs no render time and butts back against its neighbours
- * sample for sample. The list of slices is the same list the pack will use and
- * the same one the ruler draws, which is why naming them is worth doing before
- * either: a folder of sections named Part 3 is a folder you have to listen to
- * to sort out.
+ * **Sections are each laid at their own tempo.** A record that runs at 128
+ * and then at 140 is not a record at 135, and laid there neither half loops
+ * in Live at the tempo on the file. Cut into sections, each is laid at the
+ * whole number nearest its own beats — the least warp there is on a steady
+ * section — and the list shows that tempo beside each, the line above says
+ * the range, and the files and the folder carry it. The list of slices is
+ * the same list the pack will use and the same one the ruler draws, which is
+ * why naming them is worth doing before either: a folder of sections named
+ * Part 3 is a folder you have to listen to to sort out.
  */
 
 type Target = 'stems' | 'pack';
@@ -151,6 +153,22 @@ export function ExportModal({ mix }: { mix: Mix }) {
   // sections always, and between them as densely as was measured to be
   // needed unless the sheet has been told otherwise.
   const cuts = useMemo(() => mix.slices.map((slice) => slice.bar), [mix.slices]);
+  // Cut into sections with a map, each section is laid at its own tempo —
+  // `electron/export.ts` — and this is the same reading, so the list and
+  // the folder name say what the files will say.
+  const tempos = useMemo(
+    () =>
+      sliced && mix.beats
+        ? mix.slices.map((slice, i) =>
+            Math.round(tempoBetween(mix.grid, slice.bar * BEATS_PER_BAR, (mix.slices[i + 1]?.bar ?? mix.bars) * BEATS_PER_BAR)),
+          )
+        : null,
+    [sliced, mix.beats, mix.grid, mix.slices, mix.bars],
+  );
+  const lowest = tempos ? Math.min(...tempos) : laidAt;
+  const highest = tempos ? Math.max(...tempos) : laidAt;
+  const spread = lowest !== highest;
+  const rangeText = spread ? `${lowest}–${highest}` : String(laidAt);
   const measured = useMemo(
     () => (mix.beats ? loosest(mix.grid, laidAt, cuts) : null),
     [mix.beats, mix.grid, laidAt, cuts],
@@ -175,7 +193,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
       : `the worst ${line} ${(worst * 1000).toFixed(worst < 0.01 ? 1 : 0)} ms off`;
   if (!mix.song) return null;
   const song = mix.song;
-  const at = `${where ?? '~/Music/mixflow'}/${folderOf(song.title, laidAt)}/`;
+  const at = `${where ?? '~/Music/mixflow'}/${folderOf(song.title, lowest, highest)}/`;
   const sections = sliced ? mix.slices.length : 1;
   const files = chosen.length * sections;
   const parts = [
@@ -186,7 +204,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
   const facts: [string, string][] = [
     ['track', song.artist ? `${song.title} · ${song.artist}` : song.title],
     ['writes', files ? `${files} wav · ${parts.join(' + ')}` : 'nothing chosen'],
-    ['tempo', `${bpmText(mix.targetBpm)} BPM${mix.bpmAuto ? ' · fitted' : ' · set by hand'}`],
+    ['tempo', spread ? `${rangeText} BPM · a tempo per section` : `${bpmText(mix.targetBpm)} BPM${mix.bpmAuto ? ' · fitted' : ' · set by hand'}`],
     ['length', `${mix.bars} bars · ${Math.round(mix.seconds)}s`],
   ];
 
@@ -219,9 +237,10 @@ export function ExportModal({ mix }: { mix: Mix }) {
       });
       const cut = done.parts > 1 ? ` · ${done.parts} sections` : '';
       const pinned = done.every
-        ? ` · pinned ${everyText(done.every)}${done.worst && done.worst >= 0.0005 ? `, worst bar line ${(done.worst * 1000).toFixed(0)} ms off` : ''}`
+        ? ` · pinned ${everyText(done.every)}${done.worst && done.worst >= 0.0005 ? `, worst ${line} ${(done.worst * 1000).toFixed(0)} ms off` : ''}`
         : '';
-      setWrote(`${done.files.length} wav · ${done.bars} bars${cut}${pinned} · ${done.where}`);
+      const laid = done.tempos && Math.min(...done.tempos) !== Math.max(...done.tempos) ? ` · laid at ${Math.min(...done.tempos)}–${Math.max(...done.tempos)}` : '';
+      setWrote(`${done.files.length} wav · ${done.bars} bars${cut}${laid}${pinned} · ${done.where}`);
     } catch (error) {
       setWrote(`failed — ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -283,11 +302,13 @@ export function ExportModal({ mix }: { mix: Mix }) {
         <Pick
           on
           onPick={() => {}}
-          name={`Laid straight at ${laidAt} BPM`}
+          name={spread ? 'Laid straight, each section at its own tempo' : `Laid straight at ${laidAt} BPM`}
           blurb={
-            mix.beats
-              ? `From 1.1.1, whole bars, every section pinned to its bars`
-              : `From 1.1.1, whole bars, the record varisped by ${((laidAt / mix.targetBpm - 1) * 100).toFixed(3)}%`
+            spread
+              ? `${rangeText} BPM · from 1.1.1, whole bars, every section pinned to its bars`
+              : mix.beats
+                ? `From 1.1.1, whole bars, every section pinned to its bars`
+                : `From 1.1.1, whole bars, the record varisped by ${((laidAt / mix.targetBpm - 1) * 100).toFixed(3)}%`
           }
         />
         {mix.beats && (
@@ -335,6 +356,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
             </span>
             <span>bar</span>
             <span>len</span>
+            <span>tempo</span>
           </div>
           {mix.slices.map((slice, i) => {
             const next = mix.slices[i + 1]?.bar ?? mix.bars;
@@ -354,6 +376,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
                 />
                 <span className="mf-modal-slice-fact">{barText(slice.bar)}</span>
                 <span className="mf-modal-slice-fact">{lengthText(next - slice.bar)}</span>
+                <span className="mf-modal-slice-fact">{tempos ? tempos[i] : laidAt}</span>
               </div>
             );
           })}

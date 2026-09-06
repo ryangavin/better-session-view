@@ -67,8 +67,14 @@ export interface Ruling {
   cuts?: readonly number[];
 }
 
-export function straightened(channels: readonly Float32Array[], rate: number, ruling: Ruling): Straightened {
-  const laying = straightening(channels, rate, ruling);
+/** A stretch of the output, in samples from 1.1.1: what to lay when only one section is wanted. */
+export interface Span {
+  from: number;
+  upto: number;
+}
+
+export function straightened(channels: readonly Float32Array[], rate: number, ruling: Ruling, span?: Span): Straightened {
+  const laying = straightening(channels, rate, ruling, span);
   for (;;) {
     const step = laying.next();
     if (step.done) return step.value;
@@ -85,8 +91,9 @@ export async function straightenedPaced(
   rate: number,
   ruling: Ruling,
   pace: (done: number) => Promise<void>,
+  span?: Span,
 ): Promise<Straightened> {
-  const laying = straightening(channels, rate, ruling);
+  const laying = straightening(channels, rate, ruling, span);
   for (;;) {
     const step = laying.next();
     if (step.done) return step.value;
@@ -98,13 +105,14 @@ export async function straightenedPaced(
  * The laying itself, yielding the fraction done after each piece of work:
  * a channel when the record runs at one speed, a span between two pins
  * when it is pinned. The sync and the paced entry both drain this, so they
- * cannot differ.
+ * cannot differ. Given a span, only that stretch of the output is laid,
+ * bit for bit what the whole laying holds there.
  */
-function* straightening(channels: readonly Float32Array[], rate: number, ruling: Ruling): Generator<number, Straightened> {
+function* straightening(channels: readonly Float32Array[], rate: number, ruling: Ruling, span?: Span): Generator<number, Straightened> {
   const longest = Math.max(0, ...channels.map((c) => c.length));
   if (ruling.beats) {
     const beats = resampled(ruling.beats, rate, longest);
-    return yield* laid(channels, rate, pinnedOf(beats, ruling.to, ruling.cuts ?? [], ruling.every ?? 'beat'), ruling.to / tempoOf(beats));
+    return yield* laid(channels, rate, pinnedOf(beats, ruling.to, ruling.cuts ?? [], ruling.every ?? 'beat'), ruling.to / tempoOf(beats), span);
   }
   const speed = ruling.to / ruling.bpm;
   // Laid at its own tempo, the record is not resampled at all: from a whole
@@ -114,13 +122,20 @@ function* straightening(channels: readonly Float32Array[], rate: number, ruling:
   const remaining = Math.max(0, longest - from) / speed;
   const bars = Math.max(1, Math.ceil(remaining / bar - 1e-6));
   const length = Math.round(bars * bar);
+  const [start, upto] = clipped(span, length);
   const out: Float32Array[] = [];
   for (const [c, channel] of channels.entries()) {
-    out.push(resample(channel, speed, from, length));
+    out.push(resample(channel, speed, from + start * speed, upto - start));
     yield (c + 1) / channels.length;
   }
-  return { channels: out, rate, bars, seconds: length / rate, speed };
+  return { channels: out, rate, bars: span ? (upto - start) / bar : bars, seconds: (upto - start) / rate, speed };
 }
+
+/** The span held inside the output, or the whole of it. */
+const clipped = (span: Span | undefined, length: number): [number, number] => {
+  const from = span ? Math.max(0, Math.min(length, Math.round(span.from))) : 0;
+  return [from, span ? Math.max(from, Math.min(length, Math.round(span.upto))) : length];
+};
 
 /**
  * The same laying, a pin at a time.
@@ -135,20 +150,21 @@ function* straightening(channels: readonly Float32Array[], rate: number, ruling:
  * copy of themselves, so a pin is a change of speed and not an edit: the
  * sinc still reaches either side of it and no join can be heard.
  */
-function* laid(channels: readonly Float32Array[], rate: number, pinned: Pinned, speed: number): Generator<number, Straightened> {
+function* laid(channels: readonly Float32Array[], rate: number, pinned: Pinned, speed: number, span?: Span): Generator<number, Straightened> {
   const { pins, spacing, bars } = pinned;
   const length = Math.round(bars * BEATS_PER_BAR * spacing);
-  const out = channels.map(() => new Float32Array(length));
+  const [first, last] = clipped(span, length);
+  const out = channels.map(() => new Float32Array(last - first));
   for (let i = 0; i + 1 < pins.length; i++) {
     const a = pins[i];
     const b = pins[i + 1];
     const speed = (b.source - a.source) / (b.output - a.output);
-    const start = Math.max(0, Math.ceil(a.output));
-    const upto = Math.min(length, Math.ceil(b.output));
+    const start = Math.max(first, Math.ceil(a.output));
+    const upto = Math.min(last, Math.ceil(b.output));
     if (upto <= start) continue;
     const from = a.source + (start - a.output) * speed;
-    channels.forEach((channel, c) => out[c].set(resample(channel, speed, from, upto - start), start));
+    channels.forEach((channel, c) => out[c].set(resample(channel, speed, from, upto - start), start - first));
     yield (i + 1) / (pins.length - 1);
   }
-  return { channels: out, rate, bars, seconds: length / rate, speed, pinned };
+  return { channels: out, rate, bars: span ? (last - first) / (BEATS_PER_BAR * spacing) : bars, seconds: (last - first) / rate, speed, pinned };
 }

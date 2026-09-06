@@ -73,13 +73,27 @@ what its file will hold. It is not written beside the track: how tightly to pin
 is a question about what the files are for, and the next export may be for
 something else.
 
+**Cut into sections, each section is laid at its own tempo.** A record that
+runs at 128 and then at 140 is not a record at 135: laid there both halves
+are warped and neither loops in Live at the tempo on the file. So each
+section is laid at the whole number nearest the median beat inside it —
+`tempoBetween` in `warp.ts` — which on a steady section is no warp at all,
+the least there is; the file carries that tempo in its name, the folder the
+range (`Raise Your Weapon 128-140bpm`), and the dialog's list shows the
+tempo beside each section before anything is written. A ramp gets the median
+of its own beats, which is as honest as one number can be about a ramp, and
+it is not the section anyone loops. The header keeps saying the range; the
+stretcher under warp plays at the one tempo the header holds. An uncut
+export is still one tempo for the whole record.
+
 **The folder is named once.** `src/exportNames.ts` says what an export is
 called — `Some Chords 128bpm` — and the dialog and the main process both read
 it, so the dialog never names a folder the export does not write. Cut into
 sections, each stem gets a numbered folder holding its sections in order —
 `2 - drums/04 Drop - Some Chords - drums - 128bpm.wav` — so one drag of a
 stem's folder onto one Live track lands every section of it as clips in the
-running order: four drags for a song, not one per section.
+running order: four drags for a song, not one per section. The line after
+writing reads its worst line on the same lattice the sentence did.
 
 ## What holds
 
@@ -144,3 +158,7 @@ finding as a bar number. [`harness.md`](harness.md) has the batch run.
   Ryan: a twenty-four bar section should land its first and last bar and
   nothing between should be forced to four or eight. The measured default may
   be sections.
+- **2026-09-06** — a record may change tempo, and the header says so as a
+  range; the export does not varispeed it to one number. Cut into sections,
+  each is laid at its own tempo — the minimal warp — so the steady sections
+  loop in Live at the tempo on the file. Raise Your Weapon: 128, a ramp, 140.

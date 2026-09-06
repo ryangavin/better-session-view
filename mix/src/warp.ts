@@ -139,6 +139,24 @@ export function tempoRange(beats: Beats): { slowest: number; fastest: number } {
 }
 
 /**
+ * The tempo a stretch of the map runs at, as one number: the median spacing
+ * of the beats from `from` to `upto`, beats counted from 1.1.1. What a
+ * section is laid at when each section gets its own tempo — the median so a
+ * ramp at one end does not pull a steady section off its number. The whole
+ * map's tempo where the stretch holds no beats.
+ */
+export function tempoBetween(beats: Beats, from: number, upto: number): number {
+  const { samples } = beats;
+  const lo = Math.max(0, Math.ceil(from - beats.first));
+  const hi = Math.min(samples.length - 1, Math.floor(upto - beats.first));
+  const spacings: number[] = [];
+  for (let i = lo; i + 1 <= hi; i++) spacings.push(samples[i + 1] - samples[i]);
+  if (spacings.length === 0) return tempoOf(beats);
+  spacings.sort((a, b) => a - b);
+  return (60 * beats.rate) / spacings[spacings.length >> 1];
+}
+
+/**
  * The tempo the whole map runs at, as one number: beats over the time they
  * took, from the first beat to the last. What a straight map *is*, and what
  * a bent one averages to.

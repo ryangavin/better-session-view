@@ -241,8 +241,10 @@ export interface Written {
   parts: number;
   /** How densely the record was pinned, when it was laid from a map. */
   every?: Every;
-  /** How far the worst bar line inside a section landed from the grid, in seconds, when there was a map. */
+  /** How far the worst line landed from the grid, in seconds, when there was a map: the lines the dialog's sentence reads. */
   worst?: number;
+  /** The tempo each section was laid at, in order, when the stems were cut with a map. */
+  tempos?: number[];
 }
 
 /**

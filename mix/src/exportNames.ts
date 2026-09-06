@@ -10,5 +10,10 @@ export const tidy = (text: string): string => text.replace(/[/\\:]+/g, '-').repl
 /** `128`, or `128.055` for a tempo that was kept exact. */
 export const tempoLabel = (bpm: number): string => (Number.isInteger(bpm) ? String(bpm) : bpm.toFixed(3));
 
-/** `Some Chords 128bpm`: the folder a track's stems go out under, named for the tempo so Live reads it off the file. */
-export const folderOf = (title: string, to: number): string => `${tidy(title)} ${tempoLabel(to)}bpm`;
+/**
+ * `Some Chords 128bpm`: the folder a track's stems go out under, named for
+ * the tempo so Live reads it off the file — or `128-140bpm` when the
+ * sections were each laid at their own.
+ */
+export const folderOf = (title: string, to: number, upto = to): string =>
+  `${tidy(title)} ${tempoLabel(to)}${upto !== to ? `-${tempoLabel(upto)}` : ''}bpm`;

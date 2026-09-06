@@ -145,7 +145,7 @@
 .mf-modal-slice-head,
 .mf-modal-slice {
   display: grid;
-  grid-template-columns: 24px 1fr 44px 34px;
+  grid-template-columns: 24px 1fr 44px 34px 44px;
   gap: 8px;
   align-items: center;
   padding: 3px 12px;
@@ -165,7 +165,8 @@
 }
 
 .mf-modal-slice-head span:nth-child(3),
-.mf-modal-slice-head span:nth-child(4) {
+.mf-modal-slice-head span:nth-child(4),
+.mf-modal-slice-head span:nth-child(5) {
   text-align: right;
 }
 

@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readWav, wavOf } from '../src/audio.ts';
 import { folderOf, tempoLabel, tidy } from '../src/exportNames.ts';
-import { DENSITIES, errorsOf, type Every } from '../src/pinned.ts';
+import { barsOf, DENSITIES, errorsOf, type Every } from '../src/pinned.ts';
 import { straightenedPaced, type Ruling } from '../src/straighten.ts';
-import { resampled, BEATS_PER_BAR } from '../src/warp.ts';
+import { resampled, tempoBetween, BEATS_PER_BAR, type Beats } from '../src/warp.ts';
 import { destination } from './destination.ts';
 
 /**
@@ -32,6 +32,16 @@ import { destination } from './destination.ts';
  * every section of it as clips in the running order, and a song is four
  * drags rather than one per section. The section number leads the file name
  * so the folder sorts the way the song plays.
+ *
+ * **Cut into sections with a map, each section is laid at its own tempo.**
+ * A record that runs at 128 and then at 140 is not a record at 135: laid
+ * there, both halves are warped and neither loops in Live at the tempo on
+ * the file. So each section is laid at the whole number nearest the median
+ * beat spacing inside it — a steady section warps by nothing at all, which
+ * is the least warp there is — and the file carries that tempo in its name,
+ * so Live reads the truth off each one. The folder carries the range. A
+ * ramp gets the median of its own beats, which is as honest as one number
+ * can be about a ramp, and it is not the section anyone loops.
  *
  * **The cuts are pinned whether or not the stems are cut there.** A slice is
  * a bar on the grid, and a record laid from its map is pinned at every slice
@@ -65,8 +75,36 @@ export interface Written {
   parts: number;
   /** How densely the record was pinned, when it was laid from a map. */
   every?: Every;
-  /** How far the worst bar line inside a section landed from the grid, in seconds, when there was a map. */
+  /** How far the worst line landed from the grid, in seconds, when there was a map: the four-bar lines under a loop of 8 or 16 or the sections, the bar lines otherwise. */
   worst?: number;
+  /** The tempo each section was laid at, in order, when the stems were cut with a map. */
+  tempos?: number[];
+}
+
+/** One section to lay on its own: its bars from 1.1.1, its tempo, and the name it goes out under. */
+interface Section {
+  label: string;
+  barA: number;
+  barB: number;
+  to: number;
+}
+
+/** The lines `worst` is read on: what the finer loop would want, as the dialog's sentence says. */
+const linesOf = (every: Every | undefined): number => (every === 8 || every === 16 || every === 'section' ? 4 : 1);
+
+/**
+ * The sections of a cut record with a map, each at the whole tempo nearest
+ * the median beat inside it. An empty section — two slices on one bar, or
+ * one past the end — still counts, so the numbers after it do not shuffle.
+ */
+function sectionsOf(slices: readonly { bar: number; name: string }[], beats: Beats, to: number): Section[] {
+  const bars = barsOf(beats, to);
+  return slices.map((slice, index) => {
+    const barA = Math.min(bars, slice.bar);
+    const barB = Math.min(bars, slices[index + 1]?.bar ?? bars);
+    const own = barB > barA ? Math.round(tempoBetween(beats, barA * BEATS_PER_BAR, barB * BEATS_PER_BAR)) : to;
+    return { label: `${String(index + 1).padStart(2, '0')} ${tidy(slice.name)}`, barA, barB, to: own };
+  });
 }
 
 /** How far along an export is, sent as it goes: which stem, and the fraction of the whole. */
@@ -130,8 +168,9 @@ export async function exportStems(root: string, ask: ExportAsk, progress?: (at: 
   // ask may say where the cuts are on their own, for a folder of whole stems
   // that still lands every section on its bars.
   const pinnedAt = ask.cuts ?? (ask.slices ?? []).map((slice) => slice.bar);
-  const label = tempoLabel(ask.to);
-  const where = path.join(await destination(), folderOf(ask.title, ask.to));
+  const sections = ask.slices?.length && ask.beats ? sectionsOf(ask.slices, ask.beats, ask.to) : null;
+  const tempos = sections ? sections.map((s) => s.to) : [ask.to];
+  const where = path.join(await destination(), folderOf(ask.title, Math.min(...tempos), Math.max(...tempos)));
   fs.mkdirSync(where, { recursive: true });
   const files: string[] = [];
   let bars = 0;
@@ -140,33 +179,65 @@ export async function exportStems(root: string, ask: ExportAsk, progress?: (at: 
   let parts = 1;
   let every: Every | undefined;
   let worst: number | undefined;
+  const lines = linesOf(ask.every);
   for (const [index, source] of ask.sources.entries()) {
     if (!/^[a-z0-9_-]+$/i.test(source)) throw new Error(`not a source: ${source}`);
     const bytes = fs.readFileSync(path.join(root, ask.stems, `${source}.wav`));
     const read = readWav(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
     if (!read) throw new Error(`${source}.wav: not a wav this reads`);
+    const length = read.channels[0]?.length ?? 0;
     // A span at a time, the event loop given back between them: the window
     // draws the fraction and stays alive while the stem is laid.
     let told = 0;
-    const laid = await straightenedPaced(read.channels, read.rate, { ...ask, cuts: pinnedAt }, async (fraction) => {
+    const pace = (from: number, share: number) => async (fraction: number) => {
       const now = Date.now();
       if (now - told >= 50 || fraction === 1) {
         told = now;
-        progress?.({ done: (index + fraction) / ask.sources.length, stage: `laying ${source}` });
+        progress?.({ done: (index + from + fraction * share) / ask.sources.length, stage: `laying ${source}` });
       }
       await new Promise<void>((resolve) => setImmediate(resolve));
-    });
-    progress?.({ done: (index + 1) / ask.sources.length, stage: `writing ${source}` });
-    if (laid.pinned && ask.beats) {
+    };
+    /** The worst line of the laying, over the bars asked, at the lines the dialog's sentence reads. */
+    const judge = (laid: Awaited<ReturnType<typeof straightenedPaced>>, barA: number, barB: number) => {
+      if (!laid.pinned || !ask.beats) return;
       every = laid.pinned.every;
-      const errors = errorsOf(resampled(ask.beats, laid.rate, read.channels[0]?.length ?? 0), laid.pinned);
-      worst = 0;
-      for (let beat = 0; beat < errors.length; beat += BEATS_PER_BAR) worst = Math.max(worst, errors[beat] / laid.rate);
+      const errors = errorsOf(resampled(ask.beats, laid.rate, length), laid.pinned);
+      const step = lines * BEATS_PER_BAR;
+      worst ??= 0;
+      for (let beat = Math.ceil((barA * BEATS_PER_BAR) / step) * step; beat <= barB * BEATS_PER_BAR && beat < errors.length; beat += step) {
+        worst = Math.max(worst, errors[beat] / laid.rate);
+      }
+    };
+    const folder = sections || ask.slices?.length ? path.join(where, `${index + 1} - ${source}`) : where;
+    if (folder !== where) fs.mkdirSync(folder, { recursive: true });
+    if (sections) {
+      // Each section on its own, at its own tempo: only its stretch of the
+      // output is laid, and the map is pinned exactly as it would be for the
+      // whole record at that tempo, so the section's edges are its bar lines.
+      seconds = 0;
+      for (const [k, section] of sections.entries()) {
+        const perBar = (BEATS_PER_BAR * 60 * read.rate) / section.to;
+        const span = { from: Math.round(section.barA * perBar), upto: Math.round(section.barB * perBar) };
+        if (span.upto - span.from < 1) continue;
+        const laid = await straightenedPaced(read.channels, read.rate, { ...ask, to: section.to, cuts: pinnedAt }, pace(k / sections.length, 1 / sections.length), span);
+        judge(laid, section.barA, section.barB);
+        const file = path.join(folder, `${section.label} - ${tidy(ask.title)} - ${source} - ${tempoLabel(section.to)}bpm.wav`);
+        fs.writeFileSync(file, Buffer.from(wavOf(laid.channels, laid.rate)));
+        files.push(file);
+        seconds += laid.seconds;
+        speed = laid.speed;
+      }
+      bars = barsOf(ask.beats!, ask.to);
+      parts = sections.length;
+      progress?.({ done: (index + 1) / ask.sources.length, stage: `writing ${source}` });
+      continue;
     }
+    const laid = await straightenedPaced(read.channels, read.rate, { ...ask, cuts: pinnedAt }, pace(0, 1));
+    progress?.({ done: (index + 1) / ask.sources.length, stage: `writing ${source}` });
+    judge(laid, 0, laid.bars);
     const total = laid.channels[0]?.length ?? 0;
     const cuts = cutsFor(ask.slices, (BEATS_PER_BAR * 60 * laid.rate) / ask.to, total);
-    const folder = cuts.length > 1 || cuts[0]?.label ? path.join(where, `${index + 1} - ${source}`) : where;
-    if (folder !== where) fs.mkdirSync(folder, { recursive: true });
+    const label = tempoLabel(ask.to);
     for (const cut of cuts) {
       const file = path.join(
         folder,
@@ -183,5 +254,5 @@ export async function exportStems(root: string, ask: ExportAsk, progress?: (at: 
     speed = laid.speed;
     parts = cuts.length;
   }
-  return { where, files, bars, seconds, speed, parts, every, worst };
+  return { where, files, bars, seconds, speed, parts, every, worst, tempos: sections ? tempos : undefined };
 }
