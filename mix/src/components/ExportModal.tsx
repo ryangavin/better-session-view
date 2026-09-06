@@ -156,7 +156,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
     [mix.beats, mix.grid, laidAt, cuts],
   );
   const picked = mix.pinEvery;
-  const every: Every = picked ?? (measured ? offeredOf(measured.every) : 8);
+  const every: Every = picked ?? (mix.linkAudio.enabled ? 4 : measured ? offeredOf(measured.every) : 8);
   const offered = offeredOf(every);
   // The finer lines are what a shorter loop would want: the bar lines under
   // a loop of four, the four-bar lines above it and under the sections.

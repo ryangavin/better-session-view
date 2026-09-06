@@ -28,13 +28,21 @@ waveform from navigating the renderer away from the app.
 
 ## The header
 
-    mix[flow] [Link Audio · Local audio] │ Title · Artist ⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [Analyze 126–131 · 91% warp] │ Export
+    mix[flow] [Link Audio · Local audio · 4 bars] │ Title · Artist ⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [Analyze 126–131 · 91% warp] │ Export
 
 **Link Audio** shares the loaded stems as separate stereo inputs in Live. It starts off
 on every window load. The adjacent text reports connecting, discovered peers, capture
 gaps, or an unavailable publisher; the tooltip supplies the output names or error.
-No peers is a valid enabled state. This control shares audio; it does not switch Warp
-on or synchronize the playback buttons. See [link-audio.md](link-audio.md).
+No peers is a valid enabled state. Link also synchronizes playback: the tempo field
+shows and changes the shared BPM (20–999), Warp stays on while linked, and starts show
+**waiting for bar** until their scheduled phase. Stop and Pause are immediate. New
+remote start/stop commands are followed when the peer also enables Start Stop Sync;
+joining an already-playing session does not start this app. See [link-audio.md](link-audio.md).
+
+**Link timing pins** appears while linked: **4 bars** by default, with **8 bars**,
+**16 bars**, and **Sections** choices. It controls how often playback timing is held to
+the grid, keeping the original feel between pins. Section boundaries always align.
+The choice is shared with export and lasts for this window session.
 
 **Local audio** controls only the computer's speaker output. Enabling Link Audio turns
 it off, and disabling sharing or a publisher failure turns it back on. It can be

@@ -21,7 +21,8 @@
     "./tokens.css": "./src/tokens.css",
     "./type.css": "./src/type.css",
     "./debug": "./src/debug/index.ts",
-    "./debug/*": "./src/debug/*"
+    "./debug/*": "./src/debug/*",
+    "./mixer/*": "./src/mixer/*"
   },
   "types": "dist/index.d.ts",
   "scripts": {

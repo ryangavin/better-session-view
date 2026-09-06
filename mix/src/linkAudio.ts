@@ -1,6 +1,7 @@
 import workletUrl from './linkAudioWorklet.ts?worker&url';
 import { openflow } from './openflow.ts';
-import type { LinkBlock, LinkOutput } from './linkAudioTypes.ts';
+import type { LinkBlock, LinkClock, LinkCommand, LinkOutput } from './linkAudioTypes.ts';
+import { linkMicrosAt, type LinkTimeline } from './linkTiming.ts';
 
 export interface LinkInput extends LinkOutput { node: AudioNode }
 export interface LinkAudioState {
@@ -10,9 +11,10 @@ export interface LinkAudioState {
   outputs: string[];
   dropped: number;
   problem: string | null;
+  tempo: number | null;
 }
 export const LINK_AUDIO_OFF: LinkAudioState = {
-  enabled: false, starting: false, peers: 0, outputs: [], dropped: 0, problem: null,
+  enabled: false, starting: false, peers: 0, outputs: [], dropped: 0, problem: null, tempo: null,
 };
 
 /** Named graph outputs, independent of stems or decks. One instance is one Link peer. */
@@ -25,8 +27,72 @@ export class LinkAudioSender {
   private module: Promise<void> | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private key = '';
+  timeline: LinkTimeline | null = null;
+  private offsets: { rtt: number; offset: number }[] = [];
+  private pendingTempo: number | null = null;
+  private sendingTempo = false;
 
-  constructor(private context: AudioContext, private changed: () => void) {}
+  constructor(private context: AudioContext, private changed: () => void,
+    private heard: (timeline: LinkTimeline, transportChanged: boolean) => void = () => {},
+    private initialTempo: () => number = () => 120) {}
+
+  private receive(clock: LinkClock, before: number, local = false): LinkTimeline | null {
+    if (this.timeline && clock.token <= this.timeline.token) {
+      // HTTP replies in the dev harness can arrive out of order. A plan still
+      // needs its own launch time even when a newer clock has already arrived.
+      return { ...clock, contextTime: this.timeline.contextTime + (clock.micros - this.timeline.micros) / 1e6 };
+    }
+    const after = performance.now();
+    this.offsets.push({ rtt: after - before, offset: clock.micros - (before + after) * 500 });
+    if (this.offsets.length > 16) this.offsets.shift();
+    const best = this.offsets.reduce((a, b) => a.rtt < b.rtt ? a : b);
+    const stamp = this.context.getOutputTimestamp();
+    if (!stamp.performanceTime || stamp.contextTime === undefined) return null;
+    const contextTime = stamp.contextTime + (clock.micros - stamp.performanceTime * 1000 - best.offset) / 1e6;
+    // timeForIsPlaying is transformed by Link's clock correction too; a tiny
+    // timestamp movement is not another Play/Stop command.
+    const changed = !local && this.timeline !== null && clock.playing !== this.timeline.playing;
+    const timeline = { ...clock, contextTime };
+    this.timeline = timeline;
+    this.node?.port.postMessage({ clock: { token: clock.token, contextTime, micros: clock.micros } });
+    this.update({ tempo: Math.round(clock.tempo * 1e6) / 1e6, peers: clock.peers, starting: false });
+    this.heard(timeline, changed);
+    return timeline;
+  }
+
+  private async command(command: LinkCommand): Promise<LinkTimeline | null> {
+    const session = this.session;
+    const api = openflow()?.linkAudio;
+    if (!session || !api) throw new Error('Link is still connecting');
+    const before = performance.now();
+    const clock = await api.control(session, command);
+    if (session !== this.session) return null;
+    return this.receive(clock, before, true);
+  }
+
+  async plan(beat: number, earliest: number, announce: boolean): Promise<LinkTimeline | null> {
+    if (!this.timeline) return null;
+    return this.command({ kind: announce ? 'start' : 'align', beat, micros: linkMicrosAt(this.timeline, earliest) });
+  }
+  stop(): void {
+    const revision = this.revision;
+    void this.command({ kind: 'stop' }).catch((why) => { if (revision === this.revision) this.fail(why); });
+  }
+  setTempo(bpm: number): void {
+    this.pendingTempo = bpm;
+    if (this.sendingTempo) return;
+    this.sendingTempo = true;
+    void (async () => {
+      try {
+        while (this.pendingTempo !== null && this.session) {
+          const next = this.pendingTempo;
+          this.pendingTempo = null;
+          await this.command({ kind: 'tempo', bpm: next });
+        }
+      } catch (why) { this.fail(why); }
+      finally { this.sendingTempo = false; }
+    })();
+  }
 
   setInputs(inputs: LinkInput[]): void {
     const key = JSON.stringify(inputs.map(({ id, name }) => [id, name]));
@@ -56,7 +122,7 @@ export class LinkAudioSender {
       this.module ??= this.context.audioWorklet.addModule(workletUrl).catch((why) => { this.module = null; throw why; });
       await this.module;
       if (revision !== this.revision) return;
-      session = await api.open(this.inputs.map(({ id, name }) => ({ id, name })));
+      session = await api.open(this.inputs.map(({ id, name }) => ({ id, name })), this.initialTempo());
       if (revision !== this.revision) { await api.close(session); return; }
       this.session = session;
       const node = new AudioWorkletNode(this.context, 'openflow-link-capture', {
@@ -89,7 +155,6 @@ export class LinkAudioSender {
       };
       let clocking = false;
       // Pick the least delayed sample from a short window to correlate the two clocks.
-      const offsets: { rtt: number; offset: number }[] = [];
       const clock = async () => {
         if (clocking) return;
         clocking = true;
@@ -97,19 +162,9 @@ export class LinkAudioSender {
         lastClock = before;
         try {
           const clock = await api.clock(session!);
-          const after = performance.now();
           if (revision !== this.revision) return;
-          offsets.push({ rtt: after - before, offset: clock.micros - (before + after) * 500 });
-          if (offsets.length > 16) offsets.shift();
-          const best = offsets.reduce((a, b) => a.rtt < b.rtt ? a : b);
-          const stamp = this.context.getOutputTimestamp();
-          // getOutputTimestamp maps rendered audio to the hardware presentation clock.
-          // Before the context starts it is zero; no audio is being captured then.
-          if (stamp.performanceTime && stamp.contextTime !== undefined) {
-            node.port.postMessage({ clock: { token: clock.token, contextTime: stamp.contextTime,
-              micros: stamp.performanceTime * 1000 + best.offset } });
-          }
-          this.update({ peers: clock.peers, starting: false, dropped: dropped + workletDropped });
+          this.receive(clock, before);
+          this.update({ dropped: dropped + workletDropped });
         } catch (why) { if (revision === this.revision) this.fail(why); }
         finally { clocking = false; }
       };
@@ -136,6 +191,8 @@ export class LinkAudioSender {
     this.node = null;
     if (this.session) void openflow()?.linkAudio.close(this.session).catch(() => {});
     this.session = null;
+    this.timeline = null;
+    this.offsets = [];
   }
   private fail(why: unknown): void {
     this.release();

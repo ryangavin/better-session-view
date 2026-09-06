@@ -1,7 +1,19 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { createInterface } from 'node:readline';
-import type { LinkAudioAPI, LinkBlock, LinkClock, LinkOutput } from '../src/linkAudioTypes.ts';
+import type { LinkAudioAPI, LinkBlock, LinkClock, LinkCommand, LinkOutput } from '../src/linkAudioTypes.ts';
+
+export function validCommand(command: LinkCommand): boolean {
+  if (!command) return false;
+  if (command.kind === 'stop') return true;
+  if (command.kind === 'tempo') return Number.isFinite(command.bpm) && command.bpm >= 20 && command.bpm <= 999;
+  return (command.kind === 'start' || command.kind === 'align') && Number.isFinite(command.beat)
+    && Number.isSafeInteger(command.micros) && command.micros > 0;
+}
+function clockOf(line: string[]): LinkClock {
+  return { token: Number(line[1]), micros: Number(line[2]), tempo: Number(line[3]), peers: Number(line[4]),
+    beat: Number(line[5]), playing: line[6] === '1', playingMicros: Number(line[7]), startMicros: Number(line[8]) };
+}
 
 /** Fixed limits bound both IPC copies and the helper's queue. */
 export function validOutputs(outputs: unknown): outputs is LinkOutput[] {
@@ -28,9 +40,9 @@ class Publisher {
   readonly ready: Promise<void>;
   readonly outputs: LinkOutput[];
 
-  constructor(executable: string, outputs: LinkOutput[]) {
+  constructor(executable: string, outputs: LinkOutput[], tempo: number) {
     this.outputs = outputs;
-    this.child = spawn(executable, ['mix[flow]', ...outputs.map((o) => o.name)], { stdio: 'pipe' });
+    this.child = spawn(executable, ['mix[flow]', String(tempo), ...outputs.map((o) => o.name)], { stdio: 'pipe' });
     let stderr = '';
     this.child.stderr.on('data', (part: Buffer) => { stderr = (stderr + part.toString()).slice(-2000); });
     this.ready = new Promise((resolve, reject) => {
@@ -71,7 +83,15 @@ class Publisher {
 
   async clock(): Promise<LinkClock> {
     const line = await this.request((id) => `c ${id}\n`);
-    return { token: Number(line[1]), micros: Number(line[2]), tempo: Number(line[3]), peers: Number(line[4]) };
+    return clockOf(line);
+  }
+
+  async control(command: LinkCommand): Promise<LinkClock> {
+    if (!validCommand(command)) throw new Error('Invalid Link command');
+    const line = await this.request((id) => command.kind === 'tempo' ? `t ${id} ${command.bpm}\n`
+      : command.kind === 'stop' ? `s ${id}\n`
+      : `${command.kind === 'start' ? 'p' : 'q'} ${id} ${command.beat} ${command.micros}\n`);
+    return clockOf(line);
   }
 
   async write(block: LinkBlock): Promise<number> {
@@ -106,11 +126,12 @@ export class LinkAudioService implements LinkAudioAPI {
     }, 1000);
     this.reaper.unref();
   }
-  async open(outputs: LinkOutput[]): Promise<string> {
+  async open(outputs: LinkOutput[], tempo = 120): Promise<string> {
     if (!validOutputs(outputs)) throw new Error('Invalid Link Audio outputs');
+    if (!validCommand({ kind: 'tempo', bpm: tempo })) throw new Error('Invalid initial Link tempo');
     if (this.sessions.size >= 8) throw new Error('Too many Link Audio publishers');
     const id = randomUUID();
-    const publisher = new Publisher(this.executable, outputs);
+    const publisher = new Publisher(this.executable, outputs, tempo);
     this.sessions.set(id, publisher);
     try { await publisher.ready; return id; }
     catch (why) { await this.close(id); throw why; }
@@ -121,6 +142,7 @@ export class LinkAudioService implements LinkAudioAPI {
     return publisher;
   }
   clock(id: string): Promise<LinkClock> { return this.get(id).clock(); }
+  control(id: string, command: LinkCommand): Promise<LinkClock> { return this.get(id).control(command); }
   write(id: string, block: LinkBlock): Promise<number> { return this.get(id).write(block); }
   async close(id: string): Promise<void> { this.sessions.get(id)?.stop(); this.sessions.delete(id); }
   stop(): void {

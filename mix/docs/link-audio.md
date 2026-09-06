@@ -13,11 +13,46 @@ the mix twice. That switch can restore the computer's speaker output while shari
 it affects only a gain after the master sum, never the published stems. Disabling Link
 Audio or a publisher failure restores local audio. Both changes use a short gain ramp.
 
-Feeds come **after** stem EQ, level, mute and solo, and contain the actual warped or
-unwarped playback. They are not files read a second time. Enabling sharing does not
-change the record's tempo, enable Warp, or synchronize start/stop. The Link instance
-joins the session without proposing a new tempo; it provides the timeline used to
-timestamp audio. Sharing is off on every renderer load.
+Feeds come **after** stem EQ, level, mute and solo. They are not files read a second
+time. Link enables synchronized, warped playback as well as audio sharing. The header
+shows the session tempo; editing it proposes that tempo to Link, and changes from other
+peers retime the actual playback. The supported shared tempo range is 20–999 BPM.
+An existing session supplies its tempo; without peers, the app keeps its current tempo.
+Loading another song changes its source grid, never the shared tempo. Disconnecting
+keeps the last shared playback tempo. Sharing is off on every renderer load.
+
+## Starts, stops, and the source grid
+
+`linkTiming.ts` maps the native timeline to the audio context. A start calls the SDK's
+`setIsPlayingAndRequestBeatAtTime` with a four-beat quantum and the **rendered beat at the
+playhead**, derived from the selected pins. A pickup before the first downbeat therefore retains
+its phase. The returned native start time is converted to the hardware presentation
+clock and scheduled ahead in the audio engine. The header says **waiting for bar**
+until playback begins; pressing Pause or Stop cancels the pending start. A late command
+reply is replanned rather than played off-beat. With no peers the SDK allows an immediate
+launch, subject to the engine's scheduling lead.
+
+Stop and Pause are immediate and publish a stop request. Incoming start/stop changes
+are followed without echoing them; joining a session does not adopt an already-playing
+state. Live must also have **Start Stop Sync** enabled to exchange these commands.
+Loading a track, entering grid editing, finishing playback, or opening analysis stops
+only this app. Those actions must never stop the other players.
+
+Link playback always uses the stretcher. The header offers **4 bars** (the default),
+**8 bars**, **16 bars**, or **Sections** for timing pins, shared with export. Section
+boundaries always pin; between pins the original timing ratios remain intact. Launch
+phase uses the pinned output position, so seeking to an intentionally late interior beat
+does not move the subsequent phrase off the Link grid. The ordinary
+`straight()` tolerance is unsuitable here: an approximately steady recording can still
+drift against a shared beat clock. A failed stretcher prevents a synchronized start and
+reports the failure instead of silently falling back to unsynchronized playback.
+The source map remains fixed while playback tempo changes. When no measured map exists,
+the current even grid is used; aligning real musical downbeats still requires a correct
+source grid. Tempo and phase updates project through the same pinned schedule from
+the shared beat position, preserving interior groove while correcting
+more than 3ms of drift instead of accumulating the delay of each tempo notification.
+That threshold governs scheduling corrections; it is not a measured end-to-end latency
+guarantee for Live or a network.
 
 `LinkAudioSender` takes named `AudioNode` outputs. It has no stem-specific routing, so
 the future Play engine can supply Deck A, Deck B, Deck C, Deck D and Master as five
@@ -56,7 +91,9 @@ and incurs its JSON/base64 overhead; the packaged app uses Electron structured c
 
 ## Native ownership
 
-Each enabled sender has one helper process and one Link Audio instance. The main
+Each enabled sender has one helper process and one Link Audio instance, with Start Stop
+Sync enabled. A private control request changes tempo or plans a start; start planning
+returns the committed snapshot and exact native launch time. The main
 process validates channel names, counts, block dimensions and timing before writing a
 private stdin pipe. Requests have timeouts, the queue is bounded, and the helper never
 opens the library's audio files. It announces sinks for its lifetime. The SDK sends only
@@ -82,11 +119,17 @@ source, Asio source, license and standalone build command ship in
 is distinct from the LGPL FFmpeg decoder.
 
 `npm run typecheck` and `npm test -- --project=mix` cover types, input validation,
-five-way sample routing, silence, clipping, timestamps, snapshot changes and bounded
-buffer recovery. After preparation, `node mix/tools/check-link-audio.ts` builds a real
+five-way sample routing, silence, clipping, timestamps, snapshot changes, bounded
+buffer recovery, quantized scheduling, late-plan cancellation, remote starts, and
+retiming from shared beat position. After preparation, `node mix/tools/check-link-audio.ts` builds a real
 SDK receiver and verifies discovery plus independent left/right PCM and timeline
 metadata for four stems, five deck/master outputs, and six stems. This check needs
-local network discovery enabled. It does not replace monitoring/recording in Live.
+local network discovery enabled. `node mix/tools/check-link-sync.ts` builds three real
+SDK peers using a separate discovery port, so tempo and start/stop tests cannot change
+the musician's real session. It covers initial tempo, joining, 20–999 BPM changes,
+pickup phase and shared start/stop. The incumbent is allowed to establish itself before
+joining: the SDK uses session ID order when sessions are founded within 500ms of each
+other. These checks do not replace monitoring/recording in Live.
 
 Upstream: [Link Audio concepts and API](https://ableton.github.io/link/),
 [Live Link Audio FAQ](https://help.ableton.com/hc/en-us/articles/25425913328924-Link-Audio-FAQ).

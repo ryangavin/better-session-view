@@ -26,7 +26,7 @@ import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
 import { stopYoutube } from './youtube.ts';
 import { LinkAudioService } from './linkAudio.ts';
-import type { LinkBlock, LinkOutput } from '../src/linkAudioTypes.ts';
+import type { LinkBlock, LinkCommand, LinkOutput } from '../src/linkAudioTypes.ts';
 import {
   gridNotes,
   readAnalysis,
@@ -104,7 +104,8 @@ if (only(app)) {
   // be fetched.
   const tabs = reach(MIX, { ipcMain, mounts: { [MOUNT]: root } });
   const linkAudio = new LinkAudioService(path.resolve(__dirname, '../../bin/link-audio'));
-  ipcMain.handle('openflow:link-open', (_event, outputs: LinkOutput[]) => linkAudio.open(outputs));
+  ipcMain.handle('openflow:link-open', (_event, outputs: LinkOutput[], tempo?: number) => linkAudio.open(outputs, tempo));
+  ipcMain.handle('openflow:link-control', (_event, id: string, command: LinkCommand) => linkAudio.control(id, command));
   ipcMain.handle('openflow:link-clock', (_event, id: string) => linkAudio.clock(id));
   ipcMain.handle('openflow:link-write', (_event, id: string, block: LinkBlock) => linkAudio.write(id, block));
   ipcMain.handle('openflow:link-close', (_event, id: string) => linkAudio.close(id));

@@ -115,54 +115,31 @@ room is an instrument rather than a page, and not before.
 
 ## Play: a complete composition
 
-The **Play** room mounts `bench/PlayCase.tsx`, a silent four-deck study for a future
-mix[flow] play view. It composes existing widgets and `Waveform`, imports no app code,
-and uses fictional tracks, sections and peaks. Reset tab restores its local state.
+The **Play** room mounts `bench/PlayCase.tsx`, a thin wrapper around the reusable
+`src/mixer/MixerView.tsx` and `bench/usePreviewMixer.ts`. The view's contract and
+integration boundary are documented in [mixer.md](mixer.md). The same controlled face
+can be driven by a future mix adapter without importing bench simulation into the app.
 
-Four full-width waveforms share a 32-bar ruler and aligned playheads. Below them, five
-strips appear in A, B, Master, C, D order. A shared subgrid aligns headers, launchers,
-effects, mixer controls and footers. The master gets 156px; each deck shares the remaining
-width with a 200px minimum. A single full-width master grid column centers every
-row; paired controls, effect selectors and the crossfader use a common 126px span. Narrow panes scroll horizontally. Deck metadata fits within
-the letter’s 24px header height. The compact launcher uses aligned 24px rows; there is
-no alternate touch-target mode. Physical iPad usability still requires device testing.
+The preview hook owns the fictional songs, sections and peaks, queued launches, source
+switching, loop decisions, simulated clock and meters. The face receives state, semantic
+commands, parameter definitions, resolved theme colors and a read-only frame sampler.
+The face does not advance the clock or decide that a launch succeeded. Playheads and
+meters update independently at animation-frame cadence; the rest follows host state.
 
-Each deck has six named section buttons and four stem columns. A section button launches
-all stems; a cell launches only its stem. Individual stops and the deck Stop follow the
-same launch timing: immediate while paused or in Now mode, otherwise queued to the next
-four-beat boundary. Switching to Now applies pending choices. Pause preserves selections
-and pending changes. Master Stop clears selections, pending changes, the clock and loop.
-There is no mute/solo state; launching and stopping stems chooses what plays.
+The visual composition remains four full-width waveforms above A, B, Master, C and D.
+A shared subgrid aligns headers, launchers, FX, mixer and footer rows. Each deck has
+four stem columns and named section buttons. The compact master contains transport,
+launch timing, effects and loop controls. Faders/meters sit beside stem levels and EQ;
+Cue, A/Thru/B and Full share the footer. A 156px master and 200px minimum deck widths
+preserve the compact layout; narrower panes scroll. Physical iPad usability still needs
+device testing.
 
-The master groups Run/Pause and Stop, BPM and 1 bar/Now timing, two FX selectors and
-global loop controls. FX A defaults to Delay and FX B to Reverb; both also offer Echo,
-Chorus and Flanger. In marks the current integer beat. Out marks a later beat and engages
-the loop across all four preview lanes. Exit loop releases it; Reloop returns to its
-start. The same outlined region appears on every lane, and the ruler follows the current
-32-bar page. These controls operate the silent preview, not an audio engine.
-
-Fractional beat position advances with requestAnimationFrame and elapsed time. Playhead
-refs update every frame; the React clock updates only on whole beats. A separate monotonic
-beat counter keeps queued launches advancing even inside loops. Each PreviewMeter owns
-its frame updates, samples the fractional clock, and applies 35ms attack/140ms release
-smoothing before rendering the existing Meter. The whole mixer does not rerender per frame.
-Pausing preserves fractional position; animation effects cancel their frame on cleanup.
-
-Every strip has standard-sized FX A / Filter / FX B knobs. In the deck mixer, stem levels
-stack left, the fader and meter occupy the middle, and Trim/High/Mid/Low stack right.
-Master output sits left of the same trim/EQ stack. Output faders have 210px travel and
-28px tracks, with adjacent 14px meters of the same length. Stem/channel levels, ±12dB trim,
-crossfade assignments, crossfader and master level affect illustrative meters. Sends,
-EQ, filter and headphone cue retain UI settings only.
-
-Cue, A/Thru/B and Full share the shallow deck footer. The master footer holds the
-crossfader without a visible caption/readout, retaining its accessible label and value.
-Full selects an original unseparated track: stem cells, individual stops and levels dim
-and disable, while section-name buttons and deck Stop control an independent full-mix
-selection. Entering Full starts at the first selected stem section, or remains stopped
-if none is selected. Stem state is preserved for switching back. Source changes are
-immediate; section launches retain the selected timing. Full-mix meters ignore stem
-levels but still follow trim, deck gain, crossfader and master.
+Run starts the silent simulation; 1 bar queues changes, Now applies them immediately.
+Pause holds pending choices. Stop clears selections, queues, loops and position. In/Out
+mark a global preview loop, and Exit/Reloop release or re-engage it. Full selects the
+first active stem section for the original-track preview and preserves stem selections
+for returning. These are fixture policies, not behavior implemented by MixerView.
+Reset tab restores the initial composition and theme. No audio is produced.
 
 ## Play theme roles
 
@@ -195,8 +172,8 @@ identity separation; shared saturation/lightness ranges keep the palette cohesiv
 EQ explicitly fills from 0dB despite its asymmetric −24/+12dB range. Neutral EQ, trim,
 filter and sends have no colored arc; stem levels and faders always show their level.
 A small divider separates trim from EQ. Faders/meters omit visible captions but retain
-accessible labels. The active theme sets the bench body's primary/hover/muted variables;
-cleanup restores the stylesheet fallback when the Play room unmounts.
+accessible labels. The active theme scopes primary and signal tokens to the mixer root; the wrapper
+also supplies the primary to its theme editor. No body variables are written.
 
 ## Collapsing navigation
 
@@ -210,8 +187,7 @@ The master FX selectors include their A/B labels inside the dropdown face (A · 
 B · Reverb), so both controls span the same width as the other master control groups.
 
 The bench stylesheet locally overrides the primary accent tokens (`--amber` and its
-hover/muted variants) with silver-blue. This is the fallback when the Play theme editor is not mounted; the active theme
-controls these tokens while Play is open. Other application windows are unchanged.
+hover/muted variants) with silver-blue. This is the fallback when the Play theme editor is not mounted; the theme editor scopes its override to the Play composition. Other application windows are unchanged.
 
 The theme editor also has **Roll hue**, **Roll sat**, and **Roll light** for the selected
 role. Each changes only that component. Hue rolls seek a separated hue family; primary

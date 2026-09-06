@@ -37,10 +37,16 @@ quantization counts from 1.1.1, so a file pinned every eight bars loops cleanly
 at every eight-bar line a launch can land on. A cut adds a pin and moves no
 other: cut at bar 37 and pinned every 8, the pins are 32, 37, 40, 48 — not 45.
 
-**The default is measured.** `loosest` tries the densities from the sparsest and
+**The offline default is measured.** `loosest` tries the densities from the sparsest and
 takes the first whose bar lines all land within ten milliseconds — about a
 sixty-fourth of a beat at 128 — and reports how far the worst is off. Every bar
 always lands them, so per beat is never measured into; it is asked for.
+
+**Link defaults to four bars.** Its header selector offers 4, 8, 16 bars or sections,
+using the same window choice as export. This leaves interior groove intact while
+holding phrase boundaries to the shared tempo. Clock corrections follow the pinned
+schedule; launch phase is the rendered output position, including when seeking
+between pins. Link never overrides this choice to per beat.
 
 **The export dialog asks what the files are for.** *Loops of* 4, 8 or 16
 bars, or *sections*: the measured answer when it is one of those, eight bars
@@ -103,9 +109,8 @@ finding as a bar number. [`harness.md`](harness.md) has the batch run.
 
 ## Not yet
 
-- The warp lane draws the beats and not the pins. The export dialog's sentence
-  is the only place the pinning is visible, and that is deliberate: the
-  question at export is *will it loop*, and a sentence answers it.
+- The warp lane draws the beats and not the pins. Pin density is visible in the
+  Link header selector and the export dialog; the timeline does not draw pins yet.
 - Cuts snap to whatever the ruler is drawing; a section meant as a loop should
   sit on whole bars, and the length column should be typeable.
 - Nothing in the library is played by a person. Every bar earns its place on a

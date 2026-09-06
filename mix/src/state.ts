@@ -343,6 +343,8 @@ export function useMix() {
   useEffect(() => audio.watch(() => {
     setLinkAudioState(audio.linkAudio);
     setMonitoringState(audio.monitoring);
+    setPlaying(audio.playing);
+    setPosition(audio.at());
   }), [audio]);
   useEffect(() => () => audio.setLinkAudio(false), [audio]);
 
@@ -463,6 +465,19 @@ export function useMix() {
   // Rendering and audition may use a draft; persistence reads beats/offset above.
   const gridEdit = useBeatEdit(selected, savedGrid);
   const grid = gridEdit.grid;
+  const playbackBpm = linkAudio.enabled && linkAudio.tempo !== null ? linkAudio.tempo : targetBpm;
+  const lastLinkTempo = useRef<number | null>(null);
+  useEffect(() => {
+    if (linkAudio.enabled) {
+      if (linkAudio.tempo !== null) lastLinkTempo.current = linkAudio.tempo;
+    } else if (lastLinkTempo.current !== null) {
+      // Keep the last shared tempo on disconnect, without re-ruling the source grid.
+      setBeats((was) => was ?? savedGrid);
+      setTargetBpm(lastLinkTempo.current);
+      setBpmAuto(false);
+      lastLinkTempo.current = null;
+    }
+  }, [linkAudio.enabled, linkAudio.tempo, savedGrid]);
 
   /**
    * How many bars the song holds, counting bar 1 as the first.
@@ -877,7 +892,7 @@ export function useMix() {
     let raf = 0;
     const step = () => {
       if (audio.ended) {
-        audio.stop();
+        audio.stop(false);
         setPosition(0);
         setPlaying(false);
         return;
@@ -950,7 +965,7 @@ export function useMix() {
         remember(held.current);
         keepGrid();
       }
-      audio.stop();
+      audio.stop(false);
       setPlaying(false);
       gridEdit.cancel();
       setSelected(id);
@@ -1087,7 +1102,7 @@ export function useMix() {
   /** Open this track's analysis home, keeping its grid and preselecting its separation model. */
   const resetup = useCallback(() => {
     if (!song || gridEdit.active) return;
-    audio.stop();
+    audio.stop(false);
     setPlaying(false);
     setManual(null);
     setProblem(null);
@@ -1345,12 +1360,15 @@ export function useMix() {
    */
   const cuts = useMemo(() => slices.map((slice) => slice.bar), [slices]);
   const pinned = useMemo(
-    () => (beats ? { every: pinEvery ?? offeredOf(loosest(grid, targetBpm, cuts).every), cuts } : null),
-    [beats, grid, targetBpm, cuts, pinEvery],
+    () => (beats || linkAudio.enabled ? {
+      every: pinEvery ?? (linkAudio.enabled ? 4 : offeredOf(loosest(grid, playbackBpm, cuts).every)), cuts,
+    } : null),
+    [beats, grid, playbackBpm, cuts, pinEvery, linkAudio.enabled],
   );
   useEffect(() => {
-    audio.warp(beats ? grid : null, targetBpm, warp && beats !== null, pinned?.every, pinned?.cuts);
-  }, [audio, grid, targetBpm, warp, beats, peaks, pinned]);
+    audio.warp(beats || linkAudio.enabled ? grid : null, playbackBpm,
+      (warp && beats !== null) || linkAudio.enabled, pinned?.every, pinned?.cuts);
+  }, [audio, grid, playbackBpm, warp, beats, peaks, pinned, linkAudio.enabled]);
 
   useEffect(() => audio.watch(() => setStretching(audio.stretching)), [audio]);
 
@@ -1419,14 +1437,14 @@ export function useMix() {
   }, [savedGrid]);
 
   const beginGridEdit = () => {
-    audio.stop(); setPlaying(false); setManual(null); gridEdit.begin();
+    audio.stop(false); setPlaying(false); setManual(null); gridEdit.begin();
   };
   const finishGridEdit = () => {
-    audio.stop(); setPlaying(false);
+    audio.stop(false); setPlaying(false);
     if (gridEdit.dirty) saveReview(gridEdit.grid);
     gridEdit.cancel();
   };
-  const cancelGridEdit = () => { audio.stop(); setPlaying(false); gridEdit.cancel(); };
+  const cancelGridEdit = () => { audio.stop(false); setPlaying(false); gridEdit.cancel(); };
 
   /**
    * The grid, read off the audio: a seed fitted to the whole song, and the
@@ -1459,6 +1477,7 @@ export function useMix() {
   /** Playback tempo never changes where the source beats were measured. */
   const setTempo = useCallback((bpm: number) => {
     if (gridEdit.active) return;
+    if (audio.linkAudio.enabled) { audio.setLinkTempo(bpm); return; }
     setBeats((was) => was ?? savedGrid);
     setTargetBpm(bpm);
     setBpmAuto(false);
@@ -1467,7 +1486,7 @@ export function useMix() {
     // grid is now somebody's, and it is written down as somebody's.
     setFitFailed(false);
     setMadeBy('hand');
-  }, [savedGrid, gridEdit.active]);
+  }, [savedGrid, gridEdit.active, audio]);
 
   /**
    * The fit a freshly opened track gets without being asked.
@@ -1848,7 +1867,7 @@ export function useMix() {
     beginBeatDrag: gridEdit.beginGesture, endBeatDrag: gridEdit.endGesture,
     pickSlice,
     slicesAuto,
-    targetBpm,
+    targetBpm: playbackBpm,
     setTempo,
     bpmAuto,
     /** Seconds from the top of the file to the downbeat of bar 1. */
@@ -1892,6 +1911,7 @@ export function useMix() {
     /** The graph's sample rate, which is what the stems were resampled to. */
     rate: audio.rate,
     linkAudio,
+    waitingForLink: audio.waiting && linkAudio.enabled,
     setLinkAudio,
     monitoring,
     setMonitoring,

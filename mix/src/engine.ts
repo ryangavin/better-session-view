@@ -1,9 +1,10 @@
 import { FLAT, Split, type Bands } from './eq.ts';
-import { pinnedOf, type Every, type Pinned } from './pinned.ts';
+import { outputOf, pinnedOf, type Every, type Pinned } from './pinned.ts';
 import { passOf, sourceAt, straight, type Pass, type Span } from './schedule.ts';
 import { channelsOf, stretchOf, type Stretch } from './stretch.ts';
-import type { Beats } from './warp.ts';
+import { type Beats } from './warp.ts';
 import { LINK_AUDIO_OFF, LinkAudioSender, type LinkAudioState } from './linkAudio.ts';
+import { linkBeatAt, linkTimeAt, needsLinkCorrection, type LinkTimeline } from './linkTiming.ts';
 
 /**
  * The transport and the mixer, which are one thing: a Web Audio graph with one
@@ -108,6 +109,13 @@ export type Stretching = 'idle' | 'loading' | 'ready' | 'failed';
 type Via = 'straight' | 'stretch';
 
 export class Transport {
+  private pendingStart: { at: number; announce: boolean } | null = null;
+  private launchRevision = 0;
+  private launchBusy = false;
+  private linkAnchor: { source: number; beat: number } | null = null;
+  private syncIssue: string | null = null;
+  get waiting(): boolean { return this.pendingStart !== null || !!(this.going && this.ctx && this.since > this.ctx.currentTime); }
+  setLinkTempo(bpm: number): void { this.publisher?.setTempo(bpm); }
   private publisher: LinkAudioSender | null = null;
   private wasLinked = false;
   private localOutput: GainNode | null = null;
@@ -126,9 +134,13 @@ export class Transport {
     }
     this.notify();
   }
-  get linkAudio(): LinkAudioState { return this.publisher?.state ?? LINK_AUDIO_OFF; }
+  get linkAudio(): LinkAudioState {
+    const state = this.publisher?.state ?? LINK_AUDIO_OFF;
+    return this.syncIssue ? { ...state, problem: this.syncIssue } : state;
+  }
   setLinkAudio(on: boolean): void {
     if (!on && !this.publisher) return;
+    this.syncIssue = null;
     const ctx = this.audio();
     if (on) void ctx.resume();
     this.publisher ??= new LinkAudioSender(ctx, () => {
@@ -136,9 +148,17 @@ export class Transport {
       if (enabled !== this.wasLinked) {
         this.wasLinked = enabled;
         this.setMonitoring(!enabled);
+        if (enabled && this.going) this.queueLinkedStart(this.at(), false);
+        if (!enabled) {
+          const notAudibleYet = (!this.going && this.pendingStart !== null)
+            || (this.going && this.ctx !== null && this.since > this.ctx.currentTime);
+          if (notAudibleYet) this.pause(false);
+          else this.cancelLaunch();
+          this.linkAnchor = null;
+        }
       }
       this.notify();
-    });
+    }, (timeline, changed) => this.linkClock(timeline, changed), () => this.tempo);
     this.publishInputs();
     this.publisher.enable(on);
   }
@@ -146,6 +166,90 @@ export class Transport {
     this.publisher?.setInputs([...this.gains].map(([id, node]) => ({
       id, name: id.charAt(0).toUpperCase() + id.slice(1), node,
     })));
+  }
+
+  private cancelLaunch(): void {
+    this.launchRevision++;
+    this.pendingStart = null;
+    this.launchBusy = false;
+  }
+
+  private queueLinkedStart(at: number, announce: boolean): void {
+    this.cancelLaunch();
+    this.syncIssue = null;
+    this.pendingStart = { at, announce };
+    this.notify();
+  }
+
+  private maybeLaunch(): void {
+    if (!this.pendingStart || this.launchBusy || !this.ctx || !this.publisher?.timeline || !this.pinned || !this.map) return;
+    if (!this.stretch) {
+      if (this.state === 'failed') {
+        this.pendingStart = null;
+        this.syncIssue = 'Cannot synchronize playback: the time stretcher failed';
+      } else this.prepare();
+      return;
+    }
+    const pending = this.pendingStart;
+    const revision = this.launchRevision;
+    this.launchBusy = true;
+    const source = Math.max(0, Math.min(pending.at, this.duration));
+    // Launch in the rendered timeline: interior beats may deliberately push or pull.
+    const beat = outputOf(this.pinned, source * this.pinned.rate) / this.pinned.spacing;
+    void this.publisher.plan(beat, this.ctx.currentTime + Math.max(0.15, this.lead()), pending.announce)
+      .then((timeline) => {
+        if (revision !== this.launchRevision || !timeline || !this.ctx) return;
+        const when = timeline.contextTime + (timeline.startMicros - timeline.micros) / 1e6;
+        // A late IPC reply cannot be fixed by playing immediately off-beat. Ask again.
+        if (when < this.ctx.currentTime + this.lead()) {
+          this.launchBusy = false;
+          this.maybeLaunch();
+          return;
+        }
+        this.pendingStart = null;
+        this.launchBusy = false;
+        this.linkAnchor = { source, beat: linkBeatAt(timeline, when) };
+        this.playAt(source, when);
+        this.notify();
+      }).catch((why) => {
+        if (revision !== this.launchRevision) return;
+        this.cancelLaunch();
+        this.syncIssue = why instanceof Error ? why.message : String(why);
+        this.notify();
+      });
+  }
+
+  private playAt(at: number, when: number): void {
+    if (this.desired() === 'stretch') this.playStretched(at, when);
+    else this.playStraight(at, when);
+  }
+
+  private linkedPosition(timeline: LinkTimeline, when: number): number | null {
+    if (!this.linkAnchor || !this.pinned) return null;
+    const elapsed = Math.max(0, linkBeatAt(timeline, when) - this.linkAnchor.beat) * 60 / timeline.tempo;
+    return sourceAt(this.pinned, this.linkAnchor.source, elapsed, this.looping, this.span ?? undefined);
+  }
+
+  private linkClock(timeline: LinkTimeline, transportChanged: boolean): void {
+    if (!this.linkAudio.enabled) return;
+    if (transportChanged) {
+      if (!timeline.playing) this.pause(false);
+      else if (!this.playing && this.loaded) this.queueLinkedStart(this.at(), false);
+    }
+    const changed = Math.abs(this.tempo - timeline.tempo) > 0.00001;
+    if (changed || !this.warping) this.warp(this.map, timeline.tempo, true, this.every, this.cuts);
+    this.maybeLaunch();
+    if (!this.ctx || !this.going || !this.linkAnchor || this.launchBusy) return;
+    const when = this.ctx.currentTime + this.lead();
+    if (this.since > this.ctx.currentTime) {
+      const start = linkTimeAt(timeline, this.linkAnchor.beat);
+      if (start > when && Math.abs(start - this.since) > 0.003) this.playAt(this.linkAnchor.source, start);
+      return;
+    }
+    const expected = this.linkedPosition(timeline, when);
+    if (!changed && expected !== null && needsLinkCorrection(this.positionAt(when), expected, false)) {
+      this.playAt(expected, when);
+    }
   }
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -265,7 +369,7 @@ export class Transport {
    * of channels.
    */
   load(stems: Record<string, AudioBuffer>): void {
-    this.stop();
+    this.stop(false);
     this.drop();
     const ctx = this.audio();
     this.unwire();
@@ -288,7 +392,7 @@ export class Transport {
 
   /** Forget everything, and release the buffers. */
   clear(): void {
-    this.stop();
+    this.stop(false);
     this.drop();
     this.unwire();
     this.from = 0;
@@ -375,8 +479,12 @@ export class Transport {
    * on playing, which is the common case and the one that must not click.
    */
   warp(map: Beats | null, tempo: number, on: boolean, every: Every = 'beat', cuts: readonly number[] = []): void {
+    if (this.linkAudio.enabled) {
+      tempo = this.publisher?.timeline?.tempo ?? tempo;
+      on = true;
+    }
     const before = this.desired();
-    const at = this.going && this.ctx ? this.positionAt(this.ctx.currentTime + this.lead()) : 0;
+    let at = this.going && this.ctx ? this.positionAt(this.ctx.currentTime + this.lead()) : 0;
     this.map = map;
     this.tempo = tempo;
     this.every = every;
@@ -384,7 +492,18 @@ export class Transport {
     this.pinned = map ? pinnedOf(map, tempo, cuts, every) : null;
     this.warping = on;
     if (on) this.prepare();
+    this.maybeLaunch();
     if (!this.going || !this.ctx) return;
+    if (this.linkAnchor && this.publisher?.timeline) {
+      if (this.since > this.ctx.currentTime) {
+        const start = linkTimeAt(this.publisher.timeline, this.linkAnchor.beat);
+        if (start > this.ctx.currentTime + this.lead()) {
+          this.playAt(this.linkAnchor.source, start);
+          return;
+        }
+      }
+      at = this.linkedPosition(this.publisher.timeline, this.ctx.currentTime + this.lead()) ?? at;
+    }
     const after = this.desired();
     if (after === 'stretch') this.playStretched(at, this.ctx.currentTime + this.lead());
     else if (before !== after) this.playStraight(this.at());
@@ -417,23 +536,30 @@ export class Transport {
   play(at = this.at()): void {
     const ctx = this.audio();
     void ctx.resume();
+    if (this.linkAudio.enabled) { this.queueLinkedStart(at, true); return; }
     if (this.desired() === 'stretch') this.playStretched(at, ctx.currentTime + this.lead());
     else this.playStraight(at);
   }
 
   /** Stop where you are. */
-  pause(): void {
-    if (!this.going) return;
+  pause(announce = true): void {
+    const wasPlaying = this.playing;
+    this.cancelLaunch();
+    this.linkAnchor = null;
+    if (announce && wasPlaying && this.linkAudio.enabled && this.publisher?.timeline) this.publisher.stop();
+    if (!this.going) { this.notify(); return; }
     this.from = this.at();
     this.halt();
     this.going = false;
+    this.notify();
   }
 
   /** Stop and go back to the top. */
-  stop(): void {
-    this.halt();
+  stop(announce = true): void {
+    this.pause(announce);
     this.going = false;
     this.from = 0;
+    this.notify();
   }
 
   /**
@@ -442,7 +568,7 @@ export class Transport {
    */
   seek(at: number): void {
     const to = Math.max(0, Math.min(at, this.duration));
-    if (this.going) this.play(to);
+    if (this.playing) this.play(to);
     else this.from = to;
   }
 
@@ -468,7 +594,7 @@ export class Transport {
   }
 
   get playing(): boolean {
-    return this.going;
+    return this.going || this.pendingStart !== null;
   }
 
   /** Where the sound will be at a moment on the clock, on whichever graph it is on. */
@@ -489,7 +615,7 @@ export class Transport {
 
   /** Which graph the sound should be on, given what has been asked for and what there is. */
   private desired(): Via {
-    return this.warping && this.pinned && this.stretch && !straight(this.pinned)
+    return this.warping && this.pinned && this.stretch && (this.linkAudio.enabled || !straight(this.pinned))
       ? 'stretch'
       : 'straight';
   }
@@ -499,10 +625,10 @@ export class Transport {
     return (this.stretch?.latency ?? 0) + LEAD;
   }
 
-  private playStraight(at: number): void {
+  private playStraight(at: number, scheduled?: number): void {
     const ctx = this.audio();
     this.halt();
-    const when = ctx.currentTime + 0.02;
+    const when = scheduled ?? ctx.currentTime + 0.02;
     const offset = Math.max(0, Math.min(at, Math.max(0, this.duration - 0.01)));
     for (const [id, buffer] of this.buffers) {
       const source = ctx.createBufferSource();
@@ -673,6 +799,7 @@ export class Transport {
   }
 
   private notify(): void {
+    this.maybeLaunch();
     for (const hear of this.watchers) hear();
   }
 

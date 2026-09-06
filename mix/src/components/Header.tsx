@@ -1,6 +1,8 @@
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
+import { Select } from '@openflow/widgets/controls/Select.tsx';
+import { OFFERED, offeredOf } from '../pinned.ts';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Snap } from '../grid.ts';
@@ -70,6 +72,7 @@ const TEMPO: Param = {
   unit: 'custom',
   customUnit: '%0.1f',
 };
+const LINK_TEMPO: Param = { ...TEMPO, min: 20, max: 999 };
 
 /** bar.beat.sixteenth, one-based, from a position measured in bars. */
 function position(bar: number, bars: number): string {
@@ -122,16 +125,24 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
         <Toggle on={mix.linkAudio.enabled}
           onChange={mix.setLinkAudio}
           label="Link Audio"
-          title="Share each loaded stem as a separate stereo input in Live"
+          title="Share stereo stems, synchronize playback tempo, and follow Link start/stop"
           width={72}
         >Link Audio</Toggle>
         <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
           label="Local audio" width={72}
           title="Hear mix through this computer's speakers. Link Audio feeds are unaffected"
         >Local audio</Toggle>
+        {mix.linkAudio.enabled && <Select
+          items={['4 bars', '8 bars', '16 bars', 'Sections']}
+          index={OFFERED.indexOf(offeredOf(mix.pinEvery ?? 4))}
+          onChange={(next) => mix.setPinEvery(OFFERED[next])}
+          label="Link timing pins"
+          title="Pin timing every 4, 8 or 16 bars, or at sections only. Keeps the original feel between pins; section boundaries always align"
+          width={74}
+        />}
         <span className={mix.linkAudio.problem || mix.linkAudio.dropped ? 'mf-link-problem' : undefined}
           title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
-          {mix.linkAudio.problem ? 'unavailable' : mix.linkAudio.starting ? 'connecting' : mix.linkAudio.enabled
+          {mix.linkAudio.problem ? 'unavailable' : mix.linkAudio.starting ? 'connecting' : mix.waitingForLink ? 'waiting for bar' : mix.linkAudio.enabled
             ? `${mix.linkAudio.peers} peers${mix.linkAudio.dropped ? ' · gaps' : ''}` : ''}
         </span>
       </div>
@@ -179,6 +190,8 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                   ? mix.decoding
                     ? 'Reading the stems'
                     : 'No stems loaded'
+                  : mix.waitingForLink
+                    ? 'Waiting for the matching Link bar position. Press to cancel'
                   : mix.playing
                     ? 'Pause (Space)'
                     : 'Play (Space)'
@@ -213,7 +226,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
               {loopMark}
             </Toggle>
             <NumberField
-              param={TEMPO}
+              param={mix.linkAudio.enabled ? LINK_TEMPO : TEMPO}
               value={mix.targetBpm}
               display={bpmText(mix.targetBpm)}
               onChange={(next) => mix.setTempo(Number(next.toFixed(2)))}
@@ -296,11 +309,12 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                 beat map rather than with playback because without one it can
                 do nothing at all. */}
             <Toggle
-              on={mix.warp}
+              on={mix.warp || mix.linkAudio.enabled}
               onChange={mix.setWarp}
               label="Warp"
               title={
-                !mix.beats
+                mix.linkAudio.enabled ? 'Link keeps playback warped to the shared tempo'
+                : !mix.beats
                   ? 'Warp: play the stems stretched to the tempo. Follow the beat first'
                   : mix.stretching === 'failed'
                     ? 'Warp: the stretcher could not be loaded, so the stems play as they were recorded'
@@ -308,7 +322,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
                       ? 'Warp: loading the stretcher'
                       : 'Warp: play every bar of the record in the time the tempo gives it'
               }
-              disabled={!mix.beats || mix.stretching === 'failed'}
+              disabled={mix.linkAudio.enabled || !mix.beats || mix.stretching === 'failed'}
               width={38}
             >
               warp

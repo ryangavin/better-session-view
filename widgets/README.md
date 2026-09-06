@@ -22,6 +22,7 @@ with no React, this is React with no domain.
 | [the catalogue](docs/catalogue.md) | **adding a widget** — what exists, what's next, and what Max for Live does and doesn't tell you | `src/controls/*` |
 | [the graph](docs/graph.md) | the node canvas, ports, cords, who owns a position — and the room the bench measures it in | `src/chrome/Graph.tsx`, `Port.tsx`, `graphContext.ts`, `bench/trace.ts` |
 | [notation displays](docs/notation.md) | tablature, a piano roll, their timelines, or the app/widget boundary | `src/notation/*` |
+| [the mixer face](docs/mixer.md) | controlled four-deck presentation and its host adapter | `src/mixer/*`, `bench/usePreviewMixer.ts` |
 | [the bench](docs/bench.md) | the dev harness, or adding a case or a room to it | `bench/*`, `vite.config.ts` |
 | [the debug module](docs/debug.md) | building a debugging page in an app: the frame, a time axis, plots, a transport | `src/debug/*` |
 

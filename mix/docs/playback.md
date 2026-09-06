@@ -95,7 +95,16 @@ Disabling Link Audio or a publisher failure restores local audio. Replacing a tr
 layout reconnects those nodes without replacing the Link channels.
 
 The worklet captures the rendered samples and the native helper publishes them with
-audio-clock timing. The same sender accepts arbitrary named graph outputs, including
+audio-clock timing. While Link is enabled, playback follows the shared tempo through
+the stretcher, pinned every four bars by default. The Link header selector offers
+four, eight or sixteen bars, or sections only; section boundaries always pin. Timing
+between pins keeps its original feel, and clock corrections follow this same schedule.
+Starts use the rendered position within that schedule at the next matching
+four-beat phase (including pickup audio); Stop/Pause cancel immediately. The Link beat
+clock supplies the position used when tempo changes, so delayed notifications do not
+accumulate drift. Joining never starts the app automatically; new remote start/stop
+commands are followed. See `linkTiming.ts` and the Link scheduling in `engine.ts`.
+The same sender accepts arbitrary named graph outputs, including
 four decks and a master once the Play engine exists. Lifecycle, buffering, native build
 and verification are in [link-audio.md](link-audio.md).
 

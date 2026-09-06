@@ -26,7 +26,7 @@ export function prepareLinkAudio(): void {
   const stamp = path.join(bin, 'link-audio.build');
   if (fs.existsSync(executable) && fs.existsSync(stamp)
       && fs.readFileSync(stamp, 'utf8') === fingerprint
-      && run(executable, ['--version']) === 'openflow-link-audio 1') return;
+      && run(executable, ['--version']) === 'openflow-link-audio 2') return;
   const sdk = path.join(bin, 'link-sdk');
   if (!fs.existsSync(path.join(sdk, '.git'))) {
     run('git', ['clone', '--no-checkout', 'https://github.com/Ableton/link.git', sdk]);

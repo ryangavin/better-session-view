@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { validBlock, validOutputs } from './linkAudio.ts';
+import { validBlock, validCommand, validOutputs } from './linkAudio.ts';
 
 describe('Link Audio IPC boundary', () => {
+  it('accepts supported timing commands and rejects unbounded or non-finite values', () => {
+    expect(validCommand({ kind: 'tempo', bpm: 20 })).toBe(true);
+    expect(validCommand({ kind: 'tempo', bpm: 999 })).toBe(true);
+    expect(validCommand({ kind: 'tempo', bpm: Infinity })).toBe(false);
+    expect(validCommand({ kind: 'tempo', bpm: 1000 })).toBe(false);
+    expect(validCommand({ kind: 'start', beat: -1.5, micros: 123456789 })).toBe(true);
+    expect(validCommand({ kind: 'start', beat: NaN, micros: 123456789 })).toBe(false);
+    expect(validCommand({ kind: 'align', beat: 0, micros: 0 })).toBe(false);
+  });
   it('accepts separate decks plus master and rejects duplicate or unsafe identities', () => {
     const outputs = ['deck-a', 'deck-b', 'deck-c', 'deck-d', 'master'].map((id) => ({ id, name: id }));
     expect(validOutputs(outputs)).toBe(true);

@@ -13,7 +13,7 @@ import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
 import type { Analysis, GridNote, Grid, Peaks, Reading, SliceKept } from './analysis.ts';
-import type { LinkAudioAPI, LinkBlock, LinkOutput } from '../src/linkAudioTypes.ts';
+import type { LinkAudioAPI, LinkBlock, LinkCommand, LinkOutput } from '../src/linkAudioTypes.ts';
 
 /**
  * What the renderer cannot do for itself: reach a process, and reach a folder.
@@ -34,7 +34,8 @@ import type { LinkAudioAPI, LinkBlock, LinkOutput } from '../src/linkAudioTypes.
  */
 expose({
   linkAudio: {
-    open: (outputs: LinkOutput[]) => ipcRenderer.invoke('openflow:link-open', outputs),
+    open: (outputs: LinkOutput[], tempo?: number) => ipcRenderer.invoke('openflow:link-open', outputs, tempo),
+    control: (session: string, command: LinkCommand) => ipcRenderer.invoke('openflow:link-control', session, command),
     clock: (session: string) => ipcRenderer.invoke('openflow:link-clock', session),
     write: (session: string, block: LinkBlock) => ipcRenderer.invoke('openflow:link-write', session, block),
     close: (session: string) => ipcRenderer.invoke('openflow:link-close', session),
