@@ -22,7 +22,7 @@ detections, metrics and reference scores. All existing analysis and correction t
 
 The first look is the app's own pipeline — `transients.ts` → `tempo.ts` →
 `follow.ts` — on the drums, run with a trace so every decision on the way to the
-answer is kept. The **run** group runs any arm of the A/B rig (`src/debug/arms.ts`)
+answer is kept. The **run** group runs any algorithm of the A/B rig (`src/debug/algorithms.ts`)
 on the drums or the whole mix summed back together, so a wrong tempo can be
 traced to the stage that lost it.
 
@@ -53,22 +53,22 @@ call the Export sheet makes. The folder drops into Live like a loop off a pack.
 
 ```
 npm run warp:mix                        every track in the library, tempo found vs known
-npm run warp:mix -- --ab --report       every arm, scored side by side into harness/reports/ab.md
+npm run warp:mix -- --ab --report       every algorithm, scored side by side into harness/reports/ab.md
 npm run warp:mix -- --only=Sandstorm
 ```
 
-`tools/mix-warp.ts` runs the arms headless over the app's library and, with
+`tools/mix-warp.ts` runs the algorithms headless over the app's library and, with
 `--report`, writes what each saw. The truth files and the scorer it reads are the
 previous page's (`harness/`), which still opens at `/harness/` under
 `npm run dev:mix-ui` with the reports beside it; the in-app page supersedes it for
-looking and listening, and the batch run is what the arms are still for.
+looking and listening, and the batch run is what the algorithms are still for.
 
 ## Where
 
 | | |
 |---|---|
 | `src/debug/Analysis.tsx` | the page |
-| `src/debug/arms.ts` | the beat finding, several ways |
+| `src/debug/algorithms.ts` | the beat finding, several ways |
 | `src/debug/draw.ts` | the rows and the plots, in palette inks |
 | `src/debug/audition.ts` | stems and a click, looped and scrubbed |
 | `src/trace.ts` | what the two stages write when handed a trace; the app's own run passes none |

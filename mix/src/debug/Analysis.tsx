@@ -21,7 +21,7 @@ import { countedOf, refitOf, sweepOf, type Fit, type Sweep } from '../tempo.ts';
 import type { Trace } from '../trace.ts';
 import { heardIn, type Heard } from '../transients.ts';
 import { BEATS_PER_BAR, beatAt, tempoAt, tempoOf, countOf, renumbered, sampleOf, type Beats } from '../warp.ts';
-import { ARMS, INPUTS, run, SAYS, straight, type Arm, type Input } from './arms.ts';
+import { ALGORITHMS, describe, IDS, INPUTS, run, straight, type Algorithm, type Input } from './algorithms.ts';
 import { Audition, type Click } from './audition.ts';
 import * as D from './draw.ts';
 import { AnalysisEvidence } from './AnalysisEvidence.tsx';
@@ -34,7 +34,7 @@ import './Analysis.css';
  * same pipeline on the same decoded stems — with a trace, so every decision
  * on the way to the answer is kept — and draws it: the drums, the hits it
  * heard, the beats it laid, the tempo it followed, and the autocorrelation
- * and phase sweep that chose the seed. Any arm of the A/B rig runs here
+ * and phase sweep that chose the seed. Any algorithm of the A/B rig runs here
  * too, on the drums or the whole mix, so a wrong tempo can be traced to the
  * stage that lost it.
  *
@@ -45,7 +45,7 @@ import './Analysis.css';
  * 1.1.1, which is what drops into Live like a loop off a pack.
  */
 interface Run {
-  arm: Arm;
+  algorithm: Algorithm;
   input: Input;
   heard: Heard;
   fit: Fit | null;
@@ -62,11 +62,6 @@ interface Map {
   /** The follower laid it; the follow trace still describes it. */
   followed: boolean;
 }
-
-const ARM_TITLES: Record<Arm, string> = {
-  ours: 'Adaptive beat follower', line: 'Fitted straight grid', whole: 'Whole-tempo grid',
-  flux: 'Spectral onset follower', comb: 'Comb-seeded follower', ellis: 'Dynamic beat tracker', grid: 'Comb straight grid',
-};
 
 const BANDS = [
   ['low', 'kick', 'below 120 Hz, as the kick was heard'],
@@ -127,7 +122,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
   const deck = useRef<Audition | null>(null);
   if (!deck.current) deck.current = new Audition();
 
-  const [arm, setArm] = useRemembered<Arm>('mix-analysis-arm', 'ours');
+  const [algorithm, setAlgorithm] = useRemembered<Algorithm>('mix-analysis-algorithm', 'ours');
   const [input, setInput] = useRemembered<Input>('mix-analysis-input', 'drums');
   const [stems, setStems] = useRemembered<string[]>('mix-analysis-stems', ['drums']);
   const [bands, setBands] = useRemembered<string[]>('mix-analysis-bands', []);
@@ -163,7 +158,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
 
   const rate = mix.rate || 44100;
 
-  /** The channels an arm hears: the drums, or the whole. */
+  /** The channels an algorithm hears: the drums, or the whole. */
   const channelsFor = useCallback(
     (which: Input): Float32Array[] | null => {
       if (which === 'drums') {
@@ -177,8 +172,8 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
   );
 
   const analyse = useCallback(
-    (which: Arm, on: Input) => {
-      const name = editing ? ARM_TITLES[which] : which;
+    (which: Algorithm, on: Input) => {
+      const name = editing ? describe(which).name : which;
       const channels = channelsFor(on);
       if (!channels) {
         say('the stems are not decoded yet', true);
@@ -200,7 +195,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
             say(`${name}: heard nothing to work with`, true);
             return;
           }
-          setRan({ arm: which, input: on, heard: got.heard, fit: got.fit, follow: got.follow, trace, ms });
+          setRan({ algorithm: which, input: on, heard: got.heard, fit: got.fit, follow: got.follow, trace, ms });
           setSwept(null);
           setCandidate(trace.tempo?.chosen?.candidate ?? 0);
           if (got.beats) {
@@ -233,10 +228,10 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
     if (editing) {
       const channels = channelsFor('drums');
       const heard = channels && heardIn(channels, rate);
-      if (heard) setRan({ arm: 'ours', input: 'drums', heard, fit: mix.detected, follow: mix.detected && 'beats' in mix.detected ? mix.detected : null, trace: {}, ms: 0 });
+      if (heard) setRan({ algorithm: 'ours', input: 'drums', heard, fit: mix.detected, follow: mix.detected && 'beats' in mix.detected ? mix.detected : null, trace: {}, ms: 0 });
       say('Showing the current grid. Find beats to compare a new candidate; Apply grid keeps your changes.');
-    } else analyse(arm, input);
-  }, [drumsReady, analyse, arm, input, editing, channelsFor, rate, mix.detected, say]);
+    } else analyse(algorithm, input);
+  }, [drumsReady, analyse, algorithm, input, editing, channelsFor, rate, mix.detected, say]);
 
   /* ---------- the map by hand ---------- */
 
@@ -651,10 +646,10 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
       <Harness title={editing ? "Beat grid" : "analysis"} subject={subject} status={status}>
         {editing && <p className="mf-grid-guidance">Listen with a click, compare the proposed beats with the saved grid, then <b>Apply grid</b>. Alt-click a hit or beat to set bar 1; use two beats to refine the tempo. Apply before leaving this view to keep your candidate.</p>}
         <Toolbar>
-          <Group caption={editing ? "Algorithm" : "run"} title={editing ? undefined : SAYS[arm]}>
-            <Select items={editing ? ARMS.map((a) => ARM_TITLES[a]) : [...ARMS]} index={ARMS.indexOf(arm)} onChange={(i) => setArm(ARMS[i])} width={editing ? 174 : 72} label={editing ? "Beat analysis algorithm" : "arm"} />
+          <Group caption={editing ? "Algorithm" : "run"} title={editing ? undefined : describe(algorithm).does}>
+            <Select items={ALGORITHMS.map((a) => (editing ? a.name : a.id))} index={IDS.indexOf(algorithm)} onChange={(i) => setAlgorithm(IDS[i])} width={editing ? 174 : 72} label={editing ? "Beat analysis algorithm" : "algorithm"} />
             <Segmented items={[...INPUTS]} index={INPUTS.indexOf(input)} onChange={(i) => setInput(INPUTS[i])} label="input" />
-            <Button onPress={() => analyse(arm, input)} disabled={running || !drumsReady}>
+            <Button onPress={() => analyse(algorithm, input)} disabled={running || !drumsReady}>
               {editing ? 'Find beats' : 'run'}
             </Button>
           </Group>
@@ -724,7 +719,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
           </>}
         </Toolbar>
         <Facts items={editing ? [{ name: "candidate tempo", value: map ? `${map.bpm.toFixed(2)} BPM` : "—" }, { name: "bar 1", value: map ? `${map.offset.toFixed(3)} s` : "—" }, { name: "beats", value: map?.beats.samples.length ?? "—" }] : facts} />
-        {!editing && <AnalysisEvidence mix={mix} beats={beats} heard={ran?.heard ?? null} axis={axis} head={head ?? undefined} runLabel={ran ? `${ran.arm} on ${ran.input}${map?.followed ? ' · followed' : ' · edited/straight'}` : 'No run'} />}
+        {!editing && <AnalysisEvidence mix={mix} beats={beats} heard={ran?.heard ?? null} axis={axis} head={head ?? undefined} runLabel={ran ? `${ran.algorithm} on ${ran.input}${map?.followed ? ' · followed' : ' · edited/straight'}` : 'No run'} />}
         <Scope axis={axis} head={head ?? undefined} scrub={scrub}>
           <ScopeRow label="time" height={26} draw={drawRuler} ruler />
           <ScopeRow

@@ -7,7 +7,7 @@ import { countedOf, refitOf, sweepOf, type Sweep } from '../src/tempo.ts';
 import { beatAt, tempoAt, countOf, renumbered, tempoOf, BEATS_PER_BAR } from '../src/warp.ts';
 import type { Beats } from '../src/warp.ts';
 import type { IndexEntry, Report, Truth } from './types.ts';
-import { straight } from '../src/debug/arms.ts';
+import { straight } from '../src/debug/algorithms.ts';
 import { Audition } from './audio.ts';
 import type { Click } from './audio.ts';
 import * as D from './draw.ts';
@@ -16,9 +16,9 @@ import { score } from './score.ts';
 
 const REPORTS = './reports';
 const KEY = 'mix-harness-track';
-const ARM_KEY = 'mix-harness-arm';
-/** The arm of the beat finding whose report is shown; empty is ours on the drums, the bare report. */
-let arm = '';
+const ALGORITHM_KEY = 'mix-harness-algorithm';
+/** The algorithm of the beat finding whose report is shown; empty is ours on the drums, the bare report. */
+let algorithm = '';
 
 const el = <T extends Element>(sel: string): T => document.querySelector<T>(sel)!;
 const rowCanvas = (name: string): HTMLCanvasElement => el<HTMLCanvasElement>(`.row[data-row="${name}"] canvas`);
@@ -101,7 +101,7 @@ async function loadIndex(): Promise<void> {
     else el('#summary').textContent = `no report for ${asked} — run npm run warp:mix -- --report`;
   }
   try {
-    arm = localStorage.getItem(ARM_KEY) ?? '';
+    algorithm = localStorage.getItem(ALGORITHM_KEY) ?? '';
   } catch {
     // no storage
   }
@@ -111,20 +111,20 @@ async function loadIndex(): Promise<void> {
   }
 }
 
-/** The arms run on the track, for the select; the bare report first. */
+/** The algorithms run on the track, for the select; the bare report first. */
 function fillArms(entry: IndexEntry | undefined): void {
-  const select = el<HTMLSelectElement>('#arm');
+  const select = el<HTMLSelectElement>('#algorithm');
   select.innerHTML = '';
-  const arms = ['', ...(entry?.arms ?? [])];
-  for (const each of arms) {
+  const algorithms = ['', ...(entry?.algorithms ?? [])];
+  for (const each of algorithms) {
     const option = document.createElement('option');
     option.value = each;
     option.textContent = each === '' ? 'drums.ours' : each;
     select.append(option);
   }
-  if (!arms.includes(arm)) arm = '';
-  select.value = arm;
-  select.hidden = arms.length < 2;
+  if (!algorithms.includes(algorithm)) algorithm = '';
+  select.value = algorithm;
+  select.hidden = algorithms.length < 2;
 }
 
 async function loadTrack(id: string): Promise<void> {
@@ -135,10 +135,10 @@ async function loadTrack(id: string): Promise<void> {
     // no storage
   }
   fillArms(entries.find((e) => e.id === id));
-  report = await json<Report>(`${REPORTS}/${id}${arm ? `.${arm}` : ''}.json`);
+  report = await json<Report>(`${REPORTS}/${id}${algorithm ? `.${algorithm}` : ''}.json`);
   swept = null;
   truth = await json<Truth>(`${REPORTS}/truth/${id}.json`);
-  if (!report) throw new Error(`no report for ${id}${arm ? ` (${arm})` : ''}`);
+  if (!report) throw new Error(`no report for ${id}${algorithm ? ` (${algorithm})` : ''}`);
   saved = truth ? structuredClone(truth) : null;
   correcting = false;
   undoStack = [];
@@ -750,7 +750,7 @@ async function saveTruth(): Promise<void> {
 
 /**
  * Two clicks rather than a dialog: a browser driving the page cannot answer
- * a confirm(). The first click arms the button for three seconds; the second
+ * a confirm(). The first click algorithms the button for three seconds; the second
  * does the thing. Returns whether the thing is to be done.
  */
 function armed(button: HTMLButtonElement, isArmed: boolean, setArmed: (to: boolean) => void, label: string, ask: string): boolean {
@@ -1169,10 +1169,10 @@ function wire(): void {
   el<HTMLSelectElement>('#track').addEventListener('change', (ev) => {
     void loadTrack((ev.target as HTMLSelectElement).value);
   });
-  el<HTMLSelectElement>('#arm').addEventListener('change', (ev) => {
-    arm = (ev.target as HTMLSelectElement).value;
+  el<HTMLSelectElement>('#algorithm').addEventListener('change', (ev) => {
+    algorithm = (ev.target as HTMLSelectElement).value;
     try {
-      localStorage.setItem(ARM_KEY, arm);
+      localStorage.setItem(ALGORITHM_KEY, algorithm);
     } catch {
       // no storage
     }

@@ -3,11 +3,11 @@ import { createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Analysis } from './Analysis.tsx';
-import { run } from './arms.ts';
+import { run } from './algorithms.ts';
 import type { Mix } from '../state.ts';
 import type { Beats } from '../warp.ts';
 
-vi.mock('./arms.ts', async (original) => ({ ...await original<object>(), run: vi.fn(() => null) }));
+vi.mock('./algorithms.ts', async (original) => ({ ...await original<object>(), run: vi.fn(() => null) }));
 vi.mock('../transients.ts', async (original) => ({ ...await original<object>(), heardIn: () => ({ rate: 8000, transients: [] }) }));
 vi.mock('@openflow/widgets/debug/Scope.tsx', () => ({ Scope: () => null, ScopeRow: () => null }));
 vi.mock('@openflow/widgets/debug/Plot.tsx', () => ({ Plot: () => null }));

@@ -31,7 +31,7 @@ a follower anchored to the same detector naturally earns many zero residuals.
 Agreement is an internal consistency check, not independent accuracy or confidence.
 
 Save comparison copies the grid. Candidate, kept and saved grids are all rescored
-against the current run's detections and tolerance. The saved label records arm/input
+against the current run's detections and tolerance. The saved label records algorithm/input
 and map mode. The copy lasts until clear, track change or tab unmount.
 
 ## Reference accuracy
