@@ -11,7 +11,7 @@
  * stage is losing the accuracy. That is the whole point of running them side
  * by side rather than one at a time.
  */
-import { combOf } from './comb.ts';
+import { combOf, onsetOf } from './comb.ts';
 import { ellisOf, gridOf } from './ellis.ts';
 import { fluxOf, heardOf, monoOf, onsetsOf } from './flux.ts';
 import { followOf, type Follow } from './follow.ts';
@@ -130,6 +130,22 @@ export function run(algorithm: Algorithm, channels: readonly Float32Array[], rat
     const whole = Math.round(fit.bpm);
     return { heard, fit: { ...fit, bpm: whole }, follow: null, beats: straight(whole, fit.offset, rate, length) };
   }
+  // Before the flux, because this one has no use for it: the tempo resonates
+  // over the hits it is already placing beats on, which is what makes it an
+  // experiment about the tempo stage alone. It was hearing the file twice —
+  // the bands once, then a whole STFT whose only purpose was to hand the comb
+  // something to resonate over.
+  if (algorithm === 'comb') {
+    const heard = heardIn(channels, rate);
+    if (!heard) return null;
+    const comb = combOf(onsetOf(heard), SLOWEST, FASTEST);
+    if (!comb) return { heard, fit: null, follow: null, beats: null };
+    const period = 60 / comb.bpm;
+    const line = phaseOf(heard.transients.filter((t) => t.band !== 'high'), period, heard.seconds);
+    const fit: Fit = { bpm: comb.bpm, offset: line.first, agreement: beatnessOf(heard, period, line.first) };
+    const follow = followOf(heard, fit, trace.follow);
+    return { heard, fit, follow, beats: follow?.beats ?? null };
+  }
   const onset = fluxOf(monoOf(channels), rate);
   if (!onset) return null;
   if (algorithm === 'flux') {
@@ -139,16 +155,6 @@ export function run(algorithm: Algorithm, channels: readonly Float32Array[], rat
     return { heard, fit, follow, beats: follow?.beats ?? null };
   }
   const comb = combOf(onset, SLOWEST, FASTEST);
-  if (algorithm === 'comb') {
-    const heard = heardIn(channels, rate);
-    if (!heard) return null;
-    if (!comb) return { heard, fit: null, follow: null, beats: null };
-    const period = 60 / comb.bpm;
-    const line = phaseOf(heard.transients.filter((t) => t.band !== 'high'), period, heard.seconds);
-    const fit: Fit = { bpm: comb.bpm, offset: line.first, agreement: beatnessOf(heard, period, line.first) };
-    const follow = followOf(heard, fit, trace.follow);
-    return { heard, fit, follow, beats: follow?.beats ?? null };
-  }
   const heard = heardOf(onset, rate, seconds);
   if (!comb) return { heard, fit: null, follow: null, beats: null };
   const times = algorithm === 'ellis' ? ellisOf(onset, comb.bpm) : gridOf(onsetsOf(onset), comb.bpm, seconds);

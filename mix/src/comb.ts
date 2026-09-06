@@ -1,4 +1,5 @@
 import type { Onset } from './flux.ts';
+import type { Heard } from './transients.ts';
 
 /**
  * A tempo by comb-filter resonance, after audiojs/beat (MIT).
@@ -17,6 +18,12 @@ import type { Onset } from './flux.ts';
  * 154. Scheirer's filter is a resonator and has no anchor. So each tempo is
  * scored at its best phase: the strength is binned by phase within one
  * period, and the train is slid around the bin.
+ *
+ * The onset function is read once into the frames that carry any strength at
+ * all and every tempo is then scored over those alone, because the function
+ * `onsetOf` builds is nearly all zeros and a zero moves no bin. A spectral
+ * flux is dense and loses nothing by it; a raster of hits is a thousandth as
+ * full and the same hundred and twenty tempos cost a twentieth of the time.
  */
 
 export interface Comb {
@@ -33,11 +40,18 @@ const HARMONICS = 4;
 /** How wide the raised-cosine window under each pulse is, as a share of the pulse's period. */
 const WIDTH = 0.15;
 
+/** Frames of an onset function that carry any strength, and how much: what every tempo is scored over. */
+interface Struck {
+  at: Int32Array;
+  strength: Float64Array;
+}
+
 /** The strength a train at `period` frames gathers at its best phase, harmonics and all. */
-function resonance(values: Float64Array, period: number): number {
+function resonance(struck: Struck, period: number): number {
+  const { at, strength } = struck;
   const bins = Math.max(2, Math.round(period));
   const binned = new Float64Array(bins);
-  for (let i = 0; i < values.length; i++) binned[Math.floor(((i % period) / period) * bins)] += values[i];
+  for (let i = 0; i < at.length; i++) binned[Math.floor(((at[i] % period) / period) * bins)] += strength[i];
   const kernel = new Float64Array(bins);
   for (let h = 1; h <= HARMONICS; h++) {
     const p = bins / h;
@@ -57,14 +71,31 @@ function resonance(values: Float64Array, period: number): number {
   return best;
 }
 
+/** Every frame with strength in it, in order, so the tempos share one reading of the function. */
+function struckIn(values: Float64Array): Struck {
+  let n = 0;
+  for (let i = 0; i < values.length; i++) if (values[i] !== 0) n++;
+  const at = new Int32Array(n);
+  const strength = new Float64Array(n);
+  let k = 0;
+  for (let i = 0; i < values.length; i++) {
+    if (values[i] === 0) continue;
+    at[k] = i;
+    strength[k] = values[i];
+    k++;
+  }
+  return { at, strength };
+}
+
 export function combOf(onset: Onset, slowest: number, fastest: number): Comb | null {
   const { values, per } = onset;
   if (values.length < 2) return null;
+  const struck = struckIn(values);
   const scored: { bpm: number; confidence: number }[] = [];
   let strongest = 0;
   for (let bpm = Math.ceil(slowest); bpm <= Math.floor(fastest); bpm++) {
     const lean = Math.log2(bpm / LEAN_BPM) / LEAN_SIGMA;
-    const score = resonance(values, 60 / bpm / per) * Math.exp(-0.5 * lean * lean);
+    const score = resonance(struck, 60 / bpm / per) * Math.exp(-0.5 * lean * lean);
     scored.push({ bpm, confidence: score });
     if (score > strongest) strongest = score;
   }
@@ -80,4 +111,31 @@ export function combOf(onset: Onset, slowest: number, fastest: number): Comb | n
     if (!duplicate) candidates.push(s);
   }
   return { bpm: candidates[0].bpm, confidence: candidates[0].confidence, candidates };
+}
+
+/** Frames of the raster a hit is laid on. The flux's own hop, so a period counts the same frames it always did. */
+const HOP = 512;
+
+/**
+ * The hits as an onset function, so a tempo can be had off what
+ * `transients.ts` already heard.
+ *
+ * An arm that places its beats on our hits was hearing the file twice: the
+ * bands once, and then a whole STFT whose only purpose was to hand this a
+ * function to resonate over. That second hearing was five sixths of the arm's
+ * running time — two and a half seconds of FFT on an eight-minute track, to
+ * produce one number. A hit is already an onset, and a rise is what a
+ * spectral flux measures, so each one is laid on the flux's own frame grid at
+ * the sharpness it stood up with. All three bands go in: what the kick does
+ * on the beat, the snare on two and four and the hats between them is the
+ * evidence for the pulse, and the comb is asking exactly that question.
+ */
+export function onsetOf(heard: Heard): Onset {
+  const per = HOP / heard.rate;
+  const values = new Float64Array(Math.max(2, Math.ceil(heard.seconds / per)));
+  for (const hit of heard.transients) {
+    const frame = Math.round(hit.at / per);
+    if (frame >= 0 && frame < values.length) values[frame] += hit.strength;
+  }
+  return { values, per, first: 0 };
 }
