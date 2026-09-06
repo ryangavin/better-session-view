@@ -24,7 +24,9 @@ The first look is the app's own pipeline — `transients.ts` → `tempo.ts` →
 `follow.ts` — on the drums, run with a trace so every decision on the way to the
 answer is kept. The **run** group runs any one algorithm (`src/debug/algorithms.ts`)
 on the drums or the whole mix summed back together, so a wrong tempo can be
-traced to the stage that lost it.
+traced to the stage that lost it. **onset** beside the input is how far up its
+attack a hit is timed, `transients.ts`'s `ONSET`, for the three algorithms that
+hear through our detector; lower is earlier, and the product uses the default.
 
 **compare all** runs every one of them on that input and holds all seven answers
 at once, which is the thing one-at-a-time could not do: telling two apart used to

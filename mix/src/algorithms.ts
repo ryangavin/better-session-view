@@ -17,7 +17,7 @@ import { fluxOf, heardOf, monoOf, onsetsOf } from './flux.ts';
 import { followOf, type Follow } from './follow.ts';
 import { beatnessOf, FASTEST, fitOf, phaseOf, SLOWEST, type Fit } from './tempo.ts';
 import type { Trace } from './trace.ts';
-import { heardIn, type Heard } from './transients.ts';
+import { heardIn, ONSET, type Heard } from './transients.ts';
 import { beatsOf, type Beats } from './warp.ts';
 
 /**
@@ -113,11 +113,16 @@ export function straight(bpm: number, offset: number, rate: number, length: numb
   return samples.length >= 2 ? beatsOf(rate, length, first, samples, bpm) : null;
 }
 
-export function run(algorithm: Algorithm, channels: readonly Float32Array[], rate: number, trace: Trace): Run | null {
+/**
+ * One algorithm on one input. `rise` is how far up its attack a hit is
+ * timed — `transients.ts`'s onset — and reaches the three that hear through
+ * our detector; the spectral-flux ones place their beats on their own frames.
+ */
+export function run(algorithm: Algorithm, channels: readonly Float32Array[], rate: number, trace: Trace, rise = ONSET): Run | null {
   const length = channels[0].length;
   const seconds = length / rate;
   if (algorithm === 'ours' || algorithm === 'line' || algorithm === 'whole') {
-    const heard = heardIn(channels, rate);
+    const heard = heardIn(channels, rate, rise);
     if (!heard) return null;
     const fit = fitOf(heard, trace.tempo);
     if (algorithm === 'ours') {
@@ -136,7 +141,7 @@ export function run(algorithm: Algorithm, channels: readonly Float32Array[], rat
   // the bands once, then a whole STFT whose only purpose was to hand the comb
   // something to resonate over.
   if (algorithm === 'comb') {
-    const heard = heardIn(channels, rate);
+    const heard = heardIn(channels, rate, rise);
     if (!heard) return null;
     const comb = combOf(onsetOf(heard), SLOWEST, FASTEST);
     if (!comb) return { heard, fit: null, follow: null, beats: null };

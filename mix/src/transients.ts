@@ -99,8 +99,14 @@ const LEAST = 0.4;
 const OVER = 1.5;
 /** Under this share of the band's loudest, a rise is bleed or noise, however sharp. */
 const FAINT = 0.03;
-/** How far up its climb a hit is timed at: the start of the attack. */
-const ONSET = 0.2;
+/**
+ * How far up its climb a hit is timed at, as a share of the rise from the
+ * quiet before it to the peak: the start of the attack. A tenth, measured on
+ * the library against where each kick's waveform leaves the quiet: a fifth
+ * sat one to seven milliseconds into the stroke, a twentieth began to land
+ * before it. The Beat analysis tab has this as a knob.
+ */
+export const ONSET = 0.1;
 /**
  * How long each band's filter holds a hit back, in seconds, taken off again.
  * Three one-poles delay by three time constants: four milliseconds at a
@@ -149,13 +155,14 @@ class Follower {
   private b2 = 0;
   private b3 = 0;
   env = 0;
-  private readonly band: Band;
+  private readonly band: Band | 'wide';
   private readonly lo: number;
   private readonly hi: number;
   private readonly up: number;
   private readonly down: number;
 
-  constructor(band: Band, rate: number) {
+  /** `wide` is no filter at all: the whole stem, for timing a stroke by its attack. */
+  constructor(band: Band | 'wide', rate: number) {
     this.band = band;
     this.lo = poleOf(band === 'low' ? KICK : band === 'mid' ? SNARE_FROM : HATS, rate);
     this.hi = poleOf(band === 'mid' ? SNARE_TO : 0, rate);
@@ -165,6 +172,7 @@ class Follower {
 
   /** The band's filter after this sample: what the follower listens to. */
   filter(x: number): number {
+    if (this.band === 'wide') return x;
     this.a1 += this.lo * (x - this.a1);
     this.a2 += this.lo * (this.a1 - this.a2);
     this.a3 += this.lo * (this.a2 - this.a3);
@@ -246,24 +254,37 @@ const AFTER = 0.015;
 /**
  * A hit found again to the exact sample.
  *
- * The frames placed it to a millisecond and a half; this runs the band's own
- * filter and follower over the audio around it and reads off the first
- * sample at which the follower had climbed a fifth of the way from the
- * quietest it was in the twenty milliseconds before the hit to the loudest
- * it got in the fifteen after. Fixed windows, so two strokes of one drum are
- * timed by the same rule whatever frame each fell in. The filter starts fifty
- * milliseconds early so its state has settled, which is the whole cost.
+ * The frames placed it to a millisecond and a half; this runs a follower over
+ * the audio around it and reads off the first sample at which it had climbed
+ * `onset` of the way from the quietest it was in the twenty milliseconds
+ * before the hit to the loudest it got in the fifteen after. Fixed windows,
+ * so two strokes of one drum are timed by the same rule whatever frame each
+ * fell in. The filter starts fifty milliseconds early so its state has
+ * settled, which is the whole cost.
+ *
+ * **A kick is timed on the whole stem, not on its band.** The low band's
+ * three poles at a hundred and twenty hertz are what *find* a kick, and they
+ * are also slow: the body of a kick arrives through them ten to fifteen
+ * milliseconds after the stroke began, and a beat placed there cuts the
+ * attack off a section and comes in late against the click it should be on.
+ * Where the stroke has a click in the high band, `clicked` moves the kick
+ * onto it; where it has none — a layered or a synthesised kick with no
+ * beater — this is what places it, so it listens to everything the stroke
+ * put in the stem and times the attack itself. The mid and high bands are
+ * fast enough to be timed on their own filters.
  */
-export function exactly(channels: readonly Float32Array[], rate: number, hit: Transient): number {
+export function exactly(channels: readonly Float32Array[], rate: number, hit: Transient, onset = ONSET): number {
   const length = channels[0].length;
   // The hit's time already has the filter's lag taken off; the filter's own
-  // trace has not, so the windows sit a lag later than the hit does.
-  const lag = LAG[hit.band];
+  // trace has not, so the windows sit a lag later than the hit does — and the
+  // whole stem is not filtered, so it sits where the hit does.
+  const listen: Band | 'wide' = hit.band === 'low' ? 'wide' : hit.band;
+  const lag = listen === 'wide' ? 0 : LAG[listen];
   const start = Math.max(0, Math.floor((hit.at + lag - BEFORE) * rate));
   const from = Math.max(0, Math.floor((hit.at + lag - BEFORE - WARM) * rate));
   const to = Math.min(length - 1, Math.ceil((hit.at + lag + AFTER) * rate));
   if (to <= start) return hit.sample;
-  const follower = new Follower(hit.band, rate);
+  const follower = new Follower(listen, rate);
   const trace = new Float32Array(to - start + 1);
   let quiet = Infinity;
   let loud = 0;
@@ -276,7 +297,7 @@ export function exactly(channels: readonly Float32Array[], rate: number, hit: Tr
     }
   }
   if (!(loud > quiet)) return hit.sample;
-  const want = quiet + ONSET * (loud - quiet);
+  const want = quiet + onset * (loud - quiet);
   // From the quietest sample forward, so a tail still falling from the last
   // hit is not read as this one climbing.
   let lowest = 0;
@@ -493,11 +514,11 @@ export function clicked(hit: Transient, clicks: readonly Transient[]): Transient
 }
 
 /** Every stroke in a set of channels, each to the exact sample. */
-export function heardIn(channels: readonly Float32Array[], rate: number): Heard | null {
+export function heardIn(channels: readonly Float32Array[], rate: number, onset = ONSET): Heard | null {
   const envelopes = envelopesOf(channels, rate);
   if (!envelopes) return null;
   const exact = (hit: Transient): Transient => {
-    const sample = exactly(channels, rate, hit);
+    const sample = exactly(channels, rate, hit, onset);
     return { ...hit, at: sample / rate, sample };
   };
   const clicks = transientsIn(envelopes.high, envelopes.per, 'high', rate).map(exact);

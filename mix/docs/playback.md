@@ -247,11 +247,22 @@ that envelope is read every sixty-four samples. A transient is where the
 envelope *climbs*: the rise in decibels over the last five milliseconds,
 peak-picked against a threshold that follows the local level, no two closer
 than forty milliseconds in one band. The moment reported is where the envelope
-had climbed a fifth of the way — the start of the attack, not its peak — and it
-is then found again to the exact sample by running the band's own filter over
-the few milliseconds around it. The filter's own delay is taken off, four
-milliseconds for the kick band. A hit carries how sharply it rose, in nepers,
+had climbed a tenth of the way — the start of the attack, not its peak — and it
+is then found again to the exact sample by running a follower over the few
+milliseconds around it: the band's own filter for a snare or a hat, with its
+delay taken off, but **the whole stem for a kick**. The kick band's three poles
+at 120 Hz are slow — the body of a kick arrives through them ten to fifteen
+milliseconds after the stroke began — and a beat placed there cut the attack
+off the front of a section and came in late against the click it should be on.
+Timed on everything the stroke put in the stem, a kick lands within a
+millisecond or two of where its waveform leaves the quiet; the tenth, rather
+than the fifth it was, was measured on the library the same way, and the Beat
+analysis tab has it as a knob. A hit carries how sharply it rose, in nepers,
 and how loud it got against the band's loudest.
+
+The spectral-flux algorithms — Ellis among them, which is what an import gets —
+place their beats on their own frames and never pass through this refinement;
+a grid they laid is only as exact as their hop.
 
 A kick has a click and a hat has a thump, so one stroke shows up faintly in
 bands it does not belong to. A snare or a hat within six milliseconds of a hit

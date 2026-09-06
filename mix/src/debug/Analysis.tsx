@@ -19,7 +19,7 @@ import { openflow } from '../openflow.ts';
 import type { Mix, Track } from '../state.ts';
 import { countedOf, refitOf, sweepOf, type Fit, type Sweep } from '../tempo.ts';
 import type { Trace } from '../trace.ts';
-import { heardIn, type Heard } from '../transients.ts';
+import { heardIn, ONSET, type Heard } from '../transients.ts';
 import { BEATS_PER_BAR, beatAt, tempoAt, tempoOf, countOf, renumbered, sampleOf, type Beats } from '../warp.ts';
 import { agreementOf, ALGORITHMS, describe, IDS, INPUTS, run, straight, type Algorithm, type Described, type Input } from '../algorithms.ts';
 import { Audition, type Click } from './audition.ts';
@@ -70,6 +70,8 @@ const BANDS = [
 ] as const;
 
 const EXPORT_TEMPO: Param = { kind: 'float', min: 40, max: 300, defaultValue: 120, unit: 'custom', customUnit: '%0.3f' };
+/** How far up its attack a hit is timed, as a share of the rise: `transients.ts`'s `ONSET`, here to be tried. */
+const ONSET_AT: Param = { kind: 'float', min: 0.02, max: 0.5, defaultValue: ONSET, unit: 'custom', customUnit: '%0.2f' };
 
 /** One algorithm's answer on this track, kept so all of them can be seen at once. */
 interface Compared {
@@ -170,6 +172,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
   const [under, setUnder] = useState('');
   const [exportBpm, setExportBpm] = useState(120);
   const [exporting, setExporting] = useState(false);
+  const [onset, setOnset] = useState(ONSET);
   /** Every algorithm's answer on this input, once they have all been asked. */
   const [compared, setCompared] = useState<Compared[] | null>(null);
   const [comparing, setComparing] = useState<Algorithm | null>(null);
@@ -234,7 +237,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
         try {
           const trace: Trace = { tempo: { frame: 0.004 }, follow: { frame: 0.004 } };
           const started = performance.now();
-          const got = run(which, channels, rate, trace);
+          const got = run(which, channels, rate, trace, onset);
           const ms = Math.round(performance.now() - started);
           setRunning(false);
           if (!got) {
@@ -264,7 +267,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
         }
       }, 0);
     },
-    [channelsFor, rate, say, editing],
+    [channelsFor, rate, say, editing, onset],
   );
 
   /**
@@ -304,7 +307,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
           let got: ReturnType<typeof run> = null;
           let threw: string | null = null;
           try {
-            got = run(id, channels, rate, trace);
+            got = run(id, channels, rate, trace, onset);
           } catch (error) {
             threw = error instanceof Error ? error.message : String(error);
           }
@@ -323,7 +326,7 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
       };
       step(0);
     },
-    [channelsFor, rate, say],
+    [channelsFor, rate, say, onset],
   );
 
   /** Show one of the compared answers in the rows and the plots below. */
@@ -350,11 +353,11 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
     looked.current = true;
     if (editing) {
       const channels = channelsFor('drums');
-      const heard = channels && heardIn(channels, rate);
+      const heard = channels && heardIn(channels, rate, onset);
       if (heard) setRan({ algorithm: 'ours', input: 'drums', heard, fit: mix.detected, follow: mix.detected && 'beats' in mix.detected ? mix.detected : null, trace: {}, ms: 0 });
       say('Showing the current grid. Find beats to compare a new candidate; Apply grid keeps your changes.');
     } else analyse(algorithm, input);
-  }, [drumsReady, analyse, algorithm, input, editing, channelsFor, rate, mix.detected, say]);
+  }, [drumsReady, analyse, algorithm, input, editing, channelsFor, rate, mix.detected, say, onset]);
 
   /* ---------- the map by hand ---------- */
 
@@ -790,6 +793,17 @@ function Track({ mix, song, subject, editing }: { mix: Mix; song: Track; subject
           <Group caption={editing ? "Algorithm" : "run"} title={editing ? undefined : describe(algorithm).does}>
             <Select items={ALGORITHMS.map((a) => (editing ? a.name : a.id))} index={IDS.indexOf(algorithm)} onChange={(i) => setAlgorithm(IDS[i])} width={editing ? 174 : 72} label={editing ? "Beat analysis algorithm" : "algorithm"} />
             <Segmented items={[...INPUTS]} index={INPUTS.indexOf(input)} onChange={(i) => setInput(INPUTS[i])} label="input" />
+            {!editing && (
+              <NumberField
+                param={ONSET_AT}
+                value={onset}
+                onChange={setOnset}
+                showFill={false}
+                width={52}
+                label="onset"
+                title="how far up its attack a hit is timed, as a share of the rise from the quiet before it to the peak; lower is earlier"
+              />
+            )}
             <Button onPress={() => analyse(algorithm, input)} disabled={running || !drumsReady}>
               {editing ? 'Find beats' : 'run'}
             </Button>
