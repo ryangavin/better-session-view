@@ -112,3 +112,65 @@ section names, and the sections are drawn out of `Cases` like every other. A roo
 more than that passes `tabs` instead — its own `Experiment`s, mounted directly — which is
 what **Graph** does. Prefer the section list: bringing your own tabs is worth it when the
 room is an instrument rather than a page, and not before.
+
+## Play: a complete composition
+
+The **Play** room mounts `bench/PlayCase.tsx`, a silent four-deck study for a future
+mix[flow] play view. It composes existing widgets and `Waveform`, imports no app code,
+and uses fictional tracks, sections and peaks. Reset tab restores its local state.
+
+Four full-width waveforms share a 32-bar ruler and aligned playheads. Below them, five
+strips appear in A, B, Master, C, D order. A shared subgrid aligns headers, launchers,
+effects, mixer controls and footers. The master gets 156px; each deck shares the remaining
+width with a 200px minimum. A single full-width master grid column centers every
+row; paired controls, effect selectors and the crossfader use a common 126px span. Narrow panes scroll horizontally. Deck metadata fits within
+the letter’s 24px header height. The compact launcher uses aligned 24px rows; there is
+no alternate touch-target mode. Physical iPad usability still requires device testing.
+
+Each deck has six named section buttons and four stem columns. A section button launches
+all stems; a cell launches only its stem. Individual stops and the deck Stop follow the
+same launch timing: immediate while paused or in Now mode, otherwise queued to the next
+four-beat boundary. Switching to Now applies pending choices. Pause preserves selections
+and pending changes. Master Stop clears selections, pending changes, the clock and loop.
+There is no mute/solo state; launching and stopping stems chooses what plays.
+
+The master groups Run/Pause and Stop, BPM and 1 bar/Now timing, two FX selectors and
+global loop controls. FX A defaults to Delay and FX B to Reverb; both also offer Echo,
+Chorus and Flanger. In marks the current integer beat. Out marks a later beat and engages
+the loop across all four preview lanes. Exit loop releases it; Reloop returns to its
+start. The same outlined region appears on every lane, and the ruler follows the current
+32-bar page. These controls operate the silent preview, not an audio engine.
+
+Fractional beat position advances with requestAnimationFrame and elapsed time. Playhead
+refs update every frame; the React clock updates only on whole beats. A separate monotonic
+beat counter keeps queued launches advancing even inside loops. Each PreviewMeter owns
+its frame updates, samples the fractional clock, and applies 35ms attack/140ms release
+smoothing before rendering the existing Meter. The whole mixer does not rerender per frame.
+Pausing preserves fractional position; animation effects cancel their frame on cleanup.
+
+Every strip has standard-sized FX A / Filter / FX B knobs. In the deck mixer, stem levels
+stack left, the fader and meter occupy the middle, and Trim/High/Mid/Low stack right.
+Master output sits left of the same trim/EQ stack. Output faders have 210px travel and
+28px tracks, with adjacent 14px meters of the same length. Stem/channel levels, ±12dB trim,
+crossfade assignments, crossfader and master level affect illustrative meters. Sends,
+EQ, filter and headphone cue retain UI settings only.
+
+Cue, A/Thru/B and Full share the shallow deck footer. The master footer holds the
+crossfader without a visible caption/readout, retaining its accessible label and value.
+Full selects an original unseparated track: stem cells, individual stops and levels dim
+and disable, while section-name buttons and deck Stop control an independent full-mix
+selection. Entering Full starts at the first selected stem section, or remains stopped
+if none is selected. Stem state is preserved for switching back. Source changes are
+immediate; section launches retain the selected timing. Full-mix meters ignore stem
+levels but still follow trim, deck gain, crossfader and master.
+
+## Collapsing navigation
+
+The bench’s top-left sidebar toggle hides the room list without unmounting the active
+experiment. Its collapsed menu button remains available beside the experiment tabs.
+`bench-sidebar` remembers the choice through `useRemembered`. This is bench-owned
+layout state; the shared Rooms widget and other app harnesses are unchanged. Hiding
+the sidebar gives the mixer the full available browser width for layout checks.
+
+The master FX selectors include their A/B labels inside the dropdown face (A · Delay,
+B · Reverb), so both controls span the same width as the other master control groups.

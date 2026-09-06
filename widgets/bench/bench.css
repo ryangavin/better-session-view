@@ -544,3 +544,9 @@ font-variation-settings: var(--mono-axes);
   grid-column: 2;
   color: var(--wdg-caption);
 }
+
+.bench-sidebar-toggle { position: fixed; top: 9px; left: 153px; z-index: 5; }
+.bench-collapsed .bench-sidebar-toggle { left: 6px; }
+.bench-collapsed > .wdg-rooms { grid-template-columns: minmax(0, 1fr); }
+.bench-collapsed > .wdg-rooms > .wdg-rooms-side { display: none; }
+.bench-collapsed .wdg-workspace-nav { padding-left: 38px; }

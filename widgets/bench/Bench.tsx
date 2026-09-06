@@ -28,6 +28,7 @@ import {
   WorkspaceCase,
 } from './DebugCases.tsx';
 import { WaveCases } from './WaveCases.tsx';
+import { PLAY_TABS } from './PlayCase.tsx';
 import { GRAPH_TABS } from './GraphCases.tsx';
 import {
   Case,
@@ -78,6 +79,7 @@ interface RoomSpec {
 }
 
 const ROOMS: readonly RoomSpec[] = [
+  { id: 'play', title: 'Play', note: 'four decks, sixteen stems', tabs: PLAY_TABS },
   {
     id: 'controls',
     title: 'Controls',
@@ -772,6 +774,7 @@ function Cases({ only }: { only: string }) {
 
 export function Bench() {
   const [hosted, setHosted] = useState(true);
+  const [sidebar, setSidebar] = useRemembered('bench-sidebar', true);
   const [room, setRoom] = useRemembered('bench-room', ROOMS[0].id);
   const [tab, setTab] = useRemembered('bench-tab', slug(SECTIONS[0]));
 
@@ -797,7 +800,8 @@ export function Bench() {
   );
 
   return (
-    <div className={`bench${hosted ? ' hosted' : ''}`}>
+    <div className={`bench${hosted ? ' hosted' : ''}${sidebar ? '' : ' bench-collapsed'}`}>
+      <Toggle className="bench-sidebar-toggle" on={sidebar} onChange={setSidebar} width={26} label="Show bench sidebar" title={sidebar ? 'Hide sidebar' : 'Show sidebar'}>{sidebar ? '‹' : '☰'}</Toggle>
       <Rooms
         rooms={rooms}
         context={null}
