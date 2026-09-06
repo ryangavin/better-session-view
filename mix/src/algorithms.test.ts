@@ -1,6 +1,6 @@
 import { describe as group, expect, it } from 'vitest';
 import { agreementOf, ALGORITHMS, describe, IDS, secondsOf, straight } from './algorithms.ts';
-import type { Beats } from '../warp.ts';
+import type { Beats } from './warp.ts';
 
 const RATE = 48000;
 const LENGTH = RATE * 30;

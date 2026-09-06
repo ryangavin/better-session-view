@@ -30,6 +30,7 @@ import {
 } from './openflow.ts';
 import { STANDARD_BASS } from './tab.ts';
 import { followOf, type Follow } from './follow.ts';
+import { FIRST_CHOICE, run } from './algorithms.ts';
 
 /**
  * Everything the window knows, in one hook.
@@ -1409,15 +1410,27 @@ export function useMix() {
    * one; the seed alone is the straight line, and a song with nothing steady
    * in it is a refusal rather than a guess.
    */
-  const measure = useCallback((): Fit | Follow | null => {
+  const measure = useCallback((): { found: Fit | Follow; beats: Beats | null } | null => {
+    const buffer = audioOf('drums') ?? audioOf('bass');
+    if (buffer) {
+      const channels = Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c));
+      const got = run(FIRST_CHOICE, channels, buffer.sampleRate, {});
+      if (got?.fit) return { found: got.follow ?? got.fit, beats: got.beats };
+    }
+    // No stem to walk — a track drawn from kept peaks alone. The old path is
+    // all there is there, and it is still better than refusing outright.
     const it = listen();
     if (!it) return null;
     const seed = fitOf(it);
     if (!seed) return null;
-    return followOf(it, seed) ?? seed;
-  }, [listen]);
+    const followed = followOf(it, seed);
+    return { found: followed ?? seed, beats: followed?.beats ?? null };
+  }, [audioOf, listen]);
 
-  const autoWarp = useCallback(() => fit(measure()), [fit, measure]);
+  const autoWarp = useCallback(() => {
+    const got = measure();
+    fit(got?.found ?? null, got?.beats ?? undefined);
+  }, [fit, measure]);
 
   /** Playback tempo never changes where the source beats were measured. */
   const setTempo = useCallback((bpm: number) => {
@@ -1447,7 +1460,8 @@ export function useMix() {
     // and hands the new one a grid measured off the last one.
     if (!song || decodedFor !== song.id) return;
     if (Object.keys(peaks).length === 0) return;
-    fit(measure());
+    const got = measure();
+    fit(got?.found ?? null, got?.beats ?? undefined);
   }, [wantFit, asked, decoding, decodedFor, song, peaks, seconds, fit, measure]);
 
   const startManual = useCallback(

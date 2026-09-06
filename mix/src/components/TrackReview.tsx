@@ -4,13 +4,10 @@ import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import { useAxis } from '@openflow/widgets/debug/useAxis.ts';
 import { ReviewTimeline } from './ReviewTimeline.tsx';
-import { fluxOf, heardOf, monoOf } from '../flux.ts';
 import type { Mix } from '../state.ts';
-import { evenBeats, beatAt, sampleOf, rangeText, type Beats } from '../warp.ts';
-import { heardIn } from '../transients.ts';
-import { fitOf } from '../tempo.ts';
-import { followOf } from '../follow.ts';
+import { evenBeats, beatAt, sampleOf, rangeText, tempoOf, type Beats } from '../warp.ts';
 import { measure, type Measurement } from '../debug/waveforms/measure.ts';
+import { describe, OFFERED, run } from '../algorithms.ts';
 import { sectionSuggestions } from '../sections.ts';
 import { useReviewPlayback } from './reviewPlayback.ts';
 import './TrackReview.css';
@@ -74,15 +71,19 @@ export function TrackReview({ mix, details }: { mix: Mix; details?: ReactNode })
     pending.current = setTimeout(() => {
       pending.current = null;
       try {
+        // The same `run` the harness compares, so what is offered here is
+        // literally what was measured there. It used to be written out again
+        // inline, and the two had already parted: this one fell back to an
+        // even grid where the harness reported no beats at all.
         const drums = audioOf('drums');
         const input = drums && channels(drums);
-        const flux = input && algorithm === 2 ? fluxOf(monoOf(input), drums!.sampleRate) : null;
-        const heard = drums && input && (algorithm === 2 ? flux && heardOf(flux, drums.sampleRate, drums.length / drums.sampleRate) : heardIn(input, drums.sampleRate));
-        const fit = heard && fitOf(heard);
-        if (!fit || !heard) { setNote('No steady beat found. Your current grid is unchanged. Try another algorithm, or correct it in the main view.'); return; }
-        const next = (algorithm === 1 ? null : followOf(heard, fit)?.beats) ?? evenBeats(grid.rate, grid.length, fit.bpm, fit.offset);
+        if (!drums || !input) { setNote('No drums to read. Separate the track first.'); return; }
+        const chosen = OFFERED[algorithm];
+        const got = run(chosen, input, drums.sampleRate, {});
+        const next = got?.beats ?? (got?.fit ? evenBeats(grid.rate, grid.length, got.fit.bpm, got.fit.offset) : null);
+        if (!next) { setNote(`${describe(chosen).name} found no steady beat. Your current grid is unchanged — try another algorithm, or correct it in the main view.`); return; }
         change(next); inspect(sampleOf(next, 0) / next.rate);
-        setNote(`${['Transient follower', 'Steady tempo', 'Spectral flux follower'][algorithm]} grid ready to check. Apply to replace the saved beat map, including manual timing corrections, or discard the preview.`);
+        setNote(`${describe(chosen).name} grid ready to check — ${tempoOf(next).toFixed(2)} BPM over ${next.samples.length} beats. Apply to replace the saved beat map, including manual timing corrections, or discard the preview.`);
       } catch (error) { setNote(`Couldn't reset the grid: ${String(error)}`); }
       finally { setRunning(false); }
     }, 0);
@@ -111,7 +112,7 @@ export function TrackReview({ mix, details }: { mix: Mix; details?: ReactNode })
     <AnalysisHeading mix={mix} onSave={save} disabled={running} note={note || (dirty || useSections ? 'Applying replaces only the results you selected below.' : 'Inspect detection here. Edit timing in the main view.')} />
     <div className="mf-track-review">
     <section className="mf-review-workspace" aria-label="Song timeline review">
-      <div className="mf-review-actions mf-review-analysis-controls"><span>Beat algorithm</span><Select items={['Transient follower', 'Steady tempo', 'Spectral flux follower']} index={algorithm} onChange={setAlgorithm} label="Beat analysis algorithm" />
+      <div className="mf-review-actions mf-review-analysis-controls"><span>Beat algorithm</span><Select items={OFFERED.map((id) => describe(id).name)} index={algorithm} onChange={setAlgorithm} label="Beat analysis algorithm" width={186} title={describe(OFFERED[algorithm]).does} />
         <Button disabled={running} onPress={reset}>{running ? 'Finding beats…' : 'Run beat analysis'}</Button><Button disabled={!dirty || running} onPress={saved}>Discard beat preview</Button>
       </div>
       {dirty && <div className="mf-review-preview" role="status"><strong>Beat detection preview</strong><p>Apply replaces the saved beat map, including any manual corrections. Your current sections stay unless you select the section suggestions.</p><Toggle on={showSaved} onChange={setShowSaved} label="Compare saved grid" width={150}>Compare saved grid</Toggle><p>Gold lines: proposed bars. Cyan dashed lines: saved bars. Zoom in to compare; the metronome follows the proposal.</p></div>}

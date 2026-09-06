@@ -3,15 +3,17 @@ import { createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { TrackReview } from './TrackReview.tsx';
-import { fitOf } from '../tempo.ts';
-import { heardIn } from '../transients.ts';
+import { OFFERED, run } from '../algorithms.ts';
 import { measure } from '../debug/waveforms/measure.ts';
 import type { Mix } from '../state.ts';
 import { evenBeats, type Beats } from '../warp.ts';
-vi.mock('../tempo.ts', () => ({ fitOf: vi.fn(() => null) }));
-vi.mock('../follow.ts', () => ({ followOf: vi.fn(() => null) }));
-vi.mock('../transients.ts', () => ({ heardIn: vi.fn(() => null) }));
+// `run` is the seam: the page chooses an algorithm and draws what comes back,
+// and which algorithm found it is the registry's business, not this page's.
+vi.mock('../algorithms.ts', async (original) => ({ ...(await original<object>()), run: vi.fn(() => null) }));
 vi.mock('../debug/waveforms/measure.ts', () => ({ measure: vi.fn(() => new Promise(() => {})) }));
+/** What `run` hands back when an algorithm did find a grid. */
+const found = (beats: Beats, bpm: number) =>
+  ({ heard: { transients: [], seconds: 0 }, fit: { bpm, offset: beats.samples[0] / beats.rate, agreement: 0.9 }, follow: null, beats }) as unknown as NonNullable<ReturnType<typeof run>>;
 const playback = vi.hoisted(() => ({ play: vi.fn(async () => {}), stop: vi.fn() }));
 vi.mock('./reviewPlayback.ts', () => ({ useReviewPlayback: () => ({ head: null, ...playback }) }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
@@ -23,7 +25,7 @@ function fixture() {
 describe('song review', () => {
   it('opens without rerunning beats, and saves exact irregular samples while preserving existing sections', () => {
     const mix = fixture(); render(createElement(TrackReview, { mix }));
-    expect(heardIn).not.toHaveBeenCalled(); expect(measure).toHaveBeenCalledOnce();
+    expect(run).not.toHaveBeenCalled(); expect(measure).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
     expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
     expect(mix.keepStems).toHaveBeenCalledOnce();
@@ -38,15 +40,14 @@ describe('song review', () => {
   it('a failed reset leaves the candidate intact and never writes to the library', async () => {
     const mix = fixture(); render(createElement(TrackReview, { mix }));
     fireEvent.click(screen.getByRole('button', { name: 'Run beat analysis' }));
-    await waitFor(() => expect(heardIn).toHaveBeenCalledOnce());
-    expect(screen.getByText(/No steady beat found/)).toBeTruthy();
+    await waitFor(() => expect(run).toHaveBeenCalledOnce());
+    expect(screen.getByText(/found no steady beat/)).toBeTruthy();
     expect(mix.saveReview).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Apply analysis & return' }));
     expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
   });
   it('previews a successful detection against the saved grid, and discards it without applying', async () => {
-    vi.mocked(heardIn).mockReturnValueOnce({} as NonNullable<ReturnType<typeof heardIn>>);
-    vi.mocked(fitOf).mockReturnValueOnce({ bpm: 120, offset: .12, agreement: .9 });
+    vi.mocked(run).mockReturnValueOnce(found(evenBeats(grid.rate, grid.length, 120, .12), 120));
     const mix = fixture(); render(createElement(TrackReview, { mix }));
     fireEvent.click(screen.getByRole('button', { name: 'Run beat analysis' }));
     await screen.findByText('Beat detection preview');
@@ -59,8 +60,7 @@ describe('song review', () => {
     expect(mix.saveReview).toHaveBeenCalledWith(grid, undefined);
   });
   it('applies the proposed map only after the explicit Apply action', async () => {
-    vi.mocked(heardIn).mockReturnValueOnce({} as NonNullable<ReturnType<typeof heardIn>>);
-    vi.mocked(fitOf).mockReturnValueOnce({ bpm: 120, offset: .12, agreement: .9 });
+    vi.mocked(run).mockReturnValueOnce(found(evenBeats(grid.rate, grid.length, 120, .12), 120));
     const mix = fixture(); render(createElement(TrackReview, { mix }));
     fireEvent.click(screen.getByRole('button', { name: 'Run beat analysis' }));
     await screen.findByText('Beat detection preview');
@@ -120,9 +120,11 @@ describe('song review', () => {
     const mix = fixture(); render(createElement(TrackReview, { mix }));
     fireEvent.click(screen.getByRole('combobox', { name: 'Beat analysis algorithm' }));
     fireEvent.click(document.querySelectorAll('[role="option"]')[1] as Element);
-    expect(heardIn).not.toHaveBeenCalled();
+    expect(run).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Run beat analysis' }));
-    await waitFor(() => expect(heardIn).toHaveBeenCalledOnce());
+    await waitFor(() => expect(run).toHaveBeenCalledOnce());
+    // and it ran the one that was chosen, not the default
+    expect(vi.mocked(run).mock.calls[0][0]).toBe(OFFERED[1]);
     expect(mix.saveReview).not.toHaveBeenCalled();
   });
 

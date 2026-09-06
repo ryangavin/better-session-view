@@ -21,7 +21,7 @@ import { countedOf, refitOf, sweepOf, type Fit, type Sweep } from '../tempo.ts';
 import type { Trace } from '../trace.ts';
 import { heardIn, type Heard } from '../transients.ts';
 import { BEATS_PER_BAR, beatAt, tempoAt, tempoOf, countOf, renumbered, sampleOf, type Beats } from '../warp.ts';
-import { agreementOf, ALGORITHMS, describe, IDS, INPUTS, run, straight, type Algorithm, type Described, type Input } from './algorithms.ts';
+import { agreementOf, ALGORITHMS, describe, IDS, INPUTS, run, straight, type Algorithm, type Described, type Input } from '../algorithms.ts';
 import { Audition, type Click } from './audition.ts';
 import * as D from './draw.ts';
 import { AnalysisEvidence } from './AnalysisEvidence.tsx';

@@ -11,14 +11,14 @@
  * stage is losing the accuracy. That is the whole point of running them side
  * by side rather than one at a time.
  */
-import { combOf } from '../comb.ts';
-import { ellisOf, gridOf } from '../ellis.ts';
-import { fluxOf, heardOf, monoOf, onsetsOf } from '../flux.ts';
-import { followOf, type Follow } from '../follow.ts';
-import { beatnessOf, FASTEST, fitOf, phaseOf, SLOWEST, type Fit } from '../tempo.ts';
-import type { Trace } from '../trace.ts';
-import { heardIn, type Heard } from '../transients.ts';
-import { beatsOf, type Beats } from '../warp.ts';
+import { combOf } from './comb.ts';
+import { ellisOf, gridOf } from './ellis.ts';
+import { fluxOf, heardOf, monoOf, onsetsOf } from './flux.ts';
+import { followOf, type Follow } from './follow.ts';
+import { beatnessOf, FASTEST, fitOf, phaseOf, SLOWEST, type Fit } from './tempo.ts';
+import type { Trace } from './trace.ts';
+import { heardIn, type Heard } from './transients.ts';
+import { beatsOf, type Beats } from './warp.ts';
 
 /**
  * One way of finding the beat: what to call it, and what it actually does.
@@ -51,6 +51,26 @@ export type Algorithm = (typeof ALGORITHMS)[number]['id'];
 
 /** The ids in order, for the places that want the bare list. */
 export const IDS = ALGORITHMS.map((a) => a.id) as readonly Algorithm[];
+
+/**
+ * What the app itself offers, in menu order — and the first of them is what an
+ * import gets without being asked.
+ *
+ * Ellis leads because it is the one that reads a whole song rather than the
+ * part of it with drums in. Ours starts counting at the first kick, so on a
+ * track with a minute of intro bar 1 lands a minute in and everything before
+ * it falls outside the bars; Ellis rules the file. On Some Chords that is the
+ * difference between 928 beats and 1033 — 105 beats, which is the 49 seconds
+ * before the drums arrive.
+ *
+ * `whole` and `grid` stay in the harness. The first is a diagnostic — what a
+ * file labelled with a whole tempo would get — and the second is measurably
+ * wrong, landing off the beat on every track in the library.
+ */
+export const OFFERED: readonly Algorithm[] = ['ellis', 'ours', 'line', 'flux', 'comb'];
+
+/** What an import runs when nobody has chosen. */
+export const FIRST_CHOICE: Algorithm = 'ellis';
 
 export const describe = (id: Algorithm): Described =>
   ALGORITHMS.find((a) => a.id === id) ?? ALGORITHMS[0];
