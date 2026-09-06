@@ -126,19 +126,24 @@ A fresh clone needs `npm install && npm run build` before the device exists.
 ### The reach view
 
 `npm run dev:mix` opens the window **and** serves the same app to a browser, at
-<http://localhost:5673/harness/reach.html>. It is the real app, not a screenshot of one:
+<http://localhost:5673>. It is the real app, not a screenshot of one:
 your library, your settings, the stems you have already separated.
 
-That takes explaining, because the obvious version of it does not work. A tab pointed at
-`http://localhost:5673` runs the same bundle and shows the empty first-run app — the
-library lives in the main process, the renderer asks for it over IPC, and IPC arrives
-through a preload that only a window gets. What is missing there is not the window, it is
-the transport.
+That takes explaining, because it did not used to work. The library lives in the main
+process, the renderer asks for it over IPC, and IPC arrives through a preload that only a
+window gets — so a tab ran the same bundle and drew the empty first-run app, which looks
+exactly like an empty library. What was missing there was never the window, it was the
+transport.
 
-So the reach view runs the app's own `preload.ts`, unchanged, with `electron` resolved to
-a browser stand-in: `invoke` becomes a POST and events become one server-sent stream,
-both answered by the running main process. One preload, two transports, and no second
-description of the API to drift from the first.
+So `src/main.tsx` builds one when it finds that no preload has: it opens the loopback
+port the main process serves, then runs the app's own `preload.ts`, unchanged, with
+`electron` resolved to a browser stand-in. `invoke` becomes a POST and events become one
+server-sent stream, both answered by the running main process. One preload, two
+transports, and no second description of the API to drift from the first. A tab with no
+app behind it says so rather than pretending to be a fresh install.
+
+There is no second entry point and no special URL: `import.meta.env.DEV` folds the whole
+branch out of a build, which the alias above is keyed to match.
 
 Worth having because a browser is a better place to work than a shell around a page —
 real devtools, a readable DOM for anything driving the app, several tabs at once, and it

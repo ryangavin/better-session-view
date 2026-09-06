@@ -138,7 +138,7 @@ buffers so the previous song is never drawn under the new title.
    available, not mandatory. Keep experiment-specific calculations in its own directory.
 4. Dispose of audio and effects and cancel pending work on unmount. Render async errors
    locally. The workspace isolates render failures and provides Reset tab.
-5. Run `npm run dev:mix` and visit `/harness/reach.html` on the mix dev server (normally
+5. Run `npm run dev:mix` and open the mix dev server in a browser (normally
    port 5673). This is the app’s real preload and library in a browser, not mock data.
    Open the bug button, choose the tab, and inspect the results there.
 

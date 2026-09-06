@@ -18,7 +18,8 @@ const PORT = uiPort(APPS.mix);
 
 /**
  * While serving, `electron` resolves to a browser stand-in, which is what lets
- * `harness/reach.html` run the app's own preload unchanged.
+ * a browser tab run the app's own preload unchanged — `src/main.tsx` builds the
+ * bridge itself when it finds no preload has.
  *
  * Keyed on `command` rather than on an environment variable because this is the
  * one process that cannot read one: vite is started by `watch` beside the app

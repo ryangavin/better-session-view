@@ -97,7 +97,7 @@ work in [Issues](../../issues).
 ## Before you claim something works
 
 **Whenever working on `mix/`, open its dev harness in the Codex in-app browser:**
-[`http://localhost:5673/harness/reach.html`](http://localhost:5673/harness/reach.html).
+[`http://localhost:5673`](http://localhost:5673).
 Reuse the existing harness tab when it is already open. Keep it available while working
 on the module and use it to check usability changes.
 

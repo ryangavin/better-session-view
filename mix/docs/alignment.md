@@ -91,7 +91,7 @@ context equivalence. These tests run the actual resampler, not just display meta
 An additional four-bar impulse-loop test repeats rendered samples three times and checks
 the downbeat, WAV frame count, and accumulated bound from whole-file sample rounding.
 
-The development browser at `/harness/reach.html` exercises the same renderer on library
+The development browser at `http://localhost:5673` exercises the same renderer on library
 audio. This does not replace human listening or establish physical separation latency.
 The next useful experiment is a known drifting/live reference compared against these
 minimal maps, with measured boundary transients, before choosing rate smoothing.
