@@ -261,6 +261,51 @@
   text-overflow: ellipsis;
 }
 
+.mf-export-job {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mf-export-bar {
+  position: relative;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--sel);
+  overflow: hidden;
+}
+
+.mf-export-bar[data-waiting]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 28%;
+  border-radius: inherit;
+  background: var(--amber);
+  opacity: 0.5;
+  animation: mf-export-crawl 2.2s ease-in-out infinite;
+}
+
+@keyframes mf-export-crawl {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+
+.mf-export-fill {
+  height: 100%;
+  background: var(--amber);
+  transition: width 90ms linear;
+}
+
+.mf-export-stage {
+  color: var(--caption);
+  font-size: var(--text-label);
+}
+
 .mf-export-wrote {
   margin: 0;
   color: var(--detail);

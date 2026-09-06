@@ -42,15 +42,24 @@ takes the first whose bar lines all land within ten milliseconds — about a
 sixty-fourth of a beat at 128 — and reports how far the worst is off. Every bar
 always lands them, so per beat is never measured into; it is asked for.
 
-**The export dialog offers a loop length, not a density.** *Loops of* 4, 8 or
-16 bars: the measured answer when it is one of those, eight otherwise. Per
-section, every bar and per beat exist for the stretcher, the tests and the
-harness; a person exporting to Live is asked what the files are for. The
-sentence beside the control says which lines the finer loops would want and
-how far the worst of them is off, never as a percentage: *every 4-bar line on
-the grid*, or *the worst 4-bar line 6 ms off*. Under a loop of four the finer
-lines are the bar lines. The line after writing says the whole of it: *4 wav ·
-259 bars · pinned every 8 bars*.
+**The export dialog asks what the files are for.** *Loops of* 4, 8 or 16
+bars, or *sections*: the measured answer when it is one of those, eight bars
+otherwise. Sections pins the cuts alone, so a twenty-four bar section lands
+its first and last bar on the grid and keeps every push and pull between them
+— that is what a section is for, and a loop length would quantize the feel
+out of it. Every bar and per beat exist for the stretcher, the tests and the
+harness. The sentence beside the control says which lines the finer loops
+would want and how far the worst of them is off, never as a percentage:
+*every 4-bar line on the grid*, or *the worst 4-bar line 6 ms off*. Under a
+loop of four the finer lines are the bar lines. The line after writing says
+the whole of it: *4 wav · 259 bars · pinned every 8 bars*.
+
+**The export reports as it goes.** `straighten.ts` lays a span at a time
+through a generator; the main process drains it with the event loop given
+back between spans and pushes `openflow:export-progress`, so the dialog draws
+a bar and the window is not frozen for the length of a stem. The sync entry
+drains the same generator, so the paced export and the tests cannot lay a
+different file.
 
 **One answer for the stretcher and the export.** The window holds the loop
 length and hands it to both with the cuts, so a section looped under warp plays
@@ -123,3 +132,7 @@ finding as a bar number. [`harness.md`](harness.md) has the batch run.
   1, 4, 8 or 16, and the dialog offers the three a loop is for. Nothing new is
   written to `analysis.json`. The control says *Loops of 8 bars* and the
   sentence *pinned every 8 bars*; never *quantize*, *warp*, *snap* or *anchor*.
+- **2026-09-06** — *sections* stays on the dialog beside the loop lengths.
+  Ryan: a twenty-four bar section should land its first and last bar and
+  nothing between should be forced to four or eight. The measured default may
+  be sections.

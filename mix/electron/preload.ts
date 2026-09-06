@@ -8,7 +8,7 @@ import type { Model } from './models.ts';
 import type { Progress } from './job.ts';
 import type { Outcome } from './separate.ts';
 import type { Tuning } from '../src/tab.ts';
-import type { ExportAsk, Written } from './export.ts';
+import type { ExportAsk, ExportProgress, Written } from './export.ts';
 import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
@@ -88,6 +88,12 @@ expose({
   export: {
     /** Every named stem laid straight at `to` bpm from 1.1.1, into the export folder. */
     stems: (ask: ExportAsk): Promise<Written> => ipcRenderer.invoke('openflow:export-stems', ask),
+    /** How far the export has got, as it goes. */
+    onProgress: (hear: (progress: ExportProgress) => void): (() => void) => {
+      const listener = (_e: unknown, progress: ExportProgress) => hear(progress);
+      ipcRenderer.on('openflow:export-progress', listener);
+      return () => ipcRenderer.off('openflow:export-progress', listener);
+    },
   },
   destination: {
     /** Where an export would go right now: what was picked, or the default. */

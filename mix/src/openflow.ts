@@ -222,6 +222,14 @@ export interface ExportAsk {
   beats?: Beats;
 }
 
+/** How far along an export is — `mix/electron/export.ts`'s shape. */
+export interface ExportProgress {
+  /** 0 to 1 across every stem asked for. */
+  done: number;
+  /** *laying drums*, *writing drums*. */
+  stage: string;
+}
+
 export interface Written {
   where: string;
   files: string[];
@@ -299,6 +307,7 @@ interface Bridge {
   };
   export: {
     stems(ask: ExportAsk): Promise<Written>;
+    onProgress(hear: (progress: ExportProgress) => void): () => void;
   };
   separate: {
     models(): Promise<Model[]>;

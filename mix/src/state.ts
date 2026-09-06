@@ -5,7 +5,7 @@ import { cut, dragged, removed, slicesFor, slicesOf, type Slice } from './slices
 import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak } from './audio.ts';
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
-import { loopOf, loosest, type Every } from './pinned.ts';
+import { loosest, offeredOf, type Every } from './pinned.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
 import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, sampleOf, tempoOf, type Beats } from './warp.ts';
 import type { Snap } from './grid.ts';
@@ -1335,7 +1335,7 @@ export function useMix() {
    */
   const cuts = useMemo(() => slices.map((slice) => slice.bar), [slices]);
   const pinned = useMemo(
-    () => (beats ? { every: pinEvery ?? loopOf(loosest(grid, targetBpm, cuts).every), cuts } : null),
+    () => (beats ? { every: pinEvery ?? offeredOf(loosest(grid, targetBpm, cuts).every), cuts } : null),
     [beats, grid, targetBpm, cuts, pinEvery],
   );
   useEffect(() => {

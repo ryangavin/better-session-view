@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DENSITIES, errorsOf, loopOf, loosest, outputOf, pinnedOf, sourceOf, spacingOf, speedAt, worstLineOf, type Every } from './pinned.ts';
+import { DENSITIES, errorsOf, loosest, offeredOf, outputOf, pinnedOf, sourceOf, spacingOf, speedAt, worstLineOf, type Every } from './pinned.ts';
 import { beatsOf, evenBeats, sampleOf, BEATS_PER_BAR } from './warp.ts';
 
 const RATE = 1000;
@@ -249,11 +249,11 @@ describe('loosest', () => {
     expect(tight).toEqual({ every: 1, worst: 0 });
   });
 
-  it('offers a loop length from what was measured, and eight when the measurement is not one', () => {
-    expect(loopOf('section')).toBe(8);
-    expect(loopOf(16)).toBe(16);
-    expect(loopOf(4)).toBe(4);
-    expect(loopOf(1)).toBe(8);
-    expect(loopOf('beat')).toBe(8);
+  it('offers what was measured when it is offered, and eight bars otherwise', () => {
+    expect(offeredOf('section')).toBe('section');
+    expect(offeredOf(16)).toBe(16);
+    expect(offeredOf(4)).toBe(4);
+    expect(offeredOf(1)).toBe(8);
+    expect(offeredOf('beat')).toBe(8);
   });
 });

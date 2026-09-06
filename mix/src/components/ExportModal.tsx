@@ -3,9 +3,9 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { laneOrder, stemOf } from '../mock.ts';
-import { openflow } from '../openflow.ts';
+import { openflow, type ExportProgress } from '../openflow.ts';
 import { folderOf } from '../exportNames.ts';
-import { LOOPS, everyText, finerOf, loopOf, loosest, pinnedOf, worstLineOf, type Every } from '../pinned.ts';
+import { OFFERED, everyText, finerOf, loosest, offeredOf, pinnedOf, worstLineOf, type Every } from '../pinned.ts';
 import { barText, lengthText } from '../slices.ts';
 import type { Mix } from '../state.ts';
 import { bpmText } from '../warp.ts';
@@ -41,13 +41,16 @@ import './ExportModal.css';
  * a loop of that length would start on, counted from 1.1.1 as Live's global
  * quantization counts, and at every section cut, and between those pins it
  * is left exactly as it was played at one speed — `pinned.ts`. A shorter loop
- * pins more often. The default is measured — `loosest` — the sparsest pinning
- * whose bar lines all land within ten milliseconds, offered when it is one
- * of the three and eight bars otherwise; the sentence beside the control
- * says how far the finer lines are off, so someone choosing 16 is told what
- * 4 would cost them, in the words a musician would use rather than a
- * percentage. Per section, every bar and per beat exist for the stretcher,
- * the tests and the harness, and are not offered here. The choice is the
+ * pins more often. Or *sections*: pinned at the cuts alone, so a twenty-four
+ * bar section lands its first and last bar on the grid and keeps every push
+ * and pull between them, which is the whole point of a section. The default
+ * is measured — `loosest` — the sparsest pinning whose bar lines all land
+ * within ten milliseconds, offered when it is one of the four and eight bars
+ * otherwise; the sentence beside the control says how far the finer lines
+ * are off, so someone choosing 16 or sections is told what 4 would cost
+ * them, in the words a musician would use rather than a percentage. Every
+ * bar and per beat exist for the stretcher, the tests and the harness, and
+ * are not offered here. The choice is the
  * window's rather than the dialog's, so a loop under warp plays exactly what
  * the export will write; it is not written beside the track, because how
  * tightly to pin is a question about what the files are for, and the next
@@ -125,6 +128,7 @@ export function ExportModal({ mix }: { mix: Mix }) {
   const [sliced, setSliced] = useState(false);
   const [where, setWhere] = useState<string | null>(null);
   const [writing, setWriting] = useState(false);
+  const [progress, setProgress] = useState<ExportProgress | null>(null);
   const [wrote, setWrote] = useState<string | null>(null);
   const bridge = openflow();
 
@@ -152,11 +156,11 @@ export function ExportModal({ mix }: { mix: Mix }) {
     [mix.beats, mix.grid, laidAt, cuts],
   );
   const picked = mix.pinEvery;
-  const every: Every = picked ?? (measured ? loopOf(measured.every) : 8);
-  const loop = loopOf(every);
+  const every: Every = picked ?? (measured ? offeredOf(measured.every) : 8);
+  const offered = offeredOf(every);
   // The finer lines are what a shorter loop would want: the bar lines under
-  // a loop of four, the four-bar lines above it.
-  const finer = finerOf(loop);
+  // a loop of four, the four-bar lines above it and under the sections.
+  const finer = finerOf(offered);
   const worst = useMemo(
     () => (mix.beats ? worstLineOf(mix.grid, pinnedOf(mix.grid, laidAt, cuts, every), finer) : 0),
     [mix.beats, mix.grid, laidAt, cuts, every, finer],
@@ -193,6 +197,8 @@ export function ExportModal({ mix }: { mix: Mix }) {
     if (!bridge || !song.stems || chosen.length === 0) return;
     setWriting(true);
     setWrote(null);
+    setProgress(null);
+    const off = bridge.export.onProgress(setProgress);
     try {
       const done = await bridge.export.stems({
         trackId: song.id,
@@ -219,7 +225,9 @@ export function ExportModal({ mix }: { mix: Mix }) {
     } catch (error) {
       setWrote(`failed — ${error instanceof Error ? error.message : String(error)}`);
     } finally {
+      off();
       setWriting(false);
+      setProgress(null);
     }
   };
 
@@ -286,16 +294,15 @@ export function ExportModal({ mix }: { mix: Mix }) {
           <div className="mf-export-pin">
             <span className="mf-export-pin-cap">loops of</span>
             <Segmented
-              items={LOOPS.map(String)}
-              index={LOOPS.indexOf(loop)}
-              onChange={(next) => mix.setPinEvery(LOOPS[next])}
+              items={OFFERED.map((each) => (each === 'section' ? 'sections' : String(each)))}
+              index={OFFERED.indexOf(offered)}
+              onChange={(next) => mix.setPinEvery(OFFERED[next])}
               label="How long a loop the files are pinned for"
-              title="The record is pinned to the grid at every line a loop of this length starts on, counted from 1.1.1 as Live counts, and left exactly as it was played between them. A shorter loop pins more often."
+              title="The record is pinned to the grid at every line a loop of this length starts on, counted from 1.1.1 as Live counts, and left exactly as it was played between them. A shorter loop pins more often. Sections pins the cuts alone: a section lands its first and last bar and keeps everything between as it was played."
             />
-            <span className="mf-export-pin-cap">bars</span>
             <span className="mf-export-pin-says">
               {pinSays}
-              {measured && picked && picked !== loopOf(measured.every) ? ` · measured: ${everyText(measured.every)}` : ''}
+              {measured && picked && picked !== offeredOf(measured.every) ? ` · measured: ${everyText(measured.every)}` : ''}
             </span>
           </div>
         )}
@@ -383,6 +390,14 @@ export function ExportModal({ mix }: { mix: Mix }) {
           {writing ? 'Writing…' : 'Export stems'}
         </Button>
       </div>
+      {writing && (
+        <div className="mf-export-job">
+          <div className="mf-export-bar" data-waiting={!progress || undefined}>
+            <div className="mf-export-fill" style={{ width: `${Math.round((progress?.done ?? 0) * 100)}%` }} />
+          </div>
+          <span className="mf-export-stage">{progress ? `${progress.stage} · ${Math.round(progress.done * 100)}%` : 'reading the stems…'}</span>
+        </div>
+      )}
       {wrote && <p className="mf-export-wrote">{wrote}</p>}
     </Modal>
   );

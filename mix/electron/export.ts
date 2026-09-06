@@ -3,7 +3,7 @@ import path from 'node:path';
 import { readWav, wavOf } from '../src/audio.ts';
 import { folderOf, tempoLabel, tidy } from '../src/exportNames.ts';
 import { DENSITIES, errorsOf, type Every } from '../src/pinned.ts';
-import { straightened, type Ruling } from '../src/straighten.ts';
+import { straightenedPaced, type Ruling } from '../src/straighten.ts';
 import { resampled, BEATS_PER_BAR } from '../src/warp.ts';
 import { destination } from './destination.ts';
 
@@ -67,6 +67,14 @@ export interface Written {
   worst?: number;
 }
 
+/** How far along an export is, sent as it goes: which stem, and the fraction of the whole. */
+export interface ExportProgress {
+  /** 0 to 1 across every stem asked for. */
+  done: number;
+  /** *laying drums*, *writing drums*. */
+  stage: string;
+}
+
 /** One span of a straightened stem, and the folder and name it goes out under. */
 export interface Cut {
   /** `01 Intro`, or null for the whole record, which needs no folder. */
@@ -108,7 +116,7 @@ export function cutsFor(
   return cuts;
 }
 
-export async function exportStems(root: string, ask: ExportAsk): Promise<Written> {
+export async function exportStems(root: string, ask: ExportAsk, progress?: (at: ExportProgress) => void): Promise<Written> {
   if (!(ask.bpm > 0) || !(ask.to > 0) || !Number.isFinite(ask.offset)) throw new Error('bad ruling');
   if (!/^stems\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+$/.test(ask.stems)) throw new Error(`not a stem folder: ${ask.stems}`);
   for (const [index, slice] of (ask.slices ?? []).entries()) {
@@ -135,7 +143,18 @@ export async function exportStems(root: string, ask: ExportAsk): Promise<Written
     const bytes = fs.readFileSync(path.join(root, ask.stems, `${source}.wav`));
     const read = readWav(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
     if (!read) throw new Error(`${source}.wav: not a wav this reads`);
-    const laid = straightened(read.channels, read.rate, { ...ask, cuts: pinnedAt });
+    // A span at a time, the event loop given back between them: the window
+    // draws the fraction and stays alive while the stem is laid.
+    let told = 0;
+    const laid = await straightenedPaced(read.channels, read.rate, { ...ask, cuts: pinnedAt }, async (fraction) => {
+      const now = Date.now();
+      if (now - told >= 50 || fraction === 1) {
+        told = now;
+        progress?.({ done: (index + fraction) / ask.sources.length, stage: `laying ${source}` });
+      }
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    });
+    progress?.({ done: (index + 1) / ask.sources.length, stage: `writing ${source}` });
     if (laid.pinned && ask.beats) {
       every = laid.pinned.every;
       const errors = errorsOf(resampled(ask.beats, laid.rate, read.channels[0]?.length ?? 0), laid.pinned);

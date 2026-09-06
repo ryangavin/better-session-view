@@ -41,8 +41,10 @@ export type Every = 'section' | 'beat' | 1 | 4 | 8 | 16;
 /** Sparsest first, which is the order `loosest` tries them in. */
 export const DENSITIES: readonly Every[] = ['section', 16, 8, 4, 1, 'beat'];
 
-/** The loop lengths a person is offered: what a file is for. */
-export const LOOPS: readonly (4 | 8 | 16)[] = [4, 8, 16];
+/** What a person is offered: a loop length, or the sections alone with the feel between them left whole. */
+export type Offered = 4 | 8 | 16 | 'section';
+
+export const OFFERED: readonly Offered[] = [4, 8, 16, 'section'];
 
 /** A source sample and the output sample it plays at. */
 export interface Pin {
@@ -202,15 +204,15 @@ export function loosest(beats: Beats, to: number, cuts: readonly number[], toler
 }
 
 /**
- * The loop length to offer from what was measured: the measurement when it
- * is one a person is offered, else eight bars. A record that needs pinning
- * every bar is not refused the loop it is for — the dialog says what the
- * finer lines will cost.
+ * What to offer from what was measured: the measurement when it is one a
+ * person is offered, else eight bars. A record that needs pinning every bar
+ * is not refused the loop it is for — the dialog says what the finer lines
+ * will cost.
  */
-export const loopOf = (every: Every): 4 | 8 | 16 => (every === 4 || every === 8 || every === 16 ? every : 8);
+export const offeredOf = (every: Every): Offered => (every === 4 || every === 8 || every === 16 || every === 'section' ? every : 8);
 
-/** The lattice a loop of this length would be judged on: the bar lines under four, the four-bar lines above. */
-export const finerOf = (every: 4 | 8 | 16): 1 | 4 => (every === 4 ? 1 : 4);
+/** The lines a choice is judged on: the bar lines under a loop of four, the four-bar lines otherwise. */
+export const finerOf = (every: Offered): 1 | 4 => (every === 4 ? 1 : 4);
 
 /** *every 8 bars*, *per section*, *per beat*: how a density is said. */
 export const everyText = (every: Every): string =>
