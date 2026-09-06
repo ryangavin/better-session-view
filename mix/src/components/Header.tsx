@@ -118,6 +118,23 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
       <div className="mf-mark">
         mix<span>[flow]</span>
       </div>
+      <div className="mf-group mf-link" role="group" aria-label="Link Audio">
+        <Toggle on={mix.linkAudio.enabled}
+          onChange={mix.setLinkAudio}
+          label="Link Audio"
+          title="Share each loaded stem as a separate stereo input in Live"
+          width={72}
+        >Link Audio</Toggle>
+        <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
+          label="Local audio" width={72}
+          title="Hear mix through this computer's speakers. Link Audio feeds are unaffected"
+        >Local audio</Toggle>
+        <span className={mix.linkAudio.problem || mix.linkAudio.dropped ? 'mf-link-problem' : undefined}
+          title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
+          {mix.linkAudio.problem ? 'unavailable' : mix.linkAudio.starting ? 'connecting' : mix.linkAudio.enabled
+            ? `${mix.linkAudio.peers} peers${mix.linkAudio.dropped ? ' · gaps' : ''}` : ''}
+        </span>
+      </div>
 
       <div className="mf-open">
         {song ? (

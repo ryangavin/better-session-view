@@ -6,7 +6,7 @@ import { reach } from '@openflow/desktop/reach.ts';
 import { scheme, serve } from '@openflow/desktop/serve.ts';
 import { state } from '@openflow/desktop/state.ts';
 import { updates } from '@openflow/desktop/update.ts';
-import { lifecycle, only, open } from '@openflow/desktop/window.ts';
+import { lifecycle, only, open, switches } from '@openflow/desktop/window.ts';
 import { ready } from './runtime.ts';
 import { chooseDestination, destination } from './destination.ts';
 import { exportStems, type ExportAsk, type ExportProgress } from './export.ts';
@@ -25,6 +25,8 @@ import { TAB_FILE, transcriptionAt, type TranscribeProgress } from './transcribe
 import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
 import { stopYoutube } from './youtube.ts';
+import { LinkAudioService } from './linkAudio.ts';
+import type { LinkBlock, LinkOutput } from '../src/linkAudioTypes.ts';
 import {
   gridNotes,
   readAnalysis,
@@ -83,9 +85,11 @@ const HOME = DEV || `${MIX.name}://app/`;
 state(MIX);
 // And before `whenReady`, which is when a privileged scheme has to be declared.
 scheme(MIX);
+// Audio capture must keep reaching the native publisher while Live is in front.
+switches(app);
 
 const window = (): void => {
-  open({ app: MIX, home: HOME, dev: DEV, bounds: true, retry: true });
+  open({ app: MIX, home: HOME, dev: DEV, bounds: true, retry: true, throttle: false });
 };
 
 /**
@@ -99,6 +103,11 @@ if (only(app)) {
   // The same mounts the scheme gets, so both are one description of what may
   // be fetched.
   const tabs = reach(MIX, { ipcMain, mounts: { [MOUNT]: root } });
+  const linkAudio = new LinkAudioService(path.resolve(__dirname, '../../bin/link-audio'));
+  ipcMain.handle('openflow:link-open', (_event, outputs: LinkOutput[]) => linkAudio.open(outputs));
+  ipcMain.handle('openflow:link-clock', (_event, id: string) => linkAudio.clock(id));
+  ipcMain.handle('openflow:link-write', (_event, id: string, block: LinkBlock) => linkAudio.write(id, block));
+  ipcMain.handle('openflow:link-close', (_event, id: string) => linkAudio.close(id));
 
   ipcMain.handle('openflow:demucs', () => ready(RUNTIME));
 
@@ -284,6 +293,7 @@ if (only(app)) {
   // that started it is not a reason for it to carry on. Same lesson as
   // `desktop/docs/server.md` records about a server.
   app.on('before-quit', () => {
+    linkAudio.stop();
     stopAll();
     stopYoutube();
   });

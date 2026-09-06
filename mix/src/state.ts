@@ -5,6 +5,7 @@ import { cut, dragged, removed, slicesFor, slicesOf, type Slice } from './slices
 import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak } from './audio.ts';
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
+import { LINK_AUDIO_OFF, type LinkAudioState } from './linkAudio.ts';
 import { loosest, offeredOf, type Every } from './pinned.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
 import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, sampleOf, tempoOf, type Beats } from './warp.ts';
@@ -335,6 +336,15 @@ export function useMix() {
   const transport = useRef<Transport | null>(null);
   if (!transport.current) transport.current = new Transport();
   const audio = transport.current;
+  const [linkAudio, setLinkAudioState] = useState<LinkAudioState>(LINK_AUDIO_OFF);
+  const [monitoring, setMonitoringState] = useState(true);
+  const setLinkAudio = useCallback((on: boolean) => audio.setLinkAudio(on), [audio]);
+  const setMonitoring = useCallback((on: boolean) => audio.setMonitoring(on), [audio]);
+  useEffect(() => audio.watch(() => {
+    setLinkAudioState(audio.linkAudio);
+    setMonitoringState(audio.monitoring);
+  }), [audio]);
+  useEffect(() => () => audio.setLinkAudio(false), [audio]);
 
   /**
    * The session as it stands, which is not the same as the session at mount.
@@ -1881,6 +1891,10 @@ export function useMix() {
     audioOf,
     /** The graph's sample rate, which is what the stems were resampled to. */
     rate: audio.rate,
+    linkAudio,
+    setLinkAudio,
+    monitoring,
+    setMonitoring,
     onsets,
     decoding,
     audioProblem,

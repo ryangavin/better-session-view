@@ -13,6 +13,7 @@ import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
 import type { Analysis, GridNote, Grid, Peaks, Reading, SliceKept } from './analysis.ts';
+import type { LinkAudioAPI, LinkBlock, LinkOutput } from '../src/linkAudioTypes.ts';
 
 /**
  * What the renderer cannot do for itself: reach a process, and reach a folder.
@@ -32,6 +33,12 @@ import type { Analysis, GridNote, Grid, Peaks, Reading, SliceKept } from './anal
  * outlives its component is a leak the page cannot see.
  */
 expose({
+  linkAudio: {
+    open: (outputs: LinkOutput[]) => ipcRenderer.invoke('openflow:link-open', outputs),
+    clock: (session: string) => ipcRenderer.invoke('openflow:link-clock', session),
+    write: (session: string, block: LinkBlock) => ipcRenderer.invoke('openflow:link-write', session, block),
+    close: (session: string) => ipcRenderer.invoke('openflow:link-close', session),
+  } satisfies LinkAudioAPI,
   demucs: (): Promise<Ready> => ipcRenderer.invoke('openflow:demucs'),
   library: {
     read: (): Promise<Library> => ipcRenderer.invoke('openflow:library'),

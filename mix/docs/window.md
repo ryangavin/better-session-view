@@ -28,7 +28,20 @@ waveform from navigating the renderer away from the app.
 
 ## The header
 
-    mix[flow] │ Title · Artist ⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [Analyze 126–131 · 91% warp] │ Export
+    mix[flow] [Link Audio · Local audio] │ Title · Artist ⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [Analyze 126–131 · 91% warp] │ Export
+
+**Link Audio** shares the loaded stems as separate stereo inputs in Live. It starts off
+on every window load. The adjacent text reports connecting, discovered peers, capture
+gaps, or an unavailable publisher; the tooltip supplies the output names or error.
+No peers is a valid enabled state. This control shares audio; it does not switch Warp
+on or synchronize the playback buttons. See [link-audio.md](link-audio.md).
+
+**Local audio** controls only the computer's speaker output. Enabling Link Audio turns
+it off, and disabling sharing or a publisher failure turns it back on. It can be
+overridden while sharing, without changing any Link feed.
+
+The Electron window opts out of background throttling, using both `switches(app)` and
+`throttle: false`, because publishing must keep running when Live covers the mix window.
 
 Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
 **Analyze** opens the track analysis home. The compact detected tempo/agreement summary

@@ -164,19 +164,38 @@ if none is selected. Stem state is preserved for switching back. Source changes 
 immediate; section launches retain the selected timing. Full-mix meters ignore stem
 levels but still follow trim, deck gain, crossfader and master.
 
-The play face uses blue/mint/lavender/rose for Drums/Bass/Other/Vocals. Waveforms and deck letters use a separate deck palette: light/dark straw for
-A/B on the left and light/dark sage for C/D on the right. These identities stay
-fixed when crossfade assignments change. The clock is neutral. Output meters use green; faders and trim use
-cool silver. A short divider below trim distinguishes it from EQ without changing
-control positions. EQ explicitly uses the zero-value fill origin despite its asymmetric −24/+12dB
-range: neutral has no arc, and cuts/boosts fill from 0dB. Stem levels and faders
-retain their full level indication. EQ changes and selected global controls retain the primary accent; BPM has
-no fill because its value is not a selected state. These are bench-scoped colors and
-existing widget ink props, not changes to the shared palette.
+## Play theme roles
 
-Stem captions match their knob inks. FX A uses turquoise, Filter muted lavender, and
-FX B orchid for both captions and changed-value arcs. Faders and meters omit visible
-captions while retaining accessible labels.
+`bench/PlayTheme.tsx` owns eight HSL roles: Primary, Signal, four stems, and the left
+and right deck families. Existing widget inks and CSS variables apply them; no shared
+palette or widget implementation changes. The Theme button opens a floating editor
+built from Toggle, Select, Button and editable NumberField controls. It has Current favorite, Soft studio,
+Night stage and Porcelain presets, a constrained randomizer, and hue/saturation/lightness
+editing for each role. Changes apply immediately without resetting mixer controls.
+Reset tab or leaving the room discards the theme. Preset matching switches to Custom
+when edited; selecting a named preset restores all roles.
+
+Primary saturation is capped at 12%; Signal hue is constrained to 120–160 degrees.
+Primary drives selection, fader fills, trim, EQ and FX. FX captions stay subdued, with
+no separate identity color. Stem captions, levels and launchers share exclusive hue
+families. Presets/randomization reserve green for signal, and keep stem hues apart from
+each other and the two deck families. Manual editing warns when a stem is within 30 hue
+degrees of another saturated role (saturation at least 18%). This is an editing aid,
+not a perceptual or color-vision certification; evaluate the rendered result too.
+
+Deck families retain equal lightness and saturation. B/D shift up to eight hue
+degrees toward warm orange from A/C; letters and
+narrow waveform-label edges carry identity. Waveform silhouettes blend 65% deck color
+with neutral gray to keep large filled areas quieter. Physical deck identity stays fixed
+when crossfade assignments change. Randomization builds a fresh seven-family hue wheel anchored on green signal, then
+shuffles the remaining six families across stems and deck pairs. Hue spacing preserves
+identity separation; shared saturation/lightness ranges keep the palette cohesive.
+
+EQ explicitly fills from 0dB despite its asymmetric −24/+12dB range. Neutral EQ, trim,
+filter and sends have no colored arc; stem levels and faders always show their level.
+A small divider separates trim from EQ. Faders/meters omit visible captions but retain
+accessible labels. The active theme sets the bench body's primary/hover/muted variables;
+cleanup restores the stylesheet fallback when the Play room unmounts.
 
 ## Collapsing navigation
 
@@ -190,5 +209,18 @@ The master FX selectors include their A/B labels inside the dropdown face (A · 
 B · Reverb), so both controls span the same width as the other master control groups.
 
 The bench stylesheet locally overrides the primary accent tokens (`--amber` and its
-hover/muted variants) with silver-blue. This affects bench selection chrome and default
-widget accents without editing the shared palette or explicit stem/deck/FX colors.
+hover/muted variants) with silver-blue. This is the fallback when the Play theme editor is not mounted; the active theme
+controls these tokens while Play is open. Other application windows are unchanged.
+
+The theme editor also has **Roll hue**, **Roll sat**, and **Roll light** for the selected
+role. Each changes only that component. Hue rolls seek a separated hue family; primary
+stays nearly neutral and signal stays green. Saturation and lightness rolls use restrained
+ranges; manual fields remain available for wider experimentation.
+
+Four live sliders control deck variation: **B/D warmth offset** (negative cooler,
+positive warmer), **B/D saturation offset**, **B/D lightness offset**, and **Waveform
+color strength**. The first three change B/D relative to the A/C base colors, together
+for both pairs. Strength controls how much deck color appears in all waveform fills.
+**Reset variation** restores warmth 8, saturation/lightness offsets 0, and strength 65%.
+Changing presets or rolling role colors preserves these variation settings; Reset tab
+resets everything. Variation settings remain temporary.

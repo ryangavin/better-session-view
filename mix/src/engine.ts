@@ -3,6 +3,7 @@ import { pinnedOf, type Every, type Pinned } from './pinned.ts';
 import { passOf, sourceAt, straight, type Pass, type Span } from './schedule.ts';
 import { channelsOf, stretchOf, type Stretch } from './stretch.ts';
 import type { Beats } from './warp.ts';
+import { LINK_AUDIO_OFF, LinkAudioSender, type LinkAudioState } from './linkAudio.ts';
 
 /**
  * The transport and the mixer, which are one thing: a Web Audio graph with one
@@ -107,6 +108,45 @@ export type Stretching = 'idle' | 'loading' | 'ready' | 'failed';
 type Via = 'straight' | 'stretch';
 
 export class Transport {
+  private publisher: LinkAudioSender | null = null;
+  private wasLinked = false;
+  private localOutput: GainNode | null = null;
+  private localMonitoring = true;
+  get monitoring(): boolean { return this.localMonitoring; }
+  /** The speaker path only. Link taps are upstream of this gain. */
+  setMonitoring(on: boolean): void {
+    if (on === this.localMonitoring) return;
+    this.localMonitoring = on;
+    if (this.ctx && this.localOutput) {
+      const gain = this.localOutput.gain;
+      const now = this.ctx.currentTime;
+      gain.cancelScheduledValues(now);
+      gain.setValueAtTime(gain.value, now);
+      gain.linearRampToValueAtTime(on ? 1 : 0, now + RAMP);
+    }
+    this.notify();
+  }
+  get linkAudio(): LinkAudioState { return this.publisher?.state ?? LINK_AUDIO_OFF; }
+  setLinkAudio(on: boolean): void {
+    if (!on && !this.publisher) return;
+    const ctx = this.audio();
+    if (on) void ctx.resume();
+    this.publisher ??= new LinkAudioSender(ctx, () => {
+      const enabled = this.linkAudio.enabled;
+      if (enabled !== this.wasLinked) {
+        this.wasLinked = enabled;
+        this.setMonitoring(!enabled);
+      }
+      this.notify();
+    });
+    this.publishInputs();
+    this.publisher.enable(on);
+  }
+  private publishInputs(): void {
+    this.publisher?.setInputs([...this.gains].map(([id, node]) => ({
+      id, name: id.charAt(0).toUpperCase() + id.slice(1), node,
+    })));
+  }
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private gains = new Map<string, GainNode>();
@@ -179,7 +219,10 @@ export class Transport {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
-      this.master.connect(this.ctx.destination);
+      this.localOutput = this.ctx.createGain();
+      this.localOutput.gain.value = this.localMonitoring ? 1 : 0;
+      this.master.connect(this.localOutput);
+      this.localOutput.connect(this.ctx.destination);
     }
     return this.ctx;
   }
@@ -240,6 +283,7 @@ export class Transport {
     }
     this.from = 0;
     if (this.warping) this.prepare();
+    this.publishInputs();
   }
 
   /** Forget everything, and release the buffers. */
@@ -248,6 +292,7 @@ export class Transport {
     this.drop();
     this.unwire();
     this.from = 0;
+    this.publisher?.setInputs([]);
   }
 
   /** Take down the per-stem strips, and let go of the stems. */

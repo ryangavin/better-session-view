@@ -84,6 +84,21 @@ position drifts away from the sound it is pointing at. `Transport.at()` asks the
 graph where it actually is, so the line cannot be wrong however badly the page
 is being scheduled.
 
+## Sharing the rendered stems with Live
+
+**Link Audio** in the header publishes each loaded stem as a separately selectable
+stereo stream. `Transport` hands the per-stem gain nodes to `LinkAudioSender`, after
+the stretcher, EQ, level, mute and solo, and before the master sum. **Local audio**
+controls a separate gain after the master sum and before the hardware destination.
+Enabling Link Audio mutes that local path; the toggle can restore it while sharing.
+Disabling Link Audio or a publisher failure restores local audio. Replacing a track with the same stem
+layout reconnects those nodes without replacing the Link channels.
+
+The worklet captures the rendered samples and the native helper publishes them with
+audio-clock timing. The same sender accepts arbitrary named graph outputs, including
+four decks and a master once the Play engine exists. Lifecycle, buffering, native build
+and verification are in [link-audio.md](link-audio.md).
+
 ## The picture comes off the buffers that play
 
 Peaks are computed from the same `AudioBuffer`s the transport is handed, in the

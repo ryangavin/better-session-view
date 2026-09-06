@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// mix[flow]'s own build step: make the four binaries the bundle carries.
+// mix[flow]'s own build step: make the five binaries the bundle carries.
 //
 // `tools/app.ts` runs this before building the app's main process. `uv` is a
 // pinned release binary; FFmpeg is built from its pinned upstream source because
 // the codec-complete prebuilt macOS binaries enable GPL or non-free components.
-// Building the small decoder we actually use keeps the app LGPL-only, keeps
+// Building the small decoder we actually use keeps the decoder LGPL-only, keeps
 // Homebrew paths out of it, and gives electron-builder two ordinary Mach-Os to
 // sign beside `uv`.
 //
@@ -19,6 +19,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { prepareLinkAudio } from './link-audio.ts';
 
 const UV_VERSION = '0.9.11';
 const UV_DIGEST = '594d9f4cfbd21d5a2f34b0352bf423066a9dab1733c90b5d40e3e227506deb03';
@@ -258,6 +259,7 @@ async function prepareFfmpeg(): Promise<void> {
 }
 
 try {
+  prepareLinkAudio();
   await prepareUv();
   await prepareYtDlp();
   await prepareFfmpeg();

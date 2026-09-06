@@ -11,11 +11,11 @@ import { Waveform } from '../src/wave/Waveform.tsx';
 import { type Param } from '../src/param/param.ts';
 import type { Experiment } from '../src/debug/Workspace.tsx';
 import './play.css';
+import { PlayThemePicker, PRESETS, color, deckColors, DEFAULT_VARIATION } from './PlayTheme.tsx';
 
 const STEMS = ['Drums', 'Bass', 'Other', 'Vocals'];
-const INKS = ['#76b8df', '#87bdad', '#a89edb', '#db899c'];
-// Physical left/right pairs, independent of stem identity and crossfader assignment.
-const DECK_INKS = ['#e3d49a', '#aa9860', '#cbd5ac', '#8e9d72'];
+
+
 const SECTIONS = ['Intro', 'Verse', 'Build', 'Drop', 'Break', 'Outro'];
 const SONGS = [
   { title: 'After the rain', artist: 'North Arcade', bpm: 124, key: '8A' },
@@ -67,10 +67,21 @@ function PreviewMeter({ sample, label }: { sample(): number; label: string }) {
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
   }, []);
-  return <Meter ink="#69c68b" width={14} name="" label={label} orientation="vertical" length={210} value={value} />;
+  return <Meter ink="var(--play-signal)" width={14} name="" label={label} orientation="vertical" length={210} value={value} />;
 }
 
 function PlayCase() {
+  const [theme, setTheme] = useState(PRESETS[0].colors);
+  const [variation, setVariation] = useState(DEFAULT_VARIATION);
+  const INKS = theme.slice(2, 6).map(color);
+  const DECK_INKS = deckColors(theme, variation);
+  useEffect(() => {
+    const primary = color(theme[0]);
+    document.body.style.setProperty('--amber', primary);
+    document.body.style.setProperty('--amber-hover', color({ ...theme[0], l: Math.min(95, theme[0].l + 10) }));
+    document.body.style.setProperty('--amber-muted', color({ ...theme[0], l: Math.max(25, theme[0].l - 25) }));
+    return () => { for (const token of ['--amber', '--amber-hover', '--amber-muted']) document.body.style.removeProperty(token); };
+  }, [theme]);
   const [decks, setDecks] = useState(initialDecks);
   const [running, setRunning] = useState(false);
   const [clock, setClock] = useState({ beat: 0, tick: 0 });
@@ -149,28 +160,29 @@ function PlayCase() {
       </div>
 
     <div className="play-effects">
-      <Knob ink="#77d6cf" name="FX A" label="Master effects send A" param={SEND} value={masterSendA} onChange={setMasterSendA} />
-      <Knob ink="#b9b0dc" name="Filter" label="Master filter" param={FILTER} value={masterFilter} onChange={setMasterFilter} />
-      <Knob ink="#dc9bdf" name="FX B" label="Master effects send B" param={SEND} value={masterSendB} onChange={setMasterSendB} />
+      <Knob ink="var(--amber)" name="FX A" label="Master effects send A" param={SEND} value={masterSendA} onChange={setMasterSendA} />
+      <Knob ink="var(--amber)" name="Filter" label="Master filter" param={FILTER} value={masterFilter} onChange={setMasterFilter} />
+      <Knob ink="var(--amber)" name="FX B" label="Master effects send B" param={SEND} value={masterSendB} onChange={setMasterSendB} />
     </div>
     <div className="play-channel play-master-channel">
 
       <div className="play-level-stack">
         <div className="play-channel-fader"><Slider name="" label="Master level" param={LEVEL} value={master} onChange={setMaster} length={210} /><PreviewMeter label="Master output" sample={() => Math.min(1, decks.reduce((sum, d) => sum + deckLevel(d), 0) * 10 ** (masterTrim / 20) * master / 100)} /></div>
       </div>
-      <div className="play-eq-stack play-master-eq"><Knob className="play-trim" ink="#b5c5d5" name="Trim" label="Master trim" param={TRIM} value={masterTrim} onChange={setMasterTrim} />{['High', 'Mid', 'Low'].map((name, i) => <Knob key={name} name={name} label={`Master ${name}`} param={EQ} origin="center" value={masterEq[i]} onChange={value => setMasterEq(all => all.map((v, e) => e === i ? value : v))} />)}</div>
+      <div className="play-eq-stack play-master-eq"><Knob className="play-trim" ink="var(--amber)" name="Trim" label="Master trim" param={TRIM} value={masterTrim} onChange={setMasterTrim} />{['High', 'Mid', 'Low'].map((name, i) => <Knob key={name} name={name} label={`Master ${name}`} param={EQ} origin="center" value={masterEq[i]} onChange={value => setMasterEq(all => all.map((v, e) => e === i ? value : v))} />)}</div>
     </div>
     <div className="play-master-cross">
     <Slider name="" label="Crossfader" showValue={false} param={CROSS} value={cross} onChange={setCross} orientation="horizontal" length={126} display={cross === 0 ? 'Center' : `${Math.abs(cross)} ${cross < 0 ? 'A' : 'B'}`} />
     </div>
   </div>;
-  return <div className="play-example">
+  return <div className="play-example" style={{ '--play-signal': color(theme[1]) } as CSSProperties}>
+    <PlayThemePicker theme={theme} onChange={setTheme} variation={variation} onVariation={setVariation} />
     <div className="play-timeline" aria-label="Four decks aligned to a shared 32-bar preview">
       <div className="play-wave-row play-ruler"><span title="Four aligned decks · 32 bars · global loop markers">DECKS · BARS</span><div className="play-bar-labels">{Array.from({ length: 8 }, (_, i) => <span key={i}>{Math.floor(beat / 128) * 32 + i * 4 + 1}</span>)}</div></div>
       {SONGS.map((song, index) => <div className="play-wave-row" style={{ '--deck-ink': DECK_INKS[index] } as CSSProperties} key={song.title}>
         <div className="play-wave-label"><b>{'ABCD'[index]}</b><span>{song.title}</span></div>
         <div className="play-wave-lane">
-          <Waveform peaks={PEAKS[index][0]} ink={DECK_INKS[index]} height={48} label={`Deck ${index + 1} illustrative waveform on the shared beat grid`} />
+          <Waveform peaks={PEAKS[index][0]} ink={`color-mix(in srgb, ${DECK_INKS[index]} ${variation.strength}%, #9ca3ad)`} height={48} label={`Deck ${index + 1} illustrative waveform on the shared beat grid`} />
           {loop.start !== null && <div className="play-loop-region" data-enabled={loop.enabled} style={{ left: `${Math.max(0, loop.start - Math.floor(beat / 128) * 128) / 128 * 100}%`, width: `${Math.max(0, Math.min(128, (loop.end ?? loop.start) - Math.floor(beat / 128) * 128) - Math.max(0, loop.start - Math.floor(beat / 128) * 128)) / 128 * 100}%`, '--loop-ink': 'var(--amber)' } as CSSProperties}><span>{loop.end === null ? 'IN' : `↻ ${loop.end - loop.start} beats`}</span></div>}
           <span className="play-wave-grid" />
           <span ref={node => { playheads.current[index] = node; }} className="play-playhead" style={{ left: `${(phase.current.beat % 128) / 128 * 100}%` }} />
@@ -197,9 +209,9 @@ function PlayCase() {
         </div>
         </div>
         <div className="play-effects">
-          <Knob ink="#77d6cf" name="FX A" label={`Deck ${index + 1} effects send A`} param={SEND} value={d.sendA} onChange={sendA => update(index, { sendA })} />
-          <Knob ink="#b9b0dc" name="Filter" label={`Deck ${index + 1} filter`} param={FILTER} value={d.filter} onChange={filter => update(index, { filter })} />
-          <Knob ink="#dc9bdf" name="FX B" label={`Deck ${index + 1} effects send B`} param={SEND} value={d.sendB} onChange={sendB => update(index, { sendB })} />
+          <Knob ink="var(--amber)" name="FX A" label={`Deck ${index + 1} effects send A`} param={SEND} value={d.sendA} onChange={sendA => update(index, { sendA })} />
+          <Knob ink="var(--amber)" name="Filter" label={`Deck ${index + 1} filter`} param={FILTER} value={d.filter} onChange={filter => update(index, { filter })} />
+          <Knob ink="var(--amber)" name="FX B" label={`Deck ${index + 1} effects send B`} param={SEND} value={d.sendB} onChange={sendB => update(index, { sendB })} />
         </div>
         <div className="play-channel">
           <div className="play-eq-stack play-stem-levels" data-full={d.full}>
@@ -209,7 +221,7 @@ function PlayCase() {
           <div className="play-channel-fader"><Slider name="" label={`Deck ${index + 1} level`} param={LEVEL} value={d.gain} onChange={gain => update(index, { gain })} length={210} />
           <PreviewMeter label={`Deck ${index + 1} output`} sample={() => deckLevel(d)} /></div></div>
           <div className="play-eq-stack">
-            <Knob className="play-trim" ink="#b5c5d5" name="Trim" label={`Deck ${index + 1} trim`} param={TRIM} value={d.trim} onChange={trim => update(index, { trim })} />
+            <Knob className="play-trim" ink="var(--amber)" name="Trim" label={`Deck ${index + 1} trim`} param={TRIM} value={d.trim} onChange={trim => update(index, { trim })} />
             {['High', 'Mid', 'Low'].map((name, e) => <Knob key={name} name={name} label={`Deck ${index + 1} ${name}`} param={EQ} origin="center" value={d.eq[e]} onChange={v => update(index, { eq: d.eq.map((a, i) => i === e ? v : a) })} />)}
           </div>
         </div>
