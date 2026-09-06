@@ -13,7 +13,9 @@ import type { Experiment } from '../src/debug/Workspace.tsx';
 import './play.css';
 
 const STEMS = ['Drums', 'Bass', 'Other', 'Vocals'];
-const INKS = ['#e5ac65', '#87bdad', '#a89edb', '#db899c'];
+const INKS = ['#76b8df', '#87bdad', '#a89edb', '#db899c'];
+// Physical left/right pairs, independent of stem identity and crossfader assignment.
+const DECK_INKS = ['#e3d49a', '#aa9860', '#cbd5ac', '#8e9d72'];
 const SECTIONS = ['Intro', 'Verse', 'Build', 'Drop', 'Break', 'Outro'];
 const SONGS = [
   { title: 'After the rain', artist: 'North Arcade', bpm: 124, key: '8A' },
@@ -65,7 +67,7 @@ function PreviewMeter({ sample, label }: { sample(): number; label: string }) {
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
   }, []);
-  return <Meter width={14} name="Out" label={label} orientation="vertical" length={210} value={value} />;
+  return <Meter ink="#69c68b" width={14} name="" label={label} orientation="vertical" length={210} value={value} />;
 }
 
 function PlayCase() {
@@ -132,7 +134,7 @@ function PlayCase() {
       <div className="play-actions">
         <div className="play-run-stop"><Toggle on={running} onChange={setRunning} width={62}>{running ? 'Ⅱ Pause' : '▶ Run'}</Toggle>
         <Button onPress={stopAll} width={62}>■ Stop</Button></div>
-        <div className="play-timing" role="group" aria-label="Tempo and launch timing"><NumberField name="" label="BPM" width={62} title="Tempo in BPM" param={TEMPO} value={bpm} onChange={setBpm} />
+        <div className="play-timing" role="group" aria-label="Tempo and launch timing"><NumberField name="" label="BPM" showFill={false} width={62} title="Tempo in BPM" param={TEMPO} value={bpm} onChange={setBpm} />
         <Toggle label="Quantize launches to next bar" title="Launch timing: next bar or immediate" on={quantized} onChange={value => { setQuantized(value); if (!value) setDecks(all => all.map(d => ({ ...d, fullSection: d.fullQueued ?? d.fullSection, fullQueued: null, active: d.active.map((a, i) => d.queued[i] ?? a), queued: [null, null, null, null] }))); }} width={62}>{quantized ? '1 bar' : 'Now'}</Toggle></div>
         <div className="play-fx-pickers">
           <Select name="" label="FX A effect" items={EFFECTS_A} index={fxA} onChange={setFxA} width={126} />
@@ -147,16 +149,16 @@ function PlayCase() {
       </div>
 
     <div className="play-effects">
-      <Knob name="FX A" label="Master effects send A" param={SEND} value={masterSendA} onChange={setMasterSendA} />
-      <Knob name="Filter" label="Master filter" param={FILTER} value={masterFilter} onChange={setMasterFilter} />
-      <Knob name="FX B" label="Master effects send B" param={SEND} value={masterSendB} onChange={setMasterSendB} />
+      <Knob ink="#77d6cf" name="FX A" label="Master effects send A" param={SEND} value={masterSendA} onChange={setMasterSendA} />
+      <Knob ink="#b9b0dc" name="Filter" label="Master filter" param={FILTER} value={masterFilter} onChange={setMasterFilter} />
+      <Knob ink="#dc9bdf" name="FX B" label="Master effects send B" param={SEND} value={masterSendB} onChange={setMasterSendB} />
     </div>
     <div className="play-channel play-master-channel">
 
       <div className="play-level-stack">
-        <div className="play-channel-fader"><Slider name="Master" param={LEVEL} value={master} onChange={setMaster} length={210} /><PreviewMeter label="Master output" sample={() => Math.min(1, decks.reduce((sum, d) => sum + deckLevel(d), 0) * 10 ** (masterTrim / 20) * master / 100)} /></div>
+        <div className="play-channel-fader"><Slider name="" label="Master level" param={LEVEL} value={master} onChange={setMaster} length={210} /><PreviewMeter label="Master output" sample={() => Math.min(1, decks.reduce((sum, d) => sum + deckLevel(d), 0) * 10 ** (masterTrim / 20) * master / 100)} /></div>
       </div>
-      <div className="play-eq-stack play-master-eq"><Knob name="Trim" label="Master trim" param={TRIM} value={masterTrim} onChange={setMasterTrim} />{['High', 'Mid', 'Low'].map((name, i) => <Knob key={name} name={name} label={`Master ${name}`} param={EQ} value={masterEq[i]} onChange={value => setMasterEq(all => all.map((v, e) => e === i ? value : v))} />)}</div>
+      <div className="play-eq-stack play-master-eq"><Knob className="play-trim" ink="#b5c5d5" name="Trim" label="Master trim" param={TRIM} value={masterTrim} onChange={setMasterTrim} />{['High', 'Mid', 'Low'].map((name, i) => <Knob key={name} name={name} label={`Master ${name}`} param={EQ} origin="center" value={masterEq[i]} onChange={value => setMasterEq(all => all.map((v, e) => e === i ? value : v))} />)}</div>
     </div>
     <div className="play-master-cross">
     <Slider name="" label="Crossfader" showValue={false} param={CROSS} value={cross} onChange={setCross} orientation="horizontal" length={126} display={cross === 0 ? 'Center' : `${Math.abs(cross)} ${cross < 0 ? 'A' : 'B'}`} />
@@ -165,18 +167,18 @@ function PlayCase() {
   return <div className="play-example">
     <div className="play-timeline" aria-label="Four decks aligned to a shared 32-bar preview">
       <div className="play-wave-row play-ruler"><span title="Four aligned decks · 32 bars · global loop markers">DECKS · BARS</span><div className="play-bar-labels">{Array.from({ length: 8 }, (_, i) => <span key={i}>{Math.floor(beat / 128) * 32 + i * 4 + 1}</span>)}</div></div>
-      {SONGS.map((song, index) => <div className="play-wave-row" key={song.title}>
+      {SONGS.map((song, index) => <div className="play-wave-row" style={{ '--deck-ink': DECK_INKS[index] } as CSSProperties} key={song.title}>
         <div className="play-wave-label"><b>{'ABCD'[index]}</b><span>{song.title}</span></div>
         <div className="play-wave-lane">
-          <Waveform peaks={PEAKS[index][0]} ink={INKS[index]} height={48} label={`Deck ${index + 1} illustrative waveform on the shared beat grid`} />
-          {loop.start !== null && <div className="play-loop-region" data-enabled={loop.enabled} style={{ left: `${Math.max(0, loop.start - Math.floor(beat / 128) * 128) / 128 * 100}%`, width: `${Math.max(0, Math.min(128, (loop.end ?? loop.start) - Math.floor(beat / 128) * 128) - Math.max(0, loop.start - Math.floor(beat / 128) * 128)) / 128 * 100}%`, '--loop-ink': '#e5ac65' } as CSSProperties}><span>{loop.end === null ? 'IN' : `↻ ${loop.end - loop.start} beats`}</span></div>}
+          <Waveform peaks={PEAKS[index][0]} ink={DECK_INKS[index]} height={48} label={`Deck ${index + 1} illustrative waveform on the shared beat grid`} />
+          {loop.start !== null && <div className="play-loop-region" data-enabled={loop.enabled} style={{ left: `${Math.max(0, loop.start - Math.floor(beat / 128) * 128) / 128 * 100}%`, width: `${Math.max(0, Math.min(128, (loop.end ?? loop.start) - Math.floor(beat / 128) * 128) - Math.max(0, loop.start - Math.floor(beat / 128) * 128)) / 128 * 100}%`, '--loop-ink': 'var(--amber)' } as CSSProperties}><span>{loop.end === null ? 'IN' : `↻ ${loop.end - loop.start} beats`}</span></div>}
           <span className="play-wave-grid" />
           <span ref={node => { playheads.current[index] = node; }} className="play-playhead" style={{ left: `${(phase.current.beat % 128) / 128 * 100}%` }} />
         </div>
       </div>)}
     </div>
     <div className="play-scroll"><div className="play-decks">
-      {decks.map((d, index) => <Fragment key={index}><div className="play-deck">
+      {decks.map((d, index) => <Fragment key={index}><div className="play-deck" style={{ '--deck-ink': DECK_INKS[index] } as CSSProperties}>
         <div className="play-track"><b className="play-letter">{'ABCD'[index]}</b><div><h3>{SONGS[index].title}</h3><p>{SONGS[index].artist}</p></div><span>{SONGS[index].bpm} BPM<br />{SONGS[index].key}</span></div>
 
         <div className="play-performance">
@@ -195,20 +197,20 @@ function PlayCase() {
         </div>
         </div>
         <div className="play-effects">
-          <Knob name="FX A" label={`Deck ${index + 1} effects send A`} param={SEND} value={d.sendA} onChange={sendA => update(index, { sendA })} />
-          <Knob name="Filter" label={`Deck ${index + 1} filter`} param={FILTER} value={d.filter} onChange={filter => update(index, { filter })} />
-          <Knob name="FX B" label={`Deck ${index + 1} effects send B`} param={SEND} value={d.sendB} onChange={sendB => update(index, { sendB })} />
+          <Knob ink="#77d6cf" name="FX A" label={`Deck ${index + 1} effects send A`} param={SEND} value={d.sendA} onChange={sendA => update(index, { sendA })} />
+          <Knob ink="#b9b0dc" name="Filter" label={`Deck ${index + 1} filter`} param={FILTER} value={d.filter} onChange={filter => update(index, { filter })} />
+          <Knob ink="#dc9bdf" name="FX B" label={`Deck ${index + 1} effects send B`} param={SEND} value={d.sendB} onChange={sendB => update(index, { sendB })} />
         </div>
         <div className="play-channel">
           <div className="play-eq-stack play-stem-levels" data-full={d.full}>
             {STEMS.map((stem, i) => <Knob key={stem} disabled={d.full} name={stem} label={`Deck ${index + 1} ${stem} level`} param={LEVEL} value={d.levels[i]} onChange={value => update(index, { levels: d.levels.map((v, s) => s === i ? value : v) })} ink={INKS[i]} />)}
           </div>
           <div className="play-level-stack">
-          <div className="play-channel-fader"><Slider name="Level" label={`Deck ${index + 1} level`} param={LEVEL} value={d.gain} onChange={gain => update(index, { gain })} length={210} />
+          <div className="play-channel-fader"><Slider name="" label={`Deck ${index + 1} level`} param={LEVEL} value={d.gain} onChange={gain => update(index, { gain })} length={210} />
           <PreviewMeter label={`Deck ${index + 1} output`} sample={() => deckLevel(d)} /></div></div>
           <div className="play-eq-stack">
-            <Knob name="Trim" label={`Deck ${index + 1} trim`} param={TRIM} value={d.trim} onChange={trim => update(index, { trim })} />
-            {['High', 'Mid', 'Low'].map((name, e) => <Knob key={name} name={name} label={`Deck ${index + 1} ${name}`} param={EQ} value={d.eq[e]} onChange={v => update(index, { eq: d.eq.map((a, i) => i === e ? v : a) })} />)}
+            <Knob className="play-trim" ink="#b5c5d5" name="Trim" label={`Deck ${index + 1} trim`} param={TRIM} value={d.trim} onChange={trim => update(index, { trim })} />
+            {['High', 'Mid', 'Low'].map((name, e) => <Knob key={name} name={name} label={`Deck ${index + 1} ${name}`} param={EQ} origin="center" value={d.eq[e]} onChange={v => update(index, { eq: d.eq.map((a, i) => i === e ? v : a) })} />)}
           </div>
         </div>
         <div className="play-route"><Toggle on={d.cue} onChange={cue => update(index, { cue })} width={45} label={`Deck ${index + 1} headphone cue`}>Cue</Toggle><Segmented name="" label={`Deck ${index + 1} crossfade assignment`} items={ROUTE} index={d.route} onChange={route => update(index, { route })} /><Toggle on={d.full} width={44} label={`Deck ${index + 1} original full mix`} title="Use the original unseparated track instead of stems" onChange={full => update(index, { full, ...(full ? { fullSection: d.active.find(section => section >= 0) ?? -1, fullQueued: null } : {}) })}>Full</Toggle></div>

@@ -201,3 +201,16 @@
 /* One full-width column keeps every master row on the same center line. */
 .play-master-strip { grid-template-columns: minmax(0, 1fr); justify-content: stretch; }
 .play-master-strip .play-effects { justify-content: space-evenly; }
+
+/* Color identifies control families; amber stays on selections and EQ. */
+.play-letter, .play-wave-label b, .play-clock { color: var(--wdg-text); }
+.play-channel-fader .wdg-slider { --wdg-fill: #b5c5d5; }
+.play-trim { position: relative; --wdg-marker: #b5c5d5; }
+.play-trim::after { content: ''; position: absolute; bottom: -5px; left: 5px; right: 5px; border-bottom: 1px solid var(--wdg-edge); }
+.play-trim .wdg-caption { color: #b5c5d5; }
+
+/* Deck identity follows the physical pairs, independent of the stem palette. */
+.play-letter, .play-wave-label b { color: var(--deck-ink); }
+
+/* Captions carry the same identity as their control; level bars need no captions. */
+.play-stem-levels .wdg-caption, .play-effects .wdg-caption { color: var(--wdg-fill); }

@@ -164,6 +164,20 @@ if none is selected. Stem state is preserved for switching back. Source changes 
 immediate; section launches retain the selected timing. Full-mix meters ignore stem
 levels but still follow trim, deck gain, crossfader and master.
 
+The play face uses blue/mint/lavender/rose for Drums/Bass/Other/Vocals. Waveforms and deck letters use a separate deck palette: light/dark straw for
+A/B on the left and light/dark sage for C/D on the right. These identities stay
+fixed when crossfade assignments change. The clock is neutral. Output meters use green; faders and trim use
+cool silver. A short divider below trim distinguishes it from EQ without changing
+control positions. EQ explicitly uses the zero-value fill origin despite its asymmetric −24/+12dB
+range: neutral has no arc, and cuts/boosts fill from 0dB. Stem levels and faders
+retain their full level indication. EQ changes and selected global controls retain the primary accent; BPM has
+no fill because its value is not a selected state. These are bench-scoped colors and
+existing widget ink props, not changes to the shared palette.
+
+Stem captions match their knob inks. FX A uses turquoise, Filter muted lavender, and
+FX B orchid for both captions and changed-value arcs. Faders and meters omit visible
+captions while retaining accessible labels.
+
 ## Collapsing navigation
 
 The bench’s top-left sidebar toggle hides the room list without unmounting the active
@@ -174,3 +188,7 @@ the sidebar gives the mixer the full available browser width for layout checks.
 
 The master FX selectors include their A/B labels inside the dropdown face (A · Delay,
 B · Reverb), so both controls span the same width as the other master control groups.
+
+The bench stylesheet locally overrides the primary accent tokens (`--amber` and its
+hover/muted variants) with silver-blue. This affects bench selection chrome and default
+widget accents without editing the shared palette or explicit stem/deck/FX colors.

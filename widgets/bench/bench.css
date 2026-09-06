@@ -550,3 +550,6 @@ font-variation-settings: var(--mono-axes);
 .bench-collapsed > .wdg-rooms { grid-template-columns: minmax(0, 1fr); }
 .bench-collapsed > .wdg-rooms > .wdg-rooms-side { display: none; }
 .bench-collapsed .wdg-workspace-nav { padding-left: 38px; }
+
+/* Local proof-of-concept accent; the shared application palette stays unchanged. */
+body { --amber: #b8c6d6; --amber-hover: #d5e0ed; --amber-muted: #758496; }
