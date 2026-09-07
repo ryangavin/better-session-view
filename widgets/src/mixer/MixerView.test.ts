@@ -129,4 +129,21 @@ describe('controlled mixer boundary', () => {
     expect(view.getByRole('button', { name: 'Deck 1: stop all stems' }).textContent).toBe('◷ Stop');
     expect(view.container.querySelector('fieldset')?.disabled).toBe(true);
   });
+  // A wall of knobs is the part of this app with the least room for words on
+  // it, which is exactly why every one of them has to answer the hint strip.
+  // Written as "none of them is missing one" rather than as a list, so a knob
+  // added later fails this until somebody says what it does.
+  it('gives every knob, fader and crossfader a hint to put in the strip', () => {
+    const props = fixture();
+    props.state.effects = [{ id: 'delay-id', name: 'Delay', controls: [{ id: 'feedback', name: 'Feedback', param }] }];
+    const view = render(createElement(MixerView, props));
+    const turnable = [...view.container.querySelectorAll('.wdg-knob, .wdg-slider, .wdg-segmented')];
+    expect(turnable.length).toBeGreaterThan(20);
+    const mute = turnable.filter((el) => !el.getAttribute('data-hint')?.trim());
+    expect(mute.map((el) => el.querySelector('[aria-label]')?.getAttribute('aria-label') ?? el.className)).toEqual([]);
+    expect(view.getByRole('slider', { name: 'Crossfader' }).closest('.wdg-slider')?.getAttribute('data-hint'))
+      .toContain('Thru');
+    expect(view.getByRole('slider', { name: 'Deck 1 trim' }).closest('.wdg-knob')?.getAttribute('data-hint'))
+      .toContain('12 dB');
+  });
 });

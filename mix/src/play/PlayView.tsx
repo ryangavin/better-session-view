@@ -13,6 +13,9 @@ export function PlayView({ mixer }: { mixer: ReturnType<typeof useMixerViewModel
     <MixerView externalTransport {...mixer} theme={{primary:colors.primary, signal:colors.signal, stems:colors, decks:Object.fromEntries(mixer.state.decks.map((d,i) => [d.id,deckPairs[i]]))}}
       deckProps={id => ({
         'aria-label': `Deck ${id.slice(-1).toUpperCase()} — drop a library track`,
+        // The deck as a whole, for the strip. Anything inside it that says
+        // something more specific is nearer to the pointer and answers first.
+        'data-hint': 'A deck. Drag a track here from the library to load it — loading never starts it playing.',
         className: hovered === id ? 'mf-deck-over' : '',
         onDragOver: event => { if (accepts(event)) {event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect='copy'; setHovered(id);} },
         onDragLeave: event => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setHovered(null); },
