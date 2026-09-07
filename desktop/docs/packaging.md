@@ -22,6 +22,12 @@ The familiar names are one-line aliases onto this and still work: `npm run set`,
 `npm run visuals`, `npm run pack:set`, `npm run build:visuals`, `npm run dev:set-app`.
 An app with nothing special about it needs none of them.
 
+Linux CI compiles the Electron bundles by calling `tools/build-electron.ts` for
+every app in the registry. It does not call the `electron` driver command, which
+also prepares macOS-native helpers and requires Apple's toolchain. The macOS
+release job uses `pack`, including native preparation, signing and notarisation;
+a green Linux build verifies compilation, not installer readiness.
+
 Each app gets the same three dev scripts, and they are worth telling apart:
 
 | | |
