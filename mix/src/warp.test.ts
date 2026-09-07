@@ -13,6 +13,7 @@ import {
   rangeText,
   tempoText,
   resampled,
+  retimed,
   sampleOf,
   renumbered,
   shifted,
@@ -277,6 +278,66 @@ describe('pulling a bar', () => {
       expect(again.samples[120]).toBe(edited.samples[120] + 1000);
       expect(again.set).toEqual([80, 100]);
     });
+  });
+});
+
+describe('re-counting the beats at another rate', () => {
+  const map = bent();
+  /** Even beats a thousand samples apart, with one gap twice as long: the variation a re-count must keep. */
+  const gapped = beatsOf(RATE, LENGTH, 0, Array.from({ length: 40 }, (_, i) => i * 1000 + (i > 10 ? 1000 : 0)));
+
+  it('doubles then halves back to the very same samples', () => {
+    const back = retimed(retimed(map, 2, 1), 1, 2);
+    expect(back.first).toBe(map.first);
+    expect(back.samples).toEqual(map.samples);
+    const counted = renumbered(map, 6);
+    expect(retimed(retimed(counted, 2, 1), 1, 2).samples).toEqual(counted.samples);
+  });
+
+  it('keeps bar 1 where it was, halved or doubled, wherever bar 1 is in the file', () => {
+    const counted = renumbered(map, 7);
+    for (const [num, den] of [[2, 1], [1, 2], [3, 2], [2, 3]]) {
+      expect(sampleOf(retimed(counted, num, den), 0)).toBe(sampleOf(counted, 0));
+      expect(sampleOf(retimed(map, num, den), 0)).toBe(map.samples[0]);
+    }
+  });
+
+  it('reads a steady grid at three halves of its tempo', () => {
+    const faster = retimed(straight, 3, 2);
+    expect(tempoOf(faster)).toBeCloseTo(192, 2);
+    const { slowest, fastest } = tempoRange(faster);
+    expect(fastest - slowest).toBeLessThan(0.05);
+    expect(tempoOf(retimed(straight, 2, 3))).toBeCloseTo(128 * 2 / 3, 2);
+  });
+
+  it('keeps a long gap proportionally long, doubled and halved', () => {
+    const doubled = retimed(gapped, 2, 1);
+    expect(doubled.samples[21] - doubled.samples[20]).toBe(1000);
+    expect(doubled.samples[22] - doubled.samples[21]).toBe(1000);
+    expect(doubled.samples[20] - doubled.samples[19]).toBe(500);
+    expect(doubled.samples[23] - doubled.samples[22]).toBe(500);
+    const halved = retimed(gapped, 1, 2);
+    expect(halved.samples[6] - halved.samples[5]).toBe(3000);
+    expect(halved.samples[5] - halved.samples[4]).toBe(2000);
+  });
+
+  it('still covers the same stretch of the file, carried on at the local spacing', () => {
+    const doubled = retimed(map, 2, 1);
+    expect(doubled.samples[0]).toBe(map.samples[0]);
+    expect(doubled.samples[doubled.samples.length - 1]).toBe(map.samples[map.samples.length - 1]);
+    const halved = retimed(gapped, 1, 2);
+    expect(halved.samples[halved.samples.length - 1]).toBeGreaterThanOrEqual(gapped.samples[gapped.samples.length - 1]);
+    expect(retimed(beatsOf(RATE, LENGTH, 0, [0, 1000]), 2, 3).samples.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('keeps a set beat that lands on a whole beat, re-indexed, and drops one that does not', () => {
+    const set = moved(moved(map, 4, map.samples[4] + 10), 5, map.samples[5] + 10);
+    expect(set.set).toEqual([4, 5]);
+    expect(retimed(set, 2, 1).set).toEqual([8, 10]);
+    expect(retimed(set, 1, 2).set).toEqual([2]);
+    expect(retimed(set, 3, 2).set).toEqual([6]);
+    expect(retimed(set, 2, 3).set).toEqual([]);
+    expect(retimed(map, 2, 1).set).toBeUndefined();
   });
 });
 

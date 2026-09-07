@@ -119,7 +119,9 @@ nothing — it used to shift every beat to the playhead, which dragged a good de
 its hits; One beat earlier/later renumbers the same way. Nudges shift the complete map
 10 ms, for when the beats really are off by a constant. Clicking the tempo in the status
 turns it into a field for typing a steady tempo, which discards tempo variation at that
-BPM from bar 1's downbeat; Escape or blur returns the reading. **Find beats** runs the chosen
+BPM from bar 1's downbeat; Escape or blur returns the reading. Beside it, ×2, ÷2, ×3⁄2
+and ×2⁄3 re-count the same beats at that rate, keeping the detected variation and bar 1
+on its hit — `retimed` in `warp.ts`, for a detector that heard the wrong pulse. **Find beats** runs the chosen
 algorithm on the drums — what an import runs, unless another is picked — and draws the
 result as the draft; Undo puts the old grid back. **Advanced…** opens the debug workspace
 on the beat analysis tab, `state.openDebug('beats')`, the same modal the bug button

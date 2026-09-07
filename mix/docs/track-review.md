@@ -29,7 +29,16 @@ from. The tempo in the status is also where a steady tempo is typed: click it an
 becomes a field; a committed number rules `evenBeats` from bar 1's downbeat, which
 discards the detected variation on purpose, and Escape or blur brings the reading back.
 That replaced a *Replace with a steady grid* disclosure with its own BPM field, which
-was the only tempo gesture before a bar could be pulled.
+was the only tempo gesture before a bar could be pulled. Beside the tempo, **×2**,
+**÷2**, **×3⁄2** and **×2⁄3** re-count the same beats through `retimed` — a beat
+interpolated between every two, every other beat from bar 1, three across every two,
+two across every three — so the detector's documented miss, the wrong pulse by an
+octave or by 4:3, is one click that keeps the variation it detected rather than a
+typed tempo that rules it flat; bar 1 stays on its hit, and the reading beside them
+says at once whether the kit agrees with the new count.
+**Listen with click** plays four bars of drums at original speed from the playhead,
+through `reviewPlayback.ts`, which schedules audio and clicks against one AudioContext
+clock; a correction or main playback stops it.
 **Listen with click** plays four bars of drums at original speed from the playhead,
 through `reviewPlayback.ts`, which schedules audio and clicks against one AudioContext
 clock; a correction or main playback stops it.

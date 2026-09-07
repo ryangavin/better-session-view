@@ -673,4 +673,6 @@
 .mf-grid-editor .wdg { flex:none; }
 .mf-grid-tempo { all:unset; cursor:text; font:inherit; font-variation-settings:inherit; color:inherit; border-bottom:1px dotted var(--caption); }
 .mf-grid-tempo:hover, .mf-grid-tempo:focus-visible { border-bottom-color:var(--primary); }
+.mf-grid-retime { display:inline-flex; gap:6px; margin-left:8px; color:var(--detail); }
+.mf-grid-retime > .mf-grid-tempo { cursor:pointer; }
 .mf-grid-editor-row > [role='status'] .wdg { display:inline-flex; vertical-align:middle; }

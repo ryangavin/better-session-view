@@ -4,7 +4,7 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import { beatAt, beatsOnHit, evenBeats, rangeText, renumbered, sampleOf, shifted, tempoOf } from '../warp.ts';
+import { beatAt, beatsOnHit, evenBeats, rangeText, renumbered, retimed, sampleOf, shifted, tempoOf } from '../warp.ts';
 import { describe, FIRST_CHOICE, OFFERED, run, type Algorithm } from '../algorithms.ts';
 import type { Mix } from '../state.ts';
 
@@ -108,6 +108,16 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
                 onChange={(bpm) => mix.editGrid(evenBeats(grid.rate, grid.length, bpm, downbeat))} onRelease={() => setTyping(false)} />
             </span>
           : <button type="button" className="mf-grid-tempo" onClick={() => setTyping(true)} title="Click to type a steady tempo: every beat evenly spaced at it from bar 1, in place of the variation detected">{rangeText(grid)}</button>}
+        {/* The detector's known miss is the wrong pulse — an octave, or 4:3 —
+            and a re-count keeps the beats it placed right, where typing a
+            tempo would rule them flat and Find beats would hear the same
+            pulse again. Beside the tempo because that is the number they change. */}
+        <span className="mf-grid-retime" aria-label="Re-count the beats">
+          <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 2, 1))} title="Twice the tempo: a beat between every two, the detected variation kept">×2</button>
+          <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 1, 2))} title="Half the tempo: every other beat, from bar 1, the detected variation kept">÷2</button>
+          <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 3, 2))} title="Three halves of the tempo: three beats across every two, for a detector that heard a 2:3 pulse">×3⁄2</button>
+          <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 2, 3))} title="Two thirds of the tempo: two beats across every three, for a detector that heard a 3:2 pulse">×2⁄3</button>
+        </span>
         {share === null ? '' : ` · ${Math.round(share * 100)}% of beats on a hit`}
       </span>
       <Select items={OFFERED.map((id) => describe(id).name)} index={OFFERED.indexOf(algorithm)} onChange={(i) => setAlgorithm(OFFERED[i])} label="Beat finding algorithm" title={describe(algorithm).does} width={150} />

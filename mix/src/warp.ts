@@ -358,6 +358,34 @@ export const shifted = (beats: Beats, samples: number): Beats => ({
   samples: beats.samples.map((s) => s + Math.round(samples)),
 });
 
+/**
+ * The same beats counted at another rate: `num` new beats across every `den`
+ * old ones, so (2, 1) doubles the tempo, (1, 2) halves it, (3, 2) and (2, 3)
+ * are the 3:2 and 2:3 readings. What a detector that heard the wrong pulse
+ * gets — an octave out, or 4:3 — is corrected without losing what it heard
+ * right: new beat k sits where old beat k·den/num falls, interpolated between
+ * the old beats either side, so a stretch that ran fast still runs fast, and
+ * carried on at the local spacing past both ends so the map covers the same
+ * stretch of the file. Bar 1's downbeat is new beat zero as it was old beat
+ * zero, so the count keeps starting on the same hit. Typing a tempo would
+ * have ruled the variation flat, and Find beats cannot be told which pulse.
+ *
+ * A hand-set beat is kept, re-indexed, where it lands on a whole new beat —
+ * every one under ×2, the even ones under ÷2 — and dropped where it would
+ * fall between two, because a set point is a place the next pull stretches
+ * from and half a beat is not a place.
+ */
+export function retimed(beats: Beats, num: number, den: number): Beats {
+  const { first, samples } = beats;
+  const last = first + samples.length - 1;
+  const from = Math.floor((first * num) / den);
+  const upto = Math.ceil((last * num) / den);
+  const out: number[] = [];
+  for (let k = from; k <= upto; k++) out.push(Math.round(sampleOf(beats, (k * den) / num)));
+  const set = beats.set?.flatMap((b) => ((b * num) % den === 0 ? [(b * num) / den] : [])).filter((b) => b >= from && b <= upto);
+  return { ...beatsOf(beats.rate, beats.length, from, out), ...(set && { set }) };
+}
+
 /** The same map counted in another rate, for a file decoded to a different one. */
 export function resampled(beats: Beats, rate: number, length: number): Beats {
   if (rate === beats.rate) return { ...beats, length };
