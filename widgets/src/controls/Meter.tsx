@@ -52,6 +52,7 @@ export function Meter({
   length,
   className,
   title,
+  hint,
   ink,
 }: MeterProps) {
   const level = clamp(value);
@@ -64,6 +65,7 @@ export function Meter({
       layout={layout}
       className={className}
       title={title}
+      hint={hint}
       ink={ink}
       vars={{
         ...(width === undefined ? {} : { '--wdg-meter-width': `${width}px` }),

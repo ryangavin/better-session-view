@@ -2,6 +2,7 @@ import { useCallback, useState, type CSSProperties, type KeyboardEvent } from 'r
 import { useParamGesture } from '../gesture/useParamGesture.ts';
 import { clamp, quantize, type Param } from '../param/param.ts';
 import { defaultOrigin, fillFrom, type FillOrigin } from './fill.ts';
+import { hintAttribute } from './hint.ts';
 import { useReserved } from './reserve.ts';
 import './controls.css';
 
@@ -26,6 +27,12 @@ export interface NumberFieldProps {
   travel?: number;
   className?: string;
   title?: string;
+  /**
+   * A sentence for the window's hint strip, on the root as `data-hint`.
+   *
+   * Left out, the strip falls back to `title`. See [`hint.ts`](./hint.ts).
+   */
+  hint?: string;
 }
 
 const OPENS_EDITOR = /^[-+.0-9]$/;
@@ -46,6 +53,7 @@ export function NumberField({
   travel,
   className,
   title,
+  hint,
 }: NumberFieldProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const reserved = useReserved(param);
@@ -87,6 +95,7 @@ export function NumberField({
   return (
     <div
       className={`wdg wdg-number${className ? ` ${className}` : ''}`}
+      {...hintAttribute(hint)}
       style={
         {
           ...reserved,

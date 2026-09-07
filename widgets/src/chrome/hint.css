@@ -1,0 +1,22 @@
+.wdg-hint {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--bd);
+  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-label);
+  color: var(--detail);
+}
+
+.wdg-hint[data-resting] {
+  color: var(--caption);
+}
+
+.wdg-hint-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

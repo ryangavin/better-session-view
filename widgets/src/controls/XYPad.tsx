@@ -80,6 +80,7 @@ export function XYPad({
   layout,
   className,
   title,
+  hint,
   ink,
   children,
 }: XYPadProps) {
@@ -117,6 +118,7 @@ export function XYPad({
       disabled={disabled}
       className={className}
       title={title}
+      hint={hint}
       ink={ink}
       vars={{
         '--wdg-xypad-width': `${width}px`,

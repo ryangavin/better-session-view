@@ -32,6 +32,7 @@ export { usePendingValue, readbackTolerance, type PendingValue } from './gesture
 export { FINE_KEY, isFine } from './gesture/platform.ts';
 
 export { defaultOrigin, fillFrom, originFraction, type FillOrigin } from './controls/fill.ts';
+export { hintAttribute, hintFor, HINT_ATTRIBUTE } from './controls/hint.ts';
 export { useReserved } from './controls/reserve.ts';
 export {
   Widget,
@@ -67,6 +68,7 @@ export {
   type GraphView,
 } from './chrome/Graph.tsx';
 export { GraphContext, portKey, type GraphSurface, type PortSide } from './chrome/graphContext.ts';
+export { HintFooter, type HintFooterProps } from './chrome/HintFooter.tsx';
 export { Modal, type ModalProps } from './chrome/Modal.tsx';
 export {
   Popup,

@@ -52,6 +52,7 @@ src/
     Label.tsx       live.comment, and Divider for live.line
     arc.ts          dial geometry
     fill.ts         where a fill starts, shared by all three value controls
+    hint.ts         which sentence the window's hint strip shows, and why a title counts
     wake.ts         the trail behind an arriving number, and the warmth in its reading
     reserve.ts      space for the longest reading, so a control never resizes
     shared.css      the parts every control is made of: face, type, states, layout
@@ -61,6 +62,7 @@ src/
     Chain.tsx       the run it sits in — children, so it never owns the order
     Graph.tsx       the canvas it sits on instead — the sibling layout, and the cords
     Port.tsx        where a cord ends. Two slots on Device, and nothing in a chain
+    HintFooter.tsx  the strip along the bottom that says what you are pointing at
     graphContext.ts what a port and a node need from the surface under them
     Rack.tsx        a device holding chains: the macro face and the chain list
     Row.tsx         controls on one line, in three bands, through a subgrid

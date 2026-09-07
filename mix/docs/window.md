@@ -7,7 +7,24 @@ A library on the left and the open track to the right of it, under one header. I
 from an interactive mockup that had already read `set/src/shared.css`, so the tokens were
 ours before the layout was — what follows is where it deviated and why.
 
-**There is no right rail and no status bar**, and neither is a deletion so much as three
+**There is a hint strip and no status bar.** The strip runs along the bottom of the
+centre column, level with the library rail's own footer so the bottom of the window reads
+as one band, and it says in a sentence what the pointer — or the focus ring — is on. It
+is `HintFooter` from `@openflow/widgets`, and it works off `data-hint` where a control
+has one and the control's `title` where it does not, which is why most of this window
+explained itself the day it was mounted. See
+[widgets/docs/catalogue.md](../../widgets/docs/catalogue.md#what-explains-a-control) for
+the precedence rule and why the hovered sentence never reaches React.
+
+At rest it reads *Point at anything to read what it does.* rather than going blank: an
+empty band at the bottom of a window reads as something unfinished, and the one line it
+can say is what tells a newcomer the band is worth watching.
+
+It lives inside `.mf-centre`, so **Play has no strip** — the four-deck layout is a
+sibling of that column rather than something inside it, and a strip spanning the library
+as well would stop being level with the rail's footer.
+
+**There is no right rail**, and that is not a deletion so much as three
 things finding better homes. The track's name is in the header, where a window says what
 is open. The mix summary is in the band above the lanes, beside the buttons that change
 it. The slice list is in the export dialog, which is the moment anyone actually names a
@@ -468,6 +485,7 @@ and Export wait for the edit session to end. See [track-review.md](track-review.
 | per-source progress | `Meter` |
 | the tempo, in the header transport | `NumberField`, unfilled |
 | the waveform | **not a widget.** `components/Waveform.tsx` |
+| the strip along the bottom | `HintFooter`, mounted once in `App.tsx` |
 
 **The fader takes a `length`, not `layout="inside"`,** and the difference is not
 cosmetic. `widgets/docs/catalogue.md` explains that an inside row deliberately has no

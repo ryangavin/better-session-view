@@ -75,6 +75,7 @@ export function Slider({
   layout,
   className,
   title,
+  hint,
   ink,
 }: SliderProps) {
   const gesture = useParamGesture({
@@ -128,6 +129,7 @@ export function Slider({
       disabled={disabled}
       className={`wdg-slider-${orientation}${className ? ` ${className}` : ''}`}
       title={title}
+      hint={hint}
       ink={ink}
       vars={{
         '--wdg-slider-length': `${length}px`,

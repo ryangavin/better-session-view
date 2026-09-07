@@ -1,4 +1,5 @@
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
+import { hintAttribute } from './hint.ts';
 import './controls.css';
 
 /**
@@ -51,6 +52,12 @@ export interface ButtonProps {
   width?: number;
   className?: string;
   title?: string;
+  /**
+   * A sentence for the window's hint strip, on the root as `data-hint`.
+   *
+   * Left out, the strip falls back to `title`. See [`hint.ts`](./hint.ts).
+   */
+  hint?: string;
   children?: ReactNode;
 }
 
@@ -63,11 +70,13 @@ export function Button({
   width,
   className,
   title,
+  hint,
   children,
 }: ButtonProps) {
   return (
     <div
       className={`wdg wdg-button${className ? ` ${className}` : ''}`}
+      {...hintAttribute(hint)}
       style={
         (width === undefined ? {} : { '--wdg-button-width': `${width}px` }) as CSSProperties
       }

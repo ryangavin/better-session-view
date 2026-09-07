@@ -9,6 +9,7 @@ import {
   type PointerEvent,
 } from 'react';
 import { Popup, type Dismissal } from '../chrome/Popup.tsx';
+import { hintAttribute } from './hint.ts';
 import './controls.css';
 
 /**
@@ -48,6 +49,12 @@ export interface SelectProps {
   width?: number;
   className?: string;
   title?: string;
+  /**
+   * A sentence for the window's hint strip, on the root as `data-hint`.
+   *
+   * Left out, the strip falls back to `title`. See [`hint.ts`](./hint.ts).
+   */
+  hint?: string;
 }
 
 /** How long a type-ahead keeps collecting before the next key starts a new word. */
@@ -63,6 +70,7 @@ export function Select({
   width,
   className,
   title,
+  hint,
 }: SelectProps) {
   const chars = Math.max(0, ...items.map((item) => item.length));
   const at = Math.max(0, Math.min(items.length - 1, index));
@@ -175,6 +183,7 @@ export function Select({
   return (
     <div
       className={`wdg wdg-select${className ? ` ${className}` : ''}`}
+      {...hintAttribute(hint)}
       style={
         {
           '--wdg-select-chars': chars,

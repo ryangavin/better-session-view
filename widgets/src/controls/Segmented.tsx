@@ -1,5 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import type { Param } from '../param/param.ts';
+import { hintAttribute } from './hint.ts';
 import './controls.css';
 
 /**
@@ -19,6 +20,12 @@ export interface SegmentedProps {
   orientation?: 'horizontal' | 'vertical';
   className?: string;
   title?: string;
+  /**
+   * A sentence for the window's hint strip, on the root as `data-hint`.
+   *
+   * Left out, the strip falls back to `title`. See [`hint.ts`](./hint.ts).
+   */
+  hint?: string;
 }
 
 /** The members of an enum Param, for handing straight to `items`. */
@@ -36,6 +43,7 @@ export function Segmented({
   orientation = 'horizontal',
   className,
   title,
+  hint,
 }: SegmentedProps) {
   const move = (e: KeyboardEvent<HTMLDivElement>, by: number) => {
     e.preventDefault();
@@ -44,7 +52,10 @@ export function Segmented({
   };
 
   return (
-    <div className={`wdg wdg-segmented${className ? ` ${className}` : ''}`}>
+    <div
+      className={`wdg wdg-segmented${className ? ` ${className}` : ''}`}
+      {...hintAttribute(hint)}
+    >
       {name && <span className="wdg-caption">{name}</span>}
       <div
         className={`wdg-segmented-body wdg-body wdg-segmented-${orientation}`}

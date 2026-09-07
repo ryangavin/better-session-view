@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { hintAttribute } from './hint.ts';
 import type { WidgetLayout } from './Widget.tsx';
 import './controls.css';
 
@@ -45,6 +46,12 @@ export interface ToggleProps {
   layout?: Extract<WidgetLayout, 'stacked' | 'inside'>;
   className?: string;
   title?: string;
+  /**
+   * A sentence for the window's hint strip, on the root as `data-hint`.
+   *
+   * Left out, the strip falls back to `title`. See [`hint.ts`](./hint.ts).
+   */
+  hint?: string;
   /** The colour it lights in. See `WidgetProps.ink`. */
   ink?: string;
   children?: ReactNode;
@@ -61,6 +68,7 @@ export function Toggle({
   layout = 'stacked',
   className,
   title,
+  hint,
   ink,
   children,
 }: ToggleProps) {
@@ -88,6 +96,7 @@ export function Toggle({
       className={
         `wdg${inside ? ' wdg-widget' : ''} wdg-toggle${className ? ` ${className}` : ''}`
       }
+      {...hintAttribute(hint)}
       {...(inside ? { 'data-layout': 'inside' } : {})}
       {...(inside && on ? { 'data-on': '' } : {})}
       {...(inside && disabled ? { 'data-disabled': '' } : {})}

@@ -128,6 +128,7 @@ faceplate of perfect knobs doesn't look like Ableton without it.
 | [`Port`](../src/chrome/Port.tsx) | neither | where a cord ends. `Device` grew two slots for them |
 | [`Modal`](../src/chrome/Modal.tsx) | neither — an editor's, not a device's | a `<dialog>`: the top layer, the scrim, the focus trap and escape |
 | [`Popup`](../src/chrome/Popup.tsx) | neither | a panel hung off a control: the top layer, the flip, and the three ways it goes away |
+| [`HintFooter`](../src/chrome/HintFooter.tsx) | Live's Info View | the strip along the bottom that says what you are pointing at. See [what explains a control](#what-explains-a-control) |
 
 `Modal` is in this tier for the reason `Button` is in the last one: it belongs to the
 vocabulary of an *editor* rather than of a device, and every app had rolled its own — the
@@ -318,13 +319,43 @@ curve is one device's idea and this module knows about none of them.
    restyle it without forking it.
 5. Render a [`Widget`](../src/controls/Widget.tsx) with your one element inside it, and
    extend `WidgetProps` instead of redeclaring `name`, `label`, `disabled`, `layout`,
-   `className` and `title`. The frame writes the root's classes, the caption, the reading,
-   the reserved width and the layout — none of those is yours to get right.
+   `className`, `title` and `hint`. The frame writes the root's classes, the caption, the
+   reading, the reserved width, the layout and the hint attribute — none of those is
+   yours to get right. A control that builds its own root instead spreads
+   `hintAttribute(hint)` onto it.
 6. Style your element in [`shared.css`](../src/controls/shared.css) — the face, the type,
    the fill, the states — and write only its own geometry in `controls.css`. A control that
    draws its own border has already drifted.
 7. Add a case to [the bench](bench.md) — including the disabled one. It's the only test
    these get.
+
+## What explains a control
+
+Every control takes `hint`, and it lands on the control's **root** as a plain `data-hint`
+attribute. [`HintFooter`](../src/chrome/HintFooter.tsx) is the strip that shows it, and
+[`hint.ts`](../src/controls/hint.ts) is the lookup between them.
+
+**The nearest `data-hint` wins; only if there is none does the nearest `title`.** Not "the
+nearest element carrying either", which sounds like the same rule and is not: `title` sits
+on the interactive body and `hint` on the root outside it, so the title is always the
+closer of the two and an explicit hint could never win. The cost is that a hinted
+container outranks a merely-titled child inside it — right way round, since a hint is
+deliberate and a title is incidental, and the escape is to give the child a hint.
+
+Two things follow from that, and both are the point.
+
+**Opting in costs nothing.** An app already full of written `title` attributes explains
+itself the day the strip is mounted, with no edits at all. `hint` is then only for where
+the strip wants different or longer words than a tooltip should carry — a tooltip is read
+after a pause, in a small box, over the thing it describes; a strip is read at a glance,
+on one line, and can afford a clause about what the control is *for*.
+
+**It never enters the render path.** A hint is a string on an element rather than a value
+in a tree, and the strip reads it back off the DOM from one delegated listener. A hovered
+value in context or in a prop changes identity several times a second and reaches every
+memoized row that subscribes to it — see
+[`set/docs/performance.md`](../../set/docs/performance.md). This is that failure designed
+out rather than optimised away: only `HintFooter` holds the state, and it has no children.
 
 ## Six conventions worth knowing
 

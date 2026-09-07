@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode, Ref } from 'react';
+import { hintAttribute } from './hint.ts';
 import type { Param } from '../param/param.ts';
 import { useReserved } from './reserve.ts';
 import './controls.css';
@@ -48,6 +49,14 @@ export interface WidgetProps {
   className?: string;
   title?: string;
   /**
+   * A sentence for the window's hint strip, on the root as `data-hint`.
+   *
+   * Left out, the strip falls back to `title`, so a control with a decent
+   * tooltip already explains itself and this is only for saying more than a
+   * tooltip should. See [`hint.ts`](./hint.ts).
+   */
+  hint?: string;
+  /**
    * The colour the control fills in — its arc, its rail, its needle. Any CSS
    * colour, and usually a `var()`: a mixer's strip inked in its own stem's
    * colour, a rack's macro in the macro's. Left out, the fill is the accent
@@ -94,6 +103,7 @@ export function Widget({
   ref,
   className,
   title,
+  hint,
   ink,
   children,
 }: WidgetSlots) {
@@ -105,6 +115,7 @@ export function Widget({
       ref={ref}
       className={`wdg wdg-widget wdg-${kind}${className ? ` ${className}` : ''}`}
       data-layout={layout}
+      {...hintAttribute(hint)}
       {...(disabled ? { 'data-disabled': '' } : {})}
       style={{ ...reserved, ...inked, ...vars } as CSSProperties}
     >

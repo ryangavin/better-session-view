@@ -44,6 +44,7 @@ export function Knob({
   layout,
   className,
   title,
+  hint,
   ink,
 }: KnobProps) {
   const gesture = useParamGesture({
@@ -74,6 +75,7 @@ export function Knob({
       disabled={disabled}
       className={className}
       title={title}
+      hint={hint}
       ink={ink}
     >
       <div className="wdg-knob-dial" {...gesture.props}>

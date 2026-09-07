@@ -1,5 +1,6 @@
 import { DebugModal } from './components/DebugButton.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
+import { HintFooter } from '@openflow/widgets/chrome/HintFooter.tsx';
 import { PlayView } from './play/PlayView.tsx';
 import { useMixerViewModel } from './play/useMixerViewModel.ts';
 import { isViewShortcut } from './play/decks.ts';
@@ -38,6 +39,12 @@ import { carriesImport, droppedYoutube } from './libraryDrop.ts';
  * that were written (`docs/playback.md`). The slices are still eight evenly
  * spaced spans with names, because nothing detects an arrangement yet, and
  * `mock.ts` says so where they are made.
+ *
+ * Along the bottom of the main column, level with the library's footer and
+ * under Prep and Play alike, a `HintFooter` says what the pointer or the focus
+ * ring is on. Nothing had to
+ * be annotated for it: it reads a control's `title` where there is no
+ * `data-hint`, and the app was already full of titles. `docs/window.md`.
  *
  * The window also remembers itself across a reload: the open track, the mix,
  * the head. `remember.ts` has what is kept and what deliberately is not.
@@ -160,13 +167,20 @@ export function App() {
       <Header onSettings={() => setSettingsOpen(true)} mixer={mixer.engine} mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />
       <main className="mf-body">
         <Library mix={mix} />
-        {playView && <PlayView mixer={mixer} />}
-        <section className="mf-centre" hidden={playView}>
-          {mix.phase === 'empty' && <Empty mix={mix} />}
-          {mix.phase === 'idle' && <TrackAnalysis key={mix.song?.id} mix={mix} ready={ready} />}
-          {mix.phase === 'running' && <Running mix={mix} />}
-          {mix.phase === 'ready' && <Lanes mix={mix} />}
-        </section>
+        {/* Prep and Play are the same column, so the strip along its bottom
+            explains both. It used to live inside the Prep section, which left
+            the four-deck mixer — the part of the app with the fewest labels on
+            it — as the one place nothing explained itself. */}
+        <div className="mf-main">
+          {playView && <PlayView mixer={mixer} />}
+          <section className="mf-centre" hidden={playView}>
+            {mix.phase === 'empty' && <Empty mix={mix} />}
+            {mix.phase === 'idle' && <TrackAnalysis key={mix.song?.id} mix={mix} ready={ready} />}
+            {mix.phase === 'running' && <Running mix={mix} />}
+            {mix.phase === 'ready' && <Lanes mix={mix} />}
+          </section>
+          <HintFooter resting="Point at anything to read what it does." />
+        </div>
       </main>
       <DebugModal mix={mix} />
       {settingsOpen && <SettingsModal mix={mix} mixer={mixer.engine} playView={playView} onClose={() => setSettingsOpen(false)} />}
