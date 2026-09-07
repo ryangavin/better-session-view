@@ -72,10 +72,10 @@ The Electron window opts out of background throttling, using both `switches(app)
 
 Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
 **Grid** opens the one mode for asking whether the song is right, over the lanes:
-beat handles, bar 1, **Find beats** with the algorithm beside it, the drums under a
-click on Space, the section changes the stems suggest as dashed cuts on the ruler, and
-**Advanced…**, which opens the debug workspace on the beat analysis for whoever wants
-every algorithm side by side. Done and Cancel are its only way out. Beside it the header says the tempo the beats run at — a range where the record
+beat handles, bar 1, **Find beats** with the algorithms and the full analysis in its
+**▾**, the drums under a click on Space, and the section changes the stems suggest as
+dashed cuts on the ruler — one row of groups named the way the header names snap. Done
+or Enter keeps, Cancel or Escape abandons, and they are its only way out. Beside it the header says the tempo the beats run at — a range where the record
 moves — and nothing about how it was found: agreement and the algorithm's name are the
 debug workspace's. Warp controls playback, not editability. **Details** beside the
 title opens what the track is: name, artist, album, art, and the model that made the
@@ -115,21 +115,25 @@ pull stretches from the last one. Arrow keys do the same as a drag on a focused 
 by 10 ms, or 1 ms with Shift; dragging snaps to nearby hits unless
 Option is held. Command while dragging any marker moves every beat by the drag
 (`shifted`), for a map that is right and early by a constant — the marker still snaps
-to its hit; that replaced a pair of ±10 ms buttons. **Bar 1 here** makes the beat
+to its hit; that replaced a pair of ±10 ms buttons. **Here**, in the `bar 1` group, makes the beat
 nearest the playhead bar 1, moving that beat alone onto the kick or snare it is nearest
 when one is within a quarter of a beat, and renumbering only otherwise or with Option
 held — it used to shift every beat to the playhead, which dragged a good detection off
-its hits; One beat earlier/later renumbers the same way. Clicking the tempo in the status
+its hits; **‹** and **›** beside it renumber one beat either way. Clicking the tempo in the status
 turns it into a field for typing a steady tempo, which discards tempo variation at that
 BPM from bar 1's downbeat; Escape or blur returns the reading. Beside it, ×2, ÷2, ×3⁄2
 and ×2⁄3 re-count the same beats at that rate, keeping the detected variation and bar 1
 on its hit — `retimed` in `warp.ts`, for a detector that heard the wrong pulse. **Find beats** runs the chosen
 algorithm on the drums — what an import runs, unless another is picked — and draws the
-result as the draft; Undo puts the old grid back. **Worst bar** seeks and zooms to the
+result as the draft; Undo puts the old grid back. Its **▾** is a `Select` drawn as the
+caret alone: the offered algorithms, the chosen one marked, and **Advanced…** last,
+which opens the debug workspace on the beat analysis tab, `state.openDebug('beats')`,
+the same modal the bug button opens. That is where a picker on the main row and an
+**Advanced…** button beside it went. **Worst bar** seeks and zooms to the
 bar reading furthest off its hits, the next-worst on each press, and the warp lane
-shades every bar by that reading; Home is bar 1. **Advanced…** opens the debug workspace
-on the beat analysis tab, `state.openDebug('beats')`, the same modal the bug button
-opens. Space plays the drums under a click at original speed from the playhead to the
+shades every bar by that reading; its tooltip carries Space and Home, which is where
+the mode's instruction paragraph went, the rest of it being what the markers and the
+ruler's dashed marks already say in theirs. Space plays the drums under a click at original speed from the playhead to the
 end of the stem, the lanes' playhead moving with it, and Space stops it; so does a
 correction, main playback, Cancel or Done. `App.tsx` leaves Space to the editor while
 the mode is open. It replaced a *Listen with click* button that played four bars.
@@ -443,7 +447,7 @@ and Export wait for the edit session to end. See [track-review.md](track-review.
 
 | on screen | is |
 |---|---|
-| the model menu | `Select` |
+| the model menu, and the ▾ beside Find beats | `Select` |
 | play, stop, cancel, export | `Button` |
 | the zoom readout, which presses back to the whole track | `Button` |
 | loop, mute, solo | `Toggle` |

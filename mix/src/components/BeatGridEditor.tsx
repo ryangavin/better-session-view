@@ -16,6 +16,16 @@ const channelsOf = (buffer: AudioBuffer) => Array.from({ length: buffer.numberOf
 const OFF_ENOUGH = 0.5;
 
 /**
+ * What the ▾ beside Find beats offers: the algorithms it can run, and the full
+ * comparison as the last row. A picker standing on the main row asked, of every
+ * person who opened the mode, a question only somebody debugging a detector
+ * has; behind the button that runs it, the choice is there for whoever wants it
+ * and silent for everybody else. Advanced… belongs at the end of the same menu
+ * because it is that question asked at length.
+ */
+const FINDINGS = [...OFFERED.map((id) => describe(id).name), 'Advanced…'];
+
+/**
  * The grid, open for checking and correcting over the real lanes: the one
  * mode for asking whether the song is right. Drag a beat, set bar 1 on its
  * hit, find the beats again, play the drums under a click with Space; the
@@ -134,6 +144,11 @@ export function BeatGridEditor({ mix, off, inspect, follow }: { mix: Mix; off: r
       // keys while it is open: Escape closes it, not the grid.
       if (e.defaultPrevented || document.querySelector('dialog[open]') || (e.target as HTMLElement)?.closest('input, textarea, select, [role=dialog]')) return;
       if (e.key === 'Escape') { e.preventDefault(); mix.cancelGridEdit(); }
+      // Enter keeps, Escape abandons, the way Serato's grid editor leaves. A
+      // focused control has its own Enter — a button presses, a field commits,
+      // a menu takes its row — so the mode only leaves on an Enter nobody else
+      // wanted.
+      else if (e.key === 'Enter' && !(e.target as HTMLElement)?.closest('button, [role=slider], [role=combobox], [role=listbox], [role=menu]')) { e.preventDefault(); mix.finishGridEdit(); }
       else if (e.key === 'Home') { e.preventDefault(); inspect(downbeat); }
       else if (e.key.toLowerCase() === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) { e.preventDefault(); mix.undoGridEdit(); }
       // A focused button or slider has its own meaning for Space, which is what App.tsx honours too.
@@ -141,7 +156,7 @@ export function BeatGridEditor({ mix, off, inspect, follow }: { mix: Mix; off: r
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [mix.cancelGridEdit, mix.undoGridEdit, listen, inspect, downbeat]);
+  }, [mix.cancelGridEdit, mix.undoGridEdit, mix.finishGridEdit, listen, inspect, downbeat]);
   /**
    * Bar 1 here: the beat nearest the playhead becomes bar 1, and lands on
    * the hit it was meant for on the way. Serato, Traktor and Rekordbox all
@@ -161,44 +176,61 @@ export function BeatGridEditor({ mix, off, inspect, follow }: { mix: Mix; off: r
     const hit = renumberOnly ? null : hitUnder(grid, mix.hits, beat);
     mix.editGrid(renumbered(hit === null ? grid : moved(grid, beat, hit), beat));
   };
+  /* Grouped the way a DJ tool groups its grid controls — marker, adjust,
+     check, leave — rather than as ten buttons of equal weight in two rows with
+     a paragraph under them. What the paragraph explained is on the things it
+     described: the markers say what a drag does, the ruler's dashed marks say
+     they are cuts, and Space and Home are on Worst bar, which is the button
+     somebody checking the grid already has their hand on. */
   return <section className="mf-grid-editor" aria-label="Beat grid editing">
     <div className="mf-grid-editor-row">
-      <strong>Grid</strong>
-      <span role="status" title="The tempo this grid runs at, read off its beats, and the share of its beats with a kick or a snare within 25 ms, over the part of the song that has drums. Both follow every change">
-        {typing
-          ? <span ref={field}
-              onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setTyping(false); } }}
-              onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setTyping(false); }}>
-              <NumberField param={TEMPO} value={tempoOf(grid)} showFill={false} label="Steady tempo BPM" width={70}
-                onChange={(bpm) => mix.editGrid(evenBeats(grid.rate, grid.length, bpm, downbeat))} onRelease={() => setTyping(false)} />
-            </span>
-          : <button type="button" className="mf-grid-tempo" onClick={() => setTyping(true)} title="Click to type a steady tempo: every beat evenly spaced at it from bar 1, in place of the variation detected">{rangeText(grid)}</button>}
-        {/* The detector's known miss is the wrong pulse — an octave, or 4:3 —
-            and a re-count keeps the beats it placed right, where typing a
-            tempo would rule them flat and Find beats would hear the same
-            pulse again. Beside the tempo because that is the number they change. */}
-        <span className="mf-grid-retime" aria-label="Re-count the beats">
-          <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 2, 1))} title="Twice the tempo: a beat between every two, the detected variation kept">×2</button>
-          <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 1, 2))} title="Half the tempo: every other beat, from bar 1, the detected variation kept">÷2</button>
-          <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 3, 2))} title="Three halves of the tempo: three beats across every two, for a detector that heard a 2:3 pulse">×3⁄2</button>
-          <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 2, 3))} title="Two thirds of the tempo: two beats across every three, for a detector that heard a 3:2 pulse">×2⁄3</button>
+      <div className="mf-group" role="group" aria-label="Find beats">
+        <span className="mf-group-label">find</span>
+        <Button onPress={find} disabled={finding} title={`Find the beats again on the drums with ${describe(algorithm).name}, and draw them over the saved grid. Undo puts the old grid back`}>{finding ? 'Finding…' : 'Find beats'}</Button>
+        <Select className="mf-grid-findings" items={FINDINGS} index={OFFERED.indexOf(algorithm)} width={20}
+          onChange={(i) => (i < OFFERED.length ? setAlgorithm(OFFERED[i]) : mix.openDebug('beats'))}
+          label="Beat finding algorithm" title={`Which algorithm Find beats runs — ${describe(algorithm).name}: ${describe(algorithm).does} — or the full analysis, every algorithm side by side`} />
+      </div>
+      <div className="mf-group" role="group" aria-label="Bar 1">
+        <span className="mf-group-label">bar 1</span>
+        <Button onPress={(e) => setBarOne(e.altKey)} title="Make the beat nearest the playhead bar 1, moved onto the kick or snare it is nearest when one is within a quarter of a beat; the other beats stay where they are. Option renumbers only, and moves nothing">Here</Button>
+        <Button onPress={() => mix.editGrid(renumbered(grid, -1))} label="One beat earlier" title="Count bar 1 from one beat earlier. Nothing moves">‹</Button>
+        <Button onPress={() => mix.editGrid(renumbered(grid, 1))} label="One beat later" title="Count bar 1 from one beat later. Nothing moves">›</Button>
+      </div>
+      <div className="mf-group" role="group" aria-label="Tempo">
+        <span className="mf-group-label">tempo</span>
+        <span role="status" title="The tempo this grid runs at, read off its beats, and the share of its beats with a kick or a snare within 25 ms, over the part of the song that has drums. Both follow every change">
+          {typing
+            ? <span ref={field}
+                onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setTyping(false); } }}
+                onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setTyping(false); }}>
+                <NumberField param={TEMPO} value={tempoOf(grid)} showFill={false} label="Steady tempo BPM" width={70}
+                  onChange={(bpm) => mix.editGrid(evenBeats(grid.rate, grid.length, bpm, downbeat))} onRelease={() => setTyping(false)} />
+              </span>
+            : <button type="button" className="mf-grid-tempo" onClick={() => setTyping(true)} title="Click to type a steady tempo: every beat evenly spaced at it from bar 1, in place of the variation detected">{rangeText(grid)}</button>}
+          {/* The detector's known miss is the wrong pulse — an octave, or 4:3 —
+              and a re-count keeps the beats it placed right, where typing a
+              tempo would rule them flat and Find beats would hear the same
+              pulse again. Beside the tempo because that is the number they change. */}
+          <span className="mf-grid-retime" aria-label="Re-count the beats">
+            <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 2, 1))} title="Twice the tempo: a beat between every two, the detected variation kept">×2</button>
+            <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 1, 2))} title="Half the tempo: every other beat, from bar 1, the detected variation kept">÷2</button>
+            <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 3, 2))} title="Three halves of the tempo: three beats across every two, for a detector that heard a 2:3 pulse">×3⁄2</button>
+            <button type="button" className="mf-grid-tempo" onClick={() => mix.editGrid(retimed(grid, 2, 3))} title="Two thirds of the tempo: two beats across every three, for a detector that heard a 3:2 pulse">×2⁄3</button>
+          </span>
+          {share === null ? null : <span className="mf-grid-fit">{Math.round(share * 100)}% on a hit</span>}
         </span>
-        {share === null ? '' : ` · ${Math.round(share * 100)}% of beats on a hit`}
-      </span>
-      <Select items={OFFERED.map((id) => describe(id).name)} index={OFFERED.indexOf(algorithm)} onChange={(i) => setAlgorithm(OFFERED[i])} label="Beat finding algorithm" title={describe(algorithm).does} width={150} />
-      <Button onPress={find} disabled={finding} title="Find the beats again on the drums with the chosen algorithm, and draw them over the saved grid. Undo puts the old grid back">{finding ? 'Finding…' : 'Find beats'}</Button>
-      <Button onPress={goWorst} disabled={worst.length === 0} title="Seek and zoom to the bar furthest off its kicks and snares — its beats late or early, or with no hit under them — and press again for the next-worst, round again after the last. Home is bar 1">Worst bar</Button>
-      <Button onPress={mix.undoGridEdit} disabled={!mix.gridEditDirty}>Undo</Button>
-      <Button onPress={() => mix.openDebug('beats')} title="The full beat analysis: every algorithm side by side, the transients, the sweeps, and the onset knob">Advanced…</Button>
-      <Button onPress={mix.cancelGridEdit}>Cancel</Button>
-      <Button onPress={mix.finishGridEdit} className="mf-primary">Done</Button>
+      </div>
+      <div className="mf-group" role="group" aria-label="Check">
+        <span className="mf-group-label">check</span>
+        <Button onPress={goWorst} disabled={worst.length === 0} title="Seek and zoom to the bar furthest off its kicks and snares — its beats late or early, or with no hit under them — and press again for the next-worst, round again after the last. Space plays the drums under a click from the playhead, and Home goes to bar 1">Worst bar</Button>
+      </div>
+      <div className="mf-grid-leave">
+        <Button onPress={mix.undoGridEdit} disabled={!mix.gridEditDirty}>Undo</Button>
+        <Button className="mf-grid-abandon" onPress={mix.cancelGridEdit} title="Put the saved grid back and close the mode. Escape does the same">Cancel</Button>
+        <Button className="mf-primary" onPress={mix.finishGridEdit} title="Keep this grid and the cuts kept from the ruler, and close the mode. Enter does the same">Done</Button>
+      </div>
     </div>
-    <div className="mf-grid-editor-row">
-      <Button onPress={(e) => setBarOne(e.altKey)} title="Make the beat nearest the playhead bar 1, moved onto the kick or snare it is nearest when one is within a quarter of a beat; the other beats stay where they are. Option renumbers only, and moves nothing">Bar 1 here</Button>
-      <Button onPress={() => mix.editGrid(renumbered(grid, -1))}>One beat earlier</Button>
-      <Button onPress={() => mix.editGrid(renumbered(grid, 1))}>One beat later</Button>
-    </div>
-    <p>Zoom to a hit and drag its marker: a bar marker stretches the beats since the last point you set, any other beat moves alone, Command moves every beat together, and Option skips snapping to hits. Dashed marks on the ruler are section changes the stems suggest — click one to cut there. Waveform clicks only move the playhead; Space plays the drums with a click from the playhead, and Home goes to bar 1.</p>
     {problem && <p role="alert">{problem}</p>}
     {player.head !== null && <p role="status">Listening to drums at original speed · {player.head.toFixed(3)} s</p>}
   </section>;

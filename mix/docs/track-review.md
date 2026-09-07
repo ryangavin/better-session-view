@@ -5,7 +5,19 @@ is right, and it sits over the real mixer lanes as a mode — **Grid** in the he
 rather than on a page of its own. It starts with the saved beat map, including
 irregular edits, and holds a draft apart from it until Done.
 
-The status beside **Grid** is the draft's own reading, live: its tempo as `rangeText`
+Its toolbar is one row of named groups — `find`, `bar 1`, `tempo`, `check`, then Undo
+and the way out — in the header's own `mf-group` and `mf-group-label`, which is how
+Serato groups a grid editor (marker, adjust, slip, save) and how the header beside it
+groups snap. It was ten buttons of near-equal weight over two rows with a paragraph
+under them, which put **Find beats** next to **Cancel** and explained the drag in prose
+that the markers were already carrying in their tooltips. The prose is gone and nothing
+it said is: a marker's tooltip says what dragging it does, the ruler's dashed marks say
+they are cuts to click, and Space and Home are on **Worst bar**, the button a person
+checking a grid already has a hand on. **Enter** keeps and **Escape** abandons, as
+Serato's does, and both stand off a focused control — a button, a field, an open menu —
+because that control's own Enter is the one it was meant for.
+
+The status inside the `tempo` group is the draft's own reading, live: its tempo as `rangeText`
 gives it — one number for a steady map, `126–131` where it bends — and the share of
 its beats with a kick or snare within 25 ms, `beatsOnHit` in `warp.ts` bisecting
 `state.hits` per beat, over the beats between the first hit and the last. Beats with a
@@ -20,14 +32,22 @@ because that fit measured a grid this may no longer be.
 **Find beats** runs the chosen algorithm on the drums — `OFFERED`, with `FIRST_CHOICE`
 preselected, which is exactly what an import runs — and makes the result the draft:
 drawn over the saved grid in the warp lane, auditioned with the click, undone with
-Undo. **Advanced…** opens the debug workspace on the beat analysis for the full
-comparison. **Bar 1 here** makes the beat nearest the playhead bar 1, landing it on
+Undo. The **▾** beside it is where the choice lives, a `Select` drawn as the caret
+alone: the offered algorithms with the chosen one marked, and **Advanced…** last, which
+opens the debug workspace on the beat analysis for the full comparison. Both stood on
+the main row before — a picker, and a button beside it — asking every person who opened
+the mode a question only somebody debugging a detector has; behind the button that runs
+them they are there for whoever wants them and silent for everybody else. **Here** in
+the `bar 1` group makes the beat nearest the playhead bar 1, landing it on
 the kick or snare it is nearest first — `hitUnder` in `warp.ts`, a hit within a
 quarter of the beat's own spacing, then `moved` so its neighbours hold and it is a set
 beat, then `renumbered`. With no hit that close it only renumbers, and Option renumbers
 without moving. This is what Serato, Traktor and Rekordbox mean by setting the
 downbeat; a beat 5 ms off its kick used to be left for a ±10 ms nudge that could not
-make 5. The markers and dragging are as [window.md](window.md) describes; the marker
+make 5. **‹** and **›** beside it renumber by one beat either way and move nothing —
+what *One beat earlier* and *One beat later* were, a marker apiece now that they are
+in the group whose name says what they count.
+The markers and dragging are as [window.md](window.md) describes; the marker
 edits are `warp.ts`'s `pulled` for a bar, `moved` for a beat and `shifted` for a
 ⌘-drag, and the map's `set` list is what lets a pull know where to stretch from. The tempo in the status is also where a steady tempo is typed: click it and it
 becomes a field; a committed number rules `evenBeats` from bar 1's downbeat, which
@@ -72,7 +92,7 @@ deliberate: the click is a test of the beats, and against warped output it would
 the pins. `reviewPlayback.ts` schedules the drums and every click up front against one
 AudioContext clock, so a throttled window cannot starve the clicks and all of it stops
 together; its `head` is read once a frame and drives `seek`, so the lanes' own playhead
-moves with it and the view pages after it as for real playback, and Bar 1 here lands on
+moves with it and the view pages after it as for real playback, and Here lands bar 1 on
 the bar just heard. A correction stops it, because its clicks were scheduled against the
 grid it started on; so do main playback, Cancel and Done. `App.tsx` leaves Space to the
 editor while the mode is open, so outside it Space is still the transport.
