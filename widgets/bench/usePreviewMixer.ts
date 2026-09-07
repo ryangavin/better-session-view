@@ -26,9 +26,9 @@ const PEAKS = SONGS.map((_, deck) => STEMS.map((__, stem) => Array.from({ length
     (0.2 + 0.8 * Math.abs(Math.sin(i * (0.61 + stem * 0.19) + deck * 2)));
   return { min: -envelope * 0.8, max: envelope };
 })));
-interface DeckState { full: boolean; fullSection: number; fullQueued: number | null; active: number[]; queued: (number | null)[]; levels: number[]; gain: number; trim: number; sendA: number; sendB: number; eq: number[]; filter: number; route: number; cue: boolean }
+interface DeckState { loop: { start: number | null; end: number | null; enabled: boolean }; positionOffset: number; full: boolean; fullSection: number; fullQueued: number | null; active: number[]; queued: (number | null)[]; levels: number[]; gain: number; trim: number; sendA: number; sendB: number; eq: number[]; filter: number; route: number; cue: boolean }
 const initialDecks = (): DeckState[] => SONGS.map((_, i) => ({
-  full: false, fullSection: 3, fullQueued: null, active: [3, 3, 3, 3], queued: [null, null, null, null], levels: [85, 78, 66, 82],
+  loop: { start: null, end: null, enabled: false }, positionOffset: 0, full: false, fullSection: 3, fullQueued: null, active: [3, 3, 3, 3], queued: [null, null, null, null], levels: [85, 78, 66, 82],
   gain: i < 2 ? 80 : 0, trim: 0, sendA: 0, sendB: 0, eq: [0, 0, 0], filter: 0, route: i % 2 ? 2 : 0, cue: false,
 }));
 
@@ -80,24 +80,30 @@ export function usePreviewMixer() {
     if (clock.tick % 4 !== 0) return;
     setDecks(all => all.map(d => ({ ...d, fullSection: d.fullQueued ?? d.fullSection, fullQueued: null, active: d.active.map((a, i) => d.queued[i] ?? a), queued: [null, null, null, null] })));
   }, [clock.tick]);
+  const deckBeat = (d: Pick<DeckState, 'loop' | 'positionOffset'>) => {
+    const at = phase.current.beat + d.positionOffset;
+    return d.loop.enabled && d.loop.start !== null && d.loop.end !== null ? d.loop.start + ((at-d.loop.start) % (d.loop.end-d.loop.start) + d.loop.end-d.loop.start) % (d.loop.end-d.loop.start) : at;
+  };
   const update = (deck: number, patch: Partial<DeckState>) => setDecks(all => all.map((d, i) => i === deck ? { ...d, ...patch } : d));
   const launch = (deck: number, section: number, stem?: number) => setDecks(all => all.map((d, i) => {
     if (i !== deck) return d;
     const waiting = running && quantized;
+    if (section >= 0) d = { ...d, positionOffset: section * 16 - phase.current.beat,
+      loop: stem === undefined ? {start:null,end:null,enabled:false} : {start:section*16,end:(section+1)*16,enabled:true} };
     if (d.full) return { ...d, fullSection: waiting ? d.fullSection : section, fullQueued: waiting ? section : null };
     return { ...d,
       active: d.active.map((a, s) => !waiting && (stem === undefined || s === stem) ? section : a),
       queued: d.queued.map((q, s) => stem === undefined || s === stem ? (waiting ? section : null) : q),
     };
   }));
-  const stopAll = () => { setRunning(false); phase.current = { beat: 0, tick: 0 }; setClock({ beat: 0, tick: 0 }); setLoop({ start: null, end: null, enabled: false }); setDecks(all => all.map(d => ({ ...d, fullSection: -1, fullQueued: null, active: [-1, -1, -1, -1], queued: [null, null, null, null] }))); };
+  const stopAll = () => { setRunning(false); phase.current = { beat: 0, tick: 0 }; setClock({ beat: 0, tick: 0 }); setLoop({ start: null, end: null, enabled: false }); setDecks(all => all.map(d => ({ ...d, positionOffset:0, loop:{start:null,end:null,enabled:false}, fullSection: -1, fullQueued: null, active: [-1, -1, -1, -1], queued: [null, null, null, null] }))); };
   const deckLevel = (d: DeckState) => {
     const weight = d.route === 1 ? 1 : d.route === 0 ? Math.min(1, (100 - cross) / 100) : Math.min(1, (100 + cross) / 100);
     return running ? (d.full ? (d.fullSection < 0 ? 0 : 0.8) : d.levels.reduce((sum, v, s) => sum + (d.active[s] < 0 ? 0 : v / 400), 0)) * 10 ** (d.trim / 20) * d.gain / 100 * weight * (0.68 + 0.2 * Math.exp(-5 * (phase.current.beat % 1)) + 0.05 * Math.sin(phase.current.beat * 7.3)) : 0;
   };
 
   const state: MixerState = {
-    decks: decks.map(({ active, queued, levels, ...d }, index) => ({ ...d, id: deckIds[index], letter: 'ABCD'[index],
+    decks: decks.map(({ active, queued, levels, ...d }, index) => ({ ...d, playing:running, canLoopOut:d.loop.start !== null && d.loop.end === null && deckBeat(d)>d.loop.start, id: deckIds[index], letter: 'ABCD'[index],
       track: { ...SONGS[index], id: `track-${index}` }, status: 'ready', peaks: PEAKS[index][0],
       sections: SECTIONS.map((name, i) => ({ id: sectionIds[i], name })),
       stems: STEMS.map((name, i) => ({ id: stemIds[i], name, available: true, level: levels[i], selected: sectionId(active[i]), queued: queuedId(queued[i]) })),
@@ -110,6 +116,9 @@ export function usePreviewMixer() {
   };
   const commands: MixerCommands = {
     setRunning, stopAll,
+    deckLoopIn: id => { const i=deckIds.indexOf(id); if(i>=0) { const at=deckBeat(decks[i]); update(i,{positionOffset:at-phase.current.beat,loop:{start:at,end:null,enabled:false}}); } },
+    deckLoopOut: id => { const i=deckIds.indexOf(id); if(i>=0 && decks[i].loop.start!==null && deckBeat(decks[i])>decks[i].loop.start!) update(i,{loop:{...decks[i].loop,end:deckBeat(decks[i]),enabled:true}}); },
+    setDeckLoopEnabled: (id,enabled) => { const i=deckIds.indexOf(id); if(i>=0) update(i,{positionOffset:(enabled?decks[i].loop.start ?? deckBeat(decks[i]):deckBeat(decks[i]))-phase.current.beat,loop:{...decks[i].loop,enabled}}); },
     setQuantized: value => { setQuantized(value); if (!value) setDecks(all => all.map(d => ({ ...d, fullSection: d.fullQueued ?? d.fullSection, fullQueued: null, active: d.active.map((a, i) => d.queued[i] ?? a), queued: [null, null, null, null] }))); },
     loopIn: () => setLoop({ start: beat, end: null, enabled: false }),
     loopOut: () => { if (loop.start !== null && beat > loop.start) setLoop(l => ({ ...l, end: beat, enabled: true })); },
@@ -130,7 +139,7 @@ export function usePreviewMixer() {
   // Stable frame reader; render-frequency controls and the fractional clock stay behind it.
   const sample = useRef<() => MixerFrame>(() => ({ decks: {}, masterLevel: 0 }));
   sample.current = () => ({
-    decks: Object.fromEntries(decks.map((d, i) => [deckIds[i], { beat: phase.current.beat, level: deckLevel(d) }])),
+    decks: Object.fromEntries(decks.map((d, i) => [deckIds[i], { beat: deckBeat(d), level: deckLevel(d) }])),
     masterLevel: Math.min(1, decks.reduce((sum, d) => sum + deckLevel(d), 0) * 10 ** (masterTrim / 20) * master / 100),
   });
   const readFrame = useCallback(() => sample.current(), []);

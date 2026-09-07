@@ -54,6 +54,19 @@ describe('controlled mixer boundary', () => {
     expect(view.getByRole('button', { name: 'Deck 1: Verse bass, selected' }).getAttribute('aria-pressed')).toBe('true');
     expect(document.body.style.getPropertyValue('--amber')).toBe('');
   });
+  it('delegates per-deck loop capture and exit without master loop controls', () => {
+    const props=fixture();
+    props.commands.deckLoopIn=vi.fn(); props.commands.deckLoopOut=vi.fn(); props.commands.setDeckLoopEnabled=vi.fn();
+    props.state.decks=props.state.decks.map(d=>({...d,playing:true,canLoopOut:true,loop:{start:0,end:8,enabled:true}}));
+    const view=render(createElement(MixerView,props));
+    fireEvent.click(view.getByRole('button',{name:'Deck 1 loop in'}));
+    fireEvent.click(view.getByRole('button',{name:'Deck 1 loop out'}));
+    fireEvent.click(view.getByRole('button',{name:'Deck 1 loop enabled'}));
+    expect(props.commands.deckLoopIn).toHaveBeenCalledWith(props.state.decks[0].id);
+    expect(props.commands.deckLoopOut).toHaveBeenCalledWith(props.state.decks[0].id);
+    expect(props.commands.setDeckLoopEnabled).toHaveBeenCalledWith(props.state.decks[0].id,false);
+    expect(view.queryByRole('group',{name:'Global loop'})).toBeNull();
+  });
   it('keeps one bottom transport per deck and delegates playback and cue to the host', () => {
     const props = fixture();
     props.commands.setDeckPlaying = vi.fn(); props.commands.cueDeck = vi.fn(); props.commands.setDeckSync = vi.fn();

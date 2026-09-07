@@ -8,7 +8,7 @@ import type { MixerViewProps } from './model.ts';
 import { FrameMeter } from './frames.tsx';
 
 export function MasterStrip({ state, commands, readFrame, theme, params, externalTransport }: MixerViewProps) {
-  const { running, beat, loop, bpm, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq, quantized } = state;
+  const { running, beat, bpm, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq, quantized } = state;
   const { level: LEVEL, trim: TRIM, send: SEND, eq: EQ, filter: FILTER, tempo: TEMPO, cross: CROSS } = params;
   return <div className="play-master-strip" aria-label="Master mixer">
       <div className="play-actions">
@@ -25,11 +25,6 @@ export function MasterStrip({ state, commands, readFrame, theme, params, externa
               <div className="play-fx-params">{effect?.controls?.map(control => <Knob key={`${effect.id}-${control.id}`} name={control.name} label={`FX ${slot} ${effect.name} ${control.name}`} param={control.param} value={state.effectValues?.[slot]?.[effect.id]?.[control.id] ?? control.param.defaultValue} disabled={!commands.setEffectParam} onChange={value => commands.setEffectParam?.(slot, effect.id, control.id, value)} />)}</div>
             </div>;
           })}
-        </div>
-        <div className="play-loop-controls" role="group" aria-label="Global loop">
-          <Button disabled={state.playbackAvailable === false} width={62} label="Global loop in" title="Mark loop start at the current beat" onPress={commands.loopIn}>In</Button>
-          <Button width={62} label="Global loop out" disabled={!state.canLoopOut} title="Mark loop end and engage the loop" onPress={commands.loopOut}>Out</Button>
-          <Toggle width={126} label="Global loop enabled" disabled={loop.end === null} on={loop.enabled} onChange={commands.setLoopEnabled}>{loop.enabled ? 'Exit loop' : loop.end === null ? (loop.start === null ? 'Loop' : 'Set Out…') : 'Reloop'}</Toggle>
         </div>
         {!externalTransport && <span className="play-clock">{String(Math.floor(beat / 4) + 1).padStart(3, '0')}<b>.{beat % 4 + 1}</b></span>}
       </div>

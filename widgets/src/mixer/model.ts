@@ -17,6 +17,8 @@ export interface MixerDeck {
   playing?: boolean;
   synced?: boolean;
   cueHeld?: boolean;
+  loop?: { start: number | null; end: number | null; enabled: boolean };
+  canLoopOut?: boolean;
   id: string;
   letter: string;
   track: { id: string; title: string; artist: string; bpm: number | null; key: string } | null;
@@ -53,6 +55,9 @@ export interface MixerState {
 }
 export type MasterControl = 'bpm' | 'cross' | 'master' | 'masterTrim' | 'masterFilter' | 'masterSendA' | 'masterSendB';
 export interface MixerCommands {
+  deckLoopIn?(deckId: string): void;
+  deckLoopOut?(deckId: string): void;
+  setDeckLoopEnabled?(deckId: string, enabled: boolean): void;
   setDeckSync?(deckId: string, synced: boolean): void;
   setDeckPlaying?(deckId: string, playing: boolean): void;
   /** Press/release intent; cue position and audition behavior belong to the host. */
@@ -70,7 +75,7 @@ export interface MixerCommands {
   setDeck(deckId: string, control: DeckControl, value: number | boolean): void;
   setDeckEq(deckId: string, band: number, value: number): void;
   setStemLevel(deckId: string, stemId: string, value: number): void;
-  /** Null section requests stop; omitted stem targets the entire deck. */
+  /** Null section requests stop; omitted stem is a whole-deck hot cue; a stem ID requests a section loop. */
   launch(deckId: string, sectionId: string | null, stemId?: string): void;
 }
 export interface MixerFrame {

@@ -20,7 +20,8 @@ component inventing a successful result.
   positions, a variable number of stem positions per deck, and three EQ values; unavailable stems retain
   a placeholder position. Section counts and names can vary between decks.
 - `MixerCommands` contains semantic operations, not React setters. `launch(deckId,
-  sectionId, stemId?)` uses null for stop and omitted stem for the entire deck. Source
+  sectionId, stemId?)` uses null for stop, an omitted stem for a whole-deck hot cue, and a stem ID for
+  a section loop. Source
   changes send only `setDeck(id, 'full', value)`; all initialization policy belongs to
   the controller. An effect is selected by ID, even though Select displays an index.
 - A selected section is an ID or null. A queued value is undefined for no pending
@@ -38,6 +39,16 @@ row. These remain outside the disabled launcher fieldset, so empty/loading/error
 can accept a replacement. The widgets never interpret a library payload. Unknown track BPM is null.
 `playbackAvailable: false` disables Run, launch quantization and loop capture for a host
 that has no audio controller yet. Missing/undefined retains the previous bench behavior.
+
+## Deck loop controls
+
+Each launcher ends with In, Out and Exit loop/Reloop, aligned along its bottom edge.
+Optional status messages sit above this row. Optional `deckLoopIn`,
+`deckLoopOut` and `setDeckLoopEnabled` callbacks emit the deck ID. Deck `loop` and
+`canLoopOut` fields govern the caption, active state and availability. In requires a
+playing deck; Out requires host approval; Exit/Reloop requires retained bounds. These
+controls replace the master loop group. Section names emit hot-cue intent, while stem
+cells emit loop intent; the host owns timing and audio behavior.
 
 ## Deck transport footer
 

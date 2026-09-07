@@ -50,6 +50,51 @@ describe('the four-deck playback owner',()=>{
     expect(next.sources[0].loopStart).toBe(8);
     expect(next.sources[0].start.mock.calls[0][1]).toBeCloseTo(9.97);
   });
+  it('uses section names as hot cues that play through the next boundary in stems and Full mode', async () => {
+    const {engine,ctx,load}=setup(); await load();
+    await engine.launch('deck-a','section-0-0','drums');
+    expect(ctx.sources.at(-1)!.loop).toBe(true);
+    await engine.launch('deck-a','section-0-0');
+    expect(ctx.sources.slice(-4).every(s=>!s.loop)).toBe(true);
+    expect(engine.snapshot().decks[0].loop?.enabled).toBe(false);
+    ctx.currentTime=10; expect(engine.readFrame().decks['deck-a'].seconds).toBeGreaterThan(8);
+    engine.commands.setDeck('deck-a','full',true); await settle();
+    await engine.launch('deck-a','section-0-0');
+    expect(ctx.sources.at(-1)!.loop).toBe(false);
+    expect(ctx.sources.at(-1)!.start.mock.calls[0][1]).toBe(0);
+  });
+  it('loops a whole-track stem pad but plays the Track name through once', async () => {
+    const {engine,ctx}=setup(); const whole=asset(); whole.analysis={...whole.analysis!,slices:[]};
+    await engine.load('deck-a',track,async()=>whole);
+    await engine.launch('deck-a','full-track','drums'); expect(ctx.sources.at(-1)!.loop).toBe(true);
+    expect(engine.snapshot().decks[0].loop?.end).toBe(64);
+    await engine.launch('deck-a','full-track'); expect(ctx.sources.slice(-4).every(s=>!s.loop)).toBe(true);
+  });
+  it('exits and reloops one deck without changing the other deck or jumping on exit', async () => {
+    const {engine,ctx,load}=setup(); await load(); await load('deck-b');
+    await engine.launch('deck-a','section-0-0','drums');
+    await engine.launch('deck-b','section-1-4','bass');
+    const other=ctx.sources.at(-1)!; ctx.currentTime=2;
+    engine.commands.setDeckLoopEnabled!('deck-a',false);
+    expect(other.stop).not.toHaveBeenCalled();
+    expect(ctx.sources.at(-1)!.loop).toBe(false);
+    expect(ctx.sources.at(-1)!.start.mock.calls[0][1]).toBeCloseTo(2);
+    expect(engine.snapshot().decks[1].loop?.enabled).toBe(true);
+    engine.commands.setDeckLoopEnabled!('deck-a',true);
+    expect(ctx.sources.at(-1)!.loopStart).toBe(0); expect(ctx.sources.at(-1)!.loopEnd).toBe(8);
+    expect(other.stop).not.toHaveBeenCalled();
+  });
+  it('captures custom bounds for just the requested deck and hot cues escape them', async () => {
+    const {engine,ctx,load}=setup(); await load(); await load('deck-b'); await engine.running(true);
+    const other=ctx.sources.slice(-4), stopped=other.map(s=>s.stop.mock.calls.length); ctx.currentTime=2; const from=engine.readFrame().decks['deck-a'].seconds!; engine.commands.deckLoopIn!('deck-a');
+    ctx.currentTime=4; const to=engine.readFrame().decks['deck-a'].seconds!; engine.commands.deckLoopOut!('deck-a');
+    expect(ctx.sources.at(-1)!.loopStart).toBeCloseTo(from); expect(ctx.sources.at(-1)!.loopEnd).toBeCloseTo(to);
+    expect(other.map(s=>s.stop.mock.calls.length)).toEqual(stopped);
+    await engine.launch('deck-a','section-1-4');
+    expect(ctx.sources.slice(-4).every(s=>!s.loop)).toBe(true);
+    expect(ctx.sources.at(-1)!.start.mock.calls[0][1]).toBe(8);
+    expect(engine.snapshot().decks[0].loop).toEqual({start:null,end:null,enabled:false});
+  });
   it('starts four decks on one sample clock and pauses only the requested deck',async()=>{
     const {engine,ctx,load}=setup();for(const id of ['deck-a','deck-b','deck-c','deck-d'])await load(id);
     await engine.running(true);expect(ctx.sources).toHaveLength(16);

@@ -19,17 +19,22 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
           <fieldset className="play-grid" data-full={d.full} disabled={d.status !== 'ready'}>
           <span className="play-axis">Section</span>{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
           {d.sections.map(section => <div className="play-launch-row" key={section.id}>
-            {d.full ? <Toggle on={d.fullSection === section.id} label={`Deck ${index + 1}: launch ${section.name} full mix${d.fullQueued === section.id ? ', queued' : ''}`} onChange={() => commands.launch(d.id, section.id)}>{section.name}</Toggle> : <Button label={`Deck ${index + 1}: launch ${section.name} all stems`} title="Launch this section on all available stems" onPress={() => commands.launch(d.id, section.id)}>{section.name}</Button>}
+            {d.full ? <Toggle title="Hot cue: jump to this section and continue playing" on={d.fullSection === section.id} label={`Deck ${index + 1}: launch ${section.name} full mix${d.fullQueued === section.id ? ', queued' : ''}`} onChange={() => commands.launch(d.id, section.id)}>{section.name}</Toggle> : <Button label={`Deck ${index + 1}: launch ${section.name} all stems`} title="Hot cue: jump to this section and continue playing" onPress={() => commands.launch(d.id, section.id)}>{section.name}</Button>}
             {d.stems.map((stem, s) => {
               const active = stem.selected === section.id, queued = stem.queued === section.id;
               return <div className="play-cell" key={stem.id} data-active={active} data-queued={queued} style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}>
-                <Toggle disabled={d.full || d.status !== 'ready' || !stem.available} on={active} ink={theme.stems[stem.id] ?? theme.primary} width={34} label={`Deck ${index + 1}: ${section.name} ${stem.name}${queued ? ', queued' : active ? ', selected' : ''}`} onChange={() => commands.launch(d.id, section.id, stem.id)}>{queued ? '◷' : active ? '▶' : '▷'}</Toggle>
+                <Toggle disabled={d.full || d.status !== 'ready' || !stem.available} on={active} ink={theme.stems[stem.id] ?? theme.primary} title="Loop this section on this stem" width={34} label={`Deck ${index + 1}: ${section.name} ${stem.name}${queued ? ', queued' : active ? ', selected' : ''}`} onChange={() => commands.launch(d.id, section.id, stem.id)}>{queued ? '◷' : active ? '▶' : '▷'}</Toggle>
               </div>;
             })}
           </div>)}
           <Button label={`Deck ${index + 1}: stop all stems`} onPress={() => commands.launch(d.id, null)}>{(d.full ? d.fullQueued === null : d.stems.every(stem => stem.queued === null)) ? '◷ Stop' : 'Stop'}</Button>{d.stems.map((stem, i) => <Button disabled={d.full || d.status !== 'ready' || !stem.available} key={stem.id} label={`Deck ${index + 1}: stop ${stem.name}`} width={34} onPress={() => commands.launch(d.id, null, stem.id)}>■</Button>)}
         </fieldset>
           <div className="play-deck-status">{d.message && <span role="status">{d.message}</span>}</div>
+          <div className="play-deck-loops" role="group" aria-label={`Deck ${index + 1} loop`}>
+            <Button disabled={d.status !== 'ready' || !d.playing || !commands.deckLoopIn} label={`Deck ${index + 1} loop in`} title="Mark loop start at this deck’s current position" onPress={() => commands.deckLoopIn?.(d.id)}>In</Button>
+            <Button disabled={!d.canLoopOut || !commands.deckLoopOut} label={`Deck ${index + 1} loop out`} title="Mark loop end and repeat" onPress={() => commands.deckLoopOut?.(d.id)}>Out</Button>
+            <Toggle disabled={d.status !== 'ready' || d.loop?.end == null || !commands.setDeckLoopEnabled} on={d.loop?.enabled ?? false} label={`Deck ${index + 1} loop enabled`} title="Exit this deck’s loops, or re-engage its saved loop regions" onChange={on => commands.setDeckLoopEnabled?.(d.id,on)}>{d.loop?.enabled ? 'Exit loop' : d.loop?.start != null && d.loop.end == null ? 'Set Out…' : d.loop?.end != null ? 'Reloop' : 'Loop'}</Toggle>
+          </div>
 
         </div>
         <div className="play-effects">

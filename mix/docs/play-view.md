@@ -93,20 +93,25 @@ continues at native speed from the current source position. Global starts prepar
 synced voices before choosing one shared start sample. Worklet update callbacks schedule
 future boundaries, independently of React and animation frames.
 
-A section name launches all available sources; a stem cell launches only that source.
-Saved sections loop from their boundary to the next section, or the end of the track.
-Without saved sections, Track plays the whole source once. Synced launches while the
-clock is running wait for the next bar; unsynced launches are immediate. Pending cells
-show a queued indication until their scheduled audio time. Stop cells are immediate;
-the section-column Stop stops all sources on that deck. Different stems can play different
-sections simultaneously. Switching Full/stems clears the prior source selections.
+A section-name button is a hot cue: it clears that deck's active and saved loops,
+starts all available sources at the named boundary, and continues through later sections.
+In Full mode it does the same for the original mix. A stem cell instead loops only that
+stem between the section boundary and the next section (or the track end). Without saved
+sections, the Track name plays the whole source once. Synced launches while the clock is
+running wait for the next bar; unsynced launches are immediate. Pending cells show a
+queued indication until their scheduled audio time. Stop cells are immediate; the
+section-column Stop stops all sources on that deck. Different stems can play different
+sections simultaneously. Switching Full/stems clears prior selections and loop regions.
 
-In captures the playing voices' source positions. Out captures their later positions,
-engages those loops, and draws the actual source bounds. Exit continues onward; Reloop
-returns to the retained region. If every source wrapped before Out, the engine asks for
-a shorter capture rather than presenting a nonexistent loop. The header Loop toggles the
-captured region; before a capture exists it loops whole tracks. Section loops retain
-their own bounds when the global loop is released.
+Each deck has In, Out and Exit loop/Reloop below its launcher. In releases the deck's
+existing loops and captures the playing voices' source positions. Out captures their
+later positions, engages those loops and draws the actual source bounds. Exit releases
+both captured and stem-section loops on that deck, continuing from each voice's position;
+it does not stop, jump to the loop start, or affect another deck. Reloop reinstates the
+retained regions at their starts. Loop capture/exit cancels that deck's queued launches.
+A section-name hot cue clears saved loop regions too, so an old capture cannot override
+the new jump. The Play header and master strip have no loop buttons; Prep's header Loop
+remains its single-track control.
 
 Behavior references: AlphaTheta's [Cueing manual](https://downloads.support.alphatheta.com/manuals/all-in-one-dj-systems/XDJ-AZ/html/en/000COV_en/Cueing/Cueing.htm),
 and Pioneer DJ's [control guide](https://blog.pioneerdj.com/djtips/what-do-all-of-these-buttons-do/).

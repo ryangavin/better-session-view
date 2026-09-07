@@ -43,8 +43,6 @@
 .play-clock b { color: var(--wdg-caption); font-weight: 400; }
 .play-run-stop, .play-timing { display: flex; align-items: center; justify-content: center; gap: 2px; }
 .play-fx-pickers { display: grid; grid-template-columns: 126px; align-items: center; justify-content: center; gap: 3px; }
-.play-loop-controls { display: grid; grid-template-columns: 62px 62px; justify-content: center; gap: 2px; }
-.play-loop-controls > .wdg-toggle { grid-column: 1 / -1; }
 .play-timeline { border: 1px solid var(--wdg-edge); background: var(--wdg-well); margin: 4px 0; }
 .play-wave-row { display: grid; grid-template-columns: 116px minmax(0,1fr); }
 .play-wave-label { display: flex; align-items: center; gap: 8px; padding: 0 10px; border-top: 1px solid var(--wdg-edge); border-left: 2px solid var(--deck-ink,transparent); min-width: 0; }
@@ -85,3 +83,8 @@
 .play-wave-scroll > canvas { position: absolute; inset: 0; height: 100% !important; }
 .play-wave-scroll .play-wave-grid { background: linear-gradient(90deg,#ffffff16 1px,transparent 1px); }
 .play-wave-position { position: absolute; right: 5px; bottom: 3px; color: var(--wdg-caption); background: var(--wdg-well); font: 8px var(--mono); padding: 1px 3px; pointer-events: none; }
+
+/* Loop capture belongs to its launcher, with a larger escape/reloop target. */
+.play-deck-loops { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 3px; margin-top: 0; padding-top: 8px; }
+.play-deck-loops .wdg, .play-deck-loops .wdg-body { width: 100%; min-width: 0; }
+.play-deck-status { margin-top: auto; }

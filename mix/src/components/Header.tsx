@@ -235,7 +235,7 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onAu
             >
               {stopMark}
             </Button>
-            <Toggle
+            {!playView && <Toggle
               on={mix.loop}
               onChange={mix.setLoop}
               label="Loop"
@@ -248,7 +248,7 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onAu
               className={mix.region ? 'mf-looping-part' : undefined}
             >
               {loopMark}
-            </Toggle>
+            </Toggle>}
             <NumberField
               param={mix.linkAudio.enabled ? LINK_TEMPO : TEMPO}
               value={mix.targetBpm}

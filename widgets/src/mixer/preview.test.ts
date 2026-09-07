@@ -32,11 +32,11 @@ it('the fixture owns source initialization, looping, and Stop reset', () => {
   act(() => result.current.commands.launch('deck-a', 'verse', 'drums'));
   act(() => result.current.commands.setDeck('deck-a', 'full', true));
   expect(result.current.state.decks[0].fullSection).toBe('verse');
-  act(() => result.current.commands.loopIn());
+  act(() => result.current.commands.deckLoopIn!('deck-a'));
   act(() => result.current.commands.setRunning(true));
   advance(10);
-  act(() => result.current.commands.loopOut());
-  const end = result.current.state.loop.end!;
+  act(() => result.current.commands.deckLoopOut!('deck-a'));
+  const end = result.current.state.decks[0].loop!.end!;
   advance(30);
   expect(result.current.readFrame().decks['deck-a'].beat).toBeLessThan(end);
   expect(result.current.readFrame().masterLevel).toBeGreaterThan(0);

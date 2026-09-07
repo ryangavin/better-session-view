@@ -121,7 +121,7 @@ export class MixerEngine {
   private remove(id: string) {
     const deck = this.decks.get(id); if (!deck) return;
     deck.operation++; deck.slots.forEach(slot => slot.voice.dispose()); deck.channel.dispose(); deck.sends.forEach(s => s.disconnect()); deck.phones.disconnect(); this.decks.delete(id);
-    for (const key of this.loopSpans.keys()) if (key.startsWith(`${id}/`)) this.loopSpans.delete(key);
+    this.clearLoop(id);
     this.publishOutputs();
   }
   private chosen(deck: Deck, model: MixerDeck) { return [...deck.slots].filter(([id]) => model.full ? id === 'full' : id !== 'full'); }
@@ -135,7 +135,7 @@ export class MixerEngine {
     return to > from + 0.01 ? { from, to } : undefined;
   }
   private startSlot(id: string, name: string, slot: Slot, at: number, when: number) {
-    const d = this.decks.get(id)!, model = this.model(id), span = this.state.loop.enabled ? this.loopSpans.get(`${id}/${name}`) ?? slot.span : slot.span;
+    const model = this.model(id), span = slot.span;
     slot.voice.start(at, when, model.synced ? this.state.bpm : null, span, !!span); slot.enabled = true;
   }
   async play(id: string, on: boolean, when?: number, audition = false): Promise<void> {
@@ -167,7 +167,7 @@ export class MixerEngine {
     if (held) {
       if (model.playing && !d.audition) {
         d.operation++; d.slots.forEach(s => { s.voice.seek(d.cue); s.span = undefined; });
-        this.patchDeck(id, { playing: false, cueHeld: true });
+        this.loopState(id); this.patchDeck(id, { playing: false, cueHeld: true });
       } else {
         const at = this.chosen(d, model).find(([,s]) => s.enabled)?.[1].voice.at() ?? d.cue;
         if (Math.abs(at - d.cue) > 0.01) { d.cue = at; this.patchDeck(id, { cueHeld: true }); return; }
@@ -207,7 +207,21 @@ export class MixerEngine {
     let when = this.ctx!.currentTime + this.lead();
     if (model.synced && this.state.running) { const beat = this.beat(when); when += (Math.ceil(beat / 4) * 4 - beat) * 60 / this.state.bpm; }
     this.startClock(when);
-    for (const [name,s] of chosen) { if (s.revision !== revisions.get(s)) continue; s.span = this.span(d, model, section); if (when > this.ctx!.currentTime + 0.08) s.pending = {selected:section,at:when}; else {s.selected = section;s.pending=undefined;} this.startSlot(id, name, s, s.span?.from ?? 0, when); }
+    const bounds = this.span(d, model, section);
+    // Section names are hot cues. Only individual stem pads install a repeating span.
+    if (!stemId) {
+      this.clearLoop(id);
+      d.slots.forEach(s => { s.span = undefined; });
+    }
+    for (const [name,s] of chosen) {
+      if (s.revision !== revisions.get(s)) continue;
+      s.span = stemId ? bounds ?? (section === 'full-track' ? {from:0,to:d.audio.duration} : undefined) : undefined;
+      if (s.span) this.loopSpans.set(`${id}/${name}`, s.span);
+      if (when > this.ctx!.currentTime + 0.08) s.pending = {selected:section,at:when};
+      else { s.selected = section; s.pending = undefined; }
+      this.startSlot(id, name, s, bounds?.from ?? 0, when);
+    }
+    this.loopState(id);
     this.selection(id); this.apply();
   }
   private selection(id: string) {
@@ -217,7 +231,7 @@ export class MixerEngine {
   private source(id: string, full: boolean) {
     const d = this.decks.get(id); if (!d) return;
     const was = this.model(id), playing = was.playing, at = this.chosen(d, was).find(([,s]) => s.enabled)?.[1].voice.at() ?? 0;
-    d.operation++; d.slots.forEach(s => { s.voice.seek(at); s.enabled = false; s.selected = null; s.pending = undefined; s.span = undefined; });
+    d.operation++; this.clearLoop(id); d.slots.forEach(s => { s.voice.seek(at); s.enabled = false; s.selected = null; s.pending = undefined; s.span = undefined; });
     this.patchDeck(id, { full, playing: false }); this.selection(id);
     if (playing) this.run(this.play(id, true), id); this.apply();
   }
@@ -272,32 +286,55 @@ export class MixerEngine {
     await Promise.all(ready.filter(({id,d,operation}) => this.decks.get(id) === d && d.operation === operation).map(({id}) => this.play(id,true,when)));
   }
   stop() {
-    this.operation++; this.decks.forEach((d,id) => { d.operation++; d.slots.forEach(s => { s.voice.seek(0); s.enabled = false; s.selected = null; s.pending = undefined; s.span = undefined; }); d.audition = false; this.patchDeck(id,{cueHeld:false}); this.selection(id); });
+    this.operation++; this.decks.forEach((d,id) => { d.operation++; d.slots.forEach(s => { s.voice.seek(0); s.enabled = false; s.selected = null; s.pending = undefined; s.span = undefined; }); d.audition = false; this.clearLoop(id); this.patchDeck(id,{cueHeld:false}); this.selection(id); });
     this.anchor = { beat: 0, time: this.ctx?.currentTime ?? 0 }; this.loopSpans.clear(); this.loopStarts.clear();
     this.publish({ ...this.state, running: false, beat: 0, loop: {start:null,end:null,enabled:false}, canLoopOut:false }); if (this.linkAudio.enabled) this.publisher?.stop();
   }
-  private loopIn() {
-    if (!this.state.running) return;
-    this.loopStarts.clear(); this.decks.forEach((d,id) => d.slots.forEach((s,name) => { if (s.voice.playing) this.loopStarts.set(`${id}/${name}`,s.voice.at()); }));
-    this.publish({ ...this.state, loop: {start:this.beat(),end:null,enabled:false} });
+  private clearLoop(id: string) {
+    for (const map of [this.loopStarts, this.loopSpans]) for (const key of map.keys()) if (key.startsWith(`${id}/`)) map.delete(key);
+    this.patchDeck(id, { loop: { start: null, end: null, enabled: false }, canLoopOut: false });
   }
-  private loopOut() {
-    if (this.state.loop.start === null || this.beat() - this.state.loop.start < 0.1) return;
-    this.loopSpans.clear(); this.decks.forEach((d,id) => d.slots.forEach((s,name) => { const from=this.loopStarts.get(`${id}/${name}`),to=s.voice.at(); if(from!==undefined && to>from+0.02) this.loopSpans.set(`${id}/${name}`,{from,to}); }));
-    if (!this.loopSpans.size) { this.error('Set Loop Out before the playing section wraps back to its start.'); return; }
-    this.publish({ ...this.state, loop: {...this.state.loop,end:this.beat(),enabled:true} }); this.reloop(true);
+  private loopState(id: string) {
+    const d = this.decks.get(id); if (!d) return;
+    const active = this.chosen(d, this.model(id)).find(([,s]) => s.span);
+    const saved = active?.[1].span ?? this.chosen(d, this.model(id)).map(([name]) => this.loopSpans.get(`${id}/${name}`)).find(Boolean);
+    this.patchDeck(id, { loop: { start: saved?.from ?? null, end: saved?.to ?? null, enabled: !!active }, canLoopOut: false });
   }
-  toggleLoop(on: boolean) {
-    if (on && !this.loopSpans.size) {
-      this.decks.forEach((d,id) => this.chosen(d,this.model(id)).forEach(([name,s]) => this.loopSpans.set(`${id}/${name}`,s.span ?? {from:0,to:d.audio.duration})));
-    }
-    this.reloop(on);
+  deckLoopIn(id: string) {
+    const d = this.decks.get(id); if (!d || !this.model(id).playing) return;
+    const starts = this.chosen(d, this.model(id)).filter(([,s]) => s.voice.playing).map(([name,s]) => [name, s.voice.at()] as const);
+    if (!starts.length) return;
+    this.setDeckLoopEnabled(id, false); this.clearLoop(id);
+    starts.forEach(([name,at]) => this.loopStarts.set(`${id}/${name}`, at));
+    this.patchDeck(id, { loop: { start: starts[0][1], end: null, enabled: false } });
   }
-  private reloop(on: boolean) {
-    this.publish({ ...this.state, loop: {...this.state.loop,enabled:on} });
-    const when=(this.ctx?.currentTime ?? 0)+this.lead();
-    this.decks.forEach((d,id)=>d.slots.forEach((s,name)=>{if(s.voice.playing) this.startSlot(id,name,s,on ? this.loopSpans.get(`${id}/${name}`)?.from ?? s.voice.at(when) : s.voice.at(when),when);}));
+  deckLoopOut(id: string) {
+    const d = this.decks.get(id); if (!d || this.model(id).loop?.start == null || this.model(id).loop?.end != null) return;
+    const spans = this.chosen(d, this.model(id)).flatMap(([name,s]) => {
+      const from = this.loopStarts.get(`${id}/${name}`), to = s.voice.at();
+      return from !== undefined && s.voice.playing && to > from + .02 ? [[name, {from,to}] as const] : [];
+    });
+    if (!spans.length) { this.error('Loop Out must follow Loop In on the playing track.', id); return; }
+    spans.forEach(([name,span]) => this.loopSpans.set(`${id}/${name}`, span));
+    this.setDeckLoopEnabled(id, true);
   }
+  setDeckLoopEnabled(id: string, on: boolean) {
+    const d = this.decks.get(id); if (!d) return;
+    d.operation++;
+    const when = this.ctx!.currentTime + this.lead();
+    d.slots.forEach((s,name) => {
+      s.revision++; s.pending = undefined;
+      const at = s.voice.at(when);
+      if (!on && s.span) this.loopSpans.set(`${id}/${name}`, s.span);
+      s.span = on ? this.loopSpans.get(`${id}/${name}`) : undefined;
+      if (s.voice.playing) this.startSlot(id, name, s, on ? s.span?.from ?? at : at, when);
+    });
+    this.loopState(id); this.selection(id);
+  }
+  // Retained for hosts with a global shortcut; the face exposes per-deck controls.
+  private loopIn() { this.decks.forEach((_,id) => this.deckLoopIn(id)); }
+  private loopOut() { this.decks.forEach((_,id) => this.deckLoopOut(id)); }
+  toggleLoop(on: boolean) { this.decks.forEach((_,id) => this.setDeckLoopEnabled(id,on)); }
   setMonitoring = (on: boolean) => { this.monitoring=on; if(this.ctx) smooth(this.local.gain,on?1:0,this.ctx.currentTime); this.publish(); };
   setLinkAudio = (on: boolean) => { if (!on && !this.ctx) return; this.audio(); this.problem=null; this.publisher!.enable(on); };
   private linkClock(timeline: LinkTimeline, changed: boolean) {
@@ -337,9 +374,9 @@ export class MixerEngine {
     const start = Math.floor(beat / 32) * 32 - 32;
     const peaks = this.model(id).waveform?.start === start ? this.model(id).peaks : Array.from({length:768},(_,i) => d.audio.overview[start * 8 + i] ?? {min:0,max:0});
     const slot = this.chosen(d,this.model(id)).find(([,s])=>s.enabled);
-    const span = slot && (this.state.loop.enabled ? this.loopSpans.get(`${id}/${slot[0]}`) ?? slot[1].span : slot[1].span);
+    const span = slot?.[1].span;
     const toBeat = (seconds: number) => d.audio.map ? beatAt(d.audio.map,seconds*d.audio.map.rate) : seconds*(this.model(id).track?.bpm ?? 120)/60;
-    const pending = slot && this.state.loop.start !== null && this.state.loop.end === null ? this.loopStarts.get(`${id}/${slot[0]}`) : undefined;
+    const pending = slot && this.model(id).loop?.start != null && this.model(id).loop?.end === null ? this.loopStarts.get(`${id}/${slot[0]}`) : undefined;
     return { peaks, waveform: {start,length:96,visible:32,loop:span ? {start:toBeat(span.from),end:toBeat(span.to),enabled:true} : pending !== undefined ? {start:toBeat(pending),end:null,enabled:false} : undefined} };
   }
   private tick() {
@@ -347,12 +384,13 @@ export class MixerEngine {
     this.decks.forEach((d,id)=>{let changed=false;d.slots.forEach(s=>{if(s.pending && this.ctx!.currentTime >= s.pending.at){s.selected=s.pending.selected;s.pending=undefined;changed=true;}});if(changed)this.selection(id);});
     const beat=Math.floor(this.beat()); let changed=beat!==this.state.beat;
     const frames=this.readFrame();
-    const decks=this.state.decks.map(m=>{const d=this.decks.get(m.id);if(!d)return m;const page=Math.floor((frames.decks[m.id]?.beat ?? 0)/32),playing=[...d.slots.values()].some(s=>s.enabled&&s.voice.playing);const wave = this.waveform(m.id,d,frames.decks[m.id]?.beat ?? 0); if(page===d.page&&playing===m.playing&&m.waveform&&JSON.stringify(m.waveform.loop)===JSON.stringify(wave.waveform?.loop))return m;d.page=page;changed=true;return {...m,playing,...wave};});
+    const decks=this.state.decks.map(m=>{const d=this.decks.get(m.id);if(!d)return m;const canLoopOut=m.loop?.start != null && m.loop.end === null && this.chosen(d,m).some(([name,s])=>s.voice.playing && this.loopStarts.has(`${m.id}/${name}`) && s.voice.at() > this.loopStarts.get(`${m.id}/${name}`)! + .02);const page=Math.floor((frames.decks[m.id]?.beat ?? 0)/32),playing=[...d.slots.values()].some(s=>s.enabled&&s.voice.playing);const wave = this.waveform(m.id,d,frames.decks[m.id]?.beat ?? 0); if(canLoopOut===!!m.canLoopOut&&page===d.page&&playing===m.playing&&m.waveform&&JSON.stringify(m.waveform.loop)===JSON.stringify(wave.waveform?.loop))return m;d.page=page;changed=true;return {...m,playing,canLoopOut,...wave};});
     if(changed)this.publish({...this.state,decks,beat,canLoopOut:this.state.loop.start!==null&&this.beat()-this.state.loop.start>0.1});
   }
   commands: MixerCommands = {
     setDeckPlaying:(id,on)=>this.run(this.play(id,on),id), cueDeck:(id,held)=>this.cue(id,held), setDeckSync:(id,on)=>this.run(this.sync(id,on),id),
     setRunning:on=>this.run(this.running(on)),stopAll:()=>this.stop(),setQuantized:on=>this.publish({...this.state,quantized:on}),
+    deckLoopIn:id=>this.deckLoopIn(id),deckLoopOut:id=>this.deckLoopOut(id),setDeckLoopEnabled:(id,on)=>this.setDeckLoopEnabled(id,on),
     loopIn:()=>this.loopIn(),loopOut:()=>this.loopOut(),setLoopEnabled:on=>this.toggleLoop(on),
     setEffect:(slot,id)=>{this.publish({...this.state,[slot==='A'?'fxA':'fxB']:id});this.apply();},
     setEffectParam:(slot,id,param,value)=>{this.publish({...this.state,effectValues:{...this.state.effectValues,[slot]:{...this.state.effectValues?.[slot],[id]:{...this.state.effectValues?.[slot]?.[id],[param]:value}}}});this.apply();},
