@@ -147,6 +147,16 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
   }
   const live = mix.phase === 'ready';
   const song = mix.song;
+  /**
+   * What Link has to say for itself, or nothing. Worked out here so the
+   * reading can be left out of the bar entirely when it is silent: an empty
+   * span still takes the divider its group draws between children, which is a
+   * stray rule after the speaker with nothing on either side of it.
+   */
+  const linkSays = mix.linkAudio.problem ? 'unavailable'
+    : mix.linkAudio.starting ? 'connecting'
+      : mix.waitingForLink ? 'waiting for bar'
+        : mix.linkAudio.enabled ? `${mix.linkAudio.peers} peers${mix.linkAudio.dropped ? ' · gaps' : ''}` : '';
 
   const logo = <button type="button" className="mf-mark" aria-label={playView ? 'Switch to single-track editor' : 'Switch to four-deck mixer'} aria-pressed={playView} title="Switch Prep / Play (Tab)" onClick={onToggleView}>mix<span>[flow]</span></button>;
   return (
@@ -162,31 +172,6 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
         )}
 
         {logo}
-        <div className="mf-group mf-link" role="group" aria-label="Link Audio">
-          <Toggle on={mix.linkAudio.enabled}
-            onChange={mix.setLinkAudio}
-            label="Link Audio"
-            title="Link Audio: share the stems with Live, follow its tempo, and start and stop with it"
-            width={30}
-          >{linkMark}</Toggle>
-          <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
-            label="Local audio" width={30}
-            title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
-          >{speakerMark}</Toggle>
-          {!playView && mix.linkAudio.enabled && <Select
-            items={['4 bars', '8 bars', '16 bars', 'Sections']}
-            index={OFFERED.indexOf(mix.linkEvery)}
-            onChange={(next) => mix.setLinkEvery(OFFERED[next])}
-            label="Link pins"
-            title="While linked: how often playback is held to Live's grid — every 4, 8 or 16 bars, or at the sections only. The original feel stays between pins. Export has its own choice, on the export dialog"
-            width={74}
-          />}
-          <span className={mix.linkAudio.problem || mix.linkAudio.dropped ? 'mf-link-problem' : undefined}
-            title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
-            {mix.linkAudio.problem ? 'unavailable' : mix.linkAudio.starting ? 'connecting' : mix.waitingForLink ? 'waiting for bar' : mix.linkAudio.enabled
-              ? `${mix.linkAudio.peers} peers${mix.linkAudio.dropped ? ' · gaps' : ''}` : ''}
-          </span>
-        </div>
 
         {!playView && <div className="mf-open">
           {song ? (
@@ -278,6 +263,34 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
                 and heard in the other. */}
             <span className="mf-clock">{position(mix.bar, mix.bars)}</span>
             <span className="mf-clock mf-clock-time">{clockOf(mix.position)}</span>
+            {/* Link and the speakers at the right-hand end of playback, where
+                they belong: Link Audio starts and stops with Live and takes its
+                tempo, so it decides what these buttons do, and local audio is
+                where the result is heard. They stood alone beside the logo,
+                which put the one control that overrules the transport as far
+                from it as the bar allows. */}
+            <Toggle on={mix.linkAudio.enabled}
+              onChange={mix.setLinkAudio}
+              label="Link Audio"
+              title="Link Audio: share the stems with Live, follow its tempo, and start and stop with it"
+              width={26}
+            >{linkMark}</Toggle>
+            <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
+              label="Local audio" width={26}
+              title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
+            >{speakerMark}</Toggle>
+            {!playView && mix.linkAudio.enabled && <Select
+              items={['4 bars', '8 bars', '16 bars', 'Sections']}
+              index={OFFERED.indexOf(mix.linkEvery)}
+              onChange={(next) => mix.setLinkEvery(OFFERED[next])}
+              label="Link pins"
+              title="While linked: how often playback is held to Live's grid — every 4, 8 or 16 bars, or at the sections only. The original feel stays between pins. Export has its own choice, on the export dialog"
+              width={74}
+            />}
+            {linkSays && <span className={`mf-link${mix.linkAudio.problem || mix.linkAudio.dropped ? ' mf-link-problem' : ''}`}
+              title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
+              {linkSays}
+            </span>}
           </div>
 
         </>

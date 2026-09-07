@@ -21,7 +21,7 @@ The logo and plain Tab switch between the single-track preparation page and the 
 Play layout. The logo fills in Play. The library rail stays the same, and both preparation
 state and loaded deck settings survive switching. Editable controls and dialogs retain
 normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The header centers the playback controls, tempo and position in both Prep and Play across the
-whole window, with the logo and Link controls on the left and Settings on the right. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
+whole window, with the logo and track identity on the left and Settings on the right. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
 loading, keyboard behavior and the current playback boundary.
 
 ## The library rail
@@ -52,7 +52,12 @@ The title and artist share a keyboard-accessible button that opens Track Details
 renaming happens there alongside the album and cover. The header text truncates when
 space is tight. The button is disabled during beat-grid editing. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
 their names in the tooltip; they were two wide labelled switches on a header that had
-run out of room.
+run out of room. They sit at the right-hand end of the Playback group, after the clocks,
+with Link pins and the reading after them: Link Audio takes Live's tempo and starts and
+stops with it, so it decides what the transport buttons do, and standing in its own group
+beside the logo put it as far from them as the bar allows. The reading is left out
+entirely when it has nothing to say, since an empty child still takes the divider the
+group draws between children.
 
 **Link Audio** shares the loaded stems as separate stereo inputs in Live. It starts off
 on every window load. The adjacent text reports connecting, discovered peers, capture

@@ -16,7 +16,7 @@
   flex: none;
 }
 
-.mf-link { font-size: var(--text-label); color: var(--caption); }
+.mf-link { padding: 0 7px; font-size: var(--text-label); color: var(--caption); }
 .mf-link-problem { color: var(--primary); }
 
 .mf-header .wdg {
