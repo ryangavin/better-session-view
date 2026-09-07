@@ -35,9 +35,9 @@ export default defineConfig({
       module('visuals/server', ['visuals/server/**/*.test.ts']),
       module('chart', ['chart/**/*.test.ts']),
     ],
-    // Where `--reporter=html` lands. The reporter copies the coverage report
-    // in beside itself, so report/ is the whole publishable site.
-    outputFile: { html: 'report/index.html' },
+    // Vitest 5's HTML reporter takes a directory rather than outputFile.
+    // Keep report/ as the complete publishable site, including coverage.
+    reporters: ['default', ['html', { outputDir: 'report' }]],
     coverage: {
       provider: 'v8',
       // Off by default, which means a failing run writes no report at all —
