@@ -313,7 +313,7 @@ export function Lanes({ mix }: { mix: Mix }) {
 
   return (
     <div className="mf-lanes" ref={root}>
-      {mix.editingGrid && <BeatGridEditor mix={mix} inspect={(at) => {
+      {mix.editingGrid && <BeatGridEditor mix={mix} follow={follow} inspect={(at) => {
         mix.seek(Math.max(0, at));
         whole(); zoomAbout(Math.max(1, mix.seconds / 4), 0); panBy(Math.max(0, at - 1) / 4);
       }} />}

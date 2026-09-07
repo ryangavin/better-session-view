@@ -40,12 +40,19 @@ two across every three — so the detector's documented miss, the wrong pulse by
 octave or by 4:3, is one click that keeps the variation it detected rather than a
 typed tempo that rules it flat; bar 1 stays on its hit, and the reading beside them
 says at once whether the kit agrees with the new count.
-**Listen with click** plays four bars of drums at original speed from the playhead,
-through `reviewPlayback.ts`, which schedules audio and clicks against one AudioContext
-clock; a correction or main playback stops it.
-**Listen with click** plays four bars of drums at original speed from the playhead,
-through `reviewPlayback.ts`, which schedules audio and clicks against one AudioContext
-clock; a correction or main playback stops it.
+
+**Space** plays the drums under a click, at original speed, from the playhead to the end
+of the stem, and Space stops it — the way Traktor's beat tick and Rekordbox's metronome
+run with the deck, where a *Listen with click* button used to play four bars and fall
+silent, which checked a grid at its start and never where it drifted. Original speed is
+deliberate: the click is a test of the beats, and against warped output it would test
+the pins. `reviewPlayback.ts` schedules the drums and every click up front against one
+AudioContext clock, so a throttled window cannot starve the clicks and all of it stops
+together; its `head` is read once a frame and drives `seek`, so the lanes' own playhead
+moves with it and the view pages after it as for real playback, and Bar 1 here lands on
+the bar just heard. A correction stops it, because its clicks were scheduled against the
+grid it started on; so do main playback, Cancel and Done. `App.tsx` leaves Space to the
+editor while the mode is open, so outside it Space is still the transport.
 
 The section suggestions below are drawn on the ruler while the mode is open, on
 whatever beat the change falls, and kept with a click. Nothing is applied until Done.

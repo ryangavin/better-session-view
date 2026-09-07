@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { sampleOf, type Beats } from '../warp.ts';
 
-/** Four-bar checks at original speed. All voices, including future clicks, stop together. */
+/**
+ * Drums under a click at original speed, from one point to another — the
+ * grid editor asks for the rest of the stem. Every click is scheduled up
+ * front on the one clock rather than fed from the frame loop, so a throttled
+ * or hidden window cannot starve it, and all voices, including future clicks,
+ * stop together. `head` is read off that clock once a frame, never at audio rate.
+ */
 export function useReviewPlayback() {
   const context = useRef<AudioContext | null>(null);
   const nodes = useRef<AudioScheduledSourceNode[]>([]);

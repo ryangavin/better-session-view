@@ -18,12 +18,13 @@ const ON_A_BEAT = 0.025;
 /**
  * The grid, open for checking and correcting over the real lanes: the one
  * mode for asking whether the song is right. Drag a beat, set bar 1 on its
- * hit, find the beats again, listen with a click; the ruler above offers the
- * section changes it heard as cuts to keep. Done keeps it all, Cancel
- * restores the saved grid. What used to be a separate page with its own
- * timeline, zoom and algorithm picker is this, on the lanes you mix on.
+ * hit, find the beats again, play the drums under a click with Space; the
+ * ruler above offers the section changes it heard as cuts to keep. Done
+ * keeps it all, Cancel restores the saved grid. What used to be a separate
+ * page with its own timeline, zoom and algorithm picker is this, on the
+ * lanes you mix on.
  */
-export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number): void }) {
+export function BeatGridEditor({ mix, inspect, follow }: { mix: Mix; inspect(at: number): void; follow(at: number): void }) {
   const grid = mix.grid, downbeat = sampleOf(grid, 0) / grid.rate;
   const player = useReviewPlayback();
   const [problem, setProblem] = useState('');
@@ -74,9 +75,33 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
       }
     }, 0);
   };
-  // A correction or main transport playback ends the old-grid audition.
+  /**
+   * Space plays the drums under a click, from the playhead to the end of the
+   * stem, at original speed: the click is a test of the beats, and against
+   * warped output it would test the pins instead. It runs with Space the way
+   * Traktor's beat tick and Rekordbox's metronome run with the deck, because
+   * a grid checked four bars at a time is never checked where it drifts;
+   * `App.tsx` leaves Space to this while the mode is open. The playhead is
+   * the audition's, so Bar 1 here lands on the bar that was just heard, and
+   * the view pages after it as it does for real playback. A correction stops
+   * it — its clicks were scheduled against the grid it started on — and so
+   * does main playback.
+   */
+  const listen = () => {
+    if (player.head !== null) { player.stop(); return; }
+    mix.setPlaying(false); setProblem('');
+    const drums = mix.audioOf('drums');
+    const from = mix.position, to = Math.min(mix.seconds, drums?.duration ?? 0);
+    if (!drums || to <= from) { setProblem('Choose a point before the end of the drum stem.'); return; }
+    void player.play([drums], grid, from, to, true).catch((error) => { player.stop(); setProblem(`Could not listen: ${String(error)}`); });
+  };
   useEffect(() => { player.stop(); }, [grid]);
   useEffect(() => { if (mix.playing) player.stop(); }, [mix.playing]);
+  useEffect(() => {
+    if (player.head === null) return;
+    mix.seek(player.head);
+    if (mix.seconds > 0) follow(player.head / mix.seconds);
+  }, [player.head]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       // A dialog over the lanes — the debug workspace, the details — owns the
@@ -84,10 +109,12 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
       if (e.defaultPrevented || document.querySelector('dialog[open]') || (e.target as HTMLElement)?.closest('input, textarea, select, [role=dialog]')) return;
       if (e.key === 'Escape') { e.preventDefault(); mix.cancelGridEdit(); }
       else if (e.key.toLowerCase() === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) { e.preventDefault(); mix.undoGridEdit(); }
+      // A focused button or slider has its own meaning for Space, which is what App.tsx honours too.
+      else if (e.code === 'Space' && !(e.target as HTMLElement)?.closest('button, [role=slider], [role=combobox]')) { e.preventDefault(); listen(); }
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [mix.cancelGridEdit, mix.undoGridEdit]);
+  }, [mix.cancelGridEdit, mix.undoGridEdit, listen]);
   /**
    * Bar 1 here: the beat nearest the playhead becomes bar 1, and lands on
    * the hit it was meant for on the way. Serato, Traktor and Rekordbox all
@@ -106,14 +133,6 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
     const beat = Math.round(beatAt(grid, mix.position * grid.rate));
     const hit = renumberOnly ? null : hitUnder(grid, mix.hits, beat);
     mix.editGrid(renumbered(hit === null ? grid : moved(grid, beat, hit), beat));
-  };
-  const listen = () => {
-    if (player.head !== null) { player.stop(); return; }
-    mix.setPlaying(false); setProblem('');
-    const from = mix.position, to = Math.min(mix.seconds, sampleOf(grid, beatAt(grid, from * grid.rate) + 16) / grid.rate);
-    const drums = mix.audioOf('drums');
-    if (!drums || to <= from) { setProblem('Choose a point before the end of the drum stem.'); return; }
-    void player.play([drums], grid, from, to, true).catch((error) => { player.stop(); setProblem(`Could not listen: ${String(error)}`); });
   };
   return <section className="mf-grid-editor" aria-label="Beat grid editing">
     <div className="mf-grid-editor-row">
@@ -142,7 +161,6 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
       <Select items={OFFERED.map((id) => describe(id).name)} index={OFFERED.indexOf(algorithm)} onChange={(i) => setAlgorithm(OFFERED[i])} label="Beat finding algorithm" title={describe(algorithm).does} width={150} />
       <Button onPress={find} disabled={finding} title="Find the beats again on the drums with the chosen algorithm, and draw them over the saved grid. Undo puts the old grid back">{finding ? 'Finding…' : 'Find beats'}</Button>
       <Button onPress={() => inspect(downbeat)}>First downbeat</Button>
-      <Button onPress={listen}>{player.head === null ? 'Listen with click' : 'Stop listening'}</Button>
       <Button onPress={mix.undoGridEdit} disabled={!mix.gridEditDirty}>Undo</Button>
       <Button onPress={() => mix.openDebug('beats')} title="The full beat analysis: every algorithm side by side, the transients, the sweeps, and the onset knob">Advanced…</Button>
       <Button onPress={mix.cancelGridEdit}>Cancel</Button>
@@ -153,7 +171,7 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
       <Button onPress={() => mix.editGrid(renumbered(grid, -1))}>One beat earlier</Button>
       <Button onPress={() => mix.editGrid(renumbered(grid, 1))}>One beat later</Button>
     </div>
-    <p>Zoom to a hit and drag its marker: a bar marker stretches the beats since the last point you set, any other beat moves alone, Command moves every beat together, and Option skips snapping to hits. Dashed marks on the ruler are section changes the stems suggest — click one to cut there. Waveform clicks only move the playhead.</p>
+    <p>Zoom to a hit and drag its marker: a bar marker stretches the beats since the last point you set, any other beat moves alone, Command moves every beat together, and Option skips snapping to hits. Dashed marks on the ruler are section changes the stems suggest — click one to cut there. Waveform clicks only move the playhead; Space plays the drums with a click from the playhead.</p>
     {problem && <p role="alert">{problem}</p>}
     {player.head !== null && <p role="status">Listening to drums at original speed · {player.head.toFixed(3)} s</p>}
   </section>;

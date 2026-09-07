@@ -73,8 +73,8 @@ The Electron window opts out of background throttling, using both `switches(app)
 
 Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
 **Grid** opens the one mode for asking whether the song is right, over the lanes:
-beat handles, bar 1, **Find beats** with the algorithm beside it, listen with a
-click, the section changes the stems suggest as dashed cuts on the ruler, and
+beat handles, bar 1, **Find beats** with the algorithm beside it, the drums under a
+click on Space, the section changes the stems suggest as dashed cuts on the ruler, and
 **Advanced…**, which opens the debug workspace on the beat analysis for whoever wants
 every algorithm side by side. Done and Cancel are its only way out. Beside it the header says the tempo the beats run at — a range where the record
 moves — and nothing about how it was found: agreement and the algorithm's name are the
@@ -128,8 +128,10 @@ on its hit — `retimed` in `warp.ts`, for a detector that heard the wrong pulse
 algorithm on the drums — what an import runs, unless another is picked — and draws the
 result as the draft; Undo puts the old grid back. **Advanced…** opens the debug workspace
 on the beat analysis tab, `state.openDebug('beats')`, the same modal the bug button
-opens. Listen with click auditions four bars of drums at original speed; main
-playback or a correction stops that audition.
+opens. Space plays the drums under a click at original speed from the playhead to the
+end of the stem, the lanes' playhead moving with it, and Space stops it; so does a
+correction, main playback, Cancel or Done. `App.tsx` leaves Space to the editor while
+the mode is open. It replaced a *Listen with click* button that played four bars.
 
 While the grid is open the ruler offers the section changes the stems suggest —
 `sections.ts`, read off `measure()` against the draft grid, so they move with a beat
@@ -427,8 +429,8 @@ Set bar 1 and renumbering are explicit buttons; moving the whole grid is a ⌘-d
 any marker. A steady tempo is typed into the status reading because it intentionally
 removes tempo variation.
 
-Waveform clicks continue to seek. First downbeat zooms the main axis, and Listen with
-click checks the drums against the draft at original speed. The draft is separate from
+Waveform clicks continue to seek. First downbeat zooms the main axis, and Space plays
+the drums against the draft's click at original speed. The draft is separate from
 saved state: Undo steps back through actions, Cancel abandons, and Done commits. Analyze
 and Export wait for the edit session to end. See [track-review.md](track-review.md).
 

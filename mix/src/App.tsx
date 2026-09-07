@@ -87,6 +87,9 @@ export function App() {
       if (playView && e.code === 'Space' && !e.defaultPrevented && !target?.closest('input, textarea, select, button, [role=slider], [role=combobox], [role=dialog]')) { e.preventDefault(); mixer.commands.setRunning(!mixer.state.running); return; }
       if (playView || mix.phase !== 'ready' || e.defaultPrevented || target?.closest('input, textarea, select, button, [role=dialog]')) return;
       if (e.key === ' ') {
+        // With the grid open, Space is the click audition, and the grid
+        // editor answers it: it holds the player and the drums.
+        if (mix.editingGrid) return;
         e.preventDefault();
         mix.setPlaying(!mix.playing);
       } else if ((e.key === 'Backspace' || e.key === 'Delete') && mix.activeSlice > 0) {
