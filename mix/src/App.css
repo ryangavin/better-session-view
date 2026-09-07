@@ -34,7 +34,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed var(--amber);
+  border: 2px dashed var(--primary);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   color: var(--fg);
@@ -65,8 +65,8 @@ button {
 }
 
 .wdg.mf-primary {
-  --wdg-face: var(--amber);
-  --wdg-edge: var(--amber);
+  --wdg-face: var(--primary);
+  --wdg-edge: var(--primary);
   --wdg-text: var(--bg);
   --wdg-text-strong: var(--bg);
 }
@@ -78,6 +78,6 @@ button {
 }
 
 .wdg.mf-primary:hover .wdg-button-body:not(:disabled) {
-  background: var(--amber-hover);
-  border-color: var(--amber-hover);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }

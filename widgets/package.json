@@ -22,7 +22,8 @@
     "./type.css": "./src/type.css",
     "./debug": "./src/debug/index.ts",
     "./debug/*": "./src/debug/*",
-    "./mixer/*": "./src/mixer/*"
+    "./mixer/*": "./src/mixer/*",
+    "./theme/*": "./src/theme/*"
   },
   "types": "dist/index.d.ts",
   "scripts": {

@@ -412,37 +412,25 @@ two, and that file is what moves.
 
 ## Colour
 
-The surfaces, the ramp, the accents, the radii and the 22px control height are
-`@openflow/widgets/palette.css` — shared with set[flow] rather than copied, which is what
-`DESIGN.md` now points at.
+`src/Theme.tsx` wraps the app in the widgets `ThemeRoot`. The shared v1 theme contains
+surface/text/border roles, neutral primary selection, green measured signal, six stem
+identities and paired deck colors. Current favorite is the initial palette, matching the
+widgets mixer bench. See [widgets theme rules](../../widgets/docs/theme.md).
 
-What is this app's own is in `src/tokens.css`: six stem roles, and the four surfaces
-this window has that no other app does — the band, the lane head, the wash over time
-outside the song, and the bar that appears while the grid is being set by hand.
+Theme in the library footer opens the shared editor in a stock Modal. Changes recolor
+the app immediately and save the complete document (including deck variation) under
+`mix.theme.v1` in local storage. Invalid/unavailable storage falls back to the favorite;
+if writes fail the editor still works for this window. Widgets owns no persistence.
+Bench experiments are temporary and use a different origin, so they do not silently
+change the mix app's saved theme.
 
-**The six are one hue wheel, not six colours that were each picked well.** Two of them
-used to be palette accents — guitar was `--green`, piano was `--blue` — and Other was
-`--detail`, on the reasoning that the residual is not a source so much as what is left.
-Both of those are wrong for the job. Aliasing a stem to a UI accent ties its hue to a
-decision made about buttons, which is how guitar and piano ended up teal and blue with
-forty degrees between them; and grey is not a colour you can find a lane by, which is
-the entire thing a stem role is for.
-
-So they are spaced around the wheel instead, and what the set has to contain is the
-four a person can name without thinking: red, yellow, green, blue.
-
-| role | | |
-|---|---|---|
-| `--stem-vocals` | red | |
-| `--stem-drums` | yellow | pushed toward lemon, away from `--amber` — the playhead rides over this lane |
-| `--stem-guitar` | green | |
-| `--stem-other` | cyan | |
-| `--stem-bass` | blue | |
-| `--stem-piano` | magenta | |
-
-They stay here rather than in the palette until something else needs them, and they are
-named for the source they paint and never for the hue, so a stem that changes colour
-changes in one place and nothing else has to be read to find out why.
+`src/tokens.css` owns geometry/layers only. App styles use `--primary`, `--danger`,
+`--success` and `--info`; the root supplies legacy aliases for remaining callers.
+Stem definitions in `mock.ts` reference `--stem-<id>` so library badges, controls and
+waveforms share exactly the same identities. Guitar and piano have explicit roles,
+independent of generic status colors. `Waveform` and `WarpLane` subscribe to the theme
+context and repaint when it changes, including while playback is paused. No audio,
+track metadata or playback state is reset to change a theme.
 
 ## What is invented
 

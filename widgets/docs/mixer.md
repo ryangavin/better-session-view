@@ -61,8 +61,9 @@ meter levels. It adapts its private array positions into public IDs. Its stable 
 uses a ref to the latest simulated state. `bench/PlayCase.tsx` mounts the hook and passes
 its result to the same `MixerView` that a real app will use.
 
-`bench/PlayTheme.tsx` remains an experiment tool. It resolves theme roles and deck
-variations in the wrapper; the reusable face knows nothing about presets or randomization.
+`src/theme/*` owns the shared theme model, resolver and editor; see [theme.md](theme.md).
+The bench reads ThemeRoot’s resolved colors and maps deck positions to host IDs. The
+reusable face still accepts resolved colors and knows nothing about persistence.
 Only the bench CSS positions the floating theme editor or hides workspace descriptions.
 `src/mixer/mixer.css` contains the consolidated instrument layout, without bench selectors.
 

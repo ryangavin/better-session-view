@@ -1,0 +1,9 @@
+.wdg-theme-editor { flex: none; width: 276px; padding: 12px; box-sizing: border-box; }
+.wdg-theme-toolbar, .wdg-theme-values { display: flex; align-items: end; justify-content: space-between; gap: 6px; }
+.wdg-theme-swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 12px 0; }
+.wdg-theme-sample { height: 12px; margin-bottom: 10px; border-radius: 2px; }
+.wdg-theme-editor p { font-size: 11px; line-height: 1.5; color: var(--wdg-text); margin: 10px 0 0; }
+.wdg-theme-editor .wdg-theme-warning { color: var(--wdg-text-strong); border-left: 2px solid var(--wdg-text); padding-left: 8px; }
+.wdg-theme-variation { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--wdg-edge); justify-items: center; }
+.wdg-theme-rolls { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; }
+.wdg-theme-root { color: var(--fg); background: var(--bg); }

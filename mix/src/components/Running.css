@@ -3,7 +3,7 @@
 }
 
 .mf-pulse {
-  color: var(--amber);
+  color: var(--primary);
   animation: mf-pulse 1.6s ease-in-out infinite;
 }
 
@@ -39,7 +39,7 @@
   inset: 0;
   width: 28%;
   border-radius: inherit;
-  background: var(--amber);
+  background: var(--primary);
   opacity: 0.5;
   animation: mf-crawl 2.2s ease-in-out infinite;
 }
@@ -55,7 +55,7 @@
 
 .mf-job-fill {
   height: 100%;
-  background: var(--amber);
+  background: var(--primary);
   transition: width 90ms linear;
 }
 

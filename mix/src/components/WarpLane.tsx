@@ -1,3 +1,4 @@
+import { useTheme } from '@openflow/widgets/theme/ThemeRoot.tsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { rankOf, rulingOf, shaded, TICKS_PER_BAR } from '../grid.ts';
 import { barAt, placeOf, BEATS_PER_BAR, type Beats } from '../warp.ts';
@@ -79,6 +80,7 @@ const nameOf = (beat: number): string => {
 };
 
 export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, onPlace, placing, span, onMoveStart, onMoveEnd }: WarpLaneProps) {
+  const theme = useTheme();
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const lane = useRef<HTMLDivElement | null>(null);
   /** How wide the strip is, so the markers can decide how many of them fit. */
@@ -141,7 +143,7 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
       const beat = ink(el, '--bd', '#262629');
       const barLine = ink(el, '--idle', '#3a3a41');
       const tick = ink(el, '--detail', '#8b8b93');
-      const sure = ink(el, '--green', '#5fbfa8');
+      const sure = ink(el, '--success', '#5fbfa8');
       const caption = ink(el, '--caption', '#5e5e66');
       const block = ink(el, '--sel', '#1c1c20');
 
@@ -215,7 +217,7 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
 
     latest.current = paint;
     schedule();
-  }, [schedule, onsets, bars, height, from, to]);
+  }, [schedule, onsets, bars, height, from, to, theme]);
 
   /**
    * The observer is made once, and a booked frame is only ever dropped when the

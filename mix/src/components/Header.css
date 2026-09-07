@@ -14,7 +14,7 @@
 }
 
 .mf-link { font-size: var(--text-label); color: var(--caption); }
-.mf-link-problem { color: var(--amber); }
+.mf-link-problem { color: var(--primary); }
 
 .mf-header .wdg {
   --wdg-field-height: var(--ctl-h);
@@ -28,7 +28,7 @@
 }
 
 .mf-mark span {
-  color: var(--amber);
+  color: var(--primary);
 }
 
 .mf-open {
@@ -142,11 +142,11 @@
 }
 
 .mf-group .mf-playing {
-  color: var(--green);
+  color: var(--success);
 }
 
 .mf-group .mf-looping-part {
-  color: var(--amber);
+  color: var(--primary);
 }
 
 .mf-snap .wdg-segmented-body button + button {
@@ -162,8 +162,8 @@
 }
 
 .mf-snap .wdg-segmented-body button[aria-checked='true'] {
-  color: var(--amber);
-  background: color-mix(in oklab, var(--amber) 16%, transparent);
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 16%, transparent);
 }
 
 .mf-group-label,
@@ -195,7 +195,7 @@
 }
 
 .mf-fit-none {
-  color: var(--amber-muted);
+  color: var(--primary-muted);
 }
 
 .mf-broken {
@@ -204,20 +204,20 @@
   gap: 6px;
   height: var(--ctl-h);
   padding: 0 8px;
-  border: 1px solid var(--red);
+  border: 1px solid var(--danger);
   border-radius: var(--radius-md);
   font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
-  color: var(--red);
+  color: var(--danger);
 }
 
 .mf-broken i {
   width: 5px;
   height: 5px;
   border-radius: var(--radius-pill);
-  background: var(--red);
+  background: var(--danger);
 }
 
 .mf-clock-time {

@@ -1,3 +1,4 @@
+import { useTheme } from '@openflow/widgets/theme/ThemeRoot.tsx';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Peak } from '../audio.ts';
 import { levelsOf, packedOf } from '@openflow/widgets/wave/levels.ts';
@@ -163,6 +164,7 @@ export function Waveform({
   onSeek,
   className,
 }: WaveformProps) {
+  const theme = useTheme();
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const from = span?.from ?? WHOLE.from;
   const to = span?.to ?? WHOLE.to;
@@ -392,7 +394,7 @@ export function Waveform({
 
     latest.current = paint;
     schedule();
-  }, [schedule, peaks, buffer, ink, quiet, height, bars, from, to]);
+  }, [schedule, peaks, buffer, ink, quiet, height, bars, from, to, theme]);
 
   /**
    * The observer is made once, and a booked frame is only ever dropped when the

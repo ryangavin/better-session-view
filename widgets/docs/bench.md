@@ -143,37 +143,15 @@ Reset tab restores the initial composition and theme. No audio is produced.
 
 ## Play theme roles
 
-`bench/PlayTheme.tsx` owns eight HSL roles: Primary, Signal, four stems, and the left
-and right deck families. Existing widget inks and CSS variables apply them; no shared
-palette or widget implementation changes. The Theme button opens a floating editor
-built from Toggle, Select, Button and editable NumberField controls. It has Current favorite, Soft studio,
-Night stage and Porcelain presets, a constrained randomizer, and hue/saturation/lightness
-editing for each role. Changes apply immediately without resetting mixer controls.
-Reset tab or leaving the room discards the theme. Preset matching switches to Custom
-when edited; selecting a named preset restores all roles.
+The Play wrapper mounts a shared `ThemeRoot` and controlled `ThemeEditor` from
+`src/theme/`. The [theme topic](theme.md) owns the role model, palette rules, presets,
+randomization and derived label/deck colors. Bench owns only its floating Theme button
+and temporary state. The editor is the same component used in mix's app-wide Theme modal.
 
-Primary saturation is capped at 12%; Signal hue is constrained to 120–160 degrees.
-Primary drives selection, fader fills, trim, EQ and FX. FX captions stay subdued, with
-no separate identity color. Stem levels and launcher buttons share exclusive hue families; stem captions
-above knobs and launch columns use a muted tint (45% stem ink blended with the caption gray), preserving identity
-without the brightness of the control fill. Presets/randomization reserve green for signal, and keep stem hues apart from
-each other and the two deck families. Manual editing warns when a stem is within 30 hue
-degrees of another saturated role (saturation at least 18%). This is an editing aid,
-not a perceptual or color-vision certification; evaluate the rendered result too.
-
-Deck families retain equal lightness and saturation. B/D shift up to eight hue
-degrees toward warm orange from A/C; letters and
-narrow waveform-label edges carry identity. Waveform silhouettes blend 65% deck color
-with neutral gray to keep large filled areas quieter. Physical deck identity stays fixed
-when crossfade assignments change. Randomization builds a fresh seven-family hue wheel anchored on green signal, then
-shuffles the remaining six families across stems and deck pairs. Hue spacing preserves
-identity separation; shared saturation/lightness ranges keep the palette cohesive.
-
-EQ explicitly fills from 0dB despite its asymmetric −24/+12dB range. Neutral EQ, trim,
-filter and sends have no colored arc; stem levels and faders always show their level.
-A small divider separates trim from EQ. Faders/meters omit visible captions but retain
-accessible labels. The active theme scopes primary and signal tokens to the mixer root; the wrapper
-also supplies the primary to its theme editor. No body variables are written.
+Current favorite preserves the chosen palette. Presets include all role colors, surfaces
+and deck variation; selecting a preset restores that whole document. Randomize and
+individual H/S/L rolls retain variation. Reset tab or leaving Play discards theme edits
+along with the preview. No theme state is written to body or browser storage by widgets.
 
 ## Collapsing navigation
 
@@ -199,5 +177,5 @@ positive warmer), **B/D saturation offset**, **B/D lightness offset**, and **Wav
 color strength**. The first three change B/D relative to the A/C base colors, together
 for both pairs. Strength controls how much deck color appears in all waveform fills.
 **Reset variation** restores warmth 8, saturation/lightness offsets 0, and strength 65%.
-Changing presets or rolling role colors preserves these variation settings; Reset tab
-resets everything. Variation settings remain temporary.
+Changing presets restores their saved variation; rolling role colors preserves it.
+Reset tab resets everything. Bench variation settings remain temporary.

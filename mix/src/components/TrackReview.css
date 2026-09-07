@@ -16,7 +16,7 @@
 .mf-review-navigation { padding:7px 0 12px; margin:0; }
 .mf-review-timeline { position:relative; overflow:hidden; background:linear-gradient(180deg,#14121d,#0d1017); border:1px solid var(--bd); border-radius:4px; }
 .mf-review-timeline svg { width:100%; display:block; cursor:crosshair; touch-action:none; }
-.mf-review-timeline svg:focus-visible { outline:1px solid var(--amber); outline-offset:-2px; }
+.mf-review-timeline svg:focus-visible { outline:1px solid var(--primary); outline-offset:-2px; }
 .mf-review-section-track { position:absolute; inset:0 0 auto; height:34px; z-index:1; pointer-events:none; }
 .mf-review-section-track button { position:absolute; top:7px; display:flex; align-items:center; gap:5px; height:25px; overflow:hidden; white-space:nowrap; border:0; border-left:2px solid #ad8bd1; border-radius:0 3px 3px 0; background:#252034; color:#cdbce1; font:inherit; font-size:11px; padding:3px 6px; cursor:pointer; pointer-events:auto; text-align:left; }
 .mf-review-section-track button span { overflow:hidden; text-overflow:ellipsis; }
@@ -29,6 +29,6 @@
 .mf-review-selected > span { color:var(--detail); }
 .mf-review-analysis-controls { margin:0 0 12px; padding-bottom:12px; border-bottom:1px solid var(--bd); }
 
-.mf-review-preview { border-left:2px solid var(--amber); padding:10px 14px; background:var(--surface-band); }
-.mf-review-preview > strong { color:var(--amber); }
+.mf-review-preview { border-left:2px solid var(--primary); padding:10px 14px; background:var(--surface-band); }
+.mf-review-preview > strong { color:var(--primary); }
 .mf-review-preview p { color:var(--detail); font-size:12px; line-height:1.6; }

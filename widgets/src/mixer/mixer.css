@@ -16,7 +16,7 @@
 .play-grid { display: grid; grid-template-columns: minmax(44px,1fr) repeat(4,34px); grid-template-rows: 16px; grid-auto-rows: 24px; gap: 2px; align-content: start; align-items: center; justify-items: center; }
 .play-grid > .play-axis { justify-self: start; }
 .play-axis { font-size: 7px; color: var(--wdg-caption); }
-.play-stem-name { font-size: 8px; text-align: center; white-space: nowrap; color: color-mix(in srgb,var(--stem-ink) 45%,var(--wdg-caption)); }
+.play-stem-name { font-size: 8px; text-align: center; white-space: nowrap; color: var(--stem-label); }
 .play-launch-row { display: contents; }
 .play-cell { display: flex; justify-content: center; height: 24px; }
 .play-cell[data-queued='true'] { outline: 1px solid var(--stem-ink); outline-offset: -1px; animation: play-queued .7s infinite alternate; }
@@ -33,7 +33,7 @@
 .play-channel-fader { display: flex; justify-content: center; gap: 12px; background: var(--wdg-well); }
 .play-master-channel .play-channel-fader { gap: 6px; }
 .play-channel-fader .wdg-slider { --wdg-track: 28px; --wdg-fill: var(--amber); }
-.play-stem-levels .wdg-caption { color: color-mix(in srgb,var(--wdg-fill) 45%,var(--wdg-caption)); }
+.play-stem-levels .wdg-caption { color: var(--stem-label); }
 .play-trim { position: relative; --wdg-marker: var(--amber); }
 .play-trim::after { content: ''; position: absolute; bottom: -5px; left: 5px; right: 5px; border-bottom: 1px solid var(--wdg-edge); }
 .play-trim .wdg-caption { color: var(--amber); }

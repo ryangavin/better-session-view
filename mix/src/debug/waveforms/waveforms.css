@@ -24,7 +24,7 @@
 .mf-wave-source-key small { color:var(--detail); margin-left:auto; }
 .mf-wave-reading-key { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:0 12px 12px; }
 .mf-wave-reading-key button { font:inherit; font-size:11px; color:var(--detail); border:1px solid var(--bd); border-radius:3px; background:transparent; padding:5px 9px; cursor:pointer; }
-.mf-wave-reading-key button[aria-pressed=true] { color:var(--fg); border-color:var(--amber); }
+.mf-wave-reading-key button[aria-pressed=true] { color:var(--fg); border-color:var(--primary); }
 .mf-wave-reading-key span { color:var(--detail); font-size:11px; margin-left:6px; }
 .mf-wave-aurora-caption { padding:18px 16px; color:#bdabc7; }
 .mf-wave-aurora-caption span { font:italic 21px Georgia,serif; color:#eedaf1; }

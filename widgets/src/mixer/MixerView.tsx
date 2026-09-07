@@ -9,7 +9,7 @@ import { FramePlayhead } from './frames.tsx';
 /** Controlled four-deck face. The host owns all musical state and playback policy. */
 export function MixerView({ state, commands, readFrame, theme, params }: MixerViewProps) {
   const { decks, beat, loop } = state;
-  return <div className="wdg play-example" style={{ '--play-signal': theme.signal, '--amber': theme.primary } as CSSProperties}>
+  return <div className="wdg play-example" style={{ '--play-signal': theme.signal, '--primary': theme.primary, '--amber': theme.primary } as CSSProperties}>
     <div className="play-timeline" aria-label="Four decks aligned to a shared 32-bar preview">
       <div className="play-wave-row play-ruler"><span title="Four aligned decks · 32 bars · global loop markers">DECKS · BARS</span><div className="play-bar-labels">{Array.from({ length: 8 }, (_, i) => <span key={i}>{Math.floor(beat / 128) * 32 + i * 4 + 1}</span>)}</div></div>
       {decks.map((d, index) => <div className="play-wave-row" style={{ '--deck-ink': theme.decks[d.id]?.ink ?? theme.primary } as CSSProperties} key={d.id}>

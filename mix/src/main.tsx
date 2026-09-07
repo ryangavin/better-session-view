@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './App.css';
+import { MixTheme } from './Theme.tsx';
 import { App } from './App.tsx';
 
 /**
@@ -54,7 +55,7 @@ const root = document.getElementById('root')!;
 if (await bridged(root)) {
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <MixTheme><App /></MixTheme>
     </StrictMode>,
   );
 }

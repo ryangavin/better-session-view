@@ -3,8 +3,8 @@
   --wdg-edge: var(--bd3, #2c2c31);
   --wdg-edge-live: var(--focus, #4a4a52);
   --wdg-empty: var(--idle, #3a3a41);
-  --wdg-fill: var(--amber, #f0b23c);
-  --wdg-fill-text: #000;
+  --wdg-fill: var(--primary, var(--amber, #f0b23c));
+  --wdg-fill-text: var(--on-primary, #000);
   --wdg-marker: var(--fg, #ececed);
   --wdg-text: var(--ui, #b7b7be);
   --wdg-text-strong: var(--fg, #ececed);

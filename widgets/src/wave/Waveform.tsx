@@ -1,3 +1,4 @@
+import { useTheme } from '../theme/context.ts';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { levelsOf, packedOf, type Peak, type Steps } from './levels.ts';
 import { densityFor, edgesOf, pathOf, samplesFrom } from './outline.ts';
@@ -92,6 +93,7 @@ export function Waveform({
   className,
   label,
 }: WaveformProps) {
+  const theme = useTheme();
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const pending = useRef(0);
   const latest = useRef<() => void>(() => {});
@@ -145,7 +147,7 @@ export function Waveform({
       g.fill(pathOf(edges, smooth));
     };
     schedule();
-  }, [levels, from, to, ink, height, density, smooth, headroom, samples, schedule]);
+  }, [levels, from, to, ink, height, density, smooth, headroom, samples, schedule, theme]);
 
   useEffect(() => {
     const el = canvas.current;

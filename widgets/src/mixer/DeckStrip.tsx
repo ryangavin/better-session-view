@@ -1,3 +1,4 @@
+import { identityLabel } from '../theme/resolve.ts';
 import { type CSSProperties } from 'react';
 import { Button } from '../controls/Button.tsx';
 import { Toggle } from '../controls/Toggle.tsx';
@@ -15,12 +16,12 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params }
 
         <fieldset className="play-performance" disabled={d.status !== 'ready'}>
           <div className="play-grid" data-full={d.full}>
-          <span className="play-axis">SECTION</span>{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary } as CSSProperties} key={stem.id}>{stem.name}</span>)}
+          <span className="play-axis">SECTION</span>{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
           {d.sections.map(section => <div className="play-launch-row" key={section.id}>
             {d.full ? <Toggle width={44} on={d.fullSection === section.id} label={`Deck ${index + 1}: launch ${section.name} full mix${d.fullQueued === section.id ? ', queued' : ''}`} onChange={() => commands.launch(d.id, section.id)}>{section.name}</Toggle> : <Button width={44} label={`Deck ${index + 1}: launch ${section.name} all stems`} title="Launch this section on all four stems" onPress={() => commands.launch(d.id, section.id)}>{section.name}</Button>}
             {d.stems.map((stem, s) => {
               const active = stem.selected === section.id, queued = stem.queued === section.id;
-              return <div className="play-cell" key={stem.id} data-active={active} data-queued={queued} style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary } as CSSProperties}>
+              return <div className="play-cell" key={stem.id} data-active={active} data-queued={queued} style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}>
                 <Toggle disabled={d.full || d.status !== 'ready' || !stem.available} on={active} ink={theme.stems[stem.id] ?? theme.primary} width={34} label={`Deck ${index + 1}: ${section.name} ${stem.name}${queued ? ', queued' : active ? ', selected' : ''}`} onChange={() => commands.launch(d.id, section.id, stem.id)}>{queued ? '◷' : active ? '▶' : '▷'}</Toggle>
               </div>;
             })}
@@ -35,7 +36,7 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params }
         </div>
         <div className="play-channel">
           <div className="play-eq-stack play-stem-levels" data-full={d.full}>
-            {d.stems.map((stem, i) => <Knob key={stem.id} disabled={d.full || d.status !== 'ready' || !stem.available} name={stem.name} label={`Deck ${index + 1} ${stem.name} level`} param={LEVEL} value={stem.level} onChange={value => commands.setStemLevel(d.id, stem.id, value)} ink={theme.stems[stem.id] ?? theme.primary} />)}
+            {d.stems.map((stem, i) => <div key={stem.id} style={{ '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}><Knob disabled={d.full || d.status !== 'ready' || !stem.available} name={stem.name} label={`Deck ${index + 1} ${stem.name} level`} param={LEVEL} value={stem.level} onChange={value => commands.setStemLevel(d.id, stem.id, value)} ink={theme.stems[stem.id] ?? theme.primary} /></div>)}
           </div>
           <div className="play-level-stack">
           <div className="play-channel-fader"><Slider name="" label={`Deck ${index + 1} level`} param={LEVEL} value={d.gain} onChange={value => commands.setDeck(d.id, 'gain', value)} length={210} />

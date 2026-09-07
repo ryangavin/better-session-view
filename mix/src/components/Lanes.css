@@ -127,7 +127,7 @@
 
 .mf-slice-cut:hover::after,
 .mf-slice-cut:active::after {
-  background: var(--amber);
+  background: var(--primary);
 }
 
 .mf-slice:hover {
@@ -143,9 +143,9 @@
   top: 0;
   bottom: 0;
   pointer-events: none;
-  background: color-mix(in oklab, var(--amber) 10%, transparent);
-  border-left: 2px solid var(--amber);
-  border-right: 2px solid var(--amber);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  border-left: 2px solid var(--primary);
+  border-right: 2px solid var(--primary);
 }
 
 .mf-slice-num {
@@ -155,7 +155,7 @@
 }
 
 .mf-slice[data-on] .mf-slice-num {
-  color: var(--amber);
+  color: var(--primary);
 }
 
 .mf-slice-name {
@@ -205,7 +205,7 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: var(--amber);
+  background: var(--primary);
   pointer-events: none;
 }
 
@@ -214,7 +214,7 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: var(--amber);
+  background: var(--primary);
   opacity: 0.8;
   pointer-events: none;
 }
@@ -225,7 +225,7 @@
   left: 0;
   padding: 0 3px;
   border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
-  background: var(--amber);
+  background: var(--primary);
   color: var(--bg);
   font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
@@ -256,7 +256,7 @@
   left: 0;
   padding: 0 3px;
   border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
-  background: var(--amber);
+  background: var(--primary);
   color: var(--bg);
   font-variation-settings: var(--mono-axes);
   font-size: var(--text-label);
@@ -535,10 +535,10 @@
   --wdg-face: var(--surface-lane-head);
   --wdg-edge: var(--bd);
   --wdg-empty: var(--idle);
-  --wdg-fill: var(--amber);
+  --wdg-fill: var(--primary);
   --wdg-text: var(--detail);
   --wdg-caption: var(--caption);
-  --wdg-alarm: var(--red);
+  --wdg-alarm: var(--danger);
 }
 
 .mf-tab-message {
@@ -552,7 +552,7 @@
 }
 
 .mf-tab-problem {
-  color: var(--red);
+  color: var(--danger);
 }
 
 .mf-lane-none {
@@ -587,7 +587,7 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: var(--amber);
+  background: var(--primary);
   pointer-events: none;
   z-index: var(--layer-playhead);
 }
@@ -600,7 +600,7 @@
   min-height: 30px;
   padding: 0 10px;
   background: var(--surface-manual);
-  border-bottom: 1px solid var(--amber);
+  border-bottom: 1px solid var(--primary);
 }
 
 .mf-manual-step {
@@ -609,7 +609,7 @@
   font-size: var(--text-label);
   letter-spacing: var(--track-caps);
   text-transform: uppercase;
-  color: var(--amber);
+  color: var(--primary);
   animation: mf-pulse 1.8s ease-in-out infinite;
 }
 
@@ -637,9 +637,9 @@
   gap: 2px;
 }
 
-.mf-grid-editor { flex:none; padding:10px 12px; background:var(--surface-manual); border-bottom:1px solid var(--amber); }
+.mf-grid-editor { flex:none; padding:10px 12px; background:var(--surface-manual); border-bottom:1px solid var(--primary); }
 .mf-grid-editor-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:4px 0; }
-.mf-grid-editor-row > strong { color:var(--amber); }
+.mf-grid-editor-row > strong { color:var(--primary); }
 .mf-grid-editor-row > [role='status'] { flex:1; }
 .mf-grid-editor p, .mf-grid-editor-row > span { color:var(--detail); font-size:var(--text-label); }
 .mf-grid-editor p { margin:8px 0; line-height:1.5; }

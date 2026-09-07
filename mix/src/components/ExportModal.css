@@ -32,7 +32,7 @@
 }
 
 .mf-pick {
-  --mf-pick-ink: var(--amber);
+  --mf-pick-ink: var(--primary);
   display: grid;
   grid-template-columns: 10px auto 1fr;
   align-items: center;
@@ -183,7 +183,7 @@
   font: inherit;
   font-variation-settings: inherit;
   letter-spacing: inherit;
-  color: var(--amber);
+  color: var(--primary);
   cursor: pointer;
 }
 
@@ -206,7 +206,7 @@
 }
 
 .mf-modal-slice[data-on] .mf-modal-slice-num {
-  color: var(--amber);
+  color: var(--primary);
 }
 
 .mf-modal-slice input {
@@ -282,7 +282,7 @@
   inset: 0;
   width: 28%;
   border-radius: inherit;
-  background: var(--amber);
+  background: var(--primary);
   opacity: 0.5;
   animation: mf-export-crawl 2.2s ease-in-out infinite;
 }
@@ -298,7 +298,7 @@
 
 .mf-export-fill {
   height: 100%;
-  background: var(--amber);
+  background: var(--primary);
   transition: width 90ms linear;
 }
 
