@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useReviewPlayback } from './reviewPlayback.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
+import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import { beatAt, evenBeats, renumbered, sampleOf, shifted, tempoOf } from '../warp.ts';
-import { describe, FIRST_CHOICE, run } from '../algorithms.ts';
+import { describe, FIRST_CHOICE, OFFERED, run, type Algorithm } from '../algorithms.ts';
 import type { Mix } from '../state.ts';
 
 const TEMPO: Param = { kind: 'float', min: 40, max: 300, defaultValue: 120, unit: 'custom', customUnit: '%0.2f' };
@@ -24,10 +25,12 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
   const player = useReviewPlayback();
   const [problem, setProblem] = useState('');
   const [finding, setFinding] = useState(false);
+  const [algorithm, setAlgorithm] = useState<Algorithm>(FIRST_CHOICE);
   /**
-   * The beats found again, as the draft: what an import gets, run on the
-   * drums, drawn over the saved grid until Done. Undo puts the old grid
-   * back, so trying it costs nothing.
+   * The beats found again, as the draft: the chosen algorithm — what an
+   * import gets, unless another is picked — run on the drums, drawn over
+   * the saved grid until Done. Undo puts the old grid back, so trying it
+   * costs nothing.
    */
   const find = () => {
     const drums = mix.audioOf('drums');
@@ -35,9 +38,9 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
     player.stop(); setFinding(true); setProblem('');
     window.setTimeout(() => {
       try {
-        const got = run(FIRST_CHOICE, channelsOf(drums), drums.sampleRate, {});
+        const got = run(algorithm, channelsOf(drums), drums.sampleRate, {});
         const next = got?.beats ?? (got?.fit ? evenBeats(grid.rate, grid.length, got.fit.bpm, got.fit.offset) : null);
-        if (!next) { setProblem(`${describe(FIRST_CHOICE).name} found no steady beat; the grid is as it was.`); return; }
+        if (!next) { setProblem(`${describe(algorithm).name} found no steady beat; the grid is as it was.`); return; }
         mix.editGrid(next);
         inspect(sampleOf(next, 0) / next.rate);
       } catch (error) {
@@ -70,15 +73,21 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
   return <section className="mf-grid-editor" aria-label="Beat grid editing">
     <div className="mf-grid-editor-row">
       <strong>Grid</strong><span role="status">{mix.gridEditDirty ? 'Changed — Done keeps it, Cancel puts it back' : 'As saved'}</span>
-      <Button onPress={find} disabled={finding} title="Find the beats again on the drums, the way an import does, and draw them over the saved grid. Undo puts the old grid back">{finding ? 'Finding…' : 'Find beats'}</Button>
+      <Select items={OFFERED.map((id) => describe(id).name)} index={OFFERED.indexOf(algorithm)} onChange={(i) => setAlgorithm(OFFERED[i])} label="Beat finding algorithm" title={describe(algorithm).does} width={150} />
+      <Button onPress={find} disabled={finding} title="Find the beats again on the drums with the chosen algorithm, and draw them over the saved grid. Undo puts the old grid back">{finding ? 'Finding…' : 'Find beats'}</Button>
       <Button onPress={() => inspect(downbeat)}>First downbeat</Button>
       <Button onPress={listen}>{player.head === null ? 'Listen with click' : 'Stop listening'}</Button>
       <Button onPress={mix.undoGridEdit} disabled={!mix.gridEditDirty}>Undo</Button>
+      <Button onPress={() => mix.openDebug('beats')} title="The full beat analysis: every algorithm side by side, the transients, the sweeps, and the onset knob">Advanced…</Button>
       <Button onPress={mix.cancelGridEdit}>Cancel</Button>
       <Button onPress={mix.finishGridEdit} className="mf-primary">Done</Button>
     </div>
     <div className="mf-grid-editor-row">
-      <Button onPress={() => mix.editGrid(shifted(grid, Math.round(mix.position * grid.rate - sampleOf(grid, 0))))}>Set bar 1 at playhead</Button>
+      {/* Which beat is bar 1, not where the beats are: the beat nearest the
+          playhead becomes 1 and nothing moves. Shifting the whole map to the
+          playhead dragged a good detection off every hit, which is what the
+          nudges are for when the beats really are off by a constant. */}
+      <Button onPress={() => mix.editGrid(renumbered(grid, Math.round(beatAt(grid, mix.position * grid.rate))))} title="Make the beat nearest the playhead bar 1. The beats stay where they are; only the count changes">Bar 1 here</Button>
       <Button onPress={() => mix.editGrid(renumbered(grid, -1))}>One beat earlier</Button>
       <Button onPress={() => mix.editGrid(renumbered(grid, 1))}>One beat later</Button>
       <span>Nudge all beats</span><Button onPress={() => mix.editGrid(shifted(grid, -Math.round(grid.rate * .01)))}>−10 ms</Button><Button onPress={() => mix.editGrid(shifted(grid, Math.round(grid.rate * .01)))}>+10 ms</Button>

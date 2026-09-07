@@ -5,11 +5,13 @@ is right, and it sits over the real mixer lanes as a mode — **Grid** in the he
 rather than on a page of its own. It starts with the saved beat map, including
 irregular edits, and holds a draft apart from it until Done.
 
-**Find beats** runs `run(FIRST_CHOICE)` on the drums, exactly what an import runs, and
-makes the result the draft: drawn over the saved grid in the warp lane, auditioned with
-the click, undone with Undo. There is no algorithm picker here; trying the others is a
-harness question, behind the bug button. The handles, bar-1 placement, renumbering,
-nudges and the steady-grid replacement are as [window.md](window.md) describes.
+**Find beats** runs the chosen algorithm on the drums — `OFFERED`, with `FIRST_CHOICE`
+preselected, which is exactly what an import runs — and makes the result the draft:
+drawn over the saved grid in the warp lane, auditioned with the click, undone with
+Undo. **Advanced…** opens the debug workspace on the beat analysis for the full
+comparison. **Bar 1 here** renumbers so the beat nearest the playhead is bar 1, and
+moves nothing. The handles, renumbering, nudges and the steady-grid replacement are as
+[window.md](window.md) describes.
 **Listen with click** plays four bars of drums at original speed from the playhead,
 through `reviewPlayback.ts`, which schedules audio and clicks against one AudioContext
 clock; a correction or main playback stops it.

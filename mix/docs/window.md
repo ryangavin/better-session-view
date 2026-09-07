@@ -71,9 +71,10 @@ The Electron window opts out of background throttling, using both `switches(app)
 
 Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
 **Grid** opens the one mode for asking whether the song is right, over the lanes:
-beat handles, bar 1, nudges, **Find beats**, listen with a click, and the section
-changes the stems suggest as dashed cuts on the ruler. Done and Cancel are its only way
-out. Beside it the header says the tempo the beats run at — a range where the record
+beat handles, bar 1, nudges, **Find beats** with the algorithm beside it, listen with a
+click, the section changes the stems suggest as dashed cuts on the ruler, and
+**Advanced…**, which opens the debug workspace on the beat analysis for whoever wants
+every algorithm side by side. Done and Cancel are its only way out. Beside it the header says the tempo the beats run at — a range where the record
 moves — and nothing about how it was found: agreement and the algorithm's name are the
 debug workspace's. Warp controls playback, not editability. **Details** beside the
 title opens what the track is: name, artist, album, art, and the model that made the
@@ -101,11 +102,15 @@ takes over. It is a dialog rather than a page because none of it needs the wavef
 **Grid** in the header opens `BeatGridEditor.tsx` above the actual mixer lanes. Beat
 handles appear only in this mode, independently of the Warp playback switch. Marker
 arrows move a beat 10 ms, or 1 ms with Shift; dragging snaps to nearby hits unless
-Option is held. Set bar 1 shifts all samples to the playhead; One beat earlier/later
-renumbers without moving samples. Nudges shift the complete map 10 ms. Replace with a
-steady grid explicitly discards tempo variation at the entered BPM. **Find beats** runs
-what an import runs on the drums and draws the result as the draft; Undo puts the old
-grid back. Listen with click auditions four bars of drums at original speed; main
+Option is held. **Bar 1 here** makes the beat nearest the playhead bar 1 and moves
+nothing — it used to shift every beat to the playhead, which dragged a good detection off
+its hits; One beat earlier/later renumbers the same way. Nudges shift the complete map
+10 ms, for when the beats really are off by a constant. Replace with a steady grid
+explicitly discards tempo variation at the entered BPM. **Find beats** runs the chosen
+algorithm on the drums — what an import runs, unless another is picked — and draws the
+result as the draft; Undo puts the old grid back. **Advanced…** opens the debug workspace
+on the beat analysis tab, `state.openDebug('beats')`, the same modal the bug button
+opens. Listen with click auditions four bars of drums at original speed; main
 playback or a correction stops that audition.
 
 While the grid is open the ruler offers the section changes the stems suggest —

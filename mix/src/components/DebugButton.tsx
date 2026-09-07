@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { DebugWorkspace } from '../debug/Workspace.tsx';
 import type { Mix } from '../state.ts';
@@ -15,9 +14,8 @@ const bugMark = (
 
 /** Debugging belongs with library utilities, outside the track's main controls. */
 export function DebugButton({ mix }: { mix: Mix }) {
-  const [harness, setHarness] = useState(false);
   return <>
-    <button type="button" className="mf-debug" disabled={!mix.song} onClick={() => setHarness(true)} title="Debug & experiments" aria-label="Open debug workspace">{bugMark}</button>
-    {harness && mix.song && <Modal title="debug & experiments" label="Debug workspace" className="mf-harness" onClose={() => setHarness(false)}><DebugWorkspace mix={mix} /></Modal>}
+    <button type="button" className="mf-debug" disabled={!mix.song} onClick={() => mix.openDebug()} title="Debug & experiments" aria-label="Open debug workspace">{bugMark}</button>
+    {mix.debugTab !== null && mix.song && <Modal title="debug & experiments" label="Debug workspace" className="mf-harness" onClose={mix.closeDebug}><DebugWorkspace mix={mix} tab={mix.debugTab || undefined} /></Modal>}
   </>;
 }

@@ -395,6 +395,15 @@ export function useMix() {
    */
   /** Whether the track's details — name, art, the model, separate again — are open over the mixer. */
   const [details, setDetails] = useState(false);
+  /**
+   * The debug workspace, open on a tab or closed. Opened from the library
+   * footer on whatever tab it was last on, and from the grid as *Advanced*,
+   * on the beat analysis — the same tools, reached from where the question
+   * came up.
+   */
+  const [debugTab, setDebugTab] = useState<string | null>(null);
+  const openDebug = useCallback((tab = '') => setDebugTab(tab), []);
+  const closeDebug = useCallback(() => setDebugTab(null), []);
   /** Candidates from the catalogue, and whether one is being asked for. */
   const [matches, setMatches] = useState<Match[]>([]);
   const [matching, setMatching] = useState(false);
@@ -1964,6 +1973,9 @@ export function useMix() {
     details,
     openDetails,
     closeDetails,
+    debugTab,
+    openDebug,
+    closeDebug,
     editTrack,
     findMatches,
     takeMatch,
