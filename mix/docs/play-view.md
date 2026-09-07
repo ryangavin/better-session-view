@@ -117,7 +117,14 @@ cancel, lost capture, window blur and unmount cannot leave an audition running. 
 preparation/resume and launch revisions prevent obsolete audio from starting.
 
 Unsynced voices use native AudioBufferSourceNodes with 4ms start/stop fades.
-Changing between native and stretched playback overlaps their gain ramps for 8ms;
+Native loops cache one region buffer per voice, blending 4ms on each side of the
+wrap with a smooth complementary gain curve. The region retains its sample-rounded
+length and source markers; only the seam changes. The blend can borrow up to 4ms
+outside the marked region, clamping at file edges. This avoids a raw amplitude jump
+without shortening the musical loop or relying on main-thread callbacks at each wrap.
+Changing the region replaces that cache; each cached region costs one additional
+float32 buffer for its channels and duration.
+Changing between native and stretched playback overlaps their gain ramps for 20ms;
 the outgoing path remains connected until its fade completes. Stretched repositioning
 updates the active worklet schedule without an intervening inactive command. The
 stretcher's gain starts at zero so preparing it cannot leak audio into the existing mix. Sync lazily

@@ -23,10 +23,11 @@ class Context {
   currentTime=0;sampleRate=48000;destination=new Node();sources:Node[]=[];
   createGain=()=>new Node();createBiquadFilter=()=>new Node();createAnalyser=()=>new Node();createDelay=()=>new Node();createOscillator=()=>new Node();
   createChannelMerger=()=>new Node();createChannelSplitter=()=>new Node();
+  createBuffer=(channels:number,length:number,rate:number)=>({duration:length/rate,sampleRate:rate,length,numberOfChannels:channels,getChannelData:()=>new Float32Array(length)});
   createBufferSource=()=>{const n=new Node();this.sources.push(n);return n;};resume=vi.fn(async()=>{});close=vi.fn(async()=>{});
 }
 const track:Track={id:'song',title:'Song',artist:'Artist',album:null,art:null,file:'song.wav',bpm:120,key:null,seconds:64,added:'',model:null,stems:'stems/song',sources:['drums','bass','other','vocals']};
-const buffer={duration:64,sampleRate:48000,length:64*48000,numberOfChannels:2} as AudioBuffer;
+const buffer={duration:64,sampleRate:48000,length:64*48000,numberOfChannels:2,getChannelData:()=>new Float32Array(64*48000)} as unknown as AudioBuffer;
 function asset():DeckAsset {return {analysis:{grid:{bpm:120,offset:0},slices:[{bar:0,name:'Intro'},{bar:4,name:'Verse'}]} as DeckAsset['analysis'],peaks:[],audio:{map:evenBeats(48000,64*48000,120,0),buffers:Object.fromEntries(['full',...track.sources].map(id=>[id,buffer])),duration:64,overview:[]}};}
 const engines:MixerEngine[]=[];
 function setup(){const ctx=new Context(),engine=new MixerEngine(()=>ctx as unknown as AudioContext);engines.push(engine);return {ctx,engine,load:(id='deck-a')=>engine.load(id,track,async()=>asset())};}
@@ -69,8 +70,9 @@ describe('the four-deck playback owner',()=>{
     expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(before);
     await engine.play('deck-a', true);
     expect(next.sources).toHaveLength(1);
-    expect(next.sources[0].loopStart).toBe(8);
-    expect(next.sources[0].start.mock.calls[0][1]).toBeCloseTo(9.97);
+    expect(next.sources[0].loopStart).toBe(0);
+    expect(next.sources[0].loopEnd).toBe(56);
+    expect(next.sources[0].start.mock.calls[0][1]).toBeCloseTo(1.97);
   });
   it('uses section names as hot cues that play through the next boundary in stems and Full mode', async () => {
     const {engine,ctx,load}=setup(); await load();
@@ -110,7 +112,7 @@ describe('the four-deck playback owner',()=>{
     const {engine,ctx,load}=setup(); await load(); await load('deck-b'); await engine.running(true);
     const other=ctx.sources.slice(-4), stopped=other.map(s=>s.stop.mock.calls.length); ctx.currentTime=2; const from=engine.readFrame().decks['deck-a'].seconds!; engine.commands.deckLoopIn!('deck-a');
     ctx.currentTime=4; const to=engine.readFrame().decks['deck-a'].seconds!; engine.commands.deckLoopOut!('deck-a');
-    expect(ctx.sources.at(-1)!.loopStart).toBeCloseTo(from); expect(ctx.sources.at(-1)!.loopEnd).toBeCloseTo(to);
+    expect(ctx.sources.at(-1)!.loopStart).toBe(0); expect(ctx.sources.at(-1)!.loopEnd).toBeCloseTo(to-from);
     expect(other.map(s=>s.stop.mock.calls.length)).toEqual(stopped);
     await engine.launch('deck-a','section-1-4');
     expect(ctx.sources.slice(-4).every(s=>!s.loop)).toBe(true);
@@ -127,7 +129,7 @@ describe('the four-deck playback owner',()=>{
   });
   it('launches stems independently, loops saved boundaries, and stops just one stem',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');
-    expect(ctx.sources.map(s=>[s.loopStart,s.loopEnd])).toEqual([[0,8],[8,64]]);
+    expect(ctx.sources.map(s=>[s.loopStart,s.loopEnd])).toEqual([[0,8],[0,56]]);
     await engine.launch('deck-a',null,'drums');expect(ctx.sources[0].stop).toHaveBeenCalled();expect(ctx.sources[1].stop).not.toHaveBeenCalled();
     expect(engine.snapshot().decks[0].stems.map(s=>s.selected)).toEqual([null,'section-1-4',null,null]);
   });
@@ -159,8 +161,8 @@ describe('the four-deck playback owner',()=>{
   });
   it('captures real source positions for In/Out and retains the loop on exit',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2;engine.commands.loopIn();ctx.currentTime=4;engine.commands.loopOut();
-    const loop=ctx.sources.at(-1)!;expect(loop.loop).toBe(true);expect(loop.loopStart).toBeCloseTo(1.97);expect(loop.loopEnd).toBeCloseTo(3.97);
-    engine.commands.setLoopEnabled(false);expect(ctx.sources.at(-1)!.loop).toBe(false);engine.commands.setLoopEnabled(true);expect(ctx.sources.at(-1)!.loopStart).toBeCloseTo(1.97);
+    const loop=ctx.sources.at(-1)!;expect(loop.loop).toBe(true);expect(loop.loopStart).toBe(0);expect(loop.loopEnd).toBeCloseTo(2);
+    engine.commands.setLoopEnabled(false);expect(ctx.sources.at(-1)!.loop).toBe(false);engine.commands.setLoopEnabled(true);expect(ctx.sources.at(-1)!.loopStart).toBe(0);
   });
   it('preserves a paused synced source position including audio before the first beat',async()=>{
     const {engine,ctx}=setup();const shifted=asset();shifted.audio!.map=evenBeats(48000,64*48000,120,.2);
@@ -190,7 +192,7 @@ describe('the four-deck playback owner',()=>{
     const got=engine.readFrame().decks['deck-a'].sources!;
     expect(got.drums.seconds).toBe(saved.drums.seconds);expect(got.bass.seconds).toBe(saved.bass.seconds);expect(got.other.enabled).toBe(false);
     engine.cue('deck-a',true);await settle();await engine.play('deck-a',true);engine.cue('deck-a',false);
-    expect(ctx.sources.slice(-2).map(s=>s.loopStart)).toEqual([0,8]);expect(engine.snapshot().decks[0].stems[1].level).toBe(37);
+    expect(ctx.sources.slice(-2).map(s=>s.loopEnd)).toEqual([8,56]);expect(engine.snapshot().decks[0].stems[1].level).toBe(37);
   });
   it('moves only focus or all active stems relatively, clamps the common delta, and cancels without losing loops',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;await engine.play('deck-a',false);
@@ -257,7 +259,7 @@ describe('the four-deck playback owner',()=>{
     engine.commands.setDeckTiming!('deck-a','quantize',1);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop).toEqual({start:2,end:10,enabled:true});
     engine.editLoops('deck-a','resize',.5);expect(engine.snapshot().decks[0].loop?.end).toBe(6);engine.editLoops('deck-a','resize',2);expect(engine.snapshot().decks[0].loop?.end).toBe(10);
     engine.editLoops('deck-a','move',1);expect(engine.snapshot().decks[0].loop?.start).toBe(2.5);
-    engine.setDeckLoopEnabled('deck-a',false);expect(engine.snapshot().decks[0].loop?.enabled).toBe(false);engine.setDeckLoopEnabled('deck-a',true);expect(ctx.sources.at(-1)!.loopStart).toBe(2.5);
+    engine.setDeckLoopEnabled('deck-a',false);expect(engine.snapshot().decks[0].loop?.enabled).toBe(false);engine.setDeckLoopEnabled('deck-a',true);expect(ctx.sources.at(-1)!.loopStart).toBe(0);expect(ctx.sources.at(-1)!.loopEnd).toBe(8);
     engine.cue('deck-a',true);expect(engine.readFrame().decks['deck-a'].seconds).toBe(0);
   });
   it('rejects invalid loop edits atomically and uses musical length on a variable map',async()=>{

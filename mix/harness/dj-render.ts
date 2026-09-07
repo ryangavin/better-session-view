@@ -2,8 +2,9 @@ import { MixerEngine } from '../src/play/engine.ts';
 import { fixture, fixtureTrack } from './dj-fixture.ts';
 const rms=(a:Float32Array,start:number,end:number)=>{start=Math.floor(start);end=Math.floor(end);let n=0;for(let i=start;i<end;i++)n+=a[i]*a[i];return Math.sqrt(n/(end-start));};
 /** OfflineAudioContext renders actual engine nodes; no audio/controller mocks. */
-export async function runControlAudioChecks(report:(text:string)=>void){
+export async function runControlAudioChecks(report:(text:string)=>void, transitionsOnly=false){
  let log='',failures=0;const check=(name:string,ok:boolean,data:unknown)=>{if(!ok)failures++;log+=`${ok?'PASS':'FAIL'} ${name}: ${JSON.stringify(data)}\n`;report(log);};
+ if(transitionsOnly){try{await captureTransitions(check);}catch(e){failures++;log+=`ERROR ${String(e)}\n`;}report(log+(failures?`FAILED ${failures}`:'ALL TRANSITION CHECKS PASSED'));return;}
  const ctx=new OfflineAudioContext(2,48000*3,48000),engine=new MixerEngine(()=>ctx as unknown as AudioContext);
  try {
   await engine.load('deck-a',fixtureTrack,async()=>fixture(ctx));
@@ -165,9 +166,9 @@ async function captureTransitions(check:(name:string,ok:boolean,data:unknown)=>v
   transitions.push({name:'synced beat jump',at:ctx.currentTime});engine.beatJump('deck-a',1);await delay(600);
   transitions.push({name:'synced scrub',at:ctx.currentTime});engine.move('deck-a','begin');engine.move('deck-a','move',1.3);engine.move('deck-a','commit');await delay(600);
   transitions.push({name:'Sync to native',at:ctx.currentTime});await engine.sync('deck-a',false);await delay(600);
-  for(const t of transitions){const samples=chunks.filter(c=>c.at>=t.at-.1 && c.at<t.at+.5).flatMap(c=>Array.from(c.samples));let gap=0,maxGap=0,edge=0;
-   for(let i=0;i<samples.length;i++){gap=Math.abs(samples[i])<1e-5?gap+1:0;maxGap=Math.max(maxGap,gap);if(i)edge=Math.max(edge,Math.abs(samples[i]-samples[i-1]));}
-   check(`Captured ${t.name} transition avoids dropout and abrupt clicks`,samples.length>1000 && maxGap<=48 && edge<.03,{maxSilentSamples:maxGap,maxAdjacentDifference:edge});
+  for(const t of transitions){const samples=chunks.filter(c=>c.at>=t.at-.1 && c.at<t.at+.5).flatMap(c=>Array.from(c.samples));let gap=0,maxGap=0,edge=0,edgeIndex=0;
+   for(let i=0;i<samples.length;i++){gap=Math.abs(samples[i])<1e-5?gap+1:0;maxGap=Math.max(maxGap,gap);if(i && Math.abs(samples[i]-samples[i-1])>edge){edge=Math.abs(samples[i]-samples[i-1]);edgeIndex=i;}}
+   check(`Captured ${t.name} transition avoids dropout and abrupt clicks`,samples.length>1000 && maxGap<=48 && edge<.03,{maxSilentSamples:maxGap,maxAdjacentDifference:edge,edgeIndex,chunkOffset:edgeIndex%4096,edgeAfterAction:(chunks.find(c=>c.at>=t.at-.1)?.at ?? 0)+edgeIndex/ctx.sampleRate-t.at,near:samples.slice(Math.max(0,edgeIndex-3),edgeIndex+4)});
   }
  }finally{capture?.disconnect();engine.dispose();}
 }

@@ -27,7 +27,9 @@ four-channel Phones checks. A separate real-time AudioContext captures the engin
 Signalsmith worklet through `capture-worklet.js`. These are output measurements, not
 mock-node assertions. Test signals do not go to speakers.
 
-All 34 checks passed in the Codex in-app browser. Representative measured results:
+The latest full run passed all 35 checks in the Codex in-app browser. This is not
+a repeatability claim: earlier runs exceeded the Sync-transition click threshold
+(see the loop-seam follow-up below). Representative measured results:
 
 | Check | Result |
 |---|---|
@@ -154,7 +156,7 @@ A direct sample capture found no silent gap but a 0.069998 adjacent-sample step 
 switching Sync off, compared with a 0.03 maximum allowed for the fixture. Silence-only
 checks missed this audible discontinuity. The capture now checks both longest silent
 run (at most 1ms) and adjacent-sample difference for native→Sync, synced beat jump,
-synced scrub and Sync→native. The voice overlaps native/stretch paths with 8ms gain
+synced scrub and Sync→native. The voice overlaps native/stretch paths with 20ms gain
 ramps and keeps the worklet active through stretched repositioning. No extra decoded
 buffer copy was needed; existing decoded/worklet buffers remain available.
 
@@ -163,3 +165,24 @@ The final transition run passed: maximum adjacent-sample differences were 0.0231
 (Sync→native). Every transition's longest silent run was one sample at 48kHz. The
 Sync-off discontinuity fell from approximately 0.070 to 0.0062. These are bounded fixture
 measurements, not a guarantee that every musical loop boundary or audio driver is inaudible.
+
+
+## Loop-seam follow-up
+
+The new non-zero-crossing native loop fixture failed before the fix with a maximum
+adjacent-sample difference of 0.093673. A cached region buffer now blends 4ms on either
+side of the seam without changing its sample period. The rendered difference is
+0.002402; the one-beat repetition error remains about 1e-16. Unit checks cover stereo
+interior preservation, unchanged duration, file edges, short regions and 44.1/48/96kHz.
+
+The complete repository suite passed 186 files / 2447 tests. Typecheck and the mixer
+build passed. Native/Sync overlap was extended to 20ms. The latest complete browser run
+passed 35 checks, with transition steps 0.021591 (native→Sync), 0.002315 (synced jump),
+0.002333 (synced scrub), and 0.009352 (Sync→native), and no measured silent run over 1ms.
+
+**Open limitation:** earlier complete runs intermittently exceeded the 0.03 transition
+step limit on native→Sync (up to 0.038125), including with the longer overlap. The loop
+seam defect is fixed; the Sync artifact is not proven resolved. The harness now offers
+`Run transition checks` and reports the largest edge's timing and neighboring samples
+to support reproduction. A single passing run must not close that issue. Physical
+listening and external Link/hardware validation remain separate acceptance checks.
