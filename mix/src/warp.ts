@@ -205,6 +205,41 @@ export function tempoText(whole: number, slowest: number, fastest: number): stri
 }
 
 /**
+ * How much of the grid the kit confirms: the share of beats with one of
+ * `hits`, in seconds and in order, within `within` seconds. Null with nothing
+ * to count.
+ *
+ * The one number that says whether a grid is right while it is being edited,
+ * so it is read off the map as drawn rather than off the last fit, which
+ * knows nothing about a beat that was just dragged. It is beats with a hit
+ * and not hits on a beat, because a kick between the beats is the music, not
+ * the grid's mistake: a syncopated record read that way scored a quarter with
+ * the grid dead on. Only the beats between the first hit and the last are
+ * asked, so a spoken intro with no drums in it does not count against the
+ * grid ruled through it. Each beat finds its nearest hit by bisection, and a
+ * song's worth costs nothing a drag can feel.
+ */
+export function beatsOnHit(beats: Beats, hits: readonly number[], within: number): number | null {
+  if (hits.length === 0) return null;
+  const { samples, rate } = beats;
+  const first = hits[0] * rate;
+  const last = hits[hits.length - 1] * rate;
+  let asked = 0;
+  let on = 0;
+  for (const at of samples) {
+    if (at < first || at > last) continue;
+    asked++;
+    const seconds = at / rate;
+    let lo = 0, hi = hits.length;
+    while (lo < hi) { const mid = (lo + hi) >>> 1; if (hits[mid] < seconds) lo = mid + 1; else hi = mid; }
+    const before = lo > 0 ? seconds - hits[lo - 1] : Infinity;
+    const after = lo < hits.length ? hits[lo] - seconds : Infinity;
+    if (Math.min(before, after) <= within) on++;
+  }
+  return asked === 0 ? null : on / asked;
+}
+
+/**
  * Where bar 1 starts, given where any downbeat falls.
  *
  * Bar 1 is the first downbeat in the file, wherever the grid was read from. A

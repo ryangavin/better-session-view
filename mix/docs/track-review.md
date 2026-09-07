@@ -5,6 +5,18 @@ is right, and it sits over the real mixer lanes as a mode — **Grid** in the he
 rather than on a page of its own. It starts with the saved beat map, including
 irregular edits, and holds a draft apart from it until Done.
 
+The status beside **Grid** is the draft's own reading, live: its tempo as `rangeText`
+gives it — one number for a steady map, `126–131` where it bends — and the share of
+its beats with a kick or snare within 25 ms, `beatsOnHit` in `warp.ts` bisecting
+`state.hits` per beat, over the beats between the first hit and the last. Beats with a
+hit rather than hits on a beat, because a syncopated kick is the music and not the
+grid's error: read the other way a hip-hop record scored a quarter with its grid dead
+on, and a spoken intro must not count against a grid ruled through it. It moves with every drag, renumbering and
+re-finding; it used to say *As saved* or *Changed*, which Done being primary and Undo
+being enabled already say. The header keeps its tempo readout through the mode — the
+same draft, so the same number — and drops the last fit's agreement from its tooltip,
+because that fit measured a grid this may no longer be.
+
 **Find beats** runs the chosen algorithm on the drums — `OFFERED`, with `FIRST_CHOICE`
 preselected, which is exactly what an import runs — and makes the result the draft:
 drawn over the saved grid in the warp lane, auditioned with the click, undone with

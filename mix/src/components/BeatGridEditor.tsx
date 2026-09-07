@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useReviewPlayback } from './reviewPlayback.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import { beatAt, evenBeats, renumbered, sampleOf, shifted, tempoOf } from '../warp.ts';
+import { beatAt, beatsOnHit, evenBeats, rangeText, renumbered, sampleOf, shifted, tempoOf } from '../warp.ts';
 import { describe, FIRST_CHOICE, OFFERED, run, type Algorithm } from '../algorithms.ts';
 import type { Mix } from '../state.ts';
 
 const TEMPO: Param = { kind: 'float', min: 40, max: 300, defaultValue: 120, unit: 'custom', customUnit: '%0.2f' };
 
 const channelsOf = (buffer: AudioBuffer) => Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c));
+
+/** How far from a beat a kick or snare still counts as on it. */
+const ON_A_BEAT = 0.025;
 
 /**
  * The grid, open for checking and correcting over the real lanes: the one
@@ -26,6 +29,16 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
   const [problem, setProblem] = useState('');
   const [finding, setFinding] = useState(false);
   const [algorithm, setAlgorithm] = useState<Algorithm>(FIRST_CHOICE);
+  /**
+   * What the grid reads as, live off the draft: its tempo as a range, and
+   * how many of its beats the kit confirms. This is the answer to the one
+   * question the mode is for — is it right — and it moves with every drag,
+   * renumbering and re-finding, where the last fit's agreement knows only
+   * the grid it measured. Done being the primary button and Undo being
+   * pressable already say whether anything has changed.
+   */
+  const share = useMemo(() => beatsOnHit(grid, mix.hits, ON_A_BEAT), [grid, mix.hits]);
+  const reading = `${rangeText(grid)}${share === null ? '' : ` · ${Math.round(share * 100)}% of beats on a hit`}`;
   /**
    * The beats found again, as the draft: the chosen algorithm — what an
    * import gets, unless another is picked — run on the drums, drawn over
@@ -74,7 +87,7 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
   };
   return <section className="mf-grid-editor" aria-label="Beat grid editing">
     <div className="mf-grid-editor-row">
-      <strong>Grid</strong><span role="status">{mix.gridEditDirty ? 'Changed — Done keeps it, Cancel puts it back' : 'As saved'}</span>
+      <strong>Grid</strong><span role="status" title="The tempo this grid runs at, read off its beats, and the share of its beats with a kick or a snare within 25 ms, over the part of the song that has drums. Both follow every change">{reading}</span>
       <Select items={OFFERED.map((id) => describe(id).name)} index={OFFERED.indexOf(algorithm)} onChange={(i) => setAlgorithm(OFFERED[i])} label="Beat finding algorithm" title={describe(algorithm).does} width={150} />
       <Button onPress={find} disabled={finding} title="Find the beats again on the drums with the chosen algorithm, and draw them over the saved grid. Undo puts the old grid back">{finding ? 'Finding…' : 'Find beats'}</Button>
       <Button onPress={() => inspect(downbeat)}>First downbeat</Button>

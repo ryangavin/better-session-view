@@ -6,6 +6,7 @@ import {
   bpmText,
   countOf,
   evenBeats,
+  beatsOnHit,
   moved,
   placeOf,
   rangeText,
@@ -201,5 +202,33 @@ describe('what a tempo reads as', () => {
     const bar = 240 / 128;
     expect(startOf(0.4 + 4 * bar, 128)).toBeCloseTo(0.4, 6);
     expect(startOf(0.4, 128)).toBeCloseTo(0.4, 6);
+  });
+});
+
+describe('how much of the grid the kit confirms', () => {
+  const grid = evenBeats(RATE, LENGTH, 120, 0);
+
+  it('counts a beat with a hit inside the window and not one outside it', () => {
+    // Beats at 1, 1.5, 2, 2.5, 3: hits confirm 1 and 3, 2.03 is too far from 2.
+    expect(beatsOnHit(grid, [1, 2.03, 3], 0.025)).toBe(0.4);
+    expect(beatsOnHit(grid, [0, 0.5, 1, 1.5], 0.025)).toBe(1);
+  });
+
+  it('is beats with a hit, not hits on a beat: a kick between the beats costs nothing', () => {
+    expect(beatsOnHit(grid, [1, 1.25, 1.5, 1.75, 2], 0.025)).toBe(1);
+  });
+
+  it('asks only the beats between the first hit and the last', () => {
+    expect(beatsOnHit(grid, [10, 10.5, 11], 0.025)).toBe(1);
+  });
+
+  it('answers to the map as drawn, so a moved beat changes the share', () => {
+    const hits = [0, 0.5, 1.03, 1.5];
+    expect(beatsOnHit(grid, hits, 0.025)).toBe(0.75);
+    expect(beatsOnHit(moved(grid, 2, 1.03 * RATE), hits, 0.025)).toBe(1);
+  });
+
+  it('has nothing to say about a track with no hits', () => {
+    expect(beatsOnHit(grid, [], 0.025)).toBeNull();
   });
 });

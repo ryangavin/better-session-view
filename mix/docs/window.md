@@ -102,7 +102,10 @@ takes over. It is a dialog rather than a page because none of it needs the wavef
 ## The grid, over the lanes
 
 **Grid** in the header opens `BeatGridEditor.tsx` above the actual mixer lanes. Beat
-handles appear only in this mode, independently of the Warp playback switch. Marker
+handles appear only in this mode, independently of the Warp playback switch. The header's
+tempo readout stays through the mode and follows the draft, and the editor's own status
+reads the draft's tempo range and how many of its beats the kit confirms — see
+[track-review.md](track-review.md). Marker
 arrows move a beat 10 ms, or 1 ms with Shift; dragging snaps to nearby hits unless
 Option is held. **Bar 1 here** makes the beat nearest the playhead bar 1 and moves
 nothing — it used to shift every beat to the playhead, which dragged a good detection off

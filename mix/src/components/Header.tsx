@@ -294,11 +294,13 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onAu
                 and which algorithm laid it are the debug workspace's
                 questions; a person mixing asks only what tempo this is. A
                 fit that found nothing says so rather than leaving a press
-                with no answer. */}
-            {mix.editingGrid ? <span className="mf-fit">Editing</span> : mix.beats ? (
+                with no answer. With the grid open this is the draft's tempo,
+                the same number the editor reads, and the last fit's
+                agreement is left out because it measured a different grid. */}
+            {mix.beats || mix.editingGrid ? (
               <span
                 className="mf-fit"
-                title={`The tempo the beats run at, read off their spacing${mix.detected ? `; ${Math.round(mix.detected.agreement * 100)}% of the kit on a line` : ''}${mix.madeByName ? `. Laid by ${mix.madeByName}` : ''}`}
+                title={`The tempo the beats run at, read off their spacing${mix.detected && !mix.editingGrid ? `; ${Math.round(mix.detected.agreement * 100)}% of the kit on a line` : ''}${mix.madeByName && !mix.editingGrid ? `. Laid by ${mix.madeByName}` : ''}`}
               >
                 {rangeText(mix.grid)}
               </span>
