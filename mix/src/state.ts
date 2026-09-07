@@ -8,7 +8,7 @@ import { FLAT, isFlat, type Bands } from './eq.ts';
 import { LINK_AUDIO_OFF, type LinkAudioState } from './linkAudio.ts';
 import { loosest, offeredOf, type Every, type Offered } from './pinned.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
-import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, sampleOf, tempoOf, type Beats } from './warp.ts';
+import { barAt, BEATS_PER_BAR, countOf, evenBeats, moved, placeOf, pulled, resampled, shifted, startOf, sampleOf, tempoOf, type Beats } from './warp.ts';
 import type { Snap } from './grid.ts';
 import { fitOf, refitOf, snapped, FASTEST, SLOWEST, type Fit } from './tempo.ts';
 import { hearing, type Heard } from './transients.ts';
@@ -1743,11 +1743,17 @@ export function useMix() {
     setMadeBy('hand');
   }, []);
 
-  /** Drag a beat to another second of the file. */
+  /**
+   * Drag a beat to another second of the file. A bar marker pulls the grid —
+   * the beats since the last set point stretch to it and the rest come along —
+   * and any other beat moves alone: the tempo is set by bars, and a beat
+   * inside one is a beat that is late or early.
+   */
   const moveBeat = useCallback(
     (beat: number, at: number) => {
       if (!gridEdit.active) return;
-      gridEdit.change(moved(grid, beat, at * grid.rate));
+      const sample = at * grid.rate;
+      gridEdit.change(beat % BEATS_PER_BAR === 0 ? pulled(grid, beat, sample) : moved(grid, beat, sample));
     },
     [grid, gridEdit.active, gridEdit.change],
   );

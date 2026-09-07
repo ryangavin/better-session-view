@@ -256,10 +256,12 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
   };
 
   /**
-   * Dragging a marker moves that beat and nothing else, which is Live's
-   * gesture exactly: the audio under the pointer is what is being said to be
-   * that beat. It lands on a hit when it comes close to one — a kick is nearly
-   * always what is meant — unless ⌥ is held, which is how you say it is not.
+   * Dragging a marker says the audio under the pointer is that beat. What
+   * the rest of the map does about it is `state.moveBeat`'s to decide — a bar
+   * stretches the beats since the last set point, a beat moves alone — and
+   * the lane only says which beat and where. It lands on a hit when it comes
+   * close to one — a kick is nearly always what is meant — unless ⌥ is held,
+   * which is how you say it is not.
    */
   const take = (beat: number) => (event: React.PointerEvent<HTMLElement>) => {
     if (!onMove) return;
@@ -342,7 +344,9 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
               const at = beats!.samples[marker.beat - beats!.first] / beats!.rate;
               onMove(marker.beat, at + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? .001 : .01));
             }}
-            title={`Beat ${nameOf(marker.beat)}. Drag to move it; ⌥ to skip the hits`}
+            title={marker.beat % BEATS_PER_BAR === 0
+              ? `Bar ${nameOf(marker.beat)}. Drag to stretch the beats since the last set point onto it; ⌥ to skip the hits`
+              : `Beat ${nameOf(marker.beat)}. Drag to move it alone; ⌥ to skip the hits`}
             onPointerDown={take(marker.beat)}
             onPointerMove={carry}
             onPointerUp={release}

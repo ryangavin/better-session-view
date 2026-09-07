@@ -9,6 +9,7 @@ import {
   beatsOnHit,
   moved,
   placeOf,
+  pulled,
   rangeText,
   tempoText,
   resampled,
@@ -189,6 +190,93 @@ describe('editing a beat', () => {
     expect(sampleOf(counted, 0)).toBe(sampleOf(map, 6));
     expect(sampleOf(counted, -6)).toBe(sampleOf(map, 0));
     expect(beatAt(counted, sampleOf(map, 6))).toBeCloseTo(0, 9);
+  });
+});
+
+describe('pulling a bar', () => {
+  const map = bent();
+  /** Where a beat sits between two others, as a fraction: what a stretch has to keep. */
+  const between = (b: Beats, lo: number, k: number, hi: number) =>
+    (sampleOf(b, k) - sampleOf(b, lo)) / (sampleOf(b, hi) - sampleOf(b, lo));
+
+  it('keeps the count and the relative spacing of the beats since bar 1, and lands the bar where it was pulled', () => {
+    const to = map.samples[100] + 4000;
+    const edited = pulled(map, 100, to);
+    expect(edited.samples.length).toBe(map.samples.length);
+    expect(edited.samples[100]).toBe(to);
+    for (let k = 1; k < 100; k++) expect(between(edited, 0, k, 100)).toBeCloseTo(between(map, 0, k, 100), 4);
+  });
+
+  it('brings every beat after the pulled bar along by the same distance', () => {
+    const edited = pulled(map, 100, map.samples[100] + 4000);
+    for (let k = 101; k < map.samples.length; k++) expect(edited.samples[k]).toBe(map.samples[k] + 4000);
+  });
+
+  it('stretches from the last beat a hand set, and leaves the beats before it alone', () => {
+    const set = moved(map, 40, map.samples[40] + 300);
+    const edited = pulled(set, 100, set.samples[100] - 2000);
+    for (let k = 0; k <= 40; k++) expect(edited.samples[k]).toBe(set.samples[k]);
+    for (let k = 41; k < 100; k++) expect(between(edited, 40, k, 100)).toBeCloseTo(between(set, 40, k, 100), 4);
+    expect(edited.samples[100]).toBe(set.samples[100] - 2000);
+    expect(edited.samples[120]).toBe(set.samples[120] - 2000);
+  });
+
+  it('fixes a steady tempo that is a fraction off in one pull of the last bar', () => {
+    const wrong = evenBeats(RATE, LENGTH, 128.4, 0);
+    const last = wrong.samples.length - 1;
+    const edited = pulled(wrong, last, sampleOf(evenBeats(RATE, LENGTH, 128, 0), last));
+    expect(tempoOf(edited)).toBeCloseTo(128, 2);
+    const { slowest, fastest } = tempoRange(edited);
+    expect(fastest - slowest).toBeLessThan(0.05);
+  });
+
+  it('cannot pull a bar back through the beats it stretches', () => {
+    const edited = pulled(map, 8, map.samples[0] - 5000);
+    expect(edited.samples[8]).toBe(map.samples[0] + 8);
+    for (let k = 1; k <= 8; k++) expect(edited.samples[k]).toBeGreaterThan(edited.samples[k - 1]);
+  });
+
+  it('stretches a bar before bar 1 towards bar 1 and brings the lead-in along', () => {
+    const early = renumbered(map, 16);
+    const to = early.samples[8] - 1500;
+    const edited = pulled(early, -8, to);
+    expect(edited.samples[8]).toBe(to);
+    for (let k = 0; k < 8; k++) expect(edited.samples[k]).toBe(early.samples[k] - 1500);
+    for (let k = 9; k < 16; k++) expect(between(edited, -8, k - 16, 0)).toBeCloseTo(between(early, -8, k - 16, 0), 4);
+    for (let k = 16; k < early.samples.length; k++) expect(edited.samples[k]).toBe(early.samples[k]);
+  });
+
+  it('brings the whole map with bar 1 when nothing before it is set', () => {
+    const edited = pulled(map, 0, map.samples[0] + 240);
+    edited.samples.forEach((s, k) => expect(s).toBe(map.samples[k] + 240));
+  });
+
+  it('ignores a bar that is not in the map', () => {
+    expect(pulled(map, 10000, 5)).toBe(map);
+  });
+
+  describe('which beats a hand set', () => {
+    it('is nobody until a beat is moved or a bar pulled, then each once, in order', () => {
+      expect(map.set).toBeUndefined();
+      const edited = moved(pulled(moved(map, 40, map.samples[40] + 10), 100, map.samples[100] + 20), 40, map.samples[40] + 30);
+      expect(edited.set).toEqual([40, 100]);
+    });
+
+    it('is counted afresh when bar 1 moves, and rides a nudge and a resample unchanged', () => {
+      const edited = pulled(map, 100, map.samples[100] + 4000);
+      expect(renumbered(edited, 6).set).toEqual([94]);
+      expect(shifted(edited, 480).set).toEqual([100]);
+      expect(resampled(edited, 44100, LENGTH).set).toEqual([100]);
+      expect(renumbered(map, 6).set).toBeUndefined();
+    });
+
+    it('stretches from a set beat wherever bar 1 has since gone', () => {
+      const edited = renumbered(pulled(map, 100, map.samples[100] + 4000), 20);
+      const again = pulled(edited, 100, edited.samples[120] + 1000);
+      for (let k = 0; k <= 100; k++) expect(again.samples[k]).toBe(edited.samples[k]);
+      expect(again.samples[120]).toBe(edited.samples[120] + 1000);
+      expect(again.set).toEqual([80, 100]);
+    });
   });
 });
 

@@ -105,13 +105,21 @@ takes over. It is a dialog rather than a page because none of it needs the wavef
 handles appear only in this mode, independently of the Warp playback switch. The header's
 tempo readout stays through the mode and follows the draft, and the editor's own status
 reads the draft's tempo range and how many of its beats the kit confirms — see
-[track-review.md](track-review.md). Marker
-arrows move a beat 10 ms, or 1 ms with Shift; dragging snaps to nearby hits unless
+[track-review.md](track-review.md). A marker on
+a downbeat is a bar marker and dragging it stretches the grid: the beats since the last
+point a hand set — bar 1 until a hand has set a nearer one — keep their count and their
+relative spacing across the new span, and the beats after come along by the same
+distance, so a steady grid whose tempo is a fraction off is one drag of its last bar
+onto its hit. Every other marker is a beat marker and dragging it moves that beat alone.
+The map remembers the beats a hand set (`Beats.set`, saved with the grid) so the next
+pull stretches from the last one. Arrow keys do the same as a drag on a focused marker
+by 10 ms, or 1 ms with Shift; dragging snaps to nearby hits unless
 Option is held. **Bar 1 here** makes the beat nearest the playhead bar 1 and moves
 nothing — it used to shift every beat to the playhead, which dragged a good detection off
 its hits; One beat earlier/later renumbers the same way. Nudges shift the complete map
-10 ms, for when the beats really are off by a constant. Replace with a steady grid
-explicitly discards tempo variation at the entered BPM. **Find beats** runs the chosen
+10 ms, for when the beats really are off by a constant. Clicking the tempo in the status
+turns it into a field for typing a steady tempo, which discards tempo variation at that
+BPM from bar 1's downbeat; Escape or blur returns the reading. **Find beats** runs the chosen
 algorithm on the drums — what an import runs, unless another is picked — and draws the
 result as the draft; Undo puts the old grid back. **Advanced…** opens the debug workspace
 on the beat analysis tab, `state.openDebug('beats')`, the same modal the bug button

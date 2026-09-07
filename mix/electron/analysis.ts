@@ -36,6 +36,8 @@ export interface BeatMap {
   length: number;
   first: number;
   samples: readonly number[];
+  /** The beats a hand set, as indices. Absent from older files and untouched maps. */
+  set?: readonly number[];
 }
 
 /** The grid as it stands: an even ruling from `bpm` and `offset`, or the map. */
@@ -232,6 +234,12 @@ export async function readAnalysis(root: string, trackId: string): Promise<Analy
     if (held.track !== trackId) return null;
     if (held.grid && !(held.grid.bpm > 0 && Number.isFinite(held.grid.offset))) return null;
     if (held.grid?.beats && !Array.isArray(held.grid.beats.samples)) return null;
+    // A set list nobody can read costs its map nothing: the beats are where
+    // they are, and the next pull stretches from bar 1.
+    const set: unknown = held.grid?.beats?.set;
+    if (held.grid?.beats && set !== undefined && !(Array.isArray(set) && set.every(Number.isInteger))) {
+      held.grid.beats = { ...held.grid.beats, set: undefined };
+    }
     if (held.slices != null && !slicesSound(held.slices)) return null;
     if (undecided(held.grid)) return { ...held, grid: null, fitFailed: true, algorithm: undefined };
     return { ...held, fitFailed: held.fitFailed === true };

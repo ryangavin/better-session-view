@@ -670,5 +670,7 @@
 .mf-grid-editor-row > [role='status'] { flex:1; font-variation-settings:var(--mono-axes); }
 .mf-grid-editor p, .mf-grid-editor-row > span { color:var(--detail); font-size:var(--text-label); }
 .mf-grid-editor p { margin:8px 0; line-height:1.5; }
-.mf-grid-editor summary { cursor:pointer; color:var(--caption); font-size:var(--text-label); }
 .mf-grid-editor .wdg { flex:none; }
+.mf-grid-tempo { all:unset; cursor:text; font:inherit; font-variation-settings:inherit; color:inherit; border-bottom:1px dotted var(--caption); }
+.mf-grid-tempo:hover, .mf-grid-tempo:focus-visible { border-bottom-color:var(--primary); }
+.mf-grid-editor-row > [role='status'] .wdg { display:inline-flex; vertical-align:middle; }

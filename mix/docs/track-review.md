@@ -22,8 +22,14 @@ preselected, which is exactly what an import runs — and makes the result the d
 drawn over the saved grid in the warp lane, auditioned with the click, undone with
 Undo. **Advanced…** opens the debug workspace on the beat analysis for the full
 comparison. **Bar 1 here** renumbers so the beat nearest the playhead is bar 1, and
-moves nothing. The handles, renumbering, nudges and the steady-grid replacement are as
-[window.md](window.md) describes.
+moves nothing. The markers, renumbering and nudges are as [window.md](window.md)
+describes; the two kinds of marker are `warp.ts`'s two edits, `pulled` for a bar and
+`moved` for a beat, and the map's `set` list is what lets a pull know where to stretch
+from. The tempo in the status is also where a steady tempo is typed: click it and it
+becomes a field; a committed number rules `evenBeats` from bar 1's downbeat, which
+discards the detected variation on purpose, and Escape or blur brings the reading back.
+That replaced a *Replace with a steady grid* disclosure with its own BPM field, which
+was the only tempo gesture before a bar could be pulled.
 **Listen with click** plays four bars of drums at original speed from the playhead,
 through `reviewPlayback.ts`, which schedules audio and clicks against one AudioContext
 clock; a correction or main playback stops it.

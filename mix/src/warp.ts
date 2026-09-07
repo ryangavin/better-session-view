@@ -10,7 +10,11 @@
  * beats read off on demand, and a tempo change is nothing more than the
  * spacing changing. That is what makes an edit local: drag one beat and its
  * two neighbours hold, the two segments beside it re-tempo, and
- * nothing further away can tell.
+ * nothing further away can tell. The other edit is a bar pulled: the beats
+ * since the last point a hand set stretch to follow it, and the beats after
+ * come along, so a tempo that is a fraction off is one drag rather than
+ * a hundred. The map remembers which beats a hand set, and nothing else
+ * about the hand.
  *
  * Samples rather than seconds, because a sample is exact and a second is a
  * measurement of one; the rate the samples count in travels with the map, so
@@ -38,6 +42,12 @@ export interface Beats {
   first: number;
   /** The sample of each beat from `first` on, one per beat, strictly increasing. At least two. */
   samples: readonly number[];
+  /**
+   * The beats a hand has set, as beat indices, sorted. Where the next pull of
+   * a bar stretches from; bar 1 counts without being listed. Absent from a
+   * map nobody has touched, and from any file written before there was one.
+   */
+  set?: readonly number[];
 }
 
 /**
@@ -269,15 +279,78 @@ export function moved(beats: Beats, beat: number, sample: number): Beats {
   if (after !== undefined) to = Math.min(to, after - 1);
   const samples = beats.samples.slice();
   samples[i] = to;
-  return { ...beats, samples };
+  return { ...beats, samples, set: setting(beats.set, beat) };
+}
+
+/** The set list with one more beat in it, still sorted and still without repeats. */
+function setting(set: readonly number[] | undefined, beat: number): readonly number[] {
+  const out = (set ?? []).filter((b) => b !== beat);
+  out.push(beat);
+  return out.sort((a, b) => a - b);
+}
+
+/** Where a pull of `beat` stretches from: the nearest set beat on bar 1's side of it, bar 1 itself failing that. */
+function heldBeside(set: readonly number[] | undefined, beat: number): number | undefined {
+  let held: number | undefined = beat === 0 ? undefined : 0;
+  for (const b of set ?? []) {
+    if (beat >= 0 ? b < beat && (held === undefined || b > held) : b > beat && (held === undefined || b < held)) held = b;
+  }
+  return held;
+}
+
+/**
+ * One bar pulled to another sample, and the grid stretched to follow.
+ *
+ * The beats between the last set point and the pulled bar keep their count
+ * and their relative spacing across the new span; the beats past it come
+ * along by the same distance, keeping the spacing detection gave them; the
+ * beats before the set point stay. Bar 1 is the set point until a hand has
+ * set a nearer one, so a steady record whose tempo is a fraction off is fixed
+ * by pulling its last bar onto its hit — Serato's bar marker, and Live's warp
+ * marker where the markers are few. Before bar 1 the same, mirrored, because
+ * the song grows outward from its downbeat: a bar in the lead-in stretches
+ * towards bar 1 and the beats before it come along. Bar 1 itself, with
+ * nothing set before it, brings the whole map — the grid hangs from it.
+ *
+ * The pulled bar is a set beat afterwards, so the next pull stretches from
+ * it rather than from bar 1 again, and the span it spread is safe from any
+ * pull further on.
+ */
+export function pulled(beats: Beats, beat: number, sample: number): Beats {
+  const { samples, first } = beats;
+  const i = beat - first;
+  if (i < 0 || i >= samples.length) return beats;
+  const set = setting(beats.set, beat);
+  const held = heldBeside(beats.set, beat);
+  let to = Math.round(sample);
+  let out: number[];
+  if (held === undefined) {
+    out = samples.map((s) => s + to - samples[i]);
+  } else if (beat >= 0) {
+    const lo = Math.max(0, held - first);
+    to = Math.max(to, samples[lo] + (i - lo));
+    const scale = (to - samples[lo]) / (samples[i] - samples[lo]);
+    out = samples.map((s, k) => (k < lo ? s : k <= i ? samples[lo] + Math.round((s - samples[lo]) * scale) : s + to - samples[i]));
+  } else {
+    const hi = Math.min(samples.length - 1, held - first);
+    to = Math.min(to, samples[hi] - (hi - i));
+    const scale = (samples[hi] - to) / (samples[hi] - samples[i]);
+    out = samples.map((s, k) => (k > hi ? s : k >= i ? samples[hi] - Math.round((samples[hi] - s) * scale) : s + to - samples[i]));
+  }
+  return { ...beatsOf(beats.rate, beats.length, first, out), set };
 }
 
 /**
  * Bar 1 beat 1 set at a beat: Ableton's "set 1.1.1 here". Every beat stays
  * exactly where it is; only the count starts somewhere else, so beats before
- * it go negative rather than going away.
+ * it go negative rather than going away. The set beats are counted the same
+ * way, so a hand's work stays where the hand put it.
  */
-export const renumbered = (beats: Beats, beat: number): Beats => ({ ...beats, first: beats.first - beat });
+export const renumbered = (beats: Beats, beat: number): Beats => ({
+  ...beats,
+  first: beats.first - beat,
+  ...(beats.set && { set: beats.set.map((b) => b - beat) }),
+});
 
 /** Every beat moved the same way through the file: the nudge. */
 export const shifted = (beats: Beats, samples: number): Beats => ({
@@ -289,5 +362,8 @@ export const shifted = (beats: Beats, samples: number): Beats => ({
 export function resampled(beats: Beats, rate: number, length: number): Beats {
   if (rate === beats.rate) return { ...beats, length };
   const scale = rate / beats.rate;
-  return beatsOf(rate, length, beats.first, beats.samples.map((s) => Math.round(s * scale)));
+  return {
+    ...beatsOf(rate, length, beats.first, beats.samples.map((s) => Math.round(s * scale))),
+    ...(beats.set && { set: beats.set }),
+  };
 }

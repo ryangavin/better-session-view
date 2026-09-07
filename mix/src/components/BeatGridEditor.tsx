@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReviewPlayback } from './reviewPlayback.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
@@ -38,7 +38,18 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
    * pressable already say whether anything has changed.
    */
   const share = useMemo(() => beatsOnHit(grid, mix.hits, ON_A_BEAT), [grid, mix.hits]);
-  const reading = `${rangeText(grid)}${share === null ? '' : ` · ${Math.round(share * 100)}% of beats on a hit`}`;
+  /**
+   * The tempo is also where a steady one is typed. Clicking it makes it a
+   * field; a number committed there rules every beat evenly at it from bar
+   * 1, which throws away the detected variation on purpose — the thing to
+   * reach for when a record was made to a click and the detection wobbles.
+   * It used to be a disclosure with its own BPM field below the buttons, and
+   * the one tempo gesture there was; pulling a bar is the tempo gesture now,
+   * and the typed number is the reading's own affordance rather than a row.
+   */
+  const [typing, setTyping] = useState(false);
+  const field = useRef<HTMLSpanElement>(null);
+  useEffect(() => { if (typing) field.current?.querySelector<HTMLElement>('[role=slider]')?.focus(); }, [typing]);
   /**
    * The beats found again, as the draft: the chosen algorithm — what an
    * import gets, unless another is picked — run on the drums, drawn over
@@ -87,7 +98,18 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
   };
   return <section className="mf-grid-editor" aria-label="Beat grid editing">
     <div className="mf-grid-editor-row">
-      <strong>Grid</strong><span role="status" title="The tempo this grid runs at, read off its beats, and the share of its beats with a kick or a snare within 25 ms, over the part of the song that has drums. Both follow every change">{reading}</span>
+      <strong>Grid</strong>
+      <span role="status" title="The tempo this grid runs at, read off its beats, and the share of its beats with a kick or a snare within 25 ms, over the part of the song that has drums. Both follow every change">
+        {typing
+          ? <span ref={field}
+              onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setTyping(false); } }}
+              onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setTyping(false); }}>
+              <NumberField param={TEMPO} value={tempoOf(grid)} showFill={false} label="Steady tempo BPM" width={70}
+                onChange={(bpm) => mix.editGrid(evenBeats(grid.rate, grid.length, bpm, downbeat))} onRelease={() => setTyping(false)} />
+            </span>
+          : <button type="button" className="mf-grid-tempo" onClick={() => setTyping(true)} title="Click to type a steady tempo: every beat evenly spaced at it from bar 1, in place of the variation detected">{rangeText(grid)}</button>}
+        {share === null ? '' : ` · ${Math.round(share * 100)}% of beats on a hit`}
+      </span>
       <Select items={OFFERED.map((id) => describe(id).name)} index={OFFERED.indexOf(algorithm)} onChange={(i) => setAlgorithm(OFFERED[i])} label="Beat finding algorithm" title={describe(algorithm).does} width={150} />
       <Button onPress={find} disabled={finding} title="Find the beats again on the drums with the chosen algorithm, and draw them over the saved grid. Undo puts the old grid back">{finding ? 'Finding…' : 'Find beats'}</Button>
       <Button onPress={() => inspect(downbeat)}>First downbeat</Button>
@@ -107,9 +129,8 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
       <Button onPress={() => mix.editGrid(renumbered(grid, 1))}>One beat later</Button>
       <span>Nudge all beats</span><Button onPress={() => mix.editGrid(shifted(grid, -Math.round(grid.rate * .01)))}>−10 ms</Button><Button onPress={() => mix.editGrid(shifted(grid, Math.round(grid.rate * .01)))}>+10 ms</Button>
     </div>
-    <p>Zoom to a hit and drag its beat marker; Option skips snapping to hits. Dashed marks on the ruler are section changes the stems suggest — click one to cut there. Waveform clicks only move the playhead.</p>
+    <p>Zoom to a hit and drag its marker: a bar marker stretches the beats since the last point you set, any other beat moves alone, and Option skips snapping to hits. Dashed marks on the ruler are section changes the stems suggest — click one to cut there. Waveform clicks only move the playhead.</p>
     {problem && <p role="alert">{problem}</p>}
     {player.head !== null && <p role="status">Listening to drums at original speed · {player.head.toFixed(3)} s</p>}
-    <details><summary>Replace with a steady grid</summary><div className="mf-grid-editor-row"><span>Steady tempo BPM</span><NumberField param={TEMPO} value={tempoOf(grid)} showFill={false} label="Steady grid tempo BPM" width={85} onChange={(bpm) => mix.editGrid(evenBeats(grid.rate, grid.length, bpm, downbeat))}/><span>Replaces tempo variation with evenly spaced beats.</span></div></details>
   </section>;
 }
