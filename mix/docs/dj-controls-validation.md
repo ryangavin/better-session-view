@@ -8,7 +8,7 @@ original audit and proposed direction rather than claiming every proposal is shi
 ## Automated checks
 
 - Full repository `npm run typecheck`: passed.
-- `npm test`: 89 files, 849 tests passed.
+- `npm test`: 185 files, 2,443 tests passed.
 - `npx vite build --config mix/vite.config.ts`: passed; existing large-chunk warning.
 - `git diff --check`: passed.
 
@@ -27,7 +27,7 @@ four-channel Phones checks. A separate real-time AudioContext captures the engin
 Signalsmith worklet through `capture-worklet.js`. These are output measurements, not
 mock-node assertions. Test signals do not go to speakers.
 
-All 25 checks passed in the Codex in-app browser. Representative measured results:
+All 34 checks passed in the Codex in-app browser. Representative measured results:
 
 | Check | Result |
 |---|---|
@@ -105,6 +105,32 @@ boundaries, Cue hold/Play takeover on touch hardware, and Phones through the act
 No release, main-branch push or publishing is part of this validation. Wiki changes are
 prepared in the separate local wiki checkout for the release owner.
 
+## Playing scrub, leader Sync and capability specification
+
+The current preview adds playing scrub, fixed whole-source Fit, local timing leadership
+and synced bar-boundary loop entry. The normative [behavior specification](behavior-specification.md)
+records the approved capability outcomes separately from UI mappings and evidence.
+Regression coverage includes first-playing-deck election, tempo isolation while loading
+and syncing followers, handoff, phase reacquisition after scrub, queued synced loops,
+whole-source extent, playing-pointer input and a read-only local leader tempo display.
+
+The full repository suite passed 2,443 tests across 185 files. Its localhost-server tests
+required sandbox escalation; an initial restricted run failed to bind test ports.
+Typecheck and production build passed after updating the header expectation for local
+leader tempo. No new testing framework or background automation was added.
+
+The audio harness includes the 30 playback/routing checks plus four transition checks. New native rendered scrubs make several moves
+while playing; measured advancement continues and the longest silent run is one sample.
+The real Signalsmith engine run additionally measures follower phase after scrub,
+phase during a quantized loop, and leadership handoff retaining tempo. These latter
+checks use actual engine source positions; they do not measure analog output alignment
+or prove artifact-free musical listening. Physical Link/Phones hardware remains untested.
+
+Browser inspection confirmed a loaded whole waveform uses a fixed 100%-width strip,
+a moving playhead and visible Fit control. Keyboard repositioning during playback left
+focus playing and other sources stopped. A pointer-input regression verifies the actual
+waveform handler accepts playing sources and emits relative movement/commit.
+
 ## Follow-up visual review
 
 The reported 1110×964 application viewport (including the library sidebar) now fits
@@ -120,3 +146,20 @@ its two border pixels (528px), preventing a one-pixel footer overflow. The exist
 horizontal strip fallback remains for full app windows narrower than the 852px mixer
 plus sidebar. This visual follow-up changes no audio behavior; typecheck and the
 production build were rerun, while the prior audio/unit evidence above remains applicable.
+
+
+## Audible transition regression
+
+A direct sample capture found no silent gap but a 0.069998 adjacent-sample step when
+switching Sync off, compared with a 0.03 maximum allowed for the fixture. Silence-only
+checks missed this audible discontinuity. The capture now checks both longest silent
+run (at most 1ms) and adjacent-sample difference for native→Sync, synced beat jump,
+synced scrub and Sync→native. The voice overlaps native/stretch paths with 8ms gain
+ramps and keeps the worklet active through stretched repositioning. No extra decoded
+buffer copy was needed; existing decoded/worklet buffers remain available.
+
+The final transition run passed: maximum adjacent-sample differences were 0.02311
+(native→Sync), 0.002315 (synced jump), 0.002349 (synced scrub), and 0.006193
+(Sync→native). Every transition's longest silent run was one sample at 48kHz. The
+Sync-off discontinuity fell from approximately 0.070 to 0.0062. These are bounded fixture
+measurements, not a guarantee that every musical loop boundary or audio driver is inaudible.

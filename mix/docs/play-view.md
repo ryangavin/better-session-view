@@ -1,5 +1,8 @@
 # Prep and Play
 
+Intended behavior is governed by [the behavior specification](behavior-specification.md);
+measured status lives in [validation](dj-controls-validation.md).
+
 `src/play/` connects the controlled widgets mixer to a single app-owned `MixerEngine`.
 `useMixerViewModel` is the React adapter: it subscribes to that engine, supplies stable
 commands and frame readings, and resolves library IDs for loading. Widgets import no
@@ -47,8 +50,8 @@ The four standard stem positions remain identifiable; guitar and piano are inclu
 present. Missing stems stay disabled. Tracks with no stems start in Full mode. Full pauses
 all sources and switches the addressed source group. The original is initialized from the
 focused stem once; subsequent switches retain each group's independent positions, stopped
-stems, selections, loops and Cue checkpoints. Switching does not start audio. The first
-loaded deck sets the initial shared tempo while stopped and unlinked.
+stems, selections, loops and Cue checkpoints. Switching does not start audio. Loading does not establish tempo authority. Without Link, the first playing gridded
+deck becomes leader; the header shows no active tempo until then.
 
 ## Performance layout
 
@@ -113,17 +116,22 @@ while held latches playback. Keyboard Space holds Cue and Enter takes over; rele
 cancel, lost capture, window blur and unmount cannot leave an audition running. Pending
 preparation/resume and launch revisions prevent obsolete audio from starting.
 
-Unsynced voices use native AudioBufferSourceNodes with 4ms start/stop fades. Sync lazily
+Unsynced voices use native AudioBufferSourceNodes with 4ms start/stop fades.
+Changing between native and stretched playback overlaps their gain ramps for 8ms;
+the outgoing path remains connected until its fade completes. Stretched repositioning
+updates the active worklet schedule without an intervening inactive command. The
+stretcher's gain starts at zero so preparing it cannot leak audio into the existing mix. Sync lazily
 prepares Signalsmith stereo worklets using `pinnedOf`, `passOf` and `sourceAt` scheduling.
 Engaging Sync while playing applies one common beat-phase correction, preserving stem
-offsets. Paused Sync arms tempo following; Play still resumes exact positions. Turning it
+offsets. Paused Sync arms following; Play aligns the group to the leader beat phase. Turning it
 off continues at native speed. Global starts prepare all synced voices before choosing
 one shared start sample. Worklet callbacks own scheduling independently of rendering.
 
 A section-name hot cue clears deck loops and starts all sources at that boundary,
 continuing onward. A stem cell loops only that stem's section; other stems remain
 independent. In Full mode the original is addressed. Without sections, Track plays once.
-Launch timing is explicitly Now, Next beat or Next bar, independent of Sync and marker Q.
+Without Sync, launch timing is explicitly Now, Next beat or Next bar, independent of
+marker Q. Sync fixes section launches to the next leader bar (four beats).
 Queued cells show the scheduled change; Stop is immediate.
 
 Q snaps Cue and manual loop markers to the nearest saved-grid division (ties forward):
@@ -157,6 +165,40 @@ would put any participant before sample zero or within 1ms of its file end is re
 for the whole group, with a visible deck message; there is no wrap or partial clamp.
 Missing grids disable the arrows. Held Cue or an active waveform move ignores jumps.
 
+### Local leader and loop scheduling
+
+Outside Link, the oldest still-playing gridded deck leads; a stable playing source in
+that deck supplies beat phase. Loading or syncing another deck never sets the tempo.
+An unsynced leader supplies its mapped native beat rate; a synced follower becoming
+leader retains its current rate. Pause, stop, natural end and replacement allow the next
+playing deck to lead. LEADER appears in its header. The main tempo is a read-only leader
+reading locally; Link retains its shared tempo control and external clock authority.
+
+Followers are checked every 250ms and corrected when phase error exceeds 0.025 beat,
+using one scheduled correction for their playing sources. Gesture/Cue holds and queued
+operations defer correction; scrub commit requests it immediately. This is a bounded
+correction policy, not a claim of mathematically zero error at every sample. It does not
+reunify independent song sections. Synced loop entry/reloop/edit waits for the next leader
+bar, with a queued message. Synced regions snap to whole beats with at least one beat;
+sub-beat quick-loop choices remain available with Sync off. Exit is immediate.
+
+### Playing scrub and whole-source view
+
+The waveform supports relative dragging while playing or paused, with the existing
+explicit group-move choice. Playing sources continue from scheduled moved positions;
+paused sources stay paused. Gesture progress includes elapsed playback time. File edges
+clamp a common delta; playing positions stay 2ms short of the end to avoid wrapping.
+Moving exits addressed loops/Slip backgrounds while retaining saved regions and Cue.
+Cancellation restores gesture-start positions/loops and each source's prior playback
+state; commit retains the new positions and a synced follower reacquires beat phase.
+This is audible seeking, not reverse vinyl scratching.
+
+Fit is always beside the source chip on a loaded waveform. It shows the entire focused
+source from sample zero to its end, including pre-downbeat audio, with a moving playhead.
+`zoom: 0` selects this fixed view; normal zoom remains 4–64 beats. Fit again returns to
+32 beats; zoom controls also leave Fit. The waveform model supplies `fixed`, its complete
+beat extent and overview bins; widgets own only rendering and input.
+
 ## Waveforms, meters and Link
 
 Each decoded source produces beat-normalized overview peaks and frequency
@@ -177,9 +219,9 @@ drums (or the first available source) and never follows launch activity implicit
 selects the visible beat span. Source Cue, deck checkpoint, saved/active loop and other
 source positions are distinguished in the waveform. Time/bar readings belong to focus.
 
-Paused dragging moves the focused source relative to pointer-down, with no initial jump.
+Dragging moves the focused source relative to pointer-down, with no initial jump.
 Move active stems explicitly applies one common bounded beat delta to the combination;
-it requires the addressed sources paused. Release commits; Escape, pointer cancellation,
+each source retains its playing/paused state. Release commits; Escape, pointer cancellation,
 lost capture or window blur restores the pre-gesture state. Arrow keys move 1/8 beat,
 Shift+Arrow one beat. Seeking exits addressed active loops but retains saved regions and
 never overwrites Cue. Widgets emit intent; the engine owns clamping and state restoration.

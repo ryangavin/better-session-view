@@ -9,6 +9,7 @@ export class DeckVoice {
   private source: AudioBufferSourceNode | null = null;
   private sourceFade: GainNode | null = null;
   private stretch: Stretch | null = null;
+  private stretchFade: GainNode;
   private preparing: Promise<void> | null = null;
   private disposed = false;
   private pinned: Pinned | null = null;
@@ -24,6 +25,7 @@ export class DeckVoice {
   private scheduledEnd = false;
   constructor(readonly context: AudioContext, readonly buffer: AudioBuffer, readonly map: Beats | null) {
     this.output = context.createGain();
+    this.stretchFade=context.createGain();this.stretchFade.gain.value=0;this.stretchFade.connect(this.output);
   }
   get playing(): boolean { return this.active && (this.loop || this.at() < (this.span?.to ?? this.buffer.duration) - 0.001); }
   get lead(): number { return Math.max(0.03, (this.stretch?.latency ?? 0) + 0.02); }
@@ -38,7 +40,7 @@ export class DeckVoice {
       await made.node.addBuffers(channels, channels.map(c => c.buffer));
       if (this.disposed) { void made.node.dropBuffers(); made.node.disconnect(); return; }
       this.stretch = made;
-      made.node.connect(this.output);
+      made.node.connect(this.stretchFade);
       void made.node.setUpdateInterval(0.03, () => this.tick());
     })().catch(error => { this.preparing = null; throw error; });
     return this.preparing;
@@ -64,12 +66,14 @@ export class DeckVoice {
       const start = previous.span?.from ?? 0, end = previous.span?.to ?? this.buffer.duration;
       return previous.loop ? start + ((previous.from+elapsed-start)%(end-start)+(end-start))%(end-start) : Math.min(end,previous.from+elapsed);
     };
-    this.halt(when);
+    const wasStretched=this.active && !!this.pinned;
+    this.halt(when,tempo!==null);
     this.span = span; this.loop = loop; this.from = Math.max(span?.from ?? 0, Math.min(at, span?.to ?? this.buffer.duration));
     if (this.from >= (span?.to ?? this.buffer.duration) - 0.001) this.from = span?.from ?? 0;
     this.since = when; this.active = true;
     this.pinned = tempo !== null && this.map ? pinnedOf(this.map, tempo, [], 'beat') : null;
     if (this.pinned && this.stretch) {
+      if(!wasStretched){const gain=this.stretchFade.gain;gain.cancelScheduledValues(when);gain.setValueAtTime(0,when);gain.linearRampToValueAtTime(1,when+.008);}
       this.pass = passOf(this.pinned, this.from, span); this.passAt = when; this.next = 1; this.scheduledEnd = false;
       const first = this.pass.boundaries[0];
       void this.stretch.node.schedule({ outputTime: this.context.currentTime, output: when, active: true, input: first.input, rate: first.rate, loopStart: 0, loopEnd: 0 });
@@ -77,7 +81,7 @@ export class DeckVoice {
     } else {
       const source = this.context.createBufferSource(); source.buffer = this.buffer;
       source.loop = loop; source.loopStart = span?.from ?? 0; source.loopEnd = span?.to ?? this.buffer.duration;
-      const fade = this.context.createGain(); fade.gain.setValueAtTime(0, when); fade.gain.linearRampToValueAtTime(1, when + 0.004);
+      const fade = this.context.createGain(); fade.gain.setValueAtTime(0, when); fade.gain.linearRampToValueAtTime(1, when + (wasStretched ? 0.008 : 0.004));
       source.connect(fade); fade.connect(this.output);
       source.onended = () => { source.disconnect(); fade.disconnect(); };
       this.source = source; this.sourceFade=fade;
@@ -105,14 +109,19 @@ export class DeckVoice {
   }
   pause(): void { const at = this.at(); this.halt(); this.from = at; }
   seek(at: number): void { this.halt(); this.from = Math.max(0, Math.min(at, this.buffer.duration)); }
-  private halt(when = this.context.currentTime): void {
+  private halt(when = this.context.currentTime, keepStretch=false): void {
     this.active = false; this.pass = null;
     if (this.source) {
       const gain=this.sourceFade?.gain;
-      if(gain){if(typeof gain.cancelAndHoldAtTime==='function')gain.cancelAndHoldAtTime(when);else {gain.cancelScheduledValues(when);gain.setValueAtTime(1,when);}gain.linearRampToValueAtTime(0,when+.004);}
-      try { this.source.stop(when+.004); } catch {} this.source = null; this.sourceFade=null;
+      if(gain){if(typeof gain.cancelAndHoldAtTime==='function')gain.cancelAndHoldAtTime(when);else {gain.cancelScheduledValues(when);gain.setValueAtTime(1,when);}gain.linearRampToValueAtTime(0,when+(keepStretch?.008:.004));}
+      try { this.source.stop(when+(keepStretch?.008:.004)); } catch {} this.source = null; this.sourceFade=null;
     }
-    if (this.stretch) void this.stretch.node.schedule({ outputTime: this.context.currentTime, output: when, active: false });
+    if (this.stretch && !keepStretch) {
+      const gain=this.stretchFade.gain;
+      if(typeof gain.cancelAndHoldAtTime==='function')gain.cancelAndHoldAtTime(when);else {gain.cancelScheduledValues(when);gain.setValueAtTime(1,when);}
+      gain.linearRampToValueAtTime(0,when+.008);
+      void this.stretch.node.schedule({ outputTime: this.context.currentTime, output: when+.008, active: false });
+    }
   }
-  dispose(): void { this.disposed = true; this.halt(); if (this.stretch) { void this.stretch.node.dropBuffers(); this.stretch.node.disconnect(); } this.output.disconnect(); }
+  dispose(): void { this.disposed = true; this.halt(); if (this.stretch) { void this.stretch.node.dropBuffers(); this.stretch.node.disconnect(); } this.stretchFade.disconnect(); this.output.disconnect(); }
 }

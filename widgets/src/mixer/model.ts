@@ -36,8 +36,10 @@ export interface MixerDeck {
   track: { id: string; title: string; artist: string; bpm: number | null; key: string } | null;
   status: 'empty' | 'loading' | 'ready' | 'unavailable';
   message?: string;
-  /** Optional scrolling source window. The host supplies the beat range and loop in source coordinates. */
-  waveform?: { start: number; length: number; visible: number; cue?: number; deckCue?: number; focus?: string; loop?: { start: number; end: number | null; enabled: boolean } };
+  /** Host-selected timing leader; never elected by the face. */
+  syncLeader?: boolean;
+  /** Source window; fixed shows the complete source rather than scrolling under the playhead. */
+  waveform?: { fixed?: boolean; start: number; length: number; visible: number; cue?: number; deckCue?: number; focus?: string; loop?: { start: number; end: number | null; enabled: boolean } };
   peaks: readonly { min: number; max: number }[];
   /** Optional host-measured low/mid/high energy, one tuple per peak. */
   waveformSpectrum?: readonly SpectralEnergy[];

@@ -137,7 +137,7 @@ real widget interactions; `npm test -- --project=widgets` runs both with the wid
 Optional focused-source commands expose Play/Cue, focus, zoom and relative move phases
 (begin/move/commit/cancel). WaveControls captures a pointer without jumping, emits beat
 deltas from its initial position/width and rolls back on Escape, cancellation, lost capture
-or window blur. The host rejects moves while addressed sources play. Move active stems
+or window blur. The host preserves each addressed source’s playing/paused state during moves. Move active stems
 is explicit; the face never synchronizes source positions itself. Arrow keys emit 1/8-beat
 moves, Shift+Arrow one beat. Slider accessibility readings use seconds.
 
@@ -173,3 +173,12 @@ opens its level/blend panel. There is no adjacent FX settings button.
 Optional `beatJump(deckId, -1 | 1)` draws stacked ↑/↓ buttons after Sync on every deck,
 disabled without a saved grid. It delegates the one-beat change to the host; widgets
 never choose participants, move audio, alter Cue or implement boundary/Slip policy.
+
+
+Fit stays visible beside a loaded waveform's source chip and emits `setZoom(id, 0)`.
+The host supplies the entire source extent and `waveform.fixed`; FrameWaveform leaves
+that strip fixed and moves its playhead/markers across the complete range. Drag distance
+uses the supplied visible range in both modes, including playing sources. The optional
+`syncLeader` flag labels the deck header; widgets neither elect leaders nor own tempo.
+Synced launch timing displays Next bar and is read-only; sub-beat quick-loop options
+are disabled while Sync is on.

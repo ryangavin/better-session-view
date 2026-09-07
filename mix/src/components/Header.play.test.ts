@@ -18,7 +18,10 @@ it('keeps the existing playback and Link commands in Play without preparation to
   expect(mix.stop).toHaveBeenCalledOnce();
   fireEvent.click(view.getByRole('button', { name: 'Link Audio' }));
   expect(mix.setLinkAudio).toHaveBeenCalledWith(true);
-  expect(view.getByRole('slider', { name: 'Tempo' })).toBeTruthy();
+  expect(view.queryByRole('slider', { name: 'Tempo' })).toBeNull();
+  expect(view.getByLabelText('Leader tempo').textContent).toBe('—');
+  view.rerender(createElement(Header,{mix:{...mix,linkAudio:{...mix.linkAudio,enabled:true}},ready:null,playView:true}));
+  expect(view.getByRole('slider',{name:'Tempo'})).toBeTruthy();
   expect(view.queryByRole('group', { name: 'Analysis' })).toBeNull();
   expect(view.queryByRole('group', { name: 'Snap' })).toBeNull();
   expect(view.queryByRole('button', { name: 'Export' })).toBeNull();

@@ -203,6 +203,38 @@ describe('the four-deck playback owner',()=>{
     engine.commands.setMoveTogether!('deck-a',false);engine.commands.setFocus!('deck-a','bass');engine.move('deck-a','begin');engine.move('deck-a','move',-2);engine.move('deck-a','commit');
     expect(engine.readFrame().decks['deck-a'].sources!.drums.seconds).toBe(got.drums.seconds);
   });
+  it('scrubs playing focus without stopping other stems, and cancellation restores playback and loops',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;
+    const before=engine.readFrame().decks['deck-a'].sources!;engine.move('deck-a','begin');ctx.currentTime=1.2;engine.move('deck-a','move',4);ctx.currentTime=1.24;
+    let got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.playing).toBe(true);expect(got.bass.playing).toBe(true);expect(got.drums.seconds).toBeCloseTo(before.drums.seconds+.24+2,2);
+    engine.move('deck-a','cancel');ctx.currentTime=1.28;got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.playing).toBe(true);expect(got.drums.seconds).toBeCloseTo(before.drums.seconds+.01,2);expect(engine.snapshot().decks[0].loop?.enabled).toBe(true);
+  });
+  it('fits the entire source independently of playhead paging and returns to scrolling zoom',async()=>{
+    const {engine,ctx,load}=setup();await load();engine.commands.setZoom!('deck-a',0);let wave=engine.snapshot().decks[0].waveform!;
+    expect(wave).toMatchObject({fixed:true,start:0,length:128,visible:128});await engine.play('deck-a',true);ctx.currentTime=40;engine.commands.setZoom!('deck-a',0);expect(engine.snapshot().decks[0].waveform!.start).toBe(0);
+    engine.commands.setZoom!('deck-a',32);expect(engine.snapshot().decks[0].waveform!.fixed).toBe(false);
+  });
+  it('takes tempo from the first playing track and never from loading or syncing a follower',async()=>{
+    const {engine,ctx,load}=setup();await load('deck-a');const other=asset();other.audio!.map=evenBeats(48000,64*48000,90,0);
+    await engine.load('deck-b',{...track,bpm:90},async()=>other);expect(engine.snapshot().decks.some(d=>d.syncLeader)).toBe(false);
+    await engine.play('deck-b',true);expect(engine.snapshot().bpm).toBeCloseTo(90);ctx.currentTime=1;const before=engine.readFrame().decks['deck-b'].seconds;
+    await engine.sync('deck-a',true);await engine.play('deck-a',true);expect(engine.snapshot().bpm).toBeCloseTo(90);expect(engine.readFrame().decks['deck-b'].seconds).toBe(before);
+    await engine.play('deck-b',false);expect(engine.snapshot().bpm).toBeCloseTo(90);expect(engine.snapshot().decks[0].syncLeader).toBe(true);
+  });
+  it('elects the first playing deck and hands leadership to the next still playing deck',async()=>{
+    const {engine,load}=setup();await load('deck-a');await load('deck-b');await engine.play('deck-b',true);await engine.play('deck-a',true);
+    expect(engine.snapshot().decks.find(d=>d.syncLeader)?.id).toBe('deck-b');await engine.play('deck-b',false);expect(engine.snapshot().decks.find(d=>d.syncLeader)?.id).toBe('deck-a');engine.stop();expect(engine.snapshot().decks.some(d=>d.syncLeader)).toBe(false);
+  });
+  it('corrects a synced follower after a playing scrub without toggling Sync',async()=>{
+    vi.useFakeTimers();const {engine,ctx,load}=setup();await load('deck-a');await load('deck-b');await engine.play('deck-a',true);await engine.sync('deck-b',true);await engine.play('deck-b',true);
+    ctx.currentTime=1;engine.move('deck-b','begin');engine.move('deck-b','move',.4);engine.move('deck-b','commit');ctx.currentTime=1.2;await vi.advanceTimersByTimeAsync(40);ctx.currentTime=1.4;
+    const f=engine.readFrame();const delta=f.decks['deck-a'].beat-f.decks['deck-b'].beat;expect(Math.abs(delta-Math.round(delta))).toBeLessThan(.01);expect(engine.snapshot().decks[1].synced).toBe(true);
+  });
+  it('queues synced loops to a leader bar and keeps their region on whole beats',async()=>{
+    const {engine,ctx,load}=setup();await load('deck-a');await load('deck-b');await engine.play('deck-a',true);await engine.sync('deck-b',true);await engine.play('deck-b',true);ctx.currentTime=.7;
+    engine.commands.setDeckTiming!('deck-b','loopBeats',4);engine.quickLoop('deck-b');expect(engine.snapshot().decks[1].message).toBe('Loop queued for next bar.');const span=engine.snapshot().decks[1].loop!;expect(span.start!*2%1).toBeCloseTo(0);expect((span.end!-span.start!)*2).toBeCloseTo(4);
+    ctx.currentTime=1;expect(engine.readFrame().decks['deck-b'].seconds).toBeCloseTo(.97,2);ctx.currentTime=2.1;expect(engine.readFrame().decks['deck-b'].seconds).toBeCloseTo(span.start!+.07,2);
+  });
   it('lets Play take over even before asynchronous Cue preparation finishes',async()=>{
     const {engine,ctx,load}=setup();await load();let release!:()=>void;ctx.resume.mockImplementation(()=>new Promise<void>(r=>release=r));
     engine.cue('deck-a',true);await engine.play('deck-a',true);engine.cue('deck-a',false);release();await settle();
@@ -218,7 +250,7 @@ describe('the four-deck playback owner',()=>{
     ctx.currentTime=4.14;engine.deckLoopIn('deck-a');ctx.currentTime=6.42;engine.deckLoopOut('deck-a');
     expect(engine.snapshot().decks[0].loop).toEqual({start:4,end:6.5,enabled:true});
     engine.cue('deck-a',true);engine.cue('deck-a',false);expect(engine.readFrame().decks['deck-a'].seconds).toBe(4);
-    await engine.sync('deck-a',true);await engine.launch('deck-a','section-1-4','bass');expect(engine.snapshot().decks[0].stems[1].queued).toBeUndefined();
+    await engine.sync('deck-a',true);await engine.launch('deck-a','section-1-4','bass');expect(engine.snapshot().decks[0].stems[1].queued).toBe('section-1-4');
   });
   it('creates 16 beats, halves/doubles, moves, exits and reloops without changing the Cue',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2.03;
