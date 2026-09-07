@@ -1,9 +1,12 @@
 # Audio settings
 
-`src/audioSettings.ts`, `src/components/AudioSettingsModal.tsx`, and
+`src/audioSettings.ts`, `src/components/SettingsModal.tsx`, and
 `replaceAudioContext()` in `src/engine.ts` and `src/play/engine.ts`.
 
-The shared header's **Audio** button opens a widgets Modal in Prep or Play. Output
+The shared header's **Settings** button opens a widgets Modal in Prep or Play, with
+Audio and Theme sections. Audio opens first; switching sections preserves draft audio
+choices. Theme edits apply and save immediately without restarting audio. The audio
+Apply button appears only in Audio; Done closes either section. Output
 interface, processing sample rate and latency preference are machine-local settings
 under `mix.audio.v1`, independent of the library and theme. Defaults follow the system
 output and its preferred sample rate, with Web Audio's `interactive` latency hint.

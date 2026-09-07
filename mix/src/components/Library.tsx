@@ -5,7 +5,6 @@ import { STEMS } from '../mock.ts';
 import { gridFact, type GridNote, type Track } from '../openflow.ts';
 import { tempoText } from '../warp.ts';
 import type { Mix } from '../state.ts';
-import { ThemeButton } from '../Theme.tsx';
 import { DebugButton } from './DebugButton.tsx';
 import './Library.css';
 
@@ -140,7 +139,6 @@ export function Library({ mix }: { mix: Mix }) {
 
       <div className="mf-library-foot" data-bad={mix.noteBad || undefined}>
         <DebugButton mix={mix} />
-        <ThemeButton />
         {!mix.noteBad && (
           <span>
             {mix.songs.length === mix.total

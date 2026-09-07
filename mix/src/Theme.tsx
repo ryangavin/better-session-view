@@ -2,8 +2,6 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import { ThemeRoot } from '@openflow/widgets/theme/ThemeRoot.tsx';
 import { ThemeEditor } from '@openflow/widgets/theme/ThemeEditor.tsx';
 import { DEFAULT_THEME, isTheme, type Theme } from '@openflow/widgets/theme/theme.ts';
-import { Button } from '@openflow/widgets/controls/Button.tsx';
-import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 
 const KEY = 'mix.theme.v1';
 export function readTheme(): Theme {
@@ -20,14 +18,8 @@ export function MixTheme({ children }: { children: ReactNode }) {
   };
   return <Settings.Provider value={{ theme, change }}><ThemeRoot theme={theme}>{children}</ThemeRoot></Settings.Provider>;
 }
-export function ThemeButton() {
+export function ThemeSettings() {
   const settings = useContext(Settings);
-  const [open, setOpen] = useState(false);
   if (!settings) return null;
-  return <>
-    <Button onPress={() => setOpen(true)} label="Edit app theme">Theme</Button>
-    {open && <Modal title="Theme" width={330} onClose={() => setOpen(false)}>
-      <ThemeEditor theme={settings.theme} onChange={settings.change} />
-    </Modal>}
-  </>;
+  return <ThemeEditor theme={settings.theme} onChange={settings.change} />;
 }

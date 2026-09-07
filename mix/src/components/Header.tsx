@@ -122,7 +122,7 @@ const SNAPS: readonly { id: Snap; mark: string; says: string }[] = [
   { id: 'half', mark: '½', says: 'Cuts land on half a beat, whatever the zoom' },
 ];
 
-export function Header({ mix, ready, playView = false, onToggleView, mixer, onAudioSettings }: { mix: Mix; ready: Ready | null; playView?: boolean; onToggleView?(): void; mixer?: MixerEngine; onAudioSettings?():void }) {
+export function Header({ mix, ready, playView = false, onToggleView, mixer, onSettings }: { mix: Mix; ready: Ready | null; playView?: boolean; onToggleView?(): void; mixer?: MixerEngine; onSettings?():void }) {
   if (playView && mixer) {
     const state = mixer.snapshot();
     mix = { ...mix, playing: state.running, playable: state.decks.some(d => d.status === 'ready'),
@@ -349,7 +349,7 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onAu
         Export
       </Button>}
       <div className="mf-header-end">
-        {onAudioSettings && <Button className="mf-audio-settings-button" onPress={onAudioSettings} label="Audio settings" title="Audio interface, sample rate and latency">Audio</Button>}
+        {onSettings && <Button className="mf-settings-button" onPress={onSettings} label="Settings" title="Audio and theme settings">Settings</Button>}
         {playView && mixer?.problem && <span className="mf-play-status" role="status">{mixer.problem}</span>}
       </div>
     </header>

@@ -21,7 +21,7 @@ The logo and plain Tab switch between the single-track preparation page and the 
 Play layout. The logo fills in Play. The library rail stays the same, and both preparation
 state and loaded deck settings survive switching. Editable controls and dialogs retain
 normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The Play header centers the shared playback controls, tempo and position across the
-whole window, with the logo and Link controls on the left and Audio on the right. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
+whole window, with the logo and Link controls on the left and Settings on the right. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
 loading, keyboard behavior and the current playback boundary.
 
 ## The library rail
@@ -475,7 +475,8 @@ surface/text/border roles, neutral primary selection, green measured signal, six
 identities and paired deck colors. Current favorite is the initial palette, matching the
 widgets mixer bench. See [widgets theme rules](../../widgets/docs/theme.md).
 
-Theme in the library footer opens the shared editor in a stock Modal. Changes recolor
+Settings in the header opens a stock Modal with Audio and Theme sections. Theme
+contains the shared editor; the library footer has no theme button. Changes recolor
 the app immediately and save the complete document (including deck variation) under
 `mix.theme.v1` in local storage. Invalid/unavailable storage falls back to the favorite;
 if writes fail the editor still works for this window. Widgets owns no persistence.
