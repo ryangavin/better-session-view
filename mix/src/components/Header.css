@@ -9,7 +9,9 @@
   border-bottom: 1px solid var(--bd);
 }
 
-.mf-header > * {
+.mf-header > *,
+.mf-header-start > *,
+.mf-header-end > * {
   flex: none;
 }
 
@@ -188,4 +190,27 @@
   font-style: normal;
   color: var(--caption);
   margin-left: 5px;
+}
+
+/* Equal side columns keep playback centered across the whole Play window. */
+.mf-header-start,
+.mf-header-end {
+  display: contents;
+}
+
+.mf-header-play {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.mf-header-play .mf-header-start,
+.mf-header-play .mf-header-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mf-header-play .mf-header-end {
+  justify-content: flex-end;
 }

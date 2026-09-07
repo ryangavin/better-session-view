@@ -20,9 +20,8 @@ three hundred pixels, which is what they are for.
 The logo and plain Tab switch between the single-track preparation page and the four-deck
 Play layout. The logo fills in Play. The library rail stays the same, and both preparation
 state and loaded deck settings survive switching. Editable controls and dialogs retain
-normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The Play header identifies this as a
-UI preview with deck audio not connected, while retaining the shared playback and
-Link controls. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
+normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The Play header centers the shared playback controls, tempo and position across the
+whole window, with the logo and Link controls on the left and Audio on the right. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
 loading, keyboard behavior and the current playback boundary.
 
 ## The library rail

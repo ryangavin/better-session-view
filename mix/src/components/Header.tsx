@@ -140,62 +140,65 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onAu
 
   const logo = <button type="button" className="mf-mark" aria-label={playView ? 'Switch to single-track editor' : 'Switch to four-deck mixer'} aria-pressed={playView} title="Switch Prep / Play (Tab)" onClick={onToggleView}>mix<span>[flow]</span></button>;
   return (
-    <header className="mf-header">
-      {/* Silent when the toolchain is fine. A green light that is always on is
-          a thing you stop seeing; a red one that appears is not. */}
-      {!playView && ready && !ready.ok && (
-        <span className="mf-broken" title={`${ready.says} — see mix/docs/demucs.md`}>
-          <i />
-          engine
-        </span>
-      )}
-
-      {logo}
-      <div className="mf-group mf-link" role="group" aria-label="Link Audio">
-        <Toggle on={mix.linkAudio.enabled}
-          onChange={mix.setLinkAudio}
-          label="Link Audio"
-          title="Link Audio: share the stems with Live, follow its tempo, and start and stop with it"
-          width={30}
-        >{linkMark}</Toggle>
-        <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
-          label="Local audio" width={30}
-          title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
-        >{speakerMark}</Toggle>
-        {!playView && mix.linkAudio.enabled && <Select
-          items={['4 bars', '8 bars', '16 bars', 'Sections']}
-          index={OFFERED.indexOf(mix.linkEvery)}
-          onChange={(next) => mix.setLinkEvery(OFFERED[next])}
-          label="Link pins"
-          title="While linked: how often playback is held to Live's grid — every 4, 8 or 16 bars, or at the sections only. The original feel stays between pins. Export has its own choice, on the export dialog"
-          width={74}
-        />}
-        <span className={mix.linkAudio.problem || mix.linkAudio.dropped ? 'mf-link-problem' : undefined}
-          title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
-          {mix.linkAudio.problem ? 'unavailable' : mix.linkAudio.starting ? 'connecting' : mix.waitingForLink ? 'waiting for bar' : mix.linkAudio.enabled
-            ? `${mix.linkAudio.peers} peers${mix.linkAudio.dropped ? ' · gaps' : ''}` : ''}
-        </span>
-      </div>
-
-      {!playView && <div className="mf-open">
-        {song ? (
-          <>
-            <span className="mf-open-title" title={song.title}>{song.title}</span>
-            {song.artist && <span className="mf-open-artist" title={song.artist}>{song.artist}</span>}
-            <Button
-              onPress={mix.openDetails}
-              disabled={mix.editingGrid}
-              className="mf-open-details"
-              title="The track's name, artist, album and art, and the model that made its stems"
-            >
-              Details
-            </Button>
-
-          </>
-        ) : (
-          <span className="mf-open-none">nothing open</span>
+    <header className={`mf-header${playView ? ' mf-header-play' : ''}`}>
+      <div className="mf-header-start">
+        {/* Silent when the toolchain is fine. A green light that is always on is
+            a thing you stop seeing; a red one that appears is not. */}
+        {!playView && ready && !ready.ok && (
+          <span className="mf-broken" title={`${ready.says} — see mix/docs/demucs.md`}>
+            <i />
+            engine
+          </span>
         )}
-      </div>}
+
+        {logo}
+        <div className="mf-group mf-link" role="group" aria-label="Link Audio">
+          <Toggle on={mix.linkAudio.enabled}
+            onChange={mix.setLinkAudio}
+            label="Link Audio"
+            title="Link Audio: share the stems with Live, follow its tempo, and start and stop with it"
+            width={30}
+          >{linkMark}</Toggle>
+          <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
+            label="Local audio" width={30}
+            title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
+          >{speakerMark}</Toggle>
+          {!playView && mix.linkAudio.enabled && <Select
+            items={['4 bars', '8 bars', '16 bars', 'Sections']}
+            index={OFFERED.indexOf(mix.linkEvery)}
+            onChange={(next) => mix.setLinkEvery(OFFERED[next])}
+            label="Link pins"
+            title="While linked: how often playback is held to Live's grid — every 4, 8 or 16 bars, or at the sections only. The original feel stays between pins. Export has its own choice, on the export dialog"
+            width={74}
+          />}
+          <span className={mix.linkAudio.problem || mix.linkAudio.dropped ? 'mf-link-problem' : undefined}
+            title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
+            {mix.linkAudio.problem ? 'unavailable' : mix.linkAudio.starting ? 'connecting' : mix.waitingForLink ? 'waiting for bar' : mix.linkAudio.enabled
+              ? `${mix.linkAudio.peers} peers${mix.linkAudio.dropped ? ' · gaps' : ''}` : ''}
+          </span>
+        </div>
+
+        {!playView && <div className="mf-open">
+          {song ? (
+            <>
+              <span className="mf-open-title" title={song.title}>{song.title}</span>
+              {song.artist && <span className="mf-open-artist" title={song.artist}>{song.artist}</span>}
+              <Button
+                onPress={mix.openDetails}
+                disabled={mix.editingGrid}
+                className="mf-open-details"
+                title="The track's name, artist, album and art, and the model that made its stems"
+              >
+                Details
+              </Button>
+
+            </>
+          ) : (
+            <span className="mf-open-none">nothing open</span>
+          )}
+        </div>}
+
+      </div>
 
       {(live || playView) && (
         <>
@@ -345,9 +348,10 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onAu
       >
         Export
       </Button>}
-      {onAudioSettings && <Button className="mf-audio-settings-button" onPress={onAudioSettings} label="Audio settings" title="Audio interface, sample rate and latency">Audio</Button>}
-      {playView && mixer?.problem && <span className="mf-play-status" role="status">{mixer.problem}</span>}
-
+      <div className="mf-header-end">
+        {onAudioSettings && <Button className="mf-audio-settings-button" onPress={onAudioSettings} label="Audio settings" title="Audio interface, sample rate and latency">Audio</Button>}
+        {playView && mixer?.problem && <span className="mf-play-status" role="status">{mixer.problem}</span>}
+      </div>
     </header>
   );
 }
