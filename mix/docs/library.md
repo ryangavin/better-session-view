@@ -61,11 +61,16 @@ no other import is running.
 
 ## YouTube is another source, not another kind of track
 
-Paste a YouTube video URL into the rail and press **Fetch**. The app runs its bundled,
+Drag a YouTube video link from a browser onto the library or anywhere on the window. The app runs its bundled,
 checksum-pinned official `yt-dlp` executable with `bestaudio`, imports the one file it
 wrote through `addFiles`, and removes the temporary download. The file in `audio/` and the
 manifest row are therefore exactly the same as a Finder import; no URL or machine path is
 recorded in the portable library.
+
+`src/libraryDrop.ts` reads browser URI lists, Firefox URL/title pairs and plain URL
+text. `src/youtubeUrl.ts` canonicalizes the video for both the renderer and downloader.
+Internal library-to-deck drags are excluded; local file drops keep their existing path.
+Other links and arbitrary text do not import or navigate the app. The URL/Fetch row is gone.
 
 The boundary is intentionally narrow:
 

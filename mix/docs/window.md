@@ -26,9 +26,9 @@ loading, keyboard behavior and the current playback boundary.
 
 ## The library rail
 
-The rail starts with two compact rows: filter plus **Import**, then a YouTube URL plus
-**Fetch**. Import opens the ordinary multi-file picker; Fetch stays explicit rather than
-guessing that text pasted elsewhere is a URL. Both disable while an import is in flight,
+The rail starts with one compact row: filter plus **Import**. Import opens the ordinary
+multi-file picker; dropping a YouTube video link anywhere on the window imports its audio.
+There is no URL field or Fetch button. Imports disable while another import is in flight,
 and the rail footer changes from the folder name to the result or the useful error.
 
 Files may also be dropped anywhere on the window. A dashed target covers the window while
@@ -480,7 +480,11 @@ identities and paired deck colors. Current favorite is the initial palette, matc
 widgets mixer bench. See [widgets theme rules](../../widgets/docs/theme.md).
 
 Settings in the header opens a stock Modal with Audio and Theme sections. Theme
-contains the shared editor; the library footer has no theme button. Changes recolor
+contains the shared editor in two columns: palette and color editing on the left,
+waveform and deck variation on the right. The wider dialog fits these controls without
+scrolling at the desktop harness size, with a single-column fallback for narrow windows.
+The spectral band buttons share the controls’ 240px width. Color-conflict callouts
+use the info color with a tinted background. The library footer has no theme button. Changes recolor
 the app immediately and save the complete document (including deck variation) under
 `mix.theme.v1` in local storage. Invalid/unavailable storage falls back to the favorite;
 if writes fail the editor still works for this window. Widgets owns no persistence.

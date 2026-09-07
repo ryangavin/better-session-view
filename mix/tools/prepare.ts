@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// mix[flow]'s own build step: make the five binaries the bundle carries.
+// mix[flow]'s own build step: prepare the binaries the bundle carries.
 //
 // `tools/app.ts` runs this before building the app's main process. `uv` is a
 // pinned release binary; FFmpeg is built from its pinned upstream source because
@@ -19,6 +19,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { prepareAudioDevices } from './audio-devices.ts';
 import { prepareLinkAudio } from './link-audio.ts';
 
 const UV_VERSION = '0.9.11';
@@ -259,6 +260,7 @@ async function prepareFfmpeg(): Promise<void> {
 }
 
 try {
+  prepareAudioDevices();
   prepareLinkAudio();
   await prepareUv();
   await prepareYtDlp();

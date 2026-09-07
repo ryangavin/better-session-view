@@ -11,6 +11,7 @@ import type { Every } from './pinned.ts';
 import type { Beats } from './warp.ts';
 import type { Fit } from './tempo.ts';
 import type { Follow } from './follow.ts';
+import type { AudioDevice } from './audioDevices.ts';
 import type { LinkAudioAPI } from './linkAudioTypes.ts';
 
 /**
@@ -272,6 +273,7 @@ export interface KeptPeaks {
 }
 
 interface Bridge {
+  audioDevices(): Promise<AudioDevice[]>;
   linkAudio: LinkAudioAPI;
   demucs(): Promise<Ready>;
   library: {

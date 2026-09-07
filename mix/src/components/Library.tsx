@@ -1,5 +1,4 @@
 import { TRACK_DRAG } from '../play/decks.ts';
-import { useState, type FormEvent } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS } from '../mock.ts';
 import { gridFact, type GridNote, type Track } from '../openflow.ts';
@@ -26,13 +25,6 @@ import './Library.css';
  */
 export function Library({ mix }: { mix: Mix }) {
   const { library } = mix;
-  const [youtube, setYoutube] = useState('');
-
-  const fetchYoutube = async (event?: FormEvent) => {
-    event?.preventDefault();
-    if (!youtube.trim()) return;
-    if (await mix.importYoutube(youtube)) setYoutube('');
-  };
 
   return (
     <aside className="mf-library">
@@ -54,23 +46,6 @@ export function Library({ mix }: { mix: Mix }) {
             Import
           </Button>
         </div>
-        <form className="mf-library-tools" onSubmit={(event) => void fetchYoutube(event)}>
-          <input
-            type="url"
-            value={youtube}
-            onChange={(event) => setYoutube(event.currentTarget.value)}
-            placeholder="YouTube URL"
-            aria-label="YouTube URL"
-            disabled={!library.root || mix.importing}
-          />
-          <Button
-            onPress={() => void fetchYoutube()}
-            disabled={!library.root || mix.importing || !youtube.trim()}
-            title={library.root ? 'Fetch the best audio with yt-dlp' : 'Choose a library folder first'}
-          >
-            Fetch
-          </Button>
-        </form>
       </div>
 
       <div className="mf-library-list">
@@ -97,7 +72,7 @@ export function Library({ mix }: { mix: Mix }) {
         {library.root && !library.problem && library.tracks.length === 0 && (
           <div className="mf-library-blank">
             <p className="mf-blank-lead">Nothing in here yet.</p>
-            <p>Import a few tracks and they will be copied into the folder.</p>
+            <p>Import audio files or drop a YouTube video link here.</p>
             <Button
               onPress={() => void mix.importTracks()}
               disabled={mix.importing}

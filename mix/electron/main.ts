@@ -25,6 +25,7 @@ import { TAB_FILE, transcriptionAt, type TranscribeProgress } from './transcribe
 import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
 import { stopYoutube } from './youtube.ts';
+import { audioDevices } from './audioDevices.ts';
 import { LinkAudioService } from './linkAudio.ts';
 import type { LinkBlock, LinkCommand, LinkOutput } from '../src/linkAudioTypes.ts';
 import {
@@ -110,6 +111,7 @@ if (only(app)) {
   ipcMain.handle('openflow:link-write', (_event, id: string, block: LinkBlock) => linkAudio.write(id, block));
   ipcMain.handle('openflow:link-close', (_event, id: string) => linkAudio.close(id));
 
+  ipcMain.handle('openflow:audio-devices', () => audioDevices(path.resolve(__dirname, '../../bin/audio-devices')));
   ipcMain.handle('openflow:demucs', () => ready(RUNTIME));
 
   // The library is the main process's, because it is a folder. Everything the

@@ -9,12 +9,18 @@ class Context {
 }
 beforeEach(() => { const values = new Map<string,string>(); vi.stubGlobal('localStorage', { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key,value) }); });
 afterEach(() => { vi.unstubAllGlobals(); made.length = 0; });
-it('remembers only supported machine-local preferences and tolerates damaged storage', () => {
+it('remembers valid machine-local preferences and tolerates damaged storage', () => {
   expect(readAudioSettings()).toEqual(AUDIO_DEFAULTS);
   const settings = { deviceId: 'interface', sampleRate: 48000, latency: 'balanced' as const };
   saveAudioSettings(settings); expect(readAudioSettings()).toEqual(settings);
   localStorage.setItem('mix.audio.v1', '{broken'); expect(readAudioSettings()).toEqual(AUDIO_DEFAULTS);
   localStorage.setItem('mix.audio.v1', JSON.stringify({ ...settings, sampleRate: -1 })); expect(readAudioSettings()).toEqual(AUDIO_DEFAULTS);
+});
+it('retains rates supplied by a driver beyond the old fixed list', () => {
+  for (const sampleRate of [32000, 176400, 192000, 768000]) {
+    saveAudioSettings({...AUDIO_DEFAULTS, sampleRate});
+    expect(readAudioSettings().sampleRate).toBe(sampleRate);
+  }
 });
 it('prepares both engines on the requested device and rate before returning either', async () => {
   vi.stubGlobal('AudioContext', Context);

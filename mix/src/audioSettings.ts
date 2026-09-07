@@ -5,19 +5,19 @@ export interface AudioSettings {
   latency: AudioContextLatencyCategory;
 }
 export const AUDIO_DEFAULTS: AudioSettings = { deviceId: '', sampleRate: 0, latency: 'interactive' };
-export const SAMPLE_RATES = [0, 44100, 48000, 88200, 96000];
+export const validSampleRate = (rate: unknown): rate is number => typeof rate === 'number' && Number.isFinite(rate) && rate >= 0;
 const KEY = 'mix.audio.v1';
 type OutputContext = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 export function readAudioSettings(): AudioSettings {
   try {
     const held = JSON.parse(localStorage.getItem(KEY) ?? 'null');
-    if (!held || typeof held.deviceId !== 'string' || !SAMPLE_RATES.includes(held.sampleRate) || !['interactive','balanced','playback'].includes(held.latency)) return {...AUDIO_DEFAULTS};
+    if (!held || typeof held.deviceId !== 'string' || !validSampleRate(held.sampleRate) || !['interactive','balanced','playback'].includes(held.latency)) return {...AUDIO_DEFAULTS};
     return {deviceId:held.deviceId,sampleRate:held.sampleRate,latency:held.latency};
   } catch { return {...AUDIO_DEFAULTS}; }
 }
 export function saveAudioSettings(settings: AudioSettings) { localStorage.setItem(KEY,JSON.stringify(settings)); }
 export function createAudioContext(settings = readAudioSettings()): AudioContext {
-  if (settings.deviceId && typeof (AudioContext.prototype as OutputContext).setSinkId !== 'function') throw new Error('This browser cannot select an audio output. Choose System default in Audio settings.');
+  if (settings.deviceId && typeof (AudioContext.prototype as OutputContext).setSinkId !== 'function') throw new Error('This browser cannot select an audio output. Choose System default in Settings.');
   const options: AudioContextOptions & { sinkId: string } = {latencyHint:settings.latency,...(settings.sampleRate ? {sampleRate:settings.sampleRate} : {}),sinkId:settings.deviceId};
   return new AudioContext(options);
 }

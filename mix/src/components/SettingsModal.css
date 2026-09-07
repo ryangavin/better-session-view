@@ -1,14 +1,52 @@
 .mf-settings .wdg-modal-body, .mf-audio-panel { display: grid; gap: 16px; }
 .mf-audio-fields { display: grid; grid-template-columns: 116px minmax(0,1fr); align-items: center; gap: 12px 14px; }
-.mf-audio-fields > label { color: var(--ui); font-size: var(--text-label); }
+.mf-audio-fields > label, .mf-audio-output-label { color: var(--ui); font-size: var(--text-label); }
 .mf-audio-fields .wdg-select { max-width: 100%; min-width: 0; }
-.mf-audio-device-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mf-audio-output-label { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.mf-audio-output-controls { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mf-audio-output-controls .wdg-select { flex: 1; }
+.mf-audio-defaults { margin-left: auto; }
 .mf-audio-help { margin: 0; color: var(--caption); font-size: var(--text-label); line-height: 1.55; }
-.mf-audio-status { margin: 0; padding: 14px 0; border-block: 1px solid var(--edge); display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: var(--text-label); }
-.mf-audio-status dt { color: var(--caption); }.mf-audio-status dd { margin: 0; text-align: right; }
 .mf-audio-success,.mf-audio-error { margin: 0; font-size: var(--text-label); }.mf-audio-error { color: var(--red); }
 .mf-settings-button { margin-left: auto; }
 
 .mf-audio-panel[hidden] { display: none; }
 
 .mf-settings .wdg-theme-editor { justify-self: center; }
+
+/* A palette column and a waveform/deck column fit the editor in a settings window. */
+.mf-settings-theme .wdg-theme-editor {
+  width: 568px;
+  display: grid;
+  grid-template-columns: 252px 252px;
+  column-gap: 40px;
+  row-gap: 12px;
+  align-items: start;
+}
+.mf-settings-theme .wdg-theme-toolbar { grid-column: 1; grid-row: 1; }
+.mf-settings-theme .wdg-theme-swatches { grid-column: 1; grid-row: 2; margin: 0; }
+.mf-settings-theme .wdg-theme-sample { grid-column: 1; grid-row: 3; margin: 0; }
+.mf-settings-theme .wdg-theme-values { grid-column: 1; grid-row: 4; }
+.mf-settings-theme .wdg-theme-rolls { grid-column: 1; grid-row: 5; margin: 0; }
+.mf-settings-theme .wdg-theme-editor > p:first-of-type { grid-column: 1; grid-row: 6; }
+.mf-settings-theme .wdg-theme-editor > p:nth-of-type(2) { grid-column: 2; grid-row: 7; }
+.mf-settings-theme .wdg-theme-warning { grid-column: 1; grid-row: 7; }
+.mf-settings-theme .wdg-theme-spectral { grid-column: 2; grid-row: 1 / 4; padding: 0; margin: 0; border: 0; }
+.mf-settings-theme .wdg-theme-variation { grid-column: 2; grid-row: 4 / 7; margin: 0; }
+.mf-settings-theme .wdg-theme-editor p { margin-top: 0; }
+@media (max-width: 620px) {
+  .mf-settings-theme .wdg-theme-editor { display: block; width: 276px; }
+  .mf-settings-theme .wdg-theme-swatches { margin: 12px 0; }
+  .mf-settings-theme .wdg-theme-spectral, .mf-settings-theme .wdg-theme-variation { margin: 12px 0; }
+}
+
+.mf-audio-output-label .wdg-button-body { padding: 0; }
+.mf-audio-output-label svg { flex: none; }
+
+.mf-settings-theme .wdg-theme-band-swatches { width: 240px; justify-self: center; }
+.mf-settings-theme .wdg-theme-editor .wdg-theme-warning {
+  color: var(--info);
+  border-color: var(--info);
+  background: color-mix(in oklab, var(--info) 8%, transparent);
+  padding: 8px;
+}

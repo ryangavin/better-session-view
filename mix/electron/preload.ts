@@ -1,3 +1,4 @@
+import type { AudioDevice } from '../src/audioDevices.ts';
 import { ipcRenderer, webUtils } from 'electron';
 import { expose } from '@openflow/desktop/preload.ts';
 import type { Imported, Library } from './library.ts';
@@ -33,6 +34,7 @@ import type { LinkAudioAPI, LinkBlock, LinkCommand, LinkOutput } from '../src/li
  * outlives its component is a leak the page cannot see.
  */
 expose({
+  audioDevices: (): Promise<AudioDevice[]> => ipcRenderer.invoke('openflow:audio-devices'),
   linkAudio: {
     open: (outputs: LinkOutput[], tempo?: number) => ipcRenderer.invoke('openflow:link-open', outputs, tempo),
     control: (session: string, command: LinkCommand) => ipcRenderer.invoke('openflow:link-control', session, command),

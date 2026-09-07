@@ -1,7 +1,7 @@
 import { SettingsModal } from './components/SettingsModal.tsx';
 import { PlayView } from './play/PlayView.tsx';
 import { useMixerViewModel } from './play/useMixerViewModel.ts';
-import { isViewShortcut, TRACK_DRAG } from './play/decks.ts';
+import { isViewShortcut } from './play/decks.ts';
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Empty } from './components/Empty.tsx';
 import { DetailsModal } from './components/DetailsModal.tsx';
@@ -14,6 +14,7 @@ import { Running } from './components/Running.tsx';
 import { openflow, type Ready } from './openflow.ts';
 import { useMix } from './state.ts';
 import './App.css';
+import { carriesImport, droppedYoutube } from './libraryDrop.ts';
 
 /**
  * mix[flow]: a library on the left, the open track to the right of it, and one
@@ -107,25 +108,24 @@ export function App() {
     return () => window.removeEventListener('keydown', key);
   }, [playView, mixer.commands, mixer.state.running, mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
 
-  const carriesFiles = (event: DragEvent): boolean =>
-    Array.from(event.dataTransfer.types).includes('Files') && !Array.from(event.dataTransfer.types).includes(TRACK_DRAG);
+  const carriesLibraryImport = (event: DragEvent): boolean => carriesImport(Array.from(event.dataTransfer.types));
 
   const dragEnter = (event: DragEvent) => {
-    if (!carriesFiles(event)) return;
+    if (!carriesLibraryImport(event)) return;
     event.preventDefault();
     dragDepth.current += 1;
     if (mix.library.root && !mix.importing) setDropping(true);
   };
 
   const dragOver = (event: DragEvent) => {
-    if (!carriesFiles(event)) return;
+    if (!carriesLibraryImport(event)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = mix.library.root && !mix.importing ? 'copy' : 'none';
   };
 
   const dragLeave = (_event: DragEvent) => {
     // Chromium may clear `dataTransfer.types` on the final leave. The depth is
-    // already proof that this drag entered with files, and is the reliable way
+    // already proof that this drag entered with import data, and is the reliable way
     // to make sure the target cannot remain stuck on screen.
     if (dragDepth.current === 0) return;
     dragDepth.current = Math.max(0, dragDepth.current - 1);
@@ -133,12 +133,16 @@ export function App() {
   };
 
   const drop = (event: DragEvent) => {
-    if (event.dataTransfer.files.length === 0) return;
+    if (!carriesLibraryImport(event)) return;
     event.preventDefault();
     dragDepth.current = 0;
     setDropping(false);
     if (mix.library.root && !mix.importing) {
-      void mix.importDropped(Array.from(event.dataTransfer.files));
+      if(event.dataTransfer.files.length) void mix.importDropped(Array.from(event.dataTransfer.files));
+      else {
+        const video=droppedYoutube(event.dataTransfer);
+        if(video) void mix.importYoutube(video);
+      }
     }
   };
 
@@ -168,7 +172,7 @@ export function App() {
       {mix.details && <DetailsModal mix={mix} ready={ready} />}
       {dropping && (
         <div className="mf-drop" role="status">
-          <span>Drop audio files to import</span>
+          <span>Drop audio files or a YouTube video link to import</span>
         </div>
       )}
     </div>

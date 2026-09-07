@@ -45,7 +45,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | touching | read |
 |---|---|
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
-| audio interface, sample rate, latency or restarting the audio graphs | [`docs/audio-settings.md`](docs/audio-settings.md) — `src/audioSettings.ts`, `src/components/SettingsModal.tsx` |
+| audio interface, supported sample rates, latency or restarting the audio graphs | [`docs/audio-settings.md`](docs/audio-settings.md) — `src/audioSettings.ts`, `src/components/SettingsModal.tsx` |
 | switching Prep/Play, library-to-deck loading, or four-deck playback | [`docs/play-view.md`](docs/play-view.md) — `src/play/`, `src/App.tsx` |
 | the layout, the Analyze page, which lanes there are, or zooming the timeline | [`docs/window.md`](docs/window.md) — `src/`, and `src/zoom.ts` for the zoom |
 | checking or correcting the beat grid, finding the beats again, or suggesting sections | [`docs/track-review.md`](docs/track-review.md) — `src/components/BeatGridEditor.tsx`, `src/components/Ruler.tsx`, `src/beatEdit.ts`, `src/sections.ts`, `src/components/suggestions.ts` |
