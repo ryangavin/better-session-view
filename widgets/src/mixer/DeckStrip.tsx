@@ -48,6 +48,10 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
             {['High', 'Mid', 'Low'].map((name, e) => <Knob key={name} name={name} label={`Deck ${index + 1} ${name}`} param={EQ} origin="center" value={d.eq[e]} onChange={value => commands.setDeckEq(d.id, e, value)} />)}
           </div>
         </div>
-        <div className="play-route"><Toggle on={d.cue} onChange={value => commands.setDeck(d.id, 'cue', value)} width={45} label={`Deck ${index + 1} headphone cue`}>Cue</Toggle><Segmented name="" label={`Deck ${index + 1} crossfade assignment`} items={ROUTE} index={d.route} onChange={value => commands.setDeck(d.id, 'route', value)} /><Toggle on={d.full} width={44} label={`Deck ${index + 1} original full mix`} title="Use the original unseparated track instead of stems" onChange={value => commands.setDeck(d.id, 'full', value)}>Full</Toggle></div>
+        <div className="play-route"><Toggle on={d.cue} onChange={value => commands.setDeck(d.id, 'cue', value)} width={45} label={`Deck ${index + 1} headphone cue`}>Phones</Toggle><Segmented name="" label={`Deck ${index + 1} crossfade assignment`} items={ROUTE} index={d.route} onChange={value => commands.setDeck(d.id, 'route', value)} /><Toggle on={d.full} width={44} label={`Deck ${index + 1} original full mix`} title="Use the original unseparated track instead of stems" onChange={value => commands.setDeck(d.id, 'full', value)}>Full</Toggle></div>
+        <div className="play-deck-transport" role="group" aria-label={`Deck ${index + 1} transport`}>
+          <Toggle width={44} className="play-transport-button" on={d.playing ?? false} disabled={d.status !== 'ready' || !commands.setDeckPlaying} label={`Deck ${index + 1} play/pause`} title={commands.setDeckPlaying ? 'Play / Pause' : 'Deck playback is not connected yet'} onChange={playing => commands.setDeckPlaying?.(d.id, playing)}>{d.playing ? 'Ⅱ' : '▶'}</Toggle>
+          <Toggle width={44} className="play-transport-button" momentary on={d.cueHeld ?? false} disabled={d.status !== 'ready' || !commands.cueDeck} label={`Deck ${index + 1} transport cue`} title={commands.cueDeck ? 'Return to cue; hold to audition' : 'Deck playback is not connected yet'} onChange={held => commands.cueDeck?.(d.id, held)}>Cue</Toggle>
+        </div>
       </div>;
 }

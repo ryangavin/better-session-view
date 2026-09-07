@@ -47,6 +47,10 @@ sets may require horizontal scrolling. The shared sidebar is not collapsed to fo
 
 This is still the approved UI integration pass. The header says playback is not connected.
 Run, quantization and loop capture are disabled; frame readings and meters stay zero.
+Each deck now has square Play/Pause and transport Cue buttons below its routing row;
+these also remain disabled until the playback controller supplies their commands.
+Headphone monitoring is labeled Phones. The master has only a slim crossfader in the
+bottom area, with no deck transport buttons.
 Knobs and section choices hold local UI settings. They do not schedule sound or send
 commands to preparation playback. No fixture clocks, invented meters, bench songs or
 bench imports ship with mix.

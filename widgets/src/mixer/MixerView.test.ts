@@ -54,6 +54,30 @@ describe('controlled mixer boundary', () => {
     expect(view.getByRole('button', { name: 'Deck 1: Verse bass, selected' }).getAttribute('aria-pressed')).toBe('true');
     expect(document.body.style.getPropertyValue('--amber')).toBe('');
   });
+  it('keeps one bottom transport per deck and delegates playback and cue to the host', () => {
+    const props = fixture();
+    props.commands.setDeckPlaying = vi.fn(); props.commands.cueDeck = vi.fn();
+    const view = render(createElement(MixerView, props));
+    expect(view.getAllByRole('group', { name: /^Deck \d transport$/ })).toHaveLength(4);
+    const play = view.getByRole('button', { name: 'Deck 1 play/pause' });
+    fireEvent.click(play);
+    expect(props.commands.setDeckPlaying).toHaveBeenCalledWith('left-outside', true);
+    expect(play.getAttribute('aria-pressed')).toBe('false');
+    const cue = view.getByRole('button', { name: 'Deck 1 transport cue' });
+    fireEvent.pointerDown(cue); fireEvent.pointerUp(cue);
+    expect(props.commands.cueDeck).toHaveBeenNthCalledWith(1, 'left-outside', true);
+    expect(props.commands.cueDeck).toHaveBeenNthCalledWith(2, 'left-outside', false);
+    expect(props.commands.setDeck).not.toHaveBeenCalled();
+    view.rerender(createElement(MixerView, { ...props, state: { ...props.state, decks: [{ ...props.state.decks[0], playing: true }, ...props.state.decks.slice(1)] } }));
+    fireEvent.click(play);
+    expect(props.commands.setDeckPlaying).toHaveBeenLastCalledWith('left-outside', false);
+    expect(play.getAttribute('aria-pressed')).toBe('true');
+  });
+  it('disables deck transport when the host has no playback controller', () => {
+    const view = render(createElement(MixerView, fixture()));
+    expect((view.getByRole('button', { name: 'Deck 1 play/pause' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((view.getByRole('button', { name: 'Deck 1 transport cue' }) as HTMLButtonElement).disabled).toBe(true);
+  });
   it('reads independent deck positions without advancing or issuing playback commands', () => {
     const props = fixture();
     let frame: MixerFrame = { decks: { 'left-outside': { beat: 32, level: 0 }, 'left-inside': { beat: 64, level: 0 } }, masterLevel: 0 };

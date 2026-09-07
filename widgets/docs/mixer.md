@@ -39,6 +39,18 @@ can accept a replacement. The widgets never interpret a library payload. Unknown
 `playbackAvailable: false` disables Run, launch quantization and loop capture for a host
 that has no audio controller yet. Missing/undefined retains the previous bench behavior.
 
+## Deck transport footer
+
+Each deck has a square Play/Pause and momentary Cue pair below its routing row.
+The routing row calls headphone monitoring **Phones** to distinguish it from transport
+Cue. The master has no deck transport pair; its slim crossfader sits at the bottom of
+that shared footer area.
+
+Optional `setDeckPlaying(deckId, playing)` and `cueDeck(deckId, held)` commands emit
+intent only. The host reports `playing` and `cueHeld`; cue points, audition and resuming
+belong to the playback controller. Buttons are disabled for non-ready decks or missing
+callbacks, including the current silent mix adapter.
+
 ## Frame readings
 
 `readFrame()` is a stable, synchronous, read-only sampler. It returns absolute beat

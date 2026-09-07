@@ -1,7 +1,7 @@
 .play-example { max-width: 1600px; margin: 0 auto; color: var(--wdg-text); }
 .play-scroll { overflow-x: auto; }
-.play-decks { display: grid; grid-template-columns: minmax(var(--play-deck-min,200px),1fr) minmax(var(--play-deck-min,200px),1fr) 156px minmax(var(--play-deck-min,200px),1fr) minmax(var(--play-deck-min,200px),1fr); grid-template-rows: repeat(5,auto); min-width: 956px; border: 1px solid var(--wdg-edge); background: var(--wdg-face); }
-.play-deck, .play-master-strip { display: grid; grid-row: 1 / span 5; grid-template-rows: subgrid; grid-template-columns: minmax(0,1fr); row-gap: 0; padding: 8px 6px 6px; align-items: stretch; min-width: 0; border-right: 1px solid var(--wdg-edge); }
+.play-decks { display: grid; grid-template-columns: minmax(var(--play-deck-min,200px),1fr) minmax(var(--play-deck-min,200px),1fr) 156px minmax(var(--play-deck-min,200px),1fr) minmax(var(--play-deck-min,200px),1fr); grid-template-rows: repeat(6,auto); min-width: 956px; border: 1px solid var(--wdg-edge); background: var(--wdg-face); }
+.play-deck, .play-master-strip { display: grid; grid-row: 1 / span 6; grid-template-rows: subgrid; grid-template-columns: minmax(0,1fr); row-gap: 0; padding: 8px 6px 6px; align-items: stretch; min-width: 0; border-right: 1px solid var(--wdg-edge); }
 .play-deck { background: linear-gradient(90deg,transparent,#ffffff02 50%,transparent); }
 .play-deck:last-child { border-right: 0; }
 .play-master-strip { background: var(--wdg-well); }
@@ -69,3 +69,9 @@
 
 .play-launch-row > .wdg { width: 100%; min-width: 0; }
 .play-launch-row .wdg-button-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 2px; }
+
+.play-deck-transport { display: flex; justify-content: center; align-items: center; gap: 12px; padding-top: 8px; margin-top: 6px; border-top: 1px solid var(--wdg-edge); }
+.play-deck-transport .wdg { --wdg-field-height: 44px; }
+.play-transport-button { --wdg-radius: 3px; }
+.play-master-cross { grid-row: 5 / span 2; align-items: flex-end; padding-bottom: 15px; }
+.play-master-cross .wdg-slider { --wdg-track: 10px; }
