@@ -1,0 +1,8 @@
+.mf-details-modal .mf-page {
+  padding: 0;
+  overflow: visible;
+}
+
+.mf-details-modal .mf-page-body {
+  max-width: none;
+}

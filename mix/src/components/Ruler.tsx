@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { rulingOf, stepFor, TICKS_PER_BAR } from '../grid.ts';
+import type { SectionSuggestion } from '../sections.ts';
 import { barText, lengthText, snappedBar } from '../slices.ts';
 import type { Mix } from '../state.ts';
 import { barAt, placeOf } from '../warp.ts';
@@ -25,6 +26,13 @@ import { useDraft } from './draft.ts';
  * wrong rule for a loop: a section going round and round wants to be a whole
  * number of bars whatever the zoom is, so the header's snap can hold a cut to
  * a rung instead and the ruling stops having the last word.
+ *
+ * **While the grid is open, the ruler also offers cuts.** The section changes
+ * the stems suggest — a vocal arriving, the energy dropping, the tempo
+ * moving — are drawn as dashed marks with their reason, on whatever beat the
+ * change is on. Click one and it is a cut like any other; leave it and it
+ * is nothing. Cutting, dragging and naming keep working with the grid open:
+ * a cut is a bar on the grid, and it moves with a beat that is dragged.
  */
 
 /**
@@ -41,11 +49,14 @@ export function Ruler({
   mix,
   view,
   timeline,
+  suggested = [],
 }: {
   mix: Mix;
   view: View;
   /** The element whose box is exactly the timeline, for geometry. */
   timeline: RefObject<HTMLDivElement | null>;
+  /** Cuts the stems suggest, offered while the grid is open. */
+  suggested?: readonly SectionSuggestion[];
 }) {
   const grid = mix.grid;
   const drag = useRef<{ index: number; pointer: number } | null>(null);
@@ -93,7 +104,7 @@ export function Ruler({
   };
 
   const split = (event: React.MouseEvent<HTMLElement>) => {
-    if (mix.editingGrid || (event.target as HTMLElement).tagName === 'INPUT') return;
+    if ((event.target as HTMLElement).tagName === 'INPUT') return;
     const at = barUnder(event.clientX);
     if (at && at.bar > 0 && at.bar < mix.bars) mix.cutSlice(at.bar);
   };
@@ -135,7 +146,7 @@ export function Ruler({
               if ((event.target as HTMLElement).tagName !== 'INPUT') mix.pickSlice(i);
             }}
             onDoubleClick={(event) => {
-              if (mix.editingGrid || (event.target as HTMLElement).tagName === 'INPUT') return;
+              if ((event.target as HTMLElement).tagName === 'INPUT') return;
               if ((event.target as HTMLElement).classList.contains('mf-slice-name')) {
                 setEditing(i);
                 return;
@@ -144,7 +155,7 @@ export function Ruler({
             }}
             title={`${slice.name} — bar ${barText(slice.bar)}, ${lengthText(next - slice.bar)} bars. Double-click to cut here`}
           >
-            {i > 0 && !mix.editingGrid && (
+            {i > 0 && (
               <span
                 className="mf-slice-cut"
                 role="separator"
@@ -172,6 +183,27 @@ export function Ruler({
               </span>
             )}
           </div>
+        );
+      })}
+      {suggested.map((s) => {
+        if (mix.slices.some((slice) => Math.abs(slice.bar - s.bar) < 0.01)) return null;
+        const at = shows(view, placeOf(grid, s.bar));
+        if (at < 0 || at > 1) return null;
+        return (
+          <button
+            key={s.bar}
+            type="button"
+            className="mf-slice-ghost"
+            style={{ left: `${at * 100}%` }}
+            title={`${s.reason} at bar ${barText(s.bar)} — click to cut here`}
+            aria-label={`Cut at bar ${barText(s.bar)}: ${s.reason.toLowerCase()}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              mix.cutSlice(s.bar);
+            }}
+            onDoubleClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+          />
         );
       })}
       {brace && (

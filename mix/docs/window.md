@@ -70,47 +70,58 @@ The Electron window opts out of background throttling, using both `switches(app)
 `throttle: false`, because publishing must keep running when Live covers the mix window.
 
 Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
-**Analyze** opens the track analysis home. The compact detected tempo/agreement summary
-and Warp remain in the mixer header. Automatic beat detection, algorithm previews and section suggestions live in analysis.
-Manual timing corrections live in the main view behind **Edit beat grid**, which reveals
-beat handles and an explicit Done/Cancel toolbar. Warp controls playback, not editability. The tiny Separate again action above the lanes is gone.
+**Grid** opens the one mode for asking whether the song is right, over the lanes:
+beat handles, bar 1, nudges, **Find beats**, listen with a click, and the section
+changes the stems suggest as dashed cuts on the ruler. Done and Cancel are its only way
+out. Beside it the header says the tempo the beats run at — a range where the record
+moves — and nothing about how it was found: agreement and the algorithm's name are the
+debug workspace's. Warp controls playback, not editability. **Details** beside the
+title opens what the track is: name, artist, album, art, and the model that made the
+stems with Separate again. There is no Analyze page any more; what it did that was
+worth keeping is in the mode, and what it asked that a person was not asking is
+behind the bug button.
 
-The title yields by ellipsis rather than wrapping the header. In analysis the page owns
-its listening controls and Back to mix; the header shows Analysis as the current location.
-The normal playback and export controls return with the mixer. Engine faults still appear
-only when there is something wrong.
+The title yields by ellipsis rather than wrapping the header. Engine faults still
+appear only when there is something wrong.
 
-## Track analysis, on import and on return
+## Before there are stems, and the details after
 
-`TrackAnalysis.tsx` wraps setup and the product song review. A newly imported track
-with no stems starts on the source setup section: metadata, model cards and Generate stems.
-The same page shows beat and section review when decoded stems are available.
-Separation still runs only on an explicit Generate/Separate again press.
+`TrackAnalysis.tsx` is the page a track opens on before it has stems: the details, the
+model cards and Generate stems, and nothing else, because nothing else can be drawn
+yet. Separation runs only on an explicit press. Once a track has stems it opens on the
+lanes and stays there.
 
-An existing track opens with one zoomable timeline and aligned stems. `TrackReview.tsx`
-provides first/middle/end inspection, four-bar listening with an optional metronome, beat
-algorithm selection and section suggestions. Run beat analysis proposes a replacement;
-Compare saved grid overlays the current bar positions at close zoom. **Apply analysis &
-return** keeps the proposed map and, only when selected, numbered section suggestions.
-Back to mix abandons the preview. No manual timing controls live on this page.
+`DetailsModal.tsx` brings the same form back over the mixer, from **Details** in the
+header: title, artist, album and cover, the model that made the stems preselected, and
+**Separate again**. Starting a separation closes the dialog and the job's own screen
+takes over. It is a dialog rather than a page because none of it needs the waveforms.
 
-In the main view, **Edit beat grid** reveals draggable beat handles, bar-1 placement,
-renumbering, nudges and an explicit steady-grid replacement. Undo, Cancel and Done govern
-one temporary editing session; unfinished changes never reach the saved grid. Normal
-waveform clicks seek and the main Warp switch only changes playback. Section placement
-and naming stay on the main ruler; section mutations pause while a beat draft is active.
-See [track-review.md](track-review.md) for measurement, thresholds, playback and persistence.
+## The grid, over the lanes
 
-Source setup and metadata follow the review on the same page. There is no tab switch
-and no footer; Apply, Back and preview status share the top heading. The model that produced
-the stems is preselected when Analyze opens; the cache/engine estimates are the existing
-ones. **Back to mix** leaves without separating or applying a preview.
+**Grid** in the header opens `BeatGridEditor.tsx` above the actual mixer lanes. Beat
+handles appear only in this mode, independently of the Warp playback switch. Marker
+arrows move a beat 10 ms, or 1 ms with Shift; dragging snaps to nearby hits unless
+Option is held. Set bar 1 shifts all samples to the playhead; One beat earlier/later
+renumbers without moving samples. Nudges shift the complete map 10 ms. Replace with a
+steady grid explicitly discards tempo variation at the entered BPM. **Find beats** runs
+what an import runs on the drums and draws the result as the draft; Undo puts the old
+grid back. Listen with click auditions four bars of drums at original speed; main
+playback or a correction stops that audition.
 
-The underlying phases remain derived: `empty`, `idle` (analysis home), `running`
-(separation progress), `ready` (mixer). `setupFor` holds a track ID, so reopening analysis
-for one song does not put every other song there. Opening analysis stops main playback;
-analysis audition owns its own clock and stops on unmount. Mixer keyboard shortcuts only
-run in the mixer and do not also trigger while analysis is listening or a control is focused.
+While the grid is open the ruler offers the section changes the stems suggest —
+`sections.ts`, read off `measure()` against the draft grid, so they move with a beat
+that is dragged — as dashed marks with their reason. Click one to cut there; leave it
+and it is nothing. Cutting, dragging and naming sections keep working with the grid
+open. See [track-review.md](track-review.md) for measurement, thresholds and
+persistence.
+
+`beatEdit.ts` holds the draft apart from saved `beats` and `offset`. The drawing and mixer
+read the draft, but library/session persistence reads only the saved state. **Undo** restores
+one action, grouping each pointer drag into one step; Command/Ctrl-Z does the same.
+**Cancel** (or Escape) abandons the draft, and **Done** commits it through `saveReview`.
+Switching tracks or reloading abandons unfinished edits. Done with no edits preserves the
+original map and detector reading. Export is unavailable until Done or Cancel. The header
+tempo controls playback and preserves source beat positions.
 
 Metadata remains in `Details.tsx`, committing on blur and reverting with Escape. The model
 cards report useful source/speed tradeoffs, not scores. Successful separation follows the

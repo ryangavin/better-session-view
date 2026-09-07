@@ -4,15 +4,49 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import { beatAt, evenBeats, renumbered, sampleOf, shifted, tempoOf } from '../warp.ts';
+import { describe, FIRST_CHOICE, run } from '../algorithms.ts';
 import type { Mix } from '../state.ts';
 
 const TEMPO: Param = { kind: 'float', min: 40, max: 300, defaultValue: 120, unit: 'custom', customUnit: '%0.2f' };
 
-/** Manual correction lives beside the actual mixer lanes; detection lives in Analyze. */
+const channelsOf = (buffer: AudioBuffer) => Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c));
+
+/**
+ * The grid, open for checking and correcting over the real lanes: the one
+ * mode for asking whether the song is right. Drag a beat, set bar 1, nudge,
+ * find the beats again, listen with a click; the ruler above offers the
+ * section changes it heard as cuts to keep. Done keeps it all, Cancel
+ * restores the saved grid. What used to be a separate page with its own
+ * timeline, zoom and algorithm picker is this, on the lanes you mix on.
+ */
 export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number): void }) {
   const grid = mix.grid, downbeat = sampleOf(grid, 0) / grid.rate;
   const player = useReviewPlayback();
   const [problem, setProblem] = useState('');
+  const [finding, setFinding] = useState(false);
+  /**
+   * The beats found again, as the draft: what an import gets, run on the
+   * drums, drawn over the saved grid until Done. Undo puts the old grid
+   * back, so trying it costs nothing.
+   */
+  const find = () => {
+    const drums = mix.audioOf('drums');
+    if (!drums) { setProblem('No drums to read. Separate the track first.'); return; }
+    player.stop(); setFinding(true); setProblem('');
+    window.setTimeout(() => {
+      try {
+        const got = run(FIRST_CHOICE, channelsOf(drums), drums.sampleRate, {});
+        const next = got?.beats ?? (got?.fit ? evenBeats(grid.rate, grid.length, got.fit.bpm, got.fit.offset) : null);
+        if (!next) { setProblem(`${describe(FIRST_CHOICE).name} found no steady beat; the grid is as it was.`); return; }
+        mix.editGrid(next);
+        inspect(sampleOf(next, 0) / next.rate);
+      } catch (error) {
+        setProblem(`Could not find the beats: ${String(error)}`);
+      } finally {
+        setFinding(false);
+      }
+    }, 0);
+  };
   // A correction or main transport playback ends the old-grid audition.
   useEffect(() => { player.stop(); }, [grid]);
   useEffect(() => { if (mix.playing) player.stop(); }, [mix.playing]);
@@ -35,7 +69,8 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
   };
   return <section className="mf-grid-editor" aria-label="Beat grid editing">
     <div className="mf-grid-editor-row">
-      <strong>Editing beat grid</strong><span role="status">{mix.gridEditDirty ? 'Unsaved timing edits' : 'No timing edits yet'}</span>
+      <strong>Grid</strong><span role="status">{mix.gridEditDirty ? 'Changed — Done keeps it, Cancel puts it back' : 'As saved'}</span>
+      <Button onPress={find} disabled={finding} title="Find the beats again on the drums, the way an import does, and draw them over the saved grid. Undo puts the old grid back">{finding ? 'Finding…' : 'Find beats'}</Button>
       <Button onPress={() => inspect(downbeat)}>First downbeat</Button>
       <Button onPress={listen}>{player.head === null ? 'Listen with click' : 'Stop listening'}</Button>
       <Button onPress={mix.undoGridEdit} disabled={!mix.gridEditDirty}>Undo</Button>
@@ -48,7 +83,7 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
       <Button onPress={() => mix.editGrid(renumbered(grid, 1))}>One beat later</Button>
       <span>Nudge all beats</span><Button onPress={() => mix.editGrid(shifted(grid, -Math.round(grid.rate * .01)))}>−10 ms</Button><Button onPress={() => mix.editGrid(shifted(grid, Math.round(grid.rate * .01)))}>+10 ms</Button>
     </div>
-    <p>Zoom to a hit and drag its beat marker; Option skips snapping to hits. Waveform clicks only move the playhead. Done keeps timing edits; Cancel restores the saved grid.</p>
+    <p>Zoom to a hit and drag its beat marker; Option skips snapping to hits. Dashed marks on the ruler are section changes the stems suggest — click one to cut there. Waveform clicks only move the playhead.</p>
     {problem && <p role="alert">{problem}</p>}
     {player.head !== null && <p role="status">Listening to drums at original speed · {player.head.toFixed(3)} s</p>}
     <details><summary>Replace with a steady grid</summary><div className="mf-grid-editor-row"><span>Steady tempo BPM</span><NumberField param={TEMPO} value={tempoOf(grid)} showFill={false} label="Steady grid tempo BPM" width={85} onChange={(bpm) => mix.editGrid(evenBeats(grid.rate, grid.length, bpm, downbeat))}/><span>Replaces tempo variation with evenly spaced beats.</span></div></details>

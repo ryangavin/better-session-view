@@ -9,11 +9,11 @@ import './Idle.css';
  * What a track with no stems on disk shows: who it is by, the models this build
  * will actually run, what each one trades away, and one button.
  *
- * **It is also where a separation is redone.** A track with stems reaches this
- * screen through `mix.resetup()`, because redoing one means *choosing* again —
- * a job is keyed on the file's content hash and the model, so re-running what
- * is already on disk is answered from the cache and looks like nothing
- * happened. The screen says the stems are there and offers the way back.
+ * **It is also where a separation is redone.** A track with stems reaches it
+ * embedded in the details dialog — `DetailsModal.tsx` — because redoing one
+ * means *choosing* again: a job is keyed on the file's content hash and the
+ * model, so re-running what is already on disk is answered from the cache and
+ * looks like nothing happened. The screen says the stems are there.
  *
  * The metadata sits here for the same reason: it is the one moment a person is
  * looking at a track and not yet listening to it. `Details.tsx` has the form.
@@ -112,11 +112,6 @@ export function Idle({ mix, ready, embedded = false }: { mix: Mix; ready: Ready 
           >
             {again ? 'Separate again' : 'Generate stems'}
           </Button>
-          {mix.resetting && !embedded && (
-            <Button onPress={mix.keepStems} title="Go back to the mix without separating again">
-              Keep these stems
-            </Button>
-          )}
           <span className="mf-estimate">
             {!chosen
               ? 'separation needs the app around this page'

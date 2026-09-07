@@ -3,6 +3,7 @@ import { useMixerViewModel } from './play/useMixerViewModel.ts';
 import { isViewShortcut } from './play/decks.ts';
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Empty } from './components/Empty.tsx';
+import { DetailsModal } from './components/DetailsModal.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
 import { Header } from './components/Header.tsx';
 import { TrackAnalysis } from './components/TrackAnalysis.tsx';
@@ -23,9 +24,10 @@ import './App.css';
  * actually name slices. What is left is two columns instead of three, and a
  * lane that is nearly two hundred pixels wider for it.
  *
- * A new track opens its analysis home: stems/details first, then beat-grid
- * review. Analyze reopens that home for existing tracks. Running separation
- * remains a derived job state, and Back to mix returns to the lanes.
+ * A new track opens on its setup: details, a model, Generate stems. Once it
+ * has stems it opens on the lanes and stays there — the grid is checked and
+ * corrected in a mode over them, and the details come back as a dialog.
+ * Running separation remains a derived job state.
  *
  * **Nothing on screen is pretend any more except the slices.** The tracks come
  * from a folder on disk, pressing Generate runs Demucs against the file
@@ -77,7 +79,7 @@ export function App() {
       if (e.key === ' ') {
         e.preventDefault();
         mix.setPlaying(!mix.playing);
-      } else if ((e.key === 'Backspace' || e.key === 'Delete') && mix.activeSlice > 0 && !mix.editingGrid) {
+      } else if ((e.key === 'Backspace' || e.key === 'Delete') && mix.activeSlice > 0) {
         e.preventDefault();
         mix.removeSlice(mix.activeSlice);
       } else if (e.key.toLowerCase() === 'l' && (e.metaKey || e.ctrlKey)) {
@@ -147,6 +149,7 @@ export function App() {
         </section>
       </main>
       {mix.exporting && <ExportModal mix={mix} />}
+      {mix.details && <DetailsModal mix={mix} ready={ready} />}
       {dropping && (
         <div className="mf-drop" role="status">
           <span>Drop audio files to import</span>

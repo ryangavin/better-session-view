@@ -56,6 +56,11 @@
   color: var(--fg);
 }
 
+.mf-open-details {
+  flex: none;
+  align-self: center;
+}
+
 .mf-open-artist {
   flex: 0 1 auto;
   font-variation-settings: var(--mono-axes);

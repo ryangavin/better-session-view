@@ -393,7 +393,8 @@ export function useMix() {
    * boolean, so opening a *different* track shows that track's own state rather
    * than the setup somebody opened over here.
    */
-  const [setupFor, setSetupFor] = useState<string | null>(null);
+  /** Whether the track's details — name, art, the model, separate again — are open over the mixer. */
+  const [details, setDetails] = useState(false);
   /** Candidates from the catalogue, and whether one is being asked for. */
   const [matches, setMatches] = useState<Match[]>([]);
   const [matching, setMatching] = useState(false);
@@ -434,7 +435,7 @@ export function useMix() {
     ? 'empty'
     : job && runningId === song.id
       ? 'running'
-      : song.sources.length && setupFor !== song.id
+      : song.sources.length
         ? 'ready'
         : 'idle';
 
@@ -1091,7 +1092,7 @@ export function useMix() {
     const bridge = openflow();
     if (!bridge || !song) return;
     setProblem(null);
-    setSetupFor(null);
+    setDetails(false);
     setRunningId(song.id);
     setJob({
       done: 0,
@@ -1105,19 +1106,18 @@ export function useMix() {
     if (!outcome.ok && !outcome.cancelled) setProblem(outcome.says);
   }, [song, model]);
 
-  /** Open this track's analysis home, keeping its grid and preselecting its separation model. */
-  const resetup = useCallback(() => {
-    if (!song || gridEdit.active) return;
-    audio.stop(false);
-    setPlaying(false);
-    setManual(null);
+  /**
+   * Open the track's details over the mixer: who it is by, its art, and the
+   * model that made the stems with the way to make them again. The model
+   * offered is the one on disk, so *separate again* means choosing again.
+   */
+  const openDetails = useCallback(() => {
+    if (!song) return;
     setProblem(null);
     setModel(song.model ?? model);
-    setSetupFor(song.id);
-  }, [song, model, audio, gridEdit.active]);
-
-  /** Leave analysis for the mixer without running another separation. */
-  const keepStems = useCallback(() => setSetupFor(null), []);
+    setDetails(true);
+  }, [song, model]);
+  const closeDetails = useCallback(() => setDetails(false), []);
 
   /**
    * Write a correction, and take the library back from the process that owns it.
@@ -1958,9 +1958,9 @@ export function useMix() {
     hits,
     moveBeat,
     clearBeats,
-    resetup,
-    keepStems,
-    resetting: setupFor !== null && song?.id === setupFor,
+    details,
+    openDetails,
+    closeDetails,
     editTrack,
     findMatches,
     takeMatch,

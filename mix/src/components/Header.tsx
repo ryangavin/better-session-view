@@ -13,9 +13,12 @@ import { bpmText, rangeText } from '../warp.ts';
 import './Header.css';
 
 /**
- * Playback and snap stay at hand; Analyze opens the track's analysis home.
- * The compact grid readout and warp switch remain visible in the mixer.
- * Detection lives in Analyze; manual corrections require Edit beat grid. Debugging tools are
+ * Playback and snap stay at hand. **Grid** opens the one mode for asking
+ * whether the song is right — the beat handles, bar 1, finding the beats
+ * again, the section suggestions — over the real lanes, with Done and Cancel.
+ * **Details** beside the title opens what the track *is*: its name, its art,
+ * the model that made the stems and the way to make them again. The tempo the
+ * beats run at stays on the bar; how it was found is the debug workspace's,
  * reached from the library footer.
  */
 
@@ -166,6 +169,14 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
           <>
             <span className="mf-open-title" title={song.title}>{song.title}</span>
             {song.artist && <span className="mf-open-artist" title={song.artist}>{song.artist}</span>}
+            <Button
+              onPress={mix.openDetails}
+              disabled={mix.editingGrid}
+              className="mf-open-details"
+              title="The track's name, artist, album and art, and the model that made its stems"
+            >
+              Details
+            </Button>
 
           </>
         ) : (
@@ -263,39 +274,20 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
             />
           </div>
 
-          <div className="mf-group" role="group" aria-label="Analysis">
-            <Button onPress={mix.resetup} disabled={mix.editingGrid} title="Preview automatic beat and section detection, or change stems">Analyze</Button>
-            <Button onPress={mix.beginGridEdit} disabled={mix.editingGrid || !mix.playable} title="Show beat handles and edit timing in the main view">Edit beat grid</Button>
-            {/* The numbers that say whether to believe the grid, next to the
-                button that made it: the tempo the song runs at — a range
-                where it moved — and how much of the kick sits on a line. A
+          <div className="mf-group" role="group" aria-label="Grid">
+            <Button onPress={mix.beginGridEdit} disabled={mix.editingGrid || !mix.playable} title="Check and correct the beat grid and the sections over the lanes: drag beats, set bar 1, find the beats again, keep or move the section cuts">Grid</Button>
+            {/* The tempo the song runs at — a range where it moved — next to
+                the button that opens the grid. How well the kit sits on it
+                and which algorithm laid it are the debug workspace's
+                questions; a person mixing asks only what tempo this is. A
                 fit that found nothing says so rather than leaving a press
                 with no answer. */}
-            {mix.editingGrid ? <span className="mf-fit">Timing preview</span> : mix.beats || mix.detected ? (
+            {mix.editingGrid ? <span className="mf-fit">Editing</span> : mix.beats ? (
               <span
                 className="mf-fit"
-                title={
-                  // Which laid it, now that there is a choice of five: a
-                  // reading with no name on it cannot be compared with the one
-                  // on the next track, or asked for again. Silent where the
-                  // file predates recording it, rather than guessing.
-                  [
-                    mix.beats ? 'The tempo the beats run at, read off their spacing' : '',
-                    mix.detected ? 'how much of the kit lands on a grid line' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(', ') +
-                  (mix.madeByName ? `. Laid by ${mix.madeByName}` : '')
-                }
+                title={`The tempo the beats run at, read off their spacing${mix.detected ? `; ${Math.round(mix.detected.agreement * 100)}% of the kit on a line` : ''}${mix.madeByName ? `. Laid by ${mix.madeByName}` : ''}`}
               >
-                {mix.beats ? rangeText(mix.grid) : ''}
-                {mix.beats && mix.detected ? ' · ' : ''}
-                {mix.detected ? `${Math.round(mix.detected.agreement * 100)}%` : ''}
-                {/* The id rather than the name: `ellis` is five characters in a
-                    group that is already four controls wide, and it is the word
-                    the harness and the reports use for the same thing. Nothing
-                    at all where the file never recorded one. */}
-                {mix.madeBy && <i>{mix.madeBy}</i>}
+                {rangeText(mix.grid)}
               </span>
             ) : mix.fitFailed ? (
               <span className="mf-fit mf-fit-none" title="Nothing steady enough to fit a tempo to">
@@ -330,8 +322,6 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
           </div></>}
         </>
       )}
-
-      {!playView && !live && song && <Button onPress={mix.resetup} disabled title="You are in track analysis">Analysis</Button>}
 
       {!playView && <Button
         onPress={() => mix.setExporting(true)}

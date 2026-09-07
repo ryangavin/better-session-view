@@ -17,6 +17,7 @@ import { Tone } from './Tone.tsx';
 import { Waveform } from './Waveform.tsx';
 import { Ruler } from './Ruler.tsx';
 import { BeatGridEditor } from './BeatGridEditor.tsx';
+import { useSuggestions } from './suggestions.ts';
 import { WarpLane } from './WarpLane.tsx';
 import './Lanes.css';
 
@@ -292,6 +293,7 @@ export function Lanes({ mix }: { mix: Mix }) {
   }, [mix.playing, at, follow]);
 
   const travel = useTravel(list, sources.length, song?.id ?? null);
+  const suggested = useSuggestions(mix, mix.grid, mix.editingGrid);
 
   if (!song) return null;
 
@@ -347,7 +349,7 @@ export function Lanes({ mix }: { mix: Mix }) {
 
         <div className="mf-band-track" ref={timeline}>
           <Outside opens={opens} closes={closes} />
-          <Ruler mix={mix} view={view} timeline={timeline} />
+          <Ruler mix={mix} view={view} timeline={timeline} suggested={suggested} />
           <WarpLane
             onsets={mix.onsets}
             bars={grid}
