@@ -28,6 +28,23 @@ also prepares macOS-native helpers and requires Apple's toolchain. The macOS
 release job uses `pack`, including native preparation, signing and notarisation;
 a green Linux build verifies compilation, not installer readiness.
 
+## Temporary signing backport
+
+`tools/app.ts pack` applies `src/builderPatch.ts` to the installed, pinned
+electron-builder 26.15.3 before signing. This is the three-line password fix from
+[upstream #10101](https://github.com/electron-userland/electron-builder/commit/7abb30e393326676237862163a115c96e2f0e80d):
+the P12 password imports the certificate, while the randomly generated temporary
+keychain password authenticates `security set-key-partition-list`. The published
+v26 packages inspected through 26.16.0 still use the P12 password for both, causing
+the September 5/6 nightlies to fail with `SecKeychainUnlock` before notarisation.
+
+The backport accepts the exact original or already-corrected code and stops on
+unfamiliar code. It changes no secrets or signing permissions. Tests execute the
+installed package's corrected keychain functions with intercepted security calls,
+including distinct application and installer certificate passwords. Remove the
+backport when a verified stable package includes the fix; update the exact version
+and lockfile together. Signing, notarisation and Gatekeeper gates stay mandatory.
+
 Each app gets the same three dev scripts, and they are worth telling apart:
 
 | | |
