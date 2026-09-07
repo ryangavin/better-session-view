@@ -97,7 +97,9 @@ sample each frame.
 Without a `waveform` range the bench keeps its 32-bar overview. Hosts may provide a
 source window (`start`, `length`, `visible`) and source-relative loop bounds. `FrameWaveform`
 scrolls that window under a fixed playhead using the supplied beat reading. Optional
-seconds/duration frame fields support the source-time reading. Peaks and all beat/time
+seconds/duration frame fields support the source-time reading. Optional `waveformColors` provides one host-measured color per peak for spectral
+shading. The canvas keeps its peak silhouette and paints those colors over the same
+time coordinates; widgets do not analyze audio or choose a source. Peaks and all beat/time
 conversion remain host-owned. The widget never derives a loop from an audio file or
 assumes that a source's beat equals the global transport beat.
 

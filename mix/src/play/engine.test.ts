@@ -31,8 +31,30 @@ function asset():DeckAsset {return {analysis:{grid:{bpm:120,offset:0},slices:[{b
 const engines:MixerEngine[]=[];
 function setup(){const ctx=new Context(),engine=new MixerEngine(()=>ctx as unknown as AudioContext);engines.push(engine);return {ctx,engine,load:(id='deck-a')=>engine.load(id,track,async()=>asset())};}
 const settle=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
-afterEach(()=>{engines.splice(0).forEach(e=>e.dispose());stretching.prepare=null;});
+afterEach(()=>{engines.splice(0).forEach(e=>e.dispose());stretching.prepare=null;vi.useRealTimers();});
 describe('the four-deck playback owner',()=>{
+  it('indexes the full-track overview from its negative beat origin, including after a page change', async () => {
+    vi.useFakeTimers();
+    const {engine,ctx} = setup();
+    const loaded = asset();
+    loaded.audio!.overviewStart = -8;
+    loaded.audio!.overview = Array.from({length:1024},(_,i)=>({min:0,max:i/1024}));
+    loaded.audio!.overviewColors = Array.from({length:1024},(_,i)=>`color-${i}`);
+    await engine.load('deck-a',track,async()=>loaded);
+    await vi.advanceTimersByTimeAsync(40);
+    let d = engine.snapshot().decks[0];
+    expect(d.waveform?.start).toBe(-32);
+    // Beat -8 appears at index 192 of the 96-beat window; beat zero at 256.
+    expect(d.peaks[256].max).toBe(64/1024);
+    expect(d.waveformColors?.[256]).toBe('color-64');
+    await engine.launch('deck-a','section-0-0');
+    ctx.currentTime = 20;
+    await vi.advanceTimersByTimeAsync(40);
+    d = engine.snapshot().decks[0];
+    expect(d.waveform?.start).toBe(0);
+    expect(d.peaks[0].max).toBe(64/1024);
+    expect(d.waveformColors?.[0]).toBe('color-64');
+  });
   it('restarts on a new output while retaining tracks, positions and mixer controls', async () => {
     const { engine, ctx, load } = setup(); await load();
     engine.commands.setDeck('deck-a', 'trim', 4);

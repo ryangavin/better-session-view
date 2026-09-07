@@ -47,6 +47,8 @@ export interface WaveformProps {
    * in the library.
    */
   ink: string;
+  /** Optional colors evenly covering the same time range as peaks, e.g. host-measured spectral content. */
+  colors?: readonly string[];
   height?: number;
   /** Points per CSS pixel. Omit to let it ride the zoom, which is the point. */
   density?: number;
@@ -85,6 +87,7 @@ export function Waveform({
   from = 0,
   to = 1,
   ink,
+  colors,
   height = 96,
   density,
   smooth = 1,
@@ -144,10 +147,20 @@ export function Waveform({
         ? samplesFrom(samples!, { ...ask, length })
         : edgesOf(levels, ask);
       g.fillStyle = resolve(el, ink);
+      if (colors?.length && to > from) {
+        const paint = g.createLinearGradient(0, 0, box.width, 0);
+        const first = Math.max(0, Math.floor(from * colors.length));
+        const last = Math.min(colors.length - 1, Math.ceil(to * colors.length));
+        for (let i = first; i <= last; i++) {
+          const at = Math.max(0, Math.min(1, ((i + 0.5) / colors.length - from) / (to - from)));
+          paint.addColorStop(at, resolve(el, colors[i]));
+        }
+        g.fillStyle = paint;
+      }
       g.fill(pathOf(edges, smooth));
     };
     schedule();
-  }, [levels, from, to, ink, height, density, smooth, headroom, samples, schedule, theme]);
+  }, [levels, from, to, ink, colors, height, density, smooth, headroom, samples, schedule, theme]);
 
   useEffect(() => {
     const el = canvas.current;

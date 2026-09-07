@@ -2,7 +2,9 @@ import { EFFECTS } from './effects.ts';
 import type { MixerDeck, MixerParams, MixerState } from '@openflow/widgets/mixer/model.ts';
 import { decode, fileUrl, stemUrl, type Peak } from '../audio.ts';
 import { openflow, type Track, type Analysis } from '../openflow.ts';
-import { evenBeats, sampleOf, tempoOf, type Beats } from '../warp.ts';
+import { evenBeats, tempoOf, type Beats } from '../warp.ts';
+
+import { measureOverview } from './overview.ts';
 
 export const TRACK_DRAG = 'application/x-openflow-library-track';
 export const DECK_IDS = ['deck-a', 'deck-b', 'deck-c', 'deck-d'];
@@ -27,7 +29,7 @@ export const params: MixerParams = {
   tempo: {kind:'float', min:20, max:300, defaultValue:124, unit:'float'},
   cross: {kind:'float', min:-100, max:100, defaultValue:0, unit:'int'},
 };
-export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[] }
+export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[]; overviewStart?: number; overviewColors?: string[] }
 export interface DeckAsset { analysis: Analysis | null; peaks: Peak[]; audio?: DeckAudio }
 /** Decode the original and available stems into the engine's shared context. */
 export async function loadDeckAsset(track: Track, signal: AbortSignal, context?: BaseAudioContext): Promise<DeckAsset> {
@@ -46,16 +48,9 @@ export async function loadDeckAsset(track: Track, signal: AbortSignal, context?:
   if (track.stems) for (const id of track.sources) buffers[id] = await read(stemUrl(base, track.stems, id));
   const map = analysis?.grid ? analysis.grid.beats ?? evenBeats(original.sampleRate, original.length, analysis.grid.bpm, analysis.grid.offset) : null;
   const displayMap = map ?? evenBeats(original.sampleRate, original.length, track.bpm ?? 120, 0);
-  const channels = Array.from({length: original.numberOfChannels}, (_, i) => original.getChannelData(i));
-  const beats = Math.ceil((original.duration * (track.bpm ?? (map ? tempoOf(map) : 120))) / 60) + 128;
-  const overview = Array.from({length: Math.min(65536, beats * 8)}, (_, i) => {
-    const from = Math.max(0, Math.floor(sampleOf(displayMap, i / 8) / displayMap.rate * original.sampleRate));
-    const to = Math.min(original.length, Math.ceil(sampleOf(displayMap, (i + 1) / 8) / displayMap.rate * original.sampleRate));
-    let min = 0, max = 0;
-    for (let n = from; n < to; n++) for (const channel of channels) { min = Math.min(min, channel[n]); max = Math.max(max, channel[n]); }
-    return {min, max};
-  });
-  return {analysis, peaks: overview.slice(0, 1024), audio: { buffers, map, duration: original.duration, overview }};
+  const overview = await measureOverview(original, displayMap, signal);
+  return {analysis, peaks: overview.peaks.slice(0, 1024), audio: { buffers, map, duration: original.duration,
+    overview: overview.peaks, overviewStart: overview.start, overviewColors: overview.colors }};
 }
 export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): MixerDeck {
   const grid = asset.analysis?.grid;

@@ -27,6 +27,8 @@ export interface MixerDeck {
   /** Optional scrolling source window. The host supplies the beat range and loop in source coordinates. */
   waveform?: { start: number; length: number; visible: number; loop?: { start: number; end: number | null; enabled: boolean } };
   peaks: readonly { min: number; max: number }[];
+  /** Optional host-measured spectral paint, one color per peak. */
+  waveformColors?: readonly string[];
   sections: readonly MixerSection[];
   stems: readonly MixerStem[];
   full: boolean;

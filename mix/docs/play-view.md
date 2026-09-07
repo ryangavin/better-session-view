@@ -120,7 +120,18 @@ a standard CDJ feature. No jog-wheel, hot-cue bank or new effect control concept
 
 ## Waveforms, meters and Link
 
-The source buffers also produce beat-normalized overview peaks. Play shows eight bars
+The decoded original track produces beat-normalized overview peaks and frequency
+shading in `overview.ts`. The overview begins at the beat containing file sample zero,
+which can be negative: audio before the first downbeat must not be discarded. Its
+explicit origin is retained when extracting each scrolling window. Map samples and
+decoder samples are converted through seconds, so differing sample rates stay aligned.
+The measured end of the map determines the overview length, not an estimated tempo.
+
+Persistent 250/2500 Hz crossovers measure low/mid/high energy per bin and map those
+bands to red/green/blue contributions. Silence remains neutral. Spectral paint belongs
+to the original audio, before mixer processing; deck colors remain on the labels and
+rails. Both stereo channels contribute without cancellation. Analysis runs once during
+loading, yielding cooperatively and honoring replacement cancellation. Play shows eight bars
 around a fixed playhead, with a 96-beat backing window to scroll smoothly through page
 boundaries. Each deck follows its own actual source position; beat-grid lines share scale
 and aligned playheads. The first enabled source is the track-position reference when

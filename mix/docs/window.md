@@ -34,7 +34,9 @@ and the rail footer changes from the folder name to the result or the useful err
 
 Files may also be dropped anywhere on the window. A dashed target covers the window while
 the drag is over it, which both makes the action visible and prevents a file dropped on a
-waveform from navigating the renderer away from the app.
+waveform from navigating the renderer away from the app. Internal library-to-deck drags
+do not activate that file-import target. Drop capture and drag-end clear it even when a
+deck consumes the drop before it bubbles to the window.
 
 ## The header
 

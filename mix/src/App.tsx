@@ -1,7 +1,7 @@
 import { AudioSettingsModal } from './components/AudioSettingsModal.tsx';
 import { PlayView } from './play/PlayView.tsx';
 import { useMixerViewModel } from './play/useMixerViewModel.ts';
-import { isViewShortcut } from './play/decks.ts';
+import { isViewShortcut, TRACK_DRAG } from './play/decks.ts';
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Empty } from './components/Empty.tsx';
 import { DetailsModal } from './components/DetailsModal.tsx';
@@ -105,7 +105,7 @@ export function App() {
   }, [playView, mixer.commands, mixer.state.running, mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
 
   const carriesFiles = (event: DragEvent): boolean =>
-    Array.from(event.dataTransfer.types).includes('Files');
+    Array.from(event.dataTransfer.types).includes('Files') && !Array.from(event.dataTransfer.types).includes(TRACK_DRAG);
 
   const dragEnter = (event: DragEvent) => {
     if (!carriesFiles(event)) return;
@@ -145,6 +145,8 @@ export function App() {
       onDragEnter={dragEnter}
       onDragOver={dragOver}
       onDragLeave={dragLeave}
+      onDropCapture={() => { dragDepth.current = 0; setDropping(false); }}
+      onDragEnd={() => { dragDepth.current = 0; setDropping(false); }}
       onDrop={drop}
     >
       <Header onAudioSettings={() => setAudioSettings(true)} mixer={mixer.engine} mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />

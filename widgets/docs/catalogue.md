@@ -69,13 +69,11 @@ Not yet: `live.text` (a labelled toggle — `Toggle` with children is most of it
 `live.gain~` (a slider with a meter beside it, now that both halves exist), `live.arrows`,
 `live.drop`.
 
-**And a waveform**, which is the clearest candidate this list has ever had and still has
-only one caller. [`mix/src/components/Waveform.tsx`](../../mix/src/components/Waveform.tsx)
-draws a stem's peaks on a canvas — one min/max pair per column, which is what a peak file
-holds — and knows nothing about Live, a stem or a file. It moves here the day set[flow]
-draws a clip's audio, by the same rule that kept `Meter` out until a second caller
-appeared. Until then it is one app's component, and the cost of being wrong about the
-shape is one app's.
+**`Waveform`** lives in `src/wave/Waveform.tsx` and serves the track editor and mixer.
+It draws host-supplied peaks as a smooth silhouette with a cached resolution ladder.
+Optional `colors` evenly cover the same time extent as those peaks, allowing a host to
+supply spectral paint without bringing audio analysis into widgets. `ink` remains the
+single-color default. Drawing, resizing and repainting remain frame-coalesced.
 
 **Notation arrived when there were two real views to compare.** `Tablature` and
 `PianoRoll` share timeline geometry but do not pretend to share their hosts' musical
