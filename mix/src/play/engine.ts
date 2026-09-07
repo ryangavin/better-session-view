@@ -1,3 +1,4 @@
+import { createAudioContext } from '../audioSettings.ts';
 import type { MixerCommands, MixerDeck, MixerFrame, MixerState } from '@openflow/widgets/mixer/model.ts';
 import type { Track } from '../openflow.ts';
 import { beatAt, sampleOf } from '../warp.ts';
@@ -30,7 +31,7 @@ export class MixerEngine {
   monitoring = true; phonesAvailable = false; problem: string | null = null;
   private wasLinked = false;
   private phaseCorrectedAt = -Infinity;
-  constructor(private contextFactory = () => new AudioContext({ latencyHint: 'interactive' })) {}
+  constructor(private contextFactory = () => createAudioContext()) {}
   snapshot = () => this.state;
   subscribe = (fn: () => void) => { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; };
   private publish(next: MixerState = this.state) { this.frameCache = null; if (this.disposed) return; this.state = next === this.state ? { ...next } : next; this.listeners.forEach(fn => fn()); }
@@ -38,9 +39,9 @@ export class MixerEngine {
   private model(id: string) { return this.state.decks.find(d => d.id === id)!; }
   get linkAudio() { return this.publisher?.state ?? LINK_AUDIO_OFF; }
   get position() { return this.beat() * 60 / this.state.bpm; }
-  private audio(): AudioContext {
+  private audio(prepared?: AudioContext): AudioContext {
     if (this.ctx) return this.ctx;
-    const ctx = this.ctx = this.contextFactory();
+    const ctx = this.ctx = prepared ?? this.contextFactory();
     this.master = new MixerChannel(ctx); this.dry = ctx.createGain(); this.dry.connect(this.master.input);
     this.local = ctx.createGain(); this.local.gain.value = this.monitoring ? 1 : 0; this.phones = ctx.createGain(); this.master.output.connect(this.local);
     // Conventional stereo master on 1/2; pre-fader headphone cue on 3/4 when available.
@@ -61,6 +62,28 @@ export class MixerEngine {
     this.publish({ ...this.state, playbackAvailable: true });
     return ctx;
   }
+  get audioContext(): AudioContext | null { return this.ctx; }
+
+  /** Audio preferences restart sound, retaining the complete deck configuration. */
+  replaceAudioContext(context: AudioContext): void {
+    const held = [...this.decks].map(([id,d]) => ({id,audio:d.audio,cue:d.cue,slots:[...d.slots].map(([name,s]) => ({name,at:s.voice.at(),enabled:s.enabled,selected:s.selected,span:s.span}))}));
+    const models = this.state.decks;
+    this.operation++; this.cancelLoads();
+    this.anchor = {beat:this.beat(),time:context.currentTime};
+    this.setLinkAudio(false); this.publisher?.dispose(); this.publisher=null;
+    this.decks.forEach(d=>{d.operation++;d.slots.forEach(s=>s.voice.dispose());d.channel.dispose();d.sends.forEach(s=>s.disconnect());d.phones.disconnect();});
+    this.decks.clear();this.effects.forEach(e=>e.dispose());this.effects=[];
+    this.master?.dispose();this.masterSends.forEach(s=>s.disconnect());this.dry?.disconnect();this.local?.disconnect();this.phones?.disconnect();
+    if(this.timer)clearInterval(this.timer);
+    const old=this.ctx;this.ctx=null;this.publish({...this.state,running:false});this.audio(context);
+    for(const saved of held) {
+      this.adopt(saved.id,saved.audio);const d=this.decks.get(saved.id)!;d.cue=saved.cue;
+      for(const slot of saved.slots){const next=d.slots.get(slot.name)!;next.voice.seek(slot.at);next.enabled=slot.enabled;next.selected=slot.selected;next.span=slot.span;}
+    }
+    this.publish({...this.state,decks:models.map(d=>({...d,playing:false,cueHeld:false,fullQueued:undefined,status:d.status==='loading'?'unavailable':d.status,message:d.status==='loading'?'Audio settings changed during load. Drop the track again.':d.message,stems:d.stems.map(s=>({...s,queued:undefined}))}))});
+    this.apply();this.publishOutputs();if(old)void old.close();
+  }
+
   private publishOutputs() {
     if (!this.publisher) return;
     this.publisher.setInputs([...DECK_IDS.flatMap((id, i) => this.decks.has(id) ? [{ id, name: `Deck ${'ABCD'[i]}`, node: this.decks.get(id)!.channel.output }] : []), { id: 'master', name: 'Master', node: this.master.output }, { id: 'phones', name: 'Phones', node: this.phones }]);

@@ -1,0 +1,10 @@
+.mf-audio-settings .wdg-modal-body { display: grid; gap: 16px; }
+.mf-audio-fields { display: grid; grid-template-columns: 116px minmax(0,1fr); align-items: center; gap: 12px 14px; }
+.mf-audio-fields > label { color: var(--ui); font-size: var(--text-label); }
+.mf-audio-fields .wdg-select { max-width: 100%; min-width: 0; }
+.mf-audio-device-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mf-audio-help { margin: 0; color: var(--caption); font-size: var(--text-label); line-height: 1.55; }
+.mf-audio-status { margin: 0; padding: 14px 0; border-block: 1px solid var(--edge); display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: var(--text-label); }
+.mf-audio-status dt { color: var(--caption); }.mf-audio-status dd { margin: 0; text-align: right; }
+.mf-audio-success,.mf-audio-error { margin: 0; font-size: var(--text-label); }.mf-audio-error { color: var(--red); }
+.mf-audio-settings-button { margin-left: auto; }

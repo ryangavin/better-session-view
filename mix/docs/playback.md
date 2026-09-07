@@ -8,6 +8,9 @@ is how they get back into the window as something you can hear, see and mix.
 
 The four-deck Play engine shares these decoding, EQ, beat-map and stretch primitives;
 its ownership, routing and transport policies are in [play-view.md](play-view.md).
+Both engines use the shared [audio settings](audio-settings.md). Output restarts retain
+decoded buffers at their original sample rate, so analysis continues to use that rate
+even when the new AudioContext processes at a different rate.
 
 ## Getting the bytes there is the part with a decision in it
 

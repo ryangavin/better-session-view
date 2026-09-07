@@ -1,3 +1,4 @@
+import { AudioSettingsModal } from './components/AudioSettingsModal.tsx';
 import { PlayView } from './play/PlayView.tsx';
 import { useMixerViewModel } from './play/useMixerViewModel.ts';
 import { isViewShortcut } from './play/decks.ts';
@@ -42,6 +43,7 @@ import './App.css';
 export function App() {
   const mix = useMix();
   const [playView, setPlayView] = useState(false);
+  const [audioSettings, setAudioSettings] = useState(false);
   const mixer = useMixerViewModel(mix.library.tracks, mix.library.root);
   const previousMode = useRef(playView);
   useEffect(() => {
@@ -145,7 +147,7 @@ export function App() {
       onDragLeave={dragLeave}
       onDrop={drop}
     >
-      <Header mixer={mixer.engine} mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />
+      <Header onAudioSettings={() => setAudioSettings(true)} mixer={mixer.engine} mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />
       <main className="mf-body">
         <Library mix={mix} />
         {playView && <PlayView mixer={mixer} />}
@@ -156,6 +158,7 @@ export function App() {
           {mix.phase === 'ready' && <Lanes mix={mix} />}
         </section>
       </main>
+      {audioSettings && <AudioSettingsModal mix={mix} mixer={mixer.engine} playView={playView} onClose={() => setAudioSettings(false)} />}
       {mix.exporting && <ExportModal mix={mix} />}
       {mix.details && <DetailsModal mix={mix} ready={ready} />}
       {dropping && (

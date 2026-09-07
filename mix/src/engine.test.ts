@@ -109,6 +109,25 @@ class FakeContext {
 }
 
 describe('the mix across a load', () => {
+  it('keeps decoded samples and their analysis rate when changing the output rate', async () => {
+    const had = globalThis.AudioContext;
+    class Output extends FakeContext { sampleRate = 96000; close() { return Promise.resolve(); } }
+    (globalThis as { AudioContext: unknown }).AudioContext = Output;
+    try {
+      const { Transport } = await import('./engine.ts');
+      const transport = new Transport();
+      const buffer = { duration: 1, sampleRate: 44100 } as AudioBuffer;
+      transport.apply(mix({ drums: { muted: true } }), FOUR);
+      transport.load({ vocals: buffer, drums: buffer });
+      transport.replaceAudioContext(new Output() as unknown as AudioContext);
+      expect(transport.stem('vocals')).toBe(buffer);
+      expect(transport.rate).toBe(44100);
+      expect(transport.audioContext?.sampleRate).toBe(96000);
+      const gains = (transport as unknown as { gains: Map<string, FakeNode> }).gains;
+      expect(gains.get('vocals')?.gain.value).toBe(1);
+      expect(gains.get('drums')?.gain.value).toBe(0);
+    } finally { (globalThis as { AudioContext: unknown }).AudioContext = had; }
+  });
   it('stands a fresh set of stems at the mix it was last given, not at silence', async () => {
     const had = globalThis.AudioContext;
     (globalThis as { AudioContext: unknown }).AudioContext = FakeContext;

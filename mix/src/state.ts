@@ -1822,6 +1822,8 @@ export function useMix() {
   ]);
 
   return {
+    get audioContext() { return audio.audioContext; },
+    replaceAudioContext: (context: AudioContext) => audio.replaceAudioContext(context),
     library,
     loading,
     chooseFolder,

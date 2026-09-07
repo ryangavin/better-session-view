@@ -1,3 +1,4 @@
+import { createAudioContext } from './audioSettings.ts';
 import { FLAT, Split, type Bands } from './eq.ts';
 import { outputOf, pinnedOf, type Every, type Pinned } from './pinned.ts';
 import { passOf, sourceAt, straight, type Pass, type Span } from './schedule.ts';
@@ -319,9 +320,9 @@ export class Transport {
    * anybody pressed anything. Public because decoding happens against it: a
    * buffer decoded in one context and played in another is a resample at best.
    */
-  audio(): AudioContext {
+  audio(prepared?: AudioContext): AudioContext {
     if (!this.ctx) {
-      this.ctx = new AudioContext();
+      this.ctx = prepared ?? createAudioContext();
       this.master = this.ctx.createGain();
       this.localOutput = this.ctx.createGain();
       this.localOutput.gain.value = this.localMonitoring ? 1 : 0;
@@ -329,6 +330,19 @@ export class Transport {
       this.localOutput.connect(this.ctx.destination);
     }
     return this.ctx;
+  }
+
+  get audioContext(): AudioContext | null { return this.ctx; }
+
+  /** Replace the device graph without discarding the open track or its source position. */
+  replaceAudioContext(context: AudioContext): void {
+    const buffers = Object.fromEntries(this.buffers), position = this.at(), span = this.span;
+    this.pause(false); this.setLinkAudio(false); this.publisher?.dispose(); this.publisher = null;
+    this.drop(); this.unwire(); this.master?.disconnect(); this.localOutput?.disconnect();
+    const old = this.ctx; this.ctx = null;
+    this.audio(context); this.load(buffers); this.setLoopSpan(span); this.from = position;
+    if (old) void old.close();
+    this.notify();
   }
 
   /** Whether anything has been loaded to play. */
@@ -350,14 +364,12 @@ export class Transport {
   }
 
   /**
-   * The rate everything is at, which is the *context's* and not the file's.
-   *
-   * `decodeAudioData` resamples to it, so a 44.1 kHz stem in a 48 kHz context
-   * is 48 kHz by the time anything can draw it. Zero before the graph has been
-   * built, which is also before there is anything to draw.
+   * The sample grid of the retained decoded buffers. A device restart can change
+   * the context rate while these buffers (and their analysis) stay at the old
+   * rate; Web Audio and the stretcher resample them for the new output.
    */
   get rate(): number {
-    return this.ctx?.sampleRate ?? 0;
+    return this.buffers.values().next().value?.sampleRate ?? this.ctx?.sampleRate ?? 0;
   }
 
   /**

@@ -19,6 +19,9 @@ The hook retains one engine per library root. A root change aborts loads and dis
 all voices, effects, Link capture and the AudioContext. Effect cleanup defers disposal
 one microtask so React StrictMode's immediate replay cannot destroy the retained engine;
 load cancellation is synchronous. Prep's own state and audio engine remain separate.
+The header's [Audio settings](audio-settings.md) select the shared output device,
+processing rate and latency preference. Applying them pauses both engines and replaces
+their contexts while retaining loaded tracks, positions and mixer configuration.
 
 The mixer fills available height. Spare height enlarges the four aligned waveform rows;
 controls keep their established spacing. Song headers have two text rows with more

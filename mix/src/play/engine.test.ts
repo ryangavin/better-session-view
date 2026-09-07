@@ -33,6 +33,23 @@ function setup(){const ctx=new Context(),engine=new MixerEngine(()=>ctx as unkno
 const settle=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 afterEach(()=>{engines.splice(0).forEach(e=>e.dispose());stretching.prepare=null;});
 describe('the four-deck playback owner',()=>{
+  it('restarts on a new output while retaining tracks, positions and mixer controls', async () => {
+    const { engine, ctx, load } = setup(); await load();
+    engine.commands.setDeck('deck-a', 'trim', 4);
+    await engine.launch('deck-a', 'section-1-4', 'bass'); ctx.currentTime = 2;
+    const before = engine.readFrame().decks['deck-a'].beat;
+    const next = new Context(); next.sampleRate = 96000;
+    engine.replaceAudioContext(next as unknown as AudioContext);
+    expect(ctx.close).toHaveBeenCalledOnce(); expect(next.sources).toHaveLength(0);
+    expect(engine.snapshot().running).toBe(false);
+    expect(engine.snapshot().decks[0]).toMatchObject({ playing: false, trim: 4, track: { id: 'song' } });
+    expect(engine.snapshot().decks[0].stems.find(s => s.id === 'bass')?.selected).toBe('section-1-4');
+    expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(before);
+    await engine.play('deck-a', true);
+    expect(next.sources).toHaveLength(1);
+    expect(next.sources[0].loopStart).toBe(8);
+    expect(next.sources[0].start.mock.calls[0][1]).toBeCloseTo(9.97);
+  });
   it('starts four decks on one sample clock and pauses only the requested deck',async()=>{
     const {engine,ctx,load}=setup();for(const id of ['deck-a','deck-b','deck-c','deck-d'])await load(id);
     await engine.running(true);expect(ctx.sources).toHaveLength(16);
