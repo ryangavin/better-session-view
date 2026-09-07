@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes } from 'react';
 import type { Param } from '../param/param.ts';
 
 export interface MixerSection { id: string; name: string }
@@ -76,9 +76,8 @@ export interface MixerParams {
   level: Param; trim: Param; send: Param; eq: Param; filter: Param; tempo: Param; cross: Param;
 }
 export interface MixerViewProps {
-  /** Host-owned library drag/drop and track picker; the widget knows no library format. */
+  /** Host-owned library drag/drop; the widget knows no library format. */
   deckProps?(deckId: string): HTMLAttributes<HTMLDivElement>;
-  deckLoadControl?(deckId: string): ReactNode;
   state: MixerState;
   commands: MixerCommands;
   /** Read-only, synchronous audio-clock/meter snapshot. Never advances playback. */

@@ -138,7 +138,7 @@ export function App() {
       <Header mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />
       <main className="mf-body">
         <Library mix={mix} />
-        {playView && <PlayView mixer={mixer} tracks={mix.library.tracks} />}
+        {playView && <PlayView mixer={mixer} />}
         <section className="mf-centre" hidden={playView}>
           {mix.phase === 'empty' && <Empty mix={mix} />}
           {mix.phase === 'idle' && <TrackAnalysis key={mix.song?.id} mix={mix} ready={ready} />}

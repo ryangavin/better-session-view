@@ -1,13 +1,11 @@
 import { useState, type DragEvent } from 'react';
 import { MixerView } from '@openflow/widgets/mixer/MixerView.tsx';
 import { useTheme } from '@openflow/widgets/theme/ThemeRoot.tsx';
-import { Select } from '@openflow/widgets/controls/Select.tsx';
-import type { Track } from '../openflow.ts';
 import type { useMixerViewModel } from './useMixerViewModel.ts';
 import { TRACK_DRAG } from './decks.ts';
 import './play.css';
 
-export function PlayView({ mixer, tracks }: { mixer: ReturnType<typeof useMixerViewModel>; tracks: readonly Track[] }) {
+export function PlayView({ mixer }: { mixer: ReturnType<typeof useMixerViewModel> }) {
   const {colors, deckPairs} = useTheme();
   const [hovered, setHovered] = useState<string | null>(null);
   const accepts = (event: DragEvent) => Array.from(event.dataTransfer.types).includes(TRACK_DRAG);
@@ -20,7 +18,6 @@ export function PlayView({ mixer, tracks }: { mixer: ReturnType<typeof useMixerV
         onDragLeave: event => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setHovered(null); },
         onDrop: event => { if (!accepts(event)) return; event.preventDefault(); event.stopPropagation(); setHovered(null); void mixer.load(id,event.dataTransfer.getData(TRACK_DRAG)); },
       })}
-      deckLoadControl={id => <Select label={`Load track into deck ${id.slice(-1).toUpperCase()}`} items={['Load track…', ...tracks.map(t => t.title)]} index={0} width={100} onChange={i => {if (tracks[i-1]) void mixer.load(id,tracks[i-1].id);}} />}
     />
   </div>;
 }

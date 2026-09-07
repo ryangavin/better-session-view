@@ -8,7 +8,7 @@ import { Segmented } from '../controls/Segmented.tsx';
 import type { MixerDeck, MixerViewProps } from './model.ts';
 import { FrameMeter } from './frames.tsx';
 
-export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, deckProps, deckLoadControl }: Pick<MixerViewProps, 'commands' | 'readFrame' | 'theme' | 'params' | 'deckProps' | 'deckLoadControl'> & { deck: MixerDeck; index: number }) {
+export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, deckProps }: Pick<MixerViewProps, 'commands' | 'readFrame' | 'theme' | 'params' | 'deckProps'> & { deck: MixerDeck; index: number }) {
   const { level: LEVEL, trim: TRIM, send: SEND, eq: EQ, filter: FILTER } = params;
   const ROUTE = ['A', 'Thru', 'B'];
   const hostProps = deckProps?.(d.id);
@@ -16,7 +16,7 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
         <div className="play-track"><b className="play-letter">{d.letter}</b><div><h3>{d.track?.title ?? 'Empty deck'}</h3><p>{d.track?.artist ?? d.message ?? d.status}</p></div><span>{d.track ? `${d.track.bpm === null ? '—' : Math.round(d.track.bpm)} BPM` : '—'}<br />{d.track?.key ?? ''}</span></div>
 
         <div className="play-performance">
-          <div className="play-load-row">{deckLoadControl?.(d.id)}{d.message && <span role="status">{d.message}</span>}</div>
+          <div className="play-deck-status">{d.message && <span role="status">{d.message}</span>}</div>
           <fieldset className="play-grid" data-full={d.full} disabled={d.status !== 'ready'}>
           <span className="play-axis">SECTION</span>{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
           {d.sections.map(section => <div className="play-launch-row" key={section.id}>

@@ -23,12 +23,11 @@ no filesystem path from a drag is trusted. An internal drag does not select/chan
 preparation track or enter the existing file-import flow. External file drops retain
 the app-wide import behavior.
 
-Every deck also has Load track, a stock Select, so dragging is not required on a touch
-screen or keyboard. The picker remains enabled for empty, loading and failed decks.
+Deck loading is drag-and-drop only, including replacement of loading or failed decks.
 A new drop replaces that deck, leaving the others alone. Per-deck AbortControllers cancel
 fetches and guard late decode/analysis results. A library-folder change aborts everything
 and clears the face; unmount also cancels outstanding work. Failure is visible on the
-deck and another drop/picker selection retries.
+deck and another drop retries.
 
 `loadDeckAsset` reads saved analysis and the original file through existing library APIs.
 An OfflineAudioContext decodes just for peaks: it has no speaker connection and no live
@@ -62,5 +61,4 @@ controller. The existing single-track audio and Link implementation are unchange
 The Play tests exercise real sidebar drag payloads through the rendered deck drop target,
 invalid IDs, rapid replacement races, library changes, retry after failure, six-source
 identity and safe Tab handling. Browser checks cover logo/Tab switching, retained deck
-state and real library waveform/section loading. Native touch dragging still needs device
-validation; the picker provides an alternative.
+state and real library waveform/section loading. Native touch dragging still needs device validation.

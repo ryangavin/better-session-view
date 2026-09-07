@@ -34,9 +34,8 @@ component inventing a successful result.
   body, storage, or another window's palette.
 
 Optional `deckProps(id)` supplies host drag/drop handlers to the strip and waveform
-row, and `deckLoadControl(id)` inserts a host-owned picker above the launcher. These
-remain outside the disabled launcher fieldset, so empty/loading/error states can accept
-a replacement. The widgets never interpret a library payload. Unknown track BPM is null.
+row. These remain outside the disabled launcher fieldset, so empty/loading/error states
+can accept a replacement. The widgets never interpret a library payload. Unknown track BPM is null.
 `playbackAvailable: false` disables Run, launch quantization and loop capture for a host
 that has no audio controller yet. Missing/undefined retains the previous bench behavior.
 

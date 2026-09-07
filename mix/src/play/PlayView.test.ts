@@ -18,7 +18,7 @@ it('loads the dragged sidebar track into the target deck without selecting it in
   const select=vi.fn();
   const mix={library:{root:'library',tracks},songs:tracks,query:'',loading:false,importing:false,selected:null,artOf:()=>null,notes:null,total:1,note:null,noteBad:false,select} as unknown as Mix;
   const loader=vi.fn(async()=>({analysis:null,peaks:[]}));
-  function Host() {const mixer=useMixerViewModel(tracks,'library',loader);return h(Fragment,null,h(Library,{mix}),h(PlayView,{mixer,tracks}));}
+  function Host() {const mixer=useMixerViewModel(tracks,'library',loader);return h(Fragment,null,h(Library,{mix}),h(PlayView,{mixer}));}
   const view=render(h(Host));
   const store=new Map<string,string>();
   const dataTransfer={setData:(type:string,value:string)=>store.set(type,value),getData:(type:string)=>store.get(type)??'',get types(){return [...store.keys()];},effectAllowed:'',dropEffect:''};
@@ -33,5 +33,5 @@ it('loads the dragged sidebar track into the target deck without selecting it in
   expect(loader).toHaveBeenCalledWith(track,expect.any(AbortSignal));
   expect(select).not.toHaveBeenCalled();
   expect(view.container.querySelectorAll('.play-deck h3')[0].textContent).toBe('Empty deck');
-  expect(view.getByRole('combobox',{name:'Load track into deck A'}).getAttribute('aria-disabled')).not.toBe('true');
+  expect(view.queryByRole('combobox',{name:/Load track into deck/})).toBeNull();
 });

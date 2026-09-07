@@ -20,8 +20,7 @@ three hundred pixels, which is what they are for.
 The logo and plain Tab switch between the single-track preparation page and the four-deck
 Play layout. The logo fills in Play. The library rail stays the same, and both preparation
 state and loaded deck settings survive switching. Editable controls and dialogs retain
-normal Tab navigation. Tracks drag from the library onto deck strips or waveform rows;
-a Load track picker is also available on each deck. The Play header identifies this as a
+normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The Play header identifies this as a
 UI preview with audio not connected. See [play-view.md](play-view.md) for ownership,
 loading, keyboard behavior and the current playback boundary.
 

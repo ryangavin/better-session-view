@@ -63,9 +63,9 @@
 .play-playhead { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--wdg-text-strong); pointer-events: none; z-index: 1; }
 
 .play-stem-levels { grid-template-rows: repeat(var(--play-stems,4),52px); }
-.play-load-row:empty { display: none; }
-.play-load-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 5px; }
-.play-load-row span { font-size: 9px; color: var(--wdg-caption); }
+.play-deck-status:empty { display: none; }
+.play-deck-status { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 5px; }
+.play-deck-status span { font-size: 9px; color: var(--wdg-caption); }
 
 .play-launch-row > .wdg { width: 100%; min-width: 0; }
 .play-launch-row .wdg-button-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 2px; }
