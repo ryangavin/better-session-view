@@ -24,6 +24,17 @@ import type { Heard } from './transients.ts';
  * `onsetOf` builds is nearly all zeros and a zero moves no bin. A spectral
  * flux is dense and loses nothing by it; a raster of hits is a thousandth as
  * full and the same hundred and twenty tempos cost a twentieth of the time.
+ *
+ * And the train is scored a window at a time, free to re-phase between
+ * windows, because the tempos tried are whole numbers and records are not.
+ * A song at 97.6 is a third of a per cent off the nearest whole tempo, which
+ * over four minutes is a full period of drift: binned by phase over the whole
+ * file, its own beats land everywhere in the bin and 98 scores no better than
+ * anything else, and the lean toward 120 then picks the winner. That is how a
+ * record at 97.6 was called 122. Scheirer's resonator has a finite decay and
+ * never remembered the whole song; twenty seconds is the memory it is given
+ * here — thirty beats or so, long enough to hold a bar's pattern, short
+ * enough that half a BPM of error moves a beat a sixth of a period.
  */
 
 export interface Comb {
@@ -39,6 +50,8 @@ const LEAN_SIGMA = 1.4;
 const HARMONICS = 4;
 /** How wide the raised-cosine window under each pulse is, as a share of the pulse's period. */
 const WIDTH = 0.15;
+/** How long the train remembers, in seconds, before it may re-phase. */
+const WINDOW = 20;
 
 /** Frames of an onset function that carry any strength, and how much: what every tempo is scored over. */
 interface Struck {
@@ -71,14 +84,14 @@ function resonance(struck: Struck, period: number): number {
   return best;
 }
 
-/** Every frame with strength in it, in order, so the tempos share one reading of the function. */
-function struckIn(values: Float64Array): Struck {
+/** Every frame from `from` to `to` with strength in it, in order, so the tempos share one reading of the function. */
+function struckIn(values: Float64Array, from: number, to: number): Struck {
   let n = 0;
-  for (let i = 0; i < values.length; i++) if (values[i] !== 0) n++;
+  for (let i = from; i < to; i++) if (values[i] !== 0) n++;
   const at = new Int32Array(n);
   const strength = new Float64Array(n);
   let k = 0;
-  for (let i = 0; i < values.length; i++) {
+  for (let i = from; i < to; i++) {
     if (values[i] === 0) continue;
     at[k] = i;
     strength[k] = values[i];
@@ -87,15 +100,26 @@ function struckIn(values: Float64Array): Struck {
   return { at, strength };
 }
 
+/** The function cut into the windows a train is scored over, one at a time. */
+function windowsOf(values: Float64Array, per: number): Struck[] {
+  const frames = Math.max(1, Math.round(WINDOW / per));
+  const out: Struck[] = [];
+  for (let from = 0; from < values.length; from += frames) out.push(struckIn(values, from, Math.min(values.length, from + frames)));
+  return out;
+}
+
 export function combOf(onset: Onset, slowest: number, fastest: number): Comb | null {
   const { values, per } = onset;
   if (values.length < 2) return null;
-  const struck = struckIn(values);
+  const windows = windowsOf(values, per);
   const scored: { bpm: number; confidence: number }[] = [];
   let strongest = 0;
   for (let bpm = Math.ceil(slowest); bpm <= Math.floor(fastest); bpm++) {
+    const period = 60 / bpm / per;
+    let gathered = 0;
+    for (const window of windows) gathered += resonance(window, period);
     const lean = Math.log2(bpm / LEAN_BPM) / LEAN_SIGMA;
-    const score = resonance(struck, 60 / bpm / per) * Math.exp(-0.5 * lean * lean);
+    const score = gathered * Math.exp(-0.5 * lean * lean);
     scored.push({ bpm, confidence: score });
     if (score > strongest) strongest = score;
   }

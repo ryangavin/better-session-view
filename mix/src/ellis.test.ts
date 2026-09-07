@@ -85,3 +85,14 @@ describe('the copied stages on a click train', () => {
     expect(heard.transients.every((t) => t.band === 'low' && t.strength > 0 && t.strength <= 1)).toBe(true);
   });
 });
+
+describe('the comb on a record that is not at a whole tempo', () => {
+  // A third of a per cent off 98 is a whole period of drift over three
+  // minutes: a train binned by phase over the whole file lands everywhere in
+  // the bin, and the lean toward 120 then names whatever it likes — 122, on
+  // this very train, before the comb was scored a window at a time.
+  it('names the nearest whole number over a long file', () => {
+    const onset = fluxOf(clicks(97.6, 0.2, 180), RATE)!;
+    expect(combOf(onset, 70, 190)!.bpm).toBe(98);
+  });
+});
