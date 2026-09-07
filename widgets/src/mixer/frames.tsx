@@ -65,7 +65,7 @@ export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck
   const range = deck.waveform!, loop = range.loop;
   return <>
     <div className="play-wave-scroll" ref={strip} style={{ width: `${range.length / range.visible * 100}%` }}>
-      <Waveform peaks={deck.peaks} colors={deck.waveformColors} ink={ink} height={48} label={`Deck ${index + 1} waveform on the shared beat grid`} />
+      <Waveform peaks={deck.peaks} spectrum={deck.waveformSpectrum} ink={ink} height={48} label={`Deck ${index + 1} waveform on the shared beat grid`} />
       <span className="play-wave-grid" style={{ backgroundSize: `${4 / range.length * 100}% 100%` }} />
       {loop && <div className="play-loop-region" data-enabled={loop.enabled} style={{ left: `${(loop.start - range.start) / range.length * 100}%`, width: `${Math.max(0, (loop.end ?? loop.start) - loop.start) / range.length * 100}%`, '--loop-ink': ink } as CSSProperties}><span>{loop.end === null ? 'IN' : `↻ ${Number((loop.end-loop.start).toFixed(1))} beats`}</span></div>}
     </div>

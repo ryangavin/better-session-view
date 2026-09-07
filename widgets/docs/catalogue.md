@@ -72,7 +72,9 @@ Not yet: `live.text` (a labelled toggle — `Toggle` with children is most of it
 **`Waveform`** lives in `src/wave/Waveform.tsx` and serves the track editor and mixer.
 It draws host-supplied peaks as a smooth silhouette with a cached resolution ladder.
 Optional `colors` evenly cover the same time extent as those peaks, allowing a host to
-supply spectral paint without bringing audio analysis into widgets. `ink` remains the
+supply paint without bringing audio analysis into widgets. Optional `spectrum` instead
+supplies measured low/mid/high energy; the scoped theme determines its spectral colors
+and can switch back to the ordinary ink. `ink` remains the
 single-color default. Drawing, resizing and repainting remain frame-coalesced.
 
 **Notation arrived when there were two real views to compare.** `Tablature` and

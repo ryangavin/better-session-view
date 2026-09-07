@@ -1,3 +1,4 @@
+import { DEFAULT_SPECTRAL } from './spectral.ts';
 import { color, type Theme } from './theme.ts';
 
 /** Treatments are shared rules, independent of the chosen hues. */
@@ -34,6 +35,8 @@ export function resolveTheme(theme: Theme) {
     tokens[`--stem-${id}-label`] = identityLabel(colors[id], s.caption);
   }
   deckPairs.forEach((pair, i) => { tokens[`--deck-${'abcd'[i]}`] = pair.ink; tokens[`--deck-${'abcd'[i]}-waveform`] = pair.waveform; });
-  return { colors, deckPairs, tokens };
+  const spectral = theme.spectral ?? DEFAULT_SPECTRAL;
+  for (const band of ['low', 'mid', 'high'] as const) tokens[`--spectral-${band}`] = color(spectral.colors[band]);
+  return { colors, deckPairs, tokens, spectral, waveformBase: s.waveformBase, waveformSilence: s.idle };
 }
 export type ResolvedTheme = ReturnType<typeof resolveTheme>;

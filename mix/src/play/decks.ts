@@ -1,3 +1,4 @@
+import type { SpectralEnergy } from '@openflow/widgets/theme/spectral.ts';
 import { EFFECTS } from './effects.ts';
 import type { MixerDeck, MixerParams, MixerState } from '@openflow/widgets/mixer/model.ts';
 import { decode, fileUrl, stemUrl, type Peak } from '../audio.ts';
@@ -29,7 +30,7 @@ export const params: MixerParams = {
   tempo: {kind:'float', min:20, max:300, defaultValue:124, unit:'float'},
   cross: {kind:'float', min:-100, max:100, defaultValue:0, unit:'int'},
 };
-export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[]; overviewStart?: number; overviewColors?: string[] }
+export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[]; overviewStart?: number; overviewSpectrum?: SpectralEnergy[] }
 export interface DeckAsset { analysis: Analysis | null; peaks: Peak[]; audio?: DeckAudio }
 /** Decode the original and available stems into the engine's shared context. */
 export async function loadDeckAsset(track: Track, signal: AbortSignal, context?: BaseAudioContext): Promise<DeckAsset> {
@@ -50,7 +51,7 @@ export async function loadDeckAsset(track: Track, signal: AbortSignal, context?:
   const displayMap = map ?? evenBeats(original.sampleRate, original.length, track.bpm ?? 120, 0);
   const overview = await measureOverview(original, displayMap, signal);
   return {analysis, peaks: overview.peaks.slice(0, 1024), audio: { buffers, map, duration: original.duration,
-    overview: overview.peaks, overviewStart: overview.start, overviewColors: overview.colors }};
+    overview: overview.peaks, overviewStart: overview.start, overviewSpectrum: overview.spectrum }};
 }
 export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): MixerDeck {
   const grid = asset.analysis?.grid;

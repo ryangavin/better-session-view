@@ -39,21 +39,21 @@ describe('the four-deck playback owner',()=>{
     const loaded = asset();
     loaded.audio!.overviewStart = -8;
     loaded.audio!.overview = Array.from({length:1024},(_,i)=>({min:0,max:i/1024}));
-    loaded.audio!.overviewColors = Array.from({length:1024},(_,i)=>`color-${i}`);
+    loaded.audio!.overviewSpectrum = Array.from({length:1024},(_,i)=>[i,0,0] as const);
     await engine.load('deck-a',track,async()=>loaded);
     await vi.advanceTimersByTimeAsync(40);
     let d = engine.snapshot().decks[0];
     expect(d.waveform?.start).toBe(-32);
     // Beat -8 appears at index 192 of the 96-beat window; beat zero at 256.
     expect(d.peaks[256].max).toBe(64/1024);
-    expect(d.waveformColors?.[256]).toBe('color-64');
+    expect(d.waveformSpectrum?.[256]).toEqual([64,0,0]);
     await engine.launch('deck-a','section-0-0');
     ctx.currentTime = 20;
     await vi.advanceTimersByTimeAsync(40);
     d = engine.snapshot().decks[0];
     expect(d.waveform?.start).toBe(0);
     expect(d.peaks[0].max).toBe(64/1024);
-    expect(d.waveformColors?.[0]).toBe('color-64');
+    expect(d.waveformSpectrum?.[0]).toEqual([64,0,0]);
   });
   it('restarts on a new output while retaining tracks, positions and mixer controls', async () => {
     const { engine, ctx, load } = setup(); await load();

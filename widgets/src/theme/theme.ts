@@ -1,3 +1,4 @@
+import { DEFAULT_SPECTRAL, isSpectralStyle, type SpectralStyle } from './spectral.ts';
 /** Serializable palette decisions. No React, storage, app or playback dependencies. */
 export type Tone = { h: number; s: number; l: number };
 export const ROLE_NAMES = {
@@ -24,6 +25,8 @@ export type Theme = {
   colors: Record<ColorRole, Tone>;
   surfaces: typeof DARK_SURFACES;
   variation: DeckVariation;
+  /** Optional for existing v1 documents; absence uses the original RGB style. */
+  spectral?: SpectralStyle;
 };
 const tone = (h: number, s: number, l: number): Tone => ({ h, s, l });
 const PALETTES = [
@@ -43,7 +46,7 @@ const PALETTES = [
 export const PRESETS: { name: string; theme: Theme }[] = PALETTES.map(p => ({
   name: p.name,
   theme: { version: 1, colors: { ...p.colors, guitar: tone(25, 48, 66), piano: tone(65, 42, 68) },
-    surfaces: { ...DARK_SURFACES }, variation: { ...DEFAULT_VARIATION } },
+    surfaces: { ...DARK_SURFACES }, variation: { ...DEFAULT_VARIATION }, spectral: DEFAULT_SPECTRAL },
 }));
 export const DEFAULT_THEME = PRESETS[0].theme;
 export const color = ({ h, s, l }: Tone) => `hsl(${h} ${s}% ${l}%)`;
@@ -92,7 +95,7 @@ export function conflicts(theme: Theme): string[] {
 export function isTheme(value: unknown): value is Theme {
   if (!value || typeof value !== 'object') return false;
   const t = value as Theme;
-  return t.version === 1 && !!t.colors && ROLES.every(r => {
+  return t.version === 1 && (t.spectral === undefined || isSpectralStyle(t.spectral)) && !!t.colors && ROLES.every(r => {
     const c = t.colors[r];
     return c && Number.isFinite(c.h) && c.h >= 0 && c.h < 360 && Number.isFinite(c.s) && c.s >= 0 && c.s <= (r === 'primary' ? 12 : 100) && Number.isFinite(c.l) && c.l >= 0 && c.l <= 100 && (r !== 'signal' || c.h >= 120 && c.h <= 160);
   }) && !!t.surfaces && Object.keys(DARK_SURFACES).every(k => typeof t.surfaces[k as keyof typeof DARK_SURFACES] === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(t.surfaces[k as keyof typeof DARK_SURFACES])) && !!t.variation && Object.entries({warmth: [-40,40], saturation: [-30,30], lightness: [-20,20], strength: [0,100]}).every(([k, [min,max]]) => {

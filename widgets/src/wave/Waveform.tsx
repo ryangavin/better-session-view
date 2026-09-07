@@ -1,3 +1,4 @@
+import { spectralPainter, type SpectralEnergy } from '../theme/spectral.ts';
 import { useTheme } from '../theme/context.ts';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { levelsOf, packedOf, type Peak, type Steps } from './levels.ts';
@@ -49,6 +50,8 @@ export interface WaveformProps {
   ink: string;
   /** Optional colors evenly covering the same time range as peaks, e.g. host-measured spectral content. */
   colors?: readonly string[];
+  /** Measured band energy; the scoped theme chooses its spectral paint or deck ink. */
+  spectrum?: readonly SpectralEnergy[];
   height?: number;
   /** Points per CSS pixel. Omit to let it ride the zoom, which is the point. */
   density?: number;
@@ -88,6 +91,7 @@ export function Waveform({
   to = 1,
   ink,
   colors,
+  spectrum,
   height = 96,
   density,
   smooth = 1,
@@ -97,6 +101,11 @@ export function Waveform({
   label,
 }: WaveformProps) {
   const theme = useTheme();
+  const spectralColors = useMemo(() => {
+    if (!spectrum || theme.spectral.mode === 'deck') return undefined;
+    return spectrum.map(spectralPainter(theme.spectral, theme.waveformBase, theme.waveformSilence));
+  }, [spectrum, theme.spectral, theme.waveformBase, theme.waveformSilence]);
+  const paintColors = spectrum ? spectralColors : colors;
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const pending = useRef(0);
   const latest = useRef<() => void>(() => {});
@@ -147,20 +156,20 @@ export function Waveform({
         ? samplesFrom(samples!, { ...ask, length })
         : edgesOf(levels, ask);
       g.fillStyle = resolve(el, ink);
-      if (colors?.length && to > from) {
+      if (paintColors?.length && to > from) {
         const paint = g.createLinearGradient(0, 0, box.width, 0);
-        const first = Math.max(0, Math.floor(from * colors.length));
-        const last = Math.min(colors.length - 1, Math.ceil(to * colors.length));
+        const first = Math.max(0, Math.floor(from * paintColors.length));
+        const last = Math.min(paintColors.length - 1, Math.ceil(to * paintColors.length));
         for (let i = first; i <= last; i++) {
-          const at = Math.max(0, Math.min(1, ((i + 0.5) / colors.length - from) / (to - from)));
-          paint.addColorStop(at, resolve(el, colors[i]));
+          const at = Math.max(0, Math.min(1, ((i + 0.5) / paintColors.length - from) / (to - from)));
+          paint.addColorStop(at, resolve(el, paintColors[i]));
         }
         g.fillStyle = paint;
       }
       g.fill(pathOf(edges, smooth));
     };
     schedule();
-  }, [levels, from, to, ink, colors, height, density, smooth, headroom, samples, schedule, theme]);
+  }, [levels, from, to, ink, paintColors, height, density, smooth, headroom, samples, schedule, theme]);
 
   useEffect(() => {
     const el = canvas.current;

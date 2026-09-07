@@ -128,7 +128,9 @@ decoder samples are converted through seconds, so differing sample rates stay al
 The measured end of the map determines the overview length, not an estimated tempo.
 
 Persistent 250/2500 Hz crossovers measure low/mid/high energy per bin and map those
-bands to red/green/blue contributions. Silence remains neutral. Spectral paint belongs
+bands to the shared theme’s spectral colors (RGB by default). The engine retains
+energy tuples rather than baked colors. Theme edits repaint already-loaded, paused
+waveforms without re-analysis or playback changes. Silence uses the theme’s idle tone. Spectral paint belongs
 to the original audio, before mixer processing; deck colors remain on the labels and
 rails. Both stereo channels contribute without cancellation. Analysis runs once during
 loading, yielding cooperatively and honoring replacement cancellation. Play shows eight bars

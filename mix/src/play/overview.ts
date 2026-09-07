@@ -1,16 +1,9 @@
+import type { SpectralEnergy } from '@openflow/widgets/theme/spectral.ts';
 import { beatAt, sampleOf, type Beats } from '../warp.ts';
 import type { Peak } from '../audio.ts';
 
 /** Original-track overview; its origin can precede bar 1. Eight measurements per beat. */
-export interface Overview { start: number; peaks: Peak[]; colors: string[] }
-
-/** Broad-band energy colors, independent of deck/stem identity. Silence stays neutral. */
-export function spectralColor(low: number, mid: number, high: number): string {
-  const maximum = Math.max(low, mid, high);
-  if (maximum < 0.00001) return '#45464b';
-  const channel = (energy: number) => Math.round(55 + 155 * Math.sqrt(energy / maximum));
-  return `rgb(${channel(low)}, ${channel(mid)}, ${channel(high)})`;
-}
+export interface Overview { start: number; peaks: Peak[]; spectrum: SpectralEnergy[] }
 
 /**
  * Read decoded full-track samples once, never a selected stem or a rescaled proxy.
@@ -26,7 +19,7 @@ export async function measureOverview(buffer: AudioBuffer, map: Beats, signal: A
   const lower = new Float64Array(channels.length), upper = new Float64Array(channels.length);
   const a = 1 - Math.exp(-2 * Math.PI * 250 / buffer.sampleRate);
   const b = 1 - Math.exp(-2 * Math.PI * 2500 / buffer.sampleRate);
-  const peaks: Peak[] = [], colors: string[] = [];
+  const peaks: Peak[] = [], spectrum: SpectralEnergy[] = [];
   const sample = (beat: number) => Math.max(0, Math.min(buffer.length, Math.floor(sampleOf(map, beat) / map.rate * buffer.sampleRate)));
   let from = 0;
   for (let bin = 0; bin < count; bin++) {
@@ -50,8 +43,8 @@ export async function measureOverview(buffer: AudioBuffer, map: Beats, signal: A
     }
     peaks.push({min,max});
     const samples = Math.max(1, (to-from)*channels.length);
-    colors.push(spectralColor(low/samples, mid/samples, high/samples));
+    spectrum.push([low/samples, mid/samples, high/samples]);
     from = to;
   }
-  return {start,peaks,colors};
+  return {start,peaks,spectrum};
 }

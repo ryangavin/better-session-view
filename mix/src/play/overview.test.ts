@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { measureOverview, spectralColor } from './overview.ts';
+import { measureOverview } from './overview.ts';
 import { beatAt, evenBeats, sampleOf } from '../warp.ts';
 
 function buffer(channels: Float32Array[], rate = 44100): AudioBuffer {
@@ -23,7 +23,7 @@ describe('full-track beat overview', () => {
     expect(beat).toBeLessThan(to);
     expect(sampleOf(map,from)/map.rate).toBeLessThanOrEqual(.7);
     expect(sampleOf(map,to)/map.rate).toBeGreaterThan(.7);
-    expect(overview.colors).toHaveLength(overview.peaks.length);
+    expect(overview.spectrum).toHaveLength(overview.peaks.length);
   });
   it('retains both stereo channels and the very end of the original', async () => {
     const left = new Float32Array(44100).fill(.5), right = new Float32Array(44100).fill(-.5);
@@ -38,10 +38,10 @@ describe('full-track beat overview', () => {
       const samples = Float32Array.from({length:44100},(_,i) => .5*Math.sin(2*Math.PI*hz*i/44100));
       const overview = await measureOverview(buffer([samples]),evenBeats(44100,44100,120,0),signal());
       expect(overview.peaks[4].max).toBeCloseTo(.5,2);
-      colors.push(overview.colors[4].match(/\d+/g)!.map(Number));
+      colors.push([...overview.spectrum[4]]);
     }
     colors.forEach((color,i) => expect(color.indexOf(Math.max(...color))).toBe(i));
-    expect(spectralColor(0,0,0)).toBe('#45464b');
+
   });
   it('cancels before reading a replaced track', async () => {
     const aborted = new AbortController(); aborted.abort();

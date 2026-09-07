@@ -19,7 +19,7 @@ return <ThemeRoot theme={theme}>
 
 ## The document and the rules
 
-A theme includes `colors`, `surfaces` and `variation`, together. Presets restore all three;
+A theme includes `colors`, `surfaces`, `variation` and optional `spectral` settings. Presets restore them together;
 randomizing role colors retains surfaces and variation. Current favorite preserves the
 chosen eight original role colors exactly, with guitar and piano added for six-source
 hosts. These additional roles do not change any of the existing four-stem colors.
@@ -48,6 +48,26 @@ Saved favorites are preserved even when the warning flags a collision.
 Color encodes state as well as identity. Neutral EQ/trim/filter do not draw filled arcs;
 level controls always show their amount. Those are control presentation choices, not
 changes to the palette resolver or musical state.
+
+## Spectral waveform style
+
+`spectral.ts` owns frequency paint independently of stem identity. The optional v1
+`spectral` field contains Spectral/Deck color mode, low/mid/high HSL colors and strength.
+Older saved themes without the field use RGB without losing their existing palette;
+malformed supplied settings are rejected. RGB preserves the original waveform paint.
+Warm and Ice offer alternate palettes without changing any other theme role.
+
+The editor's Low/Mid/High buttons select a band for the same H/S/L values and individual
+roll buttons as the identity roles. These are frequency semantics, so they are not
+subject to stem hue-separation rules. The main identity randomizer preserves spectral
+settings. Strength blends band paint toward the theme's neutral waveform base; zero
+keeps the amplitude silhouette. Deck color mode instead uses the paired deck tint.
+
+`Waveform` accepts measured `spectrum` tuples, one low/mid/high energy triple per peak.
+It derives paint from the scoped theme and repaints while paused. Hosts retain energy
+measurements rather than storing palette-dependent colors, so editing a theme never
+requires re-analysis, loading audio, or restarting playback. `--spectral-low/mid/high`
+expose the band colors to other consumers; `useTheme().spectral` exposes the complete style.
 
 ## Consumption and scope
 

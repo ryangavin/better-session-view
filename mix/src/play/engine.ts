@@ -370,17 +370,17 @@ export class MixerEngine {
     const active=this.chosen(d,this.model(id)).find(([,s])=>s.enabled)?.[1]; const at=active?.voice.at() ?? 0;
     return [id,{seconds:at,duration:d.audio.duration,beat:d.audio.map ? beatAt(d.audio.map,at*d.audio.map.rate) : at*(this.model(id).track?.bpm ?? 120)/60,level:d.channel.level()}];
   })),masterLevel:this.ctx ? this.master.level() : 0 });
-  private waveform(id: string, d: Deck, beat: number): Pick<MixerDeck,'waveform'|'peaks'|'waveformColors'> {
+  private waveform(id: string, d: Deck, beat: number): Pick<MixerDeck,'waveform'|'peaks'|'waveformSpectrum'> {
     const start = Math.floor(beat / 32) * 32 - 32;
     const cached = this.model(id).waveform?.start === start;
     const offset = Math.round((start - (d.audio.overviewStart ?? 0)) * 8);
     const peaks = cached ? this.model(id).peaks : Array.from({length:768},(_,i) => d.audio.overview[offset + i] ?? {min:0,max:0});
-    const waveformColors = cached ? this.model(id).waveformColors : d.audio.overviewColors && Array.from({length:768},(_,i) => d.audio.overviewColors![offset + i] ?? '#45464b');
+    const waveformSpectrum = cached ? this.model(id).waveformSpectrum : d.audio.overviewSpectrum && Array.from({length:768},(_,i) => d.audio.overviewSpectrum![offset + i] ?? [0,0,0] as const);
     const slot = this.chosen(d,this.model(id)).find(([,s])=>s.enabled);
     const span = slot?.[1].span;
     const toBeat = (seconds: number) => d.audio.map ? beatAt(d.audio.map,seconds*d.audio.map.rate) : seconds*(this.model(id).track?.bpm ?? 120)/60;
     const pending = slot && this.model(id).loop?.start != null && this.model(id).loop?.end === null ? this.loopStarts.get(`${id}/${slot[0]}`) : undefined;
-    return { peaks, waveformColors, waveform: {start,length:96,visible:32,loop:span ? {start:toBeat(span.from),end:toBeat(span.to),enabled:true} : pending !== undefined ? {start:toBeat(pending),end:null,enabled:false} : undefined} };
+    return { peaks, waveformSpectrum, waveform: {start,length:96,visible:32,loop:span ? {start:toBeat(span.from),end:toBeat(span.to),enabled:true} : pending !== undefined ? {start:toBeat(pending),end:null,enabled:false} : undefined} };
   }
   private tick() {
     if(this.disposed) return;
