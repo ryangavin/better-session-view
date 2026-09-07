@@ -47,6 +47,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
 | audio interface, supported sample rates, latency or restarting the audio graphs | [`docs/audio-settings.md`](docs/audio-settings.md) — `src/audioSettings.ts`, `src/components/SettingsModal.tsx` |
 | switching Prep/Play, library-to-deck loading, or four-deck playback | [`docs/play-view.md`](docs/play-view.md) — `src/play/`, `src/App.tsx` |
+| DJ control conventions, Play-view gaps, or proposed implementation order | [`docs/dj-control-reference.md`](docs/dj-control-reference.md) — draft research/audit; verified references, proposals and validation scenarios |
 | the layout, the Analyze page, which lanes there are, or zooming the timeline | [`docs/window.md`](docs/window.md) — `src/`, and `src/zoom.ts` for the zoom |
 | checking or correcting the beat grid, finding the beats again, or suggesting sections | [`docs/track-review.md`](docs/track-review.md) — `src/components/BeatGridEditor.tsx`, `src/components/Ruler.tsx`, `src/beatEdit.ts`, `src/sections.ts`, `src/components/suggestions.ts` |
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
@@ -118,3 +119,5 @@ never notice. Where the two apps genuinely need the same control, the answer is
 The one word that *was* changed is **slice** — the mockup called it a scene in the code
 and a cue in the header, and both already mean something exact in Live.
 [`docs/window.md`](docs/window.md) has the reasoning.
+
+DJ-control output and browser evidence: [validation](docs/dj-controls-validation.md).

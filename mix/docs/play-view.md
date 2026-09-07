@@ -44,11 +44,11 @@ A fallback tempo only supplies a waveform display; it is not a fabricated analys
 Reload a deck after saving preparation changes to refresh its sections and grid.
 
 The four standard stem positions remain identifiable; guitar and piano are included when
-present. Missing stems stay disabled. Tracks with no stems start in Full mode. Full switches
-to the original at the current source position and stops the stem voices, preserving the
-channel mix. Returning to stems starts the available stems at that position. It does not
-layer the original over the separated audio. The first loaded deck sets the initial shared
-tempo while stopped and unlinked; subsequent loads do not move it.
+present. Missing stems stay disabled. Tracks with no stems start in Full mode. Full pauses
+all sources and switches the addressed source group. The original is initialized from the
+focused stem once; subsequent switches retain each group's independent positions, stopped
+stems, selections, loops and Cue checkpoints. Switching does not start audio. The first
+loaded deck sets the initial shared tempo while stopped and unlinked.
 
 ## Audio graph and levels
 
@@ -69,58 +69,64 @@ sends tap the dry deck sum before the effect returns, preventing a return feedin
 Delay is one beat; Echo is a dotted eighth. Their Feedback/Tone controls map to a bounded
 feedback loop and low-pass filter. Reverb is a parallel-comb network with Decay/Tone.
 Chorus and Flanger modulate a short delay. Each effect keeps its own parameter values
-per slot; switching effects replaces that return and discards its old tail.
+per slot. The group and individual slot enables gate new send input without changing
+stored send levels or parameters. Existing returns decay after bypass. Effect selection
+also retains the old return until quiet (or 180 seconds); a tail indicator reports activity
+while the group is off. Clear tails explicitly discards it while bypassed. Send and Phones
+gains initialize at zero before connecting: smoothing from the GainNode default of one
+would otherwise inject startup audio into a supposedly unused effect.
 
 Phones taps after trim/EQ/filter but before fader/crossfader. On a context exposing at
 least four output channels, master is 1/2 and phones is 3/4. Stereo-only hardware reports
 that separate cue routing is unavailable rather than leaking cue into the master.
-Link Audio also exposes a named Phones feed. There is no separate-device headphone picker.
+Link Audio also exposes a named Phones feed. Independent Phones level and Cue/Master blend
+mix selected pre-fader decks with the post-master output on the same audio clock. At 0%
+blend only selected decks are monitored; at 100% only master is monitored. There is no
+separate-device headphone picker.
 
 ## Transport, Cue, Sync and sections
 
-Play/Pause resumes/holds a deck's source positions. Cue follows the familiar player
-convention: during playback it returns to the stored cue and pauses; while paused away
-from cue it stores that position; at cue, holding auditions and releasing returns there.
-Pressing Play during the held audition continues playback. The transport Cue point is
-independent of the Phones switch. Pending resumes/preparation are generation-guarded so
-releasing Cue, stopping, replacing a deck or leaving the view cannot start obsolete audio.
+Play/Pause resumes/holds each participating source at its exact independent position;
+stopped stems stay stopped. Deck Cue stores a combination checkpoint: source positions,
+participation, selections and loop regions, excluding gains. Focused Cue addresses only
+one source. Paused away from the checkpoint, Cue stores the current state; playing Cue
+returns and pauses; holding at the checkpoint auditions and release restores it. Play
+while held latches playback. Keyboard Space holds Cue and Enter takes over; release,
+cancel, lost capture, window blur and unmount cannot leave an audition running. Pending
+preparation/resume and launch revisions prevent obsolete audio from starting.
 
-Unsynced voices use native AudioBufferSourceNodes. Sync lazily prepares Signalsmith stereo
-worklets, using the existing `pinnedOf`, `passOf` and `sourceAt` beat-map scheduling.
-Sync matches the shared tempo and nearest beat phase, preserving pitch and phrase position.
-It is explicit per deck; unsynced decks keep their recorded timing. Turning Sync off
-continues at native speed from the current source position. Global starts prepare all
-synced voices before choosing one shared start sample. Worklet update callbacks schedule
-future boundaries, independently of React and animation frames.
+Unsynced voices use native AudioBufferSourceNodes with 4ms start/stop fades. Sync lazily
+prepares Signalsmith stereo worklets using `pinnedOf`, `passOf` and `sourceAt` scheduling.
+Engaging Sync while playing applies one common beat-phase correction, preserving stem
+offsets. Paused Sync arms tempo following; Play still resumes exact positions. Turning it
+off continues at native speed. Global starts prepare all synced voices before choosing
+one shared start sample. Worklet callbacks own scheduling independently of rendering.
 
-A section-name button is a hot cue: it clears that deck's active and saved loops,
-starts all available sources at the named boundary, and continues through later sections.
-In Full mode it does the same for the original mix. A stem cell instead loops only that
-stem between the section boundary and the next section (or the track end). Without saved
-sections, the Track name plays the whole source once. Synced launches while the clock is
-running wait for the next bar; unsynced launches are immediate. Pending cells show a
-queued indication until their scheduled audio time. Stop cells are immediate; the
-section-column Stop stops all sources on that deck. Different stems can play different
-sections simultaneously. Switching Full/stems clears prior selections and loop regions.
+A section-name hot cue clears deck loops and starts all sources at that boundary,
+continuing onward. A stem cell loops only that stem's section; other stems remain
+independent. In Full mode the original is addressed. Without sections, Track plays once.
+Launch timing is explicitly Now, Next beat or Next bar, independent of Sync and marker Q.
+Queued cells show the scheduled change; Stop is immediate.
 
-Each deck has In, Out and Exit loop/Reloop below its launcher. In releases the deck's
-existing loops and captures the playing voices' source positions. Out captures their
-later positions, engages those loops and draws the actual source bounds. Exit releases
-both captured and stem-section loops on that deck, continuing from each voice's position;
-it does not stop, jump to the loop start, or affect another deck. Reloop reinstates the
-retained regions at their starts. Loop capture/exit cancels that deck's queued launches.
-A section-name hot cue clears saved loop regions too, so an old capture cannot override
-the new jump. The Play header and master strip have no loop buttons; Prep's header Loop
-remains its single-track control.
+Q snaps Cue and manual loop markers to the nearest saved-grid division (ties forward):
+Off, 1/8, 1/4, 1/2, 1 or 4 beats. Collective snapshots use a common delta anchored to
+focus, preserving offsets. Missing grids disable grid-dependent controls. Loop scope
+chooses active stems or focus only. In works paused or playing, stores Cue and starts a
+new capture; Out validates every target atomically with at least 20ms duration. Scope
+cannot change while awaiting Out. Quick loops use the selected beat count (16 beats is
+four bars in 4/4); half/double keep In fixed, move shifts by loop length, boundary buttons
+adjust by Q or 1/8 beat. Invalid edits change nothing. Exit continues at each audible
+position and retains saved regions. Reloop goes to In, preserving paused/playing state.
+Loop edits do not rewrite Cue. A section-name launch clears old saved loops.
 
-Behavior references: AlphaTheta's [Cueing manual](https://downloads.support.alphatheta.com/manuals/all-in-one-dj-systems/XDJ-AZ/html/en/000COV_en/Cueing/Cueing.htm),
-and Pioneer DJ's [control guide](https://blog.pioneerdj.com/djtips/what-do-all-of-these-buttons-do/).
-The hybrid stem-section launcher is this app's existing concept; it is not described as
-a standard CDJ feature. No jog-wheel, hot-cue bank or new effect control concept is added.
+Slip applies to loops only. Each looping source retains its own advancing background
+position; Exit rejoins it. The waveform shows this background marker. Ordinary Exit stays
+at audible position. Pause, Cue, Stop, source-group switching or disabling Slip ends that
+background history. It is not a general scratch, reverse or hot-cue Slip implementation.
 
 ## Waveforms, meters and Link
 
-The decoded original track produces beat-normalized overview peaks and frequency
+Each decoded source produces beat-normalized overview peaks and frequency
 shading in `overview.ts`. The overview begins at the beat containing file sample zero,
 which can be negative: audio before the first downbeat must not be discarded. Its
 explicit origin is retained when extracting each scrolling window. Map samples and
@@ -131,21 +137,24 @@ Persistent 250/2500 Hz crossovers measure low/mid/high energy per bin and map th
 bands to the shared theme’s spectral colors (RGB by default). The engine retains
 energy tuples rather than baked colors. Theme edits repaint already-loaded, paused
 waveforms without re-analysis or playback changes. Silence uses the theme’s idle tone. Spectral paint belongs
-to the original audio, before mixer processing; deck colors remain on the labels and
+to the focused source audio, before mixer processing; deck colors remain on the labels and
 rails. Both stereo channels contribute without cancellation. Analysis runs once during
-loading, yielding cooperatively and honoring replacement cancellation. Play shows eight bars
-around a fixed playhead, with a 96-beat backing window to scroll smoothly through page
-boundaries. Each deck follows its own actual source position; beat-grid lines share scale
-and aligned playheads. The first enabled source is the track-position reference when
-stems are playing different sections. Per-deck source loop bounds are passed to widgets,
-not confused with the shared elapsed transport count. The time/bar reading belongs to
-that source. Unsynced tracks naturally drift relative to each other.
+loading, yielding cooperatively and honoring replacement cancellation. Focus defaults to
+drums (or the first available source) and never follows launch activity implicitly. Zoom
+selects the visible beat span. Source Cue, deck checkpoint, saved/active loop and other
+source positions are distinguished in the waveform. Time/bar readings belong to focus.
+
+Paused dragging moves the focused source relative to pointer-down, with no initial jump.
+Move active stems explicitly applies one common bounded beat delta to the combination;
+it requires the addressed sources paused. Release commits; Escape, pointer cancellation,
+lost capture or window blur restores the pre-gesture state. Arrow keys move 1/8 beat,
+Shift+Arrow one beat. Seeking exits addressed active loops but retains saved regions and
+never overwrites Cue. Widgets emit intent; the engine owns clamping and state restoration.
 
 `readFrame` reads the AudioContext clock and actual analyser peaks, cached within an audio
 quantum. Widgets animate the scroll and meters at display refresh rate (normally 60 Hz).
 Only low-rate whole-beat/selection/page state rerenders the mixer. Pausing, dropping frames
-or hiding the browser cannot become the playback clock. Waveforms show the original
-track as a positional reference, not a rendered sum of independently launched stems.
+or hiding the browser cannot become the playback clock. Waveforms show the focused source, not a rendered sum of independently launched stems.
 
 The existing LinkAudioSender publishes loaded deck outputs, master and Phones. Header
 Link follows/sets shared tempo and transport. Synced decks also correct significant phase
@@ -168,3 +177,7 @@ pitch-preserving tempo doubling, loop wrap and pause. This dev-only page sends n
 signal to speakers. It uses the real Signalsmith worklet rather than the unit-test mock.
 The normal harness is also checked with four real library tracks playing and synced.
 Physical iPad dragging and headphone outputs require device validation.
+
+The worktree DJ harness at `/harness/dj-controls.html` mounts actual PlayView/MixerEngine
+with generated source buffers. See [DJ control validation](dj-controls-validation.md) for
+measured output checks, interaction coverage and remaining device checks.

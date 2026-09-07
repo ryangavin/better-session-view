@@ -13,6 +13,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "harness/**/*.ts",
+    "harness/**/*.tsx",
     "vite.config.ts",
     "../types/assets.d.ts",
     "../types/signalsmith-stretch.d.ts"

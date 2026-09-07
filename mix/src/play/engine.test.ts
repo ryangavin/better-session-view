@@ -162,15 +162,15 @@ describe('the four-deck playback owner',()=>{
     const loop=ctx.sources.at(-1)!;expect(loop.loop).toBe(true);expect(loop.loopStart).toBeCloseTo(1.97);expect(loop.loopEnd).toBeCloseTo(3.97);
     engine.commands.setLoopEnabled(false);expect(ctx.sources.at(-1)!.loop).toBe(false);engine.commands.setLoopEnabled(true);expect(ctx.sources.at(-1)!.loopStart).toBeCloseTo(1.97);
   });
-  it('aligns a paused synced deck on Play even when its first beat has an offset',async()=>{
+  it('preserves a paused synced source position including audio before the first beat',async()=>{
     const {engine,ctx}=setup();const shifted=asset();shifted.audio!.map=evenBeats(48000,64*48000,120,.2);
     await engine.load('deck-a',track,async()=>shifted);await engine.sync('deck-a',true);await engine.play('deck-a',true);
-    ctx.currentTime=.56;expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(1,4);
+    expect(ctx.sources).toHaveLength(0);ctx.currentTime=.56;expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(.6,4);
   });
   it('keeps queued launches and the playhead on the audible section until the bar',async()=>{
     vi.useFakeTimers();
     try {
-      const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);await engine.play('deck-a',true);
+      const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);engine.commands.setDeckTiming!('deck-a','launchBeats',4);await engine.play('deck-a',true);
       ctx.currentTime=1;const before=engine.readFrame().decks['deck-a'].beat;
       await engine.launch('deck-a','section-1-4','drums');
       expect(engine.snapshot().decks[0].stems[0].queued).toBe('section-1-4');
@@ -180,6 +180,75 @@ describe('the four-deck playback owner',()=>{
       expect(engine.snapshot().decks[0].stems[0].queued).toBeUndefined();
       expect(engine.snapshot().decks[0].stems[0].selected).toBe('section-1-4');
     } finally {vi.useRealTimers();}
+  });
+  it('recalls a divergent combination and loops without overwriting gains or reviving stopped stems',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;
+    await engine.play('deck-a',false);engine.cue('deck-a',true);engine.cue('deck-a',false);
+    const saved=engine.readFrame().decks['deck-a'].sources!;
+    engine.commands.setStemLevel('deck-a','bass',37);await engine.play('deck-a',true);ctx.currentTime=2;
+    engine.cue('deck-a',true);engine.cue('deck-a',false);
+    const got=engine.readFrame().decks['deck-a'].sources!;
+    expect(got.drums.seconds).toBe(saved.drums.seconds);expect(got.bass.seconds).toBe(saved.bass.seconds);expect(got.other.enabled).toBe(false);
+    engine.cue('deck-a',true);await settle();await engine.play('deck-a',true);engine.cue('deck-a',false);
+    expect(ctx.sources.slice(-2).map(s=>s.loopStart)).toEqual([0,8]);expect(engine.snapshot().decks[0].stems[1].level).toBe(37);
+  });
+  it('moves only focus or all active stems relatively, clamps the common delta, and cancels without losing loops',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;await engine.play('deck-a',false);
+    const before=engine.readFrame().decks['deck-a'].sources!;
+    engine.commands.setMoveTogether!('deck-a',true);engine.move('deck-a','begin');engine.move('deck-a','move',4);
+    let got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.beat-before.drums.beat).toBeCloseTo(4);expect(got.bass.beat-before.bass.beat).toBeCloseTo(4);
+    engine.move('deck-a','cancel');expect(engine.snapshot().decks[0].loop?.enabled).toBe(true);
+    engine.move('deck-a','begin');engine.move('deck-a','move',1000);engine.move('deck-a','commit');got=engine.readFrame().decks['deck-a'].sources!;
+    expect(got.bass.seconds).toBeCloseTo(64);expect(got.bass.beat-got.drums.beat).toBeCloseTo(before.bass.beat-before.drums.beat);
+    engine.commands.setMoveTogether!('deck-a',false);engine.commands.setFocus!('deck-a','bass');engine.move('deck-a','begin');engine.move('deck-a','move',-2);engine.move('deck-a','commit');
+    expect(engine.readFrame().decks['deck-a'].sources!.drums.seconds).toBe(got.drums.seconds);
+  });
+  it('lets Play take over even before asynchronous Cue preparation finishes',async()=>{
+    const {engine,ctx,load}=setup();await load();let release!:()=>void;ctx.resume.mockImplementation(()=>new Promise<void>(r=>release=r));
+    engine.cue('deck-a',true);await engine.play('deck-a',true);engine.cue('deck-a',false);release();await settle();
+    expect(engine.snapshot().decks[0].playing).toBe(true);
+  });
+  it('keeps stopped stems stopped and preserves their positions across Full playback',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;await engine.play('deck-a',false);
+    const before=engine.readFrame().decks['deck-a'].sources!.bass.seconds;engine.commands.setDeck('deck-a','full',true);await engine.play('deck-a',true);ctx.currentTime=2;engine.commands.setDeck('deck-a','full',false);await settle();
+    expect(engine.readFrame().decks['deck-a'].sources!.bass.seconds).toBeCloseTo(before);expect(engine.readFrame().decks['deck-a'].sources!.drums.enabled).toBe(false);
+  });
+  it('snaps manual In/Out, sets Cue at In and keeps Q separate from launch timing',async()=>{
+    const {engine,ctx,load}=setup();await load();engine.commands.setDeckTiming!('deck-a','quantize',1);await engine.play('deck-a',true);
+    ctx.currentTime=4.14;engine.deckLoopIn('deck-a');ctx.currentTime=6.42;engine.deckLoopOut('deck-a');
+    expect(engine.snapshot().decks[0].loop).toEqual({start:4,end:6.5,enabled:true});
+    engine.cue('deck-a',true);engine.cue('deck-a',false);expect(engine.readFrame().decks['deck-a'].seconds).toBe(4);
+    await engine.sync('deck-a',true);await engine.launch('deck-a','section-1-4','bass');expect(engine.snapshot().decks[0].stems[1].queued).toBeUndefined();
+  });
+  it('creates 16 beats, halves/doubles, moves, exits and reloops without changing the Cue',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2.03;
+    engine.commands.setDeckTiming!('deck-a','quantize',1);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop).toEqual({start:2,end:10,enabled:true});
+    engine.editLoops('deck-a','resize',.5);expect(engine.snapshot().decks[0].loop?.end).toBe(6);engine.editLoops('deck-a','resize',2);expect(engine.snapshot().decks[0].loop?.end).toBe(10);
+    engine.editLoops('deck-a','move',1);expect(engine.snapshot().decks[0].loop?.start).toBe(2.5);
+    engine.setDeckLoopEnabled('deck-a',false);expect(engine.snapshot().decks[0].loop?.enabled).toBe(false);engine.setDeckLoopEnabled('deck-a',true);expect(ctx.sources.at(-1)!.loopStart).toBe(2.5);
+    engine.cue('deck-a',true);expect(engine.readFrame().decks['deck-a'].seconds).toBe(0);
+  });
+  it('rejects invalid loop edits atomically and uses musical length on a variable map',async()=>{
+    const {engine,ctx}=setup();const a=asset();a.audio!.map={rate:48000,length:64*48000,first:0,samples:[0,24000,48000,72000,96000,144000,192000,240000,288000]};
+    await engine.load('deck-a',track,async()=>a);engine.commands.setDeckTiming!('deck-a','loopBeats',8);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop?.end).toBe(6);
+    const before=engine.snapshot().decks[0].loop;engine.editLoops('deck-a','in',20);expect(engine.snapshot().decks[0].loop).toEqual(before);
+  });
+  it('returns Slip loops to each independent background position and ordinary loops to audible position',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');engine.setDeckLoopEnabled('deck-a',false);
+    ctx.currentTime=1;engine.commands.setSlip!('deck-a',true);engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');
+    ctx.currentTime=4;const loop=engine.readFrame().decks['deck-a'].sources!;expect(loop.drums.backgroundBeat).toBeGreaterThan(loop.drums.beat+4);
+    engine.setDeckLoopEnabled('deck-a',false);ctx.currentTime=4.1;const exited=engine.readFrame().decks['deck-a'].sources!;
+    expect(exited.bass.seconds-exited.drums.seconds).toBeCloseTo(8);expect(exited.drums.seconds).toBeGreaterThan(4);expect(exited.drums.backgroundBeat).toBeUndefined();
+    engine.commands.setSlip!('deck-a',false);engine.quickLoop('deck-a');ctx.currentTime=6;const at=engine.readFrame().decks['deck-a'].seconds!;engine.setDeckLoopEnabled('deck-a',false);ctx.currentTime=6.04;expect(engine.readFrame().decks['deck-a'].seconds).toBeCloseTo(at+.04,2);
+  });
+  it('preserves effect configuration and live returns when the group is turned off',async()=>{
+    const {engine,load}=setup();await load();engine.commands.setEffectParam!('A','echo','feedback',61);engine.commands.setEffect('A','echo');engine.commands.setDeck('deck-a','sendA',72);engine.commands.setEffectEnabled!('B',false);
+    const output=engine.output('fx-a'),saved=engine.snapshot().effectValues;engine.commands.setEffectsEnabled!(false);
+    expect(engine.output('fx-a')).toBe(output);expect(engine.snapshot().decks[0].sendA).toBe(72);engine.commands.setEffectsEnabled!(true);expect(engine.snapshot().effectValues).toBe(saved);expect(engine.snapshot().effectEnabled?.B).toBe(false);
+    engine.commands.setEffect('A','reverb');expect(engine.output('fx-a')).not.toBe(output);expect((output as unknown as Node).connections.length).toBeGreaterThan(0);
+  });
+  it('does not let release restore a checkpoint after a stop command supersedes a held Cue',async()=>{
+    const {engine,load}=setup();await load();engine.cue('deck-a',true);await settle();await engine.launch('deck-a',null);engine.cue('deck-a',false);expect(engine.snapshot().decks[0].playing).toBe(false);expect(engine.readFrame().decks['deck-a'].sources!.drums.enabled).toBe(false);
   });
   it('initializes all volume controls at unity and reserves boost for trim',async()=>{
     const {engine,load}=setup();await load();const state=engine.snapshot();

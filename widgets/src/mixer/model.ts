@@ -8,6 +8,8 @@ export interface MixerStem {
   name: string;
   level: number;
   available: boolean;
+  playing?: boolean;
+  cueHeld?: boolean;
   selected: string | null;
   /** Undefined: no pending change. Null: pending stop. */
   queued: string | null | undefined;
@@ -15,8 +17,17 @@ export interface MixerStem {
 export type DeckControl = 'gain' | 'trim' | 'sendA' | 'sendB' | 'filter' | 'route' | 'cue' | 'full';
 export interface MixerDeck {
   /** Host-reported deck transport; absent while playback is not connected. */
+  focus?: string;
+  moveTogether?: boolean;
+  gridAvailable?: boolean;
+  quantize?: number;
+  launchBeats?: number;
+  loopBeats?: number;
+  loopFocus?: boolean;
+  zoom?: number;
   playing?: boolean;
   synced?: boolean;
+  slip?: boolean;
   cueHeld?: boolean;
   loop?: { start: number | null; end: number | null; enabled: boolean };
   canLoopOut?: boolean;
@@ -26,7 +37,7 @@ export interface MixerDeck {
   status: 'empty' | 'loading' | 'ready' | 'unavailable';
   message?: string;
   /** Optional scrolling source window. The host supplies the beat range and loop in source coordinates. */
-  waveform?: { start: number; length: number; visible: number; loop?: { start: number; end: number | null; enabled: boolean } };
+  waveform?: { start: number; length: number; visible: number; cue?: number; deckCue?: number; focus?: string; loop?: { start: number; end: number | null; enabled: boolean } };
   peaks: readonly { min: number; max: number }[];
   /** Optional host-measured low/mid/high energy, one tuple per peak. */
   waveformSpectrum?: readonly SpectralEnergy[];
@@ -55,9 +66,27 @@ export interface MixerState {
   effects: readonly { id: string; name: string; controls?: readonly { id: string; name: string; param: Param }[] }[];
   effectValues?: Partial<Record<'A' | 'B', Record<string, Record<string, number>>>>;
   fxA: string; fxB: string;
+  effectsEnabled?: boolean;
+  effectEnabled?: {A:boolean;B:boolean};
+  effectTailing?: boolean;
+  phonesLevel?: number;
+  phonesMix?: number;
 }
 export type MasterControl = 'bpm' | 'cross' | 'master' | 'masterTrim' | 'masterFilter' | 'masterSendA' | 'masterSendB';
 export interface MixerCommands {
+  setDeckTiming?(deckId:string, control:'quantize'|'launchBeats'|'loopBeats', beats:number):void;
+  setSlip?(deckId:string, enabled:boolean):void;
+  setLoopFocus?(deckId:string, focus:boolean):void;
+  quickLoop?(deckId:string):void;
+  resizeLoop?(deckId:string, factor:number):void;
+  moveLoop?(deckId:string, beats:number):void;
+  adjustLoop?(deckId:string, boundary:'in'|'out', beats:number):void;
+  setFocus?(deckId: string, stemId: string): void;
+  setMoveTogether?(deckId: string, together: boolean): void;
+  moveDeck?(deckId: string, phase: 'begin' | 'move' | 'commit' | 'cancel', deltaBeats?: number): void;
+  setZoom?(deckId: string, beats: number): void;
+  setStemPlaying?(deckId: string, stemId: string, playing: boolean): void;
+  cueStem?(deckId: string, stemId: string, held: boolean): void;
   deckLoopIn?(deckId: string): void;
   deckLoopOut?(deckId: string): void;
   setDeckLoopEnabled?(deckId: string, enabled: boolean): void;
@@ -71,6 +100,10 @@ export interface MixerCommands {
   loopIn(): void;
   loopOut(): void;
   setLoopEnabled(value: boolean): void;
+  setPhones?(control:'phonesLevel'|'phonesMix', value:number):void;
+  setEffectsEnabled?(enabled:boolean):void;
+  setEffectEnabled?(slot:'A'|'B', enabled:boolean):void;
+  clearEffectTails?():void;
   setEffectParam?(slot: 'A' | 'B', effectId: string, paramId: string, value: number): void;
   setEffect(slot: 'A' | 'B', effectId: string): void;
   setMaster(control: MasterControl, value: number): void;
@@ -83,7 +116,7 @@ export interface MixerCommands {
 }
 export interface MixerFrame {
   /** Absolute beat position per deck, and normalized measured output 0–1. */
-  decks: Readonly<Record<string, { beat: number; level: number; seconds?: number; duration?: number }>>;
+  decks: Readonly<Record<string, { beat: number; level: number; seconds?: number; duration?: number; sources?: Readonly<Record<string, {beat: number; seconds: number; playing: boolean; enabled: boolean; backgroundBeat?:number}>> }>>;
   masterLevel: number;
 }
 export interface MixerTheme {

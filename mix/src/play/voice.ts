@@ -7,6 +7,7 @@ import type { Beats } from '../warp.ts';
 export class DeckVoice {
   readonly output: GainNode;
   private source: AudioBufferSourceNode | null = null;
+  private sourceFade: GainNode | null = null;
   private stretch: Stretch | null = null;
   private preparing: Promise<void> | null = null;
   private disposed = false;
@@ -79,7 +80,7 @@ export class DeckVoice {
       const fade = this.context.createGain(); fade.gain.setValueAtTime(0, when); fade.gain.linearRampToValueAtTime(1, when + 0.004);
       source.connect(fade); fade.connect(this.output);
       source.onended = () => { source.disconnect(); fade.disconnect(); };
-      this.source = source;
+      this.source = source; this.sourceFade=fade;
       source.start(when, this.from);
       if (!loop) source.stop(when + (span?.to ?? this.buffer.duration) - this.from);
     }
@@ -106,7 +107,11 @@ export class DeckVoice {
   seek(at: number): void { this.halt(); this.from = Math.max(0, Math.min(at, this.buffer.duration)); }
   private halt(when = this.context.currentTime): void {
     this.active = false; this.pass = null;
-    if (this.source) { try { this.source.stop(when); } catch {} this.source = null; }
+    if (this.source) {
+      const gain=this.sourceFade?.gain;
+      if(gain){if(typeof gain.cancelAndHoldAtTime==='function')gain.cancelAndHoldAtTime(when);else {gain.cancelScheduledValues(when);gain.setValueAtTime(1,when);}gain.linearRampToValueAtTime(0,when+.004);}
+      try { this.source.stop(when+.004); } catch {} this.source = null; this.sourceFade=null;
+    }
     if (this.stretch) void this.stretch.node.schedule({ outputTime: this.context.currentTime, output: when, active: false });
   }
   dispose(): void { this.disposed = true; this.halt(); if (this.stretch) { void this.stretch.node.dropBuffers(); this.stretch.node.disconnect(); } this.output.disconnect(); }

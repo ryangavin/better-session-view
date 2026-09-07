@@ -88,3 +88,18 @@
 .play-deck-loops { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 3px; margin-top: 0; padding-top: 8px; }
 .play-deck-loops .wdg, .play-deck-loops .wdg-body { width: 100%; min-width: 0; }
 .play-deck-status { margin-top: auto; }
+
+.play-wave-row { min-height: 110px; }
+.play-wave-lane { display: flex; flex-direction: column; }
+.play-wave-tools { display:flex; align-items:center; gap:5px; flex-wrap:wrap; font:10px var(--mono); padding:3px; z-index:2; }
+.play-wave-tools button, .play-wave-tools select, .play-hold { background:var(--wdg-well); color:var(--wdg-text); border:1px solid var(--wdg-edge); border-radius:3px; min-height:24px; font:10px var(--mono); }
+.play-hold[data-on], .play-wave-tools button[aria-pressed=true] { color:var(--primary); border-color:var(--primary); }
+.play-wave-gesture { position:relative; flex:1; min-height:60px; overflow:hidden; touch-action:none; user-select:none; cursor:ew-resize; }
+.play-cue-marker { position:absolute; top:16px; bottom:0; border-left:2px solid var(--amber); color:var(--amber); font:9px var(--mono); pointer-events:none; }
+.play-source-markers { position:absolute; inset:0; pointer-events:none; }
+.play-source-markers span { position:absolute; top:0; border-left:1px solid var(--wdg-caption); color:var(--wdg-caption); font:9px var(--mono); white-space:nowrap; }
+
+.play-dj-timing {display:flex; flex-wrap:wrap; gap:4px; align-items:center; padding:4px 0; font:10px var(--mono);}
+.play-dj-timing select,.play-dj-timing button {background:var(--wdg-well);color:var(--wdg-text);border:1px solid var(--wdg-edge);font:10px var(--mono);min-height:24px;border-radius:3px;}
+
+.play-slip-marker {position:absolute;top:16px;bottom:0;border-left:1px dashed var(--primary);font:9px var(--mono);color:var(--primary);pointer-events:none;}

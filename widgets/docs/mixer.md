@@ -45,8 +45,7 @@ that has no audio controller yet. Missing/undefined retains the previous bench b
 Each launcher ends with In, Out and Exit loop/Reloop, aligned along its bottom edge.
 Optional status messages sit above this row. Optional `deckLoopIn`,
 `deckLoopOut` and `setDeckLoopEnabled` callbacks emit the deck ID. Deck `loop` and
-`canLoopOut` fields govern the caption, active state and availability. In requires a
-playing deck; Out requires host approval; Exit/Reloop requires retained bounds. These
+`canLoopOut` fields govern the caption, active state and availability. In accepts a ready paused or playing deck; Out requires host approval; Exit/Reloop requires retained bounds. These
 controls replace the master loop group. Section names emit hot-cue intent, while stem
 cells emit loop intent; the host owns timing and audio behavior.
 
@@ -132,3 +131,26 @@ source/stop delegation, unavailable state and frame sampling with no playback co
 `preview.test.ts` checks the fixture adapter's queued launches, pause/immediate behavior,
 source initialization, loop wrapping and Stop reset. Browser checks verify layout and
 real widget interactions; `npm test -- --project=widgets` runs both with the widget suite.
+
+## Focused positioning and DJ controls
+
+Optional focused-source commands expose Play/Cue, focus, zoom and relative move phases
+(begin/move/commit/cancel). WaveControls captures a pointer without jumping, emits beat
+deltas from its initial position/width and rolls back on Escape, cancellation, lost capture
+or window blur. The host rejects moves while addressed sources play. Move active stems
+is explicit; the face never synchronizes source positions itself. Arrow keys emit 1/8-beat
+moves, Shift+Arrow one beat. Slider accessibility readings use seconds.
+
+Momentary owns only input lifetime: pointer capture and keyboard hold, release exactly
+once, cancellation and teardown. Space holds Cue; Enter during a hold requests Play
+takeover. Its focus key ensures changing source releases the old source's hold.
+
+Deck timing controls separately emit marker Q, launch timing and quick-loop length.
+Loop scope, quick loop, resize, shift, boundary edits and loop-only Slip are host commands;
+active/saved bounds and pending Out determine availability. Optional source frame readings
+supply independent markers and Slip background positions. Cue and deckCue waveform fields
+are distinct checkpoints, even when their coordinates coincide.
+
+Optional effect group/slot enables preserve host configuration. Tailing state and explicit
+Clear tails are host-owned. Optional setPhones handles independent level and Cue/Master
+blend; these are not added to MasterControl, keeping existing adapters compatible.

@@ -46,6 +46,8 @@ export function FramePlayhead({ readFrame, deckId }: { readFrame(): MixerFrame; 
 
 /** A host-provided source window scrolls under a fixed playhead; no playback policy lives here. */
 export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck; index: number; ink: string; readFrame(): MixerFrame }) {
+  const background=useRef<HTMLSpanElement>(null);
+  const markers=useRef<HTMLDivElement>(null);
   const strip = useRef<HTMLDivElement>(null), reading = useRef<HTMLSpanElement>(null);
   const latest = useRef({ deck, readFrame }); latest.current = { deck, readFrame };
   useEffect(() => {
@@ -58,6 +60,11 @@ export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck
         const seconds = Math.max(0, Math.floor(at.seconds ?? 0));
         reading.current.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2,'0')} · ${Math.max(1, Math.floor(at.beat / 4) + 1)}.${Math.floor((at.beat % 4 + 4) % 4) + 1}`;
       }
+      if(background.current){const b=at?.sources?.[deck.full?'full':deck.focus ?? '']?.backgroundBeat;background.current.hidden=b===undefined;if(b!==undefined){background.current.style.left=`${Math.max(0,Math.min(98,25+(b-(at?.beat ?? 0))/range.visible*100))}%`;background.current.textContent=`SLIP ${b.toFixed(1)}`;}}
+      if(markers.current) for(const node of markers.current.children) {
+        const mark=node as HTMLElement, source=at?.sources?.[mark.dataset.source!];
+        if(source){const x=25+(source.beat-(at?.beat ?? 0))/range.visible*100;mark.style.left=`${Math.max(0,Math.min(98,x))}%`;mark.textContent=`${mark.dataset.source} ${source.beat.toFixed(1)}${x<0?' ←':x>98?' →':''}`;mark.hidden=!source.enabled;}
+      }
       frame = requestAnimationFrame(draw);
     };
     draw(); return () => cancelAnimationFrame(frame);
@@ -67,9 +74,13 @@ export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck
     <div className="play-wave-scroll" ref={strip} style={{ width: `${range.length / range.visible * 100}%` }}>
       <Waveform peaks={deck.peaks} spectrum={deck.waveformSpectrum} ink={ink} height={48} label={`Deck ${index + 1} waveform on the shared beat grid`} />
       <span className="play-wave-grid" style={{ backgroundSize: `${4 / range.length * 100}% 100%` }} />
+      {range.deckCue !== undefined && range.deckCue!==range.cue && <span className="play-cue-marker" style={{left:`${(range.deckCue-range.start)/range.length*100}%`,top:32}}>DECK CUE</span>}
+      {range.cue !== undefined && <span className="play-cue-marker" style={{left:`${(range.cue-range.start)/range.length*100}%`}}>CUE</span>}
       {loop && <div className="play-loop-region" data-enabled={loop.enabled} style={{ left: `${(loop.start - range.start) / range.length * 100}%`, width: `${Math.max(0, (loop.end ?? loop.start) - loop.start) / range.length * 100}%`, '--loop-ink': ink } as CSSProperties}><span>{loop.end === null ? 'IN' : `↻ ${Number((loop.end-loop.start).toFixed(1))} beats`}</span></div>}
     </div>
     <span className="play-playhead" style={{left:'25%'}} />
+    <span ref={background} className="play-slip-marker" hidden/>
+    <div ref={markers} className="play-source-markers">{deck.stems.filter(s=>s.available && s.id!==deck.focus).map(s=><span key={s.id} data-source={s.id}/>)}</div>
     {deck.track && <span ref={reading} className="play-wave-position" />}
   </>;
 }

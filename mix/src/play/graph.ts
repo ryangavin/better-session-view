@@ -32,6 +32,7 @@ export class MixerChannel {
 export class MixerEffect {
   input: GainNode; output: GainNode;
   private nodes: AudioNode[] = []; private delays: DelayNode[] = []; private feedbacks: GainNode[] = [];
+  private meter: AnalyserNode; private samples: Float32Array<ArrayBuffer>;
   private tone: BiquadFilterNode; private oscillator?: OscillatorNode; private depth?: GainNode;
   constructor(private ctx: AudioContext, readonly kind: string) {
     this.input = ctx.createGain(); this.output = ctx.createGain(); this.tone = ctx.createBiquadFilter(); this.tone.type = 'lowpass'; this.nodes.push(this.input, this.output, this.tone);
@@ -51,7 +52,7 @@ export class MixerEffect {
         this.oscillator.connect(this.depth); this.depth.connect(delay.delayTime); this.oscillator.start(); this.nodes.push(this.oscillator, this.depth);
       }
     }
-    this.tone.connect(this.output);
+    this.tone.connect(this.output);this.meter=ctx.createAnalyser();this.meter.fftSize=256;this.samples=new Float32Array(256);this.output.connect(this.meter);this.nodes.push(this.meter);
   }
   apply(values: Record<string, number>, bpm: number) {
     const now = this.ctx.currentTime;
@@ -64,5 +65,6 @@ export class MixerEffect {
       if (this.oscillator && this.depth) { smooth(this.oscillator.frequency, values.rate ?? 1, now); smooth(this.depth.gain, this.kind === 'chorus' ? 0.008 * (values.depth ?? 40) / 100 : 0.002, now); }
     }
   }
+  level():number {this.meter.getFloatTimeDomainData(this.samples);let peak=0;for(const value of this.samples)peak=Math.max(peak,Math.abs(value));return peak;}
   dispose() { this.oscillator?.stop(); this.nodes.forEach(node => node.disconnect()); }
 }

@@ -16,11 +16,13 @@ export function MasterStrip({ state, commands, readFrame, theme, params, externa
         <Button onPress={commands.stopAll} width={62}>■ Stop</Button></div>
         <div className="play-timing" role="group" aria-label="Tempo and launch timing"><NumberField name="" label="BPM" showFill={false} width={62} title="Tempo in BPM" param={TEMPO} value={bpm} onChange={value => commands.setMaster('bpm', value)} />
         <Toggle disabled={state.playbackAvailable === false} label="Quantize launches to next bar" title="Launch timing: next bar or immediate" on={quantized} onChange={commands.setQuantized} width={62}>{quantized ? '1 bar' : 'Now'}</Toggle></div></>}
+        {commands.setEffectsEnabled && <div className="play-dj-timing"><button aria-label="Effects group" aria-pressed={state.effectsEnabled!==false} onClick={()=>commands.setEffectsEnabled?.(state.effectsEnabled===false)}>{state.effectsEnabled!==false?'FX group on':state.effectTailing?'FX off · tail':'FX group off'}</button><button disabled={state.effectsEnabled!==false} onClick={()=>commands.clearEffectTails?.()}>Clear tails</button></div>}
         <div className="play-fx-pickers">
           {(['A', 'B'] as const).map(slot => {
             const selected = slot === 'A' ? state.fxA : state.fxB;
             const effect = state.effects.find(e => e.id === selected);
             return <div className="play-fx-unit" key={slot} role="group" aria-label={`FX ${slot}`}>
+              {commands.setEffectEnabled && <button aria-label={`FX ${slot} enabled`} aria-pressed={state.effectEnabled?.[slot]!==false} onClick={()=>commands.setEffectEnabled?.(slot,state.effectEnabled?.[slot]===false)}>FX {slot} {state.effectEnabled?.[slot]===false?'off':'on'}</button>}
               <Select label={`FX ${slot} effect`} items={state.effects.map(e => `${slot} · ${e.name}`)} index={state.effects.findIndex(e => e.id === selected)} onChange={i => commands.setEffect(slot, state.effects[i].id)} width={126} />
               <div className="play-fx-params">{effect?.controls?.map(control => <Knob key={`${effect.id}-${control.id}`} name={control.name} label={`FX ${slot} ${effect.name} ${control.name}`} param={control.param} value={state.effectValues?.[slot]?.[effect.id]?.[control.id] ?? control.param.defaultValue} disabled={!commands.setEffectParam} onChange={value => commands.setEffectParam?.(slot, effect.id, control.id, value)} />)}</div>
             </div>;
@@ -41,6 +43,7 @@ export function MasterStrip({ state, commands, readFrame, theme, params, externa
       </div>
       <div className="play-eq-stack play-master-eq"><Knob className="play-trim" ink="var(--amber)" name="Trim" label="Master trim" param={TRIM} value={masterTrim} onChange={value => commands.setMaster('masterTrim', value)} />{['High', 'Mid', 'Low'].map((name, i) => <Knob key={name} name={name} label={`Master ${name}`} param={EQ} origin="center" value={masterEq[i]} onChange={value => commands.setMasterEq(i, value)} />)}</div>
     </div>
+    {commands.setEffectsEnabled && <div className="play-dj-timing"><Knob name="Phones" label="Headphone level" param={LEVEL} value={state.phonesLevel ?? 100} onChange={v=>commands.setPhones?.('phonesLevel',v)}/><Knob name="Cue / Master" label="Headphone Cue Master blend" param={SEND} value={state.phonesMix ?? 0} onChange={v=>commands.setPhones?.('phonesMix',v)}/><span>Shared clock · Phones pre-fader, before FX returns</span></div>}
     <div className="play-master-cross">
     <Slider name="" label="Crossfader" showValue={false} param={CROSS} value={cross} onChange={value => commands.setMaster('cross', value)} orientation="horizontal" length={126} display={cross === 0 ? 'Center' : `${Math.abs(cross)} ${cross < 0 ? 'A' : 'B'}`} />
     </div>
