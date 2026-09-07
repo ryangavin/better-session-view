@@ -39,7 +39,8 @@ Loading a track, entering grid editing, finishing playback, or opening analysis 
 only this app. Those actions must never stop the other players.
 
 Link playback always uses the stretcher. The header offers **4 bars** (the default),
-**8 bars**, **16 bars**, or **Sections** for timing pins, shared with export. Section
+**8 bars**, **16 bars**, or **Sections** for Link pins — `linkEvery` in `state.ts`,
+apart from the export dialog's loop length, which is what the files are for. Section
 boundaries always pin; between pins the original timing ratios remain intact. Launch
 phase uses the pinned output position, so seeking to an intentionally late interior beat
 does not move the subsequent phrase off the Link grid. The ordinary

@@ -6,7 +6,7 @@ import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
 import { LINK_AUDIO_OFF, type LinkAudioState } from './linkAudio.ts';
-import { loosest, offeredOf, type Every } from './pinned.ts';
+import { loosest, offeredOf, type Every, type Offered } from './pinned.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
 import { barAt, countOf, evenBeats, moved, placeOf, resampled, shifted, startOf, sampleOf, tempoOf, type Beats } from './warp.ts';
 import type { Snap } from './grid.ts';
@@ -309,6 +309,12 @@ export function useMix() {
    * the export, so what loops in the window is what the files will hold.
    */
   const [pinEvery, setPinEvery] = useState<Every | null>(null);
+  /**
+   * How often playback is held to the shared grid while linked to Live.
+   * Its own choice, apart from the export's: under Link the question is how
+   * tightly to follow the room, at export it is what the files are for.
+   */
+  const [linkEvery, setLinkEvery] = useState<Offered>(4);
   const [stretching, setStretching] = useState<Stretching>('idle');
   /** Seconds from the top of the track. The one position everything else derives from. */
   const [position, setPosition] = useState(first.at ?? 0);
@@ -1361,9 +1367,9 @@ export function useMix() {
   const cuts = useMemo(() => slices.map((slice) => slice.bar), [slices]);
   const pinned = useMemo(
     () => (beats || linkAudio.enabled ? {
-      every: pinEvery ?? (linkAudio.enabled ? 4 : offeredOf(loosest(grid, playbackBpm, cuts).every)), cuts,
+      every: linkAudio.enabled ? linkEvery : pinEvery ?? offeredOf(loosest(grid, playbackBpm, cuts).every), cuts,
     } : null),
-    [beats, grid, playbackBpm, cuts, pinEvery, linkAudio.enabled],
+    [beats, grid, playbackBpm, cuts, pinEvery, linkEvery, linkAudio.enabled],
   );
   useEffect(() => {
     audio.warp(beats || linkAudio.enabled ? grid : null, playbackBpm,
@@ -1896,6 +1902,8 @@ export function useMix() {
     /** How the map is pinned between the sections: a choice, or null for the measured default. */
     pinEvery,
     setPinEvery,
+    linkEvery,
+    setLinkEvery,
     stretching,
     /** Seconds. */
     position,

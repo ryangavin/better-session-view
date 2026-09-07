@@ -134,10 +134,10 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
         >Local audio</Toggle>
         {mix.linkAudio.enabled && <Select
           items={['4 bars', '8 bars', '16 bars', 'Sections']}
-          index={OFFERED.indexOf(offeredOf(mix.pinEvery ?? 4))}
-          onChange={(next) => mix.setPinEvery(OFFERED[next])}
-          label="Link timing pins"
-          title="Pin timing every 4, 8 or 16 bars, or at sections only. Keeps the original feel between pins; section boundaries always align"
+          index={OFFERED.indexOf(mix.linkEvery)}
+          onChange={(next) => mix.setLinkEvery(OFFERED[next])}
+          label="Link pins"
+          title="While linked: how often playback is held to Live's grid — every 4, 8 or 16 bars, or at the sections only. The original feel stays between pins. Export has its own choice, on the export dialog"
           width={74}
         />}
         <span className={mix.linkAudio.problem || mix.linkAudio.dropped ? 'mf-link-problem' : undefined}

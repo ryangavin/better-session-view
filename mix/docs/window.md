@@ -39,10 +39,12 @@ shows and changes the shared BPM (20–999), Warp stays on while linked, and sta
 remote start/stop commands are followed when the peer also enables Start Stop Sync;
 joining an already-playing session does not start this app. See [link-audio.md](link-audio.md).
 
-**Link timing pins** appears while linked: **4 bars** by default, with **8 bars**,
-**16 bars**, and **Sections** choices. It controls how often playback timing is held to
-the grid, keeping the original feel between pins. Section boundaries always align.
-The choice is shared with export and lasts for this window session.
+**Link pins** appears while linked: **4 bars** by default, with **8 bars**,
+**16 bars**, and **Sections** choices. It controls how often playback is held to
+Live's grid while linked, keeping the original feel between pins. Section boundaries
+always align. It is its own choice, apart from the export dialog's loop length —
+under Link the question is how tightly to follow the room; at export it is what the
+files are for — and it lasts for this window session.
 
 **Local audio** controls only the computer's speaker output. Enabling Link Audio turns
 it off, and disabling sharing or a publisher failure turns it back on. It can be

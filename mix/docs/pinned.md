@@ -71,7 +71,9 @@ different file.
 length and hands it to both with the cuts, so a section looped under warp plays
 what its file will hold. It is not written beside the track: how tightly to pin
 is a question about what the files are for, and the next export may be for
-something else.
+something else. Linked to Live, playback follows the header's **Link pins**
+instead — its own choice, because under Link the question is how tightly to
+follow the room, not what a file is for.
 
 **Cut into sections, each section is laid at its own tempo.** A record that
 runs at 128 and then at 140 is not a record at 135: laid there both halves
