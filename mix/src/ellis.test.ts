@@ -91,7 +91,8 @@ describe('the comb on a record that is not at a whole tempo', () => {
   // minutes: a train binned by phase over the whole file lands everywhere in
   // the bin, and the lean toward 120 then names whatever it likes — 122, on
   // this very train, before the comb was scored a window at a time.
-  it('names the nearest whole number over a long file', () => {
+  // Full three-minute analysis needs headroom under coverage on CI runners.
+  it('names the nearest whole number over a long file', { timeout: 15_000 }, () => {
     const onset = fluxOf(clicks(97.6, 0.2, 180), RATE)!;
     expect(combOf(onset, 70, 190)!.bpm).toBe(98);
   });
