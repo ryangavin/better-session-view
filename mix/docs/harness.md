@@ -1,6 +1,6 @@
 # Debugging and experiments
 
-The bug button at the left edge of the library footer opens a tabbed debug workspace over the window
+The bug button joined to the Settings gear at the right of the header opens a tabbed debug workspace over the window
 — in a dev build and a packed one alike. Beat analysis runs the app’s pipeline and
 can hand a corrected map back to the app. Waveform lab compares designs using the
 same decoded stems the lanes are drawn from.

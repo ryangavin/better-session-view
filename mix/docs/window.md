@@ -20,7 +20,7 @@ three hundred pixels, which is what they are for.
 The logo and plain Tab switch between the single-track preparation page and the four-deck
 Play layout. The logo fills in Play. The library rail stays the same, and both preparation
 state and loaded deck settings survive switching. Editable controls and dialogs retain
-normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The Play header centers the shared playback controls, tempo and position across the
+normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The header centers the playback controls, tempo and position in both Prep and Play across the
 whole window, with the logo and Link controls on the left and Settings on the right. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
 loading, keyboard behavior and the current playback boundary.
 
@@ -41,14 +41,16 @@ deck consumes the drop before it bubbles to the window.
 
 The bar uses 22px controls with 6px above and below, plus its bottom divider. The
 logo, track identity, grouped controls and standalone actions share one vertical center.
-Track details uses an info icon; Snap a magnet; Edit beat grid a grid; Warp horizontal
+Clicking the title or artist opens Track Details; Snap uses a magnet; Edit beat grid a grid; Warp horizontal
 stretch arrows; Export an arrow leaving a tray; Settings a gear. Every icon action keeps
 its accessible name and a descriptive tooltip. Title, artist, tempo, position and status
-remain text. Play keeps its transport centered across the full window.
+remain text. Prep and Play keep their transport centered across the full window, using equal-width
+side columns. Track identity yields by ellipsis on the left; editing actions and the
+joined Debug/Settings group align right.
 
-The title and artist are text, not fields: renaming lives in the track details on the
-Analyze page, where the album and the cover are, and the header only says what is
-open. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
+The title and artist share a keyboard-accessible button that opens Track Details;
+renaming happens there alongside the album and cover. The header text truncates when
+space is tight. The button is disabled during beat-grid editing. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
 their names in the tooltip; they were two wide labelled switches on a header that had
 run out of room.
 
@@ -162,8 +164,9 @@ Metadata remains in `Details.tsx`, committing on blur and reverting with Escape.
 cards report useful source/speed tradeoffs, not scores. Successful separation follows the
 existing path to the mixer; beat review can be reopened with Analyze.
 
-The debug workspace is opened by the bug button at the left edge of the library footer, beside the folder
-control. `DebugButton.tsx` owns that button and its modal.
+The debug workspace is opened by the bug icon joined to the Settings gear at the right
+of the header, in both Prep and Play. `DebugButton.tsx` exports the button and its modal;
+App hosts the modal outside the header so header styles do not affect the workspace.
 
 ## The lane head is 88px, and that is the whole layout
 

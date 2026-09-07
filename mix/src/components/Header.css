@@ -1,6 +1,7 @@
 .mf-header {
   flex: none;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   height: calc(var(--ctl-h) + 13px);
@@ -58,10 +59,22 @@
   color: var(--fg);
 }
 
-.mf-open-details {
-  flex: none;
-  align-self: center;
+.mf-track-details {
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
 }
+.mf-track-details:hover:not(:disabled) .mf-open-title { text-decoration: underline; }
+.mf-track-details:focus-visible { outline: 1px solid var(--primary); outline-offset: 3px; }
+.mf-track-details:disabled { cursor: default; opacity: .5; }
 
 .mf-open-artist {
   flex: 0 1 auto;
@@ -192,28 +205,18 @@
   margin-left: 5px;
 }
 
-/* Equal side columns keep playback centered across the whole Play window. */
+/* Equal side columns center playback in Prep and Play, independently of their contents. */
 .mf-header-start,
-.mf-header-end {
-  display: contents;
-}
-
-.mf-header-play {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-}
-
-.mf-header-play .mf-header-start,
-.mf-header-play .mf-header-end {
+.mf-header-end,
+.mf-header-transport {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
 
-.mf-header-play .mf-header-end {
-  justify-content: flex-end;
-}
+.mf-header-end { justify-content: flex-end; }
+.mf-header-end > .mf-settings-button { margin-left: 0; }
 
 .mf-header button.mf-mark {
   height: var(--ctl-h);

@@ -1,3 +1,4 @@
+import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Modal } from '@openflow/widgets/chrome/Modal.tsx';
 import { DebugWorkspace } from '../debug/Workspace.tsx';
 import type { Mix } from '../state.ts';
@@ -12,10 +13,11 @@ const bugMark = (
 );
 
 
-/** Debugging belongs with library utilities, outside the track's main controls. */
+/** The bug joins Settings in the header; its full-size workspace is hosted by App. */
 export function DebugButton({ mix }: { mix: Mix }) {
-  return <>
-    <button type="button" className="mf-debug" disabled={!mix.song} onClick={() => mix.openDebug()} title="Debug & experiments" aria-label="Open debug workspace">{bugMark}</button>
-    {mix.debugTab !== null && mix.song && <Modal title="debug & experiments" label="Debug workspace" className="mf-harness" onClose={mix.closeDebug}><DebugWorkspace mix={mix} tab={mix.debugTab || undefined} /></Modal>}
-  </>;
+  return <Button width={26} className="mf-header-icon" disabled={!mix.song} onPress={() => mix.openDebug()} title="Debug & experiments" label="Open debug workspace">{bugMark}</Button>;
+}
+
+export function DebugModal({ mix }: { mix: Mix }) {
+  return mix.debugTab !== null && mix.song ? <Modal title="debug & experiments" label="Debug workspace" className="mf-harness" onClose={mix.closeDebug}><DebugWorkspace mix={mix} tab={mix.debugTab || undefined} /></Modal> : null;
 }

@@ -1,3 +1,4 @@
+import { DebugModal } from './components/DebugButton.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
 import { PlayView } from './play/PlayView.tsx';
 import { useMixerViewModel } from './play/useMixerViewModel.ts';
@@ -167,6 +168,7 @@ export function App() {
           {mix.phase === 'ready' && <Lanes mix={mix} />}
         </section>
       </main>
+      <DebugModal mix={mix} />
       {settingsOpen && <SettingsModal mix={mix} mixer={mixer.engine} playView={playView} onClose={() => setSettingsOpen(false)} />}
       {mix.exporting && <ExportModal mix={mix} />}
       {mix.details && <DetailsModal mix={mix} ready={ready} />}

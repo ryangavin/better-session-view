@@ -13,19 +13,19 @@ import type { Mix } from '../state.ts';
 import { FASTEST, SLOWEST } from '../tempo.ts';
 import { bpmText, rangeText } from '../warp.ts';
 import './Header.css';
+import { DebugButton } from './DebugButton.tsx';
 
 /**
  * Playback and snap stay at hand. **Grid** opens the one mode for asking
  * whether the song is right — the beat handles, bar 1, finding the beats
  * again, the section suggestions — over the real lanes, with Done and Cancel.
- * **Details** beside the title opens what the track *is*: its name, its art,
+ * Clicking the title or artist opens what the track *is*: its name, its art,
  * the model that made the stems and the way to make them again. The tempo the
  * beats run at stays on the bar; how it was found is the debug workspace's,
- * reached from the library footer.
+ * reached beside Settings in the header.
  */
 
 const headerIcon = (children: ReactNode) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>;
-const detailsMark = headerIcon(<><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v.2" /></>);
 const gridMark = headerIcon(<><rect x="4" y="4" width="16" height="16" rx="1" /><path d="M4 10h16M4 16h16M10 4v16M16 4v16" /></>);
 const snapMark = headerIcon(<><path d="M5 4v9a7 7 0 0 0 14 0V4h-4v9a3 3 0 0 1-6 0V4zM5 8h4M15 8h4" /></>);
 const warpMark = headerIcon(<><path d="M3 12h18M6 8l-4 4 4 4M18 8l4 4-4 4M10 5v14M14 5v14" /></>);
@@ -132,6 +132,7 @@ const SNAPS: readonly { id: Snap; mark: string; says: string }[] = [
 ];
 
 export function Header({ mix, ready, playView = false, onToggleView, mixer, onSettings }: { mix: Mix; ready: Ready | null; playView?: boolean; onToggleView?(): void; mixer?: MixerEngine; onSettings?():void }) {
+  const debugButton = <DebugButton mix={mix} />;
   if (playView && mixer) {
     const state = mixer.snapshot();
     mix = { ...mix, playing: state.running, playable: state.decks.some(d => d.status === 'ready'),
@@ -190,18 +191,10 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
         {!playView && <div className="mf-open">
           {song ? (
             <>
-              <span className="mf-open-title" title={song.title}>{song.title}</span>
-              {song.artist && <span className="mf-open-artist" title={song.artist}>{song.artist}</span>}
-              <Button
-                onPress={mix.openDetails}
-                disabled={mix.editingGrid}
-                className="mf-open-details mf-header-icon"
-                label="Track details"
-                width={26}
-                title="The track's name, artist, album and art, and the model that made its stems"
-              >
-                {detailsMark}
-              </Button>
+              <button type="button" className="mf-track-details" onClick={mix.openDetails} disabled={mix.editingGrid} title="Open track details" aria-label={`Track details: ${song.title}${song.artist ? ` — ${song.artist}` : ''}`}>
+                <span className="mf-open-title" title={song.title}>{song.title}</span>
+                {song.artist && <span className="mf-open-artist" title={song.artist}>{song.artist}</span>}
+              </button>
 
             </>
           ) : (
@@ -211,6 +204,7 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
 
       </div>
 
+      <div className="mf-header-transport">
       {(live || playView) && (
         <>
           {/* Playback: the buttons, the tempo they run at, and the reading.
@@ -286,10 +280,15 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
             <span className="mf-clock mf-clock-time">{clockOf(mix.position)}</span>
           </div>
 
+        </>
+      )}
+      </div>
+
+      <div className="mf-header-end">
           {/* Where a cut lands. Its own group and nothing else in it: it is not
               playback and it is not the beat map, it is the one setting that
               says what the pointer is allowed to do to the timeline. */}
-          {!playView && <><div className="mf-group" role="group" aria-label="Snap">
+          {live && !playView && <><div className="mf-group" role="group" aria-label="Snap">
             <span className="mf-group-label" title="Snap: where cuts land">{snapMark}</span>
             <Segmented
               items={SNAPS.map((s) => s.mark)}
@@ -350,8 +349,6 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
               {warpMark}
             </Toggle>
           </div></>}
-        </>
-      )}
 
       {!playView && <Button
         label="Export" width={26} className="mf-header-icon"
@@ -361,8 +358,10 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
       >
         {exportMark}
       </Button>}
-      <div className="mf-header-end">
-        {onSettings && <Button className="mf-settings-button mf-header-icon" width={26} onPress={onSettings} label="Settings" title="Audio and theme settings">{settingsMark}</Button>}
+        <div className="mf-group mf-settings-button" role="group" aria-label="Settings and debug">
+        {debugButton}
+        {onSettings && <Button className="mf-header-icon" width={26} onPress={onSettings} label="Settings" title="Audio and theme settings">{settingsMark}</Button>}
+        </div>
         {playView && mixer?.problem && <span className="mf-play-status" role="status">{mixer.problem}</span>}
       </div>
     </header>
