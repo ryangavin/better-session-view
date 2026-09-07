@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { MixerEngine } from '../play/engine.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
@@ -22,6 +23,14 @@ import './Header.css';
  * beats run at stays on the bar; how it was found is the debug workspace's,
  * reached from the library footer.
  */
+
+const headerIcon = (children: ReactNode) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>;
+const detailsMark = headerIcon(<><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v.2" /></>);
+const gridMark = headerIcon(<><rect x="4" y="4" width="16" height="16" rx="1" /><path d="M4 10h16M4 16h16M10 4v16M16 4v16" /></>);
+const snapMark = headerIcon(<><path d="M5 4v9a7 7 0 0 0 14 0V4h-4v9a3 3 0 0 1-6 0V4zM5 8h4M15 8h4" /></>);
+const warpMark = headerIcon(<><path d="M3 12h18M6 8l-4 4 4 4M18 8l4 4-4 4M10 5v14M14 5v14" /></>);
+const exportMark = headerIcon(<><path d="M12 15V3M7 8l5-5 5 5M4 14v6h16v-6" /></>);
+const settingsMark = headerIcon(<><path d="M10 3h4l.7 3 2 .9 2.6-.9 2 3.4-2 2.2v2.3l2 2.2-2 3.4-2.6-.9-2 .9-.7 3h-4l-.7-3-2-.9-2.6.9-2-3.4 2-2.2v-2.3l-2-2.2 2-3.4 2.6.9 2-.9z" /><circle cx="12" cy="12.2" r="3" /></>);
 
 const play = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -186,10 +195,12 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
               <Button
                 onPress={mix.openDetails}
                 disabled={mix.editingGrid}
-                className="mf-open-details"
+                className="mf-open-details mf-header-icon"
+                label="Track details"
+                width={26}
                 title="The track's name, artist, album and art, and the model that made its stems"
               >
-                Details
+                {detailsMark}
               </Button>
 
             </>
@@ -279,7 +290,7 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
               playback and it is not the beat map, it is the one setting that
               says what the pointer is allowed to do to the timeline. */}
           {!playView && <><div className="mf-group" role="group" aria-label="Snap">
-            <span className="mf-group-label">snap</span>
+            <span className="mf-group-label" title="Snap: where cuts land">{snapMark}</span>
             <Segmented
               items={SNAPS.map((s) => s.mark)}
               index={SNAPS.findIndex((s) => s.id === mix.snap)}
@@ -291,7 +302,7 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
           </div>
 
           <div className="mf-group" role="group" aria-label="Grid">
-            <Button onPress={mix.beginGridEdit} disabled={mix.editingGrid || !mix.playable} title="Check and correct the beat grid and the sections over the lanes: drag beats, set bar 1, find the beats again, keep or move the section cuts">Grid</Button>
+            <Button label="Edit beat grid" width={26} className="mf-header-icon" onPress={mix.beginGridEdit} disabled={mix.editingGrid || !mix.playable} title="Check and correct the beat grid and the sections over the lanes: drag beats, set bar 1, find the beats again, keep or move the section cuts">{gridMark}</Button>
             {/* The tempo the song runs at — a range where it moved — next to
                 the button that opens the grid. How well the kit sits on it
                 and which algorithm laid it are the debug workspace's
@@ -333,23 +344,25 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
                       : 'Warp: play every bar of the record in the time the tempo gives it'
               }
               disabled={mix.linkAudio.enabled || !mix.beats || mix.stretching === 'failed'}
-              width={38}
+              width={26}
+              className="mf-header-icon"
             >
-              warp
+              {warpMark}
             </Toggle>
           </div></>}
         </>
       )}
 
       {!playView && <Button
+        label="Export" width={26} className="mf-header-icon"
         onPress={() => mix.setExporting(true)}
         disabled={!live || mix.editingGrid}
         title={live ? 'Choose what to write out: the stems, and the full track with them' : song?.sources.length ? 'Return to the mix to export' : 'Separate the track first'}
       >
-        Export
+        {exportMark}
       </Button>}
       <div className="mf-header-end">
-        {onSettings && <Button className="mf-settings-button" onPress={onSettings} label="Settings" title="Audio and theme settings">Settings</Button>}
+        {onSettings && <Button className="mf-settings-button mf-header-icon" width={26} onPress={onSettings} label="Settings" title="Audio and theme settings">{settingsMark}</Button>}
         {playView && mixer?.problem && <span className="mf-play-status" role="status">{mixer.problem}</span>}
       </div>
     </header>

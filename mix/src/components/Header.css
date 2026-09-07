@@ -3,8 +3,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
-  padding: 0 10px;
+  height: calc(var(--ctl-h) + 13px);
+  padding: 6px 10px;
   background: var(--rail);
   border-bottom: 1px solid var(--bd);
 }
@@ -37,10 +37,10 @@
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 7px;
-  padding-left: 4px;
-  margin-left: 4px;
+  height: var(--ctl-h);
+  padding-left: 8px;
   border-left: 1px solid var(--bd);
 }
 
@@ -214,3 +214,12 @@
 .mf-header-play .mf-header-end {
   justify-content: flex-end;
 }
+
+.mf-header button.mf-mark {
+  height: var(--ctl-h);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+}
+.mf-header-icon .wdg-body { padding: 0; }
+.mf-header svg { display: block; flex: none; }

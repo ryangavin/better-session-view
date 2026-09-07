@@ -39,7 +39,12 @@ deck consumes the drop before it bubbles to the window.
 
 ## The header
 
-    mix[flow] [⚭ 🔈 4 bars] │ Title · Artist ⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [Analyze 126–131 · 91% warp] │ Export
+The bar uses 22px controls with 6px above and below, plus its bottom divider. The
+logo, track identity, grouped controls and standalone actions share one vertical center.
+Track details uses an info icon; Snap a magnet; Edit beat grid a grid; Warp horizontal
+stretch arrows; Export an arrow leaving a tray; Settings a gear. Every icon action keeps
+its accessible name and a descriptive tooltip. Title, artist, tempo, position and status
+remain text. Play keeps its transport centered across the full window.
 
 The title and artist are text, not fields: renaming lives in the track details on the
 Analyze page, where the album and the cover are, and the header only says what is
