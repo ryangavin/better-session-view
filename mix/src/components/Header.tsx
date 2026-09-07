@@ -7,7 +7,6 @@ import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
 import type { Snap } from '../grid.ts';
 import type { Ready } from '../openflow.ts';
-import { QuietField } from './Editable.tsx';
 import type { Mix } from '../state.ts';
 import { FASTEST, SLOWEST } from '../tempo.ts';
 import { bpmText, rangeText } from '../warp.ts';
@@ -42,6 +41,22 @@ const stopMark = (
 const loopMark = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
     <path d="M4 9h13l-3-3M20 15H7l3 3" />
+  </svg>
+);
+
+/** Two rings, joined: the session shared with Live. */
+const linkMark = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <circle cx="8.5" cy="12" r="5" />
+    <circle cx="15.5" cy="12" r="5" />
+  </svg>
+);
+
+/** A speaker and one wave: this computer's own output. */
+const speakerMark = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 9.5v5h4l5 4v-13l-5 4z" />
+    <path d="M16.5 9a4.5 4.5 0 0 1 0 6" />
   </svg>
 );
 
@@ -124,13 +139,13 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
         <Toggle on={mix.linkAudio.enabled}
           onChange={mix.setLinkAudio}
           label="Link Audio"
-          title="Share stereo stems, synchronize playback tempo, and follow Link start/stop"
-          width={72}
-        >Link Audio</Toggle>
+          title="Link Audio: share the stems with Live, follow its tempo, and start and stop with it"
+          width={30}
+        >{linkMark}</Toggle>
         <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
-          label="Local audio" width={72}
-          title="Hear mix through this computer's speakers. Link Audio feeds are unaffected"
-        >Local audio</Toggle>
+          label="Local audio" width={30}
+          title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
+        >{speakerMark}</Toggle>
         {mix.linkAudio.enabled && <Select
           items={['4 bars', '8 bars', '16 bars', 'Sections']}
           index={OFFERED.indexOf(mix.linkEvery)}
@@ -149,22 +164,8 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
       {!playView && <div className="mf-open">
         {song ? (
           <>
-            <QuietField
-              className="mf-open-title"
-              value={song.title}
-              label="Title"
-              title="The track's name. Type over it to correct it"
-              required
-              onCommit={(next) => void mix.editTrack(song.id, { title: next.trim() })}
-            />
-            <QuietField
-              className="mf-open-artist"
-              value={song.artist ?? ''}
-              label="Artist"
-              placeholder="artist"
-              title="Who it is by. Type over it to correct it"
-              onCommit={(next) => void mix.editTrack(song.id, { artist: next.trim() || null })}
-            />
+            <span className="mf-open-title" title={song.title}>{song.title}</span>
+            {song.artist && <span className="mf-open-artist" title={song.artist}>{song.artist}</span>}
 
           </>
         ) : (

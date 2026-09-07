@@ -38,7 +38,13 @@ waveform from navigating the renderer away from the app.
 
 ## The header
 
-    mix[flow] [Link Audio · Local audio · 4 bars] │ Title · Artist ⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [Analyze 126–131 · 91% warp] │ Export
+    mix[flow] [⚭ 🔈 4 bars] │ Title · Artist ⋯ [▶ ■ ↻ 128 1.1.1 0:00] [snap ⌗ 4 1 ♩ ½] [Analyze 126–131 · 91% warp] │ Export
+
+The title and artist are text, not fields: renaming lives in the track details on the
+Analyze page, where the album and the cover are, and the header only says what is
+open. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
+their names in the tooltip; they were two wide labelled switches on a header that had
+run out of room.
 
 **Link Audio** shares the loaded stems as separate stereo inputs in Live. It starts off
 on every window load. The adjacent text reports connecting, discovered peers, capture

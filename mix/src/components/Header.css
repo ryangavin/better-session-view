@@ -63,51 +63,6 @@
   color: var(--caption);
 }
 
-.mf-quiet {
-  display: inline-grid;
-  max-width: 100%;
-}
-
-.mf-quiet > * {
-  grid-area: 1 / 1;
-  padding: 1px 4px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-variation-settings: inherit;
-  letter-spacing: inherit;
-  color: inherit;
-}
-
-.mf-quiet-size {
-  min-width: 3ch;
-  white-space: pre;
-  overflow: hidden;
-  visibility: hidden;
-}
-
-.mf-quiet input {
-  width: 100%;
-  min-width: 0;
-  background: transparent;
-  text-overflow: ellipsis;
-  outline: none;
-}
-
-.mf-quiet input::placeholder {
-  color: var(--idle);
-}
-
-.mf-quiet:hover input {
-  border-color: var(--bd3);
-}
-
-.mf-quiet input:focus {
-  border-color: var(--focus);
-  background: var(--surface-control);
-  color: var(--fg);
-}
-
 .mf-group {
   display: inline-flex;
   align-items: stretch;
