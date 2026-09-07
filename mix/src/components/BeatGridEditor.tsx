@@ -55,7 +55,9 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
   useEffect(() => { if (mix.playing) player.stop(); }, [mix.playing]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || (e.target as HTMLElement)?.closest('input, textarea, select, [role=dialog]')) return;
+      // A dialog over the lanes — the debug workspace, the details — owns the
+      // keys while it is open: Escape closes it, not the grid.
+      if (e.defaultPrevented || document.querySelector('dialog[open]') || (e.target as HTMLElement)?.closest('input, textarea, select, [role=dialog]')) return;
       if (e.key === 'Escape') { e.preventDefault(); mix.cancelGridEdit(); }
       else if (e.key.toLowerCase() === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) { e.preventDefault(); mix.undoGridEdit(); }
     };
