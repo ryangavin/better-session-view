@@ -1,7 +1,7 @@
 import type { MixerState } from '@openflow/widgets/mixer/model.ts';
 import type { Param } from '@openflow/widgets/param/param.ts';
 
-// UI ranges for the preview; a future audio adapter owns DSP mapping.
+// Shared UI ranges; MixerEffect maps these parameters to the wet return graph.
 const percent = (defaultValue: number): Param => ({ kind: 'float', min: 0, max: 100, defaultValue, unit: 'percent' });
 const tone = { id: 'tone', name: 'Tone', param: percent(50) };
 export const EFFECTS: MixerState['effects'] = [

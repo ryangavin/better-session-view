@@ -1886,6 +1886,7 @@ export function useMix() {
     fitFailed,
     playing,
     setPlaying: start,
+    pauseForView: () => { audio.pause(false); setPlaying(false); setPosition(audio.at()); },
     loop,
     setLoop,
     /** What a cut on the ruler is held to — `grid.ts`. */

@@ -134,3 +134,13 @@ other. These checks do not replace monitoring/recording in Live.
 
 Upstream: [Link Audio concepts and API](https://ableton.github.io/link/),
 [Live Link Audio FAQ](https://help.ableton.com/hc/en-us/articles/25425913328924-Link-Audio-FAQ).
+
+
+## Four-deck Play owner
+
+Play uses its own single `MixerEngine` and the same `LinkAudioSender`. It supplies loaded
+deck outputs, master and Phones instead of preparation stems. Mode changes pause the
+outgoing engine locally and release its publisher, preventing two publishers from the
+same window. Header transport/tempo commands address the visible engine. Deck Sync is
+explicit: synced voices follow the shared tempo/beat phase; native-speed decks do not.
+See [play-view.md](play-view.md) for routing, scheduling and validation boundaries.

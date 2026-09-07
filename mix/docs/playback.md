@@ -6,6 +6,9 @@
 The separation writes four WAVs into the library — [`stems.md`](stems.md). This
 is how they get back into the window as something you can hear, see and mix.
 
+The four-deck Play engine shares these decoding, EQ, beat-map and stretch primitives;
+its ownership, routing and transport policies are in [play-view.md](play-view.md).
+
 ## Getting the bytes there is the part with a decision in it
 
 The renderer cannot open a file. Three ways round that, and only one of them

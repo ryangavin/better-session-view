@@ -28,7 +28,7 @@ component inventing a successful result.
   must survive the adapter; do not collapse null and undefined with `??` there.
 - `MixerParams` supplies ranges, units, defaults and tapers. The host maps widget values
   to its engine units; the preview's 0–100 levels and synthetic gain law are not an
-  engine specification. EQ fills explicitly originate at zero.
+  engine specification. EQ fills explicitly originate at zero. Optional `stemLevel` separates stem defaults from channel-fader defaults.
 - `MixerTheme` supplies resolved CSS colors keyed by stem/deck IDs, plus primary and
   signal colors. Tokens are scoped to the mixer root. The component never writes to
   body, storage, or another window's palette.
@@ -49,7 +49,7 @@ that shared footer area.
 Optional `setDeckPlaying(deckId, playing)` and `cueDeck(deckId, held)` commands emit
 intent only. The host reports `playing` and `cueHeld`; cue points, audition and resuming
 belong to the playback controller. Buttons are disabled for non-ready decks or missing
-callbacks, including the current silent mix adapter. Sync emits `setDeckSync(deckId, synced)`
+callbacks, including silent hosts. Sync emits `setDeckSync(deckId, synced)`
 and displays the host-reported `synced` state; tempo and phase alignment remain host-owned.
 
 ## Host transport and effect controls
@@ -57,11 +57,11 @@ and displays the host-reported `synced` state; tempo and phase alignment remain 
 `externalTransport` omits the master Run/Stop, tempo, launch timing and beat counter;
 the bench retains them by default. The host can use its existing header unchanged.
 Each effect definition may supply controls with stable IDs, names and Params. The face
-renders the selector and its knobs as one bordered, shaded control group and emits `setEffectParam(slot, effectId, paramId, value)`.
+renders the selector and its knobs as one subtly shaded control group and emits `setEffectParam(slot, effectId, paramId, value)`.
 `effectValues` is keyed by slot, effect and parameter; absent values use Param defaults.
 The master omits a separate title so the padded effect groups can occupy the header
 space while their lower boundary stays aligned with the launchers.
-The widget knows no effect algorithms. Mix owns its preview effect definitions and values.
+The widget knows no effect algorithms. Mix owns its effect definitions, values and audio graph.
 
 Launcher status messages sit below the grid, leaving headings aligned across deck states.
 Section and Stop button faces fill their grid cells, so their centered labels align with
@@ -83,11 +83,12 @@ The renderer can pause, miss frames or move to the background without becoming a
 source. Hosts should keep their readers cheap because several displayed instruments
 sample each frame.
 
-The current overview is a shared 32-bar window in 4/4, following the state's whole beat.
-The numbered ruler is omitted; waveform grid lines still show alignment.
-Hosts provide waveforms normalized to that displayed window, and per-deck absolute beat
-positions in the same coordinate system. General timeline zoom/meter changes require an
-explicit extension to the display model rather than engine policy in the view.
+Without a `waveform` range the bench keeps its 32-bar overview. Hosts may provide a
+source window (`start`, `length`, `visible`) and source-relative loop bounds. `FrameWaveform`
+scrolls that window under a fixed playhead using the supplied beat reading. Optional
+seconds/duration frame fields support the source-time reading. Peaks and all beat/time
+conversion remain host-owned. The widget never derives a loop from an audio file or
+assumes that a source's beat equals the global transport beat.
 
 ## Bench adapter
 
@@ -105,15 +106,11 @@ Only the bench CSS positions the floating theme editor or hides workspace descri
 
 ## Integrating mix
 
-Mix now mounts this face through `mix/src/play/useMixerViewModel.ts`, an app-owned UI
-adapter with real library metadata, saved sections and offline-decoded overview peaks.
-It does not import the bench or wire four-deck audio. The same library stays visible in
-Prep and Play; [mix's topic](../../mix/docs/play-view.md) governs mode switching and loads.
-
-A future audio controller must own track loading, beat/time conversion, queue
-acknowledgements, source policy and measurement. Do not mount several copies of the
-current single-track useMix hook as an implicit four-deck engine: audio context, shared
-master/FX, launch scheduling and lifecycle ownership need their own controller design.
+Mix mounts the face through `mix/src/play/useMixerViewModel.ts`, a subscription adapter
+to its app-owned four-deck engine. The engine owns decoding, independent stem scheduling,
+Sync, cue behavior, routing, effects, Link and measurement. The same library stays visible
+in Prep and Play; [mix's topic](../../mix/docs/play-view.md) governs mode switching and loads.
+No audio implementation or bench imports cross into these widgets.
 
 ## Verification
 

@@ -1,3 +1,4 @@
+import type { MixerEngine } from '../play/engine.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
@@ -121,7 +122,19 @@ const SNAPS: readonly { id: Snap; mark: string; says: string }[] = [
   { id: 'half', mark: '½', says: 'Cuts land on half a beat, whatever the zoom' },
 ];
 
-export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mix; ready: Ready | null; playView?: boolean; onToggleView?(): void }) {
+export function Header({ mix, ready, playView = false, onToggleView, mixer }: { mix: Mix; ready: Ready | null; playView?: boolean; onToggleView?(): void; mixer?: MixerEngine }) {
+  if (playView && mixer) {
+    const state = mixer.snapshot();
+    mix = { ...mix, playing: state.running, playable: state.decks.some(d => d.status === 'ready'),
+      targetBpm: state.bpm, bar: state.beat / 4, bars: Infinity, position: mixer.position,
+      loop: state.loop.enabled, region: null, editingGrid: false, waitingForLink: false,
+      linkAudio: mixer.linkAudio, monitoring: mixer.monitoring,
+      setPlaying: mixer.commands.setRunning, stop: mixer.commands.stopAll,
+      setLoop: on => mixer.commands.setLoopEnabled(on),
+      setTempo: value => mixer.commands.setMaster('bpm', value),
+      setLinkAudio: mixer.setLinkAudio, setMonitoring: mixer.setMonitoring,
+    };
+  }
   const live = mix.phase === 'ready';
   const song = mix.song;
 
@@ -149,7 +162,7 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
           label="Local audio" width={30}
           title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
         >{speakerMark}</Toggle>
-        {mix.linkAudio.enabled && <Select
+        {!playView && mix.linkAudio.enabled && <Select
           items={['4 bars', '8 bars', '16 bars', 'Sections']}
           index={OFFERED.indexOf(mix.linkEvery)}
           onChange={(next) => mix.setLinkEvery(OFFERED[next])}
@@ -227,7 +240,7 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
               onChange={mix.setLoop}
               label="Loop"
               title={
-                mix.region
+                playView ? 'Enable / exit the captured loop, or loop whole tracks until In / Out defines a region' : mix.region
                   ? 'Looping a part of the track. Command-L lets it go'
                   : 'Loop the whole track. Shift-click the timeline, or Command-L for the selected section'
               }
@@ -247,7 +260,7 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
               label="Tempo"
               disabled={mix.editingGrid}
               title={
-                mix.beats
+                playView ? 'Shared tempo: decks with Sync enabled follow it' : mix.beats
                   ? 'The tempo the stems play at with warp on. The grid is where the beats are'
                   : 'Playback tempo with Warp on. To change the source timing, use Edit beat grid'
               }
@@ -330,7 +343,7 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
       >
         Export
       </Button>}
-      {playView && <span className="mf-play-status">Deck audio not connected</span>}
+      {playView && mixer?.problem && <span className="mf-play-status" role="status">{mixer.problem}</span>}
 
     </header>
   );

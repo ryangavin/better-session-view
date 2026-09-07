@@ -22,6 +22,8 @@ export interface MixerDeck {
   track: { id: string; title: string; artist: string; bpm: number | null; key: string } | null;
   status: 'empty' | 'loading' | 'ready' | 'unavailable';
   message?: string;
+  /** Optional scrolling source window. The host supplies the beat range and loop in source coordinates. */
+  waveform?: { start: number; length: number; visible: number; loop?: { start: number; end: number | null; enabled: boolean } };
   peaks: readonly { min: number; max: number }[];
   sections: readonly MixerSection[];
   stems: readonly MixerStem[];
@@ -73,7 +75,7 @@ export interface MixerCommands {
 }
 export interface MixerFrame {
   /** Absolute beat position per deck, and normalized measured output 0–1. */
-  decks: Readonly<Record<string, { beat: number; level: number }>>;
+  decks: Readonly<Record<string, { beat: number; level: number; seconds?: number; duration?: number }>>;
   masterLevel: number;
 }
 export interface MixerTheme {
@@ -83,6 +85,7 @@ export interface MixerTheme {
   decks: Readonly<Record<string, { ink: string; waveform: string }>>;
 }
 export interface MixerParams {
+  stemLevel?: Param;
   level: Param; trim: Param; send: Param; eq: Param; filter: Param; tempo: Param; cross: Param;
 }
 export interface MixerViewProps {

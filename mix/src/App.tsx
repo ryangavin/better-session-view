@@ -43,6 +43,13 @@ export function App() {
   const mix = useMix();
   const [playView, setPlayView] = useState(false);
   const mixer = useMixerViewModel(mix.library.tracks, mix.library.root);
+  const previousMode = useRef(playView);
+  useEffect(() => {
+    if (previousMode.current === playView) return;
+    if (playView) { mix.pauseForView(); mix.setLinkAudio(false); }
+    else { void mixer.engine.running(false, false); mixer.engine.setLinkAudio(false); }
+    previousMode.current = playView;
+  }, [playView, mix.pauseForView, mix.setLinkAudio, mixer.engine]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => { if (isViewShortcut(event)) { event.preventDefault(); setPlayView(view => !view); } };
     window.addEventListener('keydown', key);
@@ -75,6 +82,7 @@ export function App() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
+      if (playView && e.code === 'Space' && !e.defaultPrevented && !target?.closest('input, textarea, select, button, [role=slider], [role=combobox], [role=dialog]')) { e.preventDefault(); mixer.commands.setRunning(!mixer.state.running); return; }
       if (playView || mix.phase !== 'ready' || e.defaultPrevented || target?.closest('input, textarea, select, button, [role=dialog]')) return;
       if (e.key === ' ') {
         e.preventDefault();
@@ -92,7 +100,7 @@ export function App() {
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [playView, mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
+  }, [playView, mixer.commands, mixer.state.running, mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
 
   const carriesFiles = (event: DragEvent): boolean =>
     Array.from(event.dataTransfer.types).includes('Files');
@@ -137,7 +145,7 @@ export function App() {
       onDragLeave={dragLeave}
       onDrop={drop}
     >
-      <Header mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />
+      <Header mixer={mixer.engine} mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />
       <main className="mf-body">
         <Library mix={mix} />
         {playView && <PlayView mixer={mixer} />}
