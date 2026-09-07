@@ -103,10 +103,12 @@ const SNAPS: readonly { id: Snap; mark: string; says: string }[] = [
   { id: 'half', mark: '½', says: 'Cuts land on half a beat, whatever the zoom' },
 ];
 
-export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
+export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mix; ready: Ready | null; playView?: boolean; onToggleView?(): void }) {
   const live = mix.phase === 'ready';
   const song = mix.song;
 
+  const logo = <button type="button" className="mf-mark" aria-label={playView ? 'Switch to single-track editor' : 'Switch to four-deck mixer'} aria-pressed={playView} title="Switch Prep / Play (Tab)" onClick={onToggleView}>mix<span>[flow]</span></button>;
+  if (playView) return <header className="mf-header">{logo}<span className="mf-view-mode">Play</span>{(mix.playing || mix.waitingForLink) && <Button label="Pause preparation playback" onPress={() => mix.setPlaying(false)}>Pause prep</Button>}<span className="mf-play-status">Layout preview · playback not connected</span></header>;
   return (
     <header className="mf-header">
       {/* Silent when the toolchain is fine. A green light that is always on is
@@ -118,9 +120,7 @@ export function Header({ mix, ready }: { mix: Mix; ready: Ready | null }) {
         </span>
       )}
 
-      <div className="mf-mark">
-        mix<span>[flow]</span>
-      </div>
+      {logo}
       <div className="mf-group mf-link" role="group" aria-label="Link Audio">
         <Toggle on={mix.linkAudio.enabled}
           onChange={mix.setLinkAudio}

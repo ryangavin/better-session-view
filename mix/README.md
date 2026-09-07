@@ -45,6 +45,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | touching | read |
 |---|---|
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
+| switching Prep/Play, library-to-deck loading, or the four-deck UI adapter | [`docs/play-view.md`](docs/play-view.md) — `src/play/`, `src/App.tsx` |
 | the layout, the Analyze page, which lanes there are, or zooming the timeline | [`docs/window.md`](docs/window.md) — `src/`, and `src/zoom.ts` for the zoom |
 | previewing beat analysis, editing the beat grid, or suggesting musical sections | [`docs/track-review.md`](docs/track-review.md) — `src/components/TrackReview.tsx`, `src/components/BeatGridEditor.tsx`, `src/beatEdit.ts`, `src/sections.ts` |
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |

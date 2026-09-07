@@ -1,3 +1,4 @@
+import type { HTMLAttributes, ReactNode } from 'react';
 import type { Param } from '../param/param.ts';
 
 export interface MixerSection { id: string; name: string }
@@ -14,7 +15,7 @@ export type DeckControl = 'gain' | 'trim' | 'sendA' | 'sendB' | 'filter' | 'rout
 export interface MixerDeck {
   id: string;
   letter: string;
-  track: { id: string; title: string; artist: string; bpm: number; key: string } | null;
+  track: { id: string; title: string; artist: string; bpm: number | null; key: string } | null;
   status: 'empty' | 'loading' | 'ready' | 'unavailable';
   message?: string;
   peaks: readonly { min: number; max: number }[];
@@ -29,6 +30,8 @@ export interface MixerDeck {
   cue: boolean;
 }
 export interface MixerState {
+  /** False when a host has only a UI controller; disables clock-dependent actions. */
+  playbackAvailable?: boolean;
   decks: readonly MixerDeck[];
   running: boolean;
   /** Whole beat for labels; fractional positions come from readFrame. */
@@ -73,6 +76,9 @@ export interface MixerParams {
   level: Param; trim: Param; send: Param; eq: Param; filter: Param; tempo: Param; cross: Param;
 }
 export interface MixerViewProps {
+  /** Host-owned library drag/drop and track picker; the widget knows no library format. */
+  deckProps?(deckId: string): HTMLAttributes<HTMLDivElement>;
+  deckLoadControl?(deckId: string): ReactNode;
   state: MixerState;
   commands: MixerCommands;
   /** Read-only, synchronous audio-clock/meter snapshot. Never advances playback. */

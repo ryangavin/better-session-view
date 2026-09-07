@@ -1,3 +1,4 @@
+import { TRACK_DRAG } from '../play/decks.ts';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS } from '../mock.ts';
@@ -113,6 +114,8 @@ export function Library({ mix }: { mix: Mix }) {
             key={song.id}
             type="button"
             className="mf-song"
+            draggable
+            onDragStart={event => { event.dataTransfer.setData(TRACK_DRAG, song.id); event.dataTransfer.effectAllowed = 'copy'; }}
             data-selected={song.id === mix.selected || undefined}
             onClick={() => mix.select(song.id)}
           >

@@ -17,7 +17,7 @@ component inventing a successful result.
   control values, transport labels, loop bounds, effects and their IDs. Deck status is
   empty/loading/ready/unavailable. Non-ready launcher fieldsets are disabled, and missing
   stems disable their individual launch/stop/level controls. The host supplies four deck
-  positions, four stem positions per deck, and three EQ values; unavailable stems retain
+  positions, a variable number of stem positions per deck, and three EQ values; unavailable stems retain
   a placeholder position. Section counts and names can vary between decks.
 - `MixerCommands` contains semantic operations, not React setters. `launch(deckId,
   sectionId, stemId?)` uses null for stop and omitted stem for the entire deck. Source
@@ -32,6 +32,13 @@ component inventing a successful result.
 - `MixerTheme` supplies resolved CSS colors keyed by stem/deck IDs, plus primary and
   signal colors. Tokens are scoped to the mixer root. The component never writes to
   body, storage, or another window's palette.
+
+Optional `deckProps(id)` supplies host drag/drop handlers to the strip and waveform
+row, and `deckLoadControl(id)` inserts a host-owned picker above the launcher. These
+remain outside the disabled launcher fieldset, so empty/loading/error states can accept
+a replacement. The widgets never interpret a library payload. Unknown track BPM is null.
+`playbackAvailable: false` disables Run, launch quantization and loop capture for a host
+that has no audio controller yet. Missing/undefined retains the previous bench behavior.
 
 ## Frame readings
 
@@ -69,14 +76,15 @@ Only the bench CSS positions the floating theme editor or hides workspace descri
 
 ## Integrating mix
 
-A future mix-owned `useMixerViewModel` can adapt its playback controller to this contract.
-It must own track loading, beat/time conversion, queue acknowledgements, source policy,
-and measurement. Do not mount several copies of the current single-track useMix hook as
-an implicit four-deck engine: audio context, shared master/FX, launch scheduling and
-lifecycle ownership need their own deliberate controller design.
+Mix now mounts this face through `mix/src/play/useMixerViewModel.ts`, an app-owned UI
+adapter with real library metadata, saved sections and offline-decoded overview peaks.
+It does not import the bench or wire four-deck audio. The same library stays visible in
+Prep and Play; [mix's topic](../../mix/docs/play-view.md) governs mode switching and loads.
 
-This extraction does not add audio capabilities, change mix's engine, or add a Play
-route to mix. The bench remains the integration proof and fast visual feedback loop.
+A future audio controller must own track loading, beat/time conversion, queue
+acknowledgements, source policy and measurement. Do not mount several copies of the
+current single-track useMix hook as an implicit four-deck engine: audio context, shared
+master/FX, launch scheduling and lifecycle ownership need their own controller design.
 
 ## Verification
 

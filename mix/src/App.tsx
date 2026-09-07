@@ -1,3 +1,6 @@
+import { PlayView } from './play/PlayView.tsx';
+import { useMixerViewModel } from './play/useMixerViewModel.ts';
+import { isViewShortcut } from './play/decks.ts';
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Empty } from './components/Empty.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
@@ -36,6 +39,13 @@ import './App.css';
  */
 export function App() {
   const mix = useMix();
+  const [playView, setPlayView] = useState(false);
+  const mixer = useMixerViewModel(mix.library.tracks, mix.library.root);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => { if (isViewShortcut(event)) { event.preventDefault(); setPlayView(view => !view); } };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, []);
   const [ready, setReady] = useState<Ready | null>(null);
   const [dropping, setDropping] = useState(false);
   const dragDepth = useRef(0);
@@ -63,7 +73,7 @@ export function App() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (mix.phase !== 'ready' || e.defaultPrevented || target?.closest('input, textarea, select, button, [role=dialog]')) return;
+      if (playView || mix.phase !== 'ready' || e.defaultPrevented || target?.closest('input, textarea, select, button, [role=dialog]')) return;
       if (e.key === ' ') {
         e.preventDefault();
         mix.setPlaying(!mix.playing);
@@ -80,7 +90,7 @@ export function App() {
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
+  }, [playView, mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
 
   const carriesFiles = (event: DragEvent): boolean =>
     Array.from(event.dataTransfer.types).includes('Files');
@@ -125,10 +135,11 @@ export function App() {
       onDragLeave={dragLeave}
       onDrop={drop}
     >
-      <Header mix={mix} ready={ready} />
+      <Header mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />
       <main className="mf-body">
         <Library mix={mix} />
-        <section className="mf-centre">
+        {playView && <PlayView mixer={mixer} tracks={mix.library.tracks} />}
+        <section className="mf-centre" hidden={playView}>
           {mix.phase === 'empty' && <Empty mix={mix} />}
           {mix.phase === 'idle' && <TrackAnalysis key={mix.song?.id} mix={mix} ready={ready} />}
           {mix.phase === 'running' && <Running mix={mix} />}
