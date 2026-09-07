@@ -4,7 +4,7 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
-import { beatAt, beatsOnHit, evenBeats, rangeText, renumbered, retimed, sampleOf, shifted, tempoOf } from '../warp.ts';
+import { beatAt, beatsOnHit, evenBeats, hitUnder, moved, rangeText, renumbered, retimed, sampleOf, tempoOf } from '../warp.ts';
 import { describe, FIRST_CHOICE, OFFERED, run, type Algorithm } from '../algorithms.ts';
 import type { Mix } from '../state.ts';
 
@@ -17,8 +17,8 @@ const ON_A_BEAT = 0.025;
 
 /**
  * The grid, open for checking and correcting over the real lanes: the one
- * mode for asking whether the song is right. Drag a beat, set bar 1, nudge,
- * find the beats again, listen with a click; the ruler above offers the
+ * mode for asking whether the song is right. Drag a beat, set bar 1 on its
+ * hit, find the beats again, listen with a click; the ruler above offers the
  * section changes it heard as cuts to keep. Done keeps it all, Cancel
  * restores the saved grid. What used to be a separate page with its own
  * timeline, zoom and algorithm picker is this, on the lanes you mix on.
@@ -88,6 +88,25 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, [mix.cancelGridEdit, mix.undoGridEdit]);
+  /**
+   * Bar 1 here: the beat nearest the playhead becomes bar 1, and lands on
+   * the hit it was meant for on the way. Serato, Traktor and Rekordbox all
+   * put bar 1 on the transient at the playhead, and a beat a few
+   * milliseconds off its kick is the commonest thing this button is pressed
+   * over — renumbering alone left that for a nudge that came in tens of
+   * milliseconds and could not make five. Only that beat moves, its
+   * neighbours hold, and it is a set beat afterwards, so the next pull of a
+   * bar stretches from it. Shifting the whole map to the playhead was tried
+   * before and dragged a good detection off every hit, which is why the
+   * playhead itself is never where the beat goes: the hit is, and only when
+   * there is one within a quarter of a beat. Option renumbers only, for a
+   * downbeat that is meant to sit off the kick.
+   */
+  const setBarOne = (renumberOnly: boolean) => {
+    const beat = Math.round(beatAt(grid, mix.position * grid.rate));
+    const hit = renumberOnly ? null : hitUnder(grid, mix.hits, beat);
+    mix.editGrid(renumbered(hit === null ? grid : moved(grid, beat, hit), beat));
+  };
   const listen = () => {
     if (player.head !== null) { player.stop(); return; }
     mix.setPlaying(false); setProblem('');
@@ -130,16 +149,11 @@ export function BeatGridEditor({ mix, inspect }: { mix: Mix; inspect(at: number)
       <Button onPress={mix.finishGridEdit} className="mf-primary">Done</Button>
     </div>
     <div className="mf-grid-editor-row">
-      {/* Which beat is bar 1, not where the beats are: the beat nearest the
-          playhead becomes 1 and nothing moves. Shifting the whole map to the
-          playhead dragged a good detection off every hit, which is what the
-          nudges are for when the beats really are off by a constant. */}
-      <Button onPress={() => mix.editGrid(renumbered(grid, Math.round(beatAt(grid, mix.position * grid.rate))))} title="Make the beat nearest the playhead bar 1. The beats stay where they are; only the count changes">Bar 1 here</Button>
+      <Button onPress={(e) => setBarOne(e.altKey)} title="Make the beat nearest the playhead bar 1, moved onto the kick or snare it is nearest when one is within a quarter of a beat; the other beats stay where they are. Option renumbers only, and moves nothing">Bar 1 here</Button>
       <Button onPress={() => mix.editGrid(renumbered(grid, -1))}>One beat earlier</Button>
       <Button onPress={() => mix.editGrid(renumbered(grid, 1))}>One beat later</Button>
-      <span>Nudge all beats</span><Button onPress={() => mix.editGrid(shifted(grid, -Math.round(grid.rate * .01)))}>−10 ms</Button><Button onPress={() => mix.editGrid(shifted(grid, Math.round(grid.rate * .01)))}>+10 ms</Button>
     </div>
-    <p>Zoom to a hit and drag its marker: a bar marker stretches the beats since the last point you set, any other beat moves alone, and Option skips snapping to hits. Dashed marks on the ruler are section changes the stems suggest — click one to cut there. Waveform clicks only move the playhead.</p>
+    <p>Zoom to a hit and drag its marker: a bar marker stretches the beats since the last point you set, any other beat moves alone, Command moves every beat together, and Option skips snapping to hits. Dashed marks on the ruler are section changes the stems suggest — click one to cut there. Waveform clicks only move the playhead.</p>
     {problem && <p role="alert">{problem}</p>}
     {player.head !== null && <p role="status">Listening to drums at original speed · {player.head.toFixed(3)} s</p>}
   </section>;

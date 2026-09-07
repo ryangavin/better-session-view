@@ -42,8 +42,8 @@ export interface WarpLaneProps {
   beats?: Beats;
   /** The hits the fit listened to, in seconds, for a dragged marker to snap to. */
   hits?: readonly number[];
-  /** A beat dragged to another second of the file. */
-  onMove?(beat: number, at: number): void;
+  /** A beat dragged to another second of the file; with `all`, every beat is to come by the same distance. */
+  onMove?(beat: number, at: number, all?: boolean): void;
   /** A click, as a fraction of the file. */
   onPlace?(place: number): void;
   /** Manual mode: the pointer is placing a downbeat rather than scrubbing. */
@@ -261,7 +261,9 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
    * stretches the beats since the last set point, a beat moves alone — and
    * the lane only says which beat and where. It lands on a hit when it comes
    * close to one — a kick is nearly always what is meant — unless ⌥ is held,
-   * which is how you say it is not.
+   * which is how you say it is not. ⌘ says the whole map is to come with
+   * it: the marker still lands on its hit, and every other beat moves by
+   * the same distance.
    */
   const take = (beat: number) => (event: React.PointerEvent<HTMLElement>) => {
     if (!onMove) return;
@@ -288,7 +290,7 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
         }
       }
     }
-    onMove(held.beat, at);
+    onMove(held.beat, at, event.metaKey);
   };
 
   const release = (event: React.PointerEvent<HTMLElement>) => {
@@ -345,8 +347,8 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
               onMove(marker.beat, at + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? .001 : .01));
             }}
             title={marker.beat % BEATS_PER_BAR === 0
-              ? `Bar ${nameOf(marker.beat)}. Drag to stretch the beats since the last set point onto it; ⌥ to skip the hits`
-              : `Beat ${nameOf(marker.beat)}. Drag to move it alone; ⌥ to skip the hits`}
+              ? `Bar ${nameOf(marker.beat)}. Drag to stretch the beats since the last set point onto it; ⌘ to move every beat with it; ⌥ to skip the hits`
+              : `Beat ${nameOf(marker.beat)}. Drag to move it alone; ⌘ to move every beat with it; ⌥ to skip the hits`}
             onPointerDown={take(marker.beat)}
             onPointerMove={carry}
             onPointerUp={release}

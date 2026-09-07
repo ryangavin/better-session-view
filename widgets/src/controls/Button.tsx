@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import './controls.css';
 
 /**
@@ -33,8 +33,11 @@ import './controls.css';
  * roughly half the time.
  */
 export interface ButtonProps {
-  /** It happened. No value, because a press is not a value. */
-  onPress(): void;
+  /**
+   * It happened. No value, because a press is not a value; the event is
+   * there for the modifiers held while it did, which are part of the press.
+   */
+  onPress(event: MouseEvent<HTMLButtonElement>): void;
   disabled?: boolean;
   /** For assistive technology. Defaults to the caption, then to the children. */
   label?: string;

@@ -73,7 +73,7 @@ The Electron window opts out of background throttling, using both `switches(app)
 
 Playback keeps the transport, target tempo and clock; Snap governs timeline gestures.
 **Grid** opens the one mode for asking whether the song is right, over the lanes:
-beat handles, bar 1, nudges, **Find beats** with the algorithm beside it, listen with a
+beat handles, bar 1, **Find beats** with the algorithm beside it, listen with a
 click, the section changes the stems suggest as dashed cuts on the ruler, and
 **Advanced…**, which opens the debug workspace on the beat analysis for whoever wants
 every algorithm side by side. Done and Cancel are its only way out. Beside it the header says the tempo the beats run at — a range where the record
@@ -114,10 +114,13 @@ onto its hit. Every other marker is a beat marker and dragging it moves that bea
 The map remembers the beats a hand set (`Beats.set`, saved with the grid) so the next
 pull stretches from the last one. Arrow keys do the same as a drag on a focused marker
 by 10 ms, or 1 ms with Shift; dragging snaps to nearby hits unless
-Option is held. **Bar 1 here** makes the beat nearest the playhead bar 1 and moves
-nothing — it used to shift every beat to the playhead, which dragged a good detection off
-its hits; One beat earlier/later renumbers the same way. Nudges shift the complete map
-10 ms, for when the beats really are off by a constant. Clicking the tempo in the status
+Option is held. Command while dragging any marker moves every beat by the drag
+(`shifted`), for a map that is right and early by a constant — the marker still snaps
+to its hit; that replaced a pair of ±10 ms buttons. **Bar 1 here** makes the beat
+nearest the playhead bar 1, moving that beat alone onto the kick or snare it is nearest
+when one is within a quarter of a beat, and renumbering only otherwise or with Option
+held — it used to shift every beat to the playhead, which dragged a good detection off
+its hits; One beat earlier/later renumbers the same way. Clicking the tempo in the status
 turns it into a field for typing a steady tempo, which discards tempo variation at that
 BPM from bar 1's downbeat; Escape or blur returns the reading. Beside it, ×2, ÷2, ×3⁄2
 and ×2⁄3 re-count the same beats at that rate, keeping the detected variation and bar 1
@@ -420,8 +423,9 @@ behind somebody's back.
 **Manual correction requires Edit beat grid.** Its toolbar sits above the mixer lanes,
 and the marker handles exist only while it is open. A marker drags to the nearest hit
 unless Option is held; its neighbours hold and only the two adjacent intervals change.
-Set bar 1, renumbering and whole-grid nudges are explicit buttons. A steady-grid
-replacement is a disclosure because it intentionally removes tempo variation.
+Set bar 1 and renumbering are explicit buttons; moving the whole grid is a ⌘-drag on
+any marker. A steady tempo is typed into the status reading because it intentionally
+removes tempo variation.
 
 Waveform clicks continue to seek. First downbeat zooms the main axis, and Listen with
 click checks the drums against the draft at original speed. The draft is separate from

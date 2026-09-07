@@ -7,6 +7,7 @@ import {
   countOf,
   evenBeats,
   beatsOnHit,
+  hitUnder,
   moved,
   placeOf,
   pulled,
@@ -379,5 +380,40 @@ describe('how much of the grid the kit confirms', () => {
 
   it('has nothing to say about a track with no hits', () => {
     expect(beatsOnHit(grid, [], 0.025)).toBeNull();
+  });
+});
+
+describe('the hit a beat was meant for', () => {
+  // 120: a beat every half second, so a quarter of a beat is 125 ms.
+  const grid = evenBeats(RATE, LENGTH, 120, 0);
+
+  it('is the nearest hit within a quarter of a beat, as a sample', () => {
+    expect(hitUnder(grid, [1.005, 1.5], 2)).toBe(Math.round(1.005 * RATE));
+    expect(hitUnder(grid, [0.8, 1.11], 2)).toBe(Math.round(1.11 * RATE));
+  });
+
+  it('is nothing where the nearest hit is further than that', () => {
+    expect(hitUnder(grid, [0.75, 1.25], 2)).toBeNull();
+    expect(hitUnder(grid, [1.126], 2)).toBeNull();
+    expect(hitUnder(grid, [], 2)).toBeNull();
+  });
+
+  it('is judged by the tighter of the two spacings beside the beat', () => {
+    // Beat 2 pushed late so the spacing after it is 0.2 s: 0.1 s away is out of reach now.
+    const tight = moved(grid, 2, 1.3 * RATE);
+    expect(hitUnder(tight, [1.4], 2)).toBeNull();
+    expect(hitUnder(tight, [1.34], 2)).toBe(Math.round(1.34 * RATE));
+  });
+
+  it('has nothing to say about a beat outside the map', () => {
+    expect(hitUnder(grid, [1], grid.first - 1)).toBeNull();
+    expect(hitUnder(grid, [1], grid.first + grid.samples.length)).toBeNull();
+  });
+
+  it('is a hand-set beat once moved onto it, renumbered or not', () => {
+    const hit = hitUnder(grid, [1.005], 2)!;
+    const landed = renumbered(moved(grid, 2, hit), 2);
+    expect(sampleOf(landed, 0)).toBe(hit);
+    expect(landed.set).toEqual([0]);
   });
 });

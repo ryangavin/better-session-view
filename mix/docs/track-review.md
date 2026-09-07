@@ -21,11 +21,15 @@ because that fit measured a grid this may no longer be.
 preselected, which is exactly what an import runs — and makes the result the draft:
 drawn over the saved grid in the warp lane, auditioned with the click, undone with
 Undo. **Advanced…** opens the debug workspace on the beat analysis for the full
-comparison. **Bar 1 here** renumbers so the beat nearest the playhead is bar 1, and
-moves nothing. The markers, renumbering and nudges are as [window.md](window.md)
-describes; the two kinds of marker are `warp.ts`'s two edits, `pulled` for a bar and
-`moved` for a beat, and the map's `set` list is what lets a pull know where to stretch
-from. The tempo in the status is also where a steady tempo is typed: click it and it
+comparison. **Bar 1 here** makes the beat nearest the playhead bar 1, landing it on
+the kick or snare it is nearest first — `hitUnder` in `warp.ts`, a hit within a
+quarter of the beat's own spacing, then `moved` so its neighbours hold and it is a set
+beat, then `renumbered`. With no hit that close it only renumbers, and Option renumbers
+without moving. This is what Serato, Traktor and Rekordbox mean by setting the
+downbeat; a beat 5 ms off its kick used to be left for a ±10 ms nudge that could not
+make 5. The markers and dragging are as [window.md](window.md) describes; the marker
+edits are `warp.ts`'s `pulled` for a bar, `moved` for a beat and `shifted` for a
+⌘-drag, and the map's `set` list is what lets a pull know where to stretch from. The tempo in the status is also where a steady tempo is typed: click it and it
 becomes a field; a committed number rules `evenBeats` from bar 1's downbeat, which
 discards the detected variation on purpose, and Escape or blur brings the reading back.
 That replaced a *Replace with a steady grid* disclosure with its own BPM field, which

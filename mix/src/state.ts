@@ -1610,21 +1610,6 @@ export function useMix() {
     [manual, seconds, seek, listen, targetBpm],
   );
 
-  /**
-   * Move the whole grid ten milliseconds, keeping the tempo.
-   *
-   * The downbeat is the half of a grid that a detector gets wrong while getting
-   * the other half right — a fit locked onto the snare is the right tempo and a
-   * bar line in the wrong place — and this is the fastest way out of that. It
-   * moves bar 1 rather than a beat, because a beat that could be dragged
-   * off the grid it is marking would be a second, competing claim.
-   */
-  const nudge = useCallback((direction: number) => {
-    setOffset((was) => was + direction * 0.01);
-    setBeats((was) => (was ? shifted(was, direction * 0.01 * was.rate) : was));
-    setDetected(null);
-  }, []);
-
   const adjust = useCallback((id: string, change: Partial<Level>) => {
     setLevel((was) => ({ ...was, [id]: { ...(was[id] ?? REST), ...change } }));
   }, []);
@@ -1747,13 +1732,21 @@ export function useMix() {
    * Drag a beat to another second of the file. A bar marker pulls the grid —
    * the beats since the last set point stretch to it and the rest come along —
    * and any other beat moves alone: the tempo is set by bars, and a beat
-   * inside one is a beat that is late or early.
+   * inside one is a beat that is late or early. With `all`, every beat comes
+   * by the distance this one was dragged, keeping every spacing: the whole
+   * map was right and early, which a detector locked a few milliseconds
+   * ahead of the kick produces, and the ⌘-drag that says so is Serato's grid
+   * slip. Its distance is read off where the beat is now, so a drag that
+   * is many moves long adds up to the one it looks like.
    */
   const moveBeat = useCallback(
-    (beat: number, at: number) => {
+    (beat: number, at: number, all = false) => {
       if (!gridEdit.active) return;
       const sample = at * grid.rate;
-      gridEdit.change(beat % BEATS_PER_BAR === 0 ? pulled(grid, beat, sample) : moved(grid, beat, sample));
+      gridEdit.change(
+        all ? shifted(grid, sample - sampleOf(grid, beat))
+          : beat % BEATS_PER_BAR === 0 ? pulled(grid, beat, sample) : moved(grid, beat, sample),
+      );
     },
     [grid, gridEdit.active, gridEdit.change],
   );
@@ -1971,8 +1964,7 @@ export function useMix() {
     /** A grid something else measured — the harness — taken as if Auto-warp had found it. */
     take: fit,
     place,
-    nudge,
-    /** The hits in seconds, and the two things a hand can do to the map. */
+    /** The hits in seconds, and the three things a hand can do to the map. */
     hits,
     moveBeat,
     clearBeats,

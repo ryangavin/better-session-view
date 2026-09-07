@@ -249,6 +249,38 @@ export function beatsOnHit(beats: Beats, hits: readonly number[], within: number
   return asked === 0 ? null : on / asked;
 }
 
+/** How far from a beat, as a share of its spacing, a hit still counts as the one it meant. */
+export const UNDER_A_BEAT = 0.25;
+
+/**
+ * The hit a beat was meant to sit on, as a sample: the nearest kick or snare
+ * within a quarter of the beat's own spacing, and null where there is none.
+ *
+ * A quarter of a beat rather than a fixed window, because "near" means
+ * something different at 70 than at 170: it is inside the reach of a sixteenth
+ * either way, so a beat detected on the right pulse but a few milliseconds
+ * late finds its hit, and a beat a whole eighth off is left alone, since the
+ * hit an eighth away is a different note. The spacing is the smaller of the
+ * two beside the beat, so a beat at the edge of a break is judged by the
+ * tighter side. Bisection over `hits`, which are sorted seconds.
+ */
+export function hitUnder(beats: Beats, hits: readonly number[], beat: number): number | null {
+  const i = beat - beats.first;
+  if (i < 0 || i >= beats.samples.length || hits.length === 0) return null;
+  const at = beats.samples[i];
+  const before = i > 0 ? at - beats.samples[i - 1] : Infinity;
+  const after = i + 1 < beats.samples.length ? beats.samples[i + 1] - at : Infinity;
+  const reach = Math.min(before, after) * UNDER_A_BEAT;
+  const seconds = at / beats.rate;
+  let lo = 0, hi = hits.length;
+  while (lo < hi) { const mid = (lo + hi) >>> 1; if (hits[mid] < seconds) lo = mid + 1; else hi = mid; }
+  const near = [hits[lo - 1], hits[lo]].filter((h): h is number => h !== undefined);
+  if (near.length === 0) return null;
+  const hit = near.reduce((best, h) => (Math.abs(h - seconds) < Math.abs(best - seconds) ? h : best));
+  const sample = Math.round(hit * beats.rate);
+  return Math.abs(sample - at) <= reach ? sample : null;
+}
+
 /**
  * Where bar 1 starts, given where any downbeat falls.
  *
@@ -352,7 +384,7 @@ export const renumbered = (beats: Beats, beat: number): Beats => ({
   ...(beats.set && { set: beats.set.map((b) => b - beat) }),
 });
 
-/** Every beat moved the same way through the file: the nudge. */
+/** Every beat moved the same way through the file: what a ⌘-drag on any marker does. */
 export const shifted = (beats: Beats, samples: number): Beats => ({
   ...beats,
   samples: beats.samples.map((s) => s + Math.round(samples)),
