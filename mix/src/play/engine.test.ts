@@ -34,6 +34,21 @@ function setup(){const ctx=new Context(),engine=new MixerEngine(()=>ctx as unkno
 const settle=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 afterEach(()=>{engines.splice(0).forEach(e=>e.dispose());stretching.prepare=null;vi.useRealTimers();});
 describe('the four-deck playback owner',()=>{
+  it('shows the original waveform without changing stem playback or positioning focus', async () => {
+    vi.useFakeTimers();
+    const {engine,ctx}=setup(), loaded=asset();
+    loaded.audio!.sourceOverviews={full:{start:0,peaks:Array.from({length:1024},()=>({min:-.7,max:.7})),spectrum:[]}};
+    await engine.load('deck-a',track,async()=>loaded);
+    await engine.play('deck-a',true,undefined,false,'drums');
+    const before=ctx.sources.length;
+    engine.commands.setFocus!('deck-a','full');
+    expect(engine.snapshot().decks[0]).toMatchObject({full:false,focus:'drums',waveformSource:'full',waveform:{focus:'full'}});
+    expect(engine.snapshot().decks[0].peaks.some(p=>p.max===.7)).toBe(true);
+    expect(ctx.sources).toHaveLength(before);
+    expect(engine.readFrame().decks['deck-a'].sources!.drums.playing).toBe(true);
+    engine.commands.setFocus!('deck-a','bass');
+    expect(engine.snapshot().decks[0]).toMatchObject({focus:'bass',waveformSource:undefined,waveform:{focus:'bass'}});
+  });
   it('indexes the full-track overview from its negative beat origin, including after a page change', async () => {
     vi.useFakeTimers();
     const {engine,ctx} = setup();

@@ -18,6 +18,8 @@ export type DeckControl = 'gain' | 'trim' | 'sendA' | 'sendB' | 'filter' | 'rout
 export interface MixerDeck {
   /** Host-reported deck transport; absent while playback is not connected. */
   focus?: string;
+  /** Display the original track while retaining the active stem controls. */
+  waveformSource?: 'full';
   moveTogether?: boolean;
   gridAvailable?: boolean;
   quantize?: number;

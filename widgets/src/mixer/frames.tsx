@@ -66,7 +66,7 @@ export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck
       if(background.current){const b=at?.sources?.[deck.full?'full':deck.focus ?? '']?.backgroundBeat;background.current.hidden=b===undefined;if(b!==undefined){background.current.style.left=`${Math.max(0,Math.min(98,xOf(b)))}%`;background.current.textContent=`SLIP ${b.toFixed(1)}`;}}
       if(markers.current) for(const node of markers.current.children) {
         const mark=node as HTMLElement, source=at?.sources?.[mark.dataset.source!];
-        if(source){const x=xOf(source.beat);mark.style.left=`${Math.max(0,Math.min(98,x))}%`;mark.textContent=`${mark.dataset.source} ${source.beat.toFixed(1)}${x<0?' ←':x>98?' →':''}`;mark.hidden=!source.enabled;}
+        if(source){const x=xOf(source.beat);mark.style.left=`${Math.max(0,Math.min(98,x))}%`;mark.textContent=mark.dataset.name ?? mark.dataset.source!;mark.hidden=!source.enabled || x<0 || x>95 || Math.abs(source.beat-(at?.beat ?? 0))<.025;}else mark.hidden=true;
       }
       frame = requestAnimationFrame(draw);
     };
@@ -83,7 +83,7 @@ export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck
     </div>
     <span ref={playhead} className="play-playhead" style={{left:'25%'}} />
     <span ref={background} className="play-slip-marker" hidden/>
-    <div ref={markers} className="play-source-markers">{deck.stems.filter(s=>s.available && s.id!==deck.focus).map(s=><span key={s.id} data-source={s.id}/>)}</div>
+    <div ref={markers} className="play-source-markers">{deck.stems.filter(s=>s.available && s.id!==deck.focus).map((s,i)=><span key={s.id} data-source={s.id} data-name={s.name} style={{top:'auto',bottom:i*11}}/>)}</div>
     {deck.track && <span ref={reading} className="play-wave-position" />}
   </>;
 }

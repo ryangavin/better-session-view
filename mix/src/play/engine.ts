@@ -574,16 +574,16 @@ export class MixerEngine {
   private waveform(id: string, d: Deck, beat: number): Pick<MixerDeck,'waveform'|'peaks'|'waveformSpectrum'> {
     const fit=this.model(id).zoom===0, start = fit ? this.beatOf(id,0) : Math.floor(beat / 32) * 32 - 32;
     const length=fit?Math.max(.001,this.beatOf(id,this.focused(id)?.[1].voice.buffer.duration ?? d.audio.duration)-start):96;
-    const focus=this.focused(id)?.[0] ?? 'full', overview=d.audio.sourceOverviews?.[focus];
+    const focus=this.model(id).waveformSource ?? this.focused(id)?.[0] ?? 'full', overview=d.audio.sourceOverviews?.[focus];
     const cached = this.model(id).waveform?.start === start && this.model(id).waveform?.focus === focus && this.model(id).waveform?.length===length;
     const offset = Math.round((start - (overview?.start ?? d.audio.overviewStart ?? 0)) * 8);
     const peaks = cached ? this.model(id).peaks : Array.from({length:Math.ceil(length*8)},(_,i) => (overview?.peaks ?? d.audio.overview)[offset + i] ?? {min:0,max:0});
     const waveformSpectrum = cached ? this.model(id).waveformSpectrum : (overview?.spectrum ?? d.audio.overviewSpectrum) && Array.from({length:Math.ceil(length*8)},(_,i) => (overview?.spectrum ?? d.audio.overviewSpectrum)![offset + i] ?? [0,0,0] as const);
-    const slot = this.focused(id);
+    const slot = this.focused(id), controlFocus=slot?.[0] ?? focus;
     const activeSpan=slot?.[1].span, span = activeSpan ?? (slot && this.loopSpans.get(`${id}/${slot[0]}`));
     const toBeat = (seconds: number) => d.audio.map ? beatAt(d.audio.map,seconds*d.audio.map.rate) : seconds*(this.model(id).track?.bpm ?? 120)/60;
     const pending = slot && this.model(id).loop?.start != null && this.model(id).loop?.end === null ? this.loopStarts.get(`${id}/${slot[0]}`) : undefined;
-    return { peaks, waveformSpectrum, waveform: {start,length,visible:fit?length:this.model(id).zoom ?? 32,fixed:fit,focus,deckCue:toBeat(this.checkpoint(id).get(focus)?.at ?? 0),cue:this.checkpoint(id,focus).get(focus) ? toBeat(this.checkpoint(id,focus).get(focus)!.at) : undefined,loop:span ? {start:toBeat(span.from),end:toBeat(span.to),enabled:!!activeSpan} : pending !== undefined ? {start:toBeat(pending),end:null,enabled:false} : undefined} };
+    return { peaks, waveformSpectrum, waveform: {start,length,visible:fit?length:this.model(id).zoom ?? 32,fixed:fit,focus,deckCue:toBeat(this.checkpoint(id).get(controlFocus)?.at ?? 0),cue:this.checkpoint(id,controlFocus).get(controlFocus) ? toBeat(this.checkpoint(id,controlFocus).get(controlFocus)!.at) : undefined,loop:span ? {start:toBeat(span.from),end:toBeat(span.to),enabled:!!activeSpan} : pending !== undefined ? {start:toBeat(pending),end:null,enabled:false} : undefined} };
   }
   private tick() {
     if(this.disposed) return;
@@ -610,7 +610,7 @@ export class MixerEngine {
     setSlip:(id,slip)=>{const d=this.decks.get(id);if(!d)return;if(!slip)d.backgrounds.clear();this.patchDeck(id,{slip});},
     setLoopFocus:(id,loopFocus)=>{if(this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;this.patchDeck(id,{loopFocus});this.loopState(id);},
     quickLoop:id=>this.quickLoop(id), resizeLoop:(id,factor)=>this.editLoops(id,'resize',factor), moveLoop:(id,beats)=>this.editLoops(id,'move',beats), adjustLoop:(id,boundary,beats)=>this.editLoops(id,boundary,beats),
-    setFocus:(id,focus)=>{if(this.decks.get(id)?.move || this.model(id).loopFocus && this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;this.patchDeck(id,{focus});this.tick();},
+    setFocus:(id,focus)=>{if(this.decks.get(id)?.move || this.model(id).loopFocus && this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;if(focus==='full'){this.patchDeck(id,{waveformSource:'full'});}else if(this.decks.get(id)?.slots.has(focus)){this.patchDeck(id,{focus,waveformSource:undefined});}this.tick();},
     setMoveTogether:(id,moveTogether)=>{if(!this.decks.get(id)?.move)this.patchDeck(id,{moveTogether});},
     moveDeck:(id,phase,delta)=>this.move(id,phase,delta),
     beatJump:(id,delta)=>this.beatJump(id,delta),

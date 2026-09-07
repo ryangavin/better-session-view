@@ -182,3 +182,9 @@ uses the supplied visible range in both modes, including playing sources. The op
 `syncLeader` flag labels the deck header; widgets neither elect leaders nor own tempo.
 Synced launch timing displays Next bar and is read-only; sub-beat quick-loop options
 are disabled while Sync is on.
+
+The waveform source selector always includes Full track (original). `waveformSource`
+selects that visual independently of playback mode and retains the focused stem for
+positioning and Play/Cue; the panel names that stem. Choosing a stem restores its
+waveform and focus. Other-source markers hide when offscreen or coincident with focus,
+and divergent sources use separate named lanes rather than overlapping beat numbers.

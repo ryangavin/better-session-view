@@ -222,7 +222,12 @@ waveforms without re-analysis or playback changes. Silence uses the theme’s id
 to the focused source audio, before mixer processing; deck colors remain on the labels and
 rails. Both stereo channels contribute without cancellation. Analysis runs once during
 loading, yielding cooperatively and honoring replacement cancellation. Focus defaults to
-drums (or the first available source) and never follows launch activity implicitly. Zoom
+drums (or the first available source) and never follows launch activity implicitly.
+The waveform source menu also offers Full track (original) during stem playback.
+This changes only the displayed overview; the retained focused stem supplies position,
+scrub and Play/Cue behavior, identified in the panel. Choosing a stem restores its
+waveform and focus. Offscreen or coincident secondary position labels are hidden;
+divergent source names occupy separate lanes. Zoom
 selects the visible beat span. Source Cue, deck checkpoint, saved/active loop and other
 source positions are distinguished in the waveform. Time/bar readings belong to focus.
 
