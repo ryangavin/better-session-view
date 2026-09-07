@@ -64,7 +64,7 @@
     "dev:devices": "vite --config set/vite.bench.config.ts",
     "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p widgets/tsconfig.json && tsc -p desktop/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p mix/tsconfig.json && tsc -p mix/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage --reporter=default --reporter=html",
+    "test:coverage": "vitest run --coverage",
     "benchmark": "node --disable-warning=ExperimentalWarning tools/benchmark.ts",
     "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link && cd .. && npm run dev:check-singletons",
     "visuals": "node --disable-warning=ExperimentalWarning tools/app.ts run visuals",
@@ -92,8 +92,8 @@
     "@types/react-dom": "^19.2.5",
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^6.1.1",
-    "@vitest/coverage-v8": "^5.0.0",
-    "@vitest/ui": "^4.1.11",
+    "@vitest/coverage-v8": "5.0.0",
+    "@vitest/ui": "5.0.0",
     "concurrently": "^10.0.5",
     "electron": "44.2.0",
     "electron-builder": "26.15.3",
@@ -102,7 +102,7 @@
     "typescript": "^7.0.2",
     "typescript-syntax": "npm:typescript@5.9.3",
     "vite": "^8.2.2",
-    "vitest": "^4.1.11"
+    "vitest": "5.0.0"
   },
   "dependencies": {
     "@fontsource-variable/recursive": "5.3.0",

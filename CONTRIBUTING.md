@@ -197,6 +197,14 @@ critical at the top. Upgrading the pair cleared all five at once, which is the s
 takes every time: an advisory against a bundler reaches the tree through the test runner
 that bundles with it, so the runner is what you upgrade.
 
+**Vitest, `@vitest/ui`, and `@vitest/coverage-v8` move together.** Their peer
+dependencies require matching versions; upgrading only the coverage provider makes
+`npm ci` fail before any tests run. All three are pinned to 5.0.0. The shared
+reporter configuration writes test results to `report/index.html` on both ordinary
+and coverage runs; `npm run test:coverage` also includes the V8 coverage report.
+Vitest 5 uses the HTML reporter's `outputDir`, not the old `outputFile` setting,
+so keep that directory aligned with CI's report artifact and Pages upload.
+
 **One line from the addon compile is expected:** `libtool: warning: 'nothing.o' has no
 symbols`. `nothing.o` is node-addon-api's deliberately empty translation unit, and an empty
 object file is what it is supposed to be. The repairs `build-link.ts` makes are described in
