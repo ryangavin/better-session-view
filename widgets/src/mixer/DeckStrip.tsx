@@ -53,6 +53,7 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
         <div className="play-deck-transport" role="group" aria-label={`Deck ${index + 1} transport`}>
           <Toggle width={44} className="play-transport-button" on={d.playing ?? false} disabled={d.status !== 'ready' || !commands.setDeckPlaying} label={`Deck ${index + 1} play/pause`} title={commands.setDeckPlaying ? 'Play / Pause' : 'Deck playback is not connected yet'} onChange={playing => commands.setDeckPlaying?.(d.id, playing)}>{d.playing ? 'Ⅱ' : '▶'}</Toggle>
           <Toggle width={44} className="play-transport-button" momentary on={d.cueHeld ?? false} disabled={d.status !== 'ready' || !commands.cueDeck} label={`Deck ${index + 1} transport cue`} title={commands.cueDeck ? 'Return to cue; hold to audition' : 'Deck playback is not connected yet'} onChange={held => commands.cueDeck?.(d.id, held)}>Cue</Toggle>
+          <Toggle width={44} className="play-transport-button" on={d.synced ?? false} disabled={d.status !== 'ready' || !commands.setDeckSync} label={`Deck ${index + 1} sync`} title={commands.setDeckSync ? 'Sync deck to the shared tempo and beat' : 'Deck playback is not connected yet'} onChange={synced => commands.setDeckSync?.(d.id, synced)}>Sync</Toggle>
         </div>
       </div>;
 }

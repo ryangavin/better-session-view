@@ -11,7 +11,6 @@ export function MixerView({ state, commands, readFrame, theme, params, deckProps
   const { decks, beat, loop } = state;
   return <div className="wdg play-example" style={{ '--play-signal': theme.signal, '--primary': theme.primary, '--amber': theme.primary, '--play-deck-min': `${Math.max(200, ...decks.map(d => 56 + d.stems.length * 36))}px` } as CSSProperties}>
     <div className="play-timeline" aria-label="Four decks aligned to a shared 32-bar preview">
-      <div className="play-wave-row play-ruler"><span title="Four aligned decks · 32 bars · global loop markers">DECKS · BARS</span><div className="play-bar-labels">{Array.from({ length: 8 }, (_, i) => <span key={i}>{Math.floor(beat / 128) * 32 + i * 4 + 1}</span>)}</div></div>
       {decks.map((d, index) => <div {...deckProps?.(d.id)} className={`play-wave-row ${deckProps?.(d.id)?.className ?? ''}`} style={{ '--deck-ink': theme.decks[d.id]?.ink ?? theme.primary } as CSSProperties} key={d.id}>
         <div className="play-wave-label"><b>{d.letter}</b><span>{d.track?.title ?? d.message ?? 'Empty deck'}</span></div>
         <div className="play-wave-lane">

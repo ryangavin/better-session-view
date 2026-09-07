@@ -11,7 +11,6 @@ export function MasterStrip({ state, commands, readFrame, theme, params, externa
   const { running, beat, loop, bpm, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq, quantized } = state;
   const { level: LEVEL, trim: TRIM, send: SEND, eq: EQ, filter: FILTER, tempo: TEMPO, cross: CROSS } = params;
   return <div className="play-master-strip" aria-label="Master mixer">
-    <b className="play-master-title">MASTER</b>
       <div className="play-actions">
         {!externalTransport && <><div className="play-run-stop"><Toggle disabled={state.playbackAvailable === false} title={state.playbackAvailable === false ? 'Four-deck playback is not connected yet' : undefined} on={running} onChange={commands.setRunning} width={62}>{running ? 'Ⅱ Pause' : '▶ Run'}</Toggle>
         <Button onPress={commands.stopAll} width={62}>■ Stop</Button></div>

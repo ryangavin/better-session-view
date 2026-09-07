@@ -50,7 +50,7 @@ This is still the approved UI integration pass. The header says playback is not 
 The master omits its duplicate Run/Stop, tempo, quantization button and beat counter
 because the shared header supplies transport. Deck loop capture remains disabled; frame
 readings and meters stay zero.
-Each deck now has square Play/Pause and transport Cue buttons below its routing row;
+Each deck now has square Play/Pause, transport Cue and Sync buttons below its routing row;
 these also remain disabled until the playback controller supplies their commands.
 Headphone monitoring is labeled Phones. The master has only a slim crossfader in the
 bottom area, with no deck transport buttons.

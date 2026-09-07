@@ -15,6 +15,7 @@ export type DeckControl = 'gain' | 'trim' | 'sendA' | 'sendB' | 'filter' | 'rout
 export interface MixerDeck {
   /** Host-reported deck transport; absent while playback is not connected. */
   playing?: boolean;
+  synced?: boolean;
   cueHeld?: boolean;
   id: string;
   letter: string;
@@ -50,6 +51,7 @@ export interface MixerState {
 }
 export type MasterControl = 'bpm' | 'cross' | 'master' | 'masterTrim' | 'masterFilter' | 'masterSendA' | 'masterSendB';
 export interface MixerCommands {
+  setDeckSync?(deckId: string, synced: boolean): void;
   setDeckPlaying?(deckId: string, playing: boolean): void;
   /** Press/release intent; cue position and audition behavior belong to the host. */
   cueDeck?(deckId: string, held: boolean): void;

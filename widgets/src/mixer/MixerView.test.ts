@@ -56,13 +56,17 @@ describe('controlled mixer boundary', () => {
   });
   it('keeps one bottom transport per deck and delegates playback and cue to the host', () => {
     const props = fixture();
-    props.commands.setDeckPlaying = vi.fn(); props.commands.cueDeck = vi.fn();
+    props.commands.setDeckPlaying = vi.fn(); props.commands.cueDeck = vi.fn(); props.commands.setDeckSync = vi.fn();
     const view = render(createElement(MixerView, props));
     expect(view.getAllByRole('group', { name: /^Deck \d transport$/ })).toHaveLength(4);
     const play = view.getByRole('button', { name: 'Deck 1 play/pause' });
     fireEvent.click(play);
     expect(props.commands.setDeckPlaying).toHaveBeenCalledWith('left-outside', true);
     expect(play.getAttribute('aria-pressed')).toBe('false');
+    const sync = view.getByRole('button', { name: 'Deck 1 sync' });
+    fireEvent.click(sync);
+    expect(props.commands.setDeckSync).toHaveBeenCalledWith('left-outside', true);
+    expect(sync.getAttribute('aria-pressed')).toBe('false');
     const cue = view.getByRole('button', { name: 'Deck 1 transport cue' });
     fireEvent.pointerDown(cue); fireEvent.pointerUp(cue);
     expect(props.commands.cueDeck).toHaveBeenNthCalledWith(1, 'left-outside', true);

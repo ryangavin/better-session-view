@@ -41,7 +41,7 @@ that has no audio controller yet. Missing/undefined retains the previous bench b
 
 ## Deck transport footer
 
-Each deck has a square Play/Pause and momentary Cue pair below its routing row.
+Each deck has a square Play/Pause, momentary Cue and Sync controls below its routing row.
 The routing row calls headphone monitoring **Phones** to distinguish it from transport
 Cue. The master has no deck transport pair; its slim crossfader sits at the bottom of
 that shared footer area.
@@ -49,18 +49,23 @@ that shared footer area.
 Optional `setDeckPlaying(deckId, playing)` and `cueDeck(deckId, held)` commands emit
 intent only. The host reports `playing` and `cueHeld`; cue points, audition and resuming
 belong to the playback controller. Buttons are disabled for non-ready decks or missing
-callbacks, including the current silent mix adapter.
+callbacks, including the current silent mix adapter. Sync emits `setDeckSync(deckId, synced)`
+and displays the host-reported `synced` state; tempo and phase alignment remain host-owned.
 
 ## Host transport and effect controls
 
 `externalTransport` omits the master Run/Stop, tempo, launch timing and beat counter;
 the bench retains them by default. The host can use its existing header unchanged.
 Each effect definition may supply controls with stable IDs, names and Params. The face
-renders these below its selector and emits `setEffectParam(slot, effectId, paramId, value)`.
+renders the selector and its knobs as one bordered, shaded control group and emits `setEffectParam(slot, effectId, paramId, value)`.
 `effectValues` is keyed by slot, effect and parameter; absent values use Param defaults.
+The master omits a separate title so the padded effect groups can occupy the header
+space while their lower boundary stays aligned with the launchers.
 The widget knows no effect algorithms. Mix owns its preview effect definitions and values.
 
 Launcher status messages sit below the grid, leaving headings aligned across deck states.
+Section and Stop button faces fill their grid cells, so their centered labels align with
+the column heading in both stem and Full modes.
 The master crossfader uses a 24px track for a taller target.
 
 ## Frame readings
@@ -79,6 +84,7 @@ source. Hosts should keep their readers cheap because several displayed instrume
 sample each frame.
 
 The current overview is a shared 32-bar window in 4/4, following the state's whole beat.
+The numbered ruler is omitted; waveform grid lines still show alignment.
 Hosts provide waveforms normalized to that displayed window, and per-deck absolute beat
 positions in the same coordinate system. General timeline zoom/meter changes require an
 explicit extension to the display model rather than engine policy in the view.
