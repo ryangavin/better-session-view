@@ -7,7 +7,7 @@ import type { MixerViewProps } from './model.ts';
 import { FramePlayhead } from './frames.tsx';
 
 /** Controlled four-deck face. The host owns all musical state and playback policy. */
-export function MixerView({ state, commands, readFrame, theme, params, deckProps }: MixerViewProps) {
+export function MixerView({ state, commands, readFrame, theme, params, deckProps, externalTransport }: MixerViewProps) {
   const { decks, beat, loop } = state;
   return <div className="wdg play-example" style={{ '--play-signal': theme.signal, '--primary': theme.primary, '--amber': theme.primary, '--play-deck-min': `${Math.max(200, ...decks.map(d => 56 + d.stems.length * 36))}px` } as CSSProperties}>
     <div className="play-timeline" aria-label="Four decks aligned to a shared 32-bar preview">
@@ -25,7 +25,7 @@ export function MixerView({ state, commands, readFrame, theme, params, deckProps
     <div className="play-scroll"><div className="play-decks">
       {decks.map((deck, index) => <Fragment key={deck.id}>
         <DeckStrip deckProps={deckProps} deck={deck} index={index} commands={commands} readFrame={readFrame} theme={theme} params={params} />
-        {index === 1 && <MasterStrip state={state} commands={commands} readFrame={readFrame} theme={theme} params={params} />}
+        {index === 1 && <MasterStrip externalTransport={externalTransport} state={state} commands={commands} readFrame={readFrame} theme={theme} params={params} />}
       </Fragment>)}
     </div></div>
 

@@ -24,6 +24,16 @@ describe('deck loading and UI ownership', () => {
     expect(d.stems.every(s => !s.available)).toBe(true);
     expect(d.sections).toEqual([{id:'full-track',name:'Track'}]);
   });
+  it('retains effect settings independently across slots and effect changes', () => {
+    const { result } = renderHook(() => useMixerViewModel(tracks, 'library'));
+    act(() => result.current.commands.setEffectParam!('A', 'delay', 'feedback', 71));
+    act(() => result.current.commands.setEffect('A', 'reverb'));
+    act(() => result.current.commands.setEffectParam!('A', 'reverb', 'decay', 4));
+    act(() => result.current.commands.setEffectParam!('B', 'delay', 'feedback', 22));
+    act(() => result.current.commands.setEffect('A', 'delay'));
+    expect(result.current.state.effectValues).toEqual({ A: { delay: { feedback: 71 }, reverb: { decay: 4 } }, B: { delay: { feedback: 22 } } });
+    expect(result.current.readFrame().masterLevel).toBe(0);
+  });
   it('a newer drop wins even when an older load finishes last', async () => {
     const pending: {signal:AbortSignal; resolve(value:DeckAsset):void}[]=[];
     const loader=vi.fn((_track:Track,signal:AbortSignal) => new Promise<DeckAsset>(resolve => pending.push({signal,resolve})));

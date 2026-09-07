@@ -10,7 +10,7 @@ export function PlayView({ mixer }: { mixer: ReturnType<typeof useMixerViewModel
   const [hovered, setHovered] = useState<string | null>(null);
   const accepts = (event: DragEvent) => Array.from(event.dataTransfer.types).includes(TRACK_DRAG);
   return <div className="mf-play">
-    <MixerView {...mixer} theme={{primary:colors.primary, signal:colors.signal, stems:colors, decks:Object.fromEntries(mixer.state.decks.map((d,i) => [d.id,deckPairs[i]]))}}
+    <MixerView externalTransport {...mixer} theme={{primary:colors.primary, signal:colors.signal, stems:colors, decks:Object.fromEntries(mixer.state.decks.map((d,i) => [d.id,deckPairs[i]]))}}
       deckProps={id => ({
         'aria-label': `Deck ${id.slice(-1).toUpperCase()} — drop a library track`,
         className: hovered === id ? 'mf-deck-over' : '',

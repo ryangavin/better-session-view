@@ -16,9 +16,8 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
         <div className="play-track"><b className="play-letter">{d.letter}</b><div><h3>{d.track?.title ?? 'Empty deck'}</h3><p>{d.track?.artist ?? d.message ?? d.status}</p></div><span>{d.track ? `${d.track.bpm === null ? '—' : Math.round(d.track.bpm)} BPM` : '—'}<br />{d.track?.key ?? ''}</span></div>
 
         <div className="play-performance">
-          <div className="play-deck-status">{d.message && <span role="status">{d.message}</span>}</div>
           <fieldset className="play-grid" data-full={d.full} disabled={d.status !== 'ready'}>
-          <span className="play-axis">SECTION</span>{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
+          <span className="play-axis">Section</span>{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
           {d.sections.map(section => <div className="play-launch-row" key={section.id}>
             {d.full ? <Toggle on={d.fullSection === section.id} label={`Deck ${index + 1}: launch ${section.name} full mix${d.fullQueued === section.id ? ', queued' : ''}`} onChange={() => commands.launch(d.id, section.id)}>{section.name}</Toggle> : <Button label={`Deck ${index + 1}: launch ${section.name} all stems`} title="Launch this section on all available stems" onPress={() => commands.launch(d.id, section.id)}>{section.name}</Button>}
             {d.stems.map((stem, s) => {
@@ -30,6 +29,8 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
           </div>)}
           <Button label={`Deck ${index + 1}: stop all stems`} onPress={() => commands.launch(d.id, null)}>{(d.full ? d.fullQueued === null : d.stems.every(stem => stem.queued === null)) ? '◷ Stop' : 'Stop'}</Button>{d.stems.map((stem, i) => <Button disabled={d.full || d.status !== 'ready' || !stem.available} key={stem.id} label={`Deck ${index + 1}: stop ${stem.name}`} width={34} onPress={() => commands.launch(d.id, null, stem.id)}>■</Button>)}
         </fieldset>
+          <div className="play-deck-status">{d.message && <span role="status">{d.message}</span>}</div>
+
         </div>
         <div className="play-effects">
           <Knob ink="var(--amber)" name="FX A" label={`Deck ${index + 1} effects send A`} param={SEND} value={d.sendA} onChange={value => commands.setDeck(d.id, 'sendA', value)} />

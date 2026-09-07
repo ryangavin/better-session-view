@@ -78,6 +78,18 @@ describe('controlled mixer boundary', () => {
     expect((view.getByRole('button', { name: 'Deck 1 play/pause' }) as HTMLButtonElement).disabled).toBe(true);
     expect((view.getByRole('button', { name: 'Deck 1 transport cue' }) as HTMLButtonElement).disabled).toBe(true);
   });
+  it('uses host-defined effect controls and omits the embedded transport when supplied externally', () => {
+    const props = fixture(); props.externalTransport = true;
+    props.state.effects = [{ id: 'delay-id', name: 'Delay', controls: [{ id: 'feedback', name: 'Feedback', param }] }];
+    props.commands.setEffectParam = vi.fn();
+    const view = render(createElement(MixerView, props));
+    expect(view.queryByRole('group', { name: 'Tempo and launch timing' })).toBeNull();
+    expect(view.container.querySelector('.play-clock')).toBeNull();
+    fireEvent.keyDown(view.getByRole('slider', { name: 'FX A Delay Feedback' }), { key: 'ArrowUp' });
+    act(() => { const pending = frames; frames = []; pending.forEach(cb => cb(16)); });
+    expect(props.commands.setEffectParam).toHaveBeenCalledWith('A', 'delay-id', 'feedback', expect.any(Number));
+    expect(props.commands.setMaster).not.toHaveBeenCalled();
+  });
   it('reads independent deck positions without advancing or issuing playback commands', () => {
     const props = fixture();
     let frame: MixerFrame = { decks: { 'left-outside': { beat: 32, level: 0 }, 'left-inside': { beat: 64, level: 0 } }, masterLevel: 0 };

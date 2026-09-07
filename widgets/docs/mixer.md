@@ -51,6 +51,18 @@ intent only. The host reports `playing` and `cueHeld`; cue points, audition and 
 belong to the playback controller. Buttons are disabled for non-ready decks or missing
 callbacks, including the current silent mix adapter.
 
+## Host transport and effect controls
+
+`externalTransport` omits the master Run/Stop, tempo, launch timing and beat counter;
+the bench retains them by default. The host can use its existing header unchanged.
+Each effect definition may supply controls with stable IDs, names and Params. The face
+renders these below its selector and emits `setEffectParam(slot, effectId, paramId, value)`.
+`effectValues` is keyed by slot, effect and parameter; absent values use Param defaults.
+The widget knows no effect algorithms. Mix owns its preview effect definitions and values.
+
+Launcher status messages sit below the grid, leaving headings aligned across deck states.
+The master crossfader uses a 24px track for a taller target.
+
 ## Frame readings
 
 `readFrame()` is a stable, synchronous, read-only sampler. It returns absolute beat

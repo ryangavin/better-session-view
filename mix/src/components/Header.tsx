@@ -108,12 +108,11 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
   const song = mix.song;
 
   const logo = <button type="button" className="mf-mark" aria-label={playView ? 'Switch to single-track editor' : 'Switch to four-deck mixer'} aria-pressed={playView} title="Switch Prep / Play (Tab)" onClick={onToggleView}>mix<span>[flow]</span></button>;
-  if (playView) return <header className="mf-header">{logo}<span className="mf-view-mode">Play</span>{(mix.playing || mix.waitingForLink) && <Button label="Pause preparation playback" onPress={() => mix.setPlaying(false)}>Pause prep</Button>}<span className="mf-play-status">Layout preview · playback not connected</span></header>;
   return (
     <header className="mf-header">
       {/* Silent when the toolchain is fine. A green light that is always on is
           a thing you stop seeing; a red one that appears is not. */}
-      {ready && !ready.ok && (
+      {!playView && ready && !ready.ok && (
         <span className="mf-broken" title={`${ready.says} — see mix/docs/demucs.md`}>
           <i />
           engine
@@ -147,7 +146,7 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
         </span>
       </div>
 
-      <div className="mf-open">
+      {!playView && <div className="mf-open">
         {song ? (
           <>
             <QuietField
@@ -171,9 +170,9 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
         ) : (
           <span className="mf-open-none">nothing open</span>
         )}
-      </div>
+      </div>}
 
-      {live && (
+      {(live || playView) && (
         <>
           {/* Playback: the buttons, the tempo they run at, and the reading.
 
@@ -251,7 +250,7 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
           {/* Where a cut lands. Its own group and nothing else in it: it is not
               playback and it is not the beat map, it is the one setting that
               says what the pointer is allowed to do to the timeline. */}
-          <div className="mf-group" role="group" aria-label="Snap">
+          {!playView && <><div className="mf-group" role="group" aria-label="Snap">
             <span className="mf-group-label">snap</span>
             <Segmented
               items={SNAPS.map((s) => s.mark)}
@@ -327,19 +326,20 @@ export function Header({ mix, ready, playView = false, onToggleView }: { mix: Mi
             >
               warp
             </Toggle>
-          </div>
+          </div></>}
         </>
       )}
 
-      {!live && song && <Button onPress={mix.resetup} disabled title="You are in track analysis">Analysis</Button>}
+      {!playView && !live && song && <Button onPress={mix.resetup} disabled title="You are in track analysis">Analysis</Button>}
 
-      <Button
+      {!playView && <Button
         onPress={() => mix.setExporting(true)}
         disabled={!live || mix.editingGrid}
         title={live ? 'Choose what to write out: the stems, and the full track with them' : song?.sources.length ? 'Return to the mix to export' : 'Separate the track first'}
       >
         Export
-      </Button>
+      </Button>}
+      {playView && <span className="mf-play-status">Deck audio not connected</span>}
 
     </header>
   );

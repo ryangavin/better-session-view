@@ -44,7 +44,8 @@ export interface MixerState {
   bpm: number; quantized: boolean; cross: number;
   master: number; masterTrim: number; masterFilter: number;
   masterSendA: number; masterSendB: number; masterEq: readonly number[];
-  effects: readonly { id: string; name: string }[];
+  effects: readonly { id: string; name: string; controls?: readonly { id: string; name: string; param: Param }[] }[];
+  effectValues?: Partial<Record<'A' | 'B', Record<string, Record<string, number>>>>;
   fxA: string; fxB: string;
 }
 export type MasterControl = 'bpm' | 'cross' | 'master' | 'masterTrim' | 'masterFilter' | 'masterSendA' | 'masterSendB';
@@ -58,6 +59,7 @@ export interface MixerCommands {
   loopIn(): void;
   loopOut(): void;
   setLoopEnabled(value: boolean): void;
+  setEffectParam?(slot: 'A' | 'B', effectId: string, paramId: string, value: number): void;
   setEffect(slot: 'A' | 'B', effectId: string): void;
   setMaster(control: MasterControl, value: number): void;
   setMasterEq(band: number, value: number): void;
@@ -82,6 +84,8 @@ export interface MixerParams {
   level: Param; trim: Param; send: Param; eq: Param; filter: Param; tempo: Param; cross: Param;
 }
 export interface MixerViewProps {
+  /** The host already displays its shared transport above the mixer. */
+  externalTransport?: boolean;
   /** Host-owned library drag/drop; the widget knows no library format. */
   deckProps?(deckId: string): HTMLAttributes<HTMLDivElement>;
   state: MixerState;

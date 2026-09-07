@@ -1,3 +1,4 @@
+import { EFFECTS } from './effects.ts';
 import type { MixerDeck, MixerParams, MixerState } from '@openflow/widgets/mixer/model.ts';
 import { decode, fileUrl, type Peak } from '../audio.ts';
 import { openflow, type Track, type Analysis } from '../openflow.ts';
@@ -14,7 +15,7 @@ export function emptyDeck(id: string, i: number): MixerDeck {
 export function initialMixer(): MixerState {
   return { decks: DECK_IDS.map(emptyDeck), running: false, beat: 0, loop: { start: null, end: null, enabled: false }, canLoopOut: false,
     bpm: 124, quantized: false, cross: 0, master: 80, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0,0,0],
-    effects: ['Delay','Reverb','Echo','Chorus','Flanger'].map(name => ({id: name.toLowerCase(), name})), fxA: 'delay', fxB: 'reverb', playbackAvailable: false };
+    effects: EFFECTS, fxA: 'delay', fxB: 'reverb', playbackAvailable: false };
 }
 export const params: MixerParams = {
   level: {kind:'float', min:0, max:100, defaultValue:80, unit:'percent'},

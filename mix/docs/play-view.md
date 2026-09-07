@@ -10,8 +10,9 @@ Click the mix[flow] logo or press plain Tab to switch. The logo fills with prima
 Play and returns to its normal appearance in Prep. Tab inside a text field, slider,
 combobox, editable area or dialog keeps normal focus navigation; modifiers, Shift+Tab,
 held repeats and already-handled events do not switch views. Prep keyboard playback and
-section-edit shortcuts are inactive in Play. Existing prep audio can continue; when it
-is running or waiting for Link, the Play header offers Pause prep. Switching views does
+section-edit shortcuts are inactive in Play. The same header transport and Link/Local audio controls remain available in Play;
+they continue to control the existing single-track engine. Track editing, Snap, Analysis
+and Export are omitted from the Play header. Switching views does
 not secretly pause, start, reload or alter that engine.
 
 ## Loading a deck
@@ -46,11 +47,19 @@ sets may require horizontal scrolling. The shared sidebar is not collapsed to fo
 ## UI controller, not an audio engine
 
 This is still the approved UI integration pass. The header says playback is not connected.
-Run, quantization and loop capture are disabled; frame readings and meters stay zero.
+The master omits its duplicate Run/Stop, tempo, quantization button and beat counter
+because the shared header supplies transport. Deck loop capture remains disabled; frame
+readings and meters stay zero.
 Each deck now has square Play/Pause and transport Cue buttons below its routing row;
 these also remain disabled until the playback controller supplies their commands.
 Headphone monitoring is labeled Phones. The master has only a slim crossfader in the
 bottom area, with no deck transport buttons.
+The master has two effect slots with host-defined parameter pairs: Delay/Echo feedback
+and tone, Reverb decay and tone, Chorus rate and depth, Flanger rate and feedback.
+Values persist independently by slot, effect and parameter for this window session.
+These are UI ranges, not a DSP implementation. Status messages sit below launchers so
+all column headings stay aligned.
+
 Knobs and section choices hold local UI settings. They do not schedule sound or send
 commands to preparation playback. No fixture clocks, invented meters, bench songs or
 bench imports ship with mix.

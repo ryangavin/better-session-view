@@ -7,26 +7,32 @@ import { Select } from '../controls/Select.tsx';
 import type { MixerViewProps } from './model.ts';
 import { FrameMeter } from './frames.tsx';
 
-export function MasterStrip({ state, commands, readFrame, theme, params }: MixerViewProps) {
+export function MasterStrip({ state, commands, readFrame, theme, params, externalTransport }: MixerViewProps) {
   const { running, beat, loop, bpm, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq, quantized } = state;
   const { level: LEVEL, trim: TRIM, send: SEND, eq: EQ, filter: FILTER, tempo: TEMPO, cross: CROSS } = params;
   return <div className="play-master-strip" aria-label="Master mixer">
     <b className="play-master-title">MASTER</b>
       <div className="play-actions">
-        <div className="play-run-stop"><Toggle disabled={state.playbackAvailable === false} title={state.playbackAvailable === false ? 'Four-deck playback is not connected yet' : undefined} on={running} onChange={commands.setRunning} width={62}>{running ? 'Ⅱ Pause' : '▶ Run'}</Toggle>
+        {!externalTransport && <><div className="play-run-stop"><Toggle disabled={state.playbackAvailable === false} title={state.playbackAvailable === false ? 'Four-deck playback is not connected yet' : undefined} on={running} onChange={commands.setRunning} width={62}>{running ? 'Ⅱ Pause' : '▶ Run'}</Toggle>
         <Button onPress={commands.stopAll} width={62}>■ Stop</Button></div>
         <div className="play-timing" role="group" aria-label="Tempo and launch timing"><NumberField name="" label="BPM" showFill={false} width={62} title="Tempo in BPM" param={TEMPO} value={bpm} onChange={value => commands.setMaster('bpm', value)} />
-        <Toggle disabled={state.playbackAvailable === false} label="Quantize launches to next bar" title="Launch timing: next bar or immediate" on={quantized} onChange={commands.setQuantized} width={62}>{quantized ? '1 bar' : 'Now'}</Toggle></div>
+        <Toggle disabled={state.playbackAvailable === false} label="Quantize launches to next bar" title="Launch timing: next bar or immediate" on={quantized} onChange={commands.setQuantized} width={62}>{quantized ? '1 bar' : 'Now'}</Toggle></div></>}
         <div className="play-fx-pickers">
-          <Select name="" label="FX A effect" items={state.effects.map(e => `A · ${e.name}`)} index={state.effects.findIndex(e => e.id === state.fxA)} onChange={i => commands.setEffect('A', state.effects[i].id)} width={126} />
-          <Select name="" label="FX B effect" items={state.effects.map(e => `B · ${e.name}`)} index={state.effects.findIndex(e => e.id === state.fxB)} onChange={i => commands.setEffect('B', state.effects[i].id)} width={126} />
+          {(['A', 'B'] as const).map(slot => {
+            const selected = slot === 'A' ? state.fxA : state.fxB;
+            const effect = state.effects.find(e => e.id === selected);
+            return <div className="play-fx-unit" key={slot} role="group" aria-label={`FX ${slot}`}>
+              <Select label={`FX ${slot} effect`} items={state.effects.map(e => `${slot} · ${e.name}`)} index={state.effects.findIndex(e => e.id === selected)} onChange={i => commands.setEffect(slot, state.effects[i].id)} width={126} />
+              <div className="play-fx-params">{effect?.controls?.map(control => <Knob key={`${effect.id}-${control.id}`} name={control.name} label={`FX ${slot} ${effect.name} ${control.name}`} param={control.param} value={state.effectValues?.[slot]?.[effect.id]?.[control.id] ?? control.param.defaultValue} disabled={!commands.setEffectParam} onChange={value => commands.setEffectParam?.(slot, effect.id, control.id, value)} />)}</div>
+            </div>;
+          })}
         </div>
         <div className="play-loop-controls" role="group" aria-label="Global loop">
           <Button disabled={state.playbackAvailable === false} width={62} label="Global loop in" title="Mark loop start at the current beat" onPress={commands.loopIn}>In</Button>
           <Button width={62} label="Global loop out" disabled={!state.canLoopOut} title="Mark loop end and engage the loop" onPress={commands.loopOut}>Out</Button>
           <Toggle width={126} label="Global loop enabled" disabled={loop.end === null} on={loop.enabled} onChange={commands.setLoopEnabled}>{loop.enabled ? 'Exit loop' : loop.end === null ? (loop.start === null ? 'Loop' : 'Set Out…') : 'Reloop'}</Toggle>
         </div>
-        <span className="play-clock">{String(Math.floor(beat / 4) + 1).padStart(3, '0')}<b>.{beat % 4 + 1}</b></span>
+        {!externalTransport && <span className="play-clock">{String(Math.floor(beat / 4) + 1).padStart(3, '0')}<b>.{beat % 4 + 1}</b></span>}
       </div>
 
     <div className="play-effects">
