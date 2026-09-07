@@ -250,6 +250,38 @@ describe('the four-deck playback owner',()=>{
   it('does not let release restore a checkpoint after a stop command supersedes a held Cue',async()=>{
     const {engine,load}=setup();await load();engine.cue('deck-a',true);await settle();await engine.launch('deck-a',null);engine.cue('deck-a',false);expect(engine.snapshot().decks[0].playing).toBe(false);expect(engine.readFrame().decks['deck-a'].sources!.drums.enabled).toBe(false);
   });
+  it('beat-jumps a paused combination without collapsing offsets, reviving stopped stems or rewriting Cue',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;await engine.play('deck-a',false);
+    engine.cue('deck-a',true);engine.cue('deck-a',false);const before=engine.readFrame().decks['deck-a'].sources!;
+    engine.beatJump('deck-a',1);let got=engine.readFrame().decks['deck-a'].sources!;
+    for(const id of ['drums','bass']){expect(got[id].beat-before[id].beat).toBeCloseTo(1);expect(got[id].playing).toBe(false);}
+    expect(got.other).toEqual(before.other);expect(engine.snapshot().decks[0].loop?.enabled).toBe(false);
+    engine.beatJump('deck-a',-1);got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.seconds).toBeCloseTo(before.drums.seconds);expect(got.bass.seconds).toBeCloseTo(before.bass.seconds);
+    engine.beatJump('deck-a',1);await engine.play('deck-a',true);ctx.currentTime=2;engine.cue('deck-a',true);engine.cue('deck-a',false);
+    got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.seconds).toBe(before.drums.seconds);expect(got.bass.seconds).toBe(before.bass.seconds);expect(engine.snapshot().decks[0].loop?.enabled).toBe(true);
+  });
+  it('beat-jumps playing and paused participants together while preserving their transport states',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;await engine.play('deck-a',false,undefined,false,'bass');
+    engine.beatJump('deck-a',1);ctx.currentTime=1.04;const got=engine.readFrame().decks['deck-a'].sources!;
+    expect(got.drums.seconds).toBeCloseTo(1.51);expect(got.drums.playing).toBe(true);expect(got.bass.seconds).toBeCloseTo(9.47);expect(got.bass.playing).toBe(false);expect(got.other.enabled).toBe(false);
+  });
+  it('rejects an entire beat jump at either file edge instead of wrapping or shortening a source step',async()=>{
+    const {engine,load}=setup();await load();engine.beatJump('deck-a',-1);expect(engine.readFrame().decks['deck-a'].seconds).toBe(0);expect(engine.snapshot().decks[0].message).toContain('boundary');
+    engine.move('deck-a','begin');engine.move('deck-a','move',127);engine.move('deck-a','commit');const before=engine.readFrame().decks['deck-a'].sources!;
+    engine.beatJump('deck-a',1);expect(engine.readFrame().decks['deck-a'].sources).toEqual(before);
+  });
+  it('uses mapped beats, including tempo changes, for the same musical step on divergent sources',async()=>{
+    const {engine}=setup();const a=asset();a.audio!.map={rate:48000,length:64*48000,first:0,samples:[0,24000,48000,72000,96000,144000,192000,240000,288000]};await engine.load('deck-a',track,async()=>a);
+    engine.move('deck-a','begin');engine.move('deck-a','move',4);engine.move('deck-a','commit');engine.beatJump('deck-a',1);
+    const got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.seconds).toBe(3);expect(got.bass.seconds).toBe(.5);
+  });
+  it('beat jump leaves a Slip loop from its audible position and retains the region for Reloop',async()=>{
+    const {engine,ctx,load}=setup();await load();engine.commands.setSlip!('deck-a',true);engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');await engine.play('deck-a',true);ctx.currentTime=2.1;
+    expect(engine.readFrame().decks['deck-a'].sources!.drums.backgroundBeat).toBeGreaterThan(3);
+    engine.beatJump('deck-a',1);ctx.currentTime=2.14;const got=engine.readFrame().decks['deck-a'].sources!.drums;
+    expect(got.seconds).toBeCloseTo(.61);expect(got.backgroundBeat).toBeUndefined();expect(got.playing).toBe(true);expect(engine.snapshot().decks[0].loop).toMatchObject({start:0,end:.5,enabled:false});
+    engine.setDeckLoopEnabled('deck-a',true);expect(engine.snapshot().decks[0].loop?.enabled).toBe(true);
+  });
   it('initializes all volume controls at unity and reserves boost for trim',async()=>{
     const {engine,load}=setup();await load();const state=engine.snapshot();
     expect(state.master).toBe(100);expect(state.masterTrim).toBe(0);

@@ -14,8 +14,14 @@ const engine=new MixerEngine();engine.setMonitoring(false);
 function Harness(){
  const state=useSyncExternalStore(engine.subscribe,engine.snapshot),[frames,setFrames]=useState(''),[result,setResult]=useState('');
  useEffect(()=>{const timer=setInterval(()=>setFrames(JSON.stringify(engine.readFrame().decks,null,2)),100);return()=>clearInterval(timer);},[]);
- const load=async()=>{engine.stop();await engine.load('deck-a',fixtureTrack,async()=>fixture(new OfflineAudioContext(2,1,48000)));};
- return <><header style={{padding:10}}><strong>DJ controls · worktree c028 · port {location.port} · real MixerEngine</strong><p>Generated source audio. Speakers muted by default. Source positions below read the real audio clock.</p><button onClick={()=>void load()}>Load measured fixture</button> <button onClick={()=>engine.setMonitoring(!engine.monitoring)}>Toggle speakers</button> <button onClick={()=>engine.stop()}>Stop all</button> <button onClick={()=>void runControlAudioChecks(setResult)}>Run captured engine audio checks</button><pre id="audio-results" style={{maxHeight:140,overflow:'auto'}}>{result}</pre></header>
- <div style={{height:850,display:'flex'}}><PlayView mixer={{state,commands:engine.commands,readFrame:engine.readFrame,params,load:async()=>load(),engine}}/></div><pre aria-label="Measured source positions">{frames}</pre></>;
+ const load=async(six=false)=>{engine.stop();const track=six?{...fixtureTrack,sources:['drums','bass','other','vocals','guitar','piano']}:fixtureTrack;await engine.load('deck-a',track,async()=>{
+  const asset=await fixture(new OfflineAudioContext(2,1,48000));
+  if(six && asset.audio)for(const id of ['other','guitar','piano']){asset.audio.buffers[id]=asset.audio.buffers.vocals;asset.audio.sourceOverviews![id]=asset.audio.sourceOverviews!.vocals;}
+  return asset;
+ });};
+ return <div style={{height:'100vh',display:'flex',flexDirection:'column',overflow:'hidden'}}><header style={{padding:6,flex:'none'}}><strong>DJ controls · worktree c028 · port {location.port} · real MixerEngine</strong><span> · generated audio · speakers muted by default</span><br/><button onClick={()=>void load()}>Load measured fixture</button> <button onClick={()=>void load(true)}>Load six-stem fixture</button> <button onClick={()=>engine.setMonitoring(!engine.monitoring)}>Toggle speakers</button> <button onClick={()=>engine.stop()}>Stop all</button> <button onClick={()=>void runControlAudioChecks(setResult)}>Run captured engine audio checks</button></header>
+ <div style={{flex:1,minHeight:0,display:'flex'}}><PlayView mixer={{state,commands:engine.commands,readFrame:engine.readFrame,params,load:async()=>load(),engine}}/></div><details style={{position:'fixed',right:8,bottom:8,zIndex:20,background:'var(--bg)',maxWidth:'90vw'}}><summary>Measurements</summary><pre id="audio-results" style={{maxHeight:180,overflow:'auto'}}>{result}</pre><pre aria-label="Measured source positions" style={{maxHeight:140,overflow:'auto'}}>{frames}</pre></details></div>;
 }
-createRoot(document.getElementById('root')!).render(<ThemeRoot theme={DEFAULT_THEME}><Harness/></ThemeRoot>);
+const root=createRoot(document.getElementById('root')!);
+root.render(<ThemeRoot theme={DEFAULT_THEME}><Harness/></ThemeRoot>);
+if(import.meta.hot)import.meta.hot.dispose(()=>{root.unmount();engine.dispose();});

@@ -250,6 +250,21 @@ export class MixerEngine {
     }
     this.publish(); this.tick();
   }
+  beatJump(id:string, delta:number) {
+    const d=this.decks.get(id);if(!d || ![-1,1].includes(delta) || d.move || d.holds.size)return;
+    if(!d.audio.map){this.error('Beat jump needs a saved beat grid.',id);return;}
+    const when=this.ctx!.currentTime+this.lead();
+    const targets=this.target(id).filter(([,s])=>s.enabled || !d.initialized).map(([name,s])=>({name,s,playing:s.voice.playing,at:this.secondsOf(id,this.beatOf(id,s.voice.at(when))+delta)}));
+    if(!targets.length)return;
+    // Reject the whole jump at a file edge: never shorten one stem's step or wrap it to zero.
+    if(targets.some(({s,at})=>at<0 || at>=s.voice.buffer.duration-.001)){this.error('Beat jump would cross an active source’s audio boundary.',id);return;}
+    for(const {name,s,playing,at} of targets){
+      s.revision++;s.pending=undefined;this.loopStarts.delete(`${id}/${name}`);d.backgrounds.delete(name);
+      if(s.span)this.loopSpans.set(`${id}/${name}`,{...s.span});s.span=undefined;s.selected=null;
+      if(playing)this.startSlot(id,name,s,at,when);else s.voice.seek(at);
+    }
+    this.loopState(id);this.selection(id);this.patchDeck(id,{message:undefined});this.tick();
+  }
   async sync(id: string, on: boolean) {
     const d = this.decks.get(id); if (!d) return;
     const op = ++d.operation;
@@ -532,6 +547,7 @@ export class MixerEngine {
     setFocus:(id,focus)=>{if(this.decks.get(id)?.move || this.model(id).loopFocus && this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;this.patchDeck(id,{focus});this.tick();},
     setMoveTogether:(id,moveTogether)=>{if(!this.decks.get(id)?.move)this.patchDeck(id,{moveTogether});},
     moveDeck:(id,phase,delta)=>this.move(id,phase,delta),
+    beatJump:(id,delta)=>this.beatJump(id,delta),
     setZoom:(id,zoom)=>{if(this.decks.get(id)?.move)return;this.patchDeck(id,{zoom:Math.max(4,Math.min(64,zoom))});this.tick();},
     setStemPlaying:(id,stem,on)=>this.run(this.play(id,on,undefined,false,stem),id),
     cueStem:(id,stem,held)=>this.cue(id,held,stem),

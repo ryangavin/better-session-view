@@ -86,20 +86,59 @@
 
 /* Loop capture belongs to its launcher, with a larger escape/reloop target. */
 .play-deck-loops { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 3px; margin-top: 0; padding-top: 8px; }
-.play-deck-loops .wdg, .play-deck-loops .wdg-body { width: 100%; min-width: 0; }
+.play-deck-loops > .wdg, .play-deck-loops > .wdg > .wdg-body { width: 100%; min-width: 0; }
 .play-deck-status { margin-top: auto; }
 
-.play-wave-row { min-height: 110px; }
+
+/* Wave controls overlay the lane; no toolbar row competes with the audio. */
+.play-wave-row { min-height: 48px; }
 .play-wave-lane { display: flex; flex-direction: column; }
-.play-wave-tools { display:flex; align-items:center; gap:5px; flex-wrap:wrap; font:10px var(--mono); padding:3px; z-index:2; }
-.play-wave-tools button, .play-wave-tools select, .play-hold { background:var(--wdg-well); color:var(--wdg-text); border:1px solid var(--wdg-edge); border-radius:3px; min-height:24px; font:10px var(--mono); }
-.play-hold[data-on], .play-wave-tools button[aria-pressed=true] { color:var(--primary); border-color:var(--primary); }
-.play-wave-gesture { position:relative; flex:1; min-height:60px; overflow:hidden; touch-action:none; user-select:none; cursor:ew-resize; }
-.play-cue-marker { position:absolute; top:16px; bottom:0; border-left:2px solid var(--amber); color:var(--amber); font:9px var(--mono); pointer-events:none; }
-.play-source-markers { position:absolute; inset:0; pointer-events:none; }
-.play-source-markers span { position:absolute; top:0; border-left:1px solid var(--wdg-caption); color:var(--wdg-caption); font:9px var(--mono); white-space:nowrap; }
-
-.play-dj-timing {display:flex; flex-wrap:wrap; gap:4px; align-items:center; padding:4px 0; font:10px var(--mono);}
-.play-dj-timing select,.play-dj-timing button {background:var(--wdg-well);color:var(--wdg-text);border:1px solid var(--wdg-edge);font:10px var(--mono);min-height:24px;border-radius:3px;}
-
+.play-wave-tools { position:absolute; top:3px; right:5px; display:flex; align-items:center; gap:3px; z-index:3; }
+.play-wave-tools .play-context-trigger {width:auto;min-width:54px;max-width:120px;}
+.play-wave-gesture { position:relative; flex:1; min-height:0; overflow:hidden; touch-action:none; user-select:none; cursor:ew-resize; }
+.play-cue-marker {position:absolute;top:16px;bottom:0;border-left:2px solid var(--amber);color:var(--amber);font:9px var(--mono);pointer-events:none;}
+.play-source-markers {position:absolute;inset:0;pointer-events:none;}
+.play-source-markers span {position:absolute;top:0;border-left:1px solid var(--wdg-caption);color:var(--wdg-caption);font:9px var(--mono);white-space:nowrap;}
 .play-slip-marker {position:absolute;top:16px;bottom:0;border-left:1px dashed var(--primary);font:9px var(--mono);color:var(--primary);pointer-events:none;}
+
+.play-deck-transport .wdg {--wdg-field-height:24px;}
+.play-deck-transport > .play-hold {width:44px;}
+.play-context select {height:24px;border:1px solid var(--wdg-edge);border-radius:var(--wdg-radius);background:var(--wdg-face);color:var(--wdg-text);font:inherit;}
+.play-quick-loop {width:auto;}
+.play-deck-loops {grid-template-columns:1fr 1fr 1fr auto 32px;}
+.play-deck-loops:not(:has(.play-quick-loop)) {grid-template-columns:1fr 1fr 1.6fr;}
+.play-deck-loops > .play-context-trigger {font-size:18px;padding:0;}
+.play-context {position:fixed;inset:auto;margin:0;width:248px;max-width:calc(100vw - 32px);max-height:min(var(--wdg-popup-room,100vh),calc(100vh - 24px));overflow:auto;padding:10px;border:1px solid var(--wdg-edge);border-radius:5px;background:var(--wdg-face);color:var(--wdg-text);box-shadow:0 8px 28px #0009;font:11px var(--mono);}
+.play-context::backdrop {background:transparent;}
+.play-context-heading {display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
+.play-context-heading strong {font-size:11px;font-weight:500;}
+.play-context-heading button {flex:none;width:32px;}
+.play-context > label {display:flex;align-items:center;justify-content:space-between;gap:8px;margin:7px 0;}
+.play-context > label > select {max-width:144px;min-width:100px;}
+.play-context > .play-context-check {justify-content:flex-start;}
+.play-context input {accent-color:var(--primary);}
+.play-context-row {display:flex;align-items:center;gap:4px;margin:5px 0;}
+.play-context-row > span {flex:1;}
+.play-context-row > button {flex:none;width:32px;min-width:30px;}
+.play-context p {font-size:10px;line-height:1.5;color:var(--wdg-caption);margin:8px 0 0;}
+.play-fx-global {display:flex;justify-content:space-between;align-items:center;height:28px;}
+.play-tail-dot {width:4px;height:4px;border-radius:50%;background:var(--primary);}
+.play-fx-heading {display:flex;align-items:center;border-bottom:1px solid var(--wdg-edge);}
+.play-fx-heading > button {width:32px;flex:none;}
+.play-fx-heading > .wdg-select {flex:1;min-width:0;}
+.play-fx-heading .wdg-select-body {width:100%;border:0;background:transparent;}
+.play-phones-controls {display:flex;justify-content:space-evenly;gap:12px;padding:8px;}
+.play-master-cross {flex-direction:column;align-items:center;justify-content:space-between;padding-bottom:15px;}
+.play-master-cross > .play-context-trigger {min-width:36px;}
+/* Six-source stems share two columns; the EQ/fader column keeps its original height. */
+.play-stem-levels:has(> :nth-child(5)) {grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,52px);gap:10px 4px;}
+
+.play-monitor-row {display:flex;align-items:center;justify-content:center;gap:6px;}
+.play-monitor-row .play-fx-global {gap:2px;}
+.play-monitor-row .play-fx-global > .play-context-trigger {width:auto;}
+
+.play-beat-jump {display:flex;flex-direction:column;gap:2px;}
+.play-deck-transport {gap:8px;}
+.play-beat-jump .wdg-body {width:32px;}
+
+.play-route .wdg {--wdg-field-height:24px;}

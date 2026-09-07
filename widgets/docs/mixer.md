@@ -154,3 +154,19 @@ are distinct checkpoints, even when their coordinates coincide.
 Optional effect group/slot enables preserve host configuration. Tailing state and explicit
 Clear tails are host-owned. Optional setPhones handles independent level and Cue/Master
 blend; these are not added to MasterControl, keeping existing adapters compatible.
+
+
+The mixer retains its aligned six-row structure. Loaded waveform lanes overlay a source
+chip plus focused Play/Cue; source, relative group movement and zoom live in its panel.
+The loop row keeps In/Out, Exit/Reloop and quick loop visible, with timing and detailed
+edits in ContextControls. It delegates positioning, flipping and dismissal to shared Popup.
+Escape restores trigger focus. Button, Toggle and Momentary share ButtonFace; comparable
+performance actions are 24px high. Six-source level controls use two columns.
+
+The master footer puts group FX beside Phones. Normal FX click toggles the group;
+right-click, Shift-click or Shift+F10 opens tail controls on that same trigger. Phones
+opens its level/blend panel. There is no adjacent FX settings button.
+
+Optional `beatJump(deckId, -1 | 1)` draws stacked ↑/↓ buttons after Sync on every deck,
+disabled without a saved grid. It delegates the one-beat change to the host; widgets
+never choose participants, move audio, alter Cue or implement boundary/Slip policy.

@@ -41,6 +41,13 @@ Built.
 | [`Meter`](../src/controls/Meter.tsx) | `live.meter~` | a level, read-only. Optional peak hold |
 | [`Button`](../src/controls/Button.tsx) | none | an action that is not a parameter |
 
+[`ButtonFace`](../src/controls/ButtonFace.tsx) is the shared native-button surface used
+by Button, Toggle and held mixer actions. It owns their existing action/toggle classes,
+tokens, focus and disabled appearance; callers supply native events and accessible names.
+Optional small/medium sizes set 20/24px height without introducing a second visual style.
+Use Button or Toggle for their normal framed APIs, and ButtonFace when a composition
+owns the input lifetime or needs a bare surface without caption/readout regions.
+
 **Reach for a filled `NumberField` before a horizontal `Slider`.** Live's own collapsed
 fader is a value box you drag with the reading inside it — that's the Arrangement track
 header's volume and pan — and it costs a third of the room while saying more, because
@@ -370,8 +377,8 @@ apparent exceptions and aren't — their reading is inside the control because t
 *is* the reading, so they pass no `readout` and the region isn't drawn.
 
 [`Widget`](../src/controls/Widget.tsx) renders those regions, which is the whole point of
-it. The rule used to live in this file and hold because everyone had read it; now a
-control physically cannot name `wdg-caption`, `wdg-body` or `wdg-readout`, so it cannot
+it. The rule used to live in this file and hold because everyone had read it; now framed
+controls delegate caption/body/readout placement to Widget, so they cannot
 put one in the wrong place or nest it a level too deep. That last one is the failure worth
 preventing: it looks right on its own and falls silently out of alignment in a `Row`.
 

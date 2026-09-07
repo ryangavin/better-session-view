@@ -1,4 +1,4 @@
-.mf-play { flex: 1; min-width: 0; overflow: auto; }
+.mf-play { flex: 1; min-width: 0; min-height: 0; overflow: hidden; container-type: size; }
 .mf-play .play-example { max-width: none; }
 .mf-play .mf-deck-over { box-shadow: inset 0 0 0 2px var(--primary); background: var(--sel); }
 .mf-play .play-deck { transition: background .1s; }
@@ -15,13 +15,47 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 .mf-play .play-grid > .wdg { position: sticky; bottom: 0; z-index: 1; background: var(--surface-control); }
 
 /* Spare window height belongs to the aligned waveforms, not gaps in the controls. */
-.mf-play .play-example { min-height: 100%; display: flex; flex-direction: column; }
-.mf-play .play-scroll { flex: none; }
-.mf-play .play-timeline { flex: 1; display: flex; flex-direction: column; min-height: 196px; }
-.mf-play .play-wave-row { flex: 1; min-height: 110px; }
+.mf-play .play-example { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.mf-play .play-scroll { flex: 0 1 auto; min-height: 0; overflow-y: hidden; }
+.mf-play .play-timeline { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.mf-play .play-wave-row { flex: 1; min-height: 0; }
 .mf-play .play-wave-lane > canvas { position: absolute; inset: 0; height: 100% !important; }
 .mf-play .play-decks { grid-template-rows: 38px repeat(5, auto); }
 .mf-play .play-track { height: 28px; min-height: 28px; max-height: 28px; grid-template-rows: 14px 14px; margin-bottom: 10px; }
 .mf-play .play-track h3, .mf-play .play-track p, .mf-play .play-track > span { line-height: 14px; }
 .mf-play .play-track h3 { font-size: 10px; }
 .mf-play .play-track p { font-size: 9px; }
+
+/* Keep the original six instrument rows inside the available performance area. */
+.mf-play .play-decks {grid-template-rows:38px minmax(136px,1fr) 78px 248px 34px 64px;}
+.mf-play .play-performance {min-height:0;overflow:hidden;}
+.mf-play .play-grid {flex:1;min-height:0;max-height:198px;}
+.mf-play .play-deck-loops {flex:none;}
+.mf-play .play-scroll {height:min(690px,calc(100% - 204px));}
+.mf-play .play-decks {height:100%;box-sizing:border-box;}
+@container (max-height: 780px) {
+  .mf-play .play-scroll {min-height:526px;}
+  .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) 64px 208px 32px 58px;}
+  .mf-play .play-eq-stack {grid-template-rows:repeat(4,48px);gap:2px;}
+  .mf-play .play-stem-levels:has(> :nth-child(5)) {grid-template-rows:repeat(3,46px);}
+  .mf-play .play-channel-fader .wdg-slider {--wdg-slider-length:174px !important;}
+  .mf-play .play-channel, .mf-play .play-effects {padding-block:3px;}
+  .mf-play .play-deck-transport {padding-top:4px;margin-top:2px;}
+  .mf-play .play-fx-params {padding-block:0;}
+  .mf-play .wdg-knob {--wdg-knob-height:22px;--wdg-knob-size:28px;}
+  .mf-play .play-actions {gap:2px;padding-bottom:2px;}
+  .mf-play .play-fx-pickers {gap:3px;}
+}
+
+@container (max-width: 1250px) {
+  .mf-play .play-decks {grid-template-columns:minmax(200px,1fr) minmax(200px,1fr) 156px minmax(200px,1fr) minmax(200px,1fr);}
+  .mf-play .play-grid {grid-template-columns:minmax(44px,1fr) repeat(var(--play-stems,4),minmax(0,1fr));}
+  .mf-play .play-cell, .mf-play .play-cell .wdg, .mf-play .play-cell .wdg-body {width:100%;min-width:0;}
+  .mf-play .play-grid > .wdg {width:100%;min-width:0;}
+  .mf-play .play-channel {gap:4px;}
+}
+@container (max-height: 700px) {
+  .mf-play .play-timeline {min-height:0;}
+  .mf-play .play-wave-row {min-height:0;}
+  .mf-play .play-scroll {height:calc(100% - 172px);}
+}

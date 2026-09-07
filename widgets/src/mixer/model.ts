@@ -83,6 +83,8 @@ export interface MixerCommands {
   adjustLoop?(deckId:string, boundary:'in'|'out', beats:number):void;
   setFocus?(deckId: string, stemId: string): void;
   setMoveTogether?(deckId: string, together: boolean): void;
+  /** Move active sources by one mapped beat; host owns boundaries and loop policy. */
+  beatJump?(deckId:string, delta:-1|1):void;
   moveDeck?(deckId: string, phase: 'begin' | 'move' | 'commit' | 'cancel', deltaBeats?: number): void;
   setZoom?(deckId: string, beats: number): void;
   setStemPlaying?(deckId: string, stemId: string, playing: boolean): void;

@@ -50,6 +50,21 @@ focused stem once; subsequent switches retain each group's independent positions
 stems, selections, loops and Cue checkpoints. Switching does not start audio. The first
 loaded deck sets the initial shared tempo while stopped and unlinked.
 
+## Performance layout
+
+Play keeps waveforms above the six aligned mixer rows: launcher/loop controls, sends,
+channel, routing and transport under the headers. The performance area does not scroll
+vertically; long section lists scroll inside their launcher. Six stems use two columns
+of level knobs. Compact layouts fit the checked 1280×720, 1024×768 and 1366×768 viewports.
+
+Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens source,
+relative group movement and zoom settings. The compact loop row keeps In, Out,
+Exit/Reloop and quick loop visible; its settings button opens Q, launch timing, target,
+length, Slip and region edits. Comparable actions use the shared 24px widget button face.
+The master footer places FX beside Phones. Click FX to bypass/enable; right-click,
+Shift-click or Shift+F10 on that same button opens tail controls. Phones opens its level
+and Cue/Master blend. Context panels use the shared Popup placement and dismissal.
+
 ## Audio graph and levels
 
 One lazily created AudioContext owns every deck and return. Each available source has a
@@ -114,7 +129,7 @@ focus, preserving offsets. Missing grids disable grid-dependent controls. Loop s
 chooses active stems or focus only. In works paused or playing, stores Cue and starts a
 new capture; Out validates every target atomically with at least 20ms duration. Scope
 cannot change while awaiting Out. Quick loops use the selected beat count (16 beats is
-four bars in 4/4); half/double keep In fixed, move shifts by loop length, boundary buttons
+four bars in 4/4); half/double keep In fixed, move shifts by one beat, boundary buttons
 adjust by Q or 1/8 beat. Invalid edits change nothing. Exit continues at each audible
 position and retains saved regions. Reloop goes to In, preserving paused/playing state.
 Loop edits do not rewrite Cue. A section-name launch clears old saved loops.
@@ -123,6 +138,21 @@ Slip applies to loops only. Each looping source retains its own advancing backgr
 position; Exit rejoins it. The waveform shows this background marker. Ordinary Exit stays
 at audible position. Pause, Cue, Stop, source-group switching or disabling Slip ends that
 background history. It is not a general scratch, reverse or hot-cue Slip implementation.
+
+### One-beat jumps
+
+The stacked footer arrows move the deck's participating sources: ↑ advances one mapped
+beat, ↓ rewinds one. Each source converts its own position through the saved beat map,
+so beat offsets survive tempo changes. Full mode addresses the original. Before first
+Play all available sources participate; after initialization stopped stems stay untouched.
+Playing sources restart at one shared scheduled time; paused sources remain paused.
+
+Jumps preserve Cue and mixer levels. They exit addressed loops, retain regions for
+Reloop, discard addressed Slip backgrounds and cancel addressed queued launches/manual
+In markers. They use audible positions rather than the Slip background. A jump that
+would put any participant before sample zero or within 1ms of its file end is rejected
+for the whole group, with a visible deck message; there is no wrap or partial clamp.
+Missing grids disable the arrows. Held Cue or an active waveform move ignores jumps.
 
 ## Waveforms, meters and Link
 

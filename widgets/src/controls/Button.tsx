@@ -1,3 +1,4 @@
+import { ButtonFace } from './ButtonFace.tsx';
 import type { CSSProperties, MouseEvent, ReactNode } from 'react';
 import './controls.css';
 
@@ -73,17 +74,16 @@ export function Button({
       }
     >
       {name && <span className="wdg-caption">{name}</span>}
-      <button
+      <ButtonFace
         type="button"
-        className="wdg-button-body wdg-body"
-        data-tone={tone}
+        tone={tone}
         aria-label={label ?? name}
         disabled={disabled}
         title={title}
         onClick={onPress}
       >
         {children}
-      </button>
+      </ButtonFace>
     </div>
   );
 }

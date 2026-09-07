@@ -1,3 +1,4 @@
+import { ButtonFace } from './ButtonFace.tsx';
 import type { CSSProperties, ReactNode } from 'react';
 import type { WidgetLayout } from './Widget.tsx';
 import './controls.css';
@@ -66,10 +67,9 @@ export function Toggle({
 }: ToggleProps) {
   const inside = layout === 'inside';
   const face = (
-    <button
+    <ButtonFace
       type="button"
-      className="wdg-toggle-body wdg-body"
-      {...(on ? { 'data-on': '' } : {})}
+      lit={on}
       aria-pressed={momentary ? undefined : on}
       aria-label={label ?? name}
       disabled={disabled}
@@ -80,7 +80,7 @@ export function Toggle({
       onClick={momentary ? undefined : () => onChange(!on)}
     >
       {inside ? null : children}
-    </button>
+    </ButtonFace>
   );
 
   return (

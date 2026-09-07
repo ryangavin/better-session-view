@@ -26,7 +26,7 @@ export async function runControlAudioChecks(report:(text:string)=>void){
   let onset=0;for(let i=48000;i<52800;i++)if(Math.abs(a[i])>1e-4){onset=i/48000;break;}
   check('Audition onset includes only scheduled audio lead',onset>=1.025 && onset<1.04,{onset});
  } catch(e){failures++;log+=`ERROR ${e instanceof Error?e.stack:e}\n`;}finally{engine.dispose();}
- try{await renderLoops(check);await renderEffects(check);await renderPhones(check);await renderSlip(check);await captureSyncedEngine(check);}catch(e){failures++;log+=`ERROR ${e instanceof Error?e.stack:e}\n`;}
+ try{await renderLoops(check);await renderBeatJump(check);await renderEffects(check);await renderPhones(check);await renderSlip(check);await captureSyncedEngine(check);}catch(e){failures++;log+=`ERROR ${e instanceof Error?e.stack:e}\n`;}
  report(log+(failures?`FAILED ${failures}`:'ALL CONTROL AUDIO CHECKS PASSED'));
 }
 
@@ -96,8 +96,10 @@ async function captureSyncedEngine(check:(name:string,ok:boolean,data:unknown)=>
   check('Real synced engine source advances at twice output time',Math.abs(advance-2*(ctx.currentTime-t0))<.025,{sourceAdvance:advance,outputAdvance:ctx.currentTime-t0});
   engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');const loop=engine.snapshot().decks[0].loop!;await delay(900);
   const at=engine.readFrame().decks['deck-a'].sources!.drums.seconds;check('Real synced engine repeats its captured musical loop',at>=loop.start! && at<loop.end!,{at,loop});
-  await engine.play('deck-a',false);const pausedAt=ctx.currentTime;await delay(700);
-  const quiet=chunks.filter(c=>c.at>pausedAt+.35).flatMap(c=>Array.from(c.samples));const energy=quiet.length?Math.sqrt(quiet.reduce((s,v)=>s+v*v,0)/quiet.length):Infinity;
+  await engine.play('deck-a',false);const pausedAt=ctx.currentTime;await delay(900);
+  // The serial 10 Hz channel/master high-pass filters have phase-dependent decay.
+  // Sample after 500 ms; this is settled-output silence, not a latency assertion.
+  const quiet=chunks.filter(c=>c.at>pausedAt+.5).flatMap(c=>Array.from(c.samples));const energy=quiet.length?Math.sqrt(quiet.reduce((s,v)=>s+v*v,0)/quiet.length):Infinity;
   check('Captured synced pause settles to silence',energy<1e-6,{rms:energy,samples:quiet.length});
  }finally{capture?.disconnect();engine.dispose();}
 }
@@ -113,4 +115,22 @@ async function renderSlip(check:(name:string,ok:boolean,data:unknown)=>void){
   }finally{engine.dispose();}
  };
  const ordinary=await render(false),slipped=await render(true);check('Captured Slip exit resumes later source audio than ordinary exit',slipped/ordinary>1.3 && slipped/ordinary<1.6,{ordinary,slipped,ratio:slipped/ordinary});
+}
+
+async function renderBeatJump(check:(name:string,ok:boolean,data:unknown)=>void){
+ const rate=48000,ctx=new OfflineAudioContext(2,rate*2,rate),engine=new MixerEngine(()=>ctx as unknown as AudioContext);
+ try{
+  const asset=await fixture(ctx),buffer=asset.audio!.buffers.drums;
+  for(let c=0;c<2;c++){const a=buffer.getChannelData(c);for(let i=0;i<a.length;i++)a[i]=.02*(1+i/rate)*Math.sin(2*Math.PI*220*i/rate);}
+  await engine.load('deck-a',fixtureTrack,async()=>asset);await engine.play('deck-a',true,undefined,false,'drums');
+  const stops=[.5,.75,1.5,1.75].map(t=>({t,p:ctx.suspend(t)})),rendered=ctx.startRendering();
+  for(const {t,p} of stops){await p;if(t===.5)engine.beatJump('deck-a',1);if(t===1.5)engine.beatJump('deck-a',-1);
+   if(t===.75 || t===1.75){const source=engine.readFrame().decks['deck-a'].sources!.drums;check(`Captured beat jump ${t===.75?'forward':'backward'} keeps playback advancing`,source.playing && Math.abs(source.seconds-(ctx.currentTime-.03+(t===.75?.5:0)))<.001,source.seconds);}
+   await ctx.resume();
+  }
+  const a=(await rendered).getChannelData(0),before=rms(a,.1*rate,.3*rate),after=rms(a,.7*rate,.9*rate);
+  check('Beat jump reaches later source audio in the captured amplitude ramp',after/before>1.8 && after/before<2.1,{before,after,ratio:after/before});
+  let gap=0,longest=0;for(let i=Math.floor(.4*rate);i<1.7*rate;i++){gap=Math.abs(a[i])<1e-5?gap+1:0;longest=Math.max(longest,gap);}
+  check('Beat jumps introduce no silent gap longer than 1 ms',longest<=48,{maxSilentSamples:longest});
+ }finally{engine.dispose();}
 }

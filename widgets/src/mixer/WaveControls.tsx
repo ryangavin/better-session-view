@@ -1,5 +1,7 @@
+import { ButtonFace } from '../controls/ButtonFace.tsx';
 import { useEffect, useRef } from 'react';
 import type { MixerDeck, MixerCommands, MixerFrame } from './model.ts';
+import { ContextControls } from './ContextControls.tsx';
 import { Momentary } from './Momentary.tsx';
 
 export function WaveControls({deck:d,commands:c,index,readFrame,children}: {deck:MixerDeck;commands:MixerCommands;index:number;readFrame():MixerFrame;children:React.ReactNode}) {
@@ -12,14 +14,16 @@ export function WaveControls({deck:d,commands:c,index,readFrame,children}: {deck
   const reading=readFrame().decks[d.id];
   const play=()=>d.full?c.setDeckPlaying?.(d.id,held?true:!playing):c.setStemPlaying?.(d.id,focus,held?true:!playing);
   return <>
-    <div className="play-wave-tools" role="group" aria-label={`Deck ${index+1} waveform controls`}>
-      <label>Focus <select aria-label={`Deck ${index+1} waveform focus`} value={focus} disabled={d.full || d.status!=='ready' || d.loopFocus && d.loop?.start!=null && d.loop.end===null} onChange={e=>c.setFocus?.(d.id,e.target.value)}>{d.full?<option value="full">Original</option>:d.stems.filter(s=>s.available).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-      <button disabled={d.status!=='ready' || !c.setStemPlaying} aria-label={`Deck ${index+1} focused play/pause`} onClick={play}>{playing?'Pause focus':'Play focus'}</button>
-      <Momentary key={focus} label={`Deck ${index+1} focused cue`} held={held ?? false} disabled={d.status!=='ready'} onHold={on=>d.full?c.cueDeck?.(d.id,on):c.cueStem?.(d.id,focus,on)} onTakeover={()=>d.full?c.setDeckPlaying?.(d.id,true):c.setStemPlaying?.(d.id,focus,true)}>Cue focus</Momentary>
-      <button aria-pressed={d.moveTogether ?? false} onClick={()=>c.setMoveTogether?.(d.id,!d.moveTogether)}>Move active stems</button>
-      <button aria-label={`Deck ${index+1} zoom in`} onClick={()=>c.setZoom?.(d.id,(d.zoom ?? 32)/2)}>+</button><button aria-label={`Deck ${index+1} zoom out`} onClick={()=>c.setZoom?.(d.id,(d.zoom ?? 32)*2)}>−</button>
-      <span>{d.zoom ?? 32} beats · {d.moveTogether?'pause active stems to move together':'pause focus to drag'}</span>
-    </div>
+    {d.status==='ready' && <div className="play-wave-tools" role="group" aria-label={`Deck ${index+1} waveform controls`}>
+      <ContextControls label={`Deck ${index+1} waveform settings`} title="Choose focused source, movement scope and zoom" face={<>{d.full?'Original':stem?.name ?? 'Source'} <span aria-hidden="true">⌄</span></>} active={d.moveTogether}>
+        <label>Focused source<select aria-label={`Deck ${index+1} waveform focus`} value={focus} disabled={d.full || d.loopFocus && d.loop?.start!=null && d.loop.end===null} onChange={e=>c.setFocus?.(d.id,e.target.value)}>{d.full?<option value="full">Original</option>:d.stems.filter(s=>s.available).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+        <label className="play-context-check"><input type="checkbox" checked={d.moveTogether ?? false} onChange={()=>c.setMoveTogether?.(d.id,!d.moveTogether)}/>Move active stems together</label>
+        <div className="play-context-row"><span>Zoom · {d.zoom ?? 32} beats</span><ButtonFace size="medium" aria-label={`Deck ${index+1} zoom in`} title="Zoom in" onClick={()=>c.setZoom?.(d.id,(d.zoom ?? 32)/2)}>+</ButtonFace><ButtonFace size="medium" aria-label={`Deck ${index+1} zoom out`} title="Zoom out" onClick={()=>c.setZoom?.(d.id,(d.zoom ?? 32)*2)}>−</ButtonFace></div>
+        <p>Pause {d.moveTogether?'active stems':'focus'} to drag. Escape cancels. Arrow keys move ⅛ beat; Shift moves one beat.</p>
+      </ContextControls>
+      <ButtonFace size="medium" disabled={!c.setStemPlaying} aria-label={`Deck ${index+1} focused play/pause`} title={`Play / pause ${stem?.name ?? 'original'} only`} aria-pressed={playing ?? false} onClick={play}>{playing?'Ⅱ':'▶'}</ButtonFace>
+      <Momentary key={focus} label={`Deck ${index+1} focused cue`} held={held ?? false} onHold={on=>d.full?c.cueDeck?.(d.id,on):c.cueStem?.(d.id,focus,on)} onTakeover={()=>d.full?c.setDeckPlaying?.(d.id,true):c.setStemPlaying?.(d.id,focus,true)}>CUE</Momentary>
+    </div>}
     <div className="play-wave-gesture" role="slider" aria-valuemin={0} aria-valuemax={reading?.duration ?? 0} aria-valuenow={reading?.seconds ?? 0} tabIndex={d.status==='ready'?0:-1} aria-label={`Deck ${index+1} waveform position`} aria-valuetext={`${(reading?.seconds ?? 0).toFixed(3)} seconds · ${d.moveTogether?'Move active stems together':'Move focused stem'}`}
       onPointerDown={e=>{if(e.button!==0 || !c.moveDeck || d.status!=='ready')return;const sources=readFrame().decks[d.id]?.sources;if(d.moveTogether?Object.values(sources ?? {}).some(s=>s.enabled&&s.playing):sources?.[focus]?.playing)return;e.preventDefault();e.currentTarget.focus();e.currentTarget.setPointerCapture(e.pointerId);drag.current={x:e.clientX,width:e.currentTarget.getBoundingClientRect().width,beats:d.zoom ?? 32,pointer:e.pointerId};c.moveDeck(d.id,'begin');}}
       onPointerMove={e=>{const at=drag.current;if(at && at.pointer===e.pointerId)c.moveDeck?.(d.id,'move',(at.x-e.clientX)/at.width*at.beats);}}
