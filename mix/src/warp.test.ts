@@ -6,6 +6,7 @@ import {
   bpmText,
   countOf,
   evenBeats,
+  barsOff,
   beatsOnHit,
   hitUnder,
   moved,
@@ -22,6 +23,7 @@ import {
   tempoAt,
   tempoOf,
   tempoRange,
+  worstBars,
   type Beats,
 } from './warp.ts';
 
@@ -415,5 +417,69 @@ describe('the hit a beat was meant for', () => {
     const landed = renumbered(moved(grid, 2, hit), 2);
     expect(sampleOf(landed, 0)).toBe(hit);
     expect(landed.set).toEqual([0]);
+  });
+});
+
+describe('how off each bar reads', () => {
+  // 120: a beat every half second, four bars in eight seconds, a quarter of a beat 125 ms.
+  const grid = evenBeats(RATE, LENGTH, 120, 0);
+  /** Bar 1 on its hits; bar 2 twenty milliseconds late throughout; bar 3 with two beats no hit confirms; bar 4 on its hits. */
+  const hits = [0, 0.5, 1, 1.5, 2.02, 2.52, 3.02, 3.52, 4, 4.5, 6, 6.5, 7, 7.5];
+
+  it('reads a bar on its hits as not off at all, and one consistently late as off by that much over twice the window', () => {
+    const [one, two] = barsOff(grid, hits, 0.025);
+    expect(one).toEqual({ bar: 0, off: 0, missing: 0, score: 0 });
+    expect(two.bar).toBe(1);
+    expect(two.off).toBeCloseTo(0.02, 6);
+    expect(two.missing).toBe(0);
+    expect(two.score).toBeCloseTo(0.4, 6);
+  });
+
+  it('reads a bar the kit does not confirm as off by what it misses beyond one beat in four', () => {
+    const three = barsOff(grid, hits, 0.025)[2];
+    expect(three.bar).toBe(2);
+    expect(three.missing).toBe(0.5);
+    expect(three.score).toBeCloseTo(1 / 3, 6);
+    const one = barsOff(grid, [0, 0.5, 1, 4, 4.5, 5, 5.5], 0.025)[0];
+    expect(one.missing).toBe(0.25);
+    expect(one.score).toBe(0);
+  });
+
+  it('is relative: a map late everywhere by the same amount has no bar that reads as off', () => {
+    const late = hits.map((h) => h + 0.015);
+    expect(barsOff(grid, late, 0.025).every((b) => b.off !== null && b.off > 0.01)).toBe(true);
+    expect(barsOff(grid, late, 0.025).map((b) => b.score)).toEqual([0, expect.closeTo(0.4, 6), expect.closeTo(1 / 3, 6), 0]);
+  });
+
+  it('is the median, so one wild beat does not condemn its neighbours', () => {
+    const wild = [0, 0.5, 1, 1.5, 2, 2.5, 3.1, 3.5];
+    expect(barsOff(grid, wild, 0.025)[1]).toEqual({ bar: 1, off: 0, missing: 0, score: 0 });
+  });
+
+  it('judges only the bars between the first hit and the last, and a bar on the edge by the beats inside it', () => {
+    const late = [2, 2.5, 3, 3.5, 4, 4.5, 5];
+    const off = barsOff(grid, late, 0.025);
+    expect(off.map((b) => b.bar)).toEqual([1, 2]);
+    expect(off[1]).toEqual({ bar: 2, off: 0, missing: 0, score: 0 });
+    expect(barsOff(grid, [], 0.025)).toEqual([]);
+  });
+
+  it('leaves out a bar with no hit anywhere in it: a breakdown is no evidence against the grid', () => {
+    const off = barsOff(grid, [0, 0.5, 1, 1.5, 4, 4.5, 5, 5.5], 0.025);
+    expect(off.map((b) => b.bar)).toEqual([0, 2]);
+    expect(off[1].missing).toBe(0);
+  });
+
+  it('answers to the map as drawn, so a corrected bar stops reading as off', () => {
+    const fixed = [4, 5, 6, 7].reduce((map, beat) => moved(map, beat, hits[beat] * RATE), grid);
+    expect(barsOff(fixed, hits, 0.025)[1].score).toBe(0);
+  });
+
+  it('ranks the bars worst first, earlier bars first among equals, down to a score, or the single worst failing that', () => {
+    const off = barsOff(grid, hits, 0.025);
+    expect(worstBars(off, 0.3).map((b) => b.bar)).toEqual([1, 2]);
+    expect(worstBars(off, 0.35).map((b) => b.bar)).toEqual([1]);
+    expect(worstBars(barsOff(grid, [0, 0.5, 1, 1.5], 0.025), 0.5)).toEqual([{ bar: 0, off: 0, missing: 0, score: 0 }]);
+    expect(worstBars([], 0.5)).toEqual([]);
   });
 });

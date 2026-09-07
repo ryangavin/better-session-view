@@ -10,7 +10,7 @@ import { STEMS } from '../mock.ts';
 import { snappedBar } from '../slices.ts';
 import type { Mix } from '../state.ts';
 import { BASS_TRANSPOSE } from '../tab.ts';
-import { barAt, placeOf } from '../warp.ts';
+import { barAt, barsOff, ON_A_BEAT, placeOf } from '../warp.ts';
 import { factorOf, limitOf, shows, spanOf, useView, type Span } from '../zoom.ts';
 import { Tablature } from './Tablature.tsx';
 import { Tone } from './Tone.tsx';
@@ -294,6 +294,12 @@ export function Lanes({ mix }: { mix: Mix }) {
 
   const travel = useTravel(list, sources.length, song?.id ?? null);
   const suggested = useSuggestions(mix, mix.grid, mix.editingGrid);
+  /**
+   * How off each bar of the draft reads, once per change to it: the warp lane
+   * shades it and the editor jumps to it, and they must agree about which bar
+   * is worst, so it is read here and handed to both.
+   */
+  const off = useMemo(() => (mix.editingGrid ? barsOff(grid, mix.hits, ON_A_BEAT) : []), [mix.editingGrid, grid, mix.hits]);
 
   if (!song) return null;
 
@@ -313,7 +319,7 @@ export function Lanes({ mix }: { mix: Mix }) {
 
   return (
     <div className="mf-lanes" ref={root}>
-      {mix.editingGrid && <BeatGridEditor mix={mix} follow={follow} inspect={(at) => {
+      {mix.editingGrid && <BeatGridEditor mix={mix} off={off} follow={follow} inspect={(at) => {
         mix.seek(Math.max(0, at));
         whole(); zoomAbout(Math.max(1, mix.seconds / 4), 0); panBy(Math.max(0, at - 1) / 4);
       }} />}
@@ -357,6 +363,7 @@ export function Lanes({ mix }: { mix: Mix }) {
             barMarks={mix.editingGrid ? mix.barMarks : []}
             beats={mix.editingGrid ? grid : undefined}
             hits={mix.hits}
+            off={mix.editingGrid ? off : undefined}
             onMove={mix.editingGrid ? mix.moveBeat : undefined}
             onMoveStart={mix.beginBeatDrag}
             onMoveEnd={mix.endBeatDrag}

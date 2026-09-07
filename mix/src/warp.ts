@@ -281,6 +281,110 @@ export function hitUnder(beats: Beats, hits: readonly number[], beat: number): n
   return Math.abs(sample - at) <= reach ? sample : null;
 }
 
+/** How far from a beat, in seconds, a kick or snare still counts as on it. */
+export const ON_A_BEAT = 0.025;
+
+/** How off one bar of the map reads against the kit. */
+export interface BarOff {
+  /** The bar, bar 1 being zero. */
+  bar: number;
+  /** The median distance in seconds of its confirmed beats from their hits; null where none is confirmed. */
+  off: number | null;
+  /** The share of its beats with no hit within a quarter of a beat of them. */
+  missing: number;
+  /**
+   * How off it reads, nought to one, against the rest of the map: how much
+   * further than the typical bar its beats sit from their hits, twice
+   * `within` counting as wholly off, or how many more than a quarter of its
+   * beats go unconfirmed. Nought where it reads like every other bar.
+   */
+  score: number;
+}
+
+/**
+ * How off every bar of the map is, so the one that is most off can be found
+ * rather than looked for. A bar is judged by the beats of its own — four from
+ * bar 1's downbeat, and from bar 1 on, since the lead-in is ruled back from
+ * it and is not a bar anybody fixes — that fall between the first hit and the last, the way
+ * `beatsOnHit` judges the whole, so a spoken intro is nobody's bad bar and a
+ * bar the drums enter halfway through is judged on the half they play; and a
+ * bar with no hit anywhere in it is left out for the same reason, because a
+ * breakdown is no evidence against the grid ruled through it and would
+ * otherwise be the worst bar of every record that has one. Each beat finds
+ * the hit it was meant for as `hitUnder` does, within a quarter of its own
+ * spacing: the bar's `off` is the median distance of the beats that found
+ * one, so a bar whose beats sit consistently late or early reads as off by
+ * that much and one wild beat does not condemn its three good neighbours;
+ * its `missing` is the share that found none, so a bar whose kit plays
+ * between the beats reads as off too. The score is relative: a grid that
+ * sits five milliseconds late everywhere is not a hundred bad bars, it is
+ * one nudge, and the bar worth going to is the one that departs from the
+ * rest — so a bar's distance is taken over the median bar's before it counts,
+ * with twice `within` counting as wholly off; and one beat in four with no
+ * kick or snare under it is a syncopation, not a mistake, so only more than a
+ * quarter unconfirmed counts, all four as wholly off. On a hip-hop record
+ * read against a right grid, the first measure painted a third of the bars
+ * as wrong. Bisection per beat, so a song's worth costs nothing a drag can
+ * feel.
+ */
+export function barsOff(beats: Beats, hits: readonly number[], within: number): BarOff[] {
+  if (hits.length === 0) return [];
+  const { samples, rate, first } = beats;
+  const lo = hits[0] * rate;
+  const hi = hits[hits.length - 1] * rate;
+  const out: BarOff[] = [];
+  let bar: number | null = null;
+  let asked = 0;
+  let found: number[] = [];
+  const close = () => {
+    if (bar === null || asked === 0) return;
+    const from = sampleOf(beats, bar * BEATS_PER_BAR) / rate;
+    const upto = sampleOf(beats, (bar + 1) * BEATS_PER_BAR) / rate;
+    let a = 0, b = hits.length;
+    while (a < b) { const mid = (a + b) >>> 1; if (hits[mid] < from) a = mid + 1; else b = mid; }
+    const played = a < hits.length && hits[a] < upto;
+    asked = played ? asked : 0;
+    if (!played) { found = []; return; }
+    found.sort((a, b) => a - b);
+    const off = found.length > 0 ? found[found.length >> 1] : null;
+    const missing = 1 - found.length / asked;
+    out.push({ bar, off, missing, score: 0 });
+    asked = 0;
+    found = [];
+  };
+  for (let i = Math.max(0, -first); i < samples.length; i++) {
+    const at = samples[i];
+    if (at < lo || at > hi) continue;
+    const beat = first + i;
+    const of = Math.floor(beat / BEATS_PER_BAR);
+    if (of !== bar) { close(); bar = of; }
+    asked++;
+    const hit = hitUnder(beats, hits, beat);
+    if (hit !== null) found.push(Math.abs(hit - at) / rate);
+  }
+  close();
+  const offs = out.flatMap((b) => (b.off === null ? [] : [b.off])).sort((a, b) => a - b);
+  const typical = offs.length > 0 ? offs[offs.length >> 1] : 0;
+  for (const b of out) {
+    const late = b.off === null ? 0 : Math.min(1, Math.max(0, b.off - typical) / (2 * within));
+    const unconfirmed = Math.max(0, (b.missing - 0.25) / 0.75);
+    b.score = Math.max(late, unconfirmed);
+  }
+  return out;
+}
+
+/**
+ * The bars worth going to, most off first: those scoring `atLeast`, in the
+ * order of a hand's work — worst to least, and earlier before later where two
+ * read the same. Where none reaches it, the single worst there is, so the
+ * gesture always lands somewhere and a good grid shows its weakest bar.
+ */
+export function worstBars(off: readonly BarOff[], atLeast: number): BarOff[] {
+  const ranked = off.slice().sort((a, b) => b.score - a.score || a.bar - b.bar);
+  const bad = ranked.filter((b) => b.score >= atLeast);
+  return bad.length > 0 ? bad : ranked.slice(0, 1);
+}
+
 /**
  * Where bar 1 starts, given where any downbeat falls.
  *

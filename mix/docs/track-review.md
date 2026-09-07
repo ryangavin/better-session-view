@@ -41,6 +41,29 @@ octave or by 4:3, is one click that keeps the variation it detected rather than 
 typed tempo that rules it flat; bar 1 stays on its hit, and the reading beside them
 says at once whether the kit agrees with the new count.
 
+**Worst bar** goes to where the grid goes wrong rather than leaving it to be looked
+for. `barsOff` in `warp.ts` reads every bar from bar 1 on that has a hit in it, over its
+beats between the first hit and the last: the median distance of its beats from the hits
+they were meant for — `hitUnder`'s quarter of a beat — and the share of its beats no hit
+confirms, scored by whichever is worse. The score is relative: the distance counts only
+past the median bar's, twice the status's 25 ms being wholly off, because a map five
+milliseconds late everywhere is one nudge and not a hundred bad bars; and only more than
+one unconfirmed beat in four counts, because a syncopation is not a mistake — read
+absolutely, a right grid on a hip-hop record painted a third of its bars as wrong. The
+median, so one wild beat does not condemn its three good neighbours; bars with
+no hit in them left out, because a breakdown is no evidence against the grid ruled
+through it and would otherwise be the worst bar of every record that has one. The warp
+lane shades each bar along its bottom edge by that score, in the danger role, so eight
+wrong bars in the middle of a good song are a stripe rather than a search through a
+hundred and twenty; the button seeks and zooms to the bar scoring highest — `worstBars`,
+those at half or more, the single worst failing that — and each press goes on to the
+next-worst, round again after the last, starting over when the grid changes because the
+bars have been re-read. `Lanes.tsx` reads it once per change to the draft and hands it
+to the lane and the editor, so the stripe and the button cannot disagree. This is what
+Rekordbox and Traktor users do with a grid — find where it walks off the kit, fix it
+there — and a 24 px strip across the song was nothing to find that with. It stands where
+**First downbeat** stood, which zoomed to bar 1; Home does that now.
+
 **Space** plays the drums under a click, at original speed, from the playhead to the end
 of the stem, and Space stops it — the way Traktor's beat tick and Rekordbox's metronome
 run with the deck, where a *Listen with click* button used to play four bars and fall

@@ -126,7 +126,9 @@ BPM from bar 1's downbeat; Escape or blur returns the reading. Beside it, ×2, �
 and ×2⁄3 re-count the same beats at that rate, keeping the detected variation and bar 1
 on its hit — `retimed` in `warp.ts`, for a detector that heard the wrong pulse. **Find beats** runs the chosen
 algorithm on the drums — what an import runs, unless another is picked — and draws the
-result as the draft; Undo puts the old grid back. **Advanced…** opens the debug workspace
+result as the draft; Undo puts the old grid back. **Worst bar** seeks and zooms to the
+bar reading furthest off its hits, the next-worst on each press, and the warp lane
+shades every bar by that reading; Home is bar 1. **Advanced…** opens the debug workspace
 on the beat analysis tab, `state.openDebug('beats')`, the same modal the bug button
 opens. Space plays the drums under a click at original speed from the playhead to the
 end of the stem, the lanes' playhead moving with it, and Space stops it; so does a
@@ -366,7 +368,10 @@ lines are the grid's claim, ticks are what the audio actually did, and green tic
 the ones detection believes start a bar. When the green ones sit on the bright lines the
 grid is right; when they walk off them it is not. A tempo a fraction out does not look
 wrong at bar 2 and is unmistakable by bar 60, which is why this is full width rather than
-a detail view.
+a detail view. While the grid is open, a band along the lane's bottom edge shades each
+bar by how off it reads — its beats late or early against their hits, or unconfirmed —
+in the danger role, the deeper the worse, and **Worst bar** goes to the deepest; see
+[track-review.md](track-review.md).
 
 The ticks come off the same peaks the lanes draw, which is not a shortcut — it is how
 detection works, and it means a tick always lines up with the transient below it. A warp
@@ -429,7 +434,8 @@ Set bar 1 and renumbering are explicit buttons; moving the whole grid is a ⌘-d
 any marker. A steady tempo is typed into the status reading because it intentionally
 removes tempo variation.
 
-Waveform clicks continue to seek. First downbeat zooms the main axis, and Space plays
+Waveform clicks continue to seek. Worst bar seeks and zooms to the bar furthest off its
+hits, the next-worst on each press, Home to bar 1, and Space plays
 the drums against the draft's click at original speed. The draft is separate from
 saved state: Undo steps back through actions, Cancel abandons, and Done commits. Analyze
 and Export wait for the edit session to end. See [track-review.md](track-review.md).

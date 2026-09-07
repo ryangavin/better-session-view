@@ -1,7 +1,7 @@
 import { useTheme } from '@openflow/widgets/theme/ThemeRoot.tsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { rankOf, rulingOf, shaded, TICKS_PER_BAR } from '../grid.ts';
-import { barAt, placeOf, BEATS_PER_BAR, type Beats } from '../warp.ts';
+import { barAt, placeOf, BEATS_PER_BAR, type BarOff, type Beats } from '../warp.ts';
 import type { Span } from '../zoom.ts';
 /**
  * An onset placed in bar space, which is the grid's claim about it rather than
@@ -42,6 +42,8 @@ export interface WarpLaneProps {
   beats?: Beats;
   /** The hits the fit listened to, in seconds, for a dragged marker to snap to. */
   hits?: readonly number[];
+  /** How off each bar reads against those hits, while the grid is being set: shaded along the bottom edge. */
+  off?: readonly BarOff[];
   /** A beat dragged to another second of the file; with `all`, every beat is to come by the same distance. */
   onMove?(beat: number, at: number, all?: boolean): void;
   /** A click, as a fraction of the file. */
@@ -71,6 +73,8 @@ const CATCH = 6;
 /** How far apart markers have to be, in pixels, to show every beat rather than every bar, and to carry a name. */
 const ROOM = 22;
 const NAMED = 30;
+/** How tall the band along the bottom edge is that says how off each bar reads, in pixels. */
+const OFF_BAND = 4;
 
 /** A beat's name: the bar, and the beat where it is not on the one. */
 const nameOf = (beat: number): string => {
@@ -79,7 +83,7 @@ const nameOf = (beat: number): string => {
   return inBar === 0 ? String(bar + 1) : `${bar + 1}.${inBar + 1}`;
 };
 
-export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, onPlace, placing, span, onMoveStart, onMoveEnd }: WarpLaneProps) {
+export function WarpLane({ onsets, bars, height, barMarks, beats, hits, off, onMove, onPlace, placing, span, onMoveStart, onMoveEnd }: WarpLaneProps) {
   const theme = useTheme();
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const lane = useRef<HTMLDivElement | null>(null);
@@ -146,6 +150,7 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
       const sure = ink(el, '--success', '#5fbfa8');
       const caption = ink(el, '--caption', '#5e5e66');
       const block = ink(el, '--sel', '#1c1c20');
+      const wrong = ink(el, '--danger', '#d4544f');
 
       // The width the whole track would have at this zoom. Nothing is drawn
       // that wide: it is what turns a position in the track into an x on a
@@ -171,6 +176,22 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
         if (!shaded(t, shade)) continue;
         const x = Math.round(atTick(t));
         ctx.fillRect(x, 0, Math.round(atTick(t + shade)) - x, height);
+      }
+      // How off each bar reads, as a band along the bottom edge, the more off
+      // the deeper: a tempo a fraction out walks the green ticks off the lines,
+      // but a strip that is wrong for eight bars in the middle of a good song
+      // is not something an eye finds in a hundred and twenty. Under the lines
+      // and the ticks, so it colours the reading without hiding the evidence;
+      // one rect a bar on screen, and nothing for a bar that reads as right.
+      if (off) {
+        ctx.fillStyle = wrong;
+        for (const reading of off) {
+          if (reading.score <= 0 || reading.bar + 1 < barFrom || reading.bar > barTo) continue;
+          const x = Math.round(xOf(placeOf(bars, reading.bar)));
+          ctx.globalAlpha = 0.8 * reading.score;
+          ctx.fillRect(x, height - OFF_BAND, Math.round(xOf(placeOf(bars, reading.bar + 1))) - x, OFF_BAND);
+        }
+        ctx.globalAlpha = 1;
       }
       for (let t = first; t <= last; t += step) {
         const x = Math.round(atTick(t)) + 0.5;
@@ -217,7 +238,7 @@ export function WarpLane({ onsets, bars, height, barMarks, beats, hits, onMove, 
 
     latest.current = paint;
     schedule();
-  }, [schedule, onsets, bars, height, from, to, theme]);
+  }, [schedule, onsets, bars, height, from, to, theme, off]);
 
   /**
    * The observer is made once, and a booked frame is only ever dropped when the
