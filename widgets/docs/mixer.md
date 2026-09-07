@@ -161,7 +161,10 @@ chip plus focused Play/Cue; source, relative group movement and zoom live in its
 The loop row keeps In/Out, Exit/Reloop and quick loop visible, with timing and detailed
 edits in ContextControls. It delegates positioning, flipping and dismissal to shared Popup.
 Escape restores trigger focus. Button, Toggle and Momentary share ButtonFace; comparable
-performance actions are 24px high. Six-source level controls use two columns.
+performance actions are 24px high, while deck Play/Cue/Sync use 40px square faces.
+Six-source level controls use two columns. Loop settings has an explicit 32px width
+inside its grid cell, independent of the symbol font size. The master footer spans
+the routing/transport subgrid; its crossfader separator aligns with deck transport.
 
 The master footer puts group FX beside Phones. Normal FX click toggles the group;
 right-click, Shift-click or Shift+F10 opens tail controls on that same trigger. Phones

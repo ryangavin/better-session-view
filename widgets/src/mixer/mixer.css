@@ -64,7 +64,7 @@
 .play-launch-row > .wdg > .wdg-body, .play-grid > .wdg-button > .wdg-body { width: 100%; }
 .play-launch-row .wdg-button-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 2px; }
 
-.play-deck-transport { display: flex; justify-content: center; align-items: center; gap: 12px; padding-top: 8px; margin-top: 6px; border-top: 1px solid var(--wdg-edge); }
+.play-deck-transport { display: flex; justify-content: center; align-items: center; gap: 12px; padding-top: 4px; margin-top: 2px; border-top: 1px solid var(--wdg-edge); }
 .play-deck-transport .wdg { --wdg-field-height: 44px; }
 .play-transport-button { --wdg-radius: 3px; }
 .play-master-cross { grid-row: 5 / span 2; align-items: flex-end; padding-bottom: 15px; }
@@ -101,13 +101,14 @@
 .play-source-markers span {position:absolute;top:0;border-left:1px solid var(--wdg-caption);color:var(--wdg-caption);font:9px var(--mono);white-space:nowrap;}
 .play-slip-marker {position:absolute;top:16px;bottom:0;border-left:1px dashed var(--primary);font:9px var(--mono);color:var(--primary);pointer-events:none;}
 
-.play-deck-transport .wdg {--wdg-field-height:24px;}
-.play-deck-transport > .play-hold {width:44px;}
+.play-deck-transport .wdg {--wdg-field-height:40px;--wdg-toggle-width:40px;}
+.play-deck-transport > .play-hold.wdg-body {width:40px;height:40px;}
 .play-context select {height:24px;border:1px solid var(--wdg-edge);border-radius:var(--wdg-radius);background:var(--wdg-face);color:var(--wdg-text);font:inherit;}
 .play-quick-loop {width:auto;}
-.play-deck-loops {grid-template-columns:1fr 1fr 1fr auto 32px;}
+.play-deck-loops {grid-template-columns:repeat(3,minmax(0,1fr)) auto 32px;}
 .play-deck-loops:not(:has(.play-quick-loop)) {grid-template-columns:1fr 1fr 1.6fr;}
-.play-deck-loops > .play-context-trigger {font-size:18px;padding:0;}
+.play-deck-loops > .play-context-trigger {width:32px;font-size:18px;padding:0;}
+.play-deck-loops > .wdg > .wdg-body {padding-inline:3px;}
 .play-context {position:fixed;inset:auto;margin:0;width:248px;max-width:calc(100vw - 32px);max-height:min(var(--wdg-popup-room,100vh),calc(100vh - 24px));overflow:auto;padding:10px;border:1px solid var(--wdg-edge);border-radius:5px;background:var(--wdg-face);color:var(--wdg-text);box-shadow:0 8px 28px #0009;font:11px var(--mono);}
 .play-context::backdrop {background:transparent;}
 .play-context-heading {display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
@@ -128,7 +129,8 @@
 .play-fx-heading > .wdg-select {flex:1;min-width:0;}
 .play-fx-heading .wdg-select-body {width:100%;border:0;background:transparent;}
 .play-phones-controls {display:flex;justify-content:space-evenly;gap:12px;padding:8px;}
-.play-master-cross {flex-direction:column;align-items:center;justify-content:space-between;padding-bottom:15px;}
+.play-master-cross {display:grid;grid-template-rows:subgrid;align-items:center;justify-items:center;padding:0;gap:0;}
+.play-master-cross > .wdg-slider {box-sizing:border-box;width:100%;align-self:stretch;justify-content:center;margin-top:2px;padding-top:4px;border-top:1px solid var(--wdg-edge);}
 .play-master-cross > .play-context-trigger {min-width:36px;}
 /* Six-source stems share two columns; the EQ/fader column keeps its original height. */
 .play-stem-levels:has(> :nth-child(5)) {grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,52px);gap:10px 4px;}
@@ -138,7 +140,7 @@
 .play-monitor-row .play-fx-global > .play-context-trigger {width:auto;}
 
 .play-beat-jump {display:flex;flex-direction:column;gap:2px;}
-.play-deck-transport {gap:8px;}
+.play-deck-transport {gap:4px;}
 .play-beat-jump .wdg-body {width:32px;}
 
 .play-route .wdg {--wdg-field-height:24px;}

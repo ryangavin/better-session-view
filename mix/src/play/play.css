@@ -34,13 +34,14 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 .mf-play .play-scroll {height:min(690px,calc(100% - 204px));}
 .mf-play .play-decks {height:100%;box-sizing:border-box;}
 @container (max-height: 780px) {
-  .mf-play .play-scroll {min-height:526px;}
+  .mf-play .play-scroll {min-height:528px;}
   .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) 64px 208px 32px 58px;}
   .mf-play .play-eq-stack {grid-template-rows:repeat(4,48px);gap:2px;}
   .mf-play .play-stem-levels:has(> :nth-child(5)) {grid-template-rows:repeat(3,46px);}
   .mf-play .play-channel-fader .wdg-slider {--wdg-slider-length:174px !important;}
   .mf-play .play-channel, .mf-play .play-effects {padding-block:3px;}
   .mf-play .play-deck-transport {padding-top:4px;margin-top:2px;}
+  .mf-play .play-master-cross > .wdg-slider {padding-top:4px;margin-top:2px;}
   .mf-play .play-fx-params {padding-block:0;}
   .mf-play .wdg-knob {--wdg-knob-height:22px;--wdg-knob-size:28px;}
   .mf-play .play-actions {gap:2px;padding-bottom:2px;}
@@ -53,6 +54,10 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
   .mf-play .play-cell, .mf-play .play-cell .wdg, .mf-play .play-cell .wdg-body {width:100%;min-width:0;}
   .mf-play .play-grid > .wdg {width:100%;min-width:0;}
   .mf-play .play-channel {gap:4px;}
+}
+@container (max-width: 960px) {
+  .mf-play .play-decks {min-width:852px;grid-template-columns:repeat(2,minmax(0,1fr)) 140px repeat(2,minmax(0,1fr));}
+  .mf-play .play-route {gap:4px;}
 }
 @container (max-height: 700px) {
   .mf-play .play-timeline {min-height:0;}

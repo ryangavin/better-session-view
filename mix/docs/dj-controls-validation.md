@@ -104,3 +104,19 @@ boundaries, Cue hold/Play takeover on touch hardware, and Phones through the act
 
 No release, main-branch push or publishing is part of this validation. Wiki changes are
 prepared in the separate local wiki checkout for the release owner.
+
+## Follow-up visual review
+
+The reported 1110×964 application viewport (including the library sidebar) now fits
+all five loop controls inside every deck. The settings trigger had inherited a width
+based on its larger symbol font instead of its 32px grid cell; it now has explicit sizing.
+All twelve Play/Cue/Sync faces measure 40×40px using the shared widget surface. Beat-jump
+pairs remain stacked. The master crossfader uses the routing/transport subgrid and its
+separator matches adjacent transport separators (901px at the reported viewport).
+Application client/scroll widths both measure 852px there, without page scrolling.
+The 1280×720 app and loaded six-stem harness at 1024×768 were visually inspected;
+loop bounds and square faces passed DOM measurements. Compact mixer height includes
+its two border pixels (528px), preventing a one-pixel footer overflow. The existing
+horizontal strip fallback remains for full app windows narrower than the 852px mixer
+plus sidebar. This visual follow-up changes no audio behavior; typecheck and the
+production build were rerun, while the prior audio/unit evidence above remains applicable.

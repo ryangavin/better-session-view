@@ -60,8 +60,11 @@ of level knobs. Compact layouts fit the checked 1280×720, 1024×768 and 1366×7
 Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens source,
 relative group movement and zoom settings. The compact loop row keeps In, Out,
 Exit/Reloop and quick loop visible; its settings button opens Q, launch timing, target,
-length, Slip and region edits. Comparable actions use the shared 24px widget button face.
-The master footer places FX beside Phones. Click FX to bypass/enable; right-click,
+length, Slip and region edits. Small actions use the shared 24px widget button face;
+deck Play/Cue/Sync are 40px squares. A narrower 852px mixer layout fits a 1110px window
+with its library sidebar. Loop controls remain within each deck.
+The master footer places FX beside Phones, with a separator above the crossfader
+aligned to the deck transport separators. Click FX to bypass/enable; right-click,
 Shift-click or Shift+F10 on that same button opens tail controls. Phones opens its level
 and Cue/Master blend. Context panels use the shared Popup placement and dismissal.
 
