@@ -52,7 +52,12 @@ export interface Model {
   load: number;
   /** `~9× realtime`, derived so the number and the words cannot disagree. */
   speed: string;
-  blurb: string;
+  /**
+   * How clean the stems come out, one to five, against the others here. Not
+   * an SDR figure: a rank a card can draw as a bar, the way a game draws a
+   * stat, next to the speed drawn the same way.
+   */
+  quality: number;
   /**
    * The uv extra a workspace needs before this model will run, if any.
    *
@@ -72,10 +77,13 @@ const speed = (realtime: number): string => `~${realtime}× realtime`;
 const model = (m: Omit<Model, 'speed'>): Model => ({ ...m, speed: speed(m.realtime) });
 
 /**
- * The blurbs say the trade rather than the score.
+ * The quality is a rank rather than a score.
  *
  * A model's SDR figure is not something anybody can act on standing at a
- * laptop; "the piano bleeds badly" is.
+ * laptop. Five pips against the others here is: the fine-tuned four is the
+ * cleanest, the base four is close behind, and the six loses two because
+ * its piano bleeds and wants checking before it is trusted. The card draws
+ * that beside the speed and the stems it makes, and nothing else to read.
  */
 export const MODELS: readonly Model[] = [
   model({
@@ -86,8 +94,7 @@ export const MODELS: readonly Model[] = [
     sources: FOUR,
     realtime: 2.7,
     load: 5,
-    blurb:
-      'Four fine-tuned checkpoints, one per source. The cleanest of the three, and the only one here that can report progress per stem — because it genuinely does one source at a time.',
+    quality: 5,
     needs: [],
   }),
   model({
@@ -98,8 +105,7 @@ export const MODELS: readonly Model[] = [
     sources: FOUR,
     realtime: 9,
     load: 4,
-    blurb:
-      'Base Demucs, one transformer pass. Fast enough to audition a whole crate; guitar and piano stay folded into Other.',
+    quality: 4,
     needs: [],
   }),
   model({
@@ -110,8 +116,7 @@ export const MODELS: readonly Model[] = [
     sources: SIX,
     realtime: 8.5,
     load: 4,
-    blurb:
-      'Adds guitar and piano to the base model, for the same time as the base model — the gap in the published bench is checkpoint loading, not inference. The guitar is usable; the piano bleeds badly and is worth checking before you trust it.',
+    quality: 3,
     needs: [],
   }),
 ];

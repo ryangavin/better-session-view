@@ -39,7 +39,7 @@ export interface Model {
   realtime: number;
   load: number;
   speed: string;
-  blurb: string;
+  quality: number;
   needs: string[];
 }
 

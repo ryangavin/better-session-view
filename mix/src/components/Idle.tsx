@@ -1,6 +1,6 @@
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Details } from './Details.tsx';
-import { STEMS } from '../mock.ts';
+import { StemStrip as Strip } from './Library.tsx';
 import { duration, estimate, roughly, type Ready } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 import './Idle.css';
@@ -18,8 +18,11 @@ import './Idle.css';
  * The metadata sits here for the same reason: it is the one moment a person is
  * looking at a track and not yet listening to it. `Details.tsx` has the form.
  *
- * The cards say the trade rather than the score. A model's SDR figure is not
- * something you can act on standing at a laptop; "the piano bleeds badly" is.
+ * The cards are three stats and no prose: the stems it makes, as the same
+ * lettered strip the library shows, and speed and quality as five pips each,
+ * the way a game draws a stat — the exact figures are in the tooltip for
+ * whoever wants them. Speed is the measured realtime rate against the
+ * fastest model here; quality is the registry's rank.
  *
  * The list comes from the main process rather than from a constant here, so
  * what is offered and what a job runs are one registry. Without an app around
@@ -43,6 +46,7 @@ export function Idle({ mix, ready, embedded = false }: { mix: Mix; ready: Ready 
 
   if (!song) return null;
 
+  const fastest = Math.max(1, ...mix.models.map((m) => m.realtime));
   /** Stems already on disk, which is only true when this screen was asked for. */
   const again = song.sources.length > 0;
   /** The same model over the same file is answered from disk, not re-rendered. */
@@ -55,12 +59,6 @@ export function Idle({ mix, ready, embedded = false }: { mix: Mix; ready: Ready 
         {!embedded && <h2 className="mf-page-title">{song.title}</h2>}
 
         <Details mix={mix} song={song} />
-
-        <p className="mf-page-blurb">
-          Each model trades render time against bleed between sources. A six-source model
-          splits guitar and piano out of the residual; a four-source one folds them back
-          into Other.
-        </p>
 
         {mix.problem && <p className="mf-page-problem">{mix.problem}</p>}
 
@@ -82,22 +80,13 @@ export function Idle({ mix, ready, embedded = false }: { mix: Mix; ready: Ready 
               onClick={() => mix.setModel(model.id)}
             >
               <span className="mf-model-name">{model.label}</span>
-              <span className="mf-model-blurb">{model.blurb}</span>
-              <span className="mf-model-facts">
-                <span>{model.sources.length} sources</span>
-                <span>{model.speed}</span>
-              </span>
-              <span className="mf-model-sources">
-                {STEMS.map((stem) => (
-                  <span
-                    key={stem.id}
-                    className="mf-model-dot"
-                    style={
-                      model.sources.includes(stem.id) ? { background: stem.ink } : undefined
-                    }
-                    title={stem.name}
-                  />
-                ))}
+              <span className="mf-model-stats">
+                <span>stems</span>
+                <Strip sources={model.sources} />
+                <span>speed</span>
+                <Pips of={Math.max(1, Math.round((model.realtime / fastest) * 5))} title={`${model.speed} — ${wait === null || model.id !== mix.model ? 'the separation phase, on Apple silicon' : wait}`} />
+                <span>quality</span>
+                <Pips of={model.quality} title={`${model.quality} of 5 against the models here`} />
               </span>
             </button>
           ))}
@@ -126,5 +115,16 @@ export function Idle({ mix, ready, embedded = false }: { mix: Mix; ready: Ready 
         </div>
       </div>
     </div>
+  );
+}
+
+/** A stat as a game draws one: five pips, so many of them lit. */
+function Pips({ of, title }: { of: number; title: string }) {
+  return (
+    <span className="mf-pips" role="img" aria-label={`${of} of 5`} title={title}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <i key={i} data-on={i < of || undefined} />
+      ))}
+    </span>
   );
 }
