@@ -11,7 +11,9 @@ export interface AudioDevice { name: string; isDefault: boolean; rates: RateRang
  * dropped before comparing, and the match still has to be unambiguous: naming
  * the wrong device's rates is worse than naming none.
  */
-const deviceName = (name: string) => name.replace(/\s*\(\s*[0-9a-f]{4}:[0-9a-f]{4}\s*\)\s*$/i, '').trim().toLowerCase();
+/** The name without the USB ids Chrome appends: what is written on the box. */
+export const deviceLabel = (name: string) => name.replace(/\s*\(\s*[0-9a-f]{4}:[0-9a-f]{4}\s*\)\s*$/i, '').trim();
+const deviceName = (name: string) => deviceLabel(name).toLowerCase();
 export function outputDevice(devices: AudioDevice[], deviceId: string, label: string): AudioDevice | null {
   const wanted = deviceName(label);
   const matches = devices.filter(device => deviceId ? wanted !== '' && deviceName(device.name) === wanted : device.isDefault);

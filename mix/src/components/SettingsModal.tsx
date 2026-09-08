@@ -10,7 +10,7 @@ import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { ThemeSettings } from '../Theme.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { openflow } from '../openflow.ts';
-import { outputDevice, rateChoices, supportsRate, type AudioDevice } from '../audioDevices.ts';
+import { deviceLabel, outputDevice, rateChoices, supportsRate, type AudioDevice } from '../audioDevices.ts';
 
 type OutputChooser = MediaDevices & { selectAudioOutput?: () => Promise<MediaDeviceInfo> };
 const LATENCY: AudioContextLatencyCategory[] = ['interactive','balanced','playback'];
@@ -46,7 +46,7 @@ export function SettingsModal({mix,mixer,playView,onClose}:{mix:Mix;mixer:MixerE
     return ()=>{alive=false;};
   },[draft.deviceId]);
   const unavailable=draft.deviceId&&!devices.some(d=>d.deviceId===draft.deviceId);
-  const options=[{id:'',name:'System default'},...devices.map((d,i)=>({id:d.deviceId,name:d.label||`Audio output ${i+1}`})),...(unavailable?[{id:draft.deviceId,name:'Saved output (not currently available)'}]:[])];
+  const options=[{id:'',name:'System default'},...devices.map((d,i)=>({id:d.deviceId,name:deviceLabel(d.label)||`Audio output ${i+1}`})),...(unavailable?[{id:draft.deviceId,name:'Saved output (not currently available)'}]:[])];
   const output=outputDevice(hardware,draft.deviceId,devices.find(device=>device.deviceId===draft.deviceId)?.label??'');
   const discrete=rateChoices(output);
   const continuous=output?.rates.filter(range=>range.min<range.max)??[];

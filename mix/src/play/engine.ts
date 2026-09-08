@@ -446,7 +446,10 @@ export class MixerEngine {
     const when=this.ctx?this.ctx.currentTime+this.lead():0;
     for(const [name,slot] of this.target(id)){
       if(!(slot.enabled || !d.initialized))continue;
-      if(playing){if(!slot.voice.playing)this.startSlot(id,name,slot,at,when);}
+      // Started even when it is already running: the idle group has been playing
+      // on under the ramp and has drifted from what was heard, so the swap has to
+      // bring it to the audible position rather than adopt its own.
+      if(playing)this.startSlot(id,name,slot,at,when);
       else slot.voice.seek(at);
     }
     this.loopState(id);this.selection(id);this.apply();

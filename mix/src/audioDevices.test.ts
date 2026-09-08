@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { outputDevice, rateChoices, supportsRate, type AudioDevice } from './audioDevices.ts';
+import { deviceLabel, outputDevice, rateChoices, supportsRate, type AudioDevice } from './audioDevices.ts';
 const output: AudioDevice = {name:'Interface',isDefault:true,rates:[{min:48000,max:48000},{min:44100,max:44100},{min:768000,max:768000},{min:48000,max:48000}]};
 it('uses the native default and requires a unique exact name for browser sinks',()=>{
   expect(outputDevice([output],'','')).toBe(output);
@@ -12,6 +12,8 @@ it('uses the native default and requires a unique exact name for browser sinks',
   expect(outputDevice([model],'opaque','Model 16 (0644:8060)')).toBe(model);
   expect(outputDevice([model],'opaque','model 16')).toBe(model);
   expect(outputDevice([model],'opaque','Model 12 (0644:8060)')).toBeNull();
+  expect(deviceLabel('Model 16 (0644:8060)')).toBe('Model 16');
+  expect(deviceLabel('Scarlett 18i20 USB')).toBe('Scarlett 18i20 USB');
 });
 it('lists every discrete driver rate, sorted and deduplicated, including high rates',()=>{
   expect(rateChoices(output)).toEqual([0,44100,48000,768000]);

@@ -407,6 +407,20 @@ describe('the four-deck playback owner',()=>{
     expect(head.start!*2%1).toBeCloseTo(0);
     expect(head.end!*2%1).toBeCloseTo(0);
   });
+  it('brings the idle source to the audible one on a swap, so neither drifts',async()=>{
+    const {engine,ctx,load}=setup();await load();
+    await engine.play('deck-a',true);ctx.currentTime=2;
+    const stems=engine.readFrame().decks['deck-a'].seconds!;
+    engine.commands.setDeck('deck-a','full',true);ctx.currentTime=2.5;
+    expect(engine.readFrame().decks['deck-a'].seconds!).toBeCloseTo(stems+.5,1);
+    // The stems keep running underneath. Coming back, they take the original's
+    // position rather than the one they wandered to.
+    ctx.currentTime=20;
+    const full=engine.readFrame().decks['deck-a'].seconds!;
+    expect(full).toBeGreaterThan(stems+10);
+    engine.commands.setDeck('deck-a','full',false);ctx.currentTime=20.5;
+    expect(engine.readFrame().decks['deck-a'].seconds!).toBeCloseTo(full+.5,1);
+  });
   it('gives every deck one quick loop length, two bars by default',async()=>{
     const {engine,ctx,load}=setup();await load('deck-a');await load('deck-b');
     expect(engine.snapshot().loopBeats).toBe(8);

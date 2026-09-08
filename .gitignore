@@ -42,3 +42,4 @@ widgets/bench/dist/
 # the stems, for the harness page. The truth folder is hand-corrected beats, and is kept
 mix/harness/reports/*
 !mix/harness/reports/truth/
+html/
