@@ -547,6 +547,10 @@ export class MixerEngine {
     const d=this.decks.get(id);if(!d || d.move)return;
     const slots=this.loopTargets(id);if(!slots.length)return;
     const point=this.capture(slots);if(!d.initialized)point.forEach(p=>p.enabled=true);this.snapCheckpoint(id,point);
+    // Pressed inside a running loop, In is the head of that loop rather than the
+    // start of a new one. It is the fine end of the same gesture halving is the
+    // coarse end of, so the loop keeps playing and only its front moves.
+    if(slots.some(([,s])=>s.span)) { this.reshape(id,slots,point,'from'); return; }
     // In also replaces the corresponding temporary Cue, preserving the combination.
     const key=this.model(id).loopFocus ? this.focused(id)![0] : this.model(id).full?'full':'deck';
     d.checkpoints.set(key,point);
@@ -557,9 +561,27 @@ export class MixerEngine {
   deckLoopOut(id: string) {
     const d=this.decks.get(id);if(!d || d.move)return;
     const slots=this.loopTargets(id), ends=this.capture(slots);this.snapCheckpoint(id,ends);
+    if(slots.some(([,s])=>s.span)) { this.reshape(id,slots,ends,'to'); return; }
     const spans=slots.map(([name])=>{const from=this.loopStarts.get(`${id}/${name}`);return [name,{from:from ?? NaN,to:ends.get(name)!.at}] as const;});
     if(!spans.length || spans.some(([,s])=>!Number.isFinite(s.from) || s.to-s.from<.02)){this.error('Loop Out must be at least 20 ms after In for every addressed stem.',id);return;}
     this.installLoops(id,new Map(spans),true);
+  }
+  /**
+   * Move one boundary of the loop that is already running, and keep playing.
+   *
+   * The region is rebuilt rather than the marker nudged, because every
+   * addressed stem carries its own span and they have to agree or the deck
+   * stops sounding like one record.
+   */
+  private reshape(id:string, slots:[string,Slot][], point:Checkpoint, edge:'from'|'to') {
+    const spans=new Map<string,Span>();
+    for(const [name,slot] of slots){
+      const span=slot.span, at=point.get(name)?.at; if(!span || at===undefined) continue;
+      const next=edge==='from'?{from:at,to:span.to}:{from:span.from,to:at};
+      if(next.to-next.from<.02){this.error('A loop cannot be shortened past 20 ms. Halve it instead.',id);return;}
+      spans.set(name,next);
+    }
+    if(spans.size)this.installLoops(id,spans,false);
   }
   private installLoops(id:string, spans:Map<string,Span>, restart:boolean) {
     const d=this.decks.get(id)!,when=this.loopWhen(id);

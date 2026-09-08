@@ -164,8 +164,11 @@ common delta anchored to focus, preserving offsets. Missing grids disable grid-d
 controls. Loop scope chooses active stems or focus only. In works paused or playing,
 stores Cue and starts a new capture; Out validates every target atomically with at least
 20ms duration. Scope cannot change while awaiting Out. Quick loops use the selected beat
-count (16 beats is four bars in 4/4); half/double keep In fixed, move shifts by one
-beat, boundary buttons adjust by Q, a whole beat while synced, or 1/8 beat. Invalid
+count, shared by every deck; half/double keep In fixed, and move shifts by one beat.
+Pressed again inside a running loop, In and Out are that loop's boundaries rather than a
+new capture: In brings the front up to the playhead and Out pulls the tail back, both on
+the Q division. That is the fine end of the gesture halving is the coarse end of, so
+there are no separate boundary buttons. Invalid
 edits change nothing. Exit continues at each audible position and retains saved regions.
 Reloop goes to In, preserving paused/playing state.
 Loop edits do not rewrite Cue. A section-name launch clears old saved loops.

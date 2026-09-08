@@ -385,6 +385,28 @@ describe('the four-deck playback owner',()=>{
     expect(engine.snapshot().decks[0].full).toBe(true);
     expect(engine.snapshot().decks[0].stems.every(s=>s.level===100)).toBe(true);
   });
+  it('shortens a running loop from either end when In or Out is pressed again',async()=>{
+    const {engine,ctx,load}=setup();await load();
+    engine.commands.setDeckTiming!('deck-a','quantize',1);engine.commands.setLoopBeats!(16);
+    await engine.play('deck-a',true);ctx.currentTime=2;engine.quickLoop('deck-a');
+    const first=engine.snapshot().decks[0].loop!;
+    expect(+(first.end!-first.start!).toFixed(2)).toBe(8);
+    // Out again, from inside: the tail comes in and the head stays.
+    ctx.currentTime=6;engine.deckLoopOut('deck-a');
+    const tail=engine.snapshot().decks[0].loop!;
+    expect(tail.start).toBe(first.start);
+    expect(tail.end!).toBeLessThan(first.end!);
+    expect(tail.enabled).toBe(true);
+    // In again: the head moves up and the tail stays where Out left it.
+    ctx.currentTime=7;engine.deckLoopIn('deck-a');
+    const head=engine.snapshot().decks[0].loop!;
+    expect(head.end).toBe(tail.end);
+    expect(head.start!).toBeGreaterThan(tail.start!);
+    expect(head.enabled).toBe(true);
+    // Both boundaries landed on the Q division.
+    expect(head.start!*2%1).toBeCloseTo(0);
+    expect(head.end!*2%1).toBeCloseTo(0);
+  });
   it('gives every deck one quick loop length, two bars by default',async()=>{
     const {engine,ctx,load}=setup();await load('deck-a');await load('deck-b');
     expect(engine.snapshot().loopBeats).toBe(8);
