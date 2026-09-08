@@ -252,12 +252,17 @@ export async function addFiles(root: string, files: readonly string[]): Promise<
   const ids: string[] = [];
 
   for (const source of files) {
-    const ext = path.extname(source).toLowerCase();
-    if (!SOUND.includes(ext)) {
-      refused.push(`${path.basename(source)} — not an audio file`);
-      continue;
-    }
     try {
+      const info = await fs.stat(source);
+      if (info.isDirectory()) {
+        refused.push(`${path.basename(source)} — folders cannot be imported; open the folder and drop the audio files inside`);
+        continue;
+      }
+      const ext = path.extname(source).toLowerCase();
+      if (!info.isFile() || !SOUND.includes(ext)) {
+        refused.push(`${path.basename(source)} — not an audio file`);
+        continue;
+      }
       const base = tidy(path.basename(source, path.extname(source)));
       const name = await freeName(audio, base, ext);
       // The filename is the only metadata an import ever brings — `guess.ts`.

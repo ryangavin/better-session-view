@@ -195,6 +195,28 @@ describe('importing', () => {
     const done = await addFiles(root, [await drop('Loud.WAV')]);
     expect(done.added).toBe(1);
   });
+
+  it.each(['flac', 'FLAC'])('copies .%s files unchanged and persists the imported track', async (ext) => {
+    const original = await drop(`Track.${ext}`, 'fLaC');
+    const done = await addFiles(root, [original]);
+    expect(done.added).toBe(1);
+    expect(done.refused).toEqual([]);
+    const saved = await read(root);
+    expect(saved.tracks[0].file).toBe('audio/Track.flac');
+    expect(await fs.readFile(path.join(root, saved.tracks[0].file))).toEqual(await fs.readFile(original));
+  });
+
+  it.each(['Album [FLAC] 88', 'Album.flac'])('explains a folder drop (%s) without refusing sibling audio files', async (name) => {
+    const folder = path.join(source, name);
+    await fs.mkdir(folder);
+    await fs.writeFile(path.join(folder, 'Inside.flac'), 'fLaC');
+    const done = await addFiles(root, [folder, await drop('Outside.flac')]);
+    expect(done.added).toBe(1);
+    expect(done.manifest.tracks.map(track => track.file)).toEqual(['audio/Outside.flac']);
+    expect(done.refused).toEqual([
+      `${name} — folders cannot be imported; open the folder and drop the audio files inside`,
+    ]);
+  });
 });
 
 describe('tidy', () => {

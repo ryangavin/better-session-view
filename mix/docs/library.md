@@ -55,6 +55,15 @@ the same path: the page hands browser `File` objects to the isolated preload,
 passes the resulting paths to `addFiles`. The renderer never receives a filesystem path
 and cannot invent one through the bridge.
 
+FLAC files are accepted alongside WAV, AIFF, MP3, M4A, AAC, Ogg, Opus and WebM;
+extensions are case-insensitive. Import copies the original bytes without decoding or
+transcoding. Separation decodes the audio later through the local engine.
+
+Drops are files, not recursive folder imports. `addFiles` checks the filesystem type
+before the extension, so an album folder named `[FLAC]` (or even `Album.flac`) gets a
+folder-specific refusal asking the user to open it and drop the audio files inside.
+Other valid files in the same drop still import.
+
 The dashed drop target is window-wide because dropping on a waveform should not navigate
 the app to a local file. It appears only after a library folder has been chosen and while
 no other import is running.
