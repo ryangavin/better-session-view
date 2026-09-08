@@ -309,3 +309,6 @@ Thru flexes into the remaining width.
 
 Faders and meters fill the channel height, sharing a flexible track row above
 their readings. Fader drag distance follows the current track size.
+
+A faint right-angle connector follows the staggered stems in order. It resizes
+with the controls, stays behind their faces and labels, and does not intercept input.
