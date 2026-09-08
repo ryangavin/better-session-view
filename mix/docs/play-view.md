@@ -18,7 +18,10 @@ Press plain Tab to switch. The sidebar and hidden Prep page stay
 mounted. Editable controls and dialogs retain normal Tab navigation. The outgoing view
 pauses locally and releases its Link publisher; switching never starts the incoming
 view or sends a Stop to other Link peers. The shared header controls the visible view's
-engine. In Play, Space toggles the shared clock and loaded decks; deck Play/Pause remains
+engine. Its centered controls are visually separated into Transport (play/stop, tempo
+and position), Timing (launch timing, marker quantization and quick-loop length, in Play),
+and Audio (Link Audio, Local audio and Link status). Prep's loop remains in Transport
+and its conditional Link pins remain beside Link Audio. In Play, Space toggles the shared clock and loaded decks; deck Play/Pause remains
 independent. Stop returns all decks to the beginning and clears section selections and
 captured loops. Deck assignments, cue points and mix settings last for the window session.
 

@@ -210,7 +210,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               it is the speed the song plays at — the one number on the bar
               that changes what you hear. Measuring it is a separate job, and
               it has a separate group. */}
-          <div className="mf-group" role="group" aria-label="Playback">
+          <div className="mf-group" role="group" aria-label="Transport">
             <Button
               onPress={() => mix.setPlaying(!mix.playing)}
               label={mix.playing ? 'Pause' : 'Play'}
@@ -275,13 +275,9 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
                 and heard in the other. */}
             <span className="mf-clock">{position(mix.bar, mix.bars)}</span>
             <span className="mf-clock mf-clock-time">{clockOf(mix.position)}</span>
-            {/* Link and the speakers at the right-hand end of playback, where
-                they belong: Link Audio starts and stops with Live and takes its
-                tempo, so it decides what these buttons do, and local audio is
-                where the result is heard. They stood alone beside the logo,
-                which put the one control that overrules the transport as far
-                from it as the bar allows. */}
-            {playView && mixer && <><Select
+          </div>
+          {playView && mixer && <div className="mf-group" role="group" aria-label="Timing">
+            <Select
               items={LAUNCH.map(([,name])=>name)}
               index={Math.max(0,LAUNCH.findIndex(([beats])=>beats===mixer.snapshot().launchBeats))}
               onChange={i=>mixer.commands.setLaunchBeats?.(LAUNCH[i][0] as number)}
@@ -302,7 +298,9 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               label="Quick loop length"
               title="How long a quick loop is, on every deck"
               width={72}
-            /></>}
+            />
+          </div>}
+          <div className="mf-group" role="group" aria-label="Audio">
             <Toggle on={mix.linkAudio.enabled}
               onChange={mix.setLinkAudio}
               label="Link Audio"

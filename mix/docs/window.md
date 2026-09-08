@@ -75,13 +75,13 @@ joined Debug/Settings group align right.
 The title and artist share a keyboard-accessible button that opens Track Details;
 renaming happens there alongside the album and cover. The header text truncates when
 space is tight. The button is disabled during beat-grid editing. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
-their names in the tooltip; they were two wide labelled switches on a header that had
-run out of room. They sit at the right-hand end of the Playback group, after the clocks,
-with Link pins and the reading after them: Link Audio takes Live's tempo and starts and
-stops with it, so it decides what the transport buttons do, and standing in its own group
-beside the logo put it as far from them as the bar allows. The reading is left out
-entirely when it has nothing to say, since an empty child still takes the divider the
-group draws between children.
+their names in the tooltip. The centered controls form three separate compact groups:
+Transport holds play/stop, Prep's loop, tempo and position; Timing holds Play's launch
+timing, marker quantization and quick-loop length; Audio holds Link Audio and Local
+audio, followed by Prep's conditional Link pins and the Link status reading. Each group
+has its own outline, with a small gap between groups. Timing appears only in Play;
+all controls retain their existing availability and behavior. The Link reading is left
+out entirely when it has nothing to say, since an empty child still takes a divider.
 
 **Link Audio** shares the loaded stems as separate stereo inputs in Live. It starts off
 on every window load. The adjacent text reports connecting, discovered peers, capture
