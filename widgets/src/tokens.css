@@ -34,6 +34,7 @@
   --wdg-height: 17px;
   --wdg-field-height: 16px;
   --wdg-track: 14px;
+  --wdg-thumb: 2px;
   --wdg-strip: 4px;
   --wdg-mark-width: 3px;
   --wdg-reach-ink: var(--ui, #b7b7be);

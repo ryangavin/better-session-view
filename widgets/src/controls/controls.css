@@ -94,15 +94,13 @@
 }
 
 .wdg-slider-vertical .wdg-slider-thumb {
-  inset: auto 0 calc(var(--wdg-fraction) * 100%) 0;
-  height: 2px;
-  transform: translateY(1px);
+  inset: auto 0 calc(var(--wdg-fraction) * (100% - var(--wdg-thumb))) 0;
+  height: var(--wdg-thumb);
 }
 
 .wdg-slider-horizontal .wdg-slider-thumb {
-  inset: 0 auto 0 calc(var(--wdg-fraction) * 100%);
-  width: 2px;
-  transform: translateX(-1px);
+  inset: 0 auto 0 calc(var(--wdg-fraction) * (100% - var(--wdg-thumb)));
+  width: var(--wdg-thumb);
 }
 
 .wdg-number-body {

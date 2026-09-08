@@ -124,7 +124,7 @@ export class MixerEngine {
     finally { if (this.requests.get(id) === request) this.requests.delete(id); }
   }
   private adopt(id: string, audio: DeckAudio) {
-    const ctx = this.audio(), channel = new MixerChannel(ctx), sends = [ctx.createGain(), ctx.createGain()], phones = ctx.createGain();
+    const ctx = this.audio(), channel = new MixerChannel(ctx,true), sends = [ctx.createGain(), ctx.createGain()], phones = ctx.createGain();
     sends.forEach(send=>send.gain.value=0);phones.gain.value=0;
     channel.output.connect(this.dry); sends.forEach(send => channel.output.connect(send)); channel.pre.connect(phones); phones.connect(this.phonesCue);
     const slots = new Map<string, Slot>();
@@ -582,7 +582,7 @@ export class MixerEngine {
   };
   private sampleFrame = (): MixerFrame => ({ decks: Object.fromEntries([...this.decks].map(([id,d]) => {
     const active=this.focused(id)?.[1]; const at=active?.voice.at() ?? 0;
-    return [id,{sources:Object.fromEntries(this.target(id).map(([name,s])=>[name,{seconds:s.voice.at(),beat:this.beatOf(id,s.voice.at()),playing:s.voice.playing,enabled:s.enabled,backgroundBeat:d.backgrounds.has(name)?this.beatOf(id,this.backgroundAt(id,d.backgrounds.get(name)!,this.ctx!.currentTime)):undefined}])),seconds:at,duration:d.audio.duration,beat:d.audio.map ? beatAt(d.audio.map,at*d.audio.map.rate) : at*(this.model(id).track?.bpm ?? 120)/60,level:d.channel.level()}];
+    return [id,{sources:Object.fromEntries(this.target(id).map(([name,s])=>[name,{seconds:s.voice.at(),beat:this.beatOf(id,s.voice.at()),playing:s.voice.playing,enabled:s.enabled,backgroundBeat:d.backgrounds.has(name)?this.beatOf(id,this.backgroundAt(id,d.backgrounds.get(name)!,this.ctx!.currentTime)):undefined}])),seconds:at,duration:d.audio.duration,beat:d.audio.map ? beatAt(d.audio.map,at*d.audio.map.rate) : at*(this.model(id).track?.bpm ?? 120)/60,level:d.channel.level(),stereo:d.channel.stereoLevels()}];
   })),masterLevel:this.ctx ? this.master.level() : 0,masterStereo:this.ctx ? this.master.stereoLevels() : [0,0] });
   private waveform(id: string, d: Deck, beat: number): Pick<MixerDeck,'waveform'|'peaks'|'waveformSpectrum'> {
     const fit=this.model(id).zoom===0, start = fit ? this.beatOf(id,0) : Math.floor(beat / 32) * 32 - 32;

@@ -24,7 +24,7 @@ export function FrameMeter({ sample, label }: { sample(): number; label: string 
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
   }, []);
-  return <Meter ink="var(--play-signal)" width={14} name="" label={label} orientation="vertical" length={210} value={value} />;
+  return <Meter ink="var(--play-signal)" name="" label={label} orientation="vertical" length={210} value={value} />;
 }
 
 

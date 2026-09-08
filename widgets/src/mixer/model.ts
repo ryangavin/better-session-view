@@ -123,7 +123,7 @@ export interface MixerCommands {
 }
 export interface MixerFrame {
   /** Absolute beat position per deck, and normalized measured output 0–1. */
-  decks: Readonly<Record<string, { beat: number; level: number; seconds?: number; duration?: number; sources?: Readonly<Record<string, {beat: number; seconds: number; playing: boolean; enabled: boolean; backgroundBeat?:number}>> }>>;
+  decks: Readonly<Record<string, { beat: number; level: number; stereo?: readonly [number,number]; seconds?: number; duration?: number; sources?: Readonly<Record<string, {beat: number; seconds: number; playing: boolean; enabled: boolean; backgroundBeat?:number}>> }>>;
   masterLevel: number;
   masterStereo?: readonly [number,number];
 }
