@@ -229,7 +229,9 @@ channel and the routing row, the same rule the Hot cue divider uses. A gutter tr
 an equal gap put the content in the same places, so the separators cost no alignment.
 The fader assembly stops at its own maximum rather than filling the widened centre. The
 plate carries evenly spaced horizontal ticks in the control edge colour, drawn as the
-body's own background so the slot and the cap paint over them. The master channel does the same against its own FX row: its meters span
+body's own background so the slot and the cap paint over them. The scale is inset from
+both ends rather than ruling to the plate's edge, and its divisions are counted rather
+than sized, so the first and last tick both land inside it. The master channel does the same against its own FX row: its meters span
 the first two columns and carry the FX knobs' side margin, and Trim/EQ takes the third
 under FX B.
 
