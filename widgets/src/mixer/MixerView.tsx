@@ -24,7 +24,7 @@ export function MixerView({ state, commands, readFrame, theme, params, deckProps
     </div>
     <div className="play-scroll"><div className="play-decks">
       {decks.map((deck, index) => <Fragment key={deck.id}>
-        <DeckStrip deckProps={deckProps} deck={deck} index={index} commands={commands} readFrame={readFrame} theme={theme} params={params} />
+        <DeckStrip deckProps={deckProps} deck={deck} index={index} loopBeats={state.loopBeats} commands={commands} readFrame={readFrame} theme={theme} params={params} />
         {index === 1 && <MasterStrip externalTransport={externalTransport} state={state} commands={commands} readFrame={readFrame} theme={theme} params={params} />}
       </Fragment>)}
     </div></div>

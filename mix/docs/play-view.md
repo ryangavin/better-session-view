@@ -71,7 +71,11 @@ Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens s
 relative group movement and zoom settings. The compact loop row keeps In, Out,
 Exit/Reloop and quick loop visible on one shared column width; its settings button keeps
 its own square and opens Q, launch timing, target,
-length, Slip and region edits. Quick loop encloses the playhead rather than moving it:
+Slip and boundary edits. The quick loop's length is one setting for the whole rig, set
+in the header in bars, so the decks cannot disagree about what a loop is; it defaults to
+two bars. Moving the loop is a pair of buttons beside the quick loop rather than a menu
+item, because sliding a region is done far more often than it is configured — and it is
+not the transport's beat jump, which moves the playhead and leaves the loop. Quick loop encloses the playhead rather than moving it:
 the region begins at the division boundary at or before the current position, and
 playback carries on inside it. Small actions use the shared 24px widget button face;
 deck Play/Cue/Sync are squares that fill the transport row. The compact mixer has a 964px minimum width so its transport squares and

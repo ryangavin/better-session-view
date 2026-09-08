@@ -17,7 +17,7 @@ export function emptyDeck(id: string, i: number): MixerDeck {
 }
 export function initialMixer(): MixerState {
   return { decks: DECK_IDS.map(emptyDeck), running: false, beat: 0, loop: { start: null, end: null, enabled: false }, canLoopOut: false,
-    bpm: 124, quantized: false, cross: 0, master: 100, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0,0,0],
+    bpm: 124, quantized: false, loopBeats: 8, cross: 0, master: 100, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0,0,0],
     effectsEnabled:true,effectEnabled:{A:true,B:true},effectTailing:false,phonesLevel:100,phonesMix:0,
     effects: EFFECTS, fxA: 'delay', fxB: 'reverb', playbackAvailable: false };
 }
@@ -61,7 +61,7 @@ export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): Mix
   const sources = track.stems ? [...STANDARD, ...track.sources.filter(id => !STANDARD.includes(id))] : STANDARD;
   const cuts = asset.analysis?.slices;
   return { ...deck, status: 'ready', track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: grid?.beats ? tempoOf(grid.beats) : grid?.bpm ?? track.bpm, key: track.key ?? '—' },
-    focus: track.sources.includes('drums') ? 'drums' : track.sources[0] ?? 'full', waveformSource: 'full', moveTogether: true, independentStems: false, zoom: 32, gridAvailable: !!grid, quantize: 0, launchBeats: 0, loopBeats: 16,
+    focus: track.sources.includes('drums') ? 'drums' : track.sources[0] ?? 'full', waveformSource: 'full', moveTogether: true, independentStems: false, zoom: 32, gridAvailable: !!grid, quantize: 0, launchBeats: 0,
     peaks: asset.peaks, full: true, fullSection: null, fullQueued: undefined,
     message: !grid ? 'No saved beat grid — Sync unavailable' : !cuts?.length ? 'No saved sections — full track available' : undefined,
     sections: cuts?.length ? cuts.map((cut, i) => ({id: `section-${i}-${cut.bar}`, name: cut.name})) : [{id:'full-track', name:'Track'}],

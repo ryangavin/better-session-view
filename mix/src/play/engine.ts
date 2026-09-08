@@ -10,6 +10,7 @@ import { DeckVoice } from './voice.ts';
 import { MixerChannel, MixerEffect, levelGain, routeGain, smooth } from './graph.ts';
 import { floorBeat, snapBeat, launchWait, LOOP_LENGTHS } from './timing.ts';
 import { EFFECTS } from './effects.ts';
+import { outputPairs, pairReach, readAudioSettings } from '../audioSettings.ts';
 
 type Slot = { pending?: {selected:string;at:number}; revision: number; voice: DeckVoice; selected: string | null; span?: Span; enabled: boolean };
 type Position = { at: number; enabled: boolean; selected: string | null; span?: Span };
@@ -36,6 +37,24 @@ export class MixerEngine {
   private disposed = false; private operation = 0;
   private loopStarts = new Map<string, number>(); private loopSpans = new Map<string, Span>();
   monitoring = true; phonesAvailable = false; problem: string | null = null;
+  /** The pairs actually in use, after clamping the stored choice to the device. */
+  mainPair = 0; cuePair: number | null = null;
+  /**
+   * Clamp the stored pairs to what this output can reach.
+   *
+   * A saved 13/14 on a machine now driving a laptop's two outputs has to land
+   * somewhere, and silence is worse than the front pair. The cue is dropped
+   * rather than moved: sharing a pair with the mix would put the pre-fader
+   * signal into the room.
+   */
+  private outputPairsFor(outputs: number): { main: number; cue: number | null } {
+    const pairs = outputPairs(outputs);
+    if (!pairs.length) return { main: 0, cue: null };
+    const held = readAudioSettings();
+    const main = pairs.includes(held.mainPair) ? held.mainPair : 0;
+    const cue = pairs.includes(held.cuePair) && held.cuePair !== main ? held.cuePair : null;
+    return { main, cue };
+  }
   private wasLinked = false;
   private phaseCorrectedAt = -Infinity;
   private playingOrder: string[] = [];
@@ -54,12 +73,27 @@ export class MixerEngine {
     const ctx = this.ctx = prepared ?? this.contextFactory();
     this.master = new MixerChannel(ctx,true); this.dry = ctx.createGain(); this.dry.connect(this.master.input);
     this.local = ctx.createGain(); this.local.gain.value = this.monitoring ? 1 : 0; this.phones = ctx.createGain(); this.phonesCue=ctx.createGain();this.phonesMaster=ctx.createGain();this.phonesMaster.gain.value=0;this.phonesCue.connect(this.phones);this.master.output.connect(this.phonesMaster);this.phonesMaster.connect(this.phones);this.master.output.connect(this.local);
-    // Conventional stereo master on 1/2; pre-fader headphone cue on 3/4 when available.
-    this.phonesAvailable = ctx.destination.maxChannelCount >= 4;
-    if (this.phonesAvailable) {
-      ctx.destination.channelCount = 4;
-      const merge = ctx.createChannelMerger(4), main = ctx.createChannelSplitter(2), cue = ctx.createChannelSplitter(2);
-      this.local.connect(main); this.phones.connect(cue); main.connect(merge, 0, 0); main.connect(merge, 1, 1); cue.connect(merge, 0, 2); cue.connect(merge, 1, 3); merge.connect(ctx.destination);
+    /**
+     * The mix and the cue go to the pairs the person chose, not to 1/2 and 3/4.
+     *
+     * A two-output interface has one pair and no cue; a sixteen-output one has
+     * eight and no convention about which is the booth. So the destination is
+     * opened wide enough to reach the further of the two chosen pairs and the
+     * merger carries silence everywhere else, which is what lets a mix sit on
+     * 13/14 while the cue sits on 11/12.
+     */
+    const outputs = ctx.destination.maxChannelCount;
+    const chosen = this.outputPairsFor(outputs);
+    this.mainPair = chosen.main; this.cuePair = chosen.cue;
+    this.phonesAvailable = chosen.cue !== null;
+    const reach = pairReach(Math.max(chosen.main, chosen.cue ?? chosen.main));
+    if (reach > 2) {
+      ctx.destination.channelCount = Math.min(outputs, reach);
+      const merge = ctx.createChannelMerger(ctx.destination.channelCount);
+      const feed = (node: AudioNode, pair: number) => { const split = ctx.createChannelSplitter(2); node.connect(split); split.connect(merge, 0, pair * 2); split.connect(merge, 1, pair * 2 + 1); };
+      feed(this.local, chosen.main);
+      if (chosen.cue !== null) feed(this.phones, chosen.cue);
+      merge.connect(ctx.destination);
     } else this.local.connect(ctx.destination);
     this.masterSends = [ctx.createGain(), ctx.createGain()]; this.masterSends.forEach(send => {send.gain.value=0;this.dry.connect(send);});
     this.publisher = new LinkAudioSender(ctx, () => {
@@ -297,7 +331,7 @@ export class MixerEngine {
     const op = ++d.operation;
     if (on) { this.patchDeck(id, { message: 'Preparing Sync…' }); await Promise.all([...d.slots.values()].map(s => s.voice.prepare())); }
     if (this.disposed || this.decks.get(id) !== d || op !== d.operation) return;
-    this.patchDeck(id, { synced: on, message: undefined, ...(on?{loopBeats:Math.max(1,this.model(id).loopBeats ?? 16)}:{}) });
+    this.patchDeck(id, { synced: on, message: undefined });
     const when = this.ctx!.currentTime + this.lead();
     const playing=this.target(id).filter(([,s])=>s.voice.playing);
     const anchor=playing.find(([name])=>name===this.focused(id)?.[0]) ?? playing[0];
@@ -558,12 +592,15 @@ export class MixerEngine {
     }
     this.loopState(id);this.selection(id);
   }
+  /** The shared length, held to whole beats on a deck that is synced. */
+  private quickLoopBeats(id:string) { const beats=this.state.loopBeats; return this.model(id).synced ? Math.max(1,beats) : beats; }
+  setLoopBeats = (beats:number) => { if(!LOOP_LENGTHS.includes(beats as never))return; this.publish({...this.state,loopBeats:beats}); };
   quickLoop(id:string) {
     const d=this.decks.get(id);if(!d || d.move)return;
     if(this.loopTargets(id).some(([,s])=>s.span)){this.setDeckLoopEnabled(id,false);return;}
     if(!d.audio.map){this.error('Quick loops need a saved beat grid.',id);return;}
     const point=this.capture(this.loopTargets(id));this.snapCheckpoint(id,point,'before');
-    const spans=new Map([...point].map(([name,p])=>[name,{from:p.at,to:this.secondsOf(id,this.beatOf(id,p.at)+(this.model(id).loopBeats ?? 16))}]));
+    const spans=new Map([...point].map(([name,p])=>[name,{from:p.at,to:this.secondsOf(id,this.beatOf(id,p.at)+this.quickLoopBeats(id))}]));
     if([...spans.values()].some(s=>s.to>d.audio.duration || s.to-s.from<.02)){this.error('That loop does not fit inside every addressed stem.',id);return;}
     this.installLoops(id,spans,false);
   }
@@ -650,10 +687,11 @@ export class MixerEngine {
     if(changed)this.publish({...this.state,decks,beat,canLoopOut:this.state.loop.start!==null&&this.beat()-this.state.loop.start>0.1});
   }
   commands: MixerCommands = {
+    setLoopBeats:this.setLoopBeats,
     setDeckTiming:(id,control,value)=>{
       const d=this.decks.get(id);if(!d || !Number.isFinite(value))return;
-      const allowed=control==='loopBeats'?LOOP_LENGTHS:control==='launchBeats'?[0,1,4]:[0,.125,.25,.5,1,4];
-      if(!allowed.includes(value as never) || control==='loopBeats' && this.model(id).synced && value<1)return;
+      const allowed=control==='launchBeats'?[0,1,4]:[0,.125,.25,.5,1,4];
+      if(!allowed.includes(value as never))return;
       if(value && !d.audio.map){this.error('Musical timing needs a saved beat grid.',id);return;}
       this.patchDeck(id,{[control]:value,message:undefined});
     },
@@ -679,7 +717,7 @@ export class MixerEngine {
     setEffectParam:(slot,id,param,value)=>{this.publish({...this.state,effectValues:{...this.state.effectValues,[slot]:{...this.state.effectValues?.[slot],[id]:{...this.state.effectValues?.[slot]?.[id],[param]:value}}}});this.apply();},
     setMaster:(control,value)=>{if(control==='bpm')this.run(this.adjustTempo(value));else {this.publish({...this.state,[control]:value});this.apply();}},
     setMasterEq:(band,value)=>{this.publish({...this.state,masterEq:this.state.masterEq.map((v,i)=>i===band?value:v)});this.apply();},
-    setDeck:(id,control,value)=>{if(control==='full'){this.source(id,!!value);return;}if(control==='cue'&&!this.phonesAvailable&&!this.linkAudio.enabled&&value){this.error('Phones needs outputs 3/4 on a multichannel audio interface, or the Phones stream in Link Audio.',id);return;}this.patchDeck(id,{[control]:value});this.apply();},
+    setDeck:(id,control,value)=>{if(control==='full'){this.source(id,!!value);return;}if(control==='cue'&&!this.phonesAvailable&&!this.linkAudio.enabled&&value){this.error('Cue needs a second output pair chosen in Settings, or the Phones stream in Link Audio.',id);return;}this.patchDeck(id,{[control]:value});this.apply();},
     setDeckEq:(id,band,value)=>{this.patchDeck(id,{eq:this.model(id).eq.map((v,i)=>i===band?value:v)});this.apply();},
     setStemLevel:(id,stem,value)=>{this.patchDeck(id,{stems:this.model(id).stems.map(s=>s.id===stem?{...s,level:value}:s)});this.apply();},
     launch:(id,section,stem)=>this.run(this.launch(id,section,stem),id),

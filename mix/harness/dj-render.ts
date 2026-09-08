@@ -35,7 +35,7 @@ async function renderLoops(check:(name:string,ok:boolean,data:unknown)=>void) {
  const rate=48000,ctx=new OfflineAudioContext(2,rate*3,rate),engine=new MixerEngine(()=>ctx as unknown as AudioContext);
  try {
   const asset=await fixture(ctx);await engine.load('deck-a',fixtureTrack,async()=>asset);
-  engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');await engine.play('deck-a',true);
+  engine.commands.setLoopBeats!(1);engine.quickLoop('deck-a');await engine.play('deck-a',true);
   const halfway=ctx.suspend(1.4),rendering=ctx.startRendering();await halfway;
   const before=engine.readFrame().decks['deck-a'].seconds!;engine.setDeckLoopEnabled('deck-a',false);await ctx.resume();
   const data=(await rendering).getChannelData(0);
@@ -95,7 +95,7 @@ async function captureSyncedEngine(check:(name:string,ok:boolean,data:unknown)=>
   check('Captured MixerEngine Sync preserves pitch at doubled tempo',Math.abs(hz-220)<3 && best>1,{hz,power:best,samples:samples.length});
   const before=engine.readFrame().decks['deck-a'].sources!.drums.seconds,t0=ctx.currentTime;await delay(200);const advance=engine.readFrame().decks['deck-a'].sources!.drums.seconds-before;
   check('Real synced engine source advances at twice output time',Math.abs(advance-2*(ctx.currentTime-t0))<.025,{sourceAdvance:advance,outputAdvance:ctx.currentTime-t0});
-  engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');const loop=engine.snapshot().decks[0].loop!;await delay(900);
+  engine.commands.setLoopBeats!(1);engine.quickLoop('deck-a');const loop=engine.snapshot().decks[0].loop!;await delay(900);
   const at=engine.readFrame().decks['deck-a'].sources!.drums.seconds;check('Real synced engine repeats its captured musical loop',at>=loop.start! && at<loop.end!,{at,loop});
   await engine.play('deck-a',false);const pausedAt=ctx.currentTime;await delay(900);
   // The serial 10 Hz channel/master high-pass filters have phase-dependent decay.
@@ -106,7 +106,7 @@ async function captureSyncedEngine(check:(name:string,ok:boolean,data:unknown)=>
   engine.move('deck-b','begin');engine.move('deck-b','move',.35);engine.move('deck-b','commit');await delay(700);
   const phase=()=>{const f=engine.readFrame(),delta=f.decks['deck-a'].beat-f.decks['deck-b'].beat;return Math.abs(delta-Math.round(delta));};
   check('Real synced follower realigns after a playing scrub',phase()<.03,{phaseErrorBeats:phase()});
-  engine.commands.setDeckTiming!('deck-b','loopBeats',4);engine.quickLoop('deck-b');await delay(2500);
+  engine.commands.setLoopBeats!(4);engine.quickLoop('deck-b');await delay(2500);
   check('Real synced loop remains aligned to leader beats',phase()<.03,{phaseErrorBeats:phase()});
   const tempo=engine.snapshot().bpm;await engine.play('deck-a',false);await delay(100);
   check('Real engine hands leadership to playing follower without changing tempo',engine.snapshot().decks[1].syncLeader===true && engine.snapshot().bpm===tempo,{leader:engine.snapshot().decks.find(d=>d.syncLeader)?.letter,tempo:engine.snapshot().bpm});
@@ -118,7 +118,7 @@ async function renderSlip(check:(name:string,ok:boolean,data:unknown)=>void){
   const ctx=new OfflineAudioContext(2,48000*3,48000),engine=new MixerEngine(()=>ctx as unknown as AudioContext);
   try{
    const asset=await fixture(ctx),buffer=asset.audio!.buffers.drums;for(let c=0;c<2;c++){const a=buffer.getChannelData(c);for(let i=0;i<a.length;i++){const t=i/48000;a[i]=.02*(1+t)*Math.sin(2*Math.PI*220*t);}}
-   await engine.load('deck-a',fixtureTrack,async()=>asset);engine.commands.setSlip!('deck-a',slip);engine.commands.setLoopFocus!('deck-a',true);engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');await engine.play('deck-a',true,undefined,false,'drums');
+   await engine.load('deck-a',fixtureTrack,async()=>asset);engine.commands.setSlip!('deck-a',slip);engine.commands.setLoopFocus!('deck-a',true);engine.commands.setLoopBeats!(1);engine.quickLoop('deck-a');await engine.play('deck-a',true,undefined,false,'drums');
    const stop=ctx.suspend(1.4),rendered=ctx.startRendering();await stop;engine.setDeckLoopEnabled('deck-a',false);await ctx.resume();const data=(await rendered).getChannelData(0);
    return rms(data,48000*2.2,48000*2.4);
   }finally{engine.dispose();}
@@ -177,7 +177,7 @@ async function renderLoopSeam(check:(name:string,ok:boolean,data:unknown)=>void)
  const ctx=new OfflineAudioContext(2,48000*2,48000),engine=new MixerEngine(()=>ctx as unknown as AudioContext);
  try{
   const asset=await fixture(ctx);for(let c=0;c<2;c++){const a=asset.audio!.buffers.drums.getChannelData(c);for(let i=0;i<a.length;i++)a[i]=.08*Math.sin(2*Math.PI*223.3*i/48000+.7);}
-  await engine.load('deck-a',fixtureTrack,async()=>asset);engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');await engine.play('deck-a',true,undefined,false,'drums');const samples=(await ctx.startRendering()).getChannelData(0);
+  await engine.load('deck-a',fixtureTrack,async()=>asset);engine.commands.setLoopBeats!(1);engine.quickLoop('deck-a');await engine.play('deck-a',true,undefined,false,'drums');const samples=(await ctx.startRendering()).getChannelData(0);
   let edge=0;for(let i=4800;i<samples.length;i++)edge=Math.max(edge,Math.abs(samples[i]-samples[i-1]));check('Native loop smooths a non-zero-crossing musical boundary',edge<.03,{maxAdjacentDifference:edge});
  }finally{engine.dispose();}
 }

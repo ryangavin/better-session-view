@@ -25,7 +25,6 @@ export interface MixerDeck {
   gridAvailable?: boolean;
   quantize?: number;
   launchBeats?: number;
-  loopBeats?: number;
   loopFocus?: boolean;
   zoom?: number;
   playing?: boolean;
@@ -66,6 +65,8 @@ export interface MixerState {
   loop: { start: number | null; end: number | null; enabled: boolean };
   canLoopOut: boolean;
   bpm: number; quantized: boolean; cross: number;
+  /** The quick loop's length in beats, shared by every deck. */
+  loopBeats: number;
   master: number; masterTrim: number; masterFilter: number;
   masterSendA: number; masterSendB: number; masterEq: readonly number[];
   effects: readonly { id: string; name: string; controls?: readonly { id: string; name: string; param: Param }[] }[];
@@ -79,7 +80,9 @@ export interface MixerState {
 }
 export type MasterControl = 'bpm' | 'cross' | 'master' | 'masterTrim' | 'masterFilter' | 'masterSendA' | 'masterSendB';
 export interface MixerCommands {
-  setDeckTiming?(deckId:string, control:'quantize'|'launchBeats'|'loopBeats', beats:number):void;
+  setDeckTiming?(deckId:string, control:'quantize'|'launchBeats', beats:number):void;
+  /** The quick loop length every deck answers to. */
+  setLoopBeats?(beats:number):void;
   setSlip?(deckId:string, enabled:boolean):void;
   setLoopFocus?(deckId:string, focus:boolean):void;
   quickLoop?(deckId:string):void;

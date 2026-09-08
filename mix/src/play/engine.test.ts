@@ -16,13 +16,17 @@ class Param {
 class Node {
   gain=new Param(); frequency=new Param(); Q=new Param(); delayTime=new Param();
   maxChannelCount=2; channelCount=2; type=''; fftSize=1024; buffer:AudioBuffer|null=null; loop=false;loopStart=0;loopEnd=0;
-  connections:unknown[]=[]; connect(n:unknown){this.connections.push(n);return n;} disconnect(){this.connections=[];}
+  merger=0;
+  connections:unknown[]=[]; wires:{node:unknown;output:number;input:number}[]=[];
+  connect(n:unknown,output=0,input=0){this.connections.push(n);this.wires.push({node:n,output,input});return n;} disconnect(){this.connections=[];this.wires=[];}
   start=vi.fn();stop=vi.fn();getFloatTimeDomainData(a:Float32Array){a.fill(.25);}
 }
 class Context {
   currentTime=0;sampleRate=48000;destination=new Node();sources:Node[]=[];
   createGain=()=>new Node();createBiquadFilter=()=>new Node();createAnalyser=()=>new Node();createDelay=()=>new Node();createOscillator=()=>new Node();
-  createChannelMerger=()=>new Node();createChannelSplitter=()=>new Node();
+  mergers:Node[]=[];splitters:Node[]=[];
+  createChannelMerger=(n=6)=>{const node=new Node();node.merger=n;this.mergers.push(node);return node;};
+  createChannelSplitter=()=>{const node=new Node();this.splitters.push(node);return node;};
   createBuffer=(channels:number,length:number,rate:number)=>({duration:length/rate,sampleRate:rate,length,numberOfChannels:channels,getChannelData:()=>new Float32Array(length)});
   createBufferSource=()=>{const n=new Node();this.sources.push(n);return n;};resume=vi.fn(async()=>{});close=vi.fn(async()=>{});
 }
@@ -274,7 +278,7 @@ describe('the four-deck playback owner',()=>{
   });
   it('queues synced loops to a leader bar and keeps their region on whole beats',async()=>{
     const {engine,ctx,load}=setup();await load('deck-a');await load('deck-b');await engine.play('deck-a',true);await engine.sync('deck-b',true);await engine.play('deck-b',true);ctx.currentTime=.7;
-    engine.commands.setDeckTiming!('deck-b','loopBeats',4);engine.quickLoop('deck-b');expect(engine.snapshot().decks[1].message).toBe('Loop queued for next bar.');const span=engine.snapshot().decks[1].loop!;expect(span.start!*2%1).toBeCloseTo(0);expect((span.end!-span.start!)*2).toBeCloseTo(4);
+    engine.commands.setLoopBeats!(4);engine.quickLoop('deck-b');expect(engine.snapshot().decks[1].message).toBe('Loop queued for next bar.');const span=engine.snapshot().decks[1].loop!;expect(span.start!*2%1).toBeCloseTo(0);expect((span.end!-span.start!)*2).toBeCloseTo(4);
     ctx.currentTime=1;expect(engine.readFrame().decks['deck-b'].seconds).toBeCloseTo(.97,2);ctx.currentTime=2.1;expect(engine.readFrame().decks['deck-b'].seconds).toBeCloseTo(span.start!+.07,2);
   });
   it('lets Play take over even before asynchronous Cue preparation finishes',async()=>{
@@ -346,6 +350,33 @@ describe('the four-deck playback owner',()=>{
     // Nothing was halted for the swap: the original plays on under a gain the mode gates.
     expect(stopped()).toBe(before);
   });
+  it('sends the mix and the cue to the chosen output pairs, and drops the cue a narrow device cannot reach',async()=>{
+    const store=new Map<string,string>();
+    vi.stubGlobal('localStorage',{getItem:(k:string)=>store.get(k)??null,setItem:(k:string,v:string)=>store.set(k,v)});
+    const held=(mainPair:number,cuePair:number)=>store.set('mix.audio.v1',JSON.stringify({deviceId:'',sampleRate:0,latency:'interactive',mainPair,cuePair}));
+    const landings=(ctx:Context)=>{const merge=ctx.mergers.at(-1)!;
+      return ctx.splitters.flatMap(sp=>sp.wires.filter(w=>w.node===merge).map(w=>w.input)).sort((a,b)=>a-b);};
+    try {
+      // A Model 16: the mix on 13/14, the cue on 11/12.
+      held(6,5);
+      const wide=setup();wide.ctx.destination.maxChannelCount=16;await wide.load();
+      expect(wide.engine.phonesAvailable).toBe(true);
+      expect([wide.engine.mainPair,wide.engine.cuePair]).toEqual([6,5]);
+      expect(wide.ctx.destination.channelCount).toBe(14);
+      expect(landings(wide.ctx)).toEqual([10,11,12,13]);
+      // Four outputs: 13/14 is out of reach, so the mix falls to the front pair and the cue goes.
+      held(6,5);
+      const narrow=setup();narrow.ctx.destination.maxChannelCount=4;await narrow.load();
+      expect([narrow.engine.mainPair,narrow.engine.cuePair]).toEqual([0,null]);
+      expect(narrow.engine.phonesAvailable).toBe(false);
+      // The conventional pair of pairs still routes 1/2 and 3/4.
+      held(0,1);
+      const usual=setup();usual.ctx.destination.maxChannelCount=4;await usual.load();
+      expect(usual.engine.phonesAvailable).toBe(true);
+      expect(usual.ctx.destination.channelCount).toBe(4);
+      expect(landings(usual.ctx)).toEqual([0,1,2,3]);
+    } finally { vi.unstubAllGlobals(); }
+  });
   it('loads on the original track with every stem back at full level',async()=>{
     const {engine,load}=setup();await load();
     engine.commands.setStemLevel('deck-a','bass',37);
@@ -354,9 +385,23 @@ describe('the four-deck playback owner',()=>{
     expect(engine.snapshot().decks[0].full).toBe(true);
     expect(engine.snapshot().decks[0].stems.every(s=>s.level===100)).toBe(true);
   });
+  it('gives every deck one quick loop length, two bars by default',async()=>{
+    const {engine,ctx,load}=setup();await load('deck-a');await load('deck-b');
+    expect(engine.snapshot().loopBeats).toBe(8);
+    await engine.play('deck-a',true);await engine.play('deck-b',true);ctx.currentTime=2;
+    engine.quickLoop('deck-a');
+    const a=engine.snapshot().decks[0].loop!;
+    expect(+((a.end!-a.start!)*2).toFixed(2)).toBe(8);
+    // The length is the rig's, so the second deck loops the same without being told.
+    engine.commands.setLoopBeats!(4);
+    engine.quickLoop('deck-b');
+    const b=engine.snapshot().decks[1].loop!;
+    expect(+((b.end!-b.start!)*2).toFixed(2)).toBe(4);
+    expect(engine.snapshot().loopBeats).toBe(4);
+  });
   it('creates 16 beats, halves/doubles, moves, exits and reloops without changing the Cue',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2.03;
-    engine.commands.setDeckTiming!('deck-a','quantize',1);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop).toEqual({start:2,end:10,enabled:true});
+    engine.commands.setDeckTiming!('deck-a','quantize',1);engine.commands.setLoopBeats!(16);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop).toEqual({start:2,end:10,enabled:true});
     engine.editLoops('deck-a','resize',.5);expect(engine.snapshot().decks[0].loop?.end).toBe(6);engine.editLoops('deck-a','resize',2);expect(engine.snapshot().decks[0].loop?.end).toBe(10);
     engine.editLoops('deck-a','move',1);expect(engine.snapshot().decks[0].loop?.start).toBe(2.5);
     engine.setDeckLoopEnabled('deck-a',false);expect(engine.snapshot().decks[0].loop?.enabled).toBe(false);engine.setDeckLoopEnabled('deck-a',true);expect(ctx.sources.at(-1)!.loopStart).toBe(0);expect(ctx.sources.at(-1)!.loopEnd).toBe(8);
@@ -364,12 +409,12 @@ describe('the four-deck playback owner',()=>{
   });
   it('rejects invalid loop edits atomically and uses musical length on a variable map',async()=>{
     const {engine,ctx}=setup();const a=asset();a.audio!.map={rate:48000,length:64*48000,first:0,samples:[0,24000,48000,72000,96000,144000,192000,240000,288000]};
-    await engine.load('deck-a',track,async()=>a);engine.commands.setDeckTiming!('deck-a','loopBeats',8);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop?.end).toBe(6);
+    await engine.load('deck-a',track,async()=>a);engine.commands.setLoopBeats!(8);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop?.end).toBe(6);
     const before=engine.snapshot().decks[0].loop;engine.editLoops('deck-a','in',20);expect(engine.snapshot().decks[0].loop).toEqual(before);
   });
   it('returns Slip loops to each independent background position and ordinary loops to audible position',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');engine.setDeckLoopEnabled('deck-a',false);
-    ctx.currentTime=1;engine.commands.setSlip!('deck-a',true);engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');
+    ctx.currentTime=1;engine.commands.setSlip!('deck-a',true);engine.commands.setLoopBeats!(1);engine.quickLoop('deck-a');
     ctx.currentTime=4;const loop=engine.readFrame().decks['deck-a'].sources!;expect(loop.drums.backgroundBeat).toBeGreaterThan(loop.drums.beat+4);
     engine.setDeckLoopEnabled('deck-a',false);ctx.currentTime=4.1;const exited=engine.readFrame().decks['deck-a'].sources!;
     expect(exited.bass.seconds-exited.drums.seconds).toBeCloseTo(8);expect(exited.drums.seconds).toBeGreaterThan(4);expect(exited.drums.backgroundBeat).toBeUndefined();
@@ -410,7 +455,7 @@ describe('the four-deck playback owner',()=>{
     const got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.seconds).toBe(3);expect(got.bass.seconds).toBe(.5);
   });
   it('beat jump leaves a Slip loop from its audible position and retains the region for Reloop',async()=>{
-    const {engine,ctx,load}=setup();await load();engine.commands.setSlip!('deck-a',true);engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');await engine.play('deck-a',true);ctx.currentTime=2.1;
+    const {engine,ctx,load}=setup();await load();engine.commands.setSlip!('deck-a',true);engine.commands.setLoopBeats!(1);engine.quickLoop('deck-a');await engine.play('deck-a',true);ctx.currentTime=2.1;
     expect(engine.readFrame().decks['deck-a'].sources!.drums.backgroundBeat).toBeGreaterThan(3);
     engine.beatJump('deck-a',1);ctx.currentTime=2.14;const got=engine.readFrame().decks['deck-a'].sources!.drums;
     expect(got.seconds).toBeCloseTo(.61);expect(got.backgroundBeat).toBeUndefined();expect(got.playing).toBe(true);expect(engine.snapshot().decks[0].loop).toMatchObject({start:0,end:.5,enabled:false});
@@ -423,7 +468,7 @@ describe('the four-deck playback owner',()=>{
     expect(levelGain(150)).toBe(1);
   });
   it('reports unavailable headphone routing instead of leaking cue into the master',async()=>{
-    const {engine,load}=setup();await load();engine.commands.setDeck('deck-a','cue',true);expect(engine.snapshot().decks[0].cue).toBe(false);expect(engine.snapshot().decks[0].message).toContain('outputs 3/4');
+    const {engine,load}=setup();await load();engine.commands.setDeck('deck-a','cue',true);expect(engine.snapshot().decks[0].cue).toBe(false);expect(engine.snapshot().decks[0].message).toContain('a second output pair');
   });
 });
 it('keeps unity at the fader rest and A/B/THRU at their conventional endpoints',()=>{

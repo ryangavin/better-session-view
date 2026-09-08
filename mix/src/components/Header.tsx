@@ -4,6 +4,7 @@ import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
+import { LOOP_LENGTHS } from '../play/timing.ts';
 import { OFFERED, offeredOf } from '../pinned.ts';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
@@ -269,6 +270,14 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
                 where the result is heard. They stood alone beside the logo,
                 which put the one control that overrules the transport as far
                 from it as the bar allows. */}
+            {playView && mixer && <Select
+              items={LOOP_LENGTHS.map(beats=>beats%4===0?`${beats/4} bar${beats===4?'':'s'}`:`${beats} beat${beats===1?'':'s'}`)}
+              index={Math.max(0,LOOP_LENGTHS.indexOf(mixer.snapshot().loopBeats as never))}
+              onChange={i=>mixer.commands.setLoopBeats?.(LOOP_LENGTHS[i])}
+              label="Quick loop length"
+              title="How long a quick loop is, on every deck"
+              width={72}
+            />}
             <Toggle on={mix.linkAudio.enabled}
               onChange={mix.setLinkAudio}
               label="Link Audio"
