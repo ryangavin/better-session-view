@@ -314,3 +314,6 @@ A small, muted waveform icon occupies the empty corner beneath the left stem
 column, with a matching music-note icon above the right column. Both are
 decorative and do not intercept input.
 
+
+FX A and B divide their section into equal-height halves. Their headers retain
+equal side spacing, with fully bordered dropdowns filling the width beside bypass.
