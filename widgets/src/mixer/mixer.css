@@ -33,7 +33,6 @@
 .play-channel-fader { display: flex; justify-content: center; gap: 12px; background: var(--wdg-well); }
 .play-master-channel .play-channel-fader { gap: 6px; }
 .play-channel-fader .wdg-slider { --wdg-track: 28px; --wdg-fill: var(--amber); }
-.play-stem-levels .wdg-caption { color: var(--stem-label); }
 .play-trim { position: relative; --wdg-marker: var(--amber); }
 .play-trim .wdg-caption { color: var(--amber); }
 .play-route, .play-master-cross { display: flex; justify-content: center; align-items: center; gap: 6px; }
@@ -54,7 +53,6 @@
 .play-loop-region span { position: absolute; top: 1px; left: 3px; color: var(--loop-ink); background: var(--wdg-well); padding: 1px 3px; font-size: 8px; white-space: nowrap; }
 .play-playhead { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--wdg-text-strong); pointer-events: none; z-index: 1; }
 
-.play-stem-levels { grid-template-rows: repeat(var(--play-stems,4),var(--play-knob-row)); }
 .play-deck-status:empty { display: none; }
 .play-deck-status { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: auto; padding-top:0; }
 .play-deck-status span { font-size: 9px; color: var(--wdg-caption); }
@@ -148,9 +146,6 @@
 .play-master-stereo > div > span { font: 9px var(--mono); color: var(--wdg-caption); }
 
 /* Stem wrappers must not introduce inline baseline spacing above their knobs. */
-.play-stem-controls { display:contents; }
-.play-stem-controls > div { display:flex; justify-content:center; }
-.play-stem-column { display:grid; grid-template-rows:subgrid; grid-row:1 / -1; }
 
 .play-master-channel { grid-template-columns: auto auto; }
 
@@ -186,17 +181,10 @@
 .play-channel-fader .wdg-meter > .wdg-body { flex:1; align-items:stretch; }
 .play-channel-fader .wdg-slider > .wdg-body { align-items:stretch; }
 
-.play-stem-levels[data-staggered="true"] { position:relative; isolation:isolate; align-self:stretch; display:flex; gap:4px; }
-.play-stem-levels[data-staggered="true"] > .play-stem-column { display:flex; flex-direction:column; justify-content:space-between; }
-
-.play-stem-levels[data-staggered="true"] .play-stem-controls { display:flex; flex:1; flex-direction:column; justify-content:space-between; }
-.play-stem-spacer { flex:0 0 calc((100% - var(--play-knob-row)) / 5); }
-.play-stem-levels[data-staggered="true"] > .play-stem-column:last-child { flex-direction:column-reverse; }
-
-.play-stem-levels[data-staggered="true"] .play-stem-controls > div { height:var(--play-knob-row); flex-shrink:0; }
 
 
-.play-stem-spacer { display:flex; align-items:center; justify-content:center; }
+
+
 .play-stem-icon { width:20px; height:20px; color:var(--wdg-caption); opacity:.45; pointer-events:none; }
 
 .play-stem-connections { position:absolute; inset:0; width:100%; height:100%; color:var(--wdg-edge); pointer-events:none; z-index:-1; overflow:visible; }
@@ -219,3 +207,14 @@
 .play-routing-section { min-height:var(--play-routing-min); }
 
 .play-section-stack > .play-effects { flex:0; }
+
+.play-knob-stack { position:relative; isolation:isolate; grid-template-rows:repeat(var(--play-knob-count),var(--play-knob-row)); }
+.play-knob-column, .play-knob-controls { display:contents; }
+.play-knob-cell { display:flex; justify-content:center; grid-column:1; }
+.play-knob-spacer { display:none; }
+.play-knob-stack[data-staggered="true"] { display:flex; align-self:stretch; gap:4px; }
+.play-knob-stack[data-staggered="true"] .play-knob-column { display:flex; flex-direction:column; }
+.play-knob-stack[data-staggered="true"] .play-knob-column:last-child { flex-direction:column-reverse; }
+.play-knob-stack[data-staggered="true"] .play-knob-controls { display:flex; flex:1; flex-direction:column; justify-content:space-between; }
+.play-knob-stack[data-staggered="true"] .play-knob-spacer { display:flex; align-items:center; justify-content:center; flex:0 0 calc((100% - var(--play-knob-row)) / (var(--play-knob-count) - 1)); }
+.play-knob-stack[data-staggered="true"] .play-knob-cell { height:var(--play-knob-row); flex-shrink:0; }

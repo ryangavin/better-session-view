@@ -1,3 +1,4 @@
+import { KnobStack } from './KnobStack.tsx';
 import { Separator, MixerSection } from './Separator.tsx';
 import { Fragment } from 'react';
 import { ButtonFace } from '../controls/ButtonFace.tsx';
@@ -44,7 +45,7 @@ export function MasterStrip({ state, commands, readFrame, theme, params, externa
       <div className="play-level-stack">
         <div className="play-channel-fader play-master-stereo" role="group" aria-label="Master stereo output">{(['Left','Right'] as const).map((name,i)=><div key={name}><FrameMeter label={`Master ${name.toLowerCase()} output`} sample={() => readFrame().masterStereo?.[i] ?? 0}/><span>{name==='Left'?'L':'R'}</span></div>)}</div>
       </div>
-      <div className="play-eq-stack play-master-eq"><Knob className="play-trim" ink="var(--amber)" name="Trim" label="Master trim" param={TRIM} value={masterTrim} onChange={value => commands.setMaster('masterTrim', value)} />{['High', 'Mid', 'Low'].map((name, i) => <Knob key={name} name={name} label={`Master ${name}`} param={EQ} origin="center" value={masterEq[i]} onChange={value => commands.setMasterEq(i, value)} />)}</div>
+      <KnobStack><Knob className="play-trim" ink="var(--amber)" name="Trim" label="Master trim" param={TRIM} value={masterTrim} onChange={value => commands.setMaster('masterTrim', value)} />{['High', 'Mid', 'Low'].map((name, i) => <Knob key={name} name={name} label={`Master ${name}`} param={EQ} origin="center" value={masterEq[i]} onChange={value => commands.setMasterEq(i, value)} />)}</KnobStack>
     </MixerSection>
     <div className="play-master-cross">
     <div className="play-routing-section"><Separator/><div className="play-monitor-row">

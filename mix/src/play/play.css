@@ -35,8 +35,8 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 .mf-play .play-decks {height:100%;box-sizing:border-box;}
 @container (max-height: 780px) {
   .mf-play .play-scroll {min-height:0;}
-  .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) max-content minmax(163px,max-content) minmax(var(--play-routing-min),max-content) 58px;}
-  .mf-play .play-eq-stack {--play-knob-row:36px;--play-knob-gap:2px;}
+  .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) max-content minmax(211px,max-content) minmax(var(--play-routing-min),max-content) 58px;}
+  .mf-play .play-eq-stack {--play-knob-row:52px;--play-knob-gap:2px;}
   .mf-play .play-fx-params {padding-block:0;}
   .mf-play .play-actions {gap:2px;padding-bottom:2px;}
   .mf-play .play-fx-pickers {gap:3px;}
@@ -62,11 +62,19 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 /* Below the controls’ minimum size, scroll rather than consume separator clearance. */
 .mf-play .play-scroll { overflow-y:auto; }
 @container (min-height: 600px) and (max-height: 780px) {
-  .mf-play .play-scroll { min-height: 528px; }
+  .mf-play .play-scroll { min-height: 576px; }
 }
 
 @container (max-height: 780px) {
   .mf-play .play-decks { --play-separator-space:5px; }
-  .mf-play .play-channel .wdg-knob { --wdg-knob-height:22px; --wdg-knob-size:28px; }
-  .mf-play .play-channel .wdg-knob > .wdg-readout { display:none; }
+}
+
+@container (max-height:780px) {
+  .mf-play .play-decks { min-width:1160px; }
+  .mf-play .play-knob-stack { display:flex; align-self:stretch; gap:4px; }
+  .mf-play .play-knob-column { display:flex; flex-direction:column; }
+  .mf-play .play-knob-column:last-child { flex-direction:column-reverse; }
+  .mf-play .play-knob-controls { display:flex; flex:1; flex-direction:column; justify-content:space-between; }
+  .mf-play .play-knob-spacer { display:flex; align-items:center; justify-content:center; flex:0 0 calc((100% - var(--play-knob-row)) / (var(--play-knob-count) - 1)); }
+  .mf-play .play-knob-cell { height:var(--play-knob-row); flex-shrink:0; }
 }
