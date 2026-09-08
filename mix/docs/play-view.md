@@ -77,9 +77,10 @@ of level knobs. Compact layouts fit the checked 1280×720, 1024×768 and 1366×7
 
 Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens source,
 relative group movement and zoom settings. The compact loop row keeps In, Out,
-Exit/Reloop and quick loop visible on one shared column width; its settings button keeps
-its own square and opens loop target,
-Slip and boundary edits. The quick loop's length is one setting for the whole rig, set
+Exit/Reloop, halve/double, move back/ahead, quick loop and settings at equal widths
+and 24px heights. Quick loop and its adjacent settings button form one attached pair
+with a single divider; both remain separately focusable. Settings opens loop target
+and Slip. The quick loop's length is one setting for the whole rig, set
 in the header in bars, so the decks cannot disagree about what a loop is; it defaults to
 two bars. Moving the loop is a pair of buttons beside the quick loop rather than a menu
 item, because sliding a region is done far more often than it is configured — and it is

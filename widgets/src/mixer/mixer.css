@@ -91,7 +91,7 @@
 .play-wave-position { position: absolute; right: 5px; bottom: 3px; color: var(--wdg-caption); background: var(--wdg-well); font: 8px var(--mono); padding: 1px 3px; pointer-events: none; }
 
 /* Loop capture belongs to its launcher, with a larger escape/reloop target. */
-.play-deck-loops { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 3px; margin-top: 0; padding-top: 8px; }
+.play-deck-loops { display: flex; gap: 3px; margin-top: 0; padding-top: 8px; }
 .play-deck-loops > .wdg, .play-deck-loops > .wdg > .wdg-body { width: 100%; min-width: 0; }
 .play-deck-status { margin-top: auto; }
 
@@ -111,15 +111,20 @@
 .play-deck-transport > .wdg-toggle > .wdg-body {height:100%;width:100%;min-height:0;}
 .play-deck-transport > .play-hold.wdg-body {width:auto;height:auto;aspect-ratio:1;}
 .play-context select {height:24px;border:1px solid var(--wdg-edge);border-radius:var(--wdg-radius);background:var(--wdg-face);color:var(--wdg-text);font:inherit;}
-.play-deck-loops > .play-quick-loop {width:100%;min-width:0;}
-.play-deck-loops {grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.5fr);}
-.play-loop-move {display:grid;grid-template-columns:1fr 1fr;gap:3px;}
-.play-loop-move > .wdg-body {width:100%;min-width:0;}
-.play-quick-loop-group {display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:3px;}
-.play-quick-loop-group > .wdg-body {width:100%;min-width:0;}
-.play-deck-loops:not(:has(.play-quick-loop)) {grid-template-columns:1fr 1fr 1.6fr;}
-.play-deck-loops > .play-context-trigger {width:32px;font-size:18px;padding:0;}
-.play-deck-loops > .wdg > .wdg-body {padding-inline:3px;}
+/* Every loop action has the same width, including the two joined quick-loop faces.
+   Paired controls reserve their internal gap before sharing the remaining width. */
+.play-deck-loops > .wdg {flex:1 1 0;}
+.play-loop-move {display:flex;gap:3px;flex:2 1 3px;min-width:0;}
+.play-quick-loop-group {display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0;flex:2 1 0;min-width:0;}
+.play-quick-loop-group:not(:has(.play-quick-loop)):not(:has(.play-context-trigger)) {display:none;}
+.play-quick-loop-group:not(:has(.play-quick-loop)),
+.play-quick-loop-group:not(:has(.play-context-trigger)) {flex:1 1 0;}
+.play-loop-move > .wdg-body, .play-quick-loop-group > .wdg-body {flex:1 1 0;width:0;min-width:0;}
+.play-quick-loop-group > .wdg-body {width:100%;}
+.play-deck-loops .wdg-body {height:24px;padding-inline:0;}
+.play-quick-loop-group:has(.play-quick-loop):has(.play-context-trigger) > .play-quick-loop {border-radius:var(--wdg-radius) 0 0 var(--wdg-radius);}
+.play-quick-loop-group:has(.play-quick-loop) > .play-context-trigger {border-left:0;border-radius:0 var(--wdg-radius) var(--wdg-radius) 0;}
+.play-quick-loop-group > .wdg-body:focus-visible {position:relative;z-index:1;}
 .play-context {position:fixed;inset:auto;margin:0;width:248px;max-width:calc(100vw - 32px);max-height:min(var(--wdg-popup-room,100vh),calc(100vh - 24px));overflow:auto;padding:10px;border:1px solid var(--wdg-edge);border-radius:5px;background:var(--wdg-face);color:var(--wdg-text);box-shadow:0 8px 28px #0009;font:11px var(--mono);}
 .play-context::backdrop {background:transparent;}
 .play-context-heading {display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;}
