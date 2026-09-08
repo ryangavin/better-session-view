@@ -200,6 +200,8 @@ with a vertical rule. Hot cues play through; stem cells loop independently.
 The hot cue column and the stem columns share one width, so every launcher button in a
 deck measures the same.
 
+Loading a track leaves the channel as the desk was set: the fader keeps its position and a synced deck stays synced, provided the arriving track has a grid to hold it to. Everything the track owns — sections, stems, waveform, grid, loops and Cue — is fresh.
+
 Newly loaded decks display Full track (original) by default. The waveform source
 selector uses its normal appearance, without an active-mode highlight. Stem waveforms
 remain available from the source menu. This default does not change waveform zoom.

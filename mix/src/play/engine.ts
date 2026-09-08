@@ -111,13 +111,19 @@ export class MixerEngine {
     if (!DECK_IDS.includes(id) || this.disposed) return;
     this.requests.get(id)?.abort(); this.remove(id);
     const request = new AbortController(); this.requests.set(id, request);
+    // The channel belongs to the desk rather than to the record: a new track
+    // arrives at the fader the last one left, and on a deck that is still
+    // synced. Everything the track owns — sections, stems, grid — is fresh.
+    const held = this.model(id), desk = { gain: held.gain }, wasSynced = held.synced ?? false;
     const fresh = emptyDeck(id, DECK_IDS.indexOf(id));
-    this.patchDeck(id, { ...fresh, track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: track.bpm, key: track.key ?? '—' }, status: 'loading', message: 'Loading audio…' });
+    this.patchDeck(id, { ...fresh, ...desk, track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: track.bpm, key: track.key ?? '—' }, status: 'loading', message: 'Loading audio…' });
     try {
       const asset = await (loader === loadDeckAsset ? loader(track, request.signal, this.audio()) : loader(track, request.signal));
       if (request.signal.aborted || this.disposed) return;
       if (asset.audio) this.adopt(id, asset.audio);
-      this.patchDeck(id, { ...loadedDeck(fresh, track, asset), playing: false, synced: false, cueHeld: false });
+      const loaded = loadedDeck(fresh, track, asset);
+      // Sync needs a grid to hold the deck to; a track without one cannot keep it.
+      this.patchDeck(id, { ...loaded, ...desk, playing: false, synced: wasSynced && loaded.gridAvailable, cueHeld: false });
 
       this.apply();
     } catch (error) { if (!request.signal.aborted) this.patchDeck(id, { status: 'unavailable', message: error instanceof Error ? error.message : 'Could not load audio' }); }

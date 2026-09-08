@@ -318,6 +318,16 @@ describe('the four-deck playback owner',()=>{
     expect(loop.start!).toBeLessThanOrEqual(before);
     expect(loop.end!).toBeGreaterThan(before);
   });
+  it('keeps the fader and Sync across a new track on the same deck',async()=>{
+    const {engine,load}=setup();await load();
+    engine.commands.setDeck('deck-a','gain',42);
+    await engine.sync('deck-a',true);
+    expect(engine.snapshot().decks[0]).toMatchObject({gain:42,synced:true});
+    await load();
+    expect(engine.snapshot().decks[0]).toMatchObject({gain:42,synced:true});
+    await engine.load('deck-a',track,async()=>({...asset(),analysis:{slices:asset().analysis!.slices} as DeckAsset['analysis']}));
+    expect(engine.snapshot().decks[0]).toMatchObject({gain:42,synced:false,gridAvailable:false});
+  });
   it('creates 16 beats, halves/doubles, moves, exits and reloops without changing the Cue',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2.03;
     engine.commands.setDeckTiming!('deck-a','quantize',1);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop).toEqual({start:2,end:10,enabled:true});
