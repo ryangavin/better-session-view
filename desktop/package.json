@@ -1,6 +1,6 @@
 {
   "name": "@openflow/desktop",
-  "version": "0.1.0-rc.3",
+  "version": "0.1.0-rc.4",
   "private": true,
   "type": "module",
   "description": "The Electron main process every app here shares: the window, the scheme, the dev loop, the child server and the updater.",
