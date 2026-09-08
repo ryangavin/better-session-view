@@ -50,7 +50,7 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 
 @container (max-width: 1250px) {
   .mf-play .play-decks {grid-template-columns:minmax(200px,1fr) minmax(200px,1fr) 156px minmax(200px,1fr) minmax(200px,1fr);}
-  .mf-play .play-grid {grid-template-columns:minmax(44px,1fr) repeat(var(--play-stems,4),minmax(0,1fr));}
+  .mf-play .play-grid {grid-template-columns:minmax(44px,1fr) 12px repeat(var(--play-stems,4),minmax(0,1fr));}
   .mf-play .play-cell, .mf-play .play-cell .wdg, .mf-play .play-cell .wdg-body {width:100%;min-width:0;}
   .mf-play .play-grid > .wdg {width:100%;min-width:0;}
   .mf-play .play-channel {gap:4px;}

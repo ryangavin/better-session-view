@@ -76,11 +76,12 @@ and Cue/Master blend. Context panels use the shared Popup placement and dismissa
 One lazily created AudioContext owns every deck and return. Each available source has a
 `DeckVoice` and a stem gain. They feed a channel's trim, existing three-band Split EQ,
 bipolar high/low-pass filter, fader and crossfade assignment, then the master. The master
-has its own trim/EQ/filter/fader. Parameter changes ramp to avoid zipper noise.
+has its own trim/EQ/filter and separate left/right output meters; it has no level fader
+in the Play interface. Parameter changes ramp to avoid zipper noise.
 
 All stem, channel and master volumes default to **100% = unity**. Zero is silence, and
 volume controls cannot boost; trim supplies gain above unity. Stem gains are linear;
-channel/master faders use a cubic taper. Neutral EQ is 0 dB, filter center is neutral.
+channel faders use a cubic taper. Neutral EQ is 0 dB, filter center is neutral.
 Crossfade A is audible on the left, B on the right, both at center; Thru bypasses the
 crossfader. There is no automatic gain matching or limiting. Use trim and the real meters
 to manage headroom when summing tracks.
@@ -285,3 +286,8 @@ remain available from the source menu. This default does not change waveform zoo
 
 Empty decks keep drop guidance in their header and waveform label; the launcher
 status area is reserved for loading, operational messages and errors.
+
+The Hot Cue divider has a 12px gutter with equal spacing on each side.
+
+Master metering splits the post-processing stereo output into independent analyzers.
+The frame provides left/right peaks; mono cancellation cannot hide either channel.

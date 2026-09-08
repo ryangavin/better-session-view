@@ -200,3 +200,10 @@ with a vertical rule. Hot cues play through; stem cells loop independently.
 Newly loaded decks display Full track (original) by default. The waveform source
 selector uses its normal appearance, without an active-mode highlight. Stem waveforms
 remain available from the source menu. This default does not change waveform zoom.
+
+A dedicated 12px gutter centers the Hot Cue divider, providing space on both sides
+without narrowing the Hot Cue label itself.
+
+The master strip shows labeled L/R meters in place of its former level fader. Hosts
+supply `masterStereo` peaks in the frame; missing stereo readings display zero.
+Master trim remains available.

@@ -9,7 +9,7 @@ import '@openflow/widgets/tokens.css';
 import { MixerEngine } from '../src/play/engine.ts';
 import { params } from '../src/play/decks.ts';
 import { fixture,fixtureTrack } from './dj-fixture.ts';
-import { runControlAudioChecks } from './dj-render.ts';
+import { runControlAudioChecks, runStereoMeterChecks } from './dj-render.ts';
 const engine=new MixerEngine();engine.setMonitoring(false);
 function Harness(){
  const state=useSyncExternalStore(engine.subscribe,engine.snapshot),[frames,setFrames]=useState(''),[result,setResult]=useState('');
@@ -19,7 +19,7 @@ function Harness(){
   if(six && asset.audio)for(const id of ['other','guitar','piano']){asset.audio.buffers[id]=asset.audio.buffers.vocals;asset.audio.sourceOverviews![id]=asset.audio.sourceOverviews!.vocals;}
   return asset;
  });};
- return <div style={{height:'100vh',display:'flex',flexDirection:'column',overflow:'hidden'}}><header style={{padding:6,flex:'none'}}><strong>DJ controls · worktree c028 · port {location.port} · real MixerEngine</strong><span> · generated audio · speakers muted by default</span><br/><button onClick={()=>void load()}>Load measured fixture</button> <button onClick={()=>void load(true)}>Load six-stem fixture</button> <button onClick={()=>engine.setMonitoring(!engine.monitoring)}>Toggle speakers</button> <button onClick={()=>engine.stop()}>Stop all</button> <button onClick={()=>void runControlAudioChecks(setResult)}>Run captured engine audio checks</button> <button onClick={()=>void runControlAudioChecks(setResult,true)}>Run transition checks</button></header>
+ return <div style={{height:'100vh',display:'flex',flexDirection:'column',overflow:'hidden'}}><header style={{padding:6,flex:'none'}}><strong>DJ controls · worktree c028 · port {location.port} · real MixerEngine</strong><span> · generated audio · speakers muted by default</span><br/><button onClick={()=>void load()}>Load measured fixture</button> <button onClick={()=>void load(true)}>Load six-stem fixture</button> <button onClick={()=>engine.setMonitoring(!engine.monitoring)}>Toggle speakers</button> <button onClick={()=>engine.stop()}>Stop all</button> <button onClick={()=>void runControlAudioChecks(setResult)}>Run captured engine audio checks</button> <button onClick={()=>void runControlAudioChecks(setResult,true)}>Run transition checks</button> <button onClick={()=>void runStereoMeterChecks(setResult)}>Run stereo meter checks</button></header>
  <div style={{flex:1,minHeight:0,display:'flex'}}><PlayView mixer={{state,commands:engine.commands,readFrame:engine.readFrame,params,load:async()=>load(),engine}}/></div><details style={{position:'fixed',right:8,bottom:8,zIndex:20,background:'var(--bg)',maxWidth:'90vw'}}><summary>Measurements</summary><pre id="audio-results" style={{maxHeight:180,overflow:'auto'}}>{result}</pre><pre aria-label="Measured source positions" style={{maxHeight:140,overflow:'auto'}}>{frames}</pre></details></div>;
 }
 const root=createRoot(document.getElementById('root')!);

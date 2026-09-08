@@ -20,9 +20,9 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
 
         <div className="play-performance">
           <fieldset className="play-grid" data-full={d.full} disabled={d.status !== 'ready'}>
-          <span className="play-axis">Hot cue</span>{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
+          <span className="play-axis">Hot cue</span><span aria-hidden="true" />{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
           {d.sections.map(section => <div className="play-launch-row" key={section.id}>
-            {d.full ? <Toggle title="Hot cue: jump to this section and continue playing" on={d.fullSection === section.id} label={`Deck ${index + 1}: launch ${section.name} full mix${d.fullQueued === section.id ? ', queued' : ''}`} onChange={() => commands.launch(d.id, section.id)}>{section.name}</Toggle> : <Button label={`Deck ${index + 1}: launch ${section.name} all stems`} title="Hot cue: jump to this section and continue playing" onPress={() => commands.launch(d.id, section.id)}>{section.name}</Button>}
+            {d.full ? <Toggle title="Hot cue: jump to this section and continue playing" on={d.fullSection === section.id} label={`Deck ${index + 1}: launch ${section.name} full mix${d.fullQueued === section.id ? ', queued' : ''}`} onChange={() => commands.launch(d.id, section.id)}>{section.name}</Toggle> : <Button label={`Deck ${index + 1}: launch ${section.name} all stems`} title="Hot cue: jump to this section and continue playing" onPress={() => commands.launch(d.id, section.id)}>{section.name}</Button>}<span aria-hidden="true" />
             {d.stems.map((stem, s) => {
               const active = stem.selected === section.id, queued = stem.queued === section.id;
               return <div className="play-cell" key={stem.id} data-active={active} data-queued={queued} style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}>
@@ -30,7 +30,7 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
               </div>;
             })}
           </div>)}
-          <Button label={`Deck ${index + 1}: stop all stems`} onPress={() => commands.launch(d.id, null)}>{(d.full ? d.fullQueued === null : d.stems.every(stem => stem.queued === null)) ? '◷ Stop' : 'Stop'}</Button>{d.stems.map((stem, i) => <Button disabled={d.full || d.status !== 'ready' || !stem.available} key={stem.id} label={`Deck ${index + 1}: stop ${stem.name}`} width={34} onPress={() => commands.launch(d.id, null, stem.id)}>■</Button>)}
+          <Button label={`Deck ${index + 1}: stop all stems`} onPress={() => commands.launch(d.id, null)}>{(d.full ? d.fullQueued === null : d.stems.every(stem => stem.queued === null)) ? '◷ Stop' : 'Stop'}</Button><span aria-hidden="true" />{d.stems.map((stem, i) => <Button disabled={d.full || d.status !== 'ready' || !stem.available} key={stem.id} label={`Deck ${index + 1}: stop ${stem.name}`} width={34} onPress={() => commands.launch(d.id, null, stem.id)}>■</Button>)}
         </fieldset>
           <div className="play-deck-status">{d.status!=='empty' && d.message && <span role="status">{d.message}</span>}</div>
           <div className="play-deck-loops" role="group" aria-label={`Deck ${index + 1} loop`}>

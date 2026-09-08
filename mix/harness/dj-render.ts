@@ -27,7 +27,7 @@ export async function runControlAudioChecks(report:(text:string)=>void, transiti
   let onset=0;for(let i=48000;i<52800;i++)if(Math.abs(a[i])>1e-4){onset=i/48000;break;}
   check('Audition onset includes only scheduled audio lead',onset>=1.025 && onset<1.04,{onset});
  } catch(e){failures++;log+=`ERROR ${e instanceof Error?e.stack:e}\n`;}finally{engine.dispose();}
- try{await renderLoops(check);await renderBeatJump(check);await renderScrub(check);await renderLoopSeam(check);await renderEffects(check);await renderPhones(check);await renderSlip(check);await captureSyncedEngine(check);await captureTransitions(check);}catch(e){failures++;log+=`ERROR ${e instanceof Error?e.stack:e}\n`;}
+ try{await renderLoops(check);await renderBeatJump(check);await renderScrub(check);await renderLoopSeam(check);await renderEffects(check);await renderPhones(check);await captureStereo(check);await renderSlip(check);await captureSyncedEngine(check);await captureTransitions(check);}catch(e){failures++;log+=`ERROR ${e instanceof Error?e.stack:e}\n`;}
  report(log+(failures?`FAILED ${failures}`:'ALL CONTROL AUDIO CHECKS PASSED'));
 }
 
@@ -180,4 +180,21 @@ async function renderLoopSeam(check:(name:string,ok:boolean,data:unknown)=>void)
   await engine.load('deck-a',fixtureTrack,async()=>asset);engine.commands.setDeckTiming!('deck-a','loopBeats',1);engine.quickLoop('deck-a');await engine.play('deck-a',true,undefined,false,'drums');const samples=(await ctx.startRendering()).getChannelData(0);
   let edge=0;for(let i=4800;i<samples.length;i++)edge=Math.max(edge,Math.abs(samples[i]-samples[i-1]));check('Native loop smooths a non-zero-crossing musical boundary',edge<.03,{maxAdjacentDifference:edge});
  }finally{engine.dispose();}
+}
+
+
+async function captureStereo(check:(name:string,ok:boolean,data:unknown)=>void){
+ const ctx=new AudioContext({sampleRate:48000}),engine=new MixerEngine(()=>ctx);
+ try{
+  engine.setMonitoring(false);await ctx.resume();
+  const asset=await fixture(ctx),buffer=asset.audio!.buffers.drums;
+  const left=buffer.getChannelData(0),right=buffer.getChannelData(1);
+  for(let i=0;i<left.length;i++)right[i]=left[i]*.25;
+  await engine.load('deck-a',fixtureTrack,async()=>asset);await engine.play('deck-a',true,undefined,false,'drums');await new Promise(resolve=>setTimeout(resolve,300));
+  const levels=engine.readFrame().masterStereo!,ratio=levels[1]/levels[0];
+  check('Master meters measure separate left and right output channels',levels[0]>.01 && ratio>.24 && ratio<.26,{left:levels[0],right:levels[1],ratio});
+ }finally{engine.dispose();}
+}
+export async function runStereoMeterChecks(report:(text:string)=>void){
+ try{await captureStereo((name,ok,data)=>report(`${ok?'PASS':'FAIL'} ${name}: ${JSON.stringify(data)}`));}catch(error){report(`ERROR ${String(error)}`);}
 }

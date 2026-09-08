@@ -52,7 +52,7 @@ export class MixerEngine {
   private audio(prepared?: AudioContext): AudioContext {
     if (this.ctx) return this.ctx;
     const ctx = this.ctx = prepared ?? this.contextFactory();
-    this.master = new MixerChannel(ctx); this.dry = ctx.createGain(); this.dry.connect(this.master.input);
+    this.master = new MixerChannel(ctx,true); this.dry = ctx.createGain(); this.dry.connect(this.master.input);
     this.local = ctx.createGain(); this.local.gain.value = this.monitoring ? 1 : 0; this.phones = ctx.createGain(); this.phonesCue=ctx.createGain();this.phonesMaster=ctx.createGain();this.phonesMaster.gain.value=0;this.phonesCue.connect(this.phones);this.master.output.connect(this.phonesMaster);this.phonesMaster.connect(this.phones);this.master.output.connect(this.local);
     // Conventional stereo master on 1/2; pre-fader headphone cue on 3/4 when available.
     this.phonesAvailable = ctx.destination.maxChannelCount >= 4;
@@ -583,7 +583,7 @@ export class MixerEngine {
   private sampleFrame = (): MixerFrame => ({ decks: Object.fromEntries([...this.decks].map(([id,d]) => {
     const active=this.focused(id)?.[1]; const at=active?.voice.at() ?? 0;
     return [id,{sources:Object.fromEntries(this.target(id).map(([name,s])=>[name,{seconds:s.voice.at(),beat:this.beatOf(id,s.voice.at()),playing:s.voice.playing,enabled:s.enabled,backgroundBeat:d.backgrounds.has(name)?this.beatOf(id,this.backgroundAt(id,d.backgrounds.get(name)!,this.ctx!.currentTime)):undefined}])),seconds:at,duration:d.audio.duration,beat:d.audio.map ? beatAt(d.audio.map,at*d.audio.map.rate) : at*(this.model(id).track?.bpm ?? 120)/60,level:d.channel.level()}];
-  })),masterLevel:this.ctx ? this.master.level() : 0 });
+  })),masterLevel:this.ctx ? this.master.level() : 0,masterStereo:this.ctx ? this.master.stereoLevels() : [0,0] });
   private waveform(id: string, d: Deck, beat: number): Pick<MixerDeck,'waveform'|'peaks'|'waveformSpectrum'> {
     const fit=this.model(id).zoom===0, start = fit ? this.beatOf(id,0) : Math.floor(beat / 32) * 32 - 32;
     const length=fit?Math.max(.001,this.beatOf(id,this.focused(id)?.[1].voice.buffer.duration ?? d.audio.duration)-start):96;

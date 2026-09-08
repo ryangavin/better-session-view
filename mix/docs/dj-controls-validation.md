@@ -199,3 +199,12 @@ Header test enters 135 through its editable field and verifies the engine comman
 The mixer/widget run passed 863 tests, followed by the new Header regression passing
 with the existing Header test (864 total across those suites). These checks do not
 close the intermittent audio-transition limitation above.
+
+
+## Stereo master meters and launcher spacing
+
+The master fader is replaced with independent L/R meters. The browser stereo check
+measured left 0.0243895 and right 0.00609737, a ratio of exactly 0.25 matching the
+generated signal. The UI exposes two labeled meters and no Master level slider.
+All 864 mixer/widget tests and typecheck passed. The Hot Cue divider now occupies
+a 12px gutter; the browser review confirms padding on both sides.

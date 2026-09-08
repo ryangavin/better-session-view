@@ -10,7 +10,7 @@ import type { MixerViewProps } from './model.ts';
 import { FrameMeter } from './frames.tsx';
 
 export function MasterStrip({ state, commands, readFrame, theme, params, externalTransport }: MixerViewProps) {
-  const { running, beat, bpm, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq, quantized } = state;
+  const { running, beat, bpm, cross, masterTrim, masterFilter, masterSendA, masterSendB, masterEq, quantized } = state;
   const { level: LEVEL, trim: TRIM, send: SEND, eq: EQ, filter: FILTER, tempo: TEMPO, cross: CROSS } = params;
   return <div className="play-master-strip" aria-label="Master mixer">
       <div className="play-actions">
@@ -40,14 +40,14 @@ export function MasterStrip({ state, commands, readFrame, theme, params, externa
     <div className="play-channel play-master-channel">
 
       <div className="play-level-stack">
-        <div className="play-channel-fader"><Slider name="" label="Master level" param={LEVEL} value={master} onChange={value => commands.setMaster('master', value)} length={210} /><FrameMeter label="Master output" sample={() => readFrame().masterLevel} /></div>
+        <div className="play-channel-fader play-master-stereo" role="group" aria-label="Master stereo output">{(['Left','Right'] as const).map((name,i)=><div key={name}><FrameMeter label={`Master ${name.toLowerCase()} output`} sample={() => readFrame().masterStereo?.[i] ?? 0}/><span>{name==='Left'?'L':'R'}</span></div>)}</div>
       </div>
       <div className="play-eq-stack play-master-eq"><Knob className="play-trim" ink="var(--amber)" name="Trim" label="Master trim" param={TRIM} value={masterTrim} onChange={value => commands.setMaster('masterTrim', value)} />{['High', 'Mid', 'Low'].map((name, i) => <Knob key={name} name={name} label={`Master ${name}`} param={EQ} origin="center" value={masterEq[i]} onChange={value => commands.setMasterEq(i, value)} />)}</div>
     </div>
     <div className="play-master-cross">
     <div className="play-monitor-row">
     {commands.setEffectsEnabled && <div className="play-fx-global"><ContextControls label="Effects group" pressed={state.effectsEnabled!==false} title={`${state.effectsEnabled!==false?'FX sends enabled':state.effectTailing?'FX bypassed · tails decaying':'FX bypassed'} · click to toggle; right-click, Shift-click or Shift+F10 for tail controls`} onPress={()=>commands.setEffectsEnabled?.(state.effectsEnabled===false)} face={<><PowerIcon/><span>FX</span>{state.effectTailing && <span className="play-tail-dot"/>}</>}><p>Bypass stops new sends and lets existing tails decay.</p><ButtonFace size="medium" disabled={state.effectsEnabled!==false} onClick={()=>commands.clearEffectTails?.()}>Clear tails</ButtonFace></ContextControls></div>}
-    {commands.setPhones && <ContextControls label="Headphone monitoring" face={<PhonesIcon/>} title="Headphone level and Cue / Master blend"><div className="play-phones-controls"><Knob name="Level" label="Headphone level" param={LEVEL} value={state.phonesLevel ?? 100} onChange={v=>commands.setPhones?.('phonesLevel',v)}/><Knob name="Cue / Master" label="Headphone Cue Master blend" param={SEND} value={state.phonesMix ?? 0} onChange={v=>commands.setPhones?.('phonesMix',v)}/></div><p>Cue is before deck faders and FX returns. Master follows the master fader. Both share the same clock.</p></ContextControls>}
+    {commands.setPhones && <ContextControls label="Headphone monitoring" face={<PhonesIcon/>} title="Headphone level and Cue / Master blend"><div className="play-phones-controls"><Knob name="Level" label="Headphone level" param={LEVEL} value={state.phonesLevel ?? 100} onChange={v=>commands.setPhones?.('phonesLevel',v)}/><Knob name="Cue / Master" label="Headphone Cue Master blend" param={SEND} value={state.phonesMix ?? 0} onChange={v=>commands.setPhones?.('phonesMix',v)}/></div><p>Cue is before deck faders and FX returns. Master follows the master output. Both share the same clock.</p></ContextControls>}
     </div>
     <Slider name="" label="Crossfader" showValue={false} param={CROSS} value={cross} onChange={value => commands.setMaster('cross', value)} orientation="horizontal" length={126} display={cross === 0 ? 'Center' : `${Math.abs(cross)} ${cross < 0 ? 'A' : 'B'}`} />
     </div>
