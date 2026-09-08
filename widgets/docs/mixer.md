@@ -239,8 +239,8 @@ row’s equal top and bottom padding. The separators are not borders on the cont
 
 The routing row follows the channel columns above it rather than the transport below:
 Full centres under the stems, the crossfade assignment under the fader and meters, and
-headphones under Trim/EQ. Each keeps its own width inside its column, so none of them is
-stretched by a neighbour. Transport keeps its own columns.
+headphones under Trim/EQ. Each fills its column, and the crossfade assignment divides
+its own between A, Thru and B. Transport keeps its own columns.
 
 The footer fills the deck width. Play, Cue and Sync hold square columns sized to
 the transport row; the remaining column takes the slack, so Thru, Full and the beat

@@ -175,8 +175,9 @@
 /* Both footer rows share the transport's intrinsic square columns. */
 .play-deck-footer { display:grid; grid-row:span 2; grid-template-rows:subgrid; grid-template-columns:repeat(3,var(--play-transport-size)) minmax(32px,1fr); column-gap:4px; }
 .play-deck-footer .play-routing-section, .play-deck-footer .play-deck-transport { display:grid; grid-column:1 / -1; grid-template-columns:subgrid; column-gap:4px; }
-.play-deck-footer .play-route > .wdg { min-width:0; }
-.play-deck-footer .play-route { display:grid; grid-column:1 / -1; grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:var(--play-column-gap); justify-items:center; }
+.play-deck-footer .play-route > .wdg, .play-deck-footer .play-route .wdg-body { width:100%; min-width:0; }
+.play-deck-footer .play-route .wdg-segmented-body > button { flex:1; }
+.play-deck-footer .play-route { display:grid; grid-column:1 / -1; grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:var(--play-column-gap); }
 .play-deck-footer .play-separator { grid-column:1 / -1; }
 
 /* The channel supplies height; tracks share the flexible row above readings. */
