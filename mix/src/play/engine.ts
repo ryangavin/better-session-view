@@ -224,11 +224,12 @@ export class MixerEngine {
     this.selection(id);
   }
   private snapCheckpoint(id:string, point:Checkpoint) {
-    const q=this.model(id).quantize ?? 0;if(!q)return;
+    const d=this.decks.get(id)!,model=this.model(id);
+    const q=model.quantize || (model.synced && d.audio.map ? 1 : 0);if(!q)return;
     const focused=point.get(this.focused(id)?.[0] ?? '');const anchor=focused?.enabled?focused:[...point.values()].find(p=>p.enabled) ?? focused ?? [...point.values()][0];
     if(!anchor)return;
     const beat=this.beatOf(id,anchor.at);let delta=snapBeat(beat,q)-beat;
-    let low=-Infinity,high=Infinity;for(const p of point.values())if(p.enabled){low=Math.max(low,this.beatOf(id,0)-this.beatOf(id,p.at));high=Math.min(high,this.beatOf(id,this.decks.get(id)!.audio.duration)-this.beatOf(id,p.at));}
+    let low=-Infinity,high=Infinity;for(const p of point.values())if(p.enabled){low=Math.max(low,this.beatOf(id,0)-this.beatOf(id,p.at));high=Math.min(high,this.beatOf(id,d.audio.duration)-this.beatOf(id,p.at));}
     delta=Math.max(low,Math.min(high,delta));point.forEach(p=>{if(p.enabled)p.at=this.secondsOf(id,this.beatOf(id,p.at)+delta);});
   }
   private beatOf(id: string, seconds: number) { const d=this.decks.get(id)!; return d.audio.map ? beatAt(d.audio.map,seconds*d.audio.map.rate) : seconds*(this.model(id).track?.bpm ?? 120)/60; }
