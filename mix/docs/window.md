@@ -34,6 +34,8 @@ three hundred pixels, which is what they are for.
 
 ## Prep and Play
 
+The app starts in Play with Play selected in the header.
+
 The left-aligned Prep/Play segmented control immediately to the right of the logo switches
 between single-track stem preparation and the four-deck DJ mixer. Exactly one button is
 selected; the logo stays static with no view-dependent highlight. Plain Tab also switches views. The library rail stays the same, and both preparation

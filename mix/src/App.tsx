@@ -51,7 +51,7 @@ import { carriesImport, droppedYoutube } from './libraryDrop.ts';
  */
 export function App() {
   const mix = useMix();
-  const [playView, setPlayView] = useState(false);
+  const [playView, setPlayView] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const mixer = useMixerViewModel(mix.library.tracks, mix.library.root);
   const previousMode = useRef(playView);
