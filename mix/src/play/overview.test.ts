@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { measureScan, overviewOf, SCAN_RATE } from './overview.ts';
+import { measureScan, overviewOf } from './overview.ts';
+import { SCAN_RATE } from './scan.ts';
 import { beatAt, evenBeats, sampleOf } from '../warp.ts';
 
 function buffer(channels: Float32Array[], rate = 44100): AudioBuffer {

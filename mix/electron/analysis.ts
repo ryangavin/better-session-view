@@ -410,13 +410,27 @@ export async function writePeaks(
  * gained or lost stems since fails the same check and is walked again.
  */
 export async function readScans(root: string, trackId: string, stems: string): Promise<Scans | null> {
+  const held = await readScanFile(root, trackId);
+  if (!held) return null;
+  return held.stems === stems && held.key === (stems ? await keyOf(root, stems) : '') ? held : null;
+}
+
+/**
+ * Whatever the file holds, without asking whether it is of these stems.
+ *
+ * Only the separator wants this. A separation invalidates the stems it wrote
+ * over and nothing else, so the scan of the *original* in an older file is
+ * still the scan of that original — worth carrying into the file the new
+ * separation writes rather than making the next load walk it again.
+ */
+export async function readScanFile(root: string, trackId: string): Promise<Scans | null> {
   try {
     const bytes = await fsp.readFile(path.join(root, scanFile(trackId)));
     if (bytes.length < 4) return null;
     const headerLength = bytes.readUInt32LE(0);
     const header = JSON.parse(bytes.subarray(4, 4 + headerLength).toString('utf8')) as ScanHeader;
     if (header.openflow !== 'mix-scan' || header.version !== SCAN_FORMAT) return null;
-    if (header.stems !== stems || header.key !== (stems ? await keyOf(root, stems) : '')) return null;
+    if (typeof header.stems !== 'string' || typeof header.key !== 'string') return null;
     if (!(header.rate > 0) || !Array.isArray(header.sources)) return null;
     if (header.sources.some((source) => !(source.bins > 0) || typeof source.name !== 'string')) return null;
     const body = 4 + headerLength;
@@ -433,7 +447,7 @@ export async function readScans(root: string, trackId: string, stems: string): P
       sources[source.name] = { bins: source.bins, values: floats.slice(at, at + length) };
       at += length;
     }
-    return { stems, key: header.key, rate: header.rate, sources };
+    return { stems: header.stems, key: header.key, rate: header.rate, sources };
   } catch {
     return null;
   }

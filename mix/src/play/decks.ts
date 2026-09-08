@@ -5,7 +5,8 @@ import { decode, fileUrl, stemUrl, type Peak } from '../audio.ts';
 import { openflow, type Track, type Analysis } from '../openflow.ts';
 import { evenBeats, tempoOf, type Beats } from '../warp.ts';
 
-import { measureScan, overviewOf, SCAN_RATE, SCAN_VALUES, type Overview, type Scan } from './overview.ts';
+import { measureScan, overviewOf, type Overview } from './overview.ts';
+import { binsOf, SCAN_RATE, SCAN_VALUES, type Scan } from './scan.ts';
 
 export const TRACK_DRAG = 'application/x-openflow-library-track';
 export const DECK_IDS = ['deck-a', 'deck-b', 'deck-c', 'deck-d'];
@@ -74,7 +75,7 @@ export async function loadDeckAsset(track: Track, signal: AbortSignal, context?:
     const held = kept?.rate === SCAN_RATE ? kept.sources[id] : undefined;
     // A kept scan has to be of this audio: a bin count that disagrees with what
     // decoded belongs to a file that has been replaced under the same name.
-    if (held && held.bins === Math.max(1, Math.round(buffer.duration * SCAN_RATE)) && held.values.length === held.bins * SCAN_VALUES) {
+    if (held && held.bins === binsOf(buffer.duration) && held.values.length === held.bins * SCAN_VALUES) {
       scans[id] = { rate: SCAN_RATE, bins: held.bins, values: held.values };
     } else {
       scans[id] = await measureScan(buffer, signal);

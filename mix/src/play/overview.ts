@@ -1,23 +1,10 @@
 import type { SpectralEnergy } from '@openflow/widgets/theme/spectral.ts';
 import { beatAt, sampleOf, type Beats } from '../warp.ts';
 import type { Peak } from '../audio.ts';
+import { SCAN_RATE, SCAN_VALUES, walk, type Samples, type Scan } from './scan.ts';
 
 /** Original-track overview; its origin can precede bar 1. Eight measurements per beat. */
 export interface Overview { start: number; peaks: Peak[]; spectrum: SpectralEnergy[] }
-
-/**
- * One source walked once, on a clock rather than on the grid.
- *
- * Reading forty million samples is the expensive half of loading a deck, and
- * doing it in beat columns tied the answer to the grid that was current when
- * it was walked — so an edited beat grid meant walking the samples again. A
- * scan is measured against time, kept beside the track, and any grid's columns
- * are drawn from it by `overviewOf` in a few milliseconds.
- *
- * Five values a bin, interleaved: the widest excursion of either channel, then
- * the low/mid/high energy of the same span.
- */
-export interface Scan { rate: number; bins: number; values: Float32Array }
 
 /**
  * Somewhere for a long walk to let the window past, without a timer.
@@ -36,56 +23,31 @@ function breather() {
     close: () => { channel.port1.close(); channel.port2.close(); },
   };
 }
-/** Bins a second. Five milliseconds apiece, several to a drawn column at any tempo. */
-export const SCAN_RATE = 200;
-export const SCAN_VALUES = 5;
-
 /**
- * Read decoded samples once, never a rescaled proxy.
+ * Walk a decoded buffer without stalling the window.
  *
- * Persistent 250/2500 Hz crossover states measure low/mid/high energy; the peak
- * silhouette retains the widest excursion of either channel. It comes up for
- * air on a time budget rather than every so many bins, so a replacement drop
- * still cancels within a frame while the walk is not mostly spent waiting.
+ * It comes up for air on a time budget rather than every so many bins, so a
+ * replacement drop still cancels within a frame while the walk is not mostly
+ * spent waiting.
  */
 export async function measureScan(buffer: AudioBuffer, signal: AbortSignal, rate = SCAN_RATE): Promise<Scan> {
-  const bins = Math.max(1, Math.round(buffer.duration * rate));
-  const values = new Float32Array(bins * SCAN_VALUES);
-  const channels = Array.from({length:buffer.numberOfChannels}, (_,i) => buffer.getChannelData(i));
-  const a = 1 - Math.exp(-2 * Math.PI * 250 / buffer.sampleRate);
-  const b = 1 - Math.exp(-2 * Math.PI * 2500 / buffer.sampleRate);
-  const lower = new Float64Array(channels.length), upper = new Float64Array(channels.length);
+  const source: Samples = {
+    channels: Array.from({length: buffer.numberOfChannels}, (_,i) => buffer.getChannelData(i)),
+    sampleRate: buffer.sampleRate, length: buffer.length, duration: buffer.duration,
+  };
+  signal.throwIfAborted();
   const air = breather();
   try {
-    let from = 0, mark = performance.now();
-    for (let bin = 0; bin < bins; bin++) {
-      if (bin % 16 === 0) {
+    const steps = walk(source, rate);
+    let mark = performance.now(), since = 0;
+    for (;;) {
+      const step = steps.next();
+      if (step.done) return step.value;
+      if (++since % 16 === 0) {
         signal.throwIfAborted();
-        if (performance.now() - mark >= 12) {
-          await air.pause();
-          signal.throwIfAborted();
-          mark = performance.now();
-        }
+        if (performance.now() - mark >= 12) { await air.pause(); signal.throwIfAborted(); mark = performance.now(); }
       }
-      const to = bin === bins - 1 ? buffer.length : Math.min(buffer.length, Math.round((bin + 1) / rate * buffer.sampleRate));
-      let min = 0, max = 0, low = 0, mid = 0, high = 0;
-      for (let c = 0; c < channels.length; c++) {
-        const channel = channels[c];
-        let l = lower[c], u = upper[c];
-        for (let n = from; n < to; n++) {
-          const value = channel[n];
-          min = Math.min(min, value); max = Math.max(max, value);
-          l += a * (value - l); u += b * (value - u);
-          low += l*l; mid += (u-l)**2; high += (value-u)**2;
-        }
-        lower[c] = l; upper[c] = u;
-      }
-      const samples = Math.max(1, (to-from)*channels.length), k = bin * SCAN_VALUES;
-      values[k] = min; values[k+1] = max;
-      values[k+2] = low/samples; values[k+3] = mid/samples; values[k+4] = high/samples;
-      from = to;
     }
-    return {rate, bins, values};
   } finally { air.close(); }
 }
 

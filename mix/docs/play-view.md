@@ -260,7 +260,9 @@ source once against **time** â€” two hundred bins a second, five values apiece â
 separation key or a source's length no longer matches what decoded. `overviewOf` gathers a
 grid's columns out of a scan in a few milliseconds, so an edited beat grid redraws instead
 of re-reading, and a second load of a song never reads a sample. A track that was never
-separated keeps the scan of its original alone. The walk comes up for air on a time budget
+separated keeps the scan of its original alone, and a separation writes its
+stems' scans as they land ([`stems.md`](stems.md)), leaving a first load only
+the original to walk. The walk comes up for air on a time budget
 through a message port rather than a timer: a nested `setTimeout` is clamped to four
 milliseconds, and to a second or more behind another app, which is enough to make a walk
 look like a hang.

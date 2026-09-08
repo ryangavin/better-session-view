@@ -16,6 +16,7 @@ import {
   type Sidecar,
 } from './job.ts';
 import { modelOf } from './models.ts';
+import { keepStemScans, scanned } from './scans.ts';
 import { places, prepare, uvPath, worker, workerEnv } from './runtime.ts';
 import {
   busyWork,
@@ -176,6 +177,10 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
   // conflate them.
   const already = await reusable(root, where, key);
   if (already) {
+    // Reused stems are as new to a deck as separated ones: what makes a load
+    // quick is the scan beside the track, and one may never have been written.
+    if (!(await scanned(root, trackId, where, already.sources)))
+      await keepStemScans(root, trackId, where, already.sources);
     const done: Finished = {
       ok: true,
       trackId,
@@ -335,6 +340,10 @@ export async function separate(request: Request, watch: Watcher): Promise<Outcom
       await fsp.rm(path.join(root, where), { recursive: true, force: true });
       await fsp.mkdir(path.dirname(path.join(root, where)), { recursive: true });
       await fsp.rename(scratch, path.join(root, where));
+      // After the rename, because the scan is keyed to the sidecar that is now
+      // in place, and after the job's own work, so a walk that fails is a track
+      // the window walks itself rather than a separation reported as failed.
+      await keepStemScans(root, trackId, where, outcome.sources);
     } catch (why) {
       await fsp.rm(scratch, { recursive: true, force: true });
       release(lease);

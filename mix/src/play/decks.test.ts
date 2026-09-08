@@ -3,7 +3,7 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { renderHook, act, cleanup } from '@testing-library/react';
 import { emptyDeck, loadDeckAsset, loadedDeck, isViewShortcut, type DeckAsset } from './decks.ts';
 import { useMixerViewModel } from './useMixerViewModel.ts';
-import { SCAN_RATE, SCAN_VALUES } from './overview.ts';
+import { SCAN_RATE, SCAN_VALUES } from './scan.ts';
 import { openflow, type Track } from '../openflow.ts';
 
 vi.mock('../openflow.ts', async (original) => ({ ...(await original<object>()), openflow: vi.fn() }));

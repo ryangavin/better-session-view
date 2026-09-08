@@ -107,11 +107,22 @@ somebody deleted in the Finder describes nothing.
   stems/<track-id>/<model>/
     vocals.wav drums.wav bass.wav other.wav
     stems.json                     the sidecar
+  analysis/<track-id>/scan.bin     the waveform walk, written as they land
 ```
 
 Inside the library, and relative like everything else in it, because a library
 is a folder you can carry to the venue — [`library.md`](library.md). One folder
 per model, so auditioning a second model does not destroy the first.
+
+**The stems are walked as they land.** A deck draws from `scan.bin` beside the
+track rather than from a hundred million samples, and the load that had to write
+it was the one right after a separation — the worst one to be slow. `scans.ts`
+walks the four float WAVs where they are (about a second) once the rename has
+put them and their sidecar in place, using the same walk the window uses, so a
+track separated this minute opens like one played all week. It is derived: a
+stem it cannot read leaves the separation's own answer alone and the window
+walks what it needs. Reused stems are walked too, since only the first load ever
+would have. [`play-view.md`](play-view.md) has what a deck does with it.
 
 ## Three rules the runner keeps
 
