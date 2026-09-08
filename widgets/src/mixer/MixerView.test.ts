@@ -24,7 +24,7 @@ function fixture(): MixerViewProps {
         full: false, fullSection: 'section-verse', fullQueued: undefined, gain: 80, trim: 0, sendA: 0, sendB: 0, filter: 0, eq: [0, 0, 0], route: 1, cue: false,
       })),
       running: false, beat: 0, loop: { start: null, end: null, enabled: false }, canLoopOut: false,
-      bpm: 128, quantized: true, cross: 0, master: 80, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0, 0, 0],
+      bpm: 128, quantized: true, loopBeats: 8, cross: 0, master: 80, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0, 0, 0],
       effects: [{ id: 'delay-id', name: 'Delay' }], fxA: 'delay-id', fxB: 'delay-id',
     },
     commands: { setRunning: vi.fn(), stopAll: vi.fn(), setQuantized: vi.fn(), loopIn: vi.fn(), loopOut: vi.fn(), setLoopEnabled: vi.fn(), setEffect: vi.fn(), setMaster: vi.fn(), setMasterEq: vi.fn(), setDeck: vi.fn(), setDeckEq: vi.fn(), setStemLevel: vi.fn(), launch: vi.fn() },

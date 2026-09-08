@@ -57,6 +57,7 @@ export function usePreviewMixer() {
   const [masterSendB, setMasterSendB] = useState(0);
   const [masterEq, setMasterEq] = useState([0, 0, 0]);
   const [quantized, setQuantized] = useState(true);
+  const [loopBeats, setLoopBeats] = useState(8);
   useEffect(() => {
     if (!running) return;
     let frame = 0;
@@ -110,7 +111,7 @@ export function usePreviewMixer() {
       fullSection: sectionId(d.fullSection), fullQueued: queuedId(d.fullQueued),
     })),
     running, beat, loop, canLoopOut: loop.start !== null && beat > loop.start,
-    bpm, quantized, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq,
+    bpm, quantized, loopBeats, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq,
     effects: EFFECTS.map(name => ({ id: name.toLowerCase(), name })),
     fxA: EFFECTS[fxA].toLowerCase(), fxB: EFFECTS[fxB].toLowerCase(),
   };
@@ -119,6 +120,7 @@ export function usePreviewMixer() {
     deckLoopIn: id => { const i=deckIds.indexOf(id); if(i>=0) { const at=deckBeat(decks[i]); update(i,{positionOffset:at-phase.current.beat,loop:{start:at,end:null,enabled:false}}); } },
     deckLoopOut: id => { const i=deckIds.indexOf(id); if(i>=0 && decks[i].loop.start!==null && deckBeat(decks[i])>decks[i].loop.start!) update(i,{loop:{...decks[i].loop,end:deckBeat(decks[i]),enabled:true}}); },
     setDeckLoopEnabled: (id,enabled) => { const i=deckIds.indexOf(id); if(i>=0) update(i,{positionOffset:(enabled?decks[i].loop.start ?? deckBeat(decks[i]):deckBeat(decks[i]))-phase.current.beat,loop:{...decks[i].loop,enabled}}); },
+    setLoopBeats,
     setQuantized: value => { setQuantized(value); if (!value) setDecks(all => all.map(d => ({ ...d, fullSection: d.fullQueued ?? d.fullSection, fullQueued: null, active: d.active.map((a, i) => d.queued[i] ?? a), queued: [null, null, null, null] }))); },
     loopIn: () => setLoop({ start: beat, end: null, enabled: false }),
     loopOut: () => { if (loop.start !== null && beat > loop.start) setLoop(l => ({ ...l, end: beat, enabled: true })); },
