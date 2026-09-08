@@ -158,8 +158,9 @@ blend; these are not added to MasterControl, keeping existing adapters compatibl
 
 The mixer retains its aligned six-row structure. Loaded waveform lanes overlay a source
 chip plus focused Play/Cue; source, relative group movement and zoom live in its panel.
-The loop row keeps In/Out, Exit/Reloop and quick loop visible, with timing and detailed
-edits in ContextControls. It delegates positioning, flipping and dismissal to shared Popup.
+The loop row keeps In/Out, Exit/Reloop and quick loop visible, sharing one column width
+between all four; only the settings trigger keeps its own square. Timing and detailed
+edits live in ContextControls. It delegates positioning, flipping and dismissal to shared Popup.
 Escape restores trigger focus. Button, Toggle and Momentary share ButtonFace; comparable
 performance actions are 24px high, while deck Play/Cue/Sync use 40px square faces.
 Six-source level controls use two columns. Loop settings has an explicit 32px width

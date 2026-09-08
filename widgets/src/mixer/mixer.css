@@ -109,8 +109,8 @@
 .play-deck-transport > .wdg-toggle > .wdg-body {height:100%;width:100%;min-height:0;}
 .play-deck-transport > .play-hold.wdg-body {width:auto;height:auto;aspect-ratio:1;}
 .play-context select {height:24px;border:1px solid var(--wdg-edge);border-radius:var(--wdg-radius);background:var(--wdg-face);color:var(--wdg-text);font:inherit;}
-.play-quick-loop {width:auto;}
-.play-deck-loops {grid-template-columns:repeat(3,minmax(0,1fr)) auto 32px;}
+.play-deck-loops > .play-quick-loop {width:100%;min-width:0;}
+.play-deck-loops {grid-template-columns:repeat(4,minmax(0,1fr)) 32px;}
 .play-deck-loops:not(:has(.play-quick-loop)) {grid-template-columns:1fr 1fr 1.6fr;}
 .play-deck-loops > .play-context-trigger {width:32px;font-size:18px;padding:0;}
 .play-deck-loops > .wdg > .wdg-body {padding-inline:3px;}

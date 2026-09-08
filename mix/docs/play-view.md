@@ -62,7 +62,8 @@ of level knobs. Compact layouts fit the checked 1280×720, 1024×768 and 1366×7
 
 Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens source,
 relative group movement and zoom settings. The compact loop row keeps In, Out,
-Exit/Reloop and quick loop visible; its settings button opens Q, launch timing, target,
+Exit/Reloop and quick loop visible on one shared column width; its settings button keeps
+its own square and opens Q, launch timing, target,
 length, Slip and region edits. Small actions use the shared 24px widget button face;
 deck Play/Cue/Sync are squares that fill the transport row. The compact mixer has a 964px minimum width so its transport squares and
 beat-jump stack fit; narrower available areas scroll horizontally. Loop controls remain within each deck.
