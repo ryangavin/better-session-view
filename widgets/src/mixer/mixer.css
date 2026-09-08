@@ -165,3 +165,14 @@
 .play-routing-section { display: grid; grid-template-rows: auto 1fr auto; }
 .play-section-divider { height: 1px; background: var(--wdg-edge); }
 .play-route { padding-block: 6px; }
+
+/* Both footer rows share the transport's intrinsic square columns. */
+.play-deck-footer { display:grid; grid-row:span 2; grid-template-rows:subgrid; grid-template-columns:repeat(3,auto) 32px; column-gap:4px; justify-content:center; }
+.play-deck-footer .play-routing-section, .play-deck-footer .play-route, .play-deck-footer .play-deck-transport { display:grid; grid-column:1 / -1; grid-template-columns:subgrid; column-gap:4px; }
+.play-deck-footer .play-section-divider { grid-column:1 / -1; }
+.play-deck-footer .play-route > .wdg { width:100%; min-width:0; }
+.play-deck-footer .play-route > .wdg-segmented { grid-column:span 2; }
+.play-deck-footer .play-route .wdg-body { width:100%; }
+.play-deck-footer .play-route .wdg-segmented-body > button { flex:1; }
+.play-deck-footer .play-route .wdg-segmented-body > button:first-child,
+.play-deck-footer .play-route .wdg-segmented-body > button:last-child { flex:0 0 auto; aspect-ratio:1; padding-inline:0; }

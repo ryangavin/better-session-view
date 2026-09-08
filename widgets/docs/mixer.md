@@ -222,3 +222,7 @@ their own dimensions.
 
 The deck routing buttons sit between dedicated separator elements, outside the
 row’s equal top and bottom padding. The separators are not borders on the controls.
+
+Routing and transport share footer columns: headphones align with Play, A/Thru/B
+spans Cue and Sync, and Full aligns with the beat arrows. A and B remain square;
+Thru flexes into the remaining width.
