@@ -207,3 +207,5 @@ without narrowing the Hot Cue label itself.
 The master strip shows labeled L/R meters in place of its former level fader. Hosts
 supply `masterStereo` peaks in the frame; missing stereo readings display zero.
 Master trim remains available.
+
+Trim and the three EQ knobs share the same stack spacing, without a separator line.

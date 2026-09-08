@@ -35,7 +35,6 @@
 .play-channel-fader .wdg-slider { --wdg-track: 28px; --wdg-fill: var(--amber); }
 .play-stem-levels .wdg-caption { color: var(--stem-label); }
 .play-trim { position: relative; --wdg-marker: var(--amber); }
-.play-trim::after { content: ''; position: absolute; bottom: -5px; left: 5px; right: 5px; border-bottom: 1px solid var(--wdg-edge); }
 .play-trim .wdg-caption { color: var(--amber); }
 .play-route, .play-master-cross { display: flex; justify-content: center; align-items: center; gap: 6px; padding-top: 6px; border-top: 1px solid var(--wdg-edge); }
 .play-actions { grid-row: 1 / span 2; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 5px; padding: 0 8px 8px; }
