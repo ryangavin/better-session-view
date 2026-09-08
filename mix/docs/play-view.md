@@ -10,6 +10,8 @@ playback or library code. Four copies of the single-track `useMix` are not a mix
 
 ## Window and ownership
 
+The app starts in Play with Play selected in the header.
+
 The left-aligned Prep/Play segmented control immediately beside the logo selects stem
 separation or the DJ mixer, with exactly one active option. The logo is static branding.
 Press plain Tab to switch. The sidebar and hidden Prep page stay
