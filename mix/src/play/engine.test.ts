@@ -60,6 +60,7 @@ describe('the four-deck playback owner',()=>{
     const {engine,ctx}=setup(), loaded=asset();
     loaded.audio!.sourceOverviews={full:{start:0,peaks:Array.from({length:1024},()=>({min:-.7,max:.7})),spectrum:[]}};
     await engine.load('deck-a',track,async()=>loaded);
+    expect(engine.snapshot().decks[0].waveformSource).toBe('full');
     await engine.play('deck-a',true,undefined,false,'drums');
     const before=ctx.sources.length;
     engine.commands.setFocus!('deck-a','full');

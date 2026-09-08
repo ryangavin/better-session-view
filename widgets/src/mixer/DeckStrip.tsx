@@ -32,7 +32,7 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
           </div>)}
           <Button label={`Deck ${index + 1}: stop all stems`} onPress={() => commands.launch(d.id, null)}>{(d.full ? d.fullQueued === null : d.stems.every(stem => stem.queued === null)) ? '◷ Stop' : 'Stop'}</Button>{d.stems.map((stem, i) => <Button disabled={d.full || d.status !== 'ready' || !stem.available} key={stem.id} label={`Deck ${index + 1}: stop ${stem.name}`} width={34} onPress={() => commands.launch(d.id, null, stem.id)}>■</Button>)}
         </fieldset>
-          <div className="play-deck-status">{d.message && <span role="status">{d.message}</span>}</div>
+          <div className="play-deck-status">{d.status!=='empty' && d.message && <span role="status">{d.message}</span>}</div>
           <div className="play-deck-loops" role="group" aria-label={`Deck ${index + 1} loop`}>
             <Button disabled={d.status !== 'ready' || !commands.deckLoopIn} label={`Deck ${index + 1} loop in`} title="Mark loop start and Cue" onPress={() => commands.deckLoopIn?.(d.id)}>In</Button>
             <Button disabled={!d.canLoopOut || !commands.deckLoopOut} label={`Deck ${index + 1} loop out`} title="Mark loop end and repeat" onPress={() => commands.deckLoopOut?.(d.id)}>Out</Button>
