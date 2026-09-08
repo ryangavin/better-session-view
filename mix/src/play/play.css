@@ -38,7 +38,6 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
   .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) 64px minmax(163px,max-content) minmax(var(--play-routing-min),max-content) 58px;}
   .mf-play .play-eq-stack {--play-knob-row:36px;--play-knob-gap:2px;}
   .mf-play .play-fx-params {padding-block:0;}
-  .mf-play .wdg-knob {--wdg-knob-height:22px;--wdg-knob-size:28px;}
   .mf-play .play-actions {gap:2px;padding-bottom:2px;}
   .mf-play .play-fx-pickers {gap:3px;}
 }
@@ -68,5 +67,6 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 
 @container (max-height: 780px) {
   .mf-play .play-decks { --play-separator-space:5px; }
-  .mf-play .wdg-knob > .wdg-readout { display:none; }
+  .mf-play .play-channel .wdg-knob { --wdg-knob-height:22px; --wdg-knob-size:28px; }
+  .mf-play .play-channel .wdg-knob > .wdg-readout { display:none; }
 }

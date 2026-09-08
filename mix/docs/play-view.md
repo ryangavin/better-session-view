@@ -331,6 +331,7 @@ Cue grid reserves the corresponding gutter. Compact mode changes that shared mar
 Play targets 1280 × 720 as its minimum supported viewport. At that size the complete
 mixer fits; smaller viewports retain control sizes and allow scrolling.
 
-Compact Play layouts hide the printed values beneath knobs and shorten their
-rows, retaining labels, accessible values and full separator clearance. Fader
-readings remain visible. Larger layouts retain knob readouts.
+Compact Play layouts shrink only the mixer channel knobs (stem levels and
+Trim/EQ), hide their printed values and shorten their rows. Effects knobs retain
+normal size and readouts. Labels, accessible values, fader readings and separator
+clearance remain available. Larger layouts retain all knob readouts.
