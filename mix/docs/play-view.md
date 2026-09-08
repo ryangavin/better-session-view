@@ -316,4 +316,5 @@ decorative and do not intercept input.
 
 
 FX A and B divide their section into equal-height halves. Their headers retain
-equal side spacing, with fully bordered dropdowns filling the width beside bypass.
+equal side spacing. Bypass and dropdown join inside one shared outline, with a
+single internal divider and no extra rule across the effects panel.

@@ -71,7 +71,7 @@
 .play-master-cross .wdg-slider { --wdg-track: 24px; }
 
 .play-performance { display: flex; flex-direction: column; }
-.play-fx-unit { display: grid; align-content:start; gap: 0; border: 0; border-radius: 0; box-shadow: inset 0 1px color-mix(in srgb,var(--wdg-edge) 65%,transparent); background: color-mix(in srgb,var(--wdg-face) 55%,transparent); }
+.play-fx-unit { display: grid; align-content:start; gap: 0; border: 0; border-radius: 0; box-shadow: none; background: color-mix(in srgb,var(--wdg-face) 55%,transparent); }
 .play-fx-unit > .wdg-select { width: 100%; min-width: 0; }
 .play-fx-unit > .wdg-select > .wdg-select-body { width: 100%; border: 0; border-radius: var(--wdg-radius) var(--wdg-radius) 0 0; background: transparent; }
 .play-fx-unit:has(.play-fx-params:not(:empty)) > .wdg-select { border-bottom: 1px solid var(--wdg-edge); }
@@ -125,10 +125,10 @@
 .play-context p {font-size:10px;line-height:1.5;color:var(--wdg-caption);margin:8px 0 0;}
 .play-fx-global {display:flex;justify-content:space-between;align-items:center;height:28px;}
 .play-tail-dot {width:4px;height:4px;border-radius:50%;background:var(--primary);}
-.play-fx-heading {display:flex;align-items:center;gap:4px;}
-.play-fx-heading > button {width:32px;flex:none;}
-.play-fx-heading > .wdg-select {flex:1;min-width:0;}
-.play-fx-heading .wdg-select-body {width:100%;}
+.play-fx-heading {display:flex;align-items:stretch;gap:0;border:1px solid var(--wdg-edge);border-radius:var(--wdg-radius);overflow:hidden;}
+.play-fx-heading > button {width:32px;flex:none;border:0;border-right:1px solid var(--wdg-edge);border-radius:0;height:auto;}
+.play-fx-heading > .wdg-select {flex:1;min-width:0;row-gap:0;}
+.play-fx-heading .wdg-select-body {width:100%;border:0;border-radius:0;padding-left:8px;}
 .play-phones-controls {display:flex;justify-content:space-evenly;gap:12px;padding:8px;}
 .play-master-cross {display:grid;grid-template-rows:subgrid;align-items:center;justify-items:center;padding:0;gap:0;}
 .play-master-cross > .wdg-slider {box-sizing:border-box;width:100%;align-self:stretch;justify-content:center;margin-top:2px;padding-top:4px;border-top:1px solid var(--wdg-edge);}
