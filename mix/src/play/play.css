@@ -5,9 +5,6 @@
 .mf-centre[hidden] { display: none; }
 .mf-view-mode { color: var(--ui); font-size: var(--text-label); }
 .mf-play-status { margin-left: auto; color: var(--caption); font-size: var(--text-label); }
-button.mf-mark { border: 1px solid transparent; border-radius: var(--radius-xs); background: transparent; padding: 2px 4px; cursor: pointer; }
-button.mf-mark:focus-visible { outline: 1px solid var(--primary); }
-button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { background: var(--primary); color: var(--on-primary); }
 
 .mf-play .play-grid { max-height: 198px; overflow-y: auto; overflow-x: hidden; }
 .mf-play .play-grid > .play-axis, .mf-play .play-stem-name { position: sticky; top: 0; z-index: 1; background: var(--surface-control); }
