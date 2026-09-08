@@ -1,3 +1,4 @@
+import { useRef, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { TRACK_DRAG } from '../play/decks.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { STEMS } from '../mock.ts';
@@ -22,11 +23,36 @@ import './Library.css';
  * means the beats are found; `no fit` and `no grid` are the two ways they are
  * not, and they want different things done about them.
  */
+/** How far the rail may be dragged. Narrower hides the badge strip; wider starves the decks. */
+const NARROWEST = 190, WIDEST = 560;
+const held = (width: number) => Math.round(Math.max(NARROWEST, Math.min(WIDEST, width)));
+
 export function Library({ mix }: { mix: Mix }) {
   const { library } = mix;
+  const rail = useRef<HTMLElement>(null);
+  const width = () => rail.current?.getBoundingClientRect().width ?? NARROWEST;
+  const drag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const from = width(), start = event.clientX;
+    const move = (moved: PointerEvent) => mix.setLibraryWidth(held(from + moved.clientX - start));
+    const done = () => window.removeEventListener('pointermove', move);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', done, { once: true });
+    window.addEventListener('pointercancel', done, { once: true });
+  };
+  const nudge = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const step = event.key === 'ArrowLeft' ? -16 : event.key === 'ArrowRight' ? 16 : 0;
+    if (!step) return;
+    event.preventDefault();
+    mix.setLibraryWidth(held(width() + step));
+  };
 
   return (
-    <aside className="mf-library">
+    <aside className="mf-library" ref={rail} style={mix.libraryWidth ? { width: `${mix.libraryWidth}px` } : undefined}>
+      <div className="mf-library-grip" role="separator" aria-orientation="vertical" aria-label="Library width"
+        aria-valuemin={NARROWEST} aria-valuemax={WIDEST} aria-valuenow={mix.libraryWidth || undefined}
+        tabIndex={0} onPointerDown={drag} onKeyDown={nudge} />
       <div className="mf-library-top">
         <div className="mf-library-tools">
           <input

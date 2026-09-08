@@ -43,6 +43,10 @@ loading, keyboard behavior and the current playback boundary.
 
 ## The library rail
 
+The rail's right edge is a drag handle: pointer or arrow keys, between 190px and 560px,
+kept in the session so a reload comes back the width it was left. Until it is dragged the
+stylesheet's own width stands, so the handle costs nothing to ignore.
+
 The rail starts with one compact row: filter plus **Import**. Import opens the ordinary
 multi-file picker; dropping a YouTube video link anywhere on the window imports its audio.
 There is no URL field or Fetch button. Imports disable while another import is in flight,

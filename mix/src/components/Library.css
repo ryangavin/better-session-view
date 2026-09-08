@@ -1,4 +1,5 @@
 .mf-library {
+  position: relative;
   flex: none;
   width: var(--rail-left);
   display: flex;
@@ -279,4 +280,21 @@ font-variation-settings: var(--mono-axes);
 
 .mf-library-where:disabled {
   cursor: default;
+}
+
+.mf-library-grip {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 7px;
+  z-index: 2;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.mf-library-grip:hover,
+.mf-library-grip:focus-visible {
+  outline: none;
+  background: var(--focus);
 }

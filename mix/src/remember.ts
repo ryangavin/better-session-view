@@ -61,6 +61,8 @@ export interface Session {
   snap?: Snap;
   /** Whether the stems play stretched to the header tempo, or as they were recorded. */
   warp?: boolean;
+  /** How wide the person dragged the library rail, in pixels. */
+  libraryWidth?: number;
   tracks?: Record<string, Remembered>;
 }
 

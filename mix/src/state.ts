@@ -267,6 +267,7 @@ export function useMix() {
    * here to be asked for, and they hold whatever the zoom is doing.
    */
   const [snap, setSnapState] = useState<Snap>(kept.snap ?? 'grid');
+  const [libraryWidth, setLibraryWidth] = useState<number>(kept.libraryWidth ?? 0);
   /**
    * The stretch of the record the loop turns round in, in seconds, or null for
    * all of it.
@@ -1803,7 +1804,7 @@ export function useMix() {
    */
   useEffect(() => {
     const timer = setTimeout(() => {
-      let next: Session = { ...held.current, selected, model, query, loop, snap, warp };
+      let next: Session = { ...held.current, selected, model, query, loop, snap, warp, libraryWidth };
       if (song) {
         next = withTrack(next, song.id, {
           levels: level,
@@ -1822,6 +1823,7 @@ export function useMix() {
     loop,
     snap,
     warp,
+    libraryWidth,
     song,
     level,
     gridHeld,
@@ -1902,6 +1904,9 @@ export function useMix() {
     /** What a cut on the ruler is held to — `grid.ts`. */
     snap,
     setSnap: setSnapState,
+    /** The library rail's dragged width in pixels, or 0 for the stylesheet's own. */
+    libraryWidth,
+    setLibraryWidth,
     /** The stretch the loop turns round in, in seconds, or null for the whole record. */
     region,
     scrubTo,
