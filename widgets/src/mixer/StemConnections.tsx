@@ -20,7 +20,8 @@ export function StemConnections() {
         const box = control.getBoundingClientRect();
         return { x:box.x-bounds.x, y:box.y-bounds.y, width:box.width, height:box.height };
       });
-      setDrawing({ path: points.map((p,i)=>i ? `H${p.x} V${p.y}` : `M${p.x} ${p.y}`).join(' '), boxes });
+      const end = { x:points[0]?.x ?? 0, y:points.at(-1)?.y ?? 0 };
+      setDrawing({ path: points.map((p,i)=>i ? `H${p.x} V${p.y}` : `M${p.x} ${p.y}`).join(' ') + ` H${end.x + 12} q-3 0 -4 -3 t-4 3 t-4 -3 t-4 3 q-1 0 -2 0`, boxes });
     };
     const observer = new ResizeObserver(measure);
     observer.observe(parent);
