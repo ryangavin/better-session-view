@@ -65,6 +65,14 @@ the booth. The cue cannot share the mix's pair, and a saved pair the current int
 cannot reach falls back to the front pair with the cue dropped rather than folded into
 the room. This is not a separate headphone-device selector: both pairs are on one device.
 
+**A multi-output interface will usually report one pair until it is wrapped in an
+Aggregate Device.** Since Chromium 150, `audio_manager_mac.cc` reads the device's
+`kAudioDevicePropertyPreferredChannelLayout` and returns that channel count if the
+property exists, falling through to the real total only when it does not — and most
+interfaces publish a stereo layout. An Aggregate Device publishes none, so the fallback
+applies and every channel appears. This is deliberate upstream, not a bug to wait out;
+the wiki's Troubleshooting page carries the steps for a person.
+
 The pairs on offer come from a throwaway context opened on the drafted device and closed
 at once. `maxChannelCount` describes the device a context was opened on, so asking the
 running one about a device just chosen would answer about the old one — which is what

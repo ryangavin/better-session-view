@@ -102,7 +102,7 @@ export function SettingsModal({mix,mixer,playView,onClose}:{mix:Mix;mixer:MixerE
       </div>
       {readingRates?<p className="mf-audio-help" role="status">Reading interface sample rates…</p>:rateProblem||!output?<p className="mf-audio-help" role="status">{rateProblem||'The selected output could not be matched to a unique interface. Its supported rates are unavailable.'}</p>:<p className="mf-audio-help">Sample rates reported by {output.name}. {unavailableRate?'Choose a supported rate or Device default.':''}</p>}
       {probing?<p className="mf-audio-help" role="status">Reading this interface's outputs…</p>
-        :pairs.length<2?<p className="mf-audio-help">This output reports one stereo pair, so the cue shares the mix. A second pair enables headphone cue.</p>
+        :pairs.length<2?<p className="mf-audio-help">This output reports one stereo pair, so the cue shares the mix. If the interface has more, macOS is reporting its preferred <em>speaker layout</em> rather than its outputs: make an Aggregate Device containing just this interface in Audio MIDI Setup and choose that here. See Troubleshooting in the wiki.</p>
         :unreachable?<p className="mf-audio-help" role="status">A saved output pair is beyond this interface. Choose pairs it has, or Apply to fall back to Outputs 1/2 with no cue.</p>
         :<p className="mf-audio-help">Cue is taken before the deck faders and the crossfader, so a deck can be heard on {pairLabel(draft.cuePair<0?0:draft.cuePair)} that the room on {pairLabel(draft.mainPair)} cannot.</p>}
       <p className="mf-audio-help">Apply restarts audio in Prep and Play, pausing playback and disconnecting Link Audio. Loaded tracks and mixer settings stay.</p>
