@@ -143,14 +143,17 @@ marker Q. Sync fixes section launches to the next leader bar (four beats).
 Queued cells show the scheduled change; Stop is immediate.
 
 Q snaps Cue and manual loop markers to the nearest saved-grid division (ties forward):
-Off, 1/8, 1/4, 1/2, 1 or 4 beats. Collective snapshots use a common delta anchored to
-focus, preserving offsets. Missing grids disable grid-dependent controls. Loop scope
-chooses active stems or focus only. In works paused or playing, stores Cue and starts a
-new capture; Out validates every target atomically with at least 20ms duration. Scope
-cannot change while awaiting Out. Quick loops use the selected beat count (16 beats is
-four bars in 4/4); half/double keep In fixed, move shifts by one beat, boundary buttons
-adjust by Q or 1/8 beat. Invalid edits change nothing. Exit continues at each audible
-position and retains saved regions. Reloop goes to In, preserving paused/playing state.
+Off, 1/8, 1/4, 1/2, 1 or 4 beats. A synced deck answers to a whole beat when Q is off,
+since it is already held to the shared grid: Cue lands on a beat, and an In or Out nudge
+steps a beat rather than rounding away to no move at all. Collective snapshots use a
+common delta anchored to focus, preserving offsets. Missing grids disable grid-dependent
+controls. Loop scope chooses active stems or focus only. In works paused or playing,
+stores Cue and starts a new capture; Out validates every target atomically with at least
+20ms duration. Scope cannot change while awaiting Out. Quick loops use the selected beat
+count (16 beats is four bars in 4/4); half/double keep In fixed, move shifts by one
+beat, boundary buttons adjust by Q, a whole beat while synced, or 1/8 beat. Invalid
+edits change nothing. Exit continues at each audible position and retains saved regions.
+Reloop goes to In, preserving paused/playing state.
 Loop edits do not rewrite Cue. A section-name launch clears old saved loops.
 
 Slip applies to loops only. Each looping source retains its own advancing background
@@ -290,9 +293,13 @@ status area is reserved for loading, operational messages and errors.
 The Hot Cue divider uses the shared separator clearance on each side.
 
 Master metering splits the post-processing stereo output into independent analyzers.
-The frame provides left/right peaks; mono cancellation cannot hide either channel.
+The frame provides left/right peaks; mono cancellation cannot hide either channel. Deck
+channels split the same way, so each deck meters its own left and right after its fader.
 
-Channel stems, fader/meter and Trim/EQ share a top-aligned column layout; stem
+Channel stems, fader/meter and Trim/EQ share a top-aligned column layout on the same
+three-column track as the FX/filter row above, so stems sit under FX A, the fader under
+Filter and Trim/EQ under FX B. The master channel matches its own FX row, spanning its
+meters across the first two columns and taking the third for Trim/EQ. Stem
 wrappers do not add baseline offsets. Four-stem rows align with all four EQ rows;
 six stems use two staggered columns, anchored by Drums at the top left and Piano at the bottom right.
 
@@ -307,8 +314,21 @@ Routing and transport share footer columns: headphones align with Play, A/Thru/B
 spans Cue and Sync, and Full aligns with the beat arrows. A and B remain square;
 Thru flexes into the remaining width.
 
-Faders and meters fill the channel height, sharing a flexible track row above
-their readings. Fader drag distance follows the current track size.
+The footer fills the deck width. Play, Cue and Sync hold square columns sized to
+the transport row; the remaining column takes the slack, so Thru, Full and the beat
+arrows grow with the deck. The beat arrows rotate to whichever orientation gives them
+more area — stacked while their box is taller than wide, side by side once it is wider
+— and swap ↑/↓ for ←/→ with rewind on the left.
+
+The deck fader is a slot and a cap drawn straight onto the strip, with no well and no
+plate, so it carries the same weight as the knobs beside it. The slot is cut to the
+master strip's background and framed like an empty meter; the cap is one flat bar in
+the primary color, lifted by a shadow. A thumb's own size comes out of its travel, so
+it never crosses either end of the track.
+
+Faders and meters fill the channel height. The deck fader shows no percentage; the row
+below the track carries the meter captions instead. Fader drag distance follows the
+current track size.
 
 A small, muted waveform icon occupies the empty corner beneath the left stem
 column. A faint right-angle zigzag connects Drums through Piano behind the

@@ -206,7 +206,10 @@ without narrowing the Hot Cue label itself.
 
 The master strip shows labeled L/R meters in place of its former level fader. Hosts
 supply `masterStereo` peaks in the frame; missing stereo readings display zero.
-Master trim remains available.
+Master trim remains available. Each deck carries the same labeled L/R pair beside its
+fader, from per-channel peaks at `decks[id].stereo`; a host that omits them reads zero.
+Meter width belongs to the layout rather than the meter, so decks and master size theirs
+independently.
 
 Trim and the three EQ knobs share the same stack spacing, without a separator line.
 
@@ -214,11 +217,15 @@ Stem knob wrappers use flex layout to avoid inline baseline offsets. Drums and T
 labels align at their top edge; six-stem grids also start at that edge.
 
 The channel is a shared three-column grid (stems, fader/meter, Trim/EQ), aligned
-at the top instead of centering each column separately. The master uses two columns.
+at the top instead of centering each column separately. It shares the track of the
+FX/filter row above it, so stems sit under FX A, the fader under Filter and Trim/EQ
+under FX B. The master channel does the same against its own FX row: its meters span
+the first two columns and carry the FX knobs' side margin, and Trim/EQ takes the third
+under FX B.
 
 Play/Cue/Sync stretch to their shared row height with a square aspect ratio; the
-paired beat-jump controls divide that same height. Individual buttons do not set
-their own dimensions.
+paired beat-jump controls divide the remaining column, along whichever axis leaves
+each button more area. Individual buttons do not set their own dimensions.
 
 The deck routing buttons sit between dedicated separator elements, outside the
 row’s equal top and bottom padding. The separators are not borders on the controls.
@@ -227,8 +234,21 @@ Routing and transport share footer columns: headphones align with Play, A/Thru/B
 spans Cue and Sync, and Full aligns with the beat arrows. A and B remain square;
 Thru flexes into the remaining width.
 
-Faders and meters fill the channel height, sharing a flexible track row above
-their readings. Fader drag distance follows the current track size.
+The footer fills the deck width. Play, Cue and Sync hold square columns sized to
+the transport row; the remaining column takes the slack, so Thru, Full and the beat
+arrows grow with the deck. The beat arrows rotate to whichever orientation gives them
+more area — stacked while their box is taller than wide, side by side once it is wider
+— and swap ↑/↓ for ←/→ with rewind on the left.
+
+The deck fader is a slot and a cap drawn straight onto the strip, with no well and no
+plate, so it carries the same weight as the knobs beside it. The slot is cut to the
+master strip's background and framed like an empty meter; the cap is one flat bar in
+the primary color, lifted by a shadow. A thumb's own size comes out of its travel, so
+it never crosses either end of the track.
+
+Faders and meters fill the channel height. The deck fader shows no percentage; the row
+below the track carries the meter captions instead. Fader drag distance follows the
+current track size.
 
 Six-stem controls use two staggered columns across the full channel height.
 Drums anchors the top left and Piano the bottom right; the opposite ends use
