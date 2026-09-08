@@ -226,3 +226,11 @@ row’s equal top and bottom padding. The separators are not borders on the cont
 Routing and transport share footer columns: headphones align with Play, A/Thru/B
 spans Cue and Sync, and Full aligns with the beat arrows. A and B remain square;
 Thru flexes into the remaining width.
+
+Faders and meters fill the channel height, sharing a flexible track row above
+their readings. Fader drag distance follows the current track size.
+
+Six-stem controls use two staggered columns across the full channel height.
+Drums anchors the top left and Piano the bottom right; the opposite ends use
+flex spacers equal to one fifth of the height remaining after a knob row, so all
+six knob centers advance in equal vertical steps as the channel height changes.

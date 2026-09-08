@@ -85,7 +85,7 @@ export interface ParamGestureOptions {
   axis?: ParamAxis;
   /** Defaults to `value` — Live grabs a control where it is rather than jumping. */
   anchor?: ParamAnchor;
-  travel?: number;
+  travel?: number | 'element';
   label?: string;
   /** Authoritative text, when something else is spelling the value. */
   display?: string;
@@ -154,6 +154,7 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
     depth: number;
     /** Screen pixels per CSS pixel here, measured once at the grab. */
     scale: number;
+    extent: number;
     /** What to put back if the drag is abandoned. */
     from: number;
     fromDepth: number;
@@ -260,6 +261,7 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
         fraction,
         depth: now.depth ?? 1,
         scale: scale > 0 ? scale : 1,
+        extent: Math.max(1, axis === 'vertical' ? e.currentTarget.offsetHeight : e.currentTarget.offsetWidth),
         from: now.value,
         fromDepth: now.depth ?? 1,
       };
@@ -282,7 +284,7 @@ export function useParamGesture(options: ParamGestureOptions): ParamGesture {
       // Distance accrues onto the fraction rather than being measured from the
       // grab point, so taking the fine modifier mid-drag slows the control from
       // where it is instead of teleporting it.
-      const reach = travel * (isFine(e) ? FINE_FACTOR : 1);
+      const reach = (travel === 'element' ? held.extent : travel) * (isFine(e) ? FINE_FACTOR : 1);
       const now = latest.current;
       // Shift drags the range instead of the value, on the same control and in
       // the same direction. Both accrue from wherever the pointer last was, so

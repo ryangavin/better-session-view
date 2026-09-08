@@ -37,7 +37,6 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
   .mf-play .play-scroll {min-height:528px;}
   .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) 64px minmax(208px,max-content) minmax(32px,max-content) 58px;}
   .mf-play .play-eq-stack {--play-knob-row:48px;--play-knob-gap:2px;}
-  .mf-play .play-channel-fader .wdg-slider {--wdg-slider-length:174px !important;}
   .mf-play .play-channel, .mf-play .play-effects {padding-block:3px;}
   .mf-play .play-deck-transport {padding-top:6px;margin-top:0;}
   .mf-play .play-master-cross > .wdg-slider {padding-top:4px;margin-top:2px;}

@@ -134,7 +134,6 @@
 .play-master-cross > .wdg-slider {box-sizing:border-box;width:100%;align-self:stretch;justify-content:center;margin-top:2px;padding-top:4px;border-top:1px solid var(--wdg-edge);}
 .play-master-cross > .play-context-trigger {min-width:36px;}
 /* Six-source stems share two columns; the EQ/fader column keeps its original height. */
-.play-stem-levels:has(> :nth-child(5)) {grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,var(--play-knob-row));gap:var(--play-knob-gap) 4px;}
 
 .play-monitor-row {display:flex;align-items:center;justify-content:center;gap:6px;}
 .play-monitor-row .play-fx-global {gap:2px;}
@@ -155,8 +154,9 @@
 .play-master-stereo > div > span { font: 9px var(--mono); color: var(--wdg-caption); }
 
 /* Stem wrappers must not introduce inline baseline spacing above their knobs. */
-.play-stem-levels > div { display: flex; justify-content: center; align-items: flex-start; }
-.play-stem-levels:has(> :nth-child(5)) { align-self: flex-start; }
+.play-stem-controls { display:contents; }
+.play-stem-controls > div { display:flex; justify-content:center; }
+.play-stem-column { display:grid; grid-template-rows:subgrid; grid-row:1 / -1; }
 
 .play-master-channel { grid-template-columns: auto auto; }
 
@@ -176,3 +176,28 @@
 .play-deck-footer .play-route .wdg-segmented-body > button { flex:1; }
 .play-deck-footer .play-route .wdg-segmented-body > button:first-child,
 .play-deck-footer .play-route .wdg-segmented-body > button:last-child { flex:0 0 auto; aspect-ratio:1; padding-inline:0; }
+
+/* The channel supplies height; tracks share the flexible row above readings. */
+.play-level-stack { align-self:stretch; min-height:0; }
+.play-channel-fader { flex:1; min-height:0; display:grid; grid-template-rows:minmax(0,1fr) auto; grid-template-columns:auto auto; row-gap:4px; }
+.play-channel-fader > .wdg-slider { display:grid; grid-row:1 / -1; grid-template-rows:subgrid; row-gap:4px; }
+.play-channel-fader > .wdg-slider > .wdg-body { min-height:0; display:flex; }
+.play-channel-fader .wdg-slider-body { height:auto; flex:1; }
+.play-channel-fader > .wdg-meter { grid-row:1; }
+.play-channel-fader .wdg-meter, .play-channel-fader .wdg-meter > .wdg-body { display:flex; min-height:0; }
+.play-channel-fader .wdg-meter-body { height:auto; flex:1; }
+.play-master-stereo > div { display:grid; grid-row:1 / -1; grid-template-rows:subgrid; justify-items:center; row-gap:4px; }
+
+.play-channel-fader > .wdg-slider { align-items:stretch; }
+.play-channel-fader .wdg-meter { align-self:stretch; }
+.play-channel-fader .wdg-meter > .wdg-body { flex:1; align-items:stretch; }
+.play-channel-fader .wdg-slider > .wdg-body { align-items:stretch; }
+
+.play-stem-levels[data-staggered="true"] { align-self:stretch; display:flex; gap:4px; }
+.play-stem-levels[data-staggered="true"] > .play-stem-column { display:flex; flex-direction:column; justify-content:space-between; }
+
+.play-stem-levels[data-staggered="true"] .play-stem-controls { display:flex; flex:1; flex-direction:column; justify-content:space-between; }
+.play-stem-spacer { flex:0 0 calc((100% - var(--play-knob-row)) / 5); }
+.play-stem-levels[data-staggered="true"] > .play-stem-column:last-child { flex-direction:column-reverse; }
+
+.play-stem-levels[data-staggered="true"] .play-stem-controls > div { height:var(--play-knob-row); flex-shrink:0; }

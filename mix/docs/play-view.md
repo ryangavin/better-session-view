@@ -294,7 +294,7 @@ The frame provides left/right peaks; mono cancellation cannot hide either channe
 
 Channel stems, fader/meter and Trim/EQ share a top-aligned column layout; stem
 wrappers do not add baseline offsets. Four-stem rows align with all four EQ rows;
-six stems use two columns aligned to the first three EQ rows.
+six stems use two staggered columns, anchored by Drums at the top left and Piano at the bottom right.
 
 Channel and routing rows honor their content height rather than clipping knob
 stacks into fixed tracks. Routing uses equal top/bottom padding, so its divider
@@ -306,3 +306,6 @@ row’s equal top and bottom padding. The separators are not borders on the cont
 Routing and transport share footer columns: headphones align with Play, A/Thru/B
 spans Cue and Sync, and Full aligns with the beat arrows. A and B remain square;
 Thru flexes into the remaining width.
+
+Faders and meters fill the channel height, sharing a flexible track row above
+their readings. Fader drag distance follows the current track size.

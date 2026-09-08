@@ -58,11 +58,11 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
           <Knob ink="var(--amber)" name="FX B" label={`Deck ${index + 1} effects send B`} param={SEND} value={d.sendB} onChange={value => commands.setDeck(d.id, 'sendB', value)} />
         </div>
         <div className="play-channel">
-          <div className="play-eq-stack play-stem-levels" data-full={d.full}>
-            {d.stems.map((stem, i) => <div key={stem.id} style={{ '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}><Knob disabled={d.full || d.status !== 'ready' || !stem.available} name={stem.name} label={`Deck ${index + 1} ${stem.name} level`} param={params.stemLevel ?? LEVEL} value={stem.level} onChange={value => commands.setStemLevel(d.id, stem.id, value)} ink={theme.stems[stem.id] ?? theme.primary} /></div>)}
+          <div className="play-eq-stack play-stem-levels" data-staggered={d.stems.length > 4} data-full={d.full}>
+            {(d.stems.length > 4 ? [d.stems.filter((_,i)=>i%2===0),d.stems.filter((_,i)=>i%2===1)] : [d.stems]).map((stems,column)=><div className="play-stem-column" key={column}><div className="play-stem-controls">{stems.map(stem=><div key={stem.id} style={{ '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}><Knob disabled={d.full || d.status !== 'ready' || !stem.available} name={stem.name} label={`Deck ${index + 1} ${stem.name} level`} param={params.stemLevel ?? LEVEL} value={stem.level} onChange={value => commands.setStemLevel(d.id, stem.id, value)} ink={theme.stems[stem.id] ?? theme.primary} /></div>)}</div>{d.stems.length > 4 && <div className="play-stem-spacer" aria-hidden="true"/>}</div>)}
           </div>
           <div className="play-level-stack">
-          <div className="play-channel-fader"><Slider name="" label={`Deck ${index + 1} level`} param={LEVEL} value={d.gain} onChange={value => commands.setDeck(d.id, 'gain', value)} length={210} />
+          <div className="play-channel-fader"><Slider name="" label={`Deck ${index + 1} level`} param={LEVEL} value={d.gain} onChange={value => commands.setDeck(d.id, 'gain', value)} length="auto" />
           <FrameMeter label={`Deck ${index + 1} output`} sample={() => readFrame().decks[d.id]?.level ?? 0} /></div></div>
           <div className="play-eq-stack">
             <Knob className="play-trim" ink="var(--amber)" name="Trim" label={`Deck ${index + 1} trim`} param={TRIM} value={d.trim} onChange={value => commands.setDeck(d.id, 'trim', value)} />
