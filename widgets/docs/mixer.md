@@ -222,7 +222,12 @@ labels align at their top edge; six-stem grids also start at that edge.
 The channel is a shared three-column grid (stems, fader/meter, Trim/EQ), aligned
 at the top instead of centering each column separately. It shares the track of the
 FX/filter row above it, so stems sit under FX A, the fader under Filter and Trim/EQ
-under FX B. The master channel does the same against its own FX row: its meters span
+under FX B. The centre takes three times the side columns, because it carries the most;
+the ratio is one pair of tokens the three rows all read, so none can drift from the
+others. Vertical `Separator` elements sit in gutter tracks between the columns in the
+channel and the routing row, the same rule the Hot cue divider uses. A gutter track and
+an equal gap put the content in the same places, so the separators cost no alignment.
+The fader assembly stops at its own maximum rather than filling the widened centre. The master channel does the same against its own FX row: its meters span
 the first two columns and carry the FX knobs' side margin, and Trim/EQ takes the third
 under FX B.
 

@@ -303,7 +303,10 @@ channels split the same way, so each deck meters its own left and right after it
 
 Channel stems, fader/meter and Trim/EQ share a top-aligned column layout on the same
 three-column track as the FX/filter row above, so stems sit under FX A, the fader under
-Filter and Trim/EQ under FX B. The master channel matches its own FX row, spanning its
+Filter and Trim/EQ under FX B. The centre column is three times a side column; vertical
+separators divide the three in the channel and the routing row; and the fader assembly
+holds a maximum width rather than filling the centre, with its meters set further from
+the fader than they are from each other. The master channel matches its own FX row, spanning its
 meters across the first two columns and taking the third for Trim/EQ. Stem
 wrappers do not add baseline offsets. Four-stem rows align with all four EQ rows;
 six stems use two staggered columns, anchored by Drums at the top left and Piano at the bottom right.
