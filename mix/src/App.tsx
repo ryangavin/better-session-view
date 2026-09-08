@@ -164,7 +164,7 @@ export function App() {
       onDragEnd={() => { dragDepth.current = 0; setDropping(false); }}
       onDrop={drop}
     >
-      <Header onSettings={() => setSettingsOpen(true)} mixer={mixer.engine} mix={mix} ready={ready} playView={playView} onToggleView={() => setPlayView(view => !view)} />
+      <Header onSettings={() => setSettingsOpen(true)} mixer={mixer.engine} mix={mix} ready={ready} playView={playView} onSelectView={setPlayView} />
       <main className="mf-body">
         <Library mix={mix} />
         {/* Prep and Play are the same column, so the strip along its bottom

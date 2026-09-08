@@ -136,7 +136,7 @@ const SNAPS: readonly { id: Snap; mark: string; says: string }[] = [
   { id: 'half', mark: '½', says: 'Cuts land on half a beat, whatever the zoom' },
 ];
 
-export function Header({ mix, ready, playView = false, onToggleView, mixer, onSettings }: { mix: Mix; ready: Ready | null; playView?: boolean; onToggleView?(): void; mixer?: MixerEngine; onSettings?():void }) {
+export function Header({ mix, ready, playView = false, onSelectView, mixer, onSettings }: { mix: Mix; ready: Ready | null; playView?: boolean; onSelectView?(play: boolean): void; mixer?: MixerEngine; onSettings?():void }) {
   const debugButton = <DebugButton mix={mix} />;
   if (playView && mixer) {
     const state = mixer.snapshot();
@@ -163,7 +163,7 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
       : mix.waitingForLink ? 'waiting for bar'
         : mix.linkAudio.enabled ? `${mix.linkAudio.peers} peers${mix.linkAudio.dropped ? ' · gaps' : ''}` : '';
 
-  const logo = <button type="button" className="mf-mark" aria-label={playView ? 'Switch to single-track editor' : 'Switch to four-deck mixer'} aria-pressed={playView} title="Switch Prep / Play (Tab)" onClick={onToggleView}>mix<span>[flow]</span></button>;
+  const logo = <span className="mf-mark">mix<span>[flow]</span></span>;
   return (
     <header className={`mf-header${playView ? ' mf-header-play' : ''}`}>
       <div className="mf-header-start">
@@ -177,6 +177,13 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
         )}
 
         {logo}
+        <Segmented
+          items={['Prep', 'Play']}
+          index={playView ? 1 : 0}
+          onChange={index => onSelectView?.(index === 1)}
+          label="View"
+          title="Prep: stem separation · Play: DJ mixer (Tab to switch)"
+        />
 
         {!playView && <div className="mf-open">
           {song ? (

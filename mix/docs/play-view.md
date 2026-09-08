@@ -10,7 +10,9 @@ playback or library code. Four copies of the single-track `useMix` are not a mix
 
 ## Window and ownership
 
-Click the logo or press plain Tab to switch. The sidebar and hidden Prep page stay
+The left-aligned Prep/Play segmented control immediately beside the logo selects stem
+separation or the DJ mixer, with exactly one active option. The logo is static branding.
+Press plain Tab to switch. The sidebar and hidden Prep page stay
 mounted. Editable controls and dialogs retain normal Tab navigation. The outgoing view
 pauses locally and releases its Link publisher; switching never starts the incoming
 view or sends a Stop to other Link peers. The shared header controls the visible view's

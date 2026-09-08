@@ -218,7 +218,7 @@
 .mf-header-end { justify-content: flex-end; }
 .mf-header-end > .mf-settings-button { margin-left: 0; }
 
-.mf-header button.mf-mark {
+.mf-header .mf-mark {
   height: var(--ctl-h);
   display: inline-flex;
   align-items: center;
