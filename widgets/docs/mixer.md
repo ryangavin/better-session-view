@@ -209,3 +209,16 @@ supply `masterStereo` peaks in the frame; missing stereo readings display zero.
 Master trim remains available.
 
 Trim and the three EQ knobs share the same stack spacing, without a separator line.
+
+Stem knob wrappers use flex layout to avoid inline baseline offsets. Drums and Trim
+labels align at their top edge; six-stem grids also start at that edge.
+
+The channel is a shared three-column grid (stems, fader/meter, Trim/EQ), aligned
+at the top instead of centering each column separately. The master uses two columns.
+
+Play/Cue/Sync stretch to their shared row height with a square aspect ratio; the
+paired beat-jump controls divide that same height. Individual buttons do not set
+their own dimensions.
+
+The deck routing buttons sit between dedicated separator elements, outside the
+row’s equal top and bottom padding. The separators are not borders on the controls.

@@ -64,8 +64,8 @@ Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens s
 relative group movement and zoom settings. The compact loop row keeps In, Out,
 Exit/Reloop and quick loop visible; its settings button opens Q, launch timing, target,
 length, Slip and region edits. Small actions use the shared 24px widget button face;
-deck Play/Cue/Sync are 40px squares. A narrower 852px mixer layout fits a 1110px window
-with its library sidebar. Loop controls remain within each deck.
+deck Play/Cue/Sync are squares that fill the transport row. The compact mixer has a 964px minimum width so its transport squares and
+beat-jump stack fit; narrower available areas scroll horizontally. Loop controls remain within each deck.
 The master footer places FX beside Phones, with a separator above the crossfader
 aligned to the deck transport separators. Click FX to bypass/enable; right-click,
 Shift-click or Shift+F10 on that same button opens tail controls. Phones opens its level
@@ -291,3 +291,14 @@ The Hot Cue divider has a 12px gutter with equal spacing on each side.
 
 Master metering splits the post-processing stereo output into independent analyzers.
 The frame provides left/right peaks; mono cancellation cannot hide either channel.
+
+Channel stems, fader/meter and Trim/EQ share a top-aligned column layout; stem
+wrappers do not add baseline offsets. Four-stem rows align with all four EQ rows;
+six stems use two columns aligned to the first three EQ rows.
+
+Channel and routing rows honor their content height rather than clipping knob
+stacks into fixed tracks. Routing uses equal top/bottom padding, so its divider
+follows the full mixer bottom margin.
+
+The deck routing buttons sit between dedicated separator elements, outside the
+row’s equal top and bottom padding. The separators are not borders on the controls.
