@@ -236,10 +236,15 @@ flex spacers equal to one fifth of the height remaining after a knob row, so all
 six knob centers advance in equal vertical steps as the channel height changes.
 
 A small, muted waveform icon occupies the empty corner beneath the left stem
-column, with a matching music-note icon above the right column. Both are
-decorative and do not intercept input.
+column. A faint right-angle zigzag connects Drums through Piano behind the
+controls and readings. Both decorations ignore input.
 
 
 FX A and B divide their section into equal-height halves. Their headers retain
 equal side spacing. Bypass and dropdown join inside one shared outline, with a
 single internal divider and no extra rule across the effects panel.
+
+A dedicated separator divides the equal FX halves, with parameter knobs centered
+in the space below each header. The master monitoring row uses the same separate
+dividers and balanced padding as deck routing. Its crossfader fills the bottom
+row to match the transport buttons’ height.
