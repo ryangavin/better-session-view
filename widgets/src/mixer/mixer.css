@@ -25,7 +25,8 @@
 @media (prefers-reduced-motion: reduce) { .play-cell[data-queued='true'] { animation: none; } }
 .play-grid[data-full='true'] > .play-stem-name, .play-grid[data-full='true'] .play-cell, .play-stem-levels[data-full='true'] { opacity: .35; }
 .play-effects { display: grid; grid-template-columns: var(--play-track-side) var(--play-track-centre) var(--play-track-side); align-items: center; justify-items: center; gap: var(--play-column-gap); padding:0; }
-.play-master-strip .play-effects { gap: 0; }
+.play-master-strip .play-effects { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0; }
+.play-deck .play-effects { display: flex; justify-content: space-evenly; gap: 0; }
 .play-effects .wdg-caption { color: var(--wdg-caption); }
 .play-channel { display: grid; grid-template-columns: var(--play-track-side) var(--play-column-gap) var(--play-track-centre) var(--play-column-gap) var(--play-track-side); column-gap: 0; row-gap: var(--play-column-gap); align-items: start; justify-items: center; padding:0; }
 .play-eq-stack { --play-knob-row:52px; --play-knob-gap:10px; display: grid; grid-template-rows: repeat(4,var(--play-knob-row)); gap: var(--play-knob-gap); align-self: start; }
