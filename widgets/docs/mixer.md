@@ -197,6 +197,8 @@ restart stopped stems.
 
 The launcher names the whole-track column Hot cue and separates it from stem cells
 with a vertical rule. Hot cues play through; stem cells loop independently.
+The hot cue column and the stem columns share one width, so every launcher button in a
+deck measures the same.
 
 Newly loaded decks display Full track (original) by default. The waveform source
 selector uses its normal appearance, without an active-mode highlight. Stem waveforms

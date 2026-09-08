@@ -64,7 +64,9 @@ Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens s
 relative group movement and zoom settings. The compact loop row keeps In, Out,
 Exit/Reloop and quick loop visible on one shared column width; its settings button keeps
 its own square and opens Q, launch timing, target,
-length, Slip and region edits. Small actions use the shared 24px widget button face;
+length, Slip and region edits. Quick loop encloses the playhead rather than moving it:
+the region begins at the division boundary at or before the current position, and
+playback carries on inside it. Small actions use the shared 24px widget button face;
 deck Play/Cue/Sync are squares that fill the transport row. The compact mixer has a 964px minimum width so its transport squares and
 beat-jump stack fit; narrower available areas scroll horizontally. Loop controls remain within each deck.
 The master footer places FX beside Phones, with a separator above the crossfader
@@ -283,6 +285,8 @@ restart stopped stems.
 
 The launcher names the whole-track column Hot cue and separates it from stem cells
 with a vertical rule. Hot cues play through; stem cells loop independently.
+The hot cue column and the stem columns share one width, so every launcher button in a
+deck measures the same.
 
 Newly loaded decks display Full track (original) by default. The waveform source
 selector uses its normal appearance, without an active-mode highlight. Stem waveforms
