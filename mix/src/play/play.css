@@ -27,7 +27,7 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 .mf-play .play-track p { font-size: 9px; }
 
 /* Keep the original six instrument rows inside the available performance area. */
-.mf-play .play-decks {grid-template-rows:38px minmax(136px,1fr) 78px minmax(248px,max-content) minmax(var(--play-routing-min),max-content) 64px;}
+.mf-play .play-decks {grid-template-rows:38px minmax(136px,1fr) max-content minmax(248px,max-content) minmax(var(--play-routing-min),max-content) 64px;}
 .mf-play .play-performance {min-height:0;overflow:hidden;}
 .mf-play .play-grid {flex:1;min-height:0;max-height:198px;}
 .mf-play .play-deck-loops {flex:none;}
@@ -35,7 +35,7 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 .mf-play .play-decks {height:100%;box-sizing:border-box;}
 @container (max-height: 780px) {
   .mf-play .play-scroll {min-height:0;}
-  .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) 64px minmax(163px,max-content) minmax(var(--play-routing-min),max-content) 58px;}
+  .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) max-content minmax(163px,max-content) minmax(var(--play-routing-min),max-content) 58px;}
   .mf-play .play-eq-stack {--play-knob-row:36px;--play-knob-gap:2px;}
   .mf-play .play-fx-params {padding-block:0;}
   .mf-play .play-actions {gap:2px;padding-bottom:2px;}

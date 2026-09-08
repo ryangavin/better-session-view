@@ -335,3 +335,6 @@ Compact Play layouts shrink only the mixer channel knobs (stem levels and
 Trim/EQ), hide their printed values and shorten their rows. Effects knobs retain
 normal size and readouts. Labels, accessible values, fader readings and separator
 clearance remain available. Larger layouts retain all knob readouts.
+
+The FX/filter row takes its height from its knobs; it has no fixed-height track
+or additional vertical padding beyond the shared separators.

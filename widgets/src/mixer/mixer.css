@@ -217,3 +217,5 @@
 .play-fx-pickers { row-gap:0; }
 
 .play-routing-section { min-height:var(--play-routing-min); }
+
+.play-section-stack > .play-effects { flex:0; }
