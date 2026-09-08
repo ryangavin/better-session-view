@@ -227,7 +227,9 @@ the ratio is one pair of tokens the three rows all read, so none can drift from 
 others. Vertical `Separator` elements sit in gutter tracks between the columns in the
 channel and the routing row, the same rule the Hot cue divider uses. A gutter track and
 an equal gap put the content in the same places, so the separators cost no alignment.
-The fader assembly stops at its own maximum rather than filling the widened centre. The master channel does the same against its own FX row: its meters span
+The fader assembly stops at its own maximum rather than filling the widened centre. The
+plate carries evenly spaced horizontal ticks in the control edge colour, drawn as the
+body's own background so the slot and the cap paint over them. The master channel does the same against its own FX row: its meters span
 the first two columns and carry the FX knobs' side margin, and Trim/EQ takes the third
 under FX B.
 

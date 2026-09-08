@@ -35,7 +35,7 @@
 .play-master-channel .play-channel-fader { gap: var(--play-meter-gap); }
 .play-channel-fader .wdg-slider { --wdg-track: 28px; --wdg-thumb: 10px; --play-slot: 8px; --wdg-marker: var(--primary); --wdg-fill: color-mix(in srgb, white 10%, var(--wdg-face)); }
 .play-channel-fader:not(.play-master-stereo) { background:none; }
-.play-channel-fader:not(.play-master-stereo) .wdg-slider-body { border-color:transparent; background:none; overflow:visible; }
+.play-channel-fader:not(.play-master-stereo) .wdg-slider-body { border-color:transparent; overflow:visible; background:repeating-linear-gradient(to bottom, var(--wdg-edge) 0 1px, transparent 1px var(--play-fader-tick)); }
 .play-channel-fader:not(.play-master-stereo) .wdg-slider-thumb { box-shadow:0 2px 4px var(--shadow-edge); }
 .play-channel-fader:not(.play-master-stereo) .wdg-slider-body::before { content:''; position:absolute; top:0; bottom:0; left:calc(50% - var(--play-slot) / 2); width:var(--play-slot); border:1px solid var(--wdg-edge); border-radius:var(--wdg-radius); background:var(--wdg-well); }
 .play-channel-fader:not(.play-master-stereo) .wdg-slider-fill { display:none; }
@@ -219,7 +219,7 @@
 .play-crossfader-row > .wdg-slider > .wdg-body { display:flex; flex:1; min-height:0; align-items:stretch; }
 .play-crossfader-row .wdg-slider-horizontal .wdg-slider-body { width:auto; height:100%; flex:1; }
 
-.play-decks { --play-separator-space:6px; --play-column-gap:12px; --play-fader-max:132px; --play-fader-meter-gap:12px; --play-track-side:minmax(auto,1fr); --play-track-centre:minmax(0,3fr); --play-transport-size:44px; --play-meter-gap:6px; --play-routing-min:calc(28px + 2px + 4 * var(--play-separator-space)); }
+.play-decks { --play-separator-space:6px; --play-column-gap:12px; --play-fader-max:132px; --play-fader-meter-gap:12px; --play-fader-tick:10%; --play-track-side:minmax(auto,1fr); --play-track-centre:minmax(0,3fr); --play-transport-size:44px; --play-meter-gap:6px; --play-routing-min:calc(28px + 2px + 4 * var(--play-separator-space)); }
 .play-separator { box-sizing:content-box; flex-shrink:0; background:var(--wdg-edge); }
 .play-separator-horizontal { height:1px; min-height:1px; margin-block:var(--play-separator-space); align-self:stretch; }
 .play-separator-vertical { width:1px; min-width:1px; margin-inline:var(--play-separator-space); align-self:stretch; }
