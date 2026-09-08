@@ -58,9 +58,17 @@ Retained buffers keep their original sample grid across a device-rate change. Pr
 sources; the stretcher prepares buffers for its new context rate. Analysis and waveform
 coordinates must not be reinterpreted as samples at the new hardware rate.
 
-The output interface serves both views. Play keeps master on channels 1/2 and headphones
-on 3/4 when the destination exposes at least four channels. This is not a separate
-headphone-device selector. Processing sample rate is not a claim about the Core Audio
+The output interface serves both views. The mix and the headphone cue each go to a stereo
+pair chosen by name — Outputs 1/2 through 15/16 — rather than to a fixed 1/2 and 3/4,
+because an interface with more than four outputs has no convention about which pair is
+the booth. The cue cannot share the mix's pair, and a saved pair the current interface
+cannot reach falls back to the front pair with the cue dropped rather than folded into
+the room. This is not a separate headphone-device selector: both pairs are on one device.
+
+The pairs on offer come from a throwaway context opened on the drafted device and closed
+at once. `maxChannelCount` describes the device a context was opened on, so asking the
+running one about a device just chosen would answer about the old one — which is what
+made the list read one pair no matter what was selected. Processing sample rate is not a claim about the Core Audio
 hardware clock: exact driver buffers, clock source and aggregate-device configuration
 remain in macOS Audio MIDI Setup or the interface driver.
 

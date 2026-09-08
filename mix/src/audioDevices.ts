@@ -2,9 +2,19 @@
 export interface RateRange { min: number; max: number }
 export interface AudioDevice { name: string; isDefault: boolean; rates: RateRange[] }
 
-/** Browser IDs are origin-scoped. Only an unambiguous exact name can identify an explicit sink. */
+/**
+ * Browser IDs are origin-scoped, so a device is identified by its name.
+ *
+ * The two sides do not spell it the same. Chrome appends the USB ids to the
+ * label — `Model 16 (0644:8060)` — where Core Audio reports `Model 16`, so an
+ * exact comparison fails on exactly the interfaces this is for. The suffix is
+ * dropped before comparing, and the match still has to be unambiguous: naming
+ * the wrong device's rates is worse than naming none.
+ */
+const deviceName = (name: string) => name.replace(/\s*\(\s*[0-9a-f]{4}:[0-9a-f]{4}\s*\)\s*$/i, '').trim().toLowerCase();
 export function outputDevice(devices: AudioDevice[], deviceId: string, label: string): AudioDevice | null {
-  const matches = devices.filter(device => deviceId ? label !== '' && device.name === label : device.isDefault);
+  const wanted = deviceName(label);
+  const matches = devices.filter(device => deviceId ? wanted !== '' && deviceName(device.name) === wanted : device.isDefault);
   return matches.length === 1 ? matches[0] : null;
 }
 export function supportsRate(device: AudioDevice, rate: number): boolean {

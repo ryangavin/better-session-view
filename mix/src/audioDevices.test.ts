@@ -7,6 +7,11 @@ it('uses the native default and requires a unique exact name for browser sinks',
   expect(outputDevice([output],'opaque','')).toBeNull();
   expect(outputDevice([output,{...output,isDefault:false}],'opaque','Interface')).toBeNull();
   expect(outputDevice([output],'opaque','Other interface')).toBeNull();
+  // Chrome appends the USB ids to a label Core Audio reports without them.
+  const model=({...output,name:'Model 16'}) as AudioDevice;
+  expect(outputDevice([model],'opaque','Model 16 (0644:8060)')).toBe(model);
+  expect(outputDevice([model],'opaque','model 16')).toBe(model);
+  expect(outputDevice([model],'opaque','Model 12 (0644:8060)')).toBeNull();
 });
 it('lists every discrete driver rate, sorted and deduplicated, including high rates',()=>{
   expect(rateChoices(output)).toEqual([0,44100,48000,768000]);
