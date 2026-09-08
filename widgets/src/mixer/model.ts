@@ -20,6 +20,7 @@ export interface MixerDeck {
   focus?: string;
   /** Display the original track while retaining the active stem controls. */
   waveformSource?: 'full';
+  independentStems?: boolean;
   moveTogether?: boolean;
   gridAvailable?: boolean;
   quantize?: number;

@@ -178,8 +178,10 @@ Outside Link, the oldest still-playing gridded deck leads; a stable playing sour
 that deck supplies beat phase. Loading or syncing another deck never sets the tempo.
 An unsynced leader supplies its mapped native beat rate; a synced follower becoming
 leader retains its current rate. Pause, stop, natural end and replacement allow the next
-playing deck to lead. LEADER appears in its header. The main tempo is a read-only leader
-reading locally; Link retains its shared tempo control and external clock authority.
+playing deck to lead. LEADER appears in its header. The main tempo is editable once a local leader is playing. Editing a native leader
+prepares and enables pitch-preserving Sync before applying the requested tempo; synced
+followers receive that rate. Loading a deck cannot change it. Before a leader starts,
+the header shows a dash. Link retains its shared tempo control and external authority.
 
 Followers are checked every 250ms and corrected when phase error exceeds 0.025 beat,
 using one scheduled correction for their playing sources. Gesture/Cue holds and queued
@@ -268,3 +270,11 @@ Physical iPad dragging and headphone outputs require device validation.
 The worktree DJ harness at `/harness/dj-controls.html` mounts actual PlayView/MixerEngine
 with generated source buffers. See [DJ control validation](dj-controls-validation.md) for
 measured output checks, interaction coverage and remaining device checks.
+
+Newly loaded decks default to Move active stems together. An individual stem-cell launch unlocks the option to uncheck it
+for focused-stem movement; a whole-track Hot Cue restores grouped movement and locks
+the choice again; grouped movement preserves relative offsets and does not
+restart stopped stems.
+
+The launcher names the whole-track column Hot cue and separates it from stem cells
+with a vertical rule. Hot cues play through; stem cells loop independently.

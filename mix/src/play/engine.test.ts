@@ -34,6 +34,27 @@ function setup(){const ctx=new Context(),engine=new MixerEngine(()=>ctx as unkno
 const settle=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 afterEach(()=>{engines.splice(0).forEach(e=>e.dispose());stretching.prepare=null;vi.useRealTimers();});
 describe('the four-deck playback owner',()=>{
+  it('adjusts native leader tempo by enabling pitch-preserving Sync and retains the requested rate', async () => {
+    vi.useFakeTimers();const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);
+    await vi.advanceTimersByTimeAsync(40);engine.commands.setMaster('bpm',135);await settle();
+    expect(engine.snapshot().decks[0].synced).toBe(true);expect(engine.snapshot().bpm).toBe(135);
+    ctx.currentTime=1;await vi.advanceTimersByTimeAsync(300);expect(engine.snapshot().bpm).toBe(135);
+    await load('deck-b');expect(engine.snapshot().bpm).toBe(135);
+  });
+  it('defaults waveform moves to all participating stems and allows focused movement explicitly', async () => {
+    const {engine,load}=setup();await load();
+    expect(engine.snapshot().decks[0].moveTogether).toBe(true);
+    engine.move('deck-a','begin');engine.move('deck-a','move',4);engine.move('deck-a','commit');
+    expect(Object.values(engine.readFrame().decks['deck-a'].sources!).every(s=>s.seconds===2)).toBe(true);
+    engine.commands.setMoveTogether!('deck-a',false);expect(engine.snapshot().decks[0].moveTogether).toBe(true);
+    await engine.launch('deck-a','section-0-0','drums');await engine.play('deck-a',false);
+    engine.commands.setMoveTogether!('deck-a',false);
+    engine.move('deck-a','begin');engine.move('deck-a','move',2);engine.move('deck-a','commit');
+    const sources=engine.readFrame().decks['deck-a'].sources!;
+    expect(sources.drums.seconds).toBe(3);expect(sources.bass.seconds).toBe(2);
+    await engine.launch('deck-a','section-0-0');
+    expect(engine.snapshot().decks[0]).toMatchObject({moveTogether:true,independentStems:false});
+  });
   it('shows the original waveform without changing stem playback or positioning focus', async () => {
     vi.useFakeTimers();
     const {engine,ctx}=setup(), loaded=asset();
@@ -221,7 +242,7 @@ describe('the four-deck playback owner',()=>{
     expect(engine.readFrame().decks['deck-a'].sources!.drums.seconds).toBe(got.drums.seconds);
   });
   it('scrubs playing focus without stopping other stems, and cancellation restores playback and loops',async()=>{
-    const {engine,ctx,load}=setup();await load();await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;
+    const {engine,ctx,load}=setup();await load();engine.commands.setMoveTogether!('deck-a',false);await engine.launch('deck-a','section-0-0','drums');await engine.launch('deck-a','section-1-4','bass');ctx.currentTime=1;
     const before=engine.readFrame().decks['deck-a'].sources!;engine.move('deck-a','begin');ctx.currentTime=1.2;engine.move('deck-a','move',4);ctx.currentTime=1.24;
     let got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.playing).toBe(true);expect(got.bass.playing).toBe(true);expect(got.drums.seconds).toBeCloseTo(before.drums.seconds+.24+2,2);
     engine.move('deck-a','cancel');ctx.currentTime=1.28;got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.playing).toBe(true);expect(got.drums.seconds).toBeCloseTo(before.drums.seconds+.01,2);expect(engine.snapshot().decks[0].loop?.enabled).toBe(true);
@@ -320,7 +341,7 @@ describe('the four-deck playback owner',()=>{
     engine.beatJump('deck-a',1);expect(engine.readFrame().decks['deck-a'].sources).toEqual(before);
   });
   it('uses mapped beats, including tempo changes, for the same musical step on divergent sources',async()=>{
-    const {engine}=setup();const a=asset();a.audio!.map={rate:48000,length:64*48000,first:0,samples:[0,24000,48000,72000,96000,144000,192000,240000,288000]};await engine.load('deck-a',track,async()=>a);
+    const {engine}=setup();const a=asset();a.audio!.map={rate:48000,length:64*48000,first:0,samples:[0,24000,48000,72000,96000,144000,192000,240000,288000]};await engine.load('deck-a',track,async()=>a);await engine.launch('deck-a','section-0-0');await engine.launch('deck-a','section-0-0','drums');await engine.play('deck-a',false);engine.commands.setMoveTogether!('deck-a',false);
     engine.move('deck-a','begin');engine.move('deck-a','move',4);engine.move('deck-a','commit');engine.beatJump('deck-a',1);
     const got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.seconds).toBe(3);expect(got.bass.seconds).toBe(.5);
   });

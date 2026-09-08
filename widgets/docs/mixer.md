@@ -188,3 +188,11 @@ selects that visual independently of playback mode and retains the focused stem 
 positioning and Play/Cue; the panel names that stem. Choosing a stem restores its
 waveform and focus. Other-source markers hide when offscreen or coincident with focus,
 and divergent sources use separate named lanes rather than overlapping beat numbers.
+
+Newly loaded decks default to Move active stems together. An individual stem-cell launch unlocks the option to uncheck it
+for focused-stem movement; a whole-track Hot Cue restores grouped movement and locks
+the choice again; grouped movement preserves relative offsets and does not
+restart stopped stems.
+
+The launcher names the whole-track column Hot cue and separates it from stem cells
+with a vertical rule. Hot cues play through; stem cells loop independently.

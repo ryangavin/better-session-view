@@ -186,3 +186,16 @@ seam defect is fixed; the Sync artifact is not proven resolved. The harness now 
 `Run transition checks` and reports the largest edge's timing and neighboring samples
 to support reproduction. A single passing run must not close that issue. Physical
 listening and external Link/hardware validation remain separate acceptance checks.
+
+
+## Hot Cue, movement scope and tempo review
+
+The grouped-movement regression verifies the default, rejection of separate movement
+before a stem launch, unlocking after a stem cell, and relocking after a Hot Cue.
+The browser six-stem fixture confirms the same checkbox transitions and the vertical
+Hot Cue divider. The leader-tempo regression verifies preparing a native leader,
+applying 135 BPM, retaining it through maintenance and loading another deck. The
+Header test enters 135 through its editable field and verifies the engine command.
+The mixer/widget run passed 863 tests, followed by the new Header regression passing
+with the existing Header test (864 total across those suites). These checks do not
+close the intermittent audio-transition limitation above.

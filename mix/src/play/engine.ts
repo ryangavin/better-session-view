@@ -312,6 +312,7 @@ export class MixerEngine {
     if (this.state.running) when += launchWait(this.syncBeat(when), model.synced?4:model.launchBeats ?? 0) * 60 / this.state.bpm;
     this.startClock(when);
     const bounds = this.span(d, model, section);
+    this.patchDeck(id,stemId ? {independentStems:true} : {independentStems:false,moveTogether:true});
     // Section names are hot cues. Only individual stem pads install a repeating span.
     if (!stemId) {
       this.clearLoop(id);
@@ -407,6 +408,18 @@ export class MixerEngine {
       smooth(d.phones.gain, m.cue ? 1 : 0, now);
       d.slots.forEach((slot,name) => smooth(slot.voice.output.gain, name === 'full' ? (m.full ? 1 : 0) : m.full ? 0 : (m.stems.find(stem => stem.id === name)?.level ?? 0) / 100, now));
     });
+  }
+  private tempoRequest = 0;
+  private async adjustTempo(bpm: number) {
+    if (!Number.isFinite(bpm)) return;
+    const request=++this.tempoRequest;
+    this.refreshLeader();
+    const leader=this.leader?.id;
+    if (!this.linkAudio.enabled && leader && !this.model(leader).synced) {
+      await this.sync(leader,true);
+      if(request!==this.tempoRequest || this.leader?.id!==leader || !this.model(leader).synced)return;
+    }
+    this.tempo(bpm);
   }
   private tempo(bpm: number, announce = true) {
     if (!Number.isFinite(bpm)) return; bpm = Math.max(20, Math.min(999, bpm));
@@ -611,7 +624,7 @@ export class MixerEngine {
     setLoopFocus:(id,loopFocus)=>{if(this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;this.patchDeck(id,{loopFocus});this.loopState(id);},
     quickLoop:id=>this.quickLoop(id), resizeLoop:(id,factor)=>this.editLoops(id,'resize',factor), moveLoop:(id,beats)=>this.editLoops(id,'move',beats), adjustLoop:(id,boundary,beats)=>this.editLoops(id,boundary,beats),
     setFocus:(id,focus)=>{if(this.decks.get(id)?.move || this.model(id).loopFocus && this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;if(focus==='full'){this.patchDeck(id,{waveformSource:'full'});}else if(this.decks.get(id)?.slots.has(focus)){this.patchDeck(id,{focus,waveformSource:undefined});}this.tick();},
-    setMoveTogether:(id,moveTogether)=>{if(!this.decks.get(id)?.move)this.patchDeck(id,{moveTogether});},
+    setMoveTogether:(id,moveTogether)=>{if(!this.decks.get(id)?.move && (moveTogether || this.model(id).independentStems))this.patchDeck(id,{moveTogether});},
     moveDeck:(id,phase,delta)=>this.move(id,phase,delta),
     beatJump:(id,delta)=>this.beatJump(id,delta),
     setZoom:(id,zoom)=>{if(this.decks.get(id)?.move)return;this.patchDeck(id,{zoom:zoom===0?0:Math.max(4,Math.min(64,zoom))});this.tick();},
@@ -627,7 +640,7 @@ export class MixerEngine {
     clearEffectTails:()=>{if(this.state.effectsEnabled!==false)return;this.effects.forEach(e=>e.dispose());this.retiredEffects.forEach(e=>e.effect.dispose());this.effects=[];this.retiredEffects=[];this.apply();},
     setEffect:(slot,id)=>{this.publish({...this.state,[slot==='A'?'fxA':'fxB']:id});this.apply();},
     setEffectParam:(slot,id,param,value)=>{this.publish({...this.state,effectValues:{...this.state.effectValues,[slot]:{...this.state.effectValues?.[slot],[id]:{...this.state.effectValues?.[slot]?.[id],[param]:value}}}});this.apply();},
-    setMaster:(control,value)=>{if(control==='bpm')this.tempo(value);else {this.publish({...this.state,[control]:value});this.apply();}},
+    setMaster:(control,value)=>{if(control==='bpm')this.run(this.adjustTempo(value));else {this.publish({...this.state,[control]:value});this.apply();}},
     setMasterEq:(band,value)=>{this.publish({...this.state,masterEq:this.state.masterEq.map((v,i)=>i===band?value:v)});this.apply();},
     setDeck:(id,control,value)=>{if(control==='full'){this.source(id,!!value);return;}if(control==='cue'&&!this.phonesAvailable&&!this.linkAudio.enabled&&value){this.error('Phones needs outputs 3/4 on a multichannel audio interface, or the Phones stream in Link Audio.',id);return;}this.patchDeck(id,{[control]:value});this.apply();},
     setDeckEq:(id,band,value)=>{this.patchDeck(id,{eq:this.model(id).eq.map((v,i)=>i===band?value:v)});this.apply();},

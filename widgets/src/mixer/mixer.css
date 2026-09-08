@@ -144,3 +144,7 @@
 .play-beat-jump .wdg-body {width:32px;}
 
 .play-route .wdg {--wdg-field-height:24px;}
+
+/* Keep whole-track hot cues visually distinct from independent stem launches. */
+.play-grid { position: relative; }
+.play-grid::after { content: ""; position: absolute; top: 0; bottom: 0; grid-column: 1 / 2; right: -1px; border-left: 1px solid var(--wdg-edge); pointer-events: none; }
