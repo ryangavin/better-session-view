@@ -27,19 +27,16 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 .mf-play .play-track p { font-size: 9px; }
 
 /* Keep the original six instrument rows inside the available performance area. */
-.mf-play .play-decks {grid-template-rows:38px minmax(136px,1fr) 78px minmax(248px,max-content) minmax(34px,max-content) 64px;}
+.mf-play .play-decks {grid-template-rows:38px minmax(136px,1fr) 78px minmax(248px,max-content) minmax(var(--play-routing-min),max-content) 64px;}
 .mf-play .play-performance {min-height:0;overflow:hidden;}
 .mf-play .play-grid {flex:1;min-height:0;max-height:198px;}
 .mf-play .play-deck-loops {flex:none;}
 .mf-play .play-scroll {height:min(690px,calc(100% - 204px));}
 .mf-play .play-decks {height:100%;box-sizing:border-box;}
 @container (max-height: 780px) {
-  .mf-play .play-scroll {min-height:528px;}
-  .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) 64px minmax(208px,max-content) minmax(32px,max-content) 58px;}
-  .mf-play .play-eq-stack {--play-knob-row:48px;--play-knob-gap:2px;}
-  .mf-play .play-channel, .mf-play .play-effects {padding-block:3px;}
-  .mf-play .play-deck-transport {padding-top:6px;margin-top:0;}
-  .mf-play .play-master-cross > .wdg-slider {padding-top:4px;margin-top:2px;}
+  .mf-play .play-scroll {min-height:0;}
+  .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) 64px minmax(163px,max-content) minmax(var(--play-routing-min),max-content) 58px;}
+  .mf-play .play-eq-stack {--play-knob-row:36px;--play-knob-gap:2px;}
   .mf-play .play-fx-params {padding-block:0;}
   .mf-play .wdg-knob {--wdg-knob-height:22px;--wdg-knob-size:28px;}
   .mf-play .play-actions {gap:2px;padding-bottom:2px;}
@@ -48,7 +45,7 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
 
 @container (max-width: 1250px) {
   .mf-play .play-decks {grid-template-columns:minmax(200px,1fr) minmax(200px,1fr) 156px minmax(200px,1fr) minmax(200px,1fr);}
-  .mf-play .play-grid {grid-template-columns:minmax(44px,1fr) 12px repeat(var(--play-stems,4),minmax(0,1fr));}
+  .mf-play .play-grid {grid-template-columns:minmax(44px,1fr) calc(1px + 2 * var(--play-separator-space)) repeat(var(--play-stems,4),minmax(0,1fr));}
   .mf-play .play-cell, .mf-play .play-cell .wdg, .mf-play .play-cell .wdg-body {width:100%;min-width:0;}
   .mf-play .play-grid > .wdg {width:100%;min-width:0;}
   .mf-play .play-channel {gap:4px;}
@@ -61,4 +58,15 @@ button.mf-mark[aria-pressed='true'], button.mf-mark[aria-pressed='true'] span { 
   .mf-play .play-timeline {min-height:0;}
   .mf-play .play-wave-row {min-height:0;}
   .mf-play .play-scroll {height:calc(100% - 172px);}
+}
+
+/* Below the controls’ minimum size, scroll rather than consume separator clearance. */
+.mf-play .play-scroll { overflow-y:auto; }
+@container (min-height: 600px) and (max-height: 780px) {
+  .mf-play .play-scroll { min-height: 528px; }
+}
+
+@container (max-height: 780px) {
+  .mf-play .play-decks { --play-separator-space:5px; }
+  .mf-play .wdg-knob > .wdg-readout { display:none; }
 }

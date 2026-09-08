@@ -201,7 +201,7 @@ Newly loaded decks display Full track (original) by default. The waveform source
 selector uses its normal appearance, without an active-mode highlight. Stem waveforms
 remain available from the source menu. This default does not change waveform zoom.
 
-A dedicated 12px gutter centers the Hot Cue divider, providing space on both sides
+A dedicated gutter reserves the shared separator clearance around the Hot Cue divider, providing space on both sides
 without narrowing the Hot Cue label itself.
 
 The master strip shows labeled L/R meters in place of its former level fader. Hosts
@@ -248,3 +248,14 @@ A dedicated separator divides the equal FX halves, with parameter knobs centered
 in the space below each header. The master monitoring row uses the same separate
 dividers and balanced padding as deck routing. Its crossfader fills the bottom
 row to match the transport buttons’ height.
+
+Mixer separators are dedicated elements in both orientations. Each owns a one-pixel
+stroke and six pixels of non-shrinking margin on either side, governed by one shared
+spacing token. Section wrappers keep that clearance outside the controls; the Hot
+Cue grid reserves the corresponding gutter. Compact mode changes that shared margin to five pixels; it never collapses.
+Play targets 1280 × 720 as its minimum supported viewport. At that size the complete
+mixer fits; smaller viewports retain control sizes and allow scrolling.
+
+Compact Play layouts hide the printed values beneath knobs and shorten their
+rows, retaining labels, accessible values and full separator clearance. Fader
+readings remain visible. Larger layouts retain knob readouts.

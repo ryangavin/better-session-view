@@ -1,3 +1,4 @@
+import { Separator, MixerSection } from './Separator.tsx';
 import { ButtonFace } from '../controls/ButtonFace.tsx';
 import { ContextControls, PhonesIcon } from './ContextControls.tsx';
 import { Momentary } from './Momentary.tsx';
@@ -19,9 +20,9 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
   return <div {...hostProps} className={`play-deck ${hostProps?.className ?? ''}`} style={{ ...hostProps?.style, '--play-stems': d.stems.length, '--deck-ink': theme.decks[d.id]?.ink ?? theme.primary } as CSSProperties}>
         <div className="play-track"><b className="play-letter">{d.letter}</b><div><h3>{d.track?.title ?? 'Empty deck'}</h3><p>{d.track?.artist ?? d.message ?? d.status}</p></div><span>{d.track ? `${d.track.bpm === null ? '—' : Math.round(d.track.bpm)} BPM` : '—'}<br />{d.syncLeader?'LEADER':d.track?.key ?? ''}</span></div>
 
-        <div className="play-performance">
+        <MixerSection className="play-performance">
           <fieldset className="play-grid" data-full={d.full} disabled={d.status !== 'ready'}>
-          <span className="play-axis">Hot cue</span><span aria-hidden="true" />{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
+          <Separator orientation="vertical" className="play-hot-cue-divider"/><span className="play-axis">Hot cue</span><span aria-hidden="true" />{d.stems.map((stem, i) => <span className="play-stem-name" style={{ '--stem-ink': theme.stems[stem.id] ?? theme.primary, '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties} key={stem.id}>{stem.name}</span>)}
           {d.sections.map(section => <div className="play-launch-row" key={section.id}>
             {d.full ? <Toggle title="Hot cue: jump to this section and continue playing" on={d.fullSection === section.id} label={`Deck ${index + 1}: launch ${section.name} full mix${d.fullQueued === section.id ? ', queued' : ''}`} onChange={() => commands.launch(d.id, section.id)}>{section.name}</Toggle> : <Button label={`Deck ${index + 1}: launch ${section.name} all stems`} title="Hot cue: jump to this section and continue playing" onPress={() => commands.launch(d.id, section.id)}>{section.name}</Button>}<span aria-hidden="true" />
             {d.stems.map((stem, s) => {
@@ -52,13 +53,13 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
           </div>
 
 
-        </div>
-        <div className="play-effects">
+        </MixerSection>
+        <MixerSection className="play-effects">
           <Knob ink="var(--amber)" name="FX A" label={`Deck ${index + 1} effects send A`} param={SEND} value={d.sendA} onChange={value => commands.setDeck(d.id, 'sendA', value)} />
           <Knob ink="var(--amber)" name="Filter" label={`Deck ${index + 1} filter`} param={FILTER} value={d.filter} onChange={value => commands.setDeck(d.id, 'filter', value)} />
           <Knob ink="var(--amber)" name="FX B" label={`Deck ${index + 1} effects send B`} param={SEND} value={d.sendB} onChange={value => commands.setDeck(d.id, 'sendB', value)} />
-        </div>
-        <div className="play-channel">
+        </MixerSection>
+        <MixerSection className="play-channel">
           <div className="play-eq-stack play-stem-levels" data-staggered={d.stems.length > 4} data-full={d.full}>
             {d.stems.length > 4 && <StemConnections/>}
             {(d.stems.length > 4 ? [d.stems.filter((_,i)=>i%2===0),d.stems.filter((_,i)=>i%2===1)] : [d.stems]).map((stems,column)=><div className="play-stem-column" key={column}><div className="play-stem-controls">{stems.map(stem=><div key={stem.id} data-stem-order={d.stems.indexOf(stem)} style={{ '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}><Knob disabled={d.full || d.status !== 'ready' || !stem.available} name={stem.name} label={`Deck ${index + 1} ${stem.name} level`} param={params.stemLevel ?? LEVEL} value={stem.level} onChange={value => commands.setStemLevel(d.id, stem.id, value)} ink={theme.stems[stem.id] ?? theme.primary} /></div>)}</div>{d.stems.length > 4 && <div className="play-stem-spacer" aria-hidden="true">{column===0 && <svg className="play-stem-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 10v4 M7.5 6v12 M12 3v18 M16.5 7v10 M21 10v4"/></svg>}</div>}</div>)}
@@ -70,8 +71,8 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
             <Knob className="play-trim" ink="var(--amber)" name="Trim" label={`Deck ${index + 1} trim`} param={TRIM} value={d.trim} onChange={value => commands.setDeck(d.id, 'trim', value)} />
             {['High', 'Mid', 'Low'].map((name, e) => <Knob key={name} name={name} label={`Deck ${index + 1} ${name}`} param={EQ} origin="center" value={d.eq[e]} onChange={value => commands.setDeckEq(d.id, e, value)} />)}
           </div>
-        </div>
-        <div className="play-deck-footer"><div className="play-routing-section"><div className="play-section-divider" aria-hidden="true"/><div className="play-route"><Toggle on={d.cue} onChange={value => commands.setDeck(d.id, 'cue', value)} label={`Deck ${index + 1} headphone cue`} title="Headphone monitoring"><PhonesIcon/></Toggle><Segmented name="" label={`Deck ${index + 1} crossfade assignment`} items={ROUTE} index={d.route} onChange={value => commands.setDeck(d.id, 'route', value)} /><Toggle on={d.full} label={`Deck ${index + 1} original full mix`} title="Use the original unseparated track instead of stems" onChange={value => commands.setDeck(d.id, 'full', value)}>Full</Toggle></div><div className="play-section-divider" aria-hidden="true"/></div>
+        </MixerSection>
+        <div className="play-deck-footer"><div className="play-routing-section"><Separator/><div className="play-route"><Toggle on={d.cue} onChange={value => commands.setDeck(d.id, 'cue', value)} label={`Deck ${index + 1} headphone cue`} title="Headphone monitoring"><PhonesIcon/></Toggle><Segmented name="" label={`Deck ${index + 1} crossfade assignment`} items={ROUTE} index={d.route} onChange={value => commands.setDeck(d.id, 'route', value)} /><Toggle on={d.full} label={`Deck ${index + 1} original full mix`} title="Use the original unseparated track instead of stems" onChange={value => commands.setDeck(d.id, 'full', value)}>Full</Toggle></div><Separator/></div>
         <div className="play-deck-transport" role="group" aria-label={`Deck ${index + 1} transport`}>
           <Toggle className="play-transport-button" on={d.playing ?? false} disabled={d.status !== 'ready' || !commands.setDeckPlaying} label={`Deck ${index + 1} play/pause`} title={commands.setDeckPlaying ? 'Play / Pause' : 'Deck playback is not connected yet'} onChange={playing => commands.setDeckPlaying?.(d.id, d.cueHeld ? true : playing)}>{d.playing ? 'Ⅱ' : '▶'}</Toggle>
           <Momentary held={d.cueHeld ?? false} disabled={d.status !== 'ready' || !commands.cueDeck} label={`Deck ${index + 1} transport cue`} onHold={held => commands.cueDeck?.(d.id, held)} onTakeover={()=>commands.setDeckPlaying?.(d.id,true)}>CUE</Momentary>
