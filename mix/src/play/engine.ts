@@ -444,8 +444,14 @@ export class MixerEngine {
     if(full)d.slots.get('full')!.enabled=true;
     this.patchDeck(id,{full});
     const when=this.ctx?this.ctx.currentTime+this.lead():0;
-    for(const [name,slot] of this.target(id)){
-      if(!(slot.enabled || !d.initialized))continue;
+    const arriving=this.target(id);
+    // Nothing in the group has ever been asked for — a deck that opened on the
+    // original and is being switched to its stems for the first time — so the
+    // whole group starts. Where some of it is already enabled, the ones stopped
+    // on purpose stay stopped.
+    const first=!arriving.some(([,slot])=>slot.enabled);
+    for(const [name,slot] of arriving){
+      if(!(slot.enabled || first || !d.initialized))continue;
       // Started even when it is already running: the idle group has been playing
       // on under the ramp and has drifted from what was heard, so the swap has to
       // bring it to the audible position rather than adopt its own.

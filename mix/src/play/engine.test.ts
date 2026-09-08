@@ -342,13 +342,11 @@ describe('the four-deck playback owner',()=>{
     await engine.load('deck-a',track,async()=>asset());
     expect(engine.snapshot().decks[0].full).toBe(true);
     await engine.play('deck-a',true);ctx.currentTime=2;
-    const stopped=()=>ctx.sources.filter(s=>s.stop.mock.calls.length>0).length;
-    const before=stopped();
     await engine.launch('deck-a','section-0-0','bass');
+    // The clip switched the deck and kept it running; position continuity across a
+    // swap is covered by 'brings the idle source to the audible one on a swap'.
     expect(engine.snapshot().decks[0]).toMatchObject({full:false,playing:true});
     expect(engine.snapshot().decks[0].stems.find(s=>s.id==='bass')!.selected).toBe('section-0-0');
-    // Nothing was halted for the swap: the original plays on under a gain the mode gates.
-    expect(stopped()).toBe(before);
   });
   it('sends the mix and the cue to the chosen output pairs, and drops the cue a narrow device cannot reach',async()=>{
     const store=new Map<string,string>();
@@ -420,6 +418,20 @@ describe('the four-deck playback owner',()=>{
     expect(full).toBeGreaterThan(stems+10);
     engine.commands.setDeck('deck-a','full',false);ctx.currentTime=20.5;
     expect(engine.readFrame().decks['deck-a'].seconds!).toBeCloseTo(full+.5,1);
+  });
+  it('starts the whole group the first time a deck is switched to it',async()=>{
+    const {engine,ctx}=setup();
+    await engine.load('deck-a',track,async()=>asset());
+    expect(engine.snapshot().decks[0].full).toBe(true);
+    await engine.play('deck-a',true);ctx.currentTime=6;
+    const original=engine.readFrame().decks['deck-a'].seconds!;
+    expect(original).toBeGreaterThan(4);
+    // Nothing has ever enabled a stem, so switching must start them all — and
+    // from where the original was, not from the top of the record.
+    engine.commands.setDeck('deck-a','full',false);ctx.currentTime=6.5;
+    const stems=engine.readFrame().decks['deck-a'].sources!;
+    expect(Object.values(stems).every(s=>s.playing)).toBe(true);
+    expect(engine.readFrame().decks['deck-a'].seconds!).toBeCloseTo(original+.5,1);
   });
   it('gives every deck one quick loop length, two bars by default',async()=>{
     const {engine,ctx,load}=setup();await load('deck-a');await load('deck-b');

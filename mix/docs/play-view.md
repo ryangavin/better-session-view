@@ -54,8 +54,10 @@ stems, and switches the deck without a separate control.
 Switching pauses nothing. `apply` already gates each voice's output by the mode, so the
 swap is a gain ramp and the outgoing group plays on underneath it, which is what makes it
 inaudible — the alternative, pausing and rescheduling every source, was audible every
-time. The incoming group is started from where the outgoing one is *every* time, running
-or not: having played on under the ramp it has drifted from what was heard, and adopting
+time. A group nothing has ever asked for — the stems of a deck that opened on the original —
+starts whole, since there is no earlier choice to respect; where some of it is already
+enabled, the parts stopped on purpose stay stopped. The incoming group is started from
+where the outgoing one is *every* time, running or not: having played on under the ramp it has drifted from what was heard, and adopting
 its own position would move the deck by however long the other source was up. So the two
 agree at the moment the gains cross, and each group keeps its own positions, stopped stems, selections,
 loops and Cue checkpoints. The cost is that both groups run once both have been heard.
