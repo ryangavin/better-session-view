@@ -298,6 +298,15 @@ describe('the four-deck playback owner',()=>{
     engine.cue('deck-a',true);engine.cue('deck-a',false);
     expect(engine.readFrame().decks['deck-a'].seconds).toBe(1);
   });
+  it('steps a synced deck loop boundary a whole beat while Q is off',async()=>{
+    const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);
+    await engine.play('deck-a',true);ctx.currentTime=2.03;engine.quickLoop('deck-a');
+    const before=engine.snapshot().decks[0].loop!;expect(before.start).toBe(2);
+    engine.editLoops('deck-a','in',.125);
+    expect(engine.snapshot().decks[0].loop!.start).toBe(2.5);
+    engine.editLoops('deck-a','out',-.125);
+    expect(engine.snapshot().decks[0].loop!.end).toBe(before.end!-.5);
+  });
   it('creates 16 beats, halves/doubles, moves, exits and reloops without changing the Cue',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2.03;
     engine.commands.setDeckTiming!('deck-a','quantize',1);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop).toEqual({start:2,end:10,enabled:true});

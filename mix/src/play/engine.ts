@@ -223,9 +223,16 @@ export class MixerEngine {
     }
     this.selection(id);
   }
+  /** The beat division markers answer to: Q when set, and a whole beat while synced. */
+  private division(id:string) { const m=this.model(id); return m.quantize || (m.synced && this.decks.get(id)?.audio.map ? 1 : 0); }
+  /** A nudge never lands off the division, and never rounds away to no move at all. */
+  private nudge(id:string, beat:number, amount:number) {
+    const q=this.division(id); if(!q) return beat+amount;
+    const moved=snapBeat(beat+amount,q);
+    return moved===snapBeat(beat,q) ? snapBeat(beat,q)+Math.sign(amount)*q : moved;
+  }
   private snapCheckpoint(id:string, point:Checkpoint) {
-    const d=this.decks.get(id)!,model=this.model(id);
-    const q=model.quantize || (model.synced && d.audio.map ? 1 : 0);if(!q)return;
+    const d=this.decks.get(id)!;const q=this.division(id);if(!q)return;
     const focused=point.get(this.focused(id)?.[0] ?? '');const anchor=focused?.enabled?focused:[...point.values()].find(p=>p.enabled) ?? focused ?? [...point.values()][0];
     if(!anchor)return;
     const beat=this.beatOf(id,anchor.at);let delta=snapBeat(beat,q)-beat;
@@ -539,8 +546,8 @@ export class MixerEngine {
       let from=this.beatOf(id,old.from),to=this.beatOf(id,old.to);
       if(operation==='resize')to=from+(to-from)*amount;
       else if(operation==='move'){from+=amount;to+=amount;}
-      else if(operation==='in')from=snapBeat(from+amount,this.model(id).quantize ?? 0);
-      else to=snapBeat(to+amount,this.model(id).quantize ?? 0);
+      else if(operation==='in')from=this.nudge(id,from,amount);
+      else to=this.nudge(id,to,amount);
       const span={from:this.secondsOf(id,from),to:this.secondsOf(id,to)};
       if(span.from<0 || span.to>d.audio.duration || span.to-span.from<.02){this.error('Loop change would cross an audio boundary or make a loop shorter than 20 ms.',id);return;}
       spans.set(name,span);
