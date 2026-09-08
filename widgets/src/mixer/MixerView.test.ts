@@ -34,6 +34,19 @@ function fixture(): MixerViewProps {
   };
 }
 describe('controlled mixer boundary', () => {
+  it('draws a lane per played source and focuses the one pointed at', () => {
+    const props = fixture(), setFocus = vi.fn();
+    props.commands.setFocus = setFocus;
+    const lanes = ['drums', 'bass', 'other', 'vocals'].map(id => ({ id, name: id[0].toUpperCase() + id.slice(1), peaks: [] }));
+    props.state = { ...props.state, decks: props.state.decks.map((d, i) => i === 0 ? { ...d, focus: 'drums', waveform: { start: 0, length: 96, visible: 32, lanes } } : d) };
+    const view = render(createElement(MixerView, props));
+    const drawn = ['Drums', 'Bass', 'Other', 'Vocals'].map(name => view.getByLabelText(`Deck 1 ${name} waveform`));
+    expect(drawn).toHaveLength(4);
+    expect(drawn.map(lane => lane.dataset.focused)).toEqual(['true', 'false', 'false', 'false']);
+    fireEvent.pointerDown(drawn[1]);
+    expect(setFocus).toHaveBeenCalledWith('left-outside', 'bass');
+  });
+
   it('emits stable section/stem IDs without deciding whether a launch has happened', () => {
     const props = fixture();
     const view = render(createElement(MixerView, props));

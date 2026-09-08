@@ -1,5 +1,5 @@
 import { createAudioContext } from '../audioSettings.ts';
-import type { MixerCommands, MixerDeck, MixerFrame, MixerState } from '@openflow/widgets/mixer/model.ts';
+import type { MixerCommands, MixerDeck, MixerFrame, MixerState, MixerWaveLane } from '@openflow/widgets/mixer/model.ts';
 import type { Track } from '../openflow.ts';
 import { beatAt, sampleOf } from '../warp.ts';
 import type { Span } from '../schedule.ts';
@@ -156,6 +156,7 @@ export class MixerEngine {
       const asset = await (loader === loadDeckAsset ? loader(track, request.signal, this.audio()) : loader(track, request.signal));
       if (request.signal.aborted || this.disposed) return;
       if (asset.audio) this.adopt(id, asset.audio);
+      this.startAtFirstBeat(id);
       const loaded = loadedDeck(fresh, track, asset);
       // Sync needs a grid to hold the deck to; a track without one cannot keep it.
       this.patchDeck(id, { ...loaded, ...desk, playing: false, synced: wasSynced && loaded.gridAvailable, cueHeld: false });
@@ -163,6 +164,24 @@ export class MixerEngine {
       this.apply();
     } catch (error) { if (!request.signal.aborted) this.patchDeck(id, { status: 'unavailable', message: error instanceof Error ? error.message : 'Could not load audio' }); }
     finally { if (this.requests.get(id) === request) this.requests.delete(id); }
+  }
+  /**
+   * A freshly loaded track sits on its first beat, with the cue point there.
+   *
+   * Files start a moment before the count does. Leaving the deck at zero puts
+   * that silence under the first press and under every return to the cue, so
+   * the head goes to beat one and the checkpoints the cue restores are seeded
+   * from it.
+   */
+  private startAtFirstBeat(id: string) {
+    const d = this.decks.get(id); if (!d?.audio.map) return;
+    const at = sampleOf(d.audio.map, d.audio.map.first) / d.audio.map.rate;
+    if (at <= 0) return;
+    d.slots.forEach(slot => slot.voice.seek(at));
+    const point = (names: string[]): Checkpoint => new Map(names.map(name => [name, { at, enabled: true, selected: null }]));
+    const stems = [...d.slots.keys()].filter(name => name !== 'full');
+    if (stems.length) d.checkpoints.set('deck', point(stems));
+    if (d.slots.has('full')) d.checkpoints.set('full', point(['full']));
   }
   private adopt(id: string, audio: DeckAudio) {
     const ctx = this.audio(), channel = new MixerChannel(ctx,true), sends = [ctx.createGain(), ctx.createGain()], phones = ctx.createGain();
@@ -458,11 +477,21 @@ export class MixerEngine {
       if(playing)this.startSlot(id,name,slot,at,when);
       else slot.voice.seek(at);
     }
-    this.loopState(id);this.selection(id);this.apply();
+    this.loopState(id);this.selection(id);this.apply(playing?when:undefined);
   }
-  private apply() {
+  /**
+   * Push the desk down to the graph, optionally at a time still to come.
+   *
+   * A source swap crossfades one group into another, and the arriving group
+   * cannot start until `lead` seconds from now. Ramping at the current time
+   * emptied the outgoing side tens of milliseconds before anything replaced it,
+   * which is the hole the swap made; scheduled at the same instant the arriving
+   * audio starts, the two are the same recording at the same position and the
+   * crossing is inaudible.
+   */
+  private apply(at?: number) {
     if (!this.ctx) return;
-    const s = this.state, now = this.ctx.currentTime;
+    const s = this.state, now = at ?? this.ctx.currentTime;
     [s.fxA, s.fxB].forEach((id, i) => {
       if (this.effects[i]?.kind !== id) {
         if(this.effects[i])this.retiredEffects.push({effect:this.effects[i],since:now}); const fx = this.effects[i] = new MixerEffect(this.ctx!, id);
@@ -689,19 +718,46 @@ export class MixerEngine {
     const active=this.focused(id)?.[1]; const at=active?.voice.at() ?? 0;
     return [id,{sources:Object.fromEntries(this.target(id).map(([name,s])=>[name,{seconds:s.voice.at(),beat:this.beatOf(id,s.voice.at()),playing:s.voice.playing,enabled:s.enabled,backgroundBeat:d.backgrounds.has(name)?this.beatOf(id,this.backgroundAt(id,d.backgrounds.get(name)!,this.ctx!.currentTime)):undefined}])),seconds:at,duration:d.audio.duration,beat:d.audio.map ? beatAt(d.audio.map,at*d.audio.map.rate) : at*(this.model(id).track?.bpm ?? 120)/60,level:d.channel.level(),stereo:d.channel.stereoLevels()}];
   })),masterLevel:this.ctx ? this.master.level() : 0,masterStereo:this.ctx ? this.master.stereoLevels() : [0,0] });
-  private waveform(id: string, d: Deck, beat: number): Pick<MixerDeck,'waveform'|'peaks'|'waveformSpectrum'> {
-    const fit=this.model(id).zoom===0, start = fit ? this.beatOf(id,0) : Math.floor(beat / 32) * 32 - 32;
-    const length=fit?Math.max(.001,this.beatOf(id,this.focused(id)?.[1].voice.buffer.duration ?? d.audio.duration)-start):96;
-    const focus=this.model(id).waveformSource ?? this.focused(id)?.[0] ?? 'full', overview=d.audio.sourceOverviews?.[focus];
-    const cached = this.model(id).waveform?.start === start && this.model(id).waveform?.focus === focus && this.model(id).waveform?.length===length;
-    const offset = Math.round((start - (overview?.start ?? d.audio.overviewStart ?? 0)) * 8);
-    const peaks = cached ? this.model(id).peaks : Array.from({length:Math.ceil(length*8)},(_,i) => (overview?.peaks ?? d.audio.overview)[offset + i] ?? {min:0,max:0});
-    const waveformSpectrum = cached ? this.model(id).waveformSpectrum : (overview?.spectrum ?? d.audio.overviewSpectrum) && Array.from({length:Math.ceil(length*8)},(_,i) => (overview?.spectrum ?? d.audio.overviewSpectrum)![offset + i] ?? [0,0,0] as const);
-    const slot = this.focused(id), controlFocus=slot?.[0] ?? focus;
-    const activeSpan=slot?.[1].span, span = activeSpan ?? (slot && this.loopSpans.get(`${id}/${slot[0]}`));
-    const toBeat = (seconds: number) => d.audio.map ? beatAt(d.audio.map,seconds*d.audio.map.rate) : seconds*(this.model(id).track?.bpm ?? 120)/60;
-    const pending = slot && this.model(id).loop?.start != null && this.model(id).loop?.end === null ? this.loopStarts.get(`${id}/${slot[0]}`) : undefined;
-    return { peaks, waveformSpectrum, waveform: {start,length,visible:fit?length:this.model(id).zoom ?? 32,fixed:fit,focus,deckCue:toBeat(this.checkpoint(id).get(controlFocus)?.at ?? 0),cue:this.checkpoint(id,controlFocus).get(controlFocus) ? toBeat(this.checkpoint(id,controlFocus).get(controlFocus)!.at) : undefined,loop:span ? {start:toBeat(span.from),end:toBeat(span.to),enabled:!!activeSpan} : pending !== undefined ? {start:toBeat(pending),end:null,enabled:false} : undefined} };
+  /**
+   * One lane per source the deck is playing: the original, or every stem.
+   *
+   * Peaks are rebuilt only when the window or the set of sources moves, so a
+   * frame that merely advances hands back the same arrays and the row does not
+   * rerender. Each lane carries its own cue and loop, because stems that have
+   * been moved apart have their own.
+   */
+  private waveform(id: string, d: Deck, beat: number): Pick<MixerDeck,'waveform'> {
+    const model = this.model(id);
+    const fit = model.zoom===0, start = fit ? this.beatOf(id,0) : Math.floor(beat / 32) * 32 - 32;
+    const length = fit ? Math.max(.001,this.beatOf(id,this.focused(id)?.[1].voice.buffer.duration ?? d.audio.duration)-start) : 96;
+    const sources = this.target(id).map(([name]) => name);
+    const drawn = sources.length ? sources : ['full'];
+    const previous = model.waveform;
+    const cached = previous?.start===start && previous.length===length && previous.lanes.length===drawn.length && previous.lanes.every((lane,i) => lane.id===drawn[i]);
+    const toBeat = (seconds: number) => d.audio.map ? beatAt(d.audio.map,seconds*d.audio.map.rate) : seconds*(model.track?.bpm ?? 120)/60;
+    const point = this.checkpoint(id);
+    const lanes = drawn.map((name,i): MixerWaveLane => {
+      const overview = d.audio.sourceOverviews?.[name];
+      const columns = overview?.peaks ?? d.audio.overview, bands = overview?.spectrum ?? d.audio.overviewSpectrum;
+      const offset = Math.round((start - (overview?.start ?? d.audio.overviewStart ?? 0)) * 8);
+      const peaks = cached ? previous.lanes[i].peaks : Array.from({length:Math.ceil(length*8)},(_,k) => columns[offset + k] ?? {min:0,max:0});
+      const spectrum = cached ? previous.lanes[i].spectrum : bands && Array.from({length:Math.ceil(length*8)},(_,k) => bands[offset + k] ?? [0,0,0] as const);
+      const slot = d.slots.get(name), own = d.checkpoints.get(name)?.get(name)?.at;
+      const activeSpan = slot?.span, span = activeSpan ?? this.loopSpans.get(`${id}/${name}`);
+      const pending = model.loop?.start != null && model.loop?.end === null ? this.loopStarts.get(`${id}/${name}`) : undefined;
+      const cue = point.get(name)?.at;
+      return { id: name, name: model.stems.find(s => s.id===name)?.name ?? 'Full track', peaks, spectrum,
+        cue: cue===undefined ? undefined : toBeat(cue), stemCue: own===undefined ? undefined : toBeat(own),
+        loop: span ? {start:toBeat(span.from),end:toBeat(span.to),enabled:!!activeSpan} : pending !== undefined ? {start:toBeat(pending),end:null,enabled:false} : undefined };
+    });
+    return { waveform: { start, length, visible: fit?length:model.zoom ?? 32, fixed: fit, lanes } };
+  }
+  /** Peaks compare by identity: the window rebuilds them only when it moves. */
+  private sameWave(a: MixerDeck['waveform'], b: MixerDeck['waveform']) {
+    if (!a || !b) return a===b;
+    if (a.start!==b.start || a.length!==b.length || a.visible!==b.visible || !!a.fixed!==!!b.fixed || a.lanes.length!==b.lanes.length) return false;
+    return a.lanes.every((lane,i) => { const other = b.lanes[i];
+      return lane.id===other.id && lane.peaks===other.peaks && lane.spectrum===other.spectrum && lane.cue===other.cue && lane.stemCue===other.stemCue && JSON.stringify(lane.loop)===JSON.stringify(other.loop); });
   }
   private tick() {
     if(this.disposed) return;
@@ -714,7 +770,7 @@ export class MixerEngine {
     this.decks.forEach((d,id)=>{let changed=false;d.slots.forEach(s=>{if(s.pending && this.ctx!.currentTime >= s.pending.at){s.selected=s.pending.selected;s.pending=undefined;changed=true;}});if(changed)this.selection(id);});
     const beat=Math.floor(this.beat()); let changed=beat!==this.state.beat;
     const frames=this.readFrame();
-    const decks=this.state.decks.map(m=>{const d=this.decks.get(m.id);if(!d)return m;const canLoopOut=m.loop?.start != null && m.loop.end === null && this.chosen(d,m).some(([name,s])=>this.loopStarts.has(`${m.id}/${name}`) && s.voice.at() > this.loopStarts.get(`${m.id}/${name}`)! + .02);const page=Math.floor((frames.decks[m.id]?.beat ?? 0)/32),playing=[...d.slots.values()].some(s=>s.enabled&&s.voice.playing);const wave = this.waveform(m.id,d,frames.decks[m.id]?.beat ?? 0); if(canLoopOut===!!m.canLoopOut&&page===d.page&&playing===m.playing&&m.waveform&&JSON.stringify(m.waveform)===JSON.stringify(wave.waveform))return m;d.page=page;changed=true;return {...m,playing,canLoopOut,...wave};});
+    const decks=this.state.decks.map(m=>{const d=this.decks.get(m.id);if(!d)return m;const canLoopOut=m.loop?.start != null && m.loop.end === null && this.chosen(d,m).some(([name,s])=>this.loopStarts.has(`${m.id}/${name}`) && s.voice.at() > this.loopStarts.get(`${m.id}/${name}`)! + .02);const page=Math.floor((frames.decks[m.id]?.beat ?? 0)/32),playing=[...d.slots.values()].some(s=>s.enabled&&s.voice.playing);const wave = this.waveform(m.id,d,frames.decks[m.id]?.beat ?? 0); if(canLoopOut===!!m.canLoopOut&&page===d.page&&playing===m.playing&&this.sameWave(m.waveform,wave.waveform))return m;d.page=page;changed=true;return {...m,playing,canLoopOut,...wave};});
     if(changed)this.publish({...this.state,decks,beat,canLoopOut:this.state.loop.start!==null&&this.beat()-this.state.loop.start>0.1});
   }
   commands: MixerCommands = {
@@ -722,7 +778,7 @@ export class MixerEngine {
     setSlip:(id,slip)=>{const d=this.decks.get(id);if(!d)return;if(!slip)d.backgrounds.clear();this.patchDeck(id,{slip});},
     setLoopFocus:(id,loopFocus)=>{if(this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;this.patchDeck(id,{loopFocus});this.loopState(id);},
     quickLoop:id=>this.quickLoop(id), resizeLoop:(id,factor)=>this.editLoops(id,'resize',factor), moveLoop:(id,beats)=>this.editLoops(id,'move',beats), adjustLoop:(id,boundary,beats)=>this.editLoops(id,boundary,beats),
-    setFocus:(id,focus)=>{if(this.decks.get(id)?.move || this.model(id).loopFocus && this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;if(focus==='full'){this.patchDeck(id,{waveformSource:'full'});}else if(this.decks.get(id)?.slots.has(focus)){this.patchDeck(id,{focus,waveformSource:undefined});}this.tick();},
+    setFocus:(id,focus)=>{if(this.decks.get(id)?.move || this.model(id).loopFocus && this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;if(this.decks.get(id)?.slots.has(focus))this.patchDeck(id,{focus});this.tick();},
     setMoveTogether:(id,moveTogether)=>{if(!this.decks.get(id)?.move && (moveTogether || this.model(id).independentStems))this.patchDeck(id,{moveTogether});},
     moveDeck:(id,phase,delta)=>this.move(id,phase,delta),
     beatJump:(id,delta)=>this.beatJump(id,delta),

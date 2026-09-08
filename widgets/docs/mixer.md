@@ -93,12 +93,14 @@ The renderer can pause, miss frames or move to the background without becoming a
 source. Hosts should keep their readers cheap because several displayed instruments
 sample each frame.
 
-Without a `waveform` range the bench keeps its 32-bar overview. Hosts may provide a
-source window (`start`, `length`, `visible`) and source-relative loop bounds. `FrameWaveform`
-scrolls that window under a fixed playhead using the supplied beat reading. Optional
-seconds/duration frame fields support the source-time reading. Optional `waveformSpectrum` provides one host-measured low/mid/high energy tuple per
-peak. The canvas applies the scoped spectral theme to its silhouette over the same
-time coordinates; widgets do not analyze audio or choose a source. Peaks and all beat/time
+Without a `waveform` range the bench keeps its 32-bar overview from `peaks`. Hosts may
+provide a source window (`start`, `length`, `visible`) and, in it, one `lane` per source
+they are playing — the original alone, or every stem. Each lane carries its own peaks,
+optional low/mid/high `spectrum` tuples, cue positions and source-relative loop bounds,
+and `FrameWaveform` scrolls each lane under its own playhead using that source's beat
+reading. Optional seconds/duration frame fields support the source-time reading. The
+canvas applies the scoped spectral theme to its silhouette over the same time
+coordinates; widgets do not analyze audio or choose sources. Peaks and all beat/time
 conversion remain host-owned. The widget never derives a loop from an audio file or
 assumes that a source's beat equals the global transport beat.
 
@@ -148,16 +150,16 @@ takeover. Its focus key ensures changing source releases the old source's hold.
 Deck timing controls separately emit marker Q, launch timing and quick-loop length.
 Loop scope, quick loop, resize, shift, boundary edits and loop-only Slip are host commands;
 active/saved bounds and pending Out determine availability. Optional source frame readings
-supply independent markers and Slip background positions. Cue and deckCue waveform fields
-are distinct checkpoints, even when their coordinates coincide.
+supply each lane's position and Slip background. A lane's `cue` and `stemCue` are
+distinct checkpoints, even when their coordinates coincide.
 
 Optional effect group/slot enables preserve host configuration. Tailing state and explicit
 Clear tails are host-owned. Optional setPhones handles independent level and Cue/Master
 blend; these are not added to MasterControl, keeping existing adapters compatible.
 
 
-The mixer retains its aligned six-row structure. Loaded waveform lanes overlay a source
-chip plus focused Play/Cue; source, relative group movement and zoom live in its panel.
+The mixer retains its aligned six-row structure. Loaded waveform rows overlay focused
+Play/Cue; relative group movement and zoom live in the settings panel.
 The loop row gives In/Out, Exit/Reloop, halve/double, move back/ahead, quick loop
 and its settings trigger equal widths and 24px heights. Quick loop and settings join
 with square inner corners and a single divider, retaining separate focus and actions. Timing and detailed
@@ -177,7 +179,7 @@ disabled without a saved grid. It delegates the one-beat change to the host; wid
 never choose participants, move audio, alter Cue or implement boundary/Slip policy.
 
 
-Fit stays visible beside a loaded waveform's source chip and emits `setZoom(id, 0)`.
+Fit stays visible beside a loaded waveform's settings trigger and emits `setZoom(id, 0)`.
 The host supplies the entire source extent and `waveform.fixed`; FrameWaveform leaves
 that strip fixed and moves its playhead/markers across the complete range. Drag distance
 uses the supplied visible range in both modes, including playing sources. The optional
@@ -185,11 +187,13 @@ uses the supplied visible range in both modes, including playing sources. The op
 Synced launch timing displays Next bar and is read-only; sub-beat quick-loop options
 are disabled while Sync is on.
 
-The waveform source selector always includes Full track (original). `waveformSource`
-selects that visual independently of playback mode and retains the focused stem for
-positioning and Play/Cue; the panel names that stem. Choosing a stem restores its
-waveform and focus. Other-source markers hide when offscreen or coincident with focus,
-and divergent sources use separate named lanes rather than overlapping beat numbers.
+There is no waveform source selector: the lanes a deck draws are the sources it is
+playing. A deck on the original draws one lane; a deck on stems draws one per stem, in
+stem ink and named, sharing the row's height. Pointing at a lane emits `setFocus` for
+that source, which is what Play/Cue, dragging and focus-only looping act on; the focused
+lane is drawn at full strength and the others are dimmed. Up/down arrows change lane from
+the keyboard. Divergent sources are legible because each lane scrolls to its own
+position rather than reporting a beat number.
 
 Newly loaded decks default to Move active stems together. An individual stem-cell launch unlocks the option to uncheck it
 for focused-stem movement; a whole-track Hot Cue restores grouped movement and locks
@@ -203,9 +207,8 @@ deck measures the same.
 
 Loading a track leaves the channel as the desk was set: fader, trim, EQ, filter, both FX sends, crossfader assignment and headphone cue all keep their positions, and a synced deck stays synced provided the arriving track has a grid to hold it to. Everything the track owns — sections, waveform, grid, loops and Cue — is fresh, and every stem returns to full level. A deck loads playing the original track; its stems are chosen explicitly.
 
-Newly loaded decks display Full track (original) by default. The waveform source
-selector uses its normal appearance, without an active-mode highlight. Stem waveforms
-remain available from the source menu. This default does not change waveform zoom.
+A newly loaded deck plays the original, so it draws that one lane; switching it to stems
+draws them all. Loading does not change waveform zoom.
 
 A dedicated gutter reserves the shared separator clearance around the Hot Cue divider, providing space on both sides
 without narrowing the Hot Cue label itself.

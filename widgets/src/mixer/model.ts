@@ -15,11 +15,27 @@ export interface MixerStem {
   queued: string | null | undefined;
 }
 export type DeckControl = 'gain' | 'trim' | 'sendA' | 'sendB' | 'filter' | 'route' | 'cue' | 'full';
+/**
+ * One drawn source: the original in full mode, or one stem per lane in stem mode.
+ *
+ * Each carries its own reading and its own marks, because stems move apart —
+ * that divergence is the thing the lanes are there to show.
+ */
+export interface MixerWaveLane {
+  id: string;
+  name: string;
+  peaks: readonly { min: number; max: number }[];
+  /** Optional host-measured low/mid/high energy, one tuple per peak. */
+  spectrum?: readonly SpectralEnergy[];
+  /** Where a Cue press returns this source, in beats. */
+  cue?: number;
+  /** Its own hot cue, when the source's own checkpoint sits away from the deck's. */
+  stemCue?: number;
+  loop?: { start: number; end: number | null; enabled: boolean };
+}
 export interface MixerDeck {
   /** Host-reported deck transport; absent while playback is not connected. */
   focus?: string;
-  /** Display the original track while retaining the active stem controls. */
-  waveformSource?: 'full';
   independentStems?: boolean;
   moveTogether?: boolean;
   gridAvailable?: boolean;
@@ -39,10 +55,9 @@ export interface MixerDeck {
   /** Host-selected timing leader; never elected by the face. */
   syncLeader?: boolean;
   /** Source window; fixed shows the complete source rather than scrolling under the playhead. */
-  waveform?: { fixed?: boolean; start: number; length: number; visible: number; cue?: number; deckCue?: number; focus?: string; loop?: { start: number; end: number | null; enabled: boolean } };
+  waveform?: { fixed?: boolean; start: number; length: number; visible: number; lanes: readonly MixerWaveLane[] };
+  /** Whole-track silhouette, drawn until the host supplies a window. */
   peaks: readonly { min: number; max: number }[];
-  /** Optional host-measured low/mid/high energy, one tuple per peak. */
-  waveformSpectrum?: readonly SpectralEnergy[];
   sections: readonly MixerSection[];
   stems: readonly MixerStem[];
   full: boolean;

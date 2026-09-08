@@ -10,8 +10,8 @@ vi.mock('../stretch.ts', () => ({
   stretchOf: async () => ({ latency: .04, node: { addBuffers:async()=>{},dropBuffers:async()=>{},connect(){},disconnect(){},schedule:vi.fn(),setUpdateInterval(){} } }),
 }));
 class Param {
-  value=1;
-  cancelScheduledValues() {} setValueAtTime(v:number){this.value=v;return this;} setTargetAtTime(v:number){this.value=v;return this;} linearRampToValueAtTime(v:number){this.value=v;return this;}
+  value=1; at=0;
+  cancelScheduledValues() {} setValueAtTime(v:number){this.value=v;return this;} setTargetAtTime(v:number,at:number){this.value=v;this.at=at;return this;} linearRampToValueAtTime(v:number){this.value=v;return this;}
 }
 class Node {
   gain=new Param(); frequency=new Param(); Q=new Param(); delayTime=new Param();
@@ -61,22 +61,27 @@ describe('the four-deck playback owner',()=>{
     await engine.launch('deck-a','section-0-0');
     expect(engine.snapshot().decks[0]).toMatchObject({moveTogether:true,independentStems:false});
   });
-  it('shows the original waveform without changing stem playback or positioning focus', async () => {
+  it('draws the original alone in full mode and every stem in stem mode', async () => {
     vi.useFakeTimers();
     const {engine,ctx}=setup(), loaded=asset();
-    loaded.audio!.sourceOverviews={full:{start:0,peaks:Array.from({length:1024},()=>({min:-.7,max:.7})),spectrum:[]}};
+    loaded.audio!.sourceOverviews={full:{start:0,peaks:Array.from({length:1024},()=>({min:-.7,max:.7})),spectrum:[]},
+      drums:{start:0,peaks:Array.from({length:1024},()=>({min:-.3,max:.3})),spectrum:[]}};
     await engine.load('deck-a',track,async()=>loaded);
-    expect(engine.snapshot().decks[0].waveformSource).toBe('full');
+    await vi.advanceTimersByTimeAsync(40);
+    expect(engine.snapshot().decks[0].waveform!.lanes.map(l=>l.id)).toEqual(['full']);
+    expect(engine.snapshot().decks[0].waveform!.lanes[0].peaks.some(p=>p.max===.7)).toBe(true);
     engine.commands.setDeck('deck-a','full',false);
     await engine.play('deck-a',true,undefined,false,'drums');
+    await vi.advanceTimersByTimeAsync(40);
+    const lanes=engine.snapshot().decks[0].waveform!.lanes;
+    expect(lanes.map(l=>l.id)).toEqual(['drums','bass','other','vocals']);
+    expect(lanes.map(l=>l.name)).toEqual(['Drums','Bass','Other','Vocals']);
+    expect(lanes[0].peaks.some(p=>p.max===.3)).toBe(true);
     const before=ctx.sources.length;
-    engine.commands.setFocus!('deck-a','full');
-    expect(engine.snapshot().decks[0]).toMatchObject({full:false,focus:'drums',waveformSource:'full',waveform:{focus:'full'}});
-    expect(engine.snapshot().decks[0].peaks.some(p=>p.max===.7)).toBe(true);
+    engine.commands.setFocus!('deck-a','bass');
+    expect(engine.snapshot().decks[0].focus).toBe('bass');
     expect(ctx.sources).toHaveLength(before);
     expect(engine.readFrame().decks['deck-a'].sources!.drums.playing).toBe(true);
-    engine.commands.setFocus!('deck-a','bass');
-    expect(engine.snapshot().decks[0]).toMatchObject({focus:'bass',waveformSource:undefined,waveform:{focus:'bass'}});
   });
   it('indexes the full-track overview from its negative beat origin, including after a page change', async () => {
     vi.useFakeTimers();
@@ -90,15 +95,15 @@ describe('the four-deck playback owner',()=>{
     let d = engine.snapshot().decks[0];
     expect(d.waveform?.start).toBe(-32);
     // Beat -8 appears at index 192 of the 96-beat window; beat zero at 256.
-    expect(d.peaks[256].max).toBe(64/1024);
-    expect(d.waveformSpectrum?.[256]).toEqual([64,0,0]);
+    expect(d.waveform!.lanes[0].peaks[256].max).toBe(64/1024);
+    expect(d.waveform!.lanes[0].spectrum?.[256]).toEqual([64,0,0]);
     await engine.launch('deck-a','section-0-0');
     ctx.currentTime = 20;
     await vi.advanceTimersByTimeAsync(40);
     d = engine.snapshot().decks[0];
     expect(d.waveform?.start).toBe(0);
-    expect(d.peaks[0].max).toBe(64/1024);
-    expect(d.waveformSpectrum?.[0]).toEqual([64,0,0]);
+    expect(d.waveform!.lanes[0].peaks[0].max).toBe(64/1024);
+    expect(d.waveform!.lanes[0].spectrum?.[0]).toEqual([64,0,0]);
   });
   it('restarts on a new output while retaining tracks, positions and mixer controls', async () => {
     const { engine, ctx, load } = setup(); await load();
@@ -208,9 +213,41 @@ describe('the four-deck playback owner',()=>{
     const loop=ctx.sources.at(-1)!;expect(loop.loop).toBe(true);expect(loop.loopStart).toBe(0);expect(loop.loopEnd).toBeCloseTo(2);
     engine.commands.setLoopEnabled(false);expect(ctx.sources.at(-1)!.loop).toBe(false);engine.commands.setLoopEnabled(true);expect(ctx.sources.at(-1)!.loopStart).toBe(0);
   });
+  it('crossfades a source swap where the arriving audio starts, not before',async()=>{
+    const {engine,ctx}=setup();
+    await engine.load('deck-a',track,async()=>asset());
+    await engine.play('deck-a',true);
+    const leaving=ctx.sources.at(-1)!, before=ctx.sources.length;
+    engine.commands.setDeck('deck-a','full',false);
+    const arriving=ctx.sources.slice(before);
+    expect(arriving).toHaveLength(4);
+    // The voice's fade feeds the slot gain the desk ramps; both sides cross there.
+    const slotGain=(source:Node)=>((source.connections[0] as Node).connections[0] as Node).gain;
+    for(const source of arriving) {
+      const when=source.start.mock.calls.at(-1)![0] as number;
+      expect(when).toBeGreaterThanOrEqual(.03);
+      expect(slotGain(source).at).toBe(when);
+      expect(slotGain(source).value).toBe(1);
+    }
+    expect(slotGain(leaving).at).toBe(arriving[0].start.mock.calls.at(-1)![0]);
+    expect(slotGain(leaving).value).toBe(0);
+  });
+  it('drops a freshly loaded track on its first beat and cues there',async()=>{
+    const {engine}=setup();const shifted=asset();shifted.audio!.map=evenBeats(48000,64*48000,120,.2);
+    await engine.load('deck-a',track,async()=>shifted);
+    expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(0,4);
+    expect(engine.readFrame().decks['deck-a'].sources!.full.seconds).toBeCloseTo(.2,4);
+    // Cue over an unmoved head auditions the point rather than setting a new one.
+    engine.commands.cueDeck!('deck-a',true);await settle();
+    expect(engine.snapshot().decks[0].playing).toBe(true);
+    engine.commands.cueDeck!('deck-a',false);
+    expect(engine.readFrame().decks['deck-a'].sources!.full.seconds).toBeCloseTo(.2,4);
+  });
   it('preserves a paused synced source position including audio before the first beat',async()=>{
     const {engine,ctx}=setup();const shifted=asset();shifted.audio!.map=evenBeats(48000,64*48000,120,.2);
-    await engine.load('deck-a',track,async()=>shifted);await engine.sync('deck-a',true);await engine.play('deck-a',true);
+    await engine.load('deck-a',track,async()=>shifted);
+    engine.move('deck-a','begin');engine.move('deck-a','move',-.4);engine.move('deck-a','commit');
+    await engine.sync('deck-a',true);await engine.play('deck-a',true);
     expect(ctx.sources).toHaveLength(0);ctx.currentTime=.56;expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(.6,4);
   });
   it('keeps queued launches and the playhead on the audible section until the bar',async()=>{
