@@ -223,6 +223,10 @@ under FX B. The master channel does the same against its own FX row: its meters 
 the first two columns and carry the FX knobs' side margin, and Trim/EQ takes the third
 under FX B.
 
+Play carries the success role and Cue the caution role, so the transport reads as
+running and holding rather than as two identical buttons. Cue takes `--caution` rather
+than `--amber`, which resolves to the palette's primary and is not reliably warm.
+
 Play/Cue/Sync stretch to their shared row height with a square aspect ratio; the
 paired beat-jump controls divide the remaining column, along whichever axis leaves
 each button more area. Individual buttons do not set their own dimensions.

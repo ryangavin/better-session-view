@@ -34,8 +34,10 @@ hosts. These additional roles do not change any of the existing four-stem colors
   warmth, saturation and lightness offsets. Waveform strength blends their colors with
   `surfaces.waveformBase`. The defaults change hue only, preserving equal emphasis.
 - Surfaces include the text/border ramp, control and timeline surfaces, focus and
-  status roles. Danger, success and information are distinct semantics from measured
-  signal. Their defaults stay stable while the identity randomizer experiments.
+  status roles. Danger, success, information and caution are distinct semantics from
+  measured signal. Caution is the warm one, for a control that is holding or auditioning
+  rather than failing; deck Cue reads it. Their defaults stay stable while the identity
+  randomizer experiments.
 
 Randomize deals nine spaced hue families to signal, six stems and two deck sides.
 Individual H/S/L rolls change only one channel. A hue roll chooses a separated degree
@@ -88,7 +90,9 @@ styles into an otherwise unthemed widget. Other canvas hosts must do the same, o
 resolved colors as changing props. Never remount playback to repaint a theme.
 
 The resolver supplies legacy `--amber` / hover / muted and red/green/blue aliases for
-existing callers. New consumers should use semantic names. Unthemed apps retain their
+existing callers. New consumers should use semantic names. `--amber` resolves to the
+primary, so a caller that wants warmth regardless of the palette wants `--caution`
+(with `--caution-hover`) instead. Unthemed apps retain their
 existing palette defaults; this is not a global recoloring of every app. Widget fills
 prefer `--primary`, falling back to `--amber`; explicit `ink` props still take precedence.
 
@@ -99,6 +103,10 @@ browser storage. Applications can serialize the same document through their own 
 or file APIs without adding storage dependencies to widgets.
 
 ## Verification
+
+A stored document written before a surface existed keeps its other choices: validation
+accepts absent surface keys and the resolver fills them from the defaults, so adding a
+role does not reset a saved theme. Malformed values are still rejected.
 
 Theme tests cover complete document validation, preset preservation, role constraints,
 six-stem randomization, derived treatments and nested scope. Root tests verify changing

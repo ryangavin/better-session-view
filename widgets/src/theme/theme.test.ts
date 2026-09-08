@@ -11,6 +11,15 @@ describe('theme documents and role rules', () => {
     expect(isTheme({ ...DEFAULT_THEME, colors: [] })).toBe(false);
     expect(isTheme({ ...DEFAULT_THEME, variation: { ...DEFAULT_THEME.variation, strength: Infinity } })).toBe(false);
   });
+  it('keeps a stored theme written before a surface existed and fills it from the defaults', () => {
+    const { caution, ...older } = DEFAULT_THEME.surfaces;
+    const stored = JSON.parse(JSON.stringify({ ...DEFAULT_THEME, surfaces: older })) as typeof DEFAULT_THEME;
+    expect(caution).toBeTruthy();
+    expect(isTheme(stored)).toBe(true);
+    expect(resolveTheme(stored).tokens['--caution']).toBe(DEFAULT_THEME.surfaces.caution);
+    expect(resolveTheme(stored).tokens['--panel']).toBe(DEFAULT_THEME.surfaces.panel);
+    expect(isTheme({ ...DEFAULT_THEME, surfaces: { ...DEFAULT_THEME.surfaces, caution: 'orange' } })).toBe(false);
+  });
   it('edits one named role without changing identities or mutating the preset', () => {
     const next = editRole(DEFAULT_THEME, 'drums', 'h', 410);
     expect(next.colors.drums.h).toBe(50);
@@ -46,6 +55,8 @@ describe('theme documents and role rules', () => {
     const result = resolveTheme(DEFAULT_THEME);
     expect(result.tokens['--stem-drums-label']).toBe(identityLabel(result.colors.drums, DEFAULT_THEME.surfaces.caption));
     expect(result.tokens['--amber']).toBe(result.tokens['--primary']);
+    expect(result.tokens['--caution']).toBe(DEFAULT_THEME.surfaces.caution);
+    expect(result.tokens['--caution']).not.toBe(result.tokens['--primary']);
     expect(result.tokens['--signal']).not.toBe(result.tokens['--success']);
     expect(result.deckPairs[0].ink).toContain('62%');
     expect(result.deckPairs[1].ink).toContain('62%');

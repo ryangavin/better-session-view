@@ -16,7 +16,7 @@ export const DARK_SURFACES = {
   border: '#262629', borderQuiet: '#232327', borderControl: '#2c2c31',
   text: '#ececed', ui: '#b7b7be', detail: '#8b8b93', caption: '#5e5e66', idle: '#3a3a41',
   control: '#151517', stats: '#121214', cell: '#18181b', cellMuted: '#131316', sunken: '#101012',
-  focus: '#4a4a52', danger: '#d4544f', success: '#5fbfa8', info: '#4da6d9', preview: '#b58fd6',
+  focus: '#4a4a52', danger: '#d4544f', success: '#5fbfa8', info: '#4da6d9', caution: '#f0b23c', preview: '#b58fd6',
   band: '#0c0c0e', laneHead: '#191920', outside: '#16161bb3', manual: '#17171c',
   waveformBase: '#9ca3ad',
 };
@@ -98,7 +98,11 @@ export function isTheme(value: unknown): value is Theme {
   return t.version === 1 && (t.spectral === undefined || isSpectralStyle(t.spectral)) && !!t.colors && ROLES.every(r => {
     const c = t.colors[r];
     return c && Number.isFinite(c.h) && c.h >= 0 && c.h < 360 && Number.isFinite(c.s) && c.s >= 0 && c.s <= (r === 'primary' ? 12 : 100) && Number.isFinite(c.l) && c.l >= 0 && c.l <= 100 && (r !== 'signal' || c.h >= 120 && c.h <= 160);
-  }) && !!t.surfaces && Object.keys(DARK_SURFACES).every(k => typeof t.surfaces[k as keyof typeof DARK_SURFACES] === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(t.surfaces[k as keyof typeof DARK_SURFACES])) && !!t.variation && Object.entries({warmth: [-40,40], saturation: [-30,30], lightness: [-20,20], strength: [0,100]}).every(([k, [min,max]]) => {
+  }) && !!t.surfaces && Object.keys(DARK_SURFACES).every(k => {
+    // A document written before a surface existed keeps its other choices; resolve fills the gap.
+    const v = t.surfaces[k as keyof typeof DARK_SURFACES];
+    return v === undefined || typeof v === 'string' && /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(v);
+  }) && !!t.variation && Object.entries({warmth: [-40,40], saturation: [-30,30], lightness: [-20,20], strength: [0,100]}).every(([k, [min,max]]) => {
     const n = t.variation[k as keyof DeckVariation]; return Number.isFinite(n) && n >= min && n <= max;
   });
 }

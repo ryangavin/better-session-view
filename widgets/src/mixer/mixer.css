@@ -71,8 +71,8 @@
 .play-transport-button { --wdg-radius: 3px; }
 .play-transport-play .wdg-toggle-body { --wdg-fill: var(--green); color: var(--green); font-size: 26px; }
 .play-transport-play .wdg-toggle-body:hover:not(:disabled):not([data-on]) { color: var(--green); }
-.play-hold.wdg-body { --wdg-fill: var(--amber); color: var(--amber); }
-.play-hold.wdg-body:hover:not(:disabled):not([data-on]) { color: var(--amber-hover); }
+.play-hold.wdg-body { --wdg-fill: var(--caution); color: var(--caution); }
+.play-hold.wdg-body:hover:not(:disabled):not([data-on]) { color: var(--caution-hover); }
 
 .play-performance { display: flex; flex-direction: column; }
 .play-fx-unit { display:grid; grid-template-rows:auto 1fr; gap:0; border: 0; border-radius: 0; box-shadow: none; background: color-mix(in srgb,var(--wdg-face) 55%,transparent); }
