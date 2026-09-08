@@ -30,7 +30,9 @@ const track:Track={id:'song',title:'Song',artist:'Artist',album:null,art:null,fi
 const buffer={duration:64,sampleRate:48000,length:64*48000,numberOfChannels:2,getChannelData:()=>new Float32Array(64*48000)} as unknown as AudioBuffer;
 function asset():DeckAsset {return {analysis:{grid:{bpm:120,offset:0},slices:[{bar:0,name:'Intro'},{bar:4,name:'Verse'}]} as DeckAsset['analysis'],peaks:[],audio:{map:evenBeats(48000,64*48000,120,0),buffers:Object.fromEntries(['full',...track.sources].map(id=>[id,buffer])),duration:64,overview:[]}};}
 const engines:MixerEngine[]=[];
-function setup(){const ctx=new Context(),engine=new MixerEngine(()=>ctx as unknown as AudioContext);engines.push(engine);return {ctx,engine,load:(id='deck-a')=>engine.load(id,track,async()=>asset())};}
+// A deck now loads playing the original; these exercise the stems, so they ask for them.
+function setup(){const ctx=new Context(),engine=new MixerEngine(()=>ctx as unknown as AudioContext);engines.push(engine);
+  return {ctx,engine,load:async(id='deck-a')=>{await engine.load(id,track,async()=>asset());engine.commands.setDeck(id,'full',false);}};}
 const settle=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 afterEach(()=>{engines.splice(0).forEach(e=>e.dispose());stretching.prepare=null;vi.useRealTimers();});
 describe('the four-deck playback owner',()=>{
@@ -61,6 +63,7 @@ describe('the four-deck playback owner',()=>{
     loaded.audio!.sourceOverviews={full:{start:0,peaks:Array.from({length:1024},()=>({min:-.7,max:.7})),spectrum:[]}};
     await engine.load('deck-a',track,async()=>loaded);
     expect(engine.snapshot().decks[0].waveformSource).toBe('full');
+    engine.commands.setDeck('deck-a','full',false);
     await engine.play('deck-a',true,undefined,false,'drums');
     const before=ctx.sources.length;
     engine.commands.setFocus!('deck-a','full');
@@ -126,7 +129,7 @@ describe('the four-deck playback owner',()=>{
   });
   it('loops a whole-track stem pad but plays the Track name through once', async () => {
     const {engine,ctx}=setup(); const whole=asset(); whole.analysis={...whole.analysis!,slices:[]};
-    await engine.load('deck-a',track,async()=>whole);
+    await engine.load('deck-a',track,async()=>whole);engine.commands.setDeck('deck-a','full',false);
     await engine.launch('deck-a','full-track','drums'); expect(ctx.sources.at(-1)!.loop).toBe(true);
     expect(engine.snapshot().decks[0].loop?.end).toBe(64);
     await engine.launch('deck-a','full-track'); expect(ctx.sources.slice(-4).every(s=>!s.loop)).toBe(true);
@@ -319,14 +322,24 @@ describe('the four-deck playback owner',()=>{
     expect(loop.end!).toBeGreaterThan(before);
   });
   it('keeps the fader and Sync across a new track on the same deck',async()=>{
-    const {engine,load}=setup();await load();
-    engine.commands.setDeck('deck-a','gain',42);
+    const {engine,ctx,load}=setup();ctx.destination.maxChannelCount=4;await load();
+    const desk={gain:42,trim:-3,filter:-25,sendA:20,sendB:30,route:2,cue:true} as const;
+    for(const [control,value] of Object.entries(desk)) engine.commands.setDeck('deck-a',control as 'gain',value as never);
+    [4,-2,6].forEach((db,band)=>engine.commands.setDeckEq('deck-a',band,db));
     await engine.sync('deck-a',true);
-    expect(engine.snapshot().decks[0]).toMatchObject({gain:42,synced:true});
+    expect(engine.snapshot().decks[0]).toMatchObject({...desk,eq:[4,-2,6],synced:true});
     await load();
-    expect(engine.snapshot().decks[0]).toMatchObject({gain:42,synced:true});
+    expect(engine.snapshot().decks[0]).toMatchObject({...desk,eq:[4,-2,6],synced:true});
     await engine.load('deck-a',track,async()=>({...asset(),analysis:{slices:asset().analysis!.slices} as DeckAsset['analysis']}));
-    expect(engine.snapshot().decks[0]).toMatchObject({gain:42,synced:false,gridAvailable:false});
+    expect(engine.snapshot().decks[0]).toMatchObject({...desk,eq:[4,-2,6],synced:false,gridAvailable:false});
+  });
+  it('loads on the original track with every stem back at full level',async()=>{
+    const {engine,load}=setup();await load();
+    engine.commands.setStemLevel('deck-a','bass',37);
+    expect(engine.snapshot().decks[0].stems.find(s=>s.id==='bass')!.level).toBe(37);
+    await engine.load('deck-a',track,async()=>asset());
+    expect(engine.snapshot().decks[0].full).toBe(true);
+    expect(engine.snapshot().decks[0].stems.every(s=>s.level===100)).toBe(true);
   });
   it('creates 16 beats, halves/doubles, moves, exits and reloops without changing the Cue',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2.03;
@@ -379,7 +392,7 @@ describe('the four-deck playback owner',()=>{
     engine.beatJump('deck-a',1);expect(engine.readFrame().decks['deck-a'].sources).toEqual(before);
   });
   it('uses mapped beats, including tempo changes, for the same musical step on divergent sources',async()=>{
-    const {engine}=setup();const a=asset();a.audio!.map={rate:48000,length:64*48000,first:0,samples:[0,24000,48000,72000,96000,144000,192000,240000,288000]};await engine.load('deck-a',track,async()=>a);await engine.launch('deck-a','section-0-0');await engine.launch('deck-a','section-0-0','drums');await engine.play('deck-a',false);engine.commands.setMoveTogether!('deck-a',false);
+    const {engine}=setup();const a=asset();a.audio!.map={rate:48000,length:64*48000,first:0,samples:[0,24000,48000,72000,96000,144000,192000,240000,288000]};await engine.load('deck-a',track,async()=>a);engine.commands.setDeck('deck-a','full',false);await engine.launch('deck-a','section-0-0');await engine.launch('deck-a','section-0-0','drums');await engine.play('deck-a',false);engine.commands.setMoveTogether!('deck-a',false);
     engine.move('deck-a','begin');engine.move('deck-a','move',4);engine.move('deck-a','commit');engine.beatJump('deck-a',1);
     const got=engine.readFrame().decks['deck-a'].sources!;expect(got.drums.seconds).toBe(3);expect(got.bass.seconds).toBe(.5);
   });

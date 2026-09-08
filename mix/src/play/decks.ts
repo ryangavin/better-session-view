@@ -62,7 +62,7 @@ export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): Mix
   const cuts = asset.analysis?.slices;
   return { ...deck, status: 'ready', track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: grid?.beats ? tempoOf(grid.beats) : grid?.bpm ?? track.bpm, key: track.key ?? '—' },
     focus: track.sources.includes('drums') ? 'drums' : track.sources[0] ?? 'full', waveformSource: 'full', moveTogether: true, independentStems: false, zoom: 32, gridAvailable: !!grid, quantize: 0, launchBeats: 0, loopBeats: 16,
-    peaks: asset.peaks, full: !track.stems, fullSection: null, fullQueued: undefined,
+    peaks: asset.peaks, full: true, fullSection: null, fullQueued: undefined,
     message: !grid ? 'No saved beat grid — Sync unavailable' : !cuts?.length ? 'No saved sections — full track available' : undefined,
     sections: cuts?.length ? cuts.map((cut, i) => ({id: `section-${i}-${cut.bar}`, name: cut.name})) : [{id:'full-track', name:'Track'}],
     stems: sources.map(id => ({id, name: id[0].toUpperCase()+id.slice(1), level:100, available: !!track.stems && track.sources.includes(id), selected:null, queued:undefined})),

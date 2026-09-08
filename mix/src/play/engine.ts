@@ -114,7 +114,8 @@ export class MixerEngine {
     // The channel belongs to the desk rather than to the record: a new track
     // arrives at the fader the last one left, and on a deck that is still
     // synced. Everything the track owns — sections, stems, grid — is fresh.
-    const held = this.model(id), desk = { gain: held.gain }, wasSynced = held.synced ?? false;
+    const held = this.model(id), wasSynced = held.synced ?? false;
+    const desk = { gain: held.gain, trim: held.trim, eq: [...held.eq], filter: held.filter, sendA: held.sendA, sendB: held.sendB, route: held.route, cue: held.cue };
     const fresh = emptyDeck(id, DECK_IDS.indexOf(id));
     this.patchDeck(id, { ...fresh, ...desk, track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: track.bpm, key: track.key ?? '—' }, status: 'loading', message: 'Loading audio…' });
     try {
