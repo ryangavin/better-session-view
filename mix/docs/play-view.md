@@ -47,10 +47,17 @@ A fallback tempo only supplies a waveform display; it is not a fabricated analys
 Reload a deck after saving preparation changes to refresh its sections and grid.
 
 The four standard stem positions remain identifiable; guitar and piano are included when
-present. Missing stems stay disabled. Tracks with no stems start in Full mode. Full pauses
-all sources and switches the addressed source group. The original is initialized from the
-focused stem once; subsequent switches retain each group's independent positions, stopped
-stems, selections, loops and Cue checkpoints. Switching does not start audio. Loading does not establish tempo authority. Without Link, the first playing gridded
+present. Missing stems stay disabled. Every deck starts in Full mode, because the original always
+sums better than its own stems do; launching any stem clip is itself the request for
+stems, and switches the deck without a separate control.
+
+Switching pauses nothing. `apply` already gates each voice's output by the mode, so the
+swap is a gain ramp and the outgoing group plays on underneath it, which is what makes it
+inaudible — the alternative, pausing and rescheduling every source, was audible every
+time. The incoming group starts from where the outgoing one is, so the two agree at the
+moment the gains cross, and each group keeps its own positions, stopped stems, selections,
+loops and Cue checkpoints. The cost is that both groups run once both have been heard.
+Switching does not start audio. Loading does not establish tempo authority. Without Link, the first playing gridded
 deck becomes leader; the header shows no active tempo until then.
 
 ## Performance layout

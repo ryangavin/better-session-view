@@ -333,6 +333,19 @@ describe('the four-deck playback owner',()=>{
     await engine.load('deck-a',track,async()=>({...asset(),analysis:{slices:asset().analysis!.slices} as DeckAsset['analysis']}));
     expect(engine.snapshot().decks[0]).toMatchObject({...desk,eq:[4,-2,6],synced:false,gridAvailable:false});
   });
+  it('takes a stem clip as the request for stems, and swaps sources without a pause',async()=>{
+    const {engine,ctx}=setup();
+    await engine.load('deck-a',track,async()=>asset());
+    expect(engine.snapshot().decks[0].full).toBe(true);
+    await engine.play('deck-a',true);ctx.currentTime=2;
+    const stopped=()=>ctx.sources.filter(s=>s.stop.mock.calls.length>0).length;
+    const before=stopped();
+    await engine.launch('deck-a','section-0-0','bass');
+    expect(engine.snapshot().decks[0]).toMatchObject({full:false,playing:true});
+    expect(engine.snapshot().decks[0].stems.find(s=>s.id==='bass')!.selected).toBe('section-0-0');
+    // Nothing was halted for the swap: the original plays on under a gain the mode gates.
+    expect(stopped()).toBe(before);
+  });
   it('loads on the original track with every stem back at full level',async()=>{
     const {engine,load}=setup();await load();
     engine.commands.setStemLevel('deck-a','bass',37);

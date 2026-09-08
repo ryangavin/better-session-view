@@ -309,8 +309,11 @@ export class MixerEngine {
     if(on){const spans=new Map(this.target(id).flatMap(([name,s])=>s.span?[[name,s.span] as const]:[]));if(spans.size)this.installLoops(id,spans,true);}
   }
   async launch(id: string, section: string | null, stemId?: string) {
-    const d = this.decks.get(id), model = this.model(id); if (!d || section !== null && !model.sections.some(s => s.id === section)) return;
-    if(d.move)return;
+    const d = this.decks.get(id); if (!d || d.move) return;
+    // Reaching for one stem is the request to hear stems: a deck plays the
+    // original until a stem clip asks otherwise, and then only that stem.
+    if (stemId && this.model(id).full) this.source(id, false);
+    const model = this.model(id); if (section !== null && !model.sections.some(s => s.id === section)) return;
     const chosen = this.chosen(d, model).filter(([name]) => !stemId || name === stemId);
     for(const key of d.holds.keys())if(!stemId || key==='deck' || key===stemId || key==='full')d.holds.delete(key);
     if (section === null) {
@@ -388,14 +391,31 @@ export class MixerEngine {
     this.patchDeck(id, { fullSection: d.slots.get('full')?.selected ?? null, fullQueued:d.slots.get('full')?.pending?.selected, cueHeld: d.holds.has(this.model(id).full ? 'full' : 'deck'), stems: this.model(id).stems.map(s => ({ ...s, playing: d.slots.get(s.id)?.voice.playing ?? false, cueHeld: d.holds.has(s.id), selected: d.slots.get(s.id)?.selected ?? null, queued: d.slots.get(s.id)?.pending?.selected })), playing: [...d.slots.values()].some(s => s.enabled && s.voice.playing) });
     this.refreshLeader();
   }
+  /**
+   * Swap which source the deck is listening to, without stopping either.
+   *
+   * `apply` already gates every voice's output by the mode, so the switch is a
+   * gain ramp rather than a transport event. What the outgoing side must not do
+   * is pause: pausing it and running `play` again left a gap and rescheduled
+   * every source, which is what made the swap audible. The incoming side is
+   * started from where the outgoing one is, so the two agree at the moment the
+   * gains cross.
+   */
   private source(id: string, full: boolean) {
     const d=this.decks.get(id);if(!d)return;
-    const previous=this.model(id), playing=!!previous.playing;
+    const previous=this.model(id);if(previous.full===full)return;
+    const playing=!!previous.playing, at=this.focused(id)?.[1].voice.at() ?? 0;
     d.operation++;d.holds.clear();d.move=undefined;d.backgrounds.clear();
-    d.slots.forEach(s=>{s.revision++;s.voice.pause();s.pending=undefined;});
-    if(full && !d.slots.get('full')!.enabled) {const at=this.focused(id)?.[1].voice.at() ?? 0;d.slots.get('full')!.voice.seek(at);d.slots.get('full')!.enabled=true;}
-    this.patchDeck(id,{full,playing:false});this.loopState(id);this.selection(id);
-    if(playing)this.run(this.play(id,true),id);this.apply();
+    d.slots.forEach(s=>{s.pending=undefined;});
+    if(full)d.slots.get('full')!.enabled=true;
+    this.patchDeck(id,{full});
+    const when=this.ctx?this.ctx.currentTime+this.lead():0;
+    for(const [name,slot] of this.target(id)){
+      if(!(slot.enabled || !d.initialized))continue;
+      if(playing){if(!slot.voice.playing)this.startSlot(id,name,slot,at,when);}
+      else slot.voice.seek(at);
+    }
+    this.loopState(id);this.selection(id);this.apply();
   }
   private apply() {
     if (!this.ctx) return;
