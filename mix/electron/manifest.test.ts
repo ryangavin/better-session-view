@@ -206,16 +206,76 @@ describe('importing', () => {
     expect(await fs.readFile(path.join(root, saved.tracks[0].file))).toEqual(await fs.readFile(original));
   });
 
-  it.each(['Album [FLAC] 88', 'Album.flac'])('explains a folder drop (%s) without refusing sibling audio files', async (name) => {
+  it.each(['Album [FLAC] 88', 'Album.flac'])('imports an album folder (%s) alongside direct audio files', async (name) => {
     const folder = path.join(source, name);
     await fs.mkdir(folder);
     await fs.writeFile(path.join(folder, 'Inside.flac'), 'fLaC');
     const done = await addFiles(root, [folder, await drop('Outside.flac')]);
-    expect(done.added).toBe(1);
-    expect(done.manifest.tracks.map(track => track.file)).toEqual(['audio/Outside.flac']);
-    expect(done.refused).toEqual([
-      `${name} — folders cannot be imported; open the folder and drop the audio files inside`,
+    expect(done.added).toBe(2);
+    expect(done.manifest.tracks.map(track => track.file)).toEqual(['audio/Inside.flac', 'audio/Outside.flac']);
+    expect(done.refused).toEqual([]);
+  });
+  it('walks nested folders in filename order and silently skips unsupported contents', async () => {
+    await fs.mkdir(path.join(source, 'Disc 2'));
+    await drop('z.MP3');
+    await drop('cover.jpg');
+    await drop('Disc 2/b.FLAC');
+    await drop('Disc 2/a.wav');
+    await drop('Disc 2/notes.txt');
+    const done = await addFiles(root, [source]);
+    expect(done.manifest.tracks.map(track => track.file)).toEqual([
+      'audio/a.wav', 'audio/b.flac', 'audio/z.mp3',
     ]);
+    expect(done.added).toBe(3);
+    expect(done.refused).toEqual([]);
+    expect((await read(root)).tracks).toEqual(done.manifest.tracks);
+  });
+
+  it('terminates symlink cycles and imports overlapping paths only once per batch', async () => {
+    const song = await drop('Song.flac');
+    await fs.symlink(source, path.join(source, 'loop'));
+    await fs.symlink(song, path.join(source, 'alias.flac'));
+    const done = await addFiles(root, [song, source, source]);
+    expect(done.added).toBe(1);
+    expect(done.refused).toEqual([]);
+  });
+
+  it('keeps valid files when a folder entry cannot be read', async () => {
+    await fs.symlink(path.join(source, 'missing'), path.join(source, 'broken.flac'));
+    await drop('Song.wav');
+    const done = await addFiles(root, [source]);
+    expect(done.added).toBe(1);
+    expect(done.refused).toHaveLength(1);
+    expect(done.refused[0]).toContain('broken.flac');
+    expect((await read(root)).tracks[0].file).toBe('audio/Song.wav');
+  });
+
+  it('keeps same-named tracks from different folders without overwriting', async () => {
+    await fs.mkdir(path.join(source, 'A'));
+    await fs.mkdir(path.join(source, 'B'));
+    await drop('A/Song.flac', 'first');
+    await drop('B/Song.flac', 'second');
+    const done = await addFiles(root, [source]);
+    expect(done.added).toBe(2);
+    expect(await fs.readFile(path.join(root, AUDIO, 'Song.flac'), 'utf8')).toBe('first');
+    expect(await fs.readFile(path.join(root, AUDIO, 'Song-2.flac'), 'utf8')).toBe('second');
+  });
+
+  it('does not scan the destination library through a dropped folder', async () => {
+    await addFiles(root, [await drop('Existing.wav')]);
+    await fs.symlink(root, path.join(source, 'Library'));
+    const done = await addFiles(root, [source]);
+    expect(done.added).toBe(1);
+    expect(done.manifest.tracks).toHaveLength(2);
+  });
+
+  it('leaves an empty or unsupported-only folder unindexed', async () => {
+    await fs.mkdir(path.join(source, 'Empty'));
+    await drop('cover.jpg');
+    const done = await addFiles(root, [source]);
+    expect(done.added).toBe(0);
+    expect(done.refused).toEqual([]);
+    expect(await exists(path.join(root, MANIFEST))).toBe(false);
   });
 });
 

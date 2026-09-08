@@ -49,7 +49,7 @@ is the safe way to be wrong.
 or a PDF, and one of those must not stop the eleven WAVs beside it. What was refused and
 why comes back with the count that succeeded.
 
-The Import button opens a multi-file picker. Dropping files anywhere on the window takes
+The Import button opens a multi-file picker. Dropping files or folders anywhere on the window takes
 the same path: the page hands browser `File` objects to the isolated preload,
 `webUtils.getPathForFile` resolves only those genuine dropped files, and the main process
 passes the resulting paths to `addFiles`. The renderer never receives a filesystem path
@@ -59,10 +59,17 @@ FLAC files are accepted alongside WAV, AIFF, MP3, M4A, AAC, Ogg, Opus and WebM;
 extensions are case-insensitive. Import copies the original bytes without decoding or
 transcoding. Separation decodes the audio later through the local engine.
 
-Drops are files, not recursive folder imports. `addFiles` checks the filesystem type
-before the extension, so an album folder named `[FLAC]` (or even `Album.flac`) gets a
-folder-specific refusal asking the user to open it and drop the audio files inside.
-Other valid files in the same drop still import.
+Folder drops recursively discover supported audio files, visiting entries in sorted filename
+order and preserving the order of top-level dropped items. Unsupported folder contents are
+silently skipped; unsupported files dropped directly still receive a refusal. Unreadable
+entries report their error without stopping the rest of the batch.
+
+Discovery completes before any copying. Real paths identify visited folders and files, so
+symlink cycles terminate and overlapping drops import a source only once per batch. The
+destination library is excluded from folder traversal, including through aliases, so it
+cannot feed its own audio and stems back into an import. Every discovered source then uses
+the ordinary copy and collision rules: folder structure is flattened into `audio/`, equal
+filenames get numeric suffixes, and the manifest is written once at the end.
 
 The dashed drop target is window-wide because dropping on a waveform should not navigate
 the app to a local file. It appears only after a library folder has been chosen and while

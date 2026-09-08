@@ -250,19 +250,44 @@ export async function addFiles(root: string, files: readonly string[]): Promise<
 
   const refused: string[] = [];
   const ids: string[] = [];
+  const candidates: string[] = [];
+  // Resolve aliases before visiting: symlink loops and overlapping drops must
+  // not revisit directories or import the same source twice in one batch.
+  const directories = new Set([await fs.realpath(root)]);
+  const seen = new Set<string>();
 
-  for (const source of files) {
+  const visit = async (source: string, direct: boolean): Promise<void> => {
     try {
       const info = await fs.stat(source);
       if (info.isDirectory()) {
-        refused.push(`${path.basename(source)} — folders cannot be imported; open the folder and drop the audio files inside`);
-        continue;
+        const real = await fs.realpath(source);
+        if (directories.has(real)) return;
+        directories.add(real);
+        for (const name of (await fs.readdir(source)).sort()) {
+          await visit(path.join(source, name), false);
+        }
+        return;
       }
       const ext = path.extname(source).toLowerCase();
       if (!info.isFile() || !SOUND.includes(ext)) {
-        refused.push(`${path.basename(source)} — not an audio file`);
-        continue;
+        if (direct) refused.push(`${path.basename(source)} — not an audio file`);
+        return;
       }
+      const real = await fs.realpath(source);
+      if (seen.has(real)) return;
+      seen.add(real);
+      candidates.push(source);
+    } catch (why) {
+      refused.push(`${path.basename(source)} — ${(why as Error).message}`);
+    }
+  };
+  // Finish discovery before copying, including when the destination library
+  // sits beneath a dropped folder. The library itself is excluded above.
+  for (const source of files) await visit(source, true);
+
+  for (const source of candidates) {
+    try {
+      const ext = path.extname(source).toLowerCase();
       const base = tidy(path.basename(source, path.extname(source)));
       const name = await freeName(audio, base, ext);
       // The filename is the only metadata an import ever brings — `guess.ts`.

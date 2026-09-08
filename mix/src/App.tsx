@@ -188,7 +188,7 @@ export function App() {
       {mix.details && <DetailsModal mix={mix} ready={ready} />}
       {dropping && (
         <div className="mf-drop" role="status">
-          <span>Drop audio files or a YouTube video link to import</span>
+          <span>Drop audio files, folders or a YouTube video link to import</span>
         </div>
       )}
     </div>
