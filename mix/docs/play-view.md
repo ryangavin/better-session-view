@@ -48,6 +48,8 @@ shown on the deck and another drop retries. Loading does not start a deck.
 
 `decks.ts` reads saved analysis, decodes the original and all available stems through the
 existing library/audio APIs, and retains those buffers in the engine's shared context.
+Every source is fetched and decoded at once rather than in turn: decoding happens off the
+main thread, so asking for them together is the difference between five seconds and two.
 Saved beat maps (or saved uniform grids) govern Sync and section boundaries. Without a
 saved grid, native-speed playback still works and Sync reports that preparation is needed.
 A fallback tempo only supplies a waveform display; it is not a fabricated analysis result.
@@ -78,8 +80,8 @@ channel, routing and transport under the headers. The performance area does not 
 vertically; long section lists scroll inside their launcher. Six stems use two columns
 of level knobs. Compact layouts fit the checked 1280×720, 1024×768 and 1366×768 viewports.
 
-Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens source,
-relative group movement and zoom settings. The compact loop row keeps In, Out,
+Loaded waveforms overlay a settings trigger, focused Play and Cue. The trigger opens
+relative group movement and zoom. The compact loop row keeps In, Out,
 Exit/Reloop, halve/double, move back/ahead, quick loop and settings at equal widths
 and 24px heights. Quick loop and its adjacent settings button form one attached pair
 with a single divider; both remain separately focusable. Settings opens loop target
@@ -237,7 +239,7 @@ Cancellation restores gesture-start positions/loops and each source's prior play
 state; commit retains the new positions and a synced follower reacquires beat phase.
 This is audible seeking, not reverse vinyl scratching.
 
-Fit is always beside the source chip on a loaded waveform. It shows the entire focused
+Fit is always beside the settings trigger on a loaded waveform. It shows the entire focused
 source from sample zero to its end, including pre-downbeat audio, with a moving playhead.
 `zoom: 0` selects this fixed view; normal zoom remains 4–64 beats. Fit again returns to
 32 beats; zoom controls also leave Fit. The waveform model supplies `fixed`, its complete
@@ -252,21 +254,31 @@ explicit origin is retained when extracting each scrolling window. Map samples a
 decoder samples are converted through seconds, so differing sample rates stay aligned.
 The measured end of the map determines the overview length, not an estimated tempo.
 
+Reading the samples is the other half of a load, and it is kept. `measureScan` walks each
+source once against **time** — two hundred bins a second, five values apiece — and
+`analysis/<track>/scan.bin` beside the track holds every source's walk, refused when the
+separation key or a source's length no longer matches what decoded. `overviewOf` gathers a
+grid's columns out of a scan in a few milliseconds, so an edited beat grid redraws instead
+of re-reading, and a second load of a song never reads a sample. A track that was never
+separated keeps the scan of its original alone. The walk comes up for air on a time budget
+through a message port rather than a timer: a nested `setTimeout` is clamped to four
+milliseconds, and to a second or more behind another app, which is enough to make a walk
+look like a hang.
+
 Persistent 250/2500 Hz crossovers measure low/mid/high energy per bin and map those
 bands to the shared theme’s spectral colors (RGB by default). The engine retains
 energy tuples rather than baked colors. Theme edits repaint already-loaded, paused
 waveforms without re-analysis or playback changes. Silence uses the theme’s idle tone. Spectral paint belongs
 to the focused source audio, before mixer processing; deck colors remain on the labels and
-rails. Both stereo channels contribute without cancellation. Analysis runs once during
-loading, yielding cooperatively and honoring replacement cancellation. Focus defaults to
-drums (or the first available source) and never follows launch activity implicitly.
-The waveform source menu also offers Full track (original) during stem playback.
-This changes only the displayed overview; the retained focused stem supplies position,
-scrub and Play/Cue behavior, identified in the panel. Choosing a stem restores its
-waveform and focus. Offscreen or coincident secondary position labels are hidden;
-divergent source names occupy separate lanes. Zoom
-selects the visible beat span. Source Cue, deck checkpoint, saved/active loop and other
-source positions are distinguished in the waveform. Time/bar readings belong to focus.
+rails. Both stereo channels contribute without cancellation. Any walk that is needed
+runs once during loading, coming up for air cooperatively and honoring replacement
+cancellation. A deck draws the sources it is playing: the original alone in full mode, and
+one lane per stem otherwise, each scrolling under its own playhead so stems that have been
+moved apart are seen apart. Pointing at a lane focuses it — there is no source menu — and
+focus supplies position, scrub and Play/Cue behavior. Focus defaults to drums (or the first
+available source) and never follows launch activity implicitly. Zoom
+selects the visible beat span. Source Cue, deck checkpoint and saved/active loop are
+distinguished within each lane. Time/bar readings belong to focus.
 
 Dragging moves the focused source relative to pointer-down, with no initial jump.
 Move active stems explicitly applies one common bounded beat delta to the combination;
@@ -318,9 +330,9 @@ deck measures the same.
 
 Loading a track leaves the channel as the desk was set: fader, trim, EQ, filter, both FX sends, crossfader assignment and headphone cue all keep their positions, and a synced deck stays synced provided the arriving track has a grid to hold it to. Everything the track owns — sections, waveform, grid, loops and Cue — is fresh, and every stem returns to full level. A deck loads playing the original track; its stems are chosen explicitly.
 
-Newly loaded decks display Full track (original) by default. The waveform source
-selector uses its normal appearance, without an active-mode highlight. Stem waveforms
-remain available from the source menu. This default does not change waveform zoom.
+A newly loaded deck plays the original, so it draws that one lane; switching it to stems
+draws them all. Loading does not change waveform zoom. The deck sits on the track's first
+beat with its cue point there, rather than on the silence a file starts with.
 
 Empty decks keep drop guidance in their header and waveform label; the launcher
 status area is reserved for loading, operational messages and errors.

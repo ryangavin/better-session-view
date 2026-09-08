@@ -272,6 +272,14 @@ export interface KeptPeaks {
   sources: Record<string, Float32Array>;
 }
 
+/** Every source a deck plays, walked against time rather than against the grid. */
+export interface KeptScans {
+  stems: string;
+  key: string;
+  rate: number;
+  sources: Record<string, { bins: number; values: Float32Array }>;
+}
+
 interface Bridge {
   audioDevices(): Promise<AudioDevice[]>;
   linkAudio: LinkAudioAPI;
@@ -305,6 +313,13 @@ interface Bridge {
       stems: string,
       columns: number,
       sources: Record<string, Float32Array>,
+    ): Promise<void>;
+    scans(trackId: string, stems: string): Promise<KeptScans | null>;
+    keepScans(
+      trackId: string,
+      stems: string,
+      rate: number,
+      sources: Record<string, { bins: number; values: Float32Array }>,
     ): Promise<void>;
   };
   destination: {

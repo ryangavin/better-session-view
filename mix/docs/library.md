@@ -201,8 +201,8 @@ sidecar that describes them, are [`stems.md`](stems.md).
 
 What is **not** written here is the mix — the faders, the mutes. Those live in
 `localStorage` on this machine, so carrying the folder elsewhere carries the audio and
-the stems but not the balance. The grid and the slices are beside the track in
-`analysis/`, which does travel. [`playback.md`](playback.md) has why, and what it would
+the stems but not the balance. The grid, the slices and the waveform scans are
+beside the track in `analysis/`, which does travel. [`playback.md`](playback.md) has why, and what it would
 take to change.
 
 ## What a row says about the grid

@@ -1,9 +1,19 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { renderHook, act, cleanup } from '@testing-library/react';
-import { emptyDeck, loadedDeck, isViewShortcut, type DeckAsset } from './decks.ts';
+import { emptyDeck, loadDeckAsset, loadedDeck, isViewShortcut, type DeckAsset } from './decks.ts';
 import { useMixerViewModel } from './useMixerViewModel.ts';
-import type { Track } from '../openflow.ts';
+import { SCAN_RATE, SCAN_VALUES } from './overview.ts';
+import { openflow, type Track } from '../openflow.ts';
+
+vi.mock('../openflow.ts', async (original) => ({ ...(await original<object>()), openflow: vi.fn() }));
+vi.mock('../audio.ts', async (original) => ({ ...(await original<object>()), decode: vi.fn(async () => sound()) }));
+const SECONDS = 2, RATE = 44100;
+function sound(readable = false): AudioBuffer {
+  const channel = new Float32Array(SECONDS*RATE);
+  return { duration: SECONDS, sampleRate: RATE, length: SECONDS*RATE, numberOfChannels: 1,
+    getChannelData: () => { if (!readable) throw new Error('walked audio that was already kept'); return channel; } } as unknown as AudioBuffer;
+}
 
 const track = (id: string): Track => ({id,title:id,artist:'Artist',file:`tracks/${id}.wav`,album:null,art:null,bpm:null,key:null,seconds:60,added:'',model:'six',stems:`stems/${id}`,sources:['drums','bass','other','vocals','guitar','piano']});
 const tracks = [track('one'),track('two')];
@@ -72,6 +82,64 @@ describe('deck loading and UI ownership', () => {
     expect(result.current.state.decks[1].status).toBe('ready');
   });
 });
+describe('what a deck reads before it can play', () => {
+  type Kept = Record<string, { bins: number; values: Float32Array }>;
+  const keepScans = vi.fn(async (_id: string, _stems: string, _rate: number, _sources: Kept) => {});
+  const scans = vi.fn();
+  let opened: string[] = [];
+  beforeEach(async () => {
+    opened = []; keepScans.mockClear();
+    scans.mockReset(); scans.mockResolvedValue(null);
+    // Kept audio is unreadable on purpose: a walk of it fails the test loudly.
+    vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound());
+    vi.mocked(openflow).mockReturnValue({ library: { base: async () => 'lib' },
+      analysis: { read: async () => null, scans, keepScans } } as unknown as ReturnType<typeof openflow>);
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => { opened.push(url); return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) }; }));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+  const bins = Math.round(SECONDS*SCAN_RATE);
+  const held = (name: string) => [name, { bins, values: new Float32Array(bins*SCAN_VALUES).fill(.25) }] as const;
+
+  it('reads every source at once rather than one after another', async () => {
+    vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound(true));
+    let release!: () => void;
+    const waiting = new Promise<void>(resolve => { release = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => { opened.push(url); await waiting; return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) }; }));
+    const loading = loadDeckAsset(tracks[0], new AbortController().signal, {} as BaseAudioContext);
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+    expect(opened).toHaveLength(7);
+    release();
+    await loading;
+  });
+
+  it('draws a kept scan without walking the samples again', async () => {
+    scans.mockResolvedValue({ stems: tracks[0].stems, key: '', rate: SCAN_RATE,
+      sources: Object.fromEntries(['full', ...tracks[0].sources].map(held)) });
+    const asset = await loadDeckAsset(tracks[0], new AbortController().signal, {} as BaseAudioContext);
+    expect(scans).toHaveBeenCalledWith('one', 'stems/one');
+    expect(keepScans).not.toHaveBeenCalled();
+    expect(asset.audio!.sourceOverviews!.drums.peaks.every(p => p.max === .25)).toBe(true);
+  });
+
+  it('walks and keeps what was never kept, including a track with no stems', async () => {
+    vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound(true));
+    await loadDeckAsset({ ...tracks[0], stems: null, sources: [] }, new AbortController().signal, {} as BaseAudioContext);
+    expect(opened).toHaveLength(1);
+    const [trackId, stems, rate, kept] = keepScans.mock.calls[0];
+    expect([trackId, stems, rate]).toEqual(['one', '', SCAN_RATE]);
+    expect(Object.keys(kept)).toEqual(['full']);
+    expect(kept.full.bins).toBe(bins);
+  });
+
+  it('walks again where a kept scan is of audio that has since been replaced', async () => {
+    vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound(true));
+    scans.mockResolvedValue({ stems: tracks[0].stems, key: '', rate: SCAN_RATE,
+      sources: { full: { bins: bins + 40, values: new Float32Array((bins + 40)*SCAN_VALUES) } } });
+    await loadDeckAsset(tracks[0], new AbortController().signal, {} as BaseAudioContext);
+    expect(Object.keys(keepScans.mock.calls[0][3])).toHaveLength(7);
+  });
+});
+
 it('reserves plain Tab for view switching, but leaves editing and reverse navigation alone', () => {
   const event=(target:Element,options:KeyboardEventInit={})=>{const e=new KeyboardEvent('keydown',{key:'Tab',...options});Object.defineProperty(e,'target',{value:target});return e;};
   expect(isViewShortcut(event(document.body))).toBe(true);

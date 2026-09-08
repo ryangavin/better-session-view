@@ -32,8 +32,10 @@ import {
   gridNotes,
   readAnalysis,
   readPeaks,
+  readScans,
   writeAnalysis,
   writePeaks,
+  writeScans,
   type Grid,
   type Reading,
   type SliceKept,
@@ -187,6 +189,21 @@ if (only(app)) {
     ) => {
       const where = await root();
       if (where) await writePeaks(where, ask.trackId, ask.stems, ask.columns, ask.sources);
+    },
+  );
+
+  ipcMain.handle('openflow:scans-read', async (_event, ask: { trackId: string; stems: string }) => {
+    const where = await root();
+    return where ? readScans(where, ask.trackId, ask.stems) : null;
+  });
+  ipcMain.handle(
+    'openflow:scans-write',
+    async (
+      _event,
+      ask: { trackId: string; stems: string; rate: number; sources: Record<string, { bins: number; values: Float32Array }> },
+    ) => {
+      const where = await root();
+      if (where) await writeScans(where, ask.trackId, ask.stems, ask.rate, ask.sources);
     },
   );
 

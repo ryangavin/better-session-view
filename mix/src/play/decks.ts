@@ -5,7 +5,7 @@ import { decode, fileUrl, stemUrl, type Peak } from '../audio.ts';
 import { openflow, type Track, type Analysis } from '../openflow.ts';
 import { evenBeats, tempoOf, type Beats } from '../warp.ts';
 
-import { measureOverview, type Overview } from './overview.ts';
+import { measureScan, overviewOf, SCAN_RATE, SCAN_VALUES, type Overview, type Scan } from './overview.ts';
 
 export const TRACK_DRAG = 'application/x-openflow-library-track';
 export const DECK_IDS = ['deck-a', 'deck-b', 'deck-c', 'deck-d'];
@@ -33,11 +33,27 @@ export const params: MixerParams = {
 };
 export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[]; overviewStart?: number; overviewSpectrum?: SpectralEnergy[]; sourceOverviews?: Record<string, Overview> }
 export interface DeckAsset { analysis: Analysis | null; peaks: Peak[]; audio?: DeckAudio }
-/** Decode the original and available stems into the engine's shared context. */
+/**
+ * Decode the original and available stems into the engine's shared context.
+ *
+ * Everything is read at once. `decodeAudioData` does its work off the main
+ * thread, so five files decoded one after another spent most of the load
+ * waiting for a core that was idle; asked for together they overlap, which is
+ * the difference between five seconds and two.
+ *
+ * The samples are walked only where nothing was kept. A scan beside the track
+ * is what makes the second load of a song immediate, and the first load is
+ * what writes it — including for a track that was never separated, which has
+ * only its original to keep.
+ */
 export async function loadDeckAsset(track: Track, signal: AbortSignal, context?: BaseAudioContext): Promise<DeckAsset> {
   const bridge = openflow();
   if (!bridge) throw new Error('Library connection unavailable');
-  const [base, analysis] = await Promise.all([bridge.library.base(), bridge.analysis.read(track.id)]);
+  const [base, analysis, kept] = await Promise.all([
+    bridge.library.base(),
+    bridge.analysis.read(track.id),
+    bridge.analysis.scans(track.id, track.stems ?? '').catch(() => null),
+  ]);
   signal.throwIfAborted();
   const ctx = context ?? new OfflineAudioContext(2, 1, 48000);
   const read = async (url: string) => {
@@ -45,14 +61,33 @@ export async function loadDeckAsset(track: Track, signal: AbortSignal, context?:
     if (!response.ok) throw new Error(`Could not load audio (${response.status})`);
     const buffer = await decode(ctx, await response.arrayBuffer()); signal.throwIfAborted(); return buffer;
   };
-  const original = await read(fileUrl(base, track.file));
-  const buffers: Record<string, AudioBuffer> = { full: original };
-  if (track.stems) for (const id of track.sources) buffers[id] = await read(stemUrl(base, track.stems, id));
+  const sources: [string, string][] = [['full', fileUrl(base, track.file)],
+    ...(track.stems ? track.sources.map((id): [string, string] => [id, stemUrl(base, track.stems!, id)]) : [])];
+  const decoded = await Promise.all(sources.map(async ([id, url]) => [id, await read(url)] as const));
+  const buffers: Record<string, AudioBuffer> = Object.fromEntries(decoded);
+  const original = buffers.full;
   const map = analysis?.grid ? analysis.grid.beats ?? evenBeats(original.sampleRate, original.length, analysis.grid.bpm, analysis.grid.offset) : null;
   const displayMap = map ?? evenBeats(original.sampleRate, original.length, track.bpm ?? 120, 0);
-  const overview = await measureOverview(original, displayMap, signal);
-  const sourceOverviews: Record<string, Overview> = {full: overview};
-  for (const [id, buffer] of Object.entries(buffers)) if (id !== 'full') sourceOverviews[id] = await measureOverview(buffer, displayMap, signal);
+  const scans: Record<string, Scan> = {};
+  let walked = false;
+  for (const [id, buffer] of decoded) {
+    const held = kept?.rate === SCAN_RATE ? kept.sources[id] : undefined;
+    // A kept scan has to be of this audio: a bin count that disagrees with what
+    // decoded belongs to a file that has been replaced under the same name.
+    if (held && held.bins === Math.max(1, Math.round(buffer.duration * SCAN_RATE)) && held.values.length === held.bins * SCAN_VALUES) {
+      scans[id] = { rate: SCAN_RATE, bins: held.bins, values: held.values };
+    } else {
+      scans[id] = await measureScan(buffer, signal);
+      walked = true;
+    }
+  }
+  const sourceOverviews: Record<string, Overview> = Object.fromEntries(
+    Object.entries(scans).map(([id, scan]) => [id, overviewOf(scan, displayMap, buffers[id].duration)]));
+  // Kept before the deck is playable, and on purpose: a walk thrown away
+  // because the next track was dropped first is a walk paid for again.
+  if (walked) void bridge.analysis.keepScans(track.id, track.stems ?? '', SCAN_RATE,
+    Object.fromEntries(Object.entries(scans).map(([id, scan]) => [id, {bins: scan.bins, values: scan.values}]))).catch(() => undefined);
+  const overview = sourceOverviews.full;
   return {analysis, peaks: overview.peaks.slice(0, 1024), audio: { buffers, map, duration: original.duration,
     sourceOverviews, overview: overview.peaks, overviewStart: overview.start, overviewSpectrum: overview.spectrum }};
 }

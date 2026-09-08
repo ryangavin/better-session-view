@@ -10,8 +10,11 @@ import {
   peaksFile,
   readAnalysis,
   readPeaks,
+  readScans,
+  scanFile,
   writeAnalysis,
   writePeaks,
+  writeScans,
 } from './analysis.ts';
 
 /**
@@ -209,6 +212,53 @@ describe('the peaks', () => {
 
   it('refuse a source of the wrong length', async () => {
     await expect(writePeaks(root, TRACK, STEMS, 10, { drums: ramp(9, 1) })).rejects.toThrow('drums');
+  });
+});
+
+describe('the scans', () => {
+  const bins = 8;
+  const scan = (scale: number) => ({ bins, values: Float32Array.from({length: bins*5},(_,i) => i/bins*scale) });
+
+  it('come back per source, with the rate and bin counts they went in with', async () => {
+    await sidecar('abc:htdemucs');
+    const drums = scan(1), vocals = scan(.5);
+    await writeScans(root, TRACK, STEMS, 200, { full: scan(2), drums, vocals });
+    const held = await readScans(root, TRACK, STEMS);
+    expect(held?.rate).toBe(200);
+    expect(held?.key).toBe('abc:htdemucs');
+    expect(Object.keys(held?.sources ?? {})).toEqual(['full', 'drums', 'vocals']);
+    expect(held?.sources.drums.bins).toBe(bins);
+    expect(Array.from(held!.sources.vocals.values)).toEqual(Array.from(vocals.values));
+  });
+
+  it('are one file for the track, whatever separated it', () => {
+    expect(scanFile(TRACK)).toBe('analysis/track-1/scan.bin');
+  });
+
+  it('are kept for a track that was never separated', async () => {
+    await writeScans(root, TRACK, '', 200, { full: scan(1) });
+    expect((await readScans(root, TRACK, ''))?.sources.full.bins).toBe(bins);
+    // The same track once it has stems: what was kept was of the original alone.
+    await sidecar('abc:htdemucs');
+    expect(await readScans(root, TRACK, STEMS)).toBeNull();
+  });
+
+  it('are not trusted once the separation has been run again, or when cut short', async () => {
+    await sidecar('first');
+    await writeScans(root, TRACK, STEMS, 200, { drums: scan(1) });
+    expect(await readScans(root, TRACK, STEMS)).not.toBeNull();
+    await sidecar('second');
+    expect(await readScans(root, TRACK, STEMS)).toBeNull();
+    await sidecar('second');
+    await writeScans(root, TRACK, STEMS, 200, { drums: scan(1) });
+    const at = path.join(root, scanFile(TRACK));
+    const bytes = await fs.readFile(at);
+    await fs.writeFile(at, bytes.subarray(0, bytes.length - 8));
+    expect(await readScans(root, TRACK, STEMS)).toBeNull();
+  });
+
+  it('refuse a source whose values do not fill its bins', async () => {
+    await expect(writeScans(root, TRACK, STEMS, 200, { drums: { bins: 9, values: new Float32Array(10) } })).rejects.toThrow('drums');
   });
 });
 

@@ -16,6 +16,9 @@ import { SIDECAR } from './job.ts';
  * was measured. `analysis/<track>/peaks.<model>.bin` is the drawing of one
  * separation's stems, binary because nine thousand columns of four stems is a
  * megabyte of digits as JSON and a quarter of that as floats.
+ * `analysis/<track>/scan.bin` is the same idea for a deck: every source the
+ * deck plays, walked on a clock rather than on the grid, so a track opens on
+ * its waveforms instead of reading a hundred million samples again.
  *
  * Both are **derived**. `job.ts` has the rule: a derived file that will not
  * parse is redone, never reported. A grid nobody can read is re-measured, and
@@ -29,6 +32,9 @@ export const ANALYSIS = 'analysis';
 export const ANALYSIS_FILE = 'analysis.json';
 export const ANALYSIS_FORMAT = 1;
 export const PEAKS_FORMAT = 1;
+export const SCAN_FORMAT = 1;
+/** Values a scan bin holds, restated from `src/play/overview.ts`. */
+export const SCAN_VALUES = 5;
 
 /** The beat map, restated from `src/warp.ts` for the same reason `openflow.ts` restates. */
 export interface BeatMap {
@@ -200,6 +206,32 @@ export interface Peaks {
   sources: Record<string, Float32Array>;
 }
 
+/**
+ * Every source a deck plays, measured against time. One file rather than one
+ * per separation: a track carries a single set of sources at a time, and a
+ * separation done again invalidates the original's scan no more than reading
+ * it costs — a fraction of a second, against the minutes the separation took.
+ */
+export interface Scans {
+  /** `stems/<track>/<model>` the stems were walked from, or '' for a track with none. */
+  stems: string;
+  /** The separation's own key, so scans of a redone separation are not trusted. */
+  key: string;
+  /** Bins a second. */
+  rate: number;
+  /** Interleaved min, max, low, mid, high per bin, `bins * 5` long, per source. */
+  sources: Record<string, { bins: number; values: Float32Array }>;
+}
+
+interface ScanHeader {
+  openflow: 'mix-scan';
+  version: number;
+  stems: string;
+  key: string;
+  rate: number;
+  sources: { name: string; bins: number }[];
+}
+
 interface PeaksHeader {
   openflow: 'mix-peaks';
   version: number;
@@ -215,6 +247,8 @@ const modelOf = (stems: string): string => stems.slice(stems.lastIndexOf('/') + 
 
 export const peaksFile = (trackId: string, stems: string): string =>
   `${analysisAt(trackId)}/peaks.${modelOf(stems)}.bin`;
+
+export const scanFile = (trackId: string): string => `${analysisAt(trackId)}/scan.bin`;
 
 /** Written beside, then renamed over: a reader never sees half a file. */
 async function place(root: string, at: string, body: Buffer | string): Promise<void> {
@@ -365,4 +399,74 @@ export async function writePeaks(
     names.map((name) => Buffer.from(sources[name].buffer, sources[name].byteOffset, per * 4)),
   );
   await place(root, peaksFile(trackId, stems), Buffer.concat([length, head, body]));
+}
+
+/**
+ * The scans of exactly these sources, or null.
+ *
+ * The header names the stems folder and the separation's key, and both have to
+ * match what is there now, for the reason `readPeaks` gives: a separation run
+ * again lands in the same folder with different audio in it. A track that has
+ * gained or lost stems since fails the same check and is walked again.
+ */
+export async function readScans(root: string, trackId: string, stems: string): Promise<Scans | null> {
+  try {
+    const bytes = await fsp.readFile(path.join(root, scanFile(trackId)));
+    if (bytes.length < 4) return null;
+    const headerLength = bytes.readUInt32LE(0);
+    const header = JSON.parse(bytes.subarray(4, 4 + headerLength).toString('utf8')) as ScanHeader;
+    if (header.openflow !== 'mix-scan' || header.version !== SCAN_FORMAT) return null;
+    if (header.stems !== stems || header.key !== (stems ? await keyOf(root, stems) : '')) return null;
+    if (!(header.rate > 0) || !Array.isArray(header.sources)) return null;
+    if (header.sources.some((source) => !(source.bins > 0) || typeof source.name !== 'string')) return null;
+    const body = 4 + headerLength;
+    const total = header.sources.reduce((sum, source) => sum + source.bins * SCAN_VALUES, 0);
+    if (bytes.length !== body + total * 4) return null;
+    // Read from an aligned copy: the header's length is whatever the JSON came
+    // to, and a Float32Array cannot start on an odd byte.
+    const aligned = new Uint8Array(bytes.subarray(body));
+    const floats = new Float32Array(aligned.buffer, 0, total);
+    const sources: Scans['sources'] = {};
+    let at = 0;
+    for (const source of header.sources) {
+      const length = source.bins * SCAN_VALUES;
+      sources[source.name] = { bins: source.bins, values: floats.slice(at, at + length) };
+      at += length;
+    }
+    return { stems, key: header.key, rate: header.rate, sources };
+  } catch {
+    return null;
+  }
+}
+
+export async function writeScans(
+  root: string,
+  trackId: string,
+  stems: string,
+  rate: number,
+  sources: Record<string, { bins: number; values: Float32Array }>,
+): Promise<void> {
+  const names = Object.keys(sources);
+  for (const name of names) {
+    const source = sources[name];
+    if (source.values.length !== source.bins * SCAN_VALUES)
+      throw new Error(`${name}: ${source.values.length} values for ${source.bins} bins`);
+  }
+  const header: ScanHeader = {
+    openflow: 'mix-scan',
+    version: SCAN_FORMAT,
+    stems,
+    key: stems ? await keyOf(root, stems) : '',
+    rate,
+    sources: names.map((name) => ({ name, bins: sources[name].bins })),
+  };
+  const head = Buffer.from(JSON.stringify(header), 'utf8');
+  const length = Buffer.alloc(4);
+  length.writeUInt32LE(head.length, 0);
+  const body = Buffer.concat(
+    names.map((name) =>
+      Buffer.from(sources[name].values.buffer, sources[name].values.byteOffset, sources[name].bins * SCAN_VALUES * 4),
+    ),
+  );
+  await place(root, scanFile(trackId), Buffer.concat([length, head, body]));
 }

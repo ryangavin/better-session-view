@@ -13,7 +13,7 @@ import type { ExportAsk, ExportProgress, Written } from './export.ts';
 import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
-import type { Analysis, GridNote, Grid, Peaks, Reading, SliceKept } from './analysis.ts';
+import type { Analysis, GridNote, Grid, Peaks, Reading, Scans, SliceKept } from './analysis.ts';
 import type { LinkAudioAPI, LinkBlock, LinkCommand, LinkOutput } from '../src/linkAudioTypes.ts';
 
 /**
@@ -94,6 +94,15 @@ expose({
       columns: number,
       sources: Record<string, Float32Array>,
     ): Promise<void> => ipcRenderer.invoke('openflow:peaks-write', { trackId, stems, columns, sources }),
+    /** Every source a deck plays, walked on a clock, or null when nothing was kept. */
+    scans: (trackId: string, stems: string): Promise<Scans | null> =>
+      ipcRenderer.invoke('openflow:scans-read', { trackId, stems }),
+    keepScans: (
+      trackId: string,
+      stems: string,
+      rate: number,
+      sources: Record<string, { bins: number; values: Float32Array }>,
+    ): Promise<void> => ipcRenderer.invoke('openflow:scans-write', { trackId, stems, rate, sources }),
   },
   export: {
     /** Every named stem laid straight at `to` bpm from 1.1.1, into the export folder. */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { measureOverview } from './overview.ts';
+import { measureScan, overviewOf, SCAN_RATE } from './overview.ts';
 import { beatAt, evenBeats, sampleOf } from '../warp.ts';
 
 function buffer(channels: Float32Array[], rate = 44100): AudioBuffer {
@@ -7,6 +7,8 @@ function buffer(channels: Float32Array[], rate = 44100): AudioBuffer {
     duration: channels[0].length/rate, getChannelData: (i:number) => channels[i]} as AudioBuffer;
 }
 const signal = () => new AbortController().signal;
+const drawn = async (audio: AudioBuffer, map: Parameters<typeof overviewOf>[1], at = signal()) =>
+  overviewOf(await measureScan(audio, at), map, audio.duration);
 describe('full-track beat overview', () => {
   it('keeps audible lead-in before bar 1 and aligns it across different decoder/map rates', async () => {
     const samples = new Float32Array(4*44100);
@@ -14,7 +16,7 @@ describe('full-track beat overview', () => {
     const audio = buffer([samples]);
     // Track C has a 2.43-second lead-in before its saved first downbeat.
     const map = evenBeats(48000,4*48000,128,2.4251666667);
-    const overview = await measureOverview(audio,map,signal());
+    const overview = await drawn(audio,map);
     const i = overview.peaks.findIndex(p => p.max > .7);
     expect(overview.start).toBeLessThan(-5);
     const from = overview.start+i/8, to = from+1/8;
@@ -28,7 +30,7 @@ describe('full-track beat overview', () => {
   it('retains both stereo channels and the very end of the original', async () => {
     const left = new Float32Array(44100).fill(.5), right = new Float32Array(44100).fill(-.5);
     right[right.length-1] = -.9;
-    const overview = await measureOverview(buffer([left,right]),evenBeats(44100,44100,120,0),signal());
+    const overview = await drawn(buffer([left,right]),evenBeats(44100,44100,120,0));
     expect(overview.peaks[0]).toEqual({min:-.5,max:.5});
     expect(overview.peaks.at(-1)!.min).toBeCloseTo(-.9);
   });
@@ -36,15 +38,31 @@ describe('full-track beat overview', () => {
     const colors: number[][] = [];
     for (const hz of [70,900,9000]) {
       const samples = Float32Array.from({length:44100},(_,i) => .5*Math.sin(2*Math.PI*hz*i/44100));
-      const overview = await measureOverview(buffer([samples]),evenBeats(44100,44100,120,0),signal());
+      const overview = await drawn(buffer([samples]),evenBeats(44100,44100,120,0));
       expect(overview.peaks[4].max).toBeCloseTo(.5,2);
       colors.push([...overview.spectrum[4]]);
     }
     colors.forEach((color,i) => expect(color.indexOf(Math.max(...color))).toBe(i));
 
   });
+  it('draws whatever grid asks, from one walk of the samples', async () => {
+    const samples = new Float32Array(4*44100);
+    samples[Math.round(1.5*44100)] = .8;
+    const scan = await measureScan(buffer([samples]),signal());
+    expect(scan.rate).toBe(SCAN_RATE);
+    expect(scan.bins).toBe(4*SCAN_RATE);
+    const spike = (map: Parameters<typeof overviewOf>[1]) => {
+      const overview = overviewOf(scan,map,4);
+      const i = overview.peaks.findIndex(p => p.max > .7);
+      return sampleOf(map,overview.start+i/8)/map.rate;
+    };
+    // The same walk, read against a slower grid and against a shifted one.
+    expect(spike(evenBeats(44100,4*44100,120,0))).toBeCloseTo(1.5,1);
+    expect(spike(evenBeats(44100,4*44100,90,.3))).toBeCloseTo(1.5,1);
+    expect(spike(evenBeats(44100,4*44100,174,.11))).toBeCloseTo(1.5,1);
+  });
   it('cancels before reading a replaced track', async () => {
     const aborted = new AbortController(); aborted.abort();
-    await expect(measureOverview(buffer([new Float32Array(10)]),evenBeats(44100,10,120,0),aborted.signal)).rejects.toThrow();
+    await expect(measureScan(buffer([new Float32Array(10)]),aborted.signal)).rejects.toThrow();
   });
 });
