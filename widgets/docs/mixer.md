@@ -227,8 +227,10 @@ pinned to those centres — three small knobs on a three-to-one track sit hard a
 edges. The master keeps equal thirds in both rows, so its EQ still lands under its FX B.
 The centre takes three times the side columns, because it carries the most;
 the ratio is one pair of tokens the three rows all read, so none can drift from the
-others. Vertical `Separator` elements sit in gutter tracks between the columns in the
-channel and the routing row, the same rule the Hot cue divider uses. A gutter track and
+others. Vertical `Separator` elements divide the deck's three sections in the FX, channel and
+routing rows, the same rule the Hot cue divider uses. The channel and routing rows hold
+theirs in gutter tracks; the evenly spaced FX row holds them as siblings, which keeps
+every gap in that row equal. A gutter track and
 an equal gap put the content in the same places, so the separators cost no alignment.
 The fader assembly stops at its own maximum rather than filling the widened centre. The
 plate carries evenly spaced horizontal ticks in the control edge colour, drawn as the
