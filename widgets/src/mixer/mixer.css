@@ -202,4 +202,6 @@
 
 .play-stem-levels[data-staggered="true"] .play-stem-controls > div { height:var(--play-knob-row); flex-shrink:0; }
 
-.play-stem-connections { position:absolute; inset:0; width:100%; height:100%; color:var(--wdg-edge); pointer-events:none; z-index:-1; overflow:visible; }
+
+.play-stem-spacer { display:flex; align-items:center; justify-content:center; }
+.play-stem-icon { width:20px; height:20px; color:var(--wdg-caption); opacity:.45; pointer-events:none; }

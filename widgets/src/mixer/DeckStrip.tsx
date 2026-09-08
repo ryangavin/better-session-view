@@ -9,7 +9,6 @@ import { Knob } from '../controls/Knob.tsx';
 import { Slider } from '../controls/Slider.tsx';
 import { Segmented } from '../controls/Segmented.tsx';
 import type { MixerDeck, MixerViewProps } from './model.ts';
-import { StemConnections } from './StemConnections.tsx';
 import { FrameMeter } from './frames.tsx';
 
 export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, deckProps }: Pick<MixerViewProps, 'commands' | 'readFrame' | 'theme' | 'params' | 'deckProps'> & { deck: MixerDeck; index: number }) {
@@ -60,8 +59,7 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
         </div>
         <div className="play-channel">
           <div className="play-eq-stack play-stem-levels" data-staggered={d.stems.length > 4} data-full={d.full}>
-            {d.stems.length > 4 && <StemConnections/>}
-            {(d.stems.length > 4 ? [d.stems.filter((_,i)=>i%2===0),d.stems.filter((_,i)=>i%2===1)] : [d.stems]).map((stems,column)=><div className="play-stem-column" key={column}><div className="play-stem-controls">{stems.map(stem=><div key={stem.id} data-stem-order={d.stems.indexOf(stem)} style={{ '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}><Knob disabled={d.full || d.status !== 'ready' || !stem.available} name={stem.name} label={`Deck ${index + 1} ${stem.name} level`} param={params.stemLevel ?? LEVEL} value={stem.level} onChange={value => commands.setStemLevel(d.id, stem.id, value)} ink={theme.stems[stem.id] ?? theme.primary} /></div>)}</div>{d.stems.length > 4 && <div className="play-stem-spacer" aria-hidden="true"/>}</div>)}
+            {(d.stems.length > 4 ? [d.stems.filter((_,i)=>i%2===0),d.stems.filter((_,i)=>i%2===1)] : [d.stems]).map((stems,column)=><div className="play-stem-column" key={column}><div className="play-stem-controls">{stems.map(stem=><div key={stem.id} style={{ '--stem-label': identityLabel(theme.stems[stem.id] ?? theme.primary) } as CSSProperties}><Knob disabled={d.full || d.status !== 'ready' || !stem.available} name={stem.name} label={`Deck ${index + 1} ${stem.name} level`} param={params.stemLevel ?? LEVEL} value={stem.level} onChange={value => commands.setStemLevel(d.id, stem.id, value)} ink={theme.stems[stem.id] ?? theme.primary} /></div>)}</div>{d.stems.length > 4 && <div className="play-stem-spacer" aria-hidden="true">{<svg className="play-stem-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">{column===0 ? <path d="M3 10v4 M7.5 6v12 M12 3v18 M16.5 7v10 M21 10v4"/> : <><path d="M9 17V6l10-2v11 M9 9l10-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="16" cy="16" rx="3" ry="2"/></>}</svg>}</div>}</div>)}
           </div>
           <div className="play-level-stack">
           <div className="play-channel-fader"><Slider name="" label={`Deck ${index + 1} level`} param={LEVEL} value={d.gain} onChange={value => commands.setDeck(d.id, 'gain', value)} length="auto" />

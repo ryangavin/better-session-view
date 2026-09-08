@@ -235,8 +235,7 @@ Drums anchors the top left and Piano the bottom right; the opposite ends use
 flex spacers equal to one fifth of the height remaining after a knob row, so all
 six knob centers advance in equal vertical steps as the channel height changes.
 
-A faint right-angle connector follows the staggered stems in order. It resizes
-with the controls, stays behind their faces and labels, and does not intercept input.
+A small, muted waveform icon occupies the empty corner beneath the left stem
+column, with a matching music-note icon above the right column. Both are
+decorative and do not intercept input.
 
-The connector exits Piano to the left and becomes a small decorative waveform
-in the empty corner, continuing the same stroke.
