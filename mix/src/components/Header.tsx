@@ -5,6 +5,10 @@ import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
 import { Segmented } from '@openflow/widgets/controls/Segmented.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { LOOP_LENGTHS } from '../play/timing.ts';
+
+/** The rig's shared timing, named as a musician would say it. */
+const LAUNCH = [[0,'Now'],[1,'Next beat'],[4,'Next bar']] as const;
+const MARKER = [[0,'Q off'],[.125,'Q 1/8'],[.25,'Q 1/4'],[.5,'Q 1/2'],[1,'Q 1 beat'],[4,'Q 1 bar']] as const;
 import { OFFERED, offeredOf } from '../pinned.ts';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import type { Param } from '@openflow/widgets/param/param.ts';
@@ -270,14 +274,28 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
                 where the result is heard. They stood alone beside the logo,
                 which put the one control that overrules the transport as far
                 from it as the bar allows. */}
-            {playView && mixer && <Select
+            {playView && mixer && <><Select
+              items={LAUNCH.map(([,name])=>name)}
+              index={Math.max(0,LAUNCH.findIndex(([beats])=>beats===mixer.snapshot().launchBeats))}
+              onChange={i=>mixer.commands.setLaunchBeats?.(LAUNCH[i][0] as number)}
+              label="Launch timing"
+              title="When a launched section starts, on every deck. A synced deck always waits for the bar"
+              width={78}
+            /><Select
+              items={MARKER.map(([,name])=>name)}
+              index={Math.max(0,MARKER.findIndex(([beats])=>beats===mixer.snapshot().quantize))}
+              onChange={i=>mixer.commands.setQuantize?.(MARKER[i][0] as number)}
+              label="Marker quantize"
+              title="What Cue and loop markers snap to, on every deck. A synced deck holds them to the beat regardless"
+              width={72}
+            /><Select
               items={LOOP_LENGTHS.map(beats=>beats%4===0?`${beats/4} bar${beats===4?'':'s'}`:`${beats} beat${beats===1?'':'s'}`)}
               index={Math.max(0,LOOP_LENGTHS.indexOf(mixer.snapshot().loopBeats as never))}
               onChange={i=>mixer.commands.setLoopBeats?.(LOOP_LENGTHS[i])}
               label="Quick loop length"
               title="How long a quick loop is, on every deck"
               width={72}
-            />}
+            /></>}
             <Toggle on={mix.linkAudio.enabled}
               onChange={mix.setLinkAudio}
               label="Link Audio"

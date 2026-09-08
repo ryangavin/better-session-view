@@ -24,7 +24,7 @@ it('the fixture adapter owns quantized launch, pause, and immediate-mode policy'
   act(() => result.current.commands.launch('deck-a', null, 'vocals'));
   act(() => result.current.commands.setRunning(false));
   expect(result.current.state.decks[0].stems[3].queued).toBeNull();
-  act(() => result.current.commands.setQuantized(false));
+  act(() => result.current.commands.setLaunchBeats!(0));
   expect(result.current.state.decks[0].stems[3].selected).toBeNull();
 });
 it('the fixture owns source initialization, looping, and Stop reset', () => {

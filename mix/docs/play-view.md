@@ -72,7 +72,7 @@ of level knobs. Compact layouts fit the checked 1280×720, 1024×768 and 1366×7
 Loaded waveforms overlay the source chip, focused Play and Cue. The chip opens source,
 relative group movement and zoom settings. The compact loop row keeps In, Out,
 Exit/Reloop and quick loop visible on one shared column width; its settings button keeps
-its own square and opens Q, launch timing, target,
+its own square and opens loop target,
 Slip and boundary edits. The quick loop's length is one setting for the whole rig, set
 in the header in bars, so the decks cannot disagree about what a loop is; it defaults to
 two bars. Moving the loop is a pair of buttons beside the quick loop rather than a menu
@@ -159,7 +159,9 @@ marker Q. Sync fixes section launches to the next leader bar (four beats).
 Queued cells show the scheduled change; Stop is immediate.
 
 Q snaps Cue and manual loop markers to the nearest saved-grid division (ties forward):
-Off, 1/8, 1/4, 1/2, 1 or 4 beats. A synced deck answers to a whole beat when Q is off,
+Off, 1/8, 1/4, 1/2, 1 or 4 beats. Q, launch timing and the quick loop length are the
+rig's, set in the header and shared by every deck, because four decks disagreeing about
+when a launch lands is a fault rather than a feature. A synced deck answers to a whole beat when Q is off,
 since it is already held to the shared grid: Cue lands on a beat, and an In or Out nudge
 steps a beat rather than rounding away to no move at all. Collective snapshots use a
 common delta anchored to focus, preserving offsets. Missing grids disable grid-dependent

@@ -23,8 +23,6 @@ export interface MixerDeck {
   independentStems?: boolean;
   moveTogether?: boolean;
   gridAvailable?: boolean;
-  quantize?: number;
-  launchBeats?: number;
   loopFocus?: boolean;
   zoom?: number;
   playing?: boolean;
@@ -64,7 +62,10 @@ export interface MixerState {
   beat: number;
   loop: { start: number | null; end: number | null; enabled: boolean };
   canLoopOut: boolean;
-  bpm: number; quantized: boolean; cross: number;
+  bpm: number; cross: number;
+  /** Shared timing: every deck answers to one launch wait, marker division and loop length. */
+  launchBeats: number;
+  quantize: number;
   /** The quick loop's length in beats, shared by every deck. */
   loopBeats: number;
   master: number; masterTrim: number; masterFilter: number;
@@ -80,7 +81,8 @@ export interface MixerState {
 }
 export type MasterControl = 'bpm' | 'cross' | 'master' | 'masterTrim' | 'masterFilter' | 'masterSendA' | 'masterSendB';
 export interface MixerCommands {
-  setDeckTiming?(deckId:string, control:'quantize'|'launchBeats', beats:number):void;
+  setLaunchBeats?(beats:number):void;
+  setQuantize?(beats:number):void;
   /** The quick loop length every deck answers to. */
   setLoopBeats?(beats:number):void;
   setSlip?(deckId:string, enabled:boolean):void;
@@ -106,7 +108,6 @@ export interface MixerCommands {
   cueDeck?(deckId: string, held: boolean): void;
   setRunning(value: boolean): void;
   stopAll(): void;
-  setQuantized(value: boolean): void;
   loopIn(): void;
   loopOut(): void;
   setLoopEnabled(value: boolean): void;

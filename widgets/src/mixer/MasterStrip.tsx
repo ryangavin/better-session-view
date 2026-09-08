@@ -13,14 +13,13 @@ import type { MixerViewProps } from './model.ts';
 import { FrameMeter } from './frames.tsx';
 
 export function MasterStrip({ state, commands, readFrame, theme, params, externalTransport }: MixerViewProps) {
-  const { running, beat, bpm, cross, masterTrim, masterFilter, masterSendA, masterSendB, masterEq, quantized } = state;
+  const { running, beat, bpm, cross, masterTrim, masterFilter, masterSendA, masterSendB, masterEq } = state;
   const { level: LEVEL, trim: TRIM, send: SEND, eq: EQ, filter: FILTER, tempo: TEMPO, cross: CROSS } = params;
   return <div className="play-master-strip" aria-label="Master mixer">
       <div className="play-actions">
         {!externalTransport && <><div className="play-run-stop"><Toggle disabled={state.playbackAvailable === false} title={state.playbackAvailable === false ? 'Four-deck playback is not connected yet' : undefined} on={running} onChange={commands.setRunning} width={62}>{running ? 'Ⅱ Pause' : '▶ Run'}</Toggle>
         <Button onPress={commands.stopAll} width={62}>■ Stop</Button></div>
-        <div className="play-timing" role="group" aria-label="Tempo and launch timing"><NumberField name="" label="BPM" showFill={false} width={62} title="Tempo in BPM" param={TEMPO} value={bpm} onChange={value => commands.setMaster('bpm', value)} hint="The tempo the whole rig runs at. Only decks with Sync on follow it; the rest play at the speed they were recorded." />
-        <Toggle disabled={state.playbackAvailable === false} label="Quantize launches to next bar" title="Launch timing: next bar or immediate" on={quantized} onChange={commands.setQuantized} width={62} hint="Whether a section you launch waits for the top of the next bar or starts the instant you press it.">{quantized ? '1 bar' : 'Now'}</Toggle></div></>}
+        <div className="play-timing" role="group" aria-label="Tempo"><NumberField name="" label="BPM" showFill={false} width={62} title="Tempo in BPM" param={TEMPO} value={bpm} onChange={value => commands.setMaster('bpm', value)} hint="The tempo the whole rig runs at. Only decks with Sync on follow it; the rest play at the speed they were recorded." /></div></>}
         <div className="play-fx-pickers">
           {(['A', 'B'] as const).map(slot => {
             const selected = slot === 'A' ? state.fxA : state.fxB;

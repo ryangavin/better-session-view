@@ -56,7 +56,8 @@ export function usePreviewMixer() {
   const [masterSendA, setMasterSendA] = useState(0);
   const [masterSendB, setMasterSendB] = useState(0);
   const [masterEq, setMasterEq] = useState([0, 0, 0]);
-  const [quantized, setQuantized] = useState(true);
+  const [launchBeats, setLaunchBeats] = useState(4);
+  const [quantize, setQuantize] = useState(0);
   const [loopBeats, setLoopBeats] = useState(8);
   useEffect(() => {
     if (!running) return;
@@ -88,7 +89,7 @@ export function usePreviewMixer() {
   const update = (deck: number, patch: Partial<DeckState>) => setDecks(all => all.map((d, i) => i === deck ? { ...d, ...patch } : d));
   const launch = (deck: number, section: number, stem?: number) => setDecks(all => all.map((d, i) => {
     if (i !== deck) return d;
-    const waiting = running && quantized;
+    const waiting = running && launchBeats > 0;
     if (section >= 0) d = { ...d, positionOffset: section * 16 - phase.current.beat,
       loop: stem === undefined ? {start:null,end:null,enabled:false} : {start:section*16,end:(section+1)*16,enabled:true} };
     if (d.full) return { ...d, fullSection: waiting ? d.fullSection : section, fullQueued: waiting ? section : null };
@@ -111,7 +112,7 @@ export function usePreviewMixer() {
       fullSection: sectionId(d.fullSection), fullQueued: queuedId(d.fullQueued),
     })),
     running, beat, loop, canLoopOut: loop.start !== null && beat > loop.start,
-    bpm, quantized, loopBeats, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq,
+    bpm, launchBeats, quantize, loopBeats, cross, master, masterTrim, masterFilter, masterSendA, masterSendB, masterEq,
     effects: EFFECTS.map(name => ({ id: name.toLowerCase(), name })),
     fxA: EFFECTS[fxA].toLowerCase(), fxB: EFFECTS[fxB].toLowerCase(),
   };
@@ -121,7 +122,8 @@ export function usePreviewMixer() {
     deckLoopOut: id => { const i=deckIds.indexOf(id); if(i>=0 && decks[i].loop.start!==null && deckBeat(decks[i])>decks[i].loop.start!) update(i,{loop:{...decks[i].loop,end:deckBeat(decks[i]),enabled:true}}); },
     setDeckLoopEnabled: (id,enabled) => { const i=deckIds.indexOf(id); if(i>=0) update(i,{positionOffset:(enabled?decks[i].loop.start ?? deckBeat(decks[i]):deckBeat(decks[i]))-phase.current.beat,loop:{...decks[i].loop,enabled}}); },
     setLoopBeats,
-    setQuantized: value => { setQuantized(value); if (!value) setDecks(all => all.map(d => ({ ...d, fullSection: d.fullQueued ?? d.fullSection, fullQueued: null, active: d.active.map((a, i) => d.queued[i] ?? a), queued: [null, null, null, null] }))); },
+    setQuantize,
+    setLaunchBeats: (beats: number) => { setLaunchBeats(beats); if (!beats) setDecks(all => all.map(d => ({ ...d, fullSection: d.fullQueued ?? d.fullSection, fullQueued: null, active: d.active.map((a, i) => d.queued[i] ?? a), queued: [null, null, null, null] }))); },
     loopIn: () => setLoop({ start: beat, end: null, enabled: false }),
     loopOut: () => { if (loop.start !== null && beat > loop.start) setLoop(l => ({ ...l, end: beat, enabled: true })); },
     setLoopEnabled: enabled => { setLoop(l => ({ ...l, enabled })); if (enabled && loop.start !== null) { phase.current.beat = loop.start; setClock(c => ({ ...c, beat: loop.start! })); } },

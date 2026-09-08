@@ -265,7 +265,7 @@ export class MixerEngine {
     this.selection(id);
   }
   /** The beat division markers answer to: Q when set, and a whole beat while synced. */
-  private division(id:string) { const m=this.model(id); return m.quantize || (m.synced && this.decks.get(id)?.audio.map ? 1 : 0); }
+  private division(id:string) { return this.state.quantize || (this.model(id).synced && this.decks.get(id)?.audio.map ? 1 : 0); }
   /** A nudge never lands off the division, and never rounds away to no move at all. */
   private nudge(id:string, beat:number, amount:number) {
     const q=this.division(id); if(!q) return beat+amount;
@@ -361,7 +361,7 @@ export class MixerEngine {
     if (model.synced) await Promise.all(chosen.map(([,s]) => s.voice.prepare()));
     if (d.operation !== op || this.disposed || this.decks.get(id) !== d) return;
     let when = this.ctx!.currentTime + this.lead();
-    if (this.state.running) when += launchWait(this.syncBeat(when), model.synced?4:model.launchBeats ?? 0) * 60 / this.state.bpm;
+    if (this.state.running) when += launchWait(this.syncBeat(when), model.synced?4:this.state.launchBeats) * 60 / this.state.bpm;
     this.startClock(when);
     const bounds = this.span(d, model, section);
     this.patchDeck(id,stemId ? {independentStems:true} : {independentStems:false,moveTogether:true});
@@ -713,13 +713,6 @@ export class MixerEngine {
   }
   commands: MixerCommands = {
     setLoopBeats:this.setLoopBeats,
-    setDeckTiming:(id,control,value)=>{
-      const d=this.decks.get(id);if(!d || !Number.isFinite(value))return;
-      const allowed=control==='launchBeats'?[0,1,4]:[0,.125,.25,.5,1,4];
-      if(!allowed.includes(value as never))return;
-      if(value && !d.audio.map){this.error('Musical timing needs a saved beat grid.',id);return;}
-      this.patchDeck(id,{[control]:value,message:undefined});
-    },
     setSlip:(id,slip)=>{const d=this.decks.get(id);if(!d)return;if(!slip)d.backgrounds.clear();this.patchDeck(id,{slip});},
     setLoopFocus:(id,loopFocus)=>{if(this.model(id).loop?.start!=null && this.model(id).loop?.end==null)return;this.patchDeck(id,{loopFocus});this.loopState(id);},
     quickLoop:id=>this.quickLoop(id), resizeLoop:(id,factor)=>this.editLoops(id,'resize',factor), moveLoop:(id,beats)=>this.editLoops(id,'move',beats), adjustLoop:(id,boundary,beats)=>this.editLoops(id,boundary,beats),
@@ -731,7 +724,9 @@ export class MixerEngine {
     setStemPlaying:(id,stem,on)=>this.run(this.play(id,on,undefined,false,stem),id),
     cueStem:(id,stem,held)=>this.cue(id,held,stem),
     setDeckPlaying:(id,on)=>this.run(this.play(id,on),id), cueDeck:(id,held)=>this.cue(id,held), setDeckSync:(id,on)=>this.run(this.sync(id,on),id),
-    setRunning:on=>this.run(this.running(on)),stopAll:()=>this.stop(),setQuantized:on=>this.publish({...this.state,quantized:on}),
+    setRunning:on=>this.run(this.running(on)),stopAll:()=>this.stop(),
+    setLaunchBeats:beats=>{if([0,1,4].includes(beats))this.publish({...this.state,launchBeats:beats});},
+    setQuantize:beats=>{if([0,.125,.25,.5,1,4].includes(beats))this.publish({...this.state,quantize:beats});},
     deckLoopIn:id=>this.deckLoopIn(id),deckLoopOut:id=>this.deckLoopOut(id),setDeckLoopEnabled:(id,on)=>this.setDeckLoopEnabled(id,on),
     loopIn:()=>this.loopIn(),loopOut:()=>this.loopOut(),setLoopEnabled:on=>this.toggleLoop(on),
     setPhones:(control,value)=>{if(!Number.isFinite(value))return;this.publish({...this.state,[control]:Math.max(0,Math.min(100,value))});this.apply();},

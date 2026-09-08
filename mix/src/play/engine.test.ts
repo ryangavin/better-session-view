@@ -216,7 +216,7 @@ describe('the four-deck playback owner',()=>{
   it('keeps queued launches and the playhead on the audible section until the bar',async()=>{
     vi.useFakeTimers();
     try {
-      const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);engine.commands.setDeckTiming!('deck-a','launchBeats',4);await engine.play('deck-a',true);
+      const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);engine.commands.setLaunchBeats!(4);await engine.play('deck-a',true);
       ctx.currentTime=1;const before=engine.readFrame().decks['deck-a'].beat;
       await engine.launch('deck-a','section-1-4','drums');
       expect(engine.snapshot().decks[0].stems[0].queued).toBe('section-1-4');
@@ -292,7 +292,7 @@ describe('the four-deck playback owner',()=>{
     expect(engine.readFrame().decks['deck-a'].sources!.bass.seconds).toBeCloseTo(before);expect(engine.readFrame().decks['deck-a'].sources!.drums.enabled).toBe(false);
   });
   it('snaps manual In/Out, sets Cue at In and keeps Q separate from launch timing',async()=>{
-    const {engine,ctx,load}=setup();await load();engine.commands.setDeckTiming!('deck-a','quantize',1);await engine.play('deck-a',true);
+    const {engine,ctx,load}=setup();await load();engine.commands.setQuantize!(1);await engine.play('deck-a',true);
     ctx.currentTime=4.14;engine.deckLoopIn('deck-a');ctx.currentTime=6.42;engine.deckLoopOut('deck-a');
     expect(engine.snapshot().decks[0].loop).toEqual({start:4,end:6.5,enabled:true});
     engine.cue('deck-a',true);engine.cue('deck-a',false);expect(engine.readFrame().decks['deck-a'].seconds).toBe(4);
@@ -300,7 +300,7 @@ describe('the four-deck playback owner',()=>{
   });
   it('snaps a Cue set on a synced deck to the nearest beat while Q is off',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);
-    expect(engine.snapshot().decks[0].quantize).toBe(0);
+    expect(engine.snapshot().quantize).toBe(0);
     await engine.play('deck-a',true);ctx.currentTime=1.18;await engine.play('deck-a',false);
     engine.cue('deck-a',true);engine.cue('deck-a',false);
     expect(engine.readFrame().decks['deck-a'].seconds).toBe(1);
@@ -316,7 +316,7 @@ describe('the four-deck playback owner',()=>{
   });
   it('starts a quick loop around the playhead without moving it',async()=>{
     const {engine,ctx,load}=setup();await load();
-    engine.commands.setDeckTiming!('deck-a','quantize',1);
+    engine.commands.setQuantize!(1);
     await engine.play('deck-a',true);ctx.currentTime=2.3;
     const before=engine.readFrame().decks['deck-a'].seconds!;
     engine.quickLoop('deck-a');
@@ -387,7 +387,7 @@ describe('the four-deck playback owner',()=>{
   });
   it('shortens a running loop from either end when In or Out is pressed again',async()=>{
     const {engine,ctx,load}=setup();await load();
-    engine.commands.setDeckTiming!('deck-a','quantize',1);engine.commands.setLoopBeats!(16);
+    engine.commands.setQuantize!(1);engine.commands.setLoopBeats!(16);
     await engine.play('deck-a',true);ctx.currentTime=2;engine.quickLoop('deck-a');
     const first=engine.snapshot().decks[0].loop!;
     expect(+(first.end!-first.start!).toFixed(2)).toBe(8);
@@ -437,7 +437,7 @@ describe('the four-deck playback owner',()=>{
   });
   it('creates 16 beats, halves/doubles, moves, exits and reloops without changing the Cue',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2.03;
-    engine.commands.setDeckTiming!('deck-a','quantize',1);engine.commands.setLoopBeats!(16);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop).toEqual({start:2,end:10,enabled:true});
+    engine.commands.setQuantize!(1);engine.commands.setLoopBeats!(16);engine.quickLoop('deck-a');expect(engine.snapshot().decks[0].loop).toEqual({start:2,end:10,enabled:true});
     engine.editLoops('deck-a','resize',.5);expect(engine.snapshot().decks[0].loop?.end).toBe(6);engine.editLoops('deck-a','resize',2);expect(engine.snapshot().decks[0].loop?.end).toBe(10);
     engine.editLoops('deck-a','move',1);expect(engine.snapshot().decks[0].loop?.start).toBe(2.5);
     engine.setDeckLoopEnabled('deck-a',false);expect(engine.snapshot().decks[0].loop?.enabled).toBe(false);engine.setDeckLoopEnabled('deck-a',true);expect(ctx.sources.at(-1)!.loopStart).toBe(0);expect(ctx.sources.at(-1)!.loopEnd).toBe(8);
