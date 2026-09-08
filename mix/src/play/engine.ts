@@ -8,7 +8,7 @@ import { linkBeatAt, type LinkTimeline } from '../linkTiming.ts';
 import { DECK_IDS, emptyDeck, initialMixer, loadedDeck, loadDeckAsset, type DeckAudio } from './decks.ts';
 import { DeckVoice } from './voice.ts';
 import { MixerChannel, MixerEffect, levelGain, routeGain, smooth } from './graph.ts';
-import { snapBeat, launchWait, LOOP_LENGTHS } from './timing.ts';
+import { floorBeat, snapBeat, launchWait, LOOP_LENGTHS } from './timing.ts';
 import { EFFECTS } from './effects.ts';
 
 type Slot = { pending?: {selected:string;at:number}; revision: number; voice: DeckVoice; selected: string | null; span?: Span; enabled: boolean };
@@ -231,11 +231,11 @@ export class MixerEngine {
     const moved=snapBeat(beat+amount,q);
     return moved===snapBeat(beat,q) ? snapBeat(beat,q)+Math.sign(amount)*q : moved;
   }
-  private snapCheckpoint(id:string, point:Checkpoint) {
+  private snapCheckpoint(id:string, point:Checkpoint, edge:'nearest'|'before'='nearest') {
     const d=this.decks.get(id)!;const q=this.division(id);if(!q)return;
     const focused=point.get(this.focused(id)?.[0] ?? '');const anchor=focused?.enabled?focused:[...point.values()].find(p=>p.enabled) ?? focused ?? [...point.values()][0];
     if(!anchor)return;
-    const beat=this.beatOf(id,anchor.at);let delta=snapBeat(beat,q)-beat;
+    const beat=this.beatOf(id,anchor.at);let delta=(edge==='before'?floorBeat(beat,q):snapBeat(beat,q))-beat;
     let low=-Infinity,high=Infinity;for(const p of point.values())if(p.enabled){low=Math.max(low,this.beatOf(id,0)-this.beatOf(id,p.at));high=Math.min(high,this.beatOf(id,d.audio.duration)-this.beatOf(id,p.at));}
     delta=Math.max(low,Math.min(high,delta));point.forEach(p=>{if(p.enabled)p.at=this.secondsOf(id,this.beatOf(id,p.at)+delta);});
   }
@@ -508,9 +508,11 @@ export class MixerEngine {
         if(next.from<0 || next.to>d.slots.get(name)!.voice.buffer.duration){this.error('The synced loop does not fit inside the source.',id);return;}adjusted.set(name,next);}
       spans=adjusted;
     }
-    if(when>this.ctx!.currentTime+this.lead()+.01)this.loopScheduled.set(id,when);
+    const queued=when>this.ctx!.currentTime+this.lead()+.01;if(queued)this.loopScheduled.set(id,when);
+    // A loop that waits for the bar enters at its start; one that takes effect now plays on.
+    const enter=restart||queued;
     for(const [name,span] of spans){const s=d.slots.get(name)!;s.revision++;s.pending=undefined;this.loopStarts.delete(`${id}/${name}`);this.loopSpans.set(`${id}/${name}`,span);const at=s.voice.at(when);s.span=span;
-      if(s.voice.playing)this.startSlot(id,name,s,restart?span.from:at>=span.to||at<span.from?span.from+(Math.max(0,at-span.from)%(span.to-span.from)):at,when);
+      if(s.voice.playing)this.startSlot(id,name,s,enter?span.from:at>=span.to||at<span.from?span.from+(Math.max(0,at-span.from)%(span.to-span.from)):at,when);
       else if(restart)s.voice.seek(span.from);
     }
     this.loopState(id);this.selection(id);this.patchDeck(id,{message:this.loopScheduled.has(id)?'Loop queued for next bar.':undefined});
@@ -533,10 +535,10 @@ export class MixerEngine {
     const d=this.decks.get(id);if(!d || d.move)return;
     if(this.loopTargets(id).some(([,s])=>s.span)){this.setDeckLoopEnabled(id,false);return;}
     if(!d.audio.map){this.error('Quick loops need a saved beat grid.',id);return;}
-    const point=this.capture(this.loopTargets(id));this.snapCheckpoint(id,point);
+    const point=this.capture(this.loopTargets(id));this.snapCheckpoint(id,point,'before');
     const spans=new Map([...point].map(([name,p])=>[name,{from:p.at,to:this.secondsOf(id,this.beatOf(id,p.at)+(this.model(id).loopBeats ?? 16))}]));
     if([...spans.values()].some(s=>s.to>d.audio.duration || s.to-s.from<.02)){this.error('That loop does not fit inside every addressed stem.',id);return;}
-    this.installLoops(id,spans,true);
+    this.installLoops(id,spans,false);
   }
   editLoops(id:string, operation:'resize'|'move'|'in'|'out', amount:number) {
     const d=this.decks.get(id);if(!d?.audio.map || !Number.isFinite(amount) || d.move)return;

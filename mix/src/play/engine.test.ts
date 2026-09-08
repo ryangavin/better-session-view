@@ -301,11 +301,22 @@ describe('the four-deck playback owner',()=>{
   it('steps a synced deck loop boundary a whole beat while Q is off',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);
     await engine.play('deck-a',true);ctx.currentTime=2.03;engine.quickLoop('deck-a');
-    const before=engine.snapshot().decks[0].loop!;expect(before.start).toBe(2);
+    const before=engine.snapshot().decks[0].loop!;expect(before.start!%.5).toBe(0);
     engine.editLoops('deck-a','in',.125);
-    expect(engine.snapshot().decks[0].loop!.start).toBe(2.5);
+    expect(engine.snapshot().decks[0].loop!.start).toBe(before.start!+.5);
     engine.editLoops('deck-a','out',-.125);
     expect(engine.snapshot().decks[0].loop!.end).toBe(before.end!-.5);
+  });
+  it('starts a quick loop around the playhead without moving it',async()=>{
+    const {engine,ctx,load}=setup();await load();
+    engine.commands.setDeckTiming!('deck-a','quantize',1);
+    await engine.play('deck-a',true);ctx.currentTime=2.3;
+    const before=engine.readFrame().decks['deck-a'].seconds!;
+    engine.quickLoop('deck-a');
+    const loop=engine.snapshot().decks[0].loop!;
+    expect(engine.readFrame().decks['deck-a'].seconds).toBe(before);
+    expect(loop.start!).toBeLessThanOrEqual(before);
+    expect(loop.end!).toBeGreaterThan(before);
   });
   it('creates 16 beats, halves/doubles, moves, exits and reloops without changing the Cue',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);ctx.currentTime=2.03;
