@@ -46,6 +46,9 @@ export function FramePlayhead({ readFrame, deckId }: { readFrame(): MixerFrame; 
 
 /** A host-provided source window scrolls under a fixed playhead; no playback policy lives here. */
 export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck; index: number; ink: string; readFrame(): MixerFrame }) {
+  const playhead=useRef<HTMLSpanElement>(null);
+  const background=useRef<HTMLSpanElement>(null);
+  const markers=useRef<HTMLDivElement>(null);
   const strip = useRef<HTMLDivElement>(null), reading = useRef<HTMLSpanElement>(null);
   const latest = useRef({ deck, readFrame }); latest.current = { deck, readFrame };
   useEffect(() => {
@@ -53,10 +56,17 @@ export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck
     const draw = () => {
       const { deck, readFrame } = latest.current, range = deck.waveform!;
       const at = readFrame().decks[deck.id];
-      if (strip.current) strip.current.style.transform = `translateX(${(0.25 - ((at?.beat ?? 0) - range.start) / range.visible) * range.visible / range.length * 100}%)`;
+      const xOf=(b:number)=>range.fixed?(b-range.start)/range.visible*100:25+(b-(at?.beat ?? 0))/range.visible*100;
+      if(playhead.current)playhead.current.style.left=`${xOf(at?.beat ?? 0)}%`;
+      if (strip.current) strip.current.style.transform = range.fixed?'none':`translateX(${(0.25 - ((at?.beat ?? 0) - range.start) / range.visible) * range.visible / range.length * 100}%)`;
       if (reading.current && at) {
         const seconds = Math.max(0, Math.floor(at.seconds ?? 0));
         reading.current.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2,'0')} · ${Math.max(1, Math.floor(at.beat / 4) + 1)}.${Math.floor((at.beat % 4 + 4) % 4) + 1}`;
+      }
+      if(background.current){const b=at?.sources?.[deck.full?'full':deck.focus ?? '']?.backgroundBeat;background.current.hidden=b===undefined;if(b!==undefined){background.current.style.left=`${Math.max(0,Math.min(98,xOf(b)))}%`;background.current.textContent=`SLIP ${b.toFixed(1)}`;}}
+      if(markers.current) for(const node of markers.current.children) {
+        const mark=node as HTMLElement, source=at?.sources?.[mark.dataset.source!];
+        if(source){const x=xOf(source.beat);mark.style.left=`${Math.max(0,Math.min(98,x))}%`;mark.textContent=mark.dataset.name ?? mark.dataset.source!;mark.hidden=!source.enabled || x<0 || x>95 || Math.abs(source.beat-(at?.beat ?? 0))<.025;}else mark.hidden=true;
       }
       frame = requestAnimationFrame(draw);
     };
@@ -67,9 +77,13 @@ export function FrameWaveform({ deck, index, ink, readFrame }: { deck: MixerDeck
     <div className="play-wave-scroll" ref={strip} style={{ width: `${range.length / range.visible * 100}%` }}>
       <Waveform peaks={deck.peaks} spectrum={deck.waveformSpectrum} ink={ink} height={48} label={`Deck ${index + 1} waveform on the shared beat grid`} />
       <span className="play-wave-grid" style={{ backgroundSize: `${4 / range.length * 100}% 100%` }} />
+      {range.deckCue !== undefined && range.deckCue!==range.cue && <span className="play-cue-marker" style={{left:`${(range.deckCue-range.start)/range.length*100}%`,top:32}}>DECK CUE</span>}
+      {range.cue !== undefined && <span className="play-cue-marker" style={{left:`${(range.cue-range.start)/range.length*100}%`}}>CUE</span>}
       {loop && <div className="play-loop-region" data-enabled={loop.enabled} style={{ left: `${(loop.start - range.start) / range.length * 100}%`, width: `${Math.max(0, (loop.end ?? loop.start) - loop.start) / range.length * 100}%`, '--loop-ink': ink } as CSSProperties}><span>{loop.end === null ? 'IN' : `↻ ${Number((loop.end-loop.start).toFixed(1))} beats`}</span></div>}
     </div>
-    <span className="play-playhead" style={{left:'25%'}} />
+    <span ref={playhead} className="play-playhead" style={{left:'25%'}} />
+    <span ref={background} className="play-slip-marker" hidden/>
+    <div ref={markers} className="play-source-markers">{deck.stems.filter(s=>s.available && s.id!==deck.focus).map((s,i)=><span key={s.id} data-source={s.id} data-name={s.name} style={{top:'auto',bottom:i*11}}/>)}</div>
     {deck.track && <span ref={reading} className="play-wave-position" />}
   </>;
 }

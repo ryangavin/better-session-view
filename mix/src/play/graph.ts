@@ -10,11 +10,17 @@ export class MixerChannel {
   input: GainNode; output: GainNode; pre: GainNode;
   private eq: Split; private high: BiquadFilterNode; private low: BiquadFilterNode;
   private meter: AnalyserNode; private samples: Float32Array<ArrayBuffer>;
-  constructor(private ctx: AudioContext) {
+  private splitter?: ChannelSplitterNode;
+  private stereoMeters: AnalyserNode[] = [];
+  constructor(private ctx: AudioContext, stereo = false) {
     this.input = ctx.createGain(); this.eq = new Split(ctx); this.high = ctx.createBiquadFilter(); this.high.type = 'highpass'; this.high.frequency.value = 10; this.high.Q.value = 0;
     this.low = ctx.createBiquadFilter(); this.low.type = 'lowpass'; this.low.frequency.value = ctx.sampleRate / 2; this.low.Q.value = 0;
     this.pre = ctx.createGain(); this.output = ctx.createGain(); this.meter = ctx.createAnalyser(); this.meter.fftSize = 1024; this.samples = new Float32Array(1024);
     this.input.connect(this.eq.input); this.eq.output.connect(this.high); this.high.connect(this.low); this.low.connect(this.pre); this.pre.connect(this.output); this.output.connect(this.meter);
+    if(stereo){
+      this.splitter=ctx.createChannelSplitter(2);this.output.connect(this.splitter);
+      this.stereoMeters=[0,1].map(channel=>{const meter=ctx.createAnalyser();meter.fftSize=1024;this.splitter!.connect(meter,channel);return meter;});
+    }
   }
   apply(trim: number, bands: readonly number[], filter: number, gain: number) {
     const now = this.ctx.currentTime;
@@ -25,13 +31,18 @@ export class MixerChannel {
     smooth(this.output.gain, gain, now);
   }
   level(): number { this.meter.getFloatTimeDomainData(this.samples); let peak = 0; for (const n of this.samples) peak = Math.max(peak, Math.abs(n)); return Math.min(1, peak); }
-  dispose() { this.input.disconnect(); this.eq.disconnect(); this.high.disconnect(); this.low.disconnect(); this.pre.disconnect(); this.output.disconnect(); this.meter.disconnect(); }
+  stereoLevels(): readonly [number,number] {
+    const levels=this.stereoMeters.map(meter=>{meter.getFloatTimeDomainData(this.samples);let peak=0;for(const sample of this.samples)peak=Math.max(peak,Math.abs(sample));return Math.min(1,peak);});
+    return [levels[0] ?? 0,levels[1] ?? 0];
+  }
+  dispose() { this.splitter?.disconnect();this.stereoMeters.forEach(m=>m.disconnect());this.input.disconnect(); this.eq.disconnect(); this.high.disconnect(); this.low.disconnect(); this.pre.disconnect(); this.output.disconnect(); this.meter.disconnect(); }
 }
 
 /** Wet-only return. Channel sends choose how much reaches it. */
 export class MixerEffect {
   input: GainNode; output: GainNode;
   private nodes: AudioNode[] = []; private delays: DelayNode[] = []; private feedbacks: GainNode[] = [];
+  private meter: AnalyserNode; private samples: Float32Array<ArrayBuffer>;
   private tone: BiquadFilterNode; private oscillator?: OscillatorNode; private depth?: GainNode;
   constructor(private ctx: AudioContext, readonly kind: string) {
     this.input = ctx.createGain(); this.output = ctx.createGain(); this.tone = ctx.createBiquadFilter(); this.tone.type = 'lowpass'; this.nodes.push(this.input, this.output, this.tone);
@@ -51,7 +62,7 @@ export class MixerEffect {
         this.oscillator.connect(this.depth); this.depth.connect(delay.delayTime); this.oscillator.start(); this.nodes.push(this.oscillator, this.depth);
       }
     }
-    this.tone.connect(this.output);
+    this.tone.connect(this.output);this.meter=ctx.createAnalyser();this.meter.fftSize=256;this.samples=new Float32Array(256);this.output.connect(this.meter);this.nodes.push(this.meter);
   }
   apply(values: Record<string, number>, bpm: number) {
     const now = this.ctx.currentTime;
@@ -64,5 +75,6 @@ export class MixerEffect {
       if (this.oscillator && this.depth) { smooth(this.oscillator.frequency, values.rate ?? 1, now); smooth(this.depth.gain, this.kind === 'chorus' ? 0.008 * (values.depth ?? 40) / 100 : 0.002, now); }
     }
   }
+  level():number {this.meter.getFloatTimeDomainData(this.samples);let peak=0;for(const value of this.samples)peak=Math.max(peak,Math.abs(value));return peak;}
   dispose() { this.oscillator?.stop(); this.nodes.forEach(node => node.disconnect()); }
 }

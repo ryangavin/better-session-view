@@ -242,7 +242,7 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
             >
               {loopMark}
             </Toggle>}
-            <NumberField
+            {playView && !mix.linkAudio.enabled && !mixer?.snapshot().decks.some(d=>d.syncLeader) ? <span className="mf-clock" aria-label="Leader tempo" title="The first playing deck sets tempo; synced decks follow it">{mixer?.snapshot().decks.some(d=>d.syncLeader)?bpmText(mix.targetBpm):'—'}</span> : <NumberField
               param={mix.linkAudio.enabled ? LINK_TEMPO : TEMPO}
               value={mix.targetBpm}
               display={bpmText(mix.targetBpm)}
@@ -253,11 +253,11 @@ export function Header({ mix, ready, playView = false, onToggleView, mixer, onSe
               label="Tempo"
               disabled={mix.editingGrid}
               title={
-                playView ? 'Shared tempo: decks with Sync enabled follow it' : mix.beats
+                playView ? 'Adjust the leader tempo; synced decks follow. Native leaders enable Sync to preserve pitch.' : mix.beats
                   ? 'The tempo the stems play at with warp on. The grid is where the beats are'
                   : 'Playback tempo with Warp on. To change the source timing, use Edit beat grid'
               }
-            />
+            />}
             {/* Bars are the grid's claim; the clock is what is true whatever
                 tempo anybody decides on. Both, because a slice is placed in one
                 and heard in the other. */}

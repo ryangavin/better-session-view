@@ -423,3 +423,8 @@
   height: 1px;
   background: var(--wdg-marker);
 }
+
+/* Explicit surface sizing for toolbars; all ink and states remain the normal widgets'. */
+.wdg-body[data-size='small'] {height:20px;min-width:24px;gap:4px;}
+.wdg-body[data-size='medium'] {height:24px;min-width:32px;gap:4px;}
+.wdg-body[data-size] svg {flex:none;}

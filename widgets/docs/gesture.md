@@ -153,3 +153,5 @@ the one failure mode where a mixer lies about what the set is doing.
 the control back to whatever Live last echoed and then forward again when the write lands,
 a visible bounce on every release. The tolerance match clears it, and the deadline covers
 the rest.
+
+Content-sized sliders use element travel, measured at pointer-down, so dragging follows their rendered track length.

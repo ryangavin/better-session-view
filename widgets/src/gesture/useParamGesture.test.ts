@@ -177,3 +177,15 @@ describe('the double-click that resets', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 });
+
+it('gears an automatic vertical fader to its height at each grab', () => {
+  const onChange = vi.fn();
+  const el = surface({ onChange, axis: 'vertical', travel: 'element' });
+  drawnAt(el, 1);
+  Object.defineProperty(el, 'offsetHeight', { value: 240, configurable: true });
+  down(el, 0, 200); move(el, 0, 140); up(el, 0, 140);
+  expect(onChange).toHaveBeenLastCalledWith(0.75);
+  Object.defineProperty(el, 'offsetHeight', { value: 120, configurable: true });
+  down(el, 0, 100); move(el, 0, 40); up(el, 0, 40);
+  expect(onChange).toHaveBeenLastCalledWith(1);
+});

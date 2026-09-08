@@ -5,7 +5,7 @@ import { decode, fileUrl, stemUrl, type Peak } from '../audio.ts';
 import { openflow, type Track, type Analysis } from '../openflow.ts';
 import { evenBeats, tempoOf, type Beats } from '../warp.ts';
 
-import { measureOverview } from './overview.ts';
+import { measureOverview, type Overview } from './overview.ts';
 
 export const TRACK_DRAG = 'application/x-openflow-library-track';
 export const DECK_IDS = ['deck-a', 'deck-b', 'deck-c', 'deck-d'];
@@ -18,6 +18,7 @@ export function emptyDeck(id: string, i: number): MixerDeck {
 export function initialMixer(): MixerState {
   return { decks: DECK_IDS.map(emptyDeck), running: false, beat: 0, loop: { start: null, end: null, enabled: false }, canLoopOut: false,
     bpm: 124, quantized: false, cross: 0, master: 100, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0,0,0],
+    effectsEnabled:true,effectEnabled:{A:true,B:true},effectTailing:false,phonesLevel:100,phonesMix:0,
     effects: EFFECTS, fxA: 'delay', fxB: 'reverb', playbackAvailable: false };
 }
 export const params: MixerParams = {
@@ -30,7 +31,7 @@ export const params: MixerParams = {
   tempo: {kind:'float', min:20, max:300, defaultValue:124, unit:'float'},
   cross: {kind:'float', min:-100, max:100, defaultValue:0, unit:'int'},
 };
-export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[]; overviewStart?: number; overviewSpectrum?: SpectralEnergy[] }
+export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[]; overviewStart?: number; overviewSpectrum?: SpectralEnergy[]; sourceOverviews?: Record<string, Overview> }
 export interface DeckAsset { analysis: Analysis | null; peaks: Peak[]; audio?: DeckAudio }
 /** Decode the original and available stems into the engine's shared context. */
 export async function loadDeckAsset(track: Track, signal: AbortSignal, context?: BaseAudioContext): Promise<DeckAsset> {
@@ -50,14 +51,17 @@ export async function loadDeckAsset(track: Track, signal: AbortSignal, context?:
   const map = analysis?.grid ? analysis.grid.beats ?? evenBeats(original.sampleRate, original.length, analysis.grid.bpm, analysis.grid.offset) : null;
   const displayMap = map ?? evenBeats(original.sampleRate, original.length, track.bpm ?? 120, 0);
   const overview = await measureOverview(original, displayMap, signal);
+  const sourceOverviews: Record<string, Overview> = {full: overview};
+  for (const [id, buffer] of Object.entries(buffers)) if (id !== 'full') sourceOverviews[id] = await measureOverview(buffer, displayMap, signal);
   return {analysis, peaks: overview.peaks.slice(0, 1024), audio: { buffers, map, duration: original.duration,
-    overview: overview.peaks, overviewStart: overview.start, overviewSpectrum: overview.spectrum }};
+    sourceOverviews, overview: overview.peaks, overviewStart: overview.start, overviewSpectrum: overview.spectrum }};
 }
 export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): MixerDeck {
   const grid = asset.analysis?.grid;
   const sources = track.stems ? [...STANDARD, ...track.sources.filter(id => !STANDARD.includes(id))] : STANDARD;
   const cuts = asset.analysis?.slices;
   return { ...deck, status: 'ready', track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: grid?.beats ? tempoOf(grid.beats) : grid?.bpm ?? track.bpm, key: track.key ?? '—' },
+    focus: track.sources.includes('drums') ? 'drums' : track.sources[0] ?? 'full', waveformSource: 'full', moveTogether: true, independentStems: false, zoom: 32, gridAvailable: !!grid, quantize: 0, launchBeats: 0, loopBeats: 16,
     peaks: asset.peaks, full: !track.stems, fullSection: null, fullQueued: undefined,
     message: !grid ? 'No saved beat grid — Sync unavailable' : !cuts?.length ? 'No saved sections — full track available' : undefined,
     sections: cuts?.length ? cuts.map((cut, i) => ({id: `section-${i}-${cut.bar}`, name: cut.name})) : [{id:'full-track', name:'Track'}],

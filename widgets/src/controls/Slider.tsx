@@ -49,8 +49,8 @@ export interface SliderProps extends WidgetProps {
   /** Where the fill grows from. Defaults to the middle when zero is the middle. */
   origin?: FillOrigin;
   showValue?: boolean;
-  /** Length along the axis, in px. The other dimension is fixed. */
-  length?: number;
+  /** Length along the axis in px, or auto to fill the available space. */
+  length?: number | 'auto';
   travel?: number;
 }
 
@@ -93,7 +93,7 @@ export function Slider({
     // control to 27px of drag, which is 4% of the range per pixel and a thumb
     // running five times ahead of the pointer. Fall through to the hook's own
     // travel instead, which is the 200px an unsized control assumes.
-    travel: travel ?? (layout === 'inside' ? undefined : length),
+    travel: travel ?? (length === 'auto' ? 'element' : layout === 'inside' ? undefined : length),
     label: label ?? name,
     display,
   });
@@ -132,7 +132,7 @@ export function Slider({
       hint={hint}
       ink={ink}
       vars={{
-        '--wdg-slider-length': `${length}px`,
+        '--wdg-slider-length': length === 'auto' ? 'auto' : `${length}px`,
         ...fillFrom(param, origin, gesture.fraction),
         // The span as a start and a width, both fractions, so the drawing is
         // two custom properties and no arithmetic in CSS. Clamped to the rail

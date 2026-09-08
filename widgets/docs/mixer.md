@@ -45,8 +45,7 @@ that has no audio controller yet. Missing/undefined retains the previous bench b
 Each launcher ends with In, Out and Exit loop/Reloop, aligned along its bottom edge.
 Optional status messages sit above this row. Optional `deckLoopIn`,
 `deckLoopOut` and `setDeckLoopEnabled` callbacks emit the deck ID. Deck `loop` and
-`canLoopOut` fields govern the caption, active state and availability. In requires a
-playing deck; Out requires host approval; Exit/Reloop requires retained bounds. These
+`canLoopOut` fields govern the caption, active state and availability. In accepts a ready paused or playing deck; Out requires host approval; Exit/Reloop requires retained bounds. These
 controls replace the master loop group. Section names emit hot-cue intent, while stem
 cells emit loop intent; the host owns timing and audio behavior.
 
@@ -132,3 +131,135 @@ source/stop delegation, unavailable state and frame sampling with no playback co
 `preview.test.ts` checks the fixture adapter's queued launches, pause/immediate behavior,
 source initialization, loop wrapping and Stop reset. Browser checks verify layout and
 real widget interactions; `npm test -- --project=widgets` runs both with the widget suite.
+
+## Focused positioning and DJ controls
+
+Optional focused-source commands expose Play/Cue, focus, zoom and relative move phases
+(begin/move/commit/cancel). WaveControls captures a pointer without jumping, emits beat
+deltas from its initial position/width and rolls back on Escape, cancellation, lost capture
+or window blur. The host preserves each addressed source’s playing/paused state during moves. Move active stems
+is explicit; the face never synchronizes source positions itself. Arrow keys emit 1/8-beat
+moves, Shift+Arrow one beat. Slider accessibility readings use seconds.
+
+Momentary owns only input lifetime: pointer capture and keyboard hold, release exactly
+once, cancellation and teardown. Space holds Cue; Enter during a hold requests Play
+takeover. Its focus key ensures changing source releases the old source's hold.
+
+Deck timing controls separately emit marker Q, launch timing and quick-loop length.
+Loop scope, quick loop, resize, shift, boundary edits and loop-only Slip are host commands;
+active/saved bounds and pending Out determine availability. Optional source frame readings
+supply independent markers and Slip background positions. Cue and deckCue waveform fields
+are distinct checkpoints, even when their coordinates coincide.
+
+Optional effect group/slot enables preserve host configuration. Tailing state and explicit
+Clear tails are host-owned. Optional setPhones handles independent level and Cue/Master
+blend; these are not added to MasterControl, keeping existing adapters compatible.
+
+
+The mixer retains its aligned six-row structure. Loaded waveform lanes overlay a source
+chip plus focused Play/Cue; source, relative group movement and zoom live in its panel.
+The loop row keeps In/Out, Exit/Reloop and quick loop visible, with timing and detailed
+edits in ContextControls. It delegates positioning, flipping and dismissal to shared Popup.
+Escape restores trigger focus. Button, Toggle and Momentary share ButtonFace; comparable
+performance actions are 24px high, while deck Play/Cue/Sync use 40px square faces.
+Six-source level controls use two columns. Loop settings has an explicit 32px width
+inside its grid cell, independent of the symbol font size. The master footer spans
+the routing/transport subgrid; its crossfader separator aligns with deck transport.
+
+The master footer puts group FX beside Phones. Normal FX click toggles the group;
+right-click, Shift-click or Shift+F10 opens tail controls on that same trigger. Phones
+opens its level/blend panel. There is no adjacent FX settings button.
+
+Optional `beatJump(deckId, -1 | 1)` draws stacked ↑/↓ buttons after Sync on every deck,
+disabled without a saved grid. It delegates the one-beat change to the host; widgets
+never choose participants, move audio, alter Cue or implement boundary/Slip policy.
+
+
+Fit stays visible beside a loaded waveform's source chip and emits `setZoom(id, 0)`.
+The host supplies the entire source extent and `waveform.fixed`; FrameWaveform leaves
+that strip fixed and moves its playhead/markers across the complete range. Drag distance
+uses the supplied visible range in both modes, including playing sources. The optional
+`syncLeader` flag labels the deck header; widgets neither elect leaders nor own tempo.
+Synced launch timing displays Next bar and is read-only; sub-beat quick-loop options
+are disabled while Sync is on.
+
+The waveform source selector always includes Full track (original). `waveformSource`
+selects that visual independently of playback mode and retains the focused stem for
+positioning and Play/Cue; the panel names that stem. Choosing a stem restores its
+waveform and focus. Other-source markers hide when offscreen or coincident with focus,
+and divergent sources use separate named lanes rather than overlapping beat numbers.
+
+Newly loaded decks default to Move active stems together. An individual stem-cell launch unlocks the option to uncheck it
+for focused-stem movement; a whole-track Hot Cue restores grouped movement and locks
+the choice again; grouped movement preserves relative offsets and does not
+restart stopped stems.
+
+The launcher names the whole-track column Hot cue and separates it from stem cells
+with a vertical rule. Hot cues play through; stem cells loop independently.
+
+Newly loaded decks display Full track (original) by default. The waveform source
+selector uses its normal appearance, without an active-mode highlight. Stem waveforms
+remain available from the source menu. This default does not change waveform zoom.
+
+A dedicated gutter reserves the shared separator clearance around the Hot Cue divider, providing space on both sides
+without narrowing the Hot Cue label itself.
+
+The master strip shows labeled L/R meters in place of its former level fader. Hosts
+supply `masterStereo` peaks in the frame; missing stereo readings display zero.
+Master trim remains available.
+
+Trim and the three EQ knobs share the same stack spacing, without a separator line.
+
+Stem knob wrappers use flex layout to avoid inline baseline offsets. Drums and Trim
+labels align at their top edge; six-stem grids also start at that edge.
+
+The channel is a shared three-column grid (stems, fader/meter, Trim/EQ), aligned
+at the top instead of centering each column separately. The master uses two columns.
+
+Play/Cue/Sync stretch to their shared row height with a square aspect ratio; the
+paired beat-jump controls divide that same height. Individual buttons do not set
+their own dimensions.
+
+The deck routing buttons sit between dedicated separator elements, outside the
+row’s equal top and bottom padding. The separators are not borders on the controls.
+
+Routing and transport share footer columns: headphones align with Play, A/Thru/B
+spans Cue and Sync, and Full aligns with the beat arrows. A and B remain square;
+Thru flexes into the remaining width.
+
+Faders and meters fill the channel height, sharing a flexible track row above
+their readings. Fader drag distance follows the current track size.
+
+Six-stem controls use two staggered columns across the full channel height.
+Drums anchors the top left and Piano the bottom right; the opposite ends use
+flex spacers equal to one fifth of the height remaining after a knob row, so all
+six knob centers advance in equal vertical steps as the channel height changes.
+
+A small, muted waveform icon occupies the empty corner beneath the left stem
+column. A faint right-angle zigzag connects Drums through Piano behind the
+controls and readings. Both decorations ignore input.
+
+
+FX A and B divide their section into equal-height halves. Their headers retain
+equal side spacing. Bypass and dropdown join inside one shared outline, with a
+single internal divider and no extra rule across the effects panel.
+
+A dedicated separator divides the equal FX halves, with parameter knobs centered
+in the space below each header. The master monitoring row uses the same separate
+dividers and balanced padding as deck routing. Its crossfader fills the bottom
+row to match the transport buttons’ height.
+
+Mixer separators are dedicated elements in both orientations. Each owns a one-pixel
+stroke and six pixels of non-shrinking margin on either side, governed by one shared
+spacing token. Section wrappers keep that clearance outside the controls; the Hot
+Cue grid reserves the corresponding gutter. Compact mode changes that shared margin to five pixels; it never collapses.
+Play targets 1280 × 720 as its minimum supported viewport. At that size the complete
+mixer fits; smaller viewports retain control sizes and allow scrolling.
+
+Compact Play layouts stagger both the stem and Trim/EQ controls into two columns,
+keeping normal-size knobs and their readouts. The shared knob stack distributes
+controls evenly between opposite spacers. Six-stem decks retain their connector
+and waveform icon. Effects controls also retain their normal size and readouts.
+
+The FX/filter row takes its height from its knobs; it has no fixed-height track
+or additional vertical padding beyond the shared separators.
