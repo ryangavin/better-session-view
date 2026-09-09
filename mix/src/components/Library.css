@@ -32,6 +32,30 @@
   --wdg-field-height: 24px;
 }
 
+.mf-library-search {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.mf-library-search:has(.mf-library-clear) input {
+  padding-right: 24px;
+}
+
+.mf-library-clear {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--detail);
+  cursor: pointer;
+}
+
 .mf-library-top input {
   flex: 1;
   min-width: 0;
@@ -118,8 +142,16 @@ font-variation-settings: var(--mono-axes);
   font: inherit;
 }
 
-.mf-heading:hover {
+.mf-heading:hover:not(:disabled) {
   background: var(--surface-cell-muted);
+}
+
+.mf-heading:disabled {
+  cursor: default;
+}
+
+.mf-library-group {
+  position: relative;
 }
 
 .mf-heading[data-kind='artist'] {

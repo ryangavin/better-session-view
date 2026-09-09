@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listing, NAMELESS, type Head, type Row } from './listing.ts';
+import { listing, matchingRows, searchTracks, NAMELESS, type Head, type Row } from './listing.ts';
 import { credits } from './credits.ts';
 import type { Track } from './openflow.ts';
 
@@ -156,5 +156,40 @@ describe('the library rail, ordered flat', () => {
   it('draws no headings at all, so a row keeps its own artist and cover', () => {
     expect(drawn(listing(tracks, 'title'))).toEqual(['Alone', 'Vessel']);
     expect(listing(tracks, 'title').every((row) => row.kind === 'track' && row.depth === 0)).toBe(true);
+  });
+});
+
+describe('searching without losing browsing identity', () => {
+  const tracks = [
+    track({ title: 'Rumble', artist: 'Skrillex, Fred again.. & Flowdan', album: 'Quest For Fire' }),
+    track({ title: 'Hazel Theme', artist: 'Skrillex', album: 'Quest For Fire' }),
+    track({ title: 'RATATA', artist: 'Skrillex, Missy Elliott & Mr. Oizo' }),
+    track({ title: 'Other', artist: 'Other Artist', album: 'Other Record' }),
+    track({ title: 'Second', artist: 'Other Artist', album: 'Other Record' }),
+  ];
+
+  it('matches words across fields in any order, including full collaborator credits', () => {
+    expect(searchTracks(tracks, '  FLOWDAN   rumble quest ').map(t => t.title)).toEqual(['Rumble']);
+    expect(searchTracks(tracks, 'skrillex rumble').map(t => t.title)).toEqual(['Rumble']);
+    expect(searchTracks(tracks, 'rumble missy')).toEqual([]);
+    expect(searchTracks(tracks, '  ')).toBe(tracks);
+  });
+
+  it('retains the album for a single result and counts only matching tracks', () => {
+    const matches = searchTracks(tracks, 'flowdan');
+    const rows = matchingRows(listing(tracks, 'artist'), new Set(matches.map(t => t.id)));
+    expect(drawn(rows)).toEqual(['[Skrillex 1]', '  [Quest For Fire 1]', '    Rumble']);
+  });
+
+  it('prunes unrelated albums and artists without assigning loose tracks an album', () => {
+    const matches = searchTracks(tracks, 'missy');
+    expect(drawn(matchingRows(listing(tracks, 'artist'), new Set(matches.map(t => t.id)))))
+      .toEqual(['[Skrillex 1]', '  RATATA']);
+    expect(matchingRows(listing(tracks, 'artist'), new Set())).toEqual([]);
+  });
+
+  it('preserves the chosen flat sort when filtering', () => {
+    const ids = new Set(searchTracks(tracks, 'skrillex').map(t => t.id));
+    expect(drawn(matchingRows(listing(tracks, 'title'), ids))).toEqual(['Hazel Theme', 'RATATA', 'Rumble']);
   });
 });

@@ -150,10 +150,11 @@ export function credits(artists: Iterable<string | null | undefined>): Reading {
   return (artist) => {
     const credit = artist?.trim() ?? '';
     if (!credit) return null;
-    const was = held.get(credit);
+    const full = artist!;
+    const was = held.get(full);
     if (was) return was;
-    const now = read(credit);
-    held.set(credit, now);
+    const now = { ...read(credit), full };
+    held.set(full, now);
     return now;
   };
 }

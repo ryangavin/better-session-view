@@ -6,7 +6,7 @@ import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
 import { LINK_AUDIO_OFF, type LinkAudioState } from './linkAudio.ts';
-import { listing, NAMELESS, type Order, type Row } from './listing.ts';
+import { listing, matchingRows, searchTracks, NAMELESS, type Order, type Row } from './listing.ts';
 import { credits } from './credits.ts';
 import { loosest, offeredOf, type Every, type Offered } from './pinned.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
@@ -521,16 +521,7 @@ export function useMix() {
   /** The head, in bars, for the clock and the playhead. */
   const bar = seconds > 0 ? barAt(grid, position / seconds) : 0;
 
-  const shown = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return tracks;
-    return tracks.filter(
-      (t) =>
-        t.title.toLowerCase().includes(needle) ||
-        (t.artist ?? '').toLowerCase().includes(needle) ||
-        (t.album ?? '').toLowerCase().includes(needle),
-    );
-  }, [tracks, query]);
+  const shown = useMemo(() => searchTracks(tracks, query), [tracks, query]);
 
   /**
    * The rail's rows: the tracks that survived the filter, with the headings
@@ -551,12 +542,15 @@ export function useMix() {
   const reading = useMemo(() => credits(tracks.map((track) => track.artist)), [tracks]);
 
   const rows = useMemo(
-    () => listing(shown, order, query.trim() ? new Set<string>() : collapsed, reading),
-    [shown, order, query, collapsed, reading],
+    () => query.trim()
+      ? matchingRows(listing(tracks, order, new Set<string>(), reading), new Set(shown.map((track) => track.id)))
+      : listing(tracks, order, collapsed, reading),
+    [tracks, shown, order, query, collapsed, reading],
   );
 
   /** Shut a heading, or — with a modifier — every heading the rail is showing. */
   const toggleHead = useCallback((key: string, all = false) => {
+    if (query.trim()) return;
     setCollapsed((was) => {
       const shut = was.has(key);
       if (!all) {
@@ -567,7 +561,7 @@ export function useMix() {
       }
       return shut ? new Set<string>() : new Set(rows.filter((row) => row.kind !== 'track').map((row) => row.key));
     });
-  }, [rows]);
+  }, [rows, query]);
 
   /** The library, read once on mount and again after anything that changes it. */
   const refresh = useCallback(async () => {
