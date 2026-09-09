@@ -26,6 +26,9 @@ describe('reading a credit against the library it is in', () => {
 
   it('never rewrites what the manifest stores', () => {
     for (const credit of SKRILLEX) expect(of(credit).full).toBe(credit);
+    expect(of('  Skrillex & Rick Ross  ')).toEqual({
+      full: '  Skrillex & Rick Ross  ', lead: 'Skrillex', others: '& Rick Ross',
+    });
   });
 
   it('keeps everyone else, in the words they were credited in', () => {

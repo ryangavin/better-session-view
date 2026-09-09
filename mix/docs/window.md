@@ -61,8 +61,9 @@ useful error.
 Three orders, kept in the session with the rail's width: **Artist**, **Added** and
 **Title**. Added is newest first — the manifest appends, so its own order buries whatever
 was imported a minute ago. Artist is the default and the only one with headings in it;
-`src/listing.ts` turns the filtered tracks into a flat list of rows, some of which are
-headings, and the rail maps them.
+`src/listing.ts` builds the headings from the whole library before applying search,
+so an album stays identifiable even when only one of its tracks matches. The rail
+wraps each artist and album in its own section to bound its sticky heading.
 
 **Depth follows the data, because `album` is sparse.** Import writes it null and only the
 catalogue lookup fills it in ([`library.md`](library.md)), so there is no unknown-album
@@ -72,16 +73,18 @@ flat list of artists; a ripped record reads as a record. Tracks whose filename g
 artist go to one **No artist** pile at the bottom rather than under U for unknown — it is
 the bounces and the rough mixes, and it should read like a list of things to fix.
 
-An artist's loose tracks come **before** its records, which looks backwards until you
-remember the headings stick. An artist heading pins to the top of the list and a record
-heading just under it; there is no heading after the last record to push it back off, so
-loose tracks trailing the records would scroll under a record they are not on.
+An artist's loose tracks come **before** its records. An artist heading pins to the
+top of the list and a record heading just under it. Each heading is constrained by
+its own section: an album cannot remain above another artist's tracks.
 
 Clicking a heading shuts it; the count stays on the heading with the rows gone.
-Option-click shuts every heading the rail is showing. While the filter box has anything in
-it the shut set is ignored rather than applied — a search that matched a track inside a
-shut record has found nothing anybody can see — and the headings come back as they were
-the moment the box is cleared.
+Option-click shuts every heading the rail is showing; Option-clicking a shut heading
+opens them all. Search matches every whitespace-separated word, in any order, across
+title, full artist credit and album, without regard to case. For example, `skrillex
+rumble` finds a title and artist together. Matching tracks stay expanded, with counts
+of the matches, and heading toggles are disabled until search is cleared. The stored
+collapse state is unchanged. Escape in the field or its clear button restores browsing
+and the previous collapsed headings.
 
 ### One heading for an artist credited several ways
 
@@ -93,8 +96,8 @@ rewritten**: the manifest keeps the credit character for character, and Track De
 edits the whole of it.
 
 Only the lead is read, never the whole list, so being right about one separator is enough.
-A record billed `Boys Noize & Skrillex` files under Boys Noize, because that is what the
-billing says.
+A record billed `Boys Noize & Skrillex` files under Boys Noize only when that lead is
+corroborated elsewhere in the library; otherwise it keeps its full heading.
 
 **A separator is believed only when the library already holds the name it leaves behind.**
 That guard is the difference between this and splitting on punctuation: `Above & Beyond`,
@@ -103,16 +106,18 @@ join inside them, and no list of exceptions would ever be complete. So the folde
 evidence — `Skrillex & Rick Ross` collapses because *Skrillex* is already a credit here on
 his own, and `Above & Beyond` does not because *Above* is not. A folder that gains a solo
 record later starts collapsing that artist's collaborations, which is the right way round.
-Two joins need no evidence and one is refused outright: `feat.`, `ft.`, `featuring` and
+Featuring joins need no evidence; ambiguous joins followed by `the` are left intact: `feat.`, `ft.`, `featuring` and
 `w/` are always joins because nobody is called `feat.`, and a join followed by `the` is a
-band's name — `Nick Cave and the Bad Seeds`, `Florence + The Machine` — however well the
-folder knows the half in front of it. A slash is not a separator at all, so `AC/DC` never
+possible band name — `Nick Cave and the Bad Seeds`, `Florence + The Machine` — however
+well the folder knows the half in front of it. This is a conservative browsing
+heuristic, not artist metadata: a real collaboration with a `The` artist can remain
+unsplit, and ambiguous punctuation cannot establish identity reliably. A slash is not a separator at all, so `AC/DC` never
 comes apart.
 
 **What the heading leaves out, the row keeps.** Under a heading a row is one line — title,
 what is left of the billing, the badge strip, the grid fact — so `Purple Lamborghini`
 reads `& Rick Ross` beside its title. The whole stored credit is the row's tooltip and
-therefore the hint strip's text on hover or focus, and the filter still matches the full
+available to the hint strip on hover or focus, and the filter still matches the full
 credit, so typing a collaborator's name finds their tracks under somebody else's heading.
 
 Ordered by Added or Title there are no headings, and a row goes back to the two-line shape

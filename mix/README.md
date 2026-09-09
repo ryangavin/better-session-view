@@ -50,6 +50,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | intended Play behavior, acceptance scenarios, or refining the quick start | [`docs/behavior-specification.md`](docs/behavior-specification.md) — normative policy, manual sources and repeatable verification |
 | DJ control conventions, Play-view gaps, or proposed implementation order | [`docs/dj-control-reference.md`](docs/dj-control-reference.md) — draft research/audit; verified references, proposals and validation scenarios |
 | the layout, the Analyze page, which lanes there are, or zooming the timeline | [`docs/window.md`](docs/window.md) — `src/`, and `src/zoom.ts` for the zoom |
+| the release review of library browsing and established DJ workflows | [`docs/library-browsing.md`](docs/library-browsing.md) — research, scope and validation |
 | how the library rail is ordered and grouped, or how an artist's collaborations are collected | [`docs/window.md`](docs/window.md) — `src/listing.ts`, `src/credits.ts`, `src/components/Library.tsx` |
 | checking or correcting the beat grid, finding the beats again, or suggesting sections | [`docs/track-review.md`](docs/track-review.md) — `src/components/BeatGridEditor.tsx`, `src/components/Ruler.tsx`, `src/beatEdit.ts`, `src/sections.ts`, `src/components/suggestions.ts` |
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |

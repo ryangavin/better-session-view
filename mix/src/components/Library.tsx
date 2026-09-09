@@ -1,9 +1,9 @@
-import { useRef, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useRef, type ReactNode, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { TRACK_DRAG } from '../play/decks.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
 import { STEMS } from '../mock.ts';
-import { ORDERS, type Head } from '../listing.ts';
+import { ORDERS, type Head, type Row } from '../listing.ts';
 import type { Credit } from '../credits.ts';
 import { gridFact, type GridNote, type Track } from '../openflow.ts';
 import { tempoText } from '../warp.ts';
@@ -68,14 +68,26 @@ export function Library({ mix }: { mix: Mix }) {
         tabIndex={0} onPointerDown={drag} onKeyDown={nudge} />
       <div className="mf-library-top">
         <div className="mf-library-tools">
-          <input
-            type="text"
-            value={mix.query}
-            onChange={(e) => mix.setQuery(e.target.value)}
-            placeholder="Filter library"
-            aria-label="Filter the library"
-            disabled={!library.root}
-          />
+          <div className="mf-library-search">
+            <input
+              type="text"
+              value={mix.query}
+              onChange={(e) => mix.setQuery(e.target.value)}
+              placeholder="Filter library"
+              aria-label="Filter the library"
+              disabled={!library.root}
+              title="Search title, artist, collaborators and album; all words must match. Escape clears"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && mix.query) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  mix.setQuery('');
+                }
+              }}
+            />
+            {mix.query && <button type="button" className="mf-library-clear" aria-label="Clear library search"
+              title="Clear library search" onClick={() => mix.setQuery('')}>×</button>}
+          </div>
           <Select
             items={ORDERS.map((o) => o.label)}
             index={Math.max(0, ORDERS.findIndex((o) => o.id === mix.order))}
@@ -83,7 +95,7 @@ export function Library({ mix }: { mix: Mix }) {
             disabled={!library.root}
             label="Order the library"
             title="How the library is arranged. Artist groups it into headings; Added puts the newest first"
-            width={44}
+            width={64}
           />
           <Button
             onPress={() => void mix.importTracks()}
@@ -130,19 +142,7 @@ export function Library({ mix }: { mix: Mix }) {
           </div>
         )}
 
-        {mix.rows.map((row) =>
-          row.kind === 'track' ? (
-            <Song key={row.key} mix={mix} song={row.track} depth={row.depth} credit={row.credit} />
-          ) : (
-            <Heading
-              key={row.key}
-              head={row}
-              at={mix.coverOf(row.art)}
-              shut={mix.collapsed.has(row.key)}
-              onToggle={(all) => mix.toggleHead(row.key, all)}
-            />
-          ),
-        )}
+        <LibraryRows rows={mix.rows} mix={mix} />
 
         {library.tracks.length > 0 && mix.songs.length === 0 && (
           <p className="mf-library-empty">Nothing matches that.</p>
@@ -181,6 +181,31 @@ export function Library({ mix }: { mix: Mix }) {
       </div>
     </aside>
   );
+}
+
+/** Each sticky heading is bounded by the tracks it describes. */
+function LibraryRows({ rows, mix }: { rows: readonly Row[]; mix: Mix }) {
+  const children: ReactNode[] = [];
+  for (let i = 0; i < rows.length;) {
+    const row = rows[i];
+    if (row.kind === 'track') {
+      children.push(<Song key={row.key} mix={mix} song={row.track} depth={row.depth} credit={row.credit} />);
+      i++;
+      continue;
+    }
+    let end = i + 1;
+    while (end < rows.length && (rows[end].kind === 'track' || (row.kind === 'artist' && rows[end].kind === 'album'))) end++;
+    const searching = Boolean(mix.query.trim());
+    children.push(
+      <section key={row.key} className="mf-library-group" data-kind={row.kind}>
+        <Heading head={row} at={mix.coverOf(row.art)} searching={searching}
+          shut={!searching && mix.collapsed.has(row.key)} onToggle={(all) => mix.toggleHead(row.key, all)} />
+        <LibraryRows rows={rows.slice(i + 1, end)} mix={mix} />
+      </section>,
+    );
+    i = end;
+  }
+  return children;
 }
 
 /**
@@ -222,7 +247,7 @@ function Song({ mix, song, depth, credit }: { mix: Mix; song: Track; depth: numb
       <button {...held}>
         <span className="mf-song-said">
           <span className="mf-song-title">{song.title}</span>
-          {credit?.others && <span className="mf-song-with">{credit.others}</span>}
+          {credit?.others && <span className="mf-song-with"> {credit.others}</span>}
         </span>
         <StemStrip sources={song.sources} />
         <GridMeta song={song} notes={mix.notes} />
@@ -249,16 +274,14 @@ function Song({ mix, song, depth, credit }: { mix: Mix; song: Track; depth: numb
  * An artist, or one of their records.
  *
  * It sticks: an artist to the top of the list, a record just under wherever the
- * artist came to rest. That is the whole reason `listing.ts` puts an artist's
- * loose tracks *before* its records — a heading that stays on screen has to be
- * telling the truth about the row beneath it, and there is no heading after the
- * last record to push it back off.
+ * artist came to rest. `LibraryRows` bounds both by their own sections, so
+ * neither heading can survive above a different group's tracks.
  *
  * Option-click shuts every heading rather than this one. A second button for
  * that would cost a line of chrome the rail does not have, and collapse-all has
  * been on the modifier in every outline view for thirty years.
  */
-function Heading({ head, at, shut, onToggle }: { head: Head; at: string | null; shut: boolean; onToggle(all: boolean): void }) {
+function Heading({ head, at, shut, searching, onToggle }: { head: Head; at: string | null; shut: boolean; searching: boolean; onToggle(all: boolean): void }) {
   const what = head.kind === 'album' ? 'record' : 'artist';
   return (
     <button
@@ -267,8 +290,9 @@ function Heading({ head, at, shut, onToggle }: { head: Head; at: string | null; 
       data-kind={head.kind}
       data-shut={shut || undefined}
       aria-expanded={!shut}
+      disabled={searching}
       onClick={(event: ReactMouseEvent) => onToggle(event.altKey)}
-      title={`${shut ? 'Show' : 'Hide'} this ${what} — hold Option for all of them`}
+      title={searching ? 'Matching tracks stay expanded while searching' : `${shut ? 'Show' : 'Hide'} this ${what} — hold Option for all of them`}
     >
       <span className="mf-heading-caret" aria-hidden="true" />
       {head.kind === 'album' && <Art at={at} title={head.name} />}

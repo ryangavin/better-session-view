@@ -22,12 +22,9 @@ import type { Track } from './openflow.ts';
  * the difference between this and the naive version, which turns five tracks
  * into five headings and five rows.
  *
- * **An artist's loose tracks come before its records**, which looks backwards
- * until you remember the headings stick. A stuck heading has to be telling the
- * truth about the row under it, and there is no heading after the last album
- * to push it back out — so loose tracks trailing the albums would scroll under
- * a record they are not on. Ahead of them, they sit under the artist, which is
- * exactly where they belong.
+ * **An artist's loose tracks come before its records.** The renderer wraps
+ * each artist and album in a section, bounding sticky headings by the tracks
+ * they describe. The domain list remains flat for filtering and counting.
  *
  * **An artist heading is the lead of a credit, not the whole of it.** A folder
  * of dance records credits the same person four ways — `Skrillex`,
@@ -36,8 +33,8 @@ import type { Track } from './openflow.ts';
  * credit is filed and what is left over; the leftover rides on the row, so
  * nothing about who else played on it is lost by grouping it.
  *
- * Nothing here knows about React or the filter. It is given the tracks that
- * survived the filter and hands back rows.
+ * Nothing here knows about React. Build the complete listing before search,
+ * then use `matchingRows` to retain the headings of matching tracks.
  */
 
 /** How the rail is ordered. Only `artist` has headings; the other two are lists. */
@@ -170,3 +167,35 @@ export function listing(
 /** Every heading in a listing, for the collapse-all that alt-click asks for. */
 export const heads = (rows: readonly Row[]): string[] =>
   rows.filter((row): row is Head => row.kind !== 'track').map((row) => row.key);
+
+/** All words must occur, in any order, across title, full credit and album. */
+export function searchTracks(tracks: Track[], query: string): Track[] {
+  const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return tracks;
+  return tracks.filter((track) => {
+    const text = [track.title, track.artist, track.album].join(' ').toLocaleLowerCase();
+    return words.every((word) => text.includes(word));
+  });
+}
+
+/** Filter an expanded listing so album identity survives even a single match. */
+export function matchingRows(rows: readonly Row[], ids: ReadonlySet<string>): Row[] {
+  const kept: Row[] = [];
+  let artistCount = 0, albumCount = 0;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const row = rows[i];
+    if (row.kind === 'track') {
+      if (!ids.has(row.track.id)) continue;
+      kept.push(row);
+      artistCount++;
+      albumCount++;
+    } else if (row.kind === 'album') {
+      if (albumCount) kept.push({ ...row, count: albumCount });
+      albumCount = 0;
+    } else {
+      if (artistCount) kept.push({ ...row, count: artistCount });
+      artistCount = albumCount = 0;
+    }
+  }
+  return kept.reverse();
+}

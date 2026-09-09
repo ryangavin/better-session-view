@@ -207,8 +207,8 @@ take to change.
 
 ## What a row says about the grid
 
-The strip on a row's first line says what has been separated. The fact on its second
-line says what has been **gridded**, which is the other half of getting a track ready
+The strip on a row says what has been separated. Its grid fact says what has been
+**gridded**, which is the other half of getting a track ready
 and used to finish invisibly: a tempo where the beats have been found, and where they
 have not, which kind of not.
 
@@ -225,6 +225,10 @@ numbers and two flags per track, not the beat maps, because a rail of two hundre
 not two hundred beat maps in the renderer to show two hundred tempos. Where that answer
 cannot be had, a row falls back to the file's type rather than claiming `no grid`: an
 empty answer means nobody could say, not that nothing is there.
+
+Browsing uses Artist, Added and Title orders, full-credit search and collapsible
+artist/album headings. See [window.md](window.md#the-library-rail) for the behavior and
+[library-browsing.md](library-browsing.md) for the release review and source research.
 
 ## Not yet
 
