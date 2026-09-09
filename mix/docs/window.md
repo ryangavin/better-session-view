@@ -50,10 +50,74 @@ The rail's right edge is a drag handle: pointer or arrow keys, between 190px and
 kept in the session so a reload comes back the width it was left. Until it is dragged the
 stylesheet's own width stands, so the handle costs nothing to ignore.
 
-The rail starts with one compact row: filter plus **Import**. Import opens the ordinary
-multi-file picker; dropping a YouTube video link anywhere on the window imports its audio.
-There is no URL field or Fetch button. Imports disable while another import is in flight,
-and the rail footer changes from the folder name to the result or the useful error.
+The rail starts with one compact row: filter, an **order** select, and **Import**. Import
+opens the ordinary multi-file picker; dropping a YouTube video link anywhere on the window
+imports its audio. There is no URL field or Fetch button. Imports disable while another
+import is in flight, and the rail footer changes from the folder name to the result or the
+useful error.
+
+### Order, and the headings it draws
+
+Three orders, kept in the session with the rail's width: **Artist**, **Added** and
+**Title**. Added is newest first — the manifest appends, so its own order buries whatever
+was imported a minute ago. Artist is the default and the only one with headings in it;
+`src/listing.ts` turns the filtered tracks into a flat list of rows, some of which are
+headings, and the rail maps them.
+
+**Depth follows the data, because `album` is sparse.** Import writes it null and only the
+catalogue lookup fills it in ([`library.md`](library.md)), so there is no unknown-album
+heading at all: an album earns a line of its own once *two* of its tracks are in the
+folder, and everything else sits loose under its artist. A library of singles reads as a
+flat list of artists; a ripped record reads as a record. Tracks whose filename gave up no
+artist go to one **No artist** pile at the bottom rather than under U for unknown — it is
+the bounces and the rough mixes, and it should read like a list of things to fix.
+
+An artist's loose tracks come **before** its records, which looks backwards until you
+remember the headings stick. An artist heading pins to the top of the list and a record
+heading just under it; there is no heading after the last record to push it back off, so
+loose tracks trailing the records would scroll under a record they are not on.
+
+Clicking a heading shuts it; the count stays on the heading with the rows gone.
+Option-click shuts every heading the rail is showing. While the filter box has anything in
+it the shut set is ignored rather than applied — a search that matched a track inside a
+shut record has found nothing anybody can see — and the headings come back as they were
+the moment the box is cleared.
+
+### One heading for an artist credited several ways
+
+A catalogue writes a collaboration out in full: `Skrillex`, `Skrillex & Rick Ross` and
+`Skrillex, Fred again.. & Flowdan` are three `artistName` values for the same person, and
+filing on the whole string grows a heading for each. `src/credits.ts` reads a credit for
+the name it is **filed** under — its lead — and the rail groups on that. **Nothing is
+rewritten**: the manifest keeps the credit character for character, and Track Details still
+edits the whole of it.
+
+Only the lead is read, never the whole list, so being right about one separator is enough.
+A record billed `Boys Noize & Skrillex` files under Boys Noize, because that is what the
+billing says.
+
+**A separator is believed only when the library already holds the name it leaves behind.**
+That guard is the difference between this and splitting on punctuation: `Above & Beyond`,
+`Tyler, The Creator`, `Earth, Wind & Fire` and `Simon & Garfunkel` are single names with a
+join inside them, and no list of exceptions would ever be complete. So the folder is the
+evidence — `Skrillex & Rick Ross` collapses because *Skrillex* is already a credit here on
+his own, and `Above & Beyond` does not because *Above* is not. A folder that gains a solo
+record later starts collapsing that artist's collaborations, which is the right way round.
+Two joins need no evidence and one is refused outright: `feat.`, `ft.`, `featuring` and
+`w/` are always joins because nobody is called `feat.`, and a join followed by `the` is a
+band's name — `Nick Cave and the Bad Seeds`, `Florence + The Machine` — however well the
+folder knows the half in front of it. A slash is not a separator at all, so `AC/DC` never
+comes apart.
+
+**What the heading leaves out, the row keeps.** Under a heading a row is one line — title,
+what is left of the billing, the badge strip, the grid fact — so `Purple Lamborghini`
+reads `& Rick Ross` beside its title. The whole stored credit is the row's tooltip and
+therefore the hint strip's text on hover or focus, and the filter still matches the full
+credit, so typing a collaborator's name finds their tracks under somebody else's heading.
+
+Ordered by Added or Title there are no headings, and a row goes back to the two-line shape
+that carries its cover and its own artist line. Row shape follows the order and never the
+data, so the rail does not change shape as covers arrive.
 
 Files may also be dropped anywhere on the window. A dashed target covers the window while
 the drag is over it, which both makes the action visible and prevents a file dropped on a

@@ -50,6 +50,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | intended Play behavior, acceptance scenarios, or refining the quick start | [`docs/behavior-specification.md`](docs/behavior-specification.md) — normative policy, manual sources and repeatable verification |
 | DJ control conventions, Play-view gaps, or proposed implementation order | [`docs/dj-control-reference.md`](docs/dj-control-reference.md) — draft research/audit; verified references, proposals and validation scenarios |
 | the layout, the Analyze page, which lanes there are, or zooming the timeline | [`docs/window.md`](docs/window.md) — `src/`, and `src/zoom.ts` for the zoom |
+| how the library rail is ordered and grouped, or how an artist's collaborations are collected | [`docs/window.md`](docs/window.md) — `src/listing.ts`, `src/credits.ts`, `src/components/Library.tsx` |
 | checking or correcting the beat grid, finding the beats again, or suggesting sections | [`docs/track-review.md`](docs/track-review.md) — `src/components/BeatGridEditor.tsx`, `src/components/Ruler.tsx`, `src/beatEdit.ts`, `src/sections.ts`, `src/components/suggestions.ts` |
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
 | bass transcription, MIDI, tuning-aware tab, or its cache | [`docs/transcribe.md`](docs/transcribe.md) — `electron/transcribeJob.ts`, `transcribe.ts`, `python/transcribe.py`, `src/tab.ts` |
@@ -101,6 +102,8 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | `src/tablature.ts` | visible-slice projection for the shared notation widget. Tested |
 | `src/midi.ts` | deterministic MIDI rebuilt after octave correction. Tested |
 | `src/grid.ts` | how finely the grid rules at that zoom, and what each line is. Tested |
+| `src/listing.ts` | the library rail as rows: the orders, and which headings a folder earns. Tested |
+| `src/credits.ts` | which name a credit is filed under, and who it leaves out. Reads the folder, writes nothing. Tested |
 | `src/state.ts` | everything the window knows, in one hook |
 | `src/components/` | the header, the library, the three states, the lanes and the warp lane |
 
