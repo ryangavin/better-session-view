@@ -60,16 +60,38 @@ The Track / Stems / BPM header sits **inside** the scrolling list as a sticky ro
 than above it. Outside, it was laid out over the rail's full width while every row it
 labels was laid out inside a scroller a scrollbar narrower, so the labels stood a
 scrollbar's width right of the numbers under them. Sticky offsets follow from that: the
-header holds the top, an artist rests below it, a record below the artist. Alternating
-shading runs down the whole listing rather than off `nth-child`, which restarts inside
-each artist's section and would stripe the rail in blocks that break at every record.
+header holds the top, an artist rests below it, a record below the artist. The fact columns are
+ruled, so a number on the right belongs to a column rather than floating at the end of a
+widened rail. The rules are painted on the row as gradient stops off the same `--stems`
+and `--bpm` widths the grid is laid out from, which is what keeps them on the column
+edges as the rail is dragged; a stretched cell background would have cost the row its
+ellipsis. Every row background is set with `background-color` rather than the shorthand,
+or it would drop them. Nothing shades alternate rows: with the columns ruled, a second
+alternation was noise on top of a list that already had covers, indentation and a
+selection edge to read.
 
-The fact columns are ruled and banded, so a number on the right belongs to a column
-rather than floating at the end of a widened rail. The rule and the tint are painted on
-the row as gradient stops off the same `--stems` and `--bpm` widths the grid is laid out
-from, which is what keeps them on the column edges as the rail is dragged; a stretched
-cell background would have cost the row's ellipsis. Every row background is set with
-`background-color` rather than the shorthand, or it would drop the bands.
+## The cut the rail renders in
+
+The rail read as a foreign panel for a reason that was not layout. Every row and heading
+in it is a `<button>`, and both carried `font: inherit` — the `font` shorthand resets
+`font-variation-settings` to `normal`, so the whole rail rendered at Recursive's default
+axes while the rest of the window renders at `CASL 0.38`. The rail was in a colder cut of
+the same typeface than everything beside it, which is exactly the sort of difference that
+is obvious and hard to name.
+
+Measured against the running app, the suite's rule is **words proportional, figures
+monospaced**: `Hot cue`, `Empty deck`, `Next bar` and `Trim` are all `MONO 0`, while
+`0.0 dB`, `100 %` and the clock are `MONO 1`. The rail now states both explicitly rather
+than inheriting either by accident — names, headings and the Artist label take
+`--sans-axes`, and the stem count, tempo, heading counts and footer take `--mono-axes`.
+Anywhere a button interrupts inheritance, the axes are restated on it.
+
+Two things follow from that measurement. An artist heading no longer needs a bar to be
+found: it keeps a single `border-top` where it had one above and below, since the doubled
+rule was what made the rail read as a stack of strips rather than a list. And the `Album`
+chip is gone — the suite labels a *region* once, the way `.mf-cap` does, and a record is
+already told apart by its indent, its cover and its weight. Rows sit on `--ctl-h`, the
+suite's control height, rather than on a number of their own.
 
 ## Project constraints and diagnosis
 

@@ -3,8 +3,8 @@
   --cols-h: 22px;
   --stems: 48px;
   --bpm: 78px;
-  --band: color-mix(in srgb, var(--fg) 3%, transparent);
   container-type: inline-size;
+  font-variation-settings: var(--sans-axes);
   --rail-pad: 10px;
   --step: 14px;
   --caret: 7px;
@@ -62,6 +62,7 @@
   border: 0;
   background: transparent;
   color: var(--detail);
+  font-variation-settings: var(--sans-axes);
   cursor: pointer;
 }
 
@@ -115,14 +116,12 @@
   width: 100%;
   padding: 0 0 0 var(--rail-pad);
   border-left: 2px solid transparent;
-  background-image:
-    linear-gradient(to left, var(--band) 0 var(--bpm), transparent var(--bpm)),
-    linear-gradient(to left,
-      transparent 0 var(--bpm),
-      var(--bd3) var(--bpm) calc(var(--bpm) + 1px),
-      transparent calc(var(--bpm) + 1px) calc(var(--bpm) + var(--stems)),
-      var(--bd3) calc(var(--bpm) + var(--stems)) calc(var(--bpm) + var(--stems) + 1px),
-      transparent calc(var(--bpm) + var(--stems) + 1px));
+  background-image: linear-gradient(to left,
+    transparent 0 var(--bpm),
+    var(--bd3) var(--bpm) calc(var(--bpm) + 1px),
+    transparent calc(var(--bpm) + 1px) calc(var(--bpm) + var(--stems)),
+    var(--bd3) calc(var(--bpm) + var(--stems)) calc(var(--bpm) + var(--stems) + 1px),
+    transparent calc(var(--bpm) + var(--stems) + 1px));
 }
 
 .mf-library-columns > :not(:first-child),
@@ -157,10 +156,7 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
-}
-
-.mf-song[data-shaded] {
-  background-color: var(--surface-cell-muted);
+  font-variation-settings: var(--sans-axes);
 }
 
 .mf-song:hover {
@@ -168,7 +164,7 @@
 }
 
 .mf-song[data-depth] {
-  height: 24px;
+  height: var(--ctl-h);
 }
 
 .mf-song-identity {
@@ -202,6 +198,7 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
+  font-variation-settings: var(--sans-axes);
   font-size: var(--text-body);
 }
 
@@ -221,7 +218,6 @@
   top: var(--cols-h);
   z-index: 2;
   border-top: 1px solid var(--bd);
-  border-bottom: 1px solid var(--bd);
   background: var(--surface-cell);
   font-weight: var(--weight-strong);
   color: var(--fg);
@@ -272,11 +268,11 @@
 
 .mf-heading-kind {
   flex: none;
-  font-size: var(--text-annot);
+  font-size: var(--text-label);
   font-weight: var(--weight-normal);
   letter-spacing: var(--track-caps);
   text-transform: uppercase;
-  color: var(--detail);
+  color: var(--caption);
 }
 
 .mf-heading-count {
@@ -390,6 +386,7 @@
 .mf-song-meta,
 .mf-song-sources {
   text-align: right;
+  font-variation-settings: var(--mono-axes);
   font-variant-numeric: tabular-nums;
   font-size: var(--text-label);
   color: var(--detail);
@@ -492,7 +489,7 @@
   border: none;
   background: none;
   color: var(--caption);
-  font-variation-settings: var(--mono-axes);
+  font-variation-settings: var(--sans-axes);
   font-size: var(--text-label);
   white-space: nowrap;
   overflow: hidden;

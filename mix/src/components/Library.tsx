@@ -124,7 +124,7 @@ export function Library({ mix }: { mix: Mix }) {
           </div>
         )}
 
-        <LibraryRows rows={mix.rows} mix={mix} stripes={stripes(mix.rows)} />
+        <LibraryRows rows={mix.rows} mix={mix} />
 
         {library.tracks.length > 0 && mix.songs.length === 0 && (
           <p className="mf-library-empty">Nothing matches that.</p>
@@ -165,29 +165,13 @@ export function Library({ mix }: { mix: Mix }) {
   );
 }
 
-/**
- * Which track rows take the shaded band, counted down the whole listing.
- *
- * Every other row is what carries the eye from a title across to its tempo,
- * and the count has to run through the headings to do it: `nth-child` restarts
- * inside each artist's section, which stripes the list in blocks that break
- * wherever a record begins.
- */
-function stripes(rows: readonly Row[]): Set<string> {
-  const shaded = new Set<string>();
-  let n = 0;
-  for (const row of rows) if (row.kind === 'track' && n++ % 2 === 1) shaded.add(row.key);
-  return shaded;
-}
-
 /** Each sticky heading is bounded by the tracks it describes. */
-function LibraryRows({ rows, mix, stripes: shaded }: { rows: readonly Row[]; mix: Mix; stripes: ReadonlySet<string> }) {
+function LibraryRows({ rows, mix }: { rows: readonly Row[]; mix: Mix }) {
   const children: ReactNode[] = [];
   for (let i = 0; i < rows.length;) {
     const row = rows[i];
     if (row.kind === 'track') {
-      children.push(<Song key={row.key} mix={mix} song={row.track} depth={row.depth} credit={row.credit}
-        shaded={shaded.has(row.key)} />);
+      children.push(<Song key={row.key} mix={mix} song={row.track} depth={row.depth} credit={row.credit} />);
       i++;
       continue;
     }
@@ -198,7 +182,7 @@ function LibraryRows({ rows, mix, stripes: shaded }: { rows: readonly Row[]; mix
       <section key={row.key} className="mf-library-group" data-kind={row.kind}>
         <Heading head={row} at={mix.coverOf(row.art)} searching={searching}
           shut={!searching && mix.collapsed.has(row.key)} onToggle={(all) => mix.toggleHead(row.key, all)} />
-        <LibraryRows rows={rows.slice(i + 1, end)} mix={mix} stripes={shaded} />
+        <LibraryRows rows={rows.slice(i + 1, end)} mix={mix} />
       </section>,
     );
     i = end;
@@ -207,7 +191,7 @@ function LibraryRows({ rows, mix, stripes: shaded }: { rows: readonly Row[]; mix
 }
 
 /** Grouped rows omit repeated artist/artwork; flat rows keep their credit below the title. */
-function Song({ mix, song, depth, credit, shaded }: { mix: Mix; song: Track; depth: number; credit: Credit | null; shaded: boolean }) {
+function Song({ mix, song, depth, credit }: { mix: Mix; song: Track; depth: number; credit: Credit | null }) {
   const held = {
     type: 'button' as const,
     className: 'mf-song',
@@ -217,7 +201,6 @@ function Song({ mix, song, depth, credit, shaded }: { mix: Mix; song: Track; dep
       event.dataTransfer.effectAllowed = 'copy';
     },
     'data-selected': song.id === mix.selected || undefined,
-    'data-shaded': shaded || undefined,
     'data-depth': depth || undefined,
     onClick: () => mix.select(song.id),
     title: credit ? `${song.title} — ${credit.full}` : song.title,
@@ -275,7 +258,7 @@ function Heading({ head, at, shut, searching, onToggle }: { head: Head; at: stri
         ? <span className="mf-art" data-blank aria-hidden="true" />
         : <Art at={at} title={head.name} />)}
       <span className="mf-heading-name">{head.name}</span>
-      {!head.loose && <span className="mf-heading-kind">{head.kind === 'album' ? 'Album' : 'Artist'}</span>}
+      {head.kind === 'artist' && <span className="mf-heading-kind">Artist</span>}
       <span className="mf-heading-count" title={`${head.count} tracks`}>{head.count}</span>
     </button>
   );

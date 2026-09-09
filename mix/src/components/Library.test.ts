@@ -49,13 +49,6 @@ describe('the library rail', () => {
     expect(view.getByText('Vessel').closest('.mf-song')?.getAttribute('data-depth')).toBe('2');
   });
 
-  it('shades every other track down the whole list, counting through the headings', () => {
-    const view = rail();
-    expect([...view.container.querySelectorAll('.mf-song')]
-      .map((row) => [row.querySelector('.mf-song-title')?.textContent, row.hasAttribute('data-shaded')]))
-      .toEqual([['Low Tide', false], ['Vessel', true], ['Demo', false], ['mixdown_v3', true]]);
-  });
-
   it('keeps the column header inside the scroller, where the rows it labels are', () => {
     const view = rail();
     expect(view.container.querySelector('.mf-library-list > .mf-library-columns')).not.toBeNull();
