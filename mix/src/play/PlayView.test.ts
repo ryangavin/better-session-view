@@ -6,6 +6,7 @@ import { Library } from '../components/Library.tsx';
 import { PlayView } from './PlayView.tsx';
 import { useMixerViewModel } from './useMixerViewModel.ts';
 import { TRACK_DRAG } from './decks.ts';
+import { listing } from '../listing.ts';
 import type { Track } from '../openflow.ts';
 import type { Mix } from '../state.ts';
 vi.mock('@openflow/widgets/wave/Waveform.tsx', () => ({ Waveform: () => null }));
@@ -16,7 +17,7 @@ it('loads the dragged sidebar track into the target deck without selecting it in
   const track: Track={id:'track-1',title:'Real library title',artist:'Artist',album:null,art:null,file:'tracks/one.wav',bpm:null,key:null,seconds:100,added:'',model:null,stems:null,sources:[]};
   const tracks=[track];
   const select=vi.fn();
-  const mix={library:{root:'library',tracks},songs:tracks,query:'',loading:false,importing:false,selected:null,artOf:()=>null,notes:null,total:1,note:null,noteBad:false,select} as unknown as Mix;
+  const mix={library:{root:'library',tracks},songs:tracks,rows:listing(tracks,'artist'),order:'artist',collapsed:new Set<string>(),toggleHead:vi.fn(),artists:1,query:'',loading:false,importing:false,selected:null,artOf:()=>null,coverOf:()=>null,notes:null,total:1,note:null,noteBad:false,select} as unknown as Mix;
   const loader=vi.fn(async()=>({analysis:null,peaks:[]}));
   function Host() {const mixer=useMixerViewModel(tracks,'library',loader);return h(Fragment,null,h(Library,{mix}),h(PlayView,{mixer}));}
   const view=render(h(Host));

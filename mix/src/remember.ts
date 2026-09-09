@@ -25,6 +25,7 @@ import type { Snap } from './grid.ts';
  */
 
 import type { Level } from './engine.ts';
+import type { Order } from './listing.ts';
 import type { Beats } from './warp.ts';
 
 const KEY = 'mixflow.window.v1';
@@ -63,6 +64,9 @@ export interface Session {
   warp?: boolean;
   /** How wide the person dragged the library rail, in pixels. */
   libraryWidth?: number;
+  /** How the rail is ordered, and which of its headings are shut. */
+  order?: Order;
+  collapsed?: string[];
   tracks?: Record<string, Remembered>;
 }
 
