@@ -421,8 +421,9 @@ Mixer separators are dedicated elements in both orientations. Each owns a one-pi
 stroke and six pixels of non-shrinking margin on either side, governed by one shared
 spacing token. Section wrappers keep that clearance outside the controls; the Hot
 Cue grid reserves the corresponding gutter. Compact mode changes that shared margin to five pixels; it never collapses.
-Play targets 1280 × 720 as its minimum supported viewport. At that size the complete
-mixer fits; smaller viewports retain control sizes and allow scrolling.
+Each Play deck keeps at least 260px of width so its routing, knobs and transport
+controls stay inside its column. When the mixer cannot fit beside the library, scroll
+it horizontally to reach the remaining decks; the library stays visible.
 
 Compact Play layouts stagger both the stem and Trim/EQ controls into two columns,
 keeping normal-size knobs and their readouts. The shared knob stack distributes

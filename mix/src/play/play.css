@@ -29,7 +29,8 @@
 .mf-play .play-grid {flex:1;min-height:0;max-height:198px;}
 .mf-play .play-deck-loops {flex:none;}
 .mf-play .play-scroll {height:min(690px,calc(100% - 204px));}
-.mf-play .play-decks {height:100%;box-sizing:border-box;}
+/* Keep routing and the three square transport buttons inside each deck. */
+.mf-play .play-decks {height:100%;box-sizing:border-box;--play-deck-min:260px;min-width:1198px;}
 @container (max-height: 780px) {
   .mf-play .play-scroll {min-height:0;}
   .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) max-content minmax(211px,max-content) minmax(var(--play-routing-min),max-content) 58px;--play-transport-size:52px;}
@@ -40,14 +41,13 @@
 }
 
 @container (max-width: 1250px) {
-  .mf-play .play-decks {grid-template-columns:minmax(200px,1fr) minmax(200px,1fr) 156px minmax(200px,1fr) minmax(200px,1fr);}
   .mf-play .play-grid {grid-template-columns:minmax(44px,1fr) calc(1px + 2 * var(--play-separator-space)) repeat(var(--play-stems,4),minmax(0,1fr));}
   .mf-play .play-cell, .mf-play .play-cell .wdg, .mf-play .play-cell .wdg-body {width:100%;min-width:0;}
   .mf-play .play-grid > .wdg {width:100%;min-width:0;}
   .mf-play .play-decks {--play-column-gap:4px;}
 }
 @container (max-width: 960px) {
-  .mf-play .play-decks {min-width:964px;grid-template-columns:repeat(2,minmax(0,1fr)) 140px repeat(2,minmax(0,1fr));}
+  .mf-play .play-decks {min-width:1182px;grid-template-columns:repeat(2,minmax(var(--play-deck-min),1fr)) 140px repeat(2,minmax(var(--play-deck-min),1fr));}
   .mf-play .play-route {gap:4px;}
 }
 @container (max-height: 700px) {
@@ -67,7 +67,6 @@
 }
 
 @container (max-height:780px) {
-  .mf-play .play-decks { min-width:1160px; }
   .mf-play .play-knob-stack { display:flex; align-self:stretch; gap:4px; }
   .mf-play .play-knob-column { display:flex; flex-direction:column; }
   .mf-play .play-knob-column:last-child { flex-direction:column-reverse; }
