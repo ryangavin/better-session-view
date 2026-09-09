@@ -210,7 +210,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               it is the speed the song plays at — the one number on the bar
               that changes what you hear. Measuring it is a separate job, and
               it has a separate group. */}
-          <div className="mf-group" role="group" aria-label="Transport">
+          <div className="wdg wdg-control-group mf-group" role="group" aria-label="Transport">
             <Button
               onPress={() => mix.setPlaying(!mix.playing)}
               label={mix.playing ? 'Pause' : 'Play'}
@@ -276,7 +276,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
             <span className="mf-clock">{position(mix.bar, mix.bars)}</span>
             <span className="mf-clock mf-clock-time">{clockOf(mix.position)}</span>
           </div>
-          {playView && mixer && <div className="mf-group" role="group" aria-label="Timing">
+          {playView && mixer && <div className="wdg wdg-control-group mf-group" role="group" aria-label="Timing">
             <Select
               items={LAUNCH.map(([,name])=>name)}
               index={Math.max(0,LAUNCH.findIndex(([beats])=>beats===mixer.snapshot().launchBeats))}
@@ -300,7 +300,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               width={72}
             />
           </div>}
-          <div className="mf-group" role="group" aria-label="Audio">
+          <div className="wdg wdg-control-group mf-group" role="group" aria-label="Audio">
             <Toggle on={mix.linkAudio.enabled}
               onChange={mix.setLinkAudio}
               label="Link Audio"
@@ -333,7 +333,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
           {/* Where a cut lands. Its own group and nothing else in it: it is not
               playback and it is not the beat map, it is the one setting that
               says what the pointer is allowed to do to the timeline. */}
-          {live && !playView && <><div className="mf-group" role="group" aria-label="Snap">
+          {live && !playView && <><div className="wdg wdg-control-group mf-group" role="group" aria-label="Snap">
             <span className="mf-group-label" title="Snap: where cuts land">{snapMark}</span>
             <Segmented
               items={SNAPS.map((s) => s.mark)}
@@ -345,7 +345,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
             />
           </div>
 
-          <div className="mf-group" role="group" aria-label="Grid">
+          <div className="wdg wdg-control-group mf-group" role="group" aria-label="Grid">
             <Button label="Edit beat grid" width={26} className="mf-header-icon" onPress={mix.beginGridEdit} disabled={mix.editingGrid || !mix.playable} title="Check and correct the beat grid and the sections over the lanes: drag beats, set bar 1, find the beats again, keep or move the section cuts">{gridMark}</Button>
             {/* The tempo the song runs at — a range where it moved — next to
                 the button that opens the grid. How well the kit sits on it
@@ -403,7 +403,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
       >
         {exportMark}
       </Button>}
-        <div className="mf-group mf-settings-button" role="group" aria-label="Settings and debug">
+        <div className="wdg wdg-control-group mf-group mf-settings-button" role="group" aria-label="Settings and debug">
         {debugButton}
         {onSettings && <Button className="mf-header-icon" width={26} onPress={onSettings} label="Settings" title="Audio and theme settings">{settingsMark}</Button>}
         </div>

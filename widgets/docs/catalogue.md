@@ -48,6 +48,13 @@ Optional small/medium sizes set 20/24px height without introducing a second visu
 Use Button or Toggle for their normal framed APIs, and ButtonFace when a composition
 owns the input lifetime or needs a bare surface without caption/readout regions.
 
+Joined toolbar controls use `className="wdg wdg-control-group"` with an accessible
+`role="group"` and label. Shared CSS gives them the ordinary widget face, one outer
+border and radius, internal dividers and square joined edges. Active fills remain
+the individual controls’ responsibility; focus outlines sit inside the clipped group.
+Mix uses this same group for its header and beat-grid toolbar instead of app-owned
+button surfaces.
+
 **Reach for a filled `NumberField` before a horizontal `Slider`.** Live's own collapsed
 fader is a value box you drag with the reading inside it — that's the Arrangement track
 header's volume and pan — and it costs a third of the room while saying more, because

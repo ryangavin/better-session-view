@@ -70,7 +70,6 @@
 
 .play-deck-transport { display: flex; justify-content: center; align-items: stretch; gap: 12px; padding-top:0; }
 .play-deck-transport .wdg { --wdg-field-height: 44px; }
-.play-transport-button { --wdg-radius: 3px; }
 .play-transport-play .wdg-toggle-body { --wdg-fill: var(--green); font-size: 26px; }
 .play-transport-play .wdg-toggle-body:not([data-on]) { color: var(--green); }
 .play-transport-play .wdg-toggle-body:hover:not(:disabled):not([data-on]) { color: var(--green); }

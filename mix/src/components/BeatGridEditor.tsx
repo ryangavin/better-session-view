@@ -184,20 +184,20 @@ export function BeatGridEditor({ mix, off, inspect, follow }: { mix: Mix; off: r
      somebody checking the grid already has their hand on. */
   return <section className="mf-grid-editor" aria-label="Beat grid editing">
     <div className="mf-grid-editor-row">
-      <div className="mf-group" role="group" aria-label="Find beats">
+      <div className="wdg wdg-control-group mf-group" role="group" aria-label="Find beats">
         <span className="mf-group-label">find</span>
         <Button onPress={find} disabled={finding} title={`Find the beats again on the drums with ${describe(algorithm).name}, and draw them over the saved grid. Undo puts the old grid back`}>{finding ? 'Finding…' : 'Find beats'}</Button>
         <Select className="mf-grid-findings" items={FINDINGS} index={OFFERED.indexOf(algorithm)} width={20}
           onChange={(i) => (i < OFFERED.length ? setAlgorithm(OFFERED[i]) : mix.openDebug('beats'))}
           label="Beat finding algorithm" title={`Which algorithm Find beats runs — ${describe(algorithm).name}: ${describe(algorithm).does} — or the full analysis, every algorithm side by side`} />
       </div>
-      <div className="mf-group" role="group" aria-label="Bar 1">
+      <div className="wdg wdg-control-group mf-group" role="group" aria-label="Bar 1">
         <span className="mf-group-label">bar 1</span>
         <Button onPress={(e) => setBarOne(e.altKey)} title="Make the beat nearest the playhead bar 1, moved onto the kick or snare it is nearest when one is within a quarter of a beat; the other beats stay where they are. Option renumbers only, and moves nothing">Here</Button>
         <Button onPress={() => mix.editGrid(renumbered(grid, -1))} label="One beat earlier" title="Count bar 1 from one beat earlier. Nothing moves">‹</Button>
         <Button onPress={() => mix.editGrid(renumbered(grid, 1))} label="One beat later" title="Count bar 1 from one beat later. Nothing moves">›</Button>
       </div>
-      <div className="mf-group" role="group" aria-label="Tempo">
+      <div className="wdg wdg-control-group mf-group" role="group" aria-label="Tempo">
         <span className="mf-group-label">tempo</span>
         <span role="status" title="The tempo this grid runs at, read off its beats, and the share of its beats with a kick or a snare within 25 ms, over the part of the song that has drums. Both follow every change">
           {typing
@@ -221,7 +221,7 @@ export function BeatGridEditor({ mix, off, inspect, follow }: { mix: Mix; off: r
           {share === null ? null : <span className="mf-grid-fit">{Math.round(share * 100)}% on a hit</span>}
         </span>
       </div>
-      <div className="mf-group" role="group" aria-label="Check">
+      <div className="wdg wdg-control-group mf-group" role="group" aria-label="Check">
         <span className="mf-group-label">check</span>
         <Button onPress={goWorst} disabled={worst.length === 0} title="Seek and zoom to the bar furthest off its kicks and snares — its beats late or early, or with no hit under them — and press again for the next-worst, round again after the last. Space plays the drums under a click from the playhead, and Home goes to bar 1">Worst bar</Button>
       </div>

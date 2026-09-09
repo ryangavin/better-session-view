@@ -269,6 +269,26 @@
   white-space: nowrap;
 }
 
+/* Joined controls share the ordinary button face and one outer outline. */
+.wdg-control-group {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--ctl-h, 22px);
+  border: 1px solid var(--wdg-edge);
+  border-radius: var(--wdg-radius);
+  background: var(--wdg-face);
+  overflow: hidden;
+}
+.wdg-control-group > * { display: flex; align-items: center; }
+.wdg-control-group > * + * { border-left: 1px solid var(--wdg-edge); }
+.wdg-control-group > .wdg > .wdg-body,
+.wdg-control-group > .wdg-body {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.wdg-control-group > .wdg > .wdg-segmented-body button { height: 100%; }
+
 .wdg-caption,
 .wdg-label {
   font-family: var(--wdg-sans);
@@ -348,6 +368,11 @@
 .wdg-select-body:focus-visible {
   outline: 1px solid var(--wdg-focus);
   outline-offset: 1px;
+}
+
+.wdg-control-group :is(button, [role='slider']):focus-visible {
+  outline: 1px solid var(--wdg-focus);
+  outline-offset: -2px;
 }
 
 .wdg-widget[data-disabled],

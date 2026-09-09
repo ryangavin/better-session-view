@@ -5,7 +5,7 @@
 .mf-pocket-card header span { color:var(--detail); white-space:nowrap; }
 .mf-pocket-library { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:22px; padding:12px 0; border-block:1px solid #24232e; }
 .mf-pocket-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:12px system-ui; color:#e9e0f5; }
-.mf-pocket-thumbnail { flex:none; height:32px; overflow:hidden; border-radius:3px; background:#090913; }
+.mf-pocket-thumbnail { flex:none; height:32px; overflow:hidden; border-radius: var(--radius, 2px); background:#090913; }
 .mf-pocket-thumbnail canvas { display:block; }
 .mf-pocket-sources { display:grid; grid-template-columns:repeat(6,1fr); height:12px; gap:1px; }
 .mf-pocket-sources span { border-top:1px solid; text-align:center; font:9px/11px system-ui; }
@@ -23,7 +23,7 @@
 .mf-wave-source-key b { font:16px system-ui; }
 .mf-wave-source-key small { color:var(--detail); margin-left:auto; }
 .mf-wave-reading-key { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:0 12px 12px; }
-.mf-wave-reading-key button { font:inherit; font-size:11px; color:var(--detail); border:1px solid var(--bd); border-radius:3px; background:transparent; padding:5px 9px; cursor:pointer; }
+.mf-wave-reading-key button { font:inherit; font-size:11px; color:var(--detail); border:1px solid var(--bd); border-radius: var(--radius, 2px); background:transparent; padding:5px 9px; cursor:pointer; }
 .mf-wave-reading-key button[aria-pressed=true] { color:var(--fg); border-color:var(--primary); }
 .mf-wave-reading-key span { color:var(--detail); font-size:11px; margin-left:6px; }
 .mf-wave-aurora-caption { padding:18px 16px; color:#bdabc7; }

@@ -142,6 +142,12 @@ deck consumes the drop before it bubbles to the window.
 
 ## The header
 
+Header and beat-grid button groups use the shared widgets control-group surface,
+including its active and focus states. Their 2px outer corners match ordinary
+buttons and album artwork through the palette’s single `--radius` token. Joined
+internal corners stay square; circles and pills retain their shape.
+
+
 The bar uses 22px controls with 6px above and below, plus its bottom divider. The
 logo, track identity, grouped controls and standalone actions share one vertical center.
 Clicking the title or artist opens Track Details; Snap uses a magnet; Edit beat grid a grid; Warp horizontal

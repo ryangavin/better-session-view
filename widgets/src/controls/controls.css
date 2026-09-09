@@ -314,7 +314,7 @@
   flex: none;
   width: var(--wdg-mark-width);
   height: 9px;
-  border-radius: 1px;
+  border-radius: var(--radius, 2px);
   background: transparent;
   content: '';
 }

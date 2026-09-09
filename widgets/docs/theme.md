@@ -102,6 +102,16 @@ validates the complete document before restoration. Different app origins do not
 browser storage. Applications can serialize the same document through their own settings
 or file APIs without adding storage dependencies to widgets.
 
+## Rectangular corners
+
+The shared palette owns `--radius: 2px`, the existing ordinary button rounding.
+`--radius-xs/sm/md/lg` remain aliases for existing app styles, including artwork;
+widget control, plate and modal aliases read the same value. Set the palette-root
+`--radius` once to change rectangular corners across consumers. Joined controls
+keep zero-radius internal corners and use the token only on their outer corners.
+Circles, knob geometry and pill indicators remain distinct. This is a CSS theme
+token, not a new serialized color-theme field or editor setting.
+
 ## Verification
 
 A stored document written before a surface existed keeps its other choices: validation

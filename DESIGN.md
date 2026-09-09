@@ -50,7 +50,11 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   value is drift waiting to happen — visuals and the widget bench each kept a private copy
   until they didn't. `widgets/` is the exception on purpose: it reads `--wdg-*` aliases so
   the package still works inside a host that has none of this.
-- Radii are tokens: 2px, 3px, 4px, 6px and pill. Header controls share a 22px height
+- Rectangular corners share `--radius` (2px) in the palette: buttons, joined groups,
+  panels and artwork. The old `--radius-xs/sm/md/lg` names are compatibility aliases
+  to that single value; circles and `--radius-pill` retain their geometry. Change
+  `--radius` at the palette root to change all those corners together.
+  Header controls share a 22px height
   and are vertically centered with equal space above and below. Both are in the palette,
   so a control is the same height in every app here.
 - **An app's own colors are roles, and they stay in that app.** mix[flow] paints six

@@ -83,62 +83,12 @@
   color: var(--caption);
 }
 
-.mf-group {
-  display: inline-flex;
-  align-items: stretch;
-  height: var(--ctl-h);
-  border: 1px solid var(--bd3);
-  border-radius: var(--radius-md);
-  background: var(--sel);
-  overflow: hidden;
-}
-
-.mf-group > * {
-  display: flex;
-  align-items: center;
-}
-
-.mf-group > * + * {
-  border-left: 1px solid var(--bd3);
-}
-
-.mf-group .wdg-body {
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-}
-
-.mf-group .wdg-body:not([data-on]) {
-  background: transparent;
-}
-
-.mf-group .wdg-segmented-body button {
-  height: 100%;
-}
-
 .mf-group .mf-playing {
   color: var(--success);
 }
 
 .mf-group .mf-looping-part {
   color: var(--primary);
-}
-
-.mf-snap .wdg-segmented-body button + button {
-  border-left: 0;
-}
-
-.mf-snap .wdg-segmented-body button {
-  min-width: 20px;
-  padding: 0 5px;
-  font-variation-settings: var(--mono-axes);
-  font-size: var(--text-label);
-  color: var(--caption);
-}
-
-.mf-snap .wdg-segmented-body button[aria-checked='true'] {
-  color: var(--primary);
-  background: color-mix(in oklab, var(--primary) 16%, transparent);
 }
 
 .mf-group-label,
