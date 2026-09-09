@@ -1,7 +1,9 @@
 .mf-library {
   --head-h: 26px;
   --cols-h: 22px;
-  --facts: 32px 60px;
+  --stems: 48px;
+  --bpm: 78px;
+  --band: color-mix(in srgb, var(--fg) 3%, transparent);
   container-type: inline-size;
   --rail-pad: 10px;
   --step: 14px;
@@ -108,12 +110,31 @@
 .mf-library-columns,
 .mf-song {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--facts);
+  grid-template-columns: minmax(0, 1fr) var(--stems) var(--bpm);
   align-items: center;
-  column-gap: 8px;
   width: 100%;
-  padding: 0 var(--rail-pad);
+  padding: 0 0 0 var(--rail-pad);
   border-left: 2px solid transparent;
+  background-image:
+    linear-gradient(to left, var(--band) 0 var(--bpm), transparent var(--bpm)),
+    linear-gradient(to left,
+      transparent 0 var(--bpm),
+      var(--bd3) var(--bpm) calc(var(--bpm) + 1px),
+      transparent calc(var(--bpm) + 1px) calc(var(--bpm) + var(--stems)),
+      var(--bd3) calc(var(--bpm) + var(--stems)) calc(var(--bpm) + var(--stems) + 1px),
+      transparent calc(var(--bpm) + var(--stems) + 1px));
+}
+
+.mf-library-columns > :not(:first-child),
+.mf-song-sources,
+.mf-song-meta {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.mf-library-columns > :last-child,
+.mf-song-meta {
+  padding-right: var(--rail-pad);
 }
 
 .mf-library-columns {
@@ -121,14 +142,10 @@
   top: 0;
   z-index: 3;
   height: var(--cols-h);
-  background: var(--panel);
+  background-color: var(--panel);
   border-bottom: 1px solid var(--bd);
   font-size: var(--text-label);
   color: var(--detail);
-}
-
-.mf-library-columns > :not(:first-child) {
-  text-align: right;
 }
 
 .mf-song {
@@ -136,18 +153,18 @@
   border-top: 0;
   border-right: 0;
   border-bottom: 0;
-  background: transparent;
+  background-color: transparent;
   text-align: left;
   cursor: pointer;
   font: inherit;
 }
 
 .mf-song[data-shaded] {
-  background: var(--surface-cell-muted);
+  background-color: var(--surface-cell-muted);
 }
 
 .mf-song:hover {
-  background: var(--surface-cell);
+  background-color: var(--surface-cell);
 }
 
 .mf-song[data-depth] {
@@ -295,7 +312,7 @@
 }
 
 .mf-song[data-selected] {
-  background: var(--sel);
+  background-color: var(--sel);
   border-left-color: var(--primary);
 }
 
@@ -350,7 +367,10 @@
 
 @container (max-width: 270px) {
   .mf-song,
-  .mf-library-columns { grid-template-columns: minmax(0, 1fr) 60px; }
+  .mf-library-columns {
+    --stems: 0px;
+    grid-template-columns: minmax(0, 1fr) var(--bpm);
+  }
   .mf-song-sources,
   .mf-library-columns > :nth-child(2) { display: none; }
 }
@@ -366,6 +386,7 @@
   color: var(--detail);
 }
 
+.mf-library-columns > :not(:first-child),
 .mf-song-meta,
 .mf-song-sources {
   text-align: right;

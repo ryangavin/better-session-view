@@ -64,6 +64,13 @@ header holds the top, an artist rests below it, a record below the artist. Alter
 shading runs down the whole listing rather than off `nth-child`, which restarts inside
 each artist's section and would stripe the rail in blocks that break at every record.
 
+The fact columns are ruled and banded, so a number on the right belongs to a column
+rather than floating at the end of a widened rail. The rule and the tint are painted on
+the row as gradient stops off the same `--stems` and `--bpm` widths the grid is laid out
+from, which is what keeps them on the column edges as the rail is dragged; a stretched
+cell background would have cost the row's ellipsis. Every row background is set with
+`background-color` rather than the shorthand, or it would drop the bands.
+
 ## Project constraints and diagnosis
 
 The manifest has title, artist, album and import time, but no album artist, track
