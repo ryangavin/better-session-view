@@ -62,6 +62,10 @@ belong to the playback controller. Buttons are disabled for non-ready decks or m
 callbacks, including silent hosts. Sync emits `setDeckSync(deckId, synced)`
 and displays the host-reported `synced` state; tempo and phase alignment remain host-owned.
 
+Inactive Play and Cue keep their green and caution-colored labels. Playing Play/Pause
+and held Cue fill with those colors and use the shared contrasting fill-text token,
+including while hovered, so the icon and CUE label remain readable.
+
 ## Host transport and effect controls
 
 `externalTransport` omits the master Run/Stop, tempo, launch timing and beat counter;
