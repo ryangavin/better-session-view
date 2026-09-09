@@ -4,10 +4,13 @@ import { renderHook, act, cleanup } from '@testing-library/react';
 import { emptyDeck, loadDeckAsset, loadedDeck, isViewShortcut, type DeckAsset } from './decks.ts';
 import { useMixerViewModel } from './useMixerViewModel.ts';
 import { SCAN_RATE, SCAN_VALUES } from './scan.ts';
+import { evenBeats } from '../warp.ts';
 import { openflow, type Track } from '../openflow.ts';
 
 vi.mock('../openflow.ts', async (original) => ({ ...(await original<object>()), openflow: vi.fn() }));
 vi.mock('../audio.ts', async (original) => ({ ...(await original<object>()), decode: vi.fn(async () => sound()) }));
+// The beat finding has its own tests; here it is a doorway that answers nothing.
+vi.mock('./fit.ts', async (original) => ({ ...(await original<object>()), findGrid: vi.fn(async () => null) }));
 const SECONDS = 2, RATE = 44100;
 function sound(readable = false): AudioBuffer {
   const channel = new Float32Array(SECONDS*RATE);
@@ -86,19 +89,69 @@ describe('what a deck reads before it can play', () => {
   type Kept = Record<string, { bins: number; values: Float32Array }>;
   const keepScans = vi.fn(async (_id: string, _stems: string, _rate: number, _sources: Kept) => {});
   const scans = vi.fn();
+  const read = vi.fn();
+  const write = vi.fn(async (_id: string, _grid: unknown, _fit: unknown, _slices: unknown, _failed?: boolean, _made?: string | null) => {});
   let opened: string[] = [];
   beforeEach(async () => {
     opened = []; keepScans.mockClear();
     scans.mockReset(); scans.mockResolvedValue(null);
     // Kept audio is unreadable on purpose: a walk of it fails the test loudly.
     vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound());
+    read.mockReset(); read.mockResolvedValue(null); write.mockClear();
+    vi.mocked(await import('./fit.ts')).findGrid.mockReset();
+    vi.mocked(await import('./fit.ts')).findGrid.mockResolvedValue(null);
     vi.mocked(openflow).mockReturnValue({ library: { base: async () => 'lib' },
-      analysis: { read: async () => null, scans, keepScans } } as unknown as ReturnType<typeof openflow>);
+      analysis: { read, write, scans, keepScans } } as unknown as ReturnType<typeof openflow>);
     vi.stubGlobal('fetch', vi.fn(async (url: string) => { opened.push(url); return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) }; }));
   });
   afterEach(() => vi.unstubAllGlobals());
   const bins = Math.round(SECONDS*SCAN_RATE);
   const held = (name: string) => [name, { bins, values: new Float32Array(bins*SCAN_VALUES).fill(.25) }] as const;
+
+  it('finds a grid for a track that has none, keeps it, and hands the deck the map', async () => {
+    vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound(true));
+    const beats = evenBeats(RATE, SECONDS*RATE, 128, .1);
+    vi.mocked(await import('./fit.ts')).findGrid.mockResolvedValue({ found: { bpm: 128, offset: .1, agreement: .9 }, beats });
+    const said: string[] = [];
+    const asset = await loadDeckAsset(tracks[0], new AbortController().signal, {} as BaseAudioContext, m => said.push(m));
+    expect(said).toEqual(['Finding the beat…']);
+    expect(asset.audio!.map).toBe(beats);
+    expect(asset.analysis?.grid).toMatchObject({ bpm: 128, bpmAuto: true, offset: .1 });
+    const [id, grid, reading, slices, failed, made] = write.mock.calls[0];
+    expect([id, failed, made]).toEqual(['one', false, 'ellis']);
+    expect(grid).toMatchObject({ bpm: 128 });
+    expect(reading).toEqual({ bpm: 128, offset: .1, agreement: .9 });
+    expect(slices).toBeNull();
+  });
+
+  it('leaves a saved grid alone, and never asks twice about a track it refused', async () => {
+    vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound(true));
+    const findGrid = vi.mocked(await import('./fit.ts')).findGrid;
+    read.mockResolvedValue({ grid: { bpm: 124, bpmAuto: true, offset: 0, beats: null }, slices: null, fitFailed: false });
+    await loadDeckAsset(tracks[0], new AbortController().signal, {} as BaseAudioContext);
+    read.mockResolvedValue({ grid: null, slices: null, fitFailed: true });
+    await loadDeckAsset(tracks[0], new AbortController().signal, {} as BaseAudioContext);
+    expect(findGrid).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('writes a refusal down so the next drop does not spend the two seconds again', async () => {
+    vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound(true));
+    vi.mocked(await import('./fit.ts')).findGrid.mockResolvedValue({ found: null, beats: null });
+    const asset = await loadDeckAsset(tracks[0], new AbortController().signal, {} as BaseAudioContext);
+    expect(asset.analysis?.grid).toBeNull();
+    expect(asset.audio!.map).toBeNull();
+    expect(write.mock.calls[0][4]).toBe(true);
+    expect(write.mock.calls[0][5]).toBeNull();
+  });
+
+  it('keeps the deck ungridded, and unmarked, where the beat finding could not run', async () => {
+    vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound(true));
+    vi.mocked(await import('./fit.ts')).findGrid.mockResolvedValue(null);
+    const asset = await loadDeckAsset(tracks[0], new AbortController().signal, {} as BaseAudioContext);
+    expect(asset.audio!.map).toBeNull();
+    expect(write).not.toHaveBeenCalled();
+  });
 
   it('reads every source at once rather than one after another', async () => {
     vi.mocked(await import('../audio.ts')).decode.mockImplementation(async () => sound(true));

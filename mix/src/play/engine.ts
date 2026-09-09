@@ -153,7 +153,9 @@ export class MixerEngine {
     const fresh = emptyDeck(id, DECK_IDS.indexOf(id));
     this.patchDeck(id, { ...fresh, ...desk, track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: track.bpm, key: track.key ?? '—' }, status: 'loading', message: 'Loading audio…' });
     try {
-      const asset = await (loader === loadDeckAsset ? loader(track, request.signal, this.audio()) : loader(track, request.signal));
+      const asset = await (loader === loadDeckAsset
+        ? loader(track, request.signal, this.audio(), message => { if (!request.signal.aborted) this.patchDeck(id, { message }); })
+        : loader(track, request.signal));
       if (request.signal.aborted || this.disposed) return;
       if (asset.audio) this.adopt(id, asset.audio);
       this.startAtFirstBeat(id);

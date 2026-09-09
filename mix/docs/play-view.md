@@ -48,6 +48,14 @@ shown on the deck and another drop retries. Loading does not start a deck.
 
 `decks.ts` reads saved analysis, decodes the original and all available stems through the
 existing library/audio APIs, and retains those buffers in the engine's shared context.
+A track with no saved grid is gridded here rather than arriving without one: the beat
+finding runs on the original the deck has already decoded, in a worker, and the deck
+stays on `Finding the beat…` until it answers. Measured on the library, the shipping
+algorithm reads the same tempo from the whole mix as from a drums stem on every track
+that has a tempo at all, so this costs nothing against separating first. What it finds
+is written beside the track, and so is a refusal — a song with nothing steady in it is
+not asked again on every drop. Sections still come from Prep; an unprepared track has
+the one whole-track hot cue.
 Every source is fetched and decoded at once rather than in turn: decoding happens off the
 main thread, so asking for them together is the difference between five seconds and two.
 Saved beat maps (or saved uniform grids) govern Sync and section boundaries. Without a
