@@ -1,5 +1,6 @@
 .mf-library {
   --head-h: 26px;
+  --cols-h: 22px;
   --facts: 32px 60px;
   container-type: inline-size;
   --rail-pad: 10px;
@@ -116,8 +117,11 @@
 }
 
 .mf-library-columns {
-  flex: none;
-  height: 22px;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: var(--cols-h);
+  background: var(--panel);
   border-bottom: 1px solid var(--bd);
   font-size: var(--text-label);
   color: var(--detail);
@@ -136,6 +140,10 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
+}
+
+.mf-song[data-shaded] {
+  background: var(--surface-cell-muted);
 }
 
 .mf-song:hover {
@@ -193,7 +201,7 @@
 }
 
 .mf-heading[data-kind='artist'] {
-  top: 0;
+  top: var(--cols-h);
   z-index: 2;
   border-top: 1px solid var(--bd);
   border-bottom: 1px solid var(--bd);
@@ -203,7 +211,7 @@
 }
 
 .mf-heading[data-kind='album'] {
-  top: var(--head-h);
+  top: calc(var(--cols-h) + var(--head-h));
   padding-left: calc(var(--rail-pad) + var(--step));
   background: var(--panel);
   color: var(--ui);

@@ -31,7 +31,7 @@ The following references were inspected as images, not inferred from feature lis
 
 | Reference | Visible design choices | Application in this rail |
 | --- | --- | --- |
-| [Serato DJ Pro 4 overview](https://support.serato.com/hc/en-us/articles/14173738028175-Software-Overview-Serato-DJ-Pro-4-0) | A dense single-line track table below the decks; one column-label row; aligned metadata; restrained neutral rows and a clear selection stripe. | One header for Track / Stems / BPM; constant fact columns; single-line grouped tracks; selection retains the app's amber edge. |
+| [Serato DJ Pro 4 overview](https://support.serato.com/hc/en-us/articles/14173738028175-Software-Overview-Serato-DJ-Pro-4-0) | A dense single-line track table below the decks; one column-label row; aligned metadata; restrained neutral rows and a clear selection stripe. | One header for Track / Stems / BPM; constant fact columns; single-line grouped tracks; alternating row shading; selection retains the app's amber edge. |
 | [Traktor browser](https://docs.native-instruments.com/ni-tech-manuals/traktor-pro-manual/en/traktor-overview#browser) | Navigation hierarchy occupies a narrow left tree; tracks have regular rows, small covers and aligned numerical facts. Hierarchy and track facts use distinct spatial roles. | Artist bands and indented album covers identify the outline; track titles occupy the flexible column and facts stay aligned at the right. |
 
 These are qualitative observations from official screenshots. The reference row heights
@@ -55,6 +55,14 @@ custom properties (`--rail-pad`, `--step`, `--caret`, `--cover`, `--gap`), and a
 title starts in the same column as the album name above it because both are computed from
 those. Nothing draws a connecting guide or branch marks: a ladder into a list whose
 indentation is already regular is decoration competing with the covers and the facts.
+
+The Track / Stems / BPM header sits **inside** the scrolling list as a sticky row rather
+than above it. Outside, it was laid out over the rail's full width while every row it
+labels was laid out inside a scroller a scrollbar narrower, so the labels stood a
+scrollbar's width right of the numbers under them. Sticky offsets follow from that: the
+header holds the top, an artist rests below it, a record below the artist. Alternating
+shading runs down the whole listing rather than off `nth-child`, which restarts inside
+each artist's section and would stripe the rail in blocks that break at every record.
 
 ## Project constraints and diagnosis
 
