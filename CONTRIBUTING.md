@@ -65,9 +65,9 @@ in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
 Ten projects. Each has its own README; read the one you're touching.
 
-[`audio/`](audio/README.md) separately documents **audio[flow]**, a planned reusable
-headless Rust rendering library with mix[flow] as its first consumer. It is design
-documentation only, not an implemented package or app.
+[**audio[flow]**](https://github.com/openflowfm/audio) lives in the separate sibling
+`openflow/audio` repository. It contains the headless Rust rendering library design
+and comparison harness, with mix[flow] as its intended first consumer.
 
 | module | what it is | read for |
 |---|---|---|

@@ -7,9 +7,10 @@ for routine feature work.
 Beyond the set-management design below, open[flow] is intended to grow into a
 programmable music production and performance system, with reusable graph devices,
 customizable interfaces, songs and parts, improvisation and flexible scheduling.
-The planned rendering foundation is [audio[flow]](../audio/README.md), a headless
-Rust library whose first consumer would be mix[flow]. Its docs describe intentions
-and validation gates; no engine implementation exists there yet.
+The planned rendering foundation is [audio[flow]](https://github.com/openflowfm/audio),
+a headless Rust library whose first consumer would be mix[flow]. Its design docs
+and comparison harness live in the separate `openflow/audio` repository;
+engine implementation remains paused.
 
 
 MVP was set management: bulk naming and coloring, with clip and scene launching so you can
