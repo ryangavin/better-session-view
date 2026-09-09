@@ -4,6 +4,13 @@ Where the project is headed, and the decisions that shape it. Read this before c
 how the naming convention, the library/scheme/mapping split, or derivation works — not
 for routine feature work.
 
+Beyond the set-management design below, open[flow] is intended to grow into a
+programmable music production and performance system, with reusable graph devices,
+customizable interfaces, songs and parts, improvisation and flexible scheduling.
+The planned rendering foundation is [audio[flow]](../audio/README.md), a headless
+Rust library whose first consumer would be mix[flow]. Its docs describe intentions
+and validation gates; no engine implementation exists there yet.
+
 
 MVP was set management: bulk naming and coloring, with clip and scene launching so you can
 hear what you're labelling. That works — but every convention it applies still lives in
@@ -99,4 +106,3 @@ build-then-delete, made precise rather than wholesale by `ClipSlot.duplicate_cli
 is one plan and one message however many songs moved, which is what keeps it a single
 entry in Live's history. What it costs and what guards it is under *Reordering scenes* in
 [`bridge/README.md`](../bridge/README.md).
-

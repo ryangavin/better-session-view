@@ -65,6 +65,10 @@ in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
 Ten projects. Each has its own README; read the one you're touching.
 
+[`audio/`](audio/README.md) separately documents **audio[flow]**, a planned reusable
+headless Rust rendering library with mix[flow] as its first consumer. It is design
+documentation only, not an implemented package or app.
+
 | module | what it is | read for |
 |---|---|---|
 | [`protocol/`](protocol/README.md) | wire types, single source of truth | adding or changing a message |
