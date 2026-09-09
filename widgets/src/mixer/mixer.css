@@ -103,6 +103,10 @@
 .play-wave-gesture { position:relative; flex:1; min-height:0; overflow:hidden; touch-action:none; user-select:none; cursor:ew-resize; display:flex; flex-direction:column; }
 .play-cue-marker {position:absolute;top:0;bottom:0;border-left:2px solid var(--amber);color:var(--amber);font:9px var(--mono);pointer-events:none;}
 .play-slip-marker {position:absolute;top:0;bottom:0;border-left:1px dashed var(--primary);font:9px var(--mono);color:var(--primary);pointer-events:none;}
+.play-wave-loading {flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(135deg,#ffffff08 0 7px,transparent 7px 14px);}
+.play-wave-loading span {font-size:13px;letter-spacing:.04em;color:var(--wdg-text);animation:play-wave-breath 1.7s ease-in-out infinite;}
+@keyframes play-wave-breath {0%,100% {opacity:.45} 50% {opacity:1}}
+@media (prefers-reduced-motion: reduce) {.play-wave-loading span {animation:none;opacity:.8}}
 .play-wave-source {position:relative;flex:1;min-height:0;overflow:hidden;}
 .play-wave-source + .play-wave-source {border-top:1px solid #ffffff10;}
 .play-wave-source[data-focused='false'] {opacity:.5;}

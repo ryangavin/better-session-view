@@ -13,6 +13,10 @@ export function WaveControls({deck:d,commands:c,index,readFrame,children}: {deck
   useEffect(()=>{window.addEventListener('blur',cancel);return()=>{window.removeEventListener('blur',cancel);cancel();};},[d.id]);
   const reading=readFrame().decks[d.id];
   const play=()=>d.full?c.setDeckPlaying?.(d.id,held?true:!playing):c.setStemPlaying?.(d.id,focus,held?true:!playing);
+  // A deck being read has nothing to draw and nothing to drag. Its lane says so
+  // itself, at a size somebody across the booth can read, rather than leaving a
+  // ruled empty strip that looks like a track with no sound in it.
+  if(d.status==='loading') return <div className="play-wave-loading" role="status" aria-label={`Deck ${index+1} loading`}><span>{d.message ?? 'Loading…'}</span></div>;
   return <>
     {d.status==='ready' && <div className="play-wave-tools" role="group" aria-label={`Deck ${index+1} waveform controls`}>
       <ContextControls label={`Deck ${index+1} waveform settings`} title="Choose movement scope and zoom" face="···">

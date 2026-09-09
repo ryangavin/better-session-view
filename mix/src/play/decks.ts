@@ -122,7 +122,7 @@ export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): Mix
   return { ...deck, status: 'ready', track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: grid?.beats ? tempoOf(grid.beats) : grid?.bpm ?? track.bpm, key: track.key ?? '—' },
     focus: track.sources.includes('drums') ? 'drums' : track.sources[0] ?? 'full', moveTogether: true, independentStems: false, zoom: 32, gridAvailable: !!grid,
     peaks: asset.peaks, full: true, fullSection: null, fullQueued: undefined,
-    message: !grid ? 'No saved beat grid — Sync unavailable' : !cuts?.length ? 'No saved sections — full track available' : undefined,
+    message: !grid ? 'No steady tempo found — Sync unavailable' : undefined,
     sections: cuts?.length ? cuts.map((cut, i) => ({id: `section-${i}-${cut.bar}`, name: cut.name})) : [{id:'full-track', name:'Track'}],
     stems: sources.map(id => ({id, name: id[0].toUpperCase()+id.slice(1), level:100, available: !!track.stems && track.sources.includes(id), selected:null, queued:undefined})),
   };

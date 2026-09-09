@@ -344,8 +344,12 @@ A newly loaded deck plays the original, so it draws that one lane; switching it 
 draws them all. Loading does not change waveform zoom. The deck sits on the track's first
 beat with its cue point there, rather than on the silence a file starts with.
 
-Empty decks keep drop guidance in their header and waveform label; the launcher
-status area is reserved for loading, operational messages and errors.
+Empty decks keep drop guidance in their header and waveform label. A deck being read
+says so in its own waveform lane, at a size that reads across a booth, over a hatched
+strip that cannot be dragged — there is nothing to draw and nothing to scrub until it
+answers. The launcher's status line is left for what is worth interrupting somebody
+about: a refused tempo, a failed load, an output that cannot carry the cue. A deck that
+simply has no sections says nothing, because its one whole-track hot cue already does.
 
 The Hot Cue divider uses the shared separator clearance on each side.
 

@@ -34,6 +34,17 @@ function fixture(): MixerViewProps {
   };
 }
 describe('controlled mixer boundary', () => {
+  it('gives a loading deck its lane to say so in, and nothing to drag', () => {
+    const props = fixture();
+    props.state = { ...props.state, decks: props.state.decks.map((d, i) => i === 0 ? { ...d, status: 'loading' as const, message: 'Finding the beat…' } : d) };
+    const view = render(createElement(MixerView, props));
+    expect(view.getAllByRole('status').map(node => node.textContent)).toContain('Finding the beat…');
+    // Not in the launcher's status line as well, and not draggable while it reads.
+    expect(view.queryByLabelText('Deck 1 waveform position')).toBeNull();
+    expect(view.queryByLabelText('Deck 1 waveform controls')).toBeNull();
+    expect(view.container.querySelector('.play-deck-status')?.textContent).toBe('');
+  });
+
   it('draws a lane per played source and focuses the one pointed at', () => {
     const props = fixture(), setFocus = vi.fn();
     props.commands.setFocus = setFocus;
