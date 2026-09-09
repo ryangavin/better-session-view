@@ -65,15 +65,16 @@ was imported a minute ago. Artist is the default and the only one with headings 
 so an album stays identifiable even when only one of its tracks matches. The rail
 wraps each artist and album in its own section to bound its sticky heading.
 
-**Depth follows the data, because `album` is sparse.** Import writes it null and only the
-catalogue lookup fills it in ([`library.md`](library.md)), so there is no unknown-album
-heading at all: an album earns a line of its own once *two* of its tracks are in the
-folder, and everything else sits loose under its artist. A library of singles reads as a
-flat list of artists; a ripped record reads as a record. Tracks whose filename gave up no
-artist go to one **No artist** pile at the bottom rather than under U for unknown — it is
-the bounces and the rough mixes, and it should read like a list of things to fix.
+**The hierarchy is regular: artist, record, track, always.** `album` is sparse — import
+writes it null and only the catalogue lookup fills it in ([`library.md`](library.md)) —
+and rather than letting those tracks float at the level of the records beside them, they
+gather under one **No album** heading at the end of the artist. Every track is then two
+steps in, so an indent means one thing and the eye separates a record from a song without
+reading either. Tracks whose filename gave up no artist go to one **No artist** pile at
+the bottom rather than under U for unknown — it is the bounces and the rough mixes, and it
+should read like a list of things to fix.
 
-An artist's loose tracks come **before** its records. An artist heading pins to the
+An artist's named records come **before** its unnamed pile. An artist heading pins to the
 top of the list and a record heading just under it. Each heading is constrained by
 its own section: an album cannot remain above another artist's tracks.
 
@@ -114,15 +115,24 @@ heuristic, not artist metadata: a real collaboration with a `The` artist can rem
 unsplit, and ambiguous punctuation cannot establish identity reliably. A slash is not a separator at all, so `AC/DC` never
 comes apart.
 
-**What the heading leaves out, the row keeps.** Under a heading a row is one line — title,
-what is left of the billing, the badge strip, the grid fact — so `Purple Lamborghini`
-reads `& Rick Ross` beside its title. The whole stored credit is the row's tooltip and
-available to the hint strip on hover or focus, and the filter still matches the full
-credit, so typing a collaborator's name finds their tracks under somebody else's heading.
+**The rail is a compact outline with aligned facts.** Artist and album headings are
+26px high. Artist names use a stronger weight and a neutral band; albums sit one level
+in with a 16px cover, a stronger title and a bordered header. A vertical guide with
+short branches connects the album to its songs; their titles align under the album
+name instead of starting to its left. Small inline **Artist** / **Album** labels and right-aligned counts
+identify each heading without adding a second line or space between sections.
 
-Ordered by Added or Title there are no headings, and a row goes back to the two-line shape
-that carries its cover and its own artist line. Row shape follows the order and never the
-data, so the rail does not change shape as covers arrive.
+Grouped tracks are 24px single-line rows. One column header names **Track**, **Stems**
+and **BPM**. Stem counts replace the wide colored badge strip; hover the count to read
+which stems are available. A dash means no stems. The BPM column contains a tempo or
+range, **no fit**, **no grid**, or a dash when no reading is available. File type and key
+remain in its hover detail instead of being mixed into a tempo column.
+
+The full stored artist credit remains in the track tooltip, hint strip and search.
+At rail widths of 400px or more, collaborator suffixes also appear beside the title.
+Below 270px, the stems column hides to leave room for names and tempo. Added and Title
+use the same aligned facts with 36px rows, individual covers and a secondary artist
+line. These choices keep the rail's type and surfaces in the shared design system.
 
 Files may also be dropped anywhere on the window. A dashed target covers the window while
 the drag is over it, which both makes the action visible and prevents a file dropped on a
@@ -380,9 +390,8 @@ a lane that reached for them would draw the song you just left.
 band, and described at the point where somebody chooses it, which is the moment the trade
 is actually being made. Wanting guitar on its own means choosing another model in **Analyze**, below the song review.
 
-The one place a *missing* stem is still worth drawing is the library's badge strip, and
-for the opposite reason: there the question is which of a hundred tracks have one, so a
-gap in a fixed six-cell strip is a shape you read without reading.
+The library summarizes available stems as a count in its Stems column. Hovering that
+count names them; missing stems do not add empty lanes to the open track.
 
 `Reset` counts against the stems the song has rather than against all six, so a level
 left behind by an earlier separation with a six-source model cannot arm a button against

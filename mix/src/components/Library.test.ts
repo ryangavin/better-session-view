@@ -41,11 +41,11 @@ function rail(order: Order = 'artist', collapsed = new Set<string>(), tracks = T
 }
 
 describe('the library rail', () => {
-  it('draws a heading for the record that earned one, and none for the single cut', () => {
+  it('draws a heading for every record, and stands one in where nothing named the record', () => {
     const view = rail();
     expect([...view.container.querySelectorAll('.mf-heading-name')].map((n) => n.textContent))
-      .toEqual(['Aperture', 'Ceremony', 'No artist']);
-    expect(view.getByText('Demo').closest('.mf-song')?.getAttribute('data-depth')).toBe('1');
+      .toEqual(['Aperture', 'Ceremony', 'Long Division', 'No artist', 'No album']);
+    expect(view.getByText('Demo').closest('.mf-song')?.getAttribute('data-depth')).toBe('2');
     expect(view.getByText('Vessel').closest('.mf-song')?.getAttribute('data-depth')).toBe('2');
   });
 
@@ -81,7 +81,8 @@ describe('the library rail', () => {
 
   it('draws one heading for an artist credited two ways, and says who else was on it', () => {
     const view = rail('artist', new Set(), CREDITED);
-    expect([...view.container.querySelectorAll('.mf-heading-name')].map((n) => n.textContent)).toEqual(['Skrillex']);
+    expect([...view.container.querySelectorAll('.mf-heading-name')].map((n) => n.textContent))
+      .toEqual(['Skrillex', 'No album']);
     expect([...view.container.querySelectorAll('.mf-song-with')].map((n) => n.textContent?.trim())).toEqual(['& Rick Ross']);
   });
 

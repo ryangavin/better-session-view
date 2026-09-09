@@ -11,30 +11,9 @@ import type { Mix } from '../state.ts';
 import './Library.css';
 
 /**
- * Everything in the library folder, and which of it has stems.
- *
- * The badge strip is the point of the rail: six cells that say what a track has
- * been separated into without opening it, and a four-source model leaves two of
- * them dark — which is how you spot the one you separated in a hurry and meant
- * to redo. One letter each rather than three, because six three-letter badges
- * is a second line of text on every row and a hundred rows of that is a wall.
- *
- * A row is two lines: the title with the strip, and the artist with where the
- * track's grid stands. That second fact is the rail's other job: the strip says
- * what has been separated, and this says what has been *gridded*, which is the
- * half of the import flow that used to finish invisibly or not at all. A tempo
- * means the beats are found; `no fit` and `no grid` are the two ways they are
- * not, and they want different things done about them.
- *
- * **Ordered by artist, a row loses a line and gains a heading.** The heading
- * already says the artist, so a second line spent restating it is width thrown
- * away — title, strip and grid fit on one, and the rail halves its row height
- * exactly when there is most of it to scan. Covers go up to the record's
- * heading, where one of them stands for the twelve underneath. Row shape
- * follows the *order*, never the data: every row in a listing is the same
- * height, so the rail does not change shape as covers arrive.
- *
- * `listing.ts` decides what the headings are and why a record earns one.
+ * The library rail: a compact artist/album outline with aligned track facts.
+ * Full credits remain searchable and available in the hover hint.
+ * `listing.ts` decides which headings the library earns and where tracks file.
  */
 /** How far the rail may be dragged. Narrower hides the badge strip; wider starves the decks. */
 const NARROWEST = 190, WIDEST = 560;
@@ -107,6 +86,9 @@ export function Library({ mix }: { mix: Mix }) {
         </div>
       </div>
 
+      {library.tracks.length > 0 && <div className="mf-library-columns" aria-hidden="true">
+        <span>Track</span><span>Stems</span><span>BPM</span>
+      </div>}
       <div className="mf-library-list">
         {!library.root && !mix.loading && (
           <div className="mf-library-blank">
@@ -208,26 +190,7 @@ function LibraryRows({ rows, mix }: { rows: readonly Row[]; mix: Mix }) {
   return children;
 }
 
-/**
- * One track in the rail.
- *
- * Two shapes, and which one it takes is the *order*'s business rather than the
- * track's: under a heading it is a single line, because the heading has already
- * said the artist and the record's cover is already on screen; in a flat
- * listing it keeps its cover and the second line that names who made it. Depth
- * is the tell — `listing.ts` gives every track a heading when it groups, so a
- * depth of zero means there is nothing above this row to lean on.
- *
- * **What the heading did not say, the row does.** A heading is the *lead* of a
- * credit, so a record billed `Skrillex & Rick Ross` sits under Skrillex with
- * `& Rick Ross` beside its title — grouping collapses the heading, never the
- * billing. The two share one clipped box rather than being two flex items,
- * because as flex items a long enough billing wins the negotiation and squeezes
- * the title out of its own row; in one box the ellipsis always falls on the
- * right and the title is always the part that survives. The whole credit as the manifest stores it is on the row's `title`,
- * which puts it in the hint strip along the bottom of the window on hover or
- * focus, and Track Details still edits it verbatim.
- */
+/** Grouped rows omit repeated artist/artwork; flat rows keep their credit below the title. */
 function Song({ mix, song, depth, credit }: { mix: Mix; song: Track; depth: number; credit: Credit | null }) {
   const held = {
     type: 'button' as const,
@@ -242,36 +205,32 @@ function Song({ mix, song, depth, credit }: { mix: Mix; song: Track; depth: numb
     onClick: () => mix.select(song.id),
     title: credit ? `${song.title} — ${credit.full}` : song.title,
   };
-  if (depth > 0)
-    return (
-      <button {...held}>
-        <span className="mf-song-said">
-          <span className="mf-song-title">{song.title}</span>
-          {credit?.others && <span className="mf-song-with"> {credit.others}</span>}
-        </span>
-        <StemStrip sources={song.sources} />
-        <GridMeta song={song} notes={mix.notes} />
-      </button>
-    );
   return (
     <button {...held}>
-      <Art at={mix.artOf(song)} title={song.title} />
-      <span className="mf-song-body">
-        <span className="mf-song-line">
-          <span className="mf-song-title">{song.title}</span>
-          <StemStrip sources={song.sources} />
-        </span>
-        <span className="mf-song-line">
-          <span className="mf-song-artist">{song.artist ?? 'unknown artist'}</span>
-          <GridMeta song={song} notes={mix.notes} />
+      <span className="mf-song-identity">
+        {depth === 0 && <Art at={mix.artOf(song)} title={song.title} />}
+        <span className="mf-song-body">
+          <span className="mf-song-line">
+            <span className="mf-song-title">{song.title}</span>
+            {depth > 0 && credit?.others && <span className="mf-song-with">{credit.others}</span>}
+          </span>
+          {depth === 0 && <span className="mf-song-artist">{song.artist ?? 'unknown artist'}</span>}
         </span>
       </span>
+      <span className="mf-song-sources" title={song.sources.length
+        ? `Available stems: ${STEMS.filter((stem) => song.sources.includes(stem.id)).map((stem) => stem.name).join(', ')}`
+        : 'Original audio; no separated stems'}>
+        {song.sources.length || '—'}
+      </span>
+      <GridMeta song={song} notes={mix.notes} />
     </button>
   );
 }
 
 /**
- * An artist, or one of their records.
+ * An artist, or one of their records — including the standing-in record that
+ * holds whatever the catalogue never named, which carries an empty cover cell
+ * so its name still starts in the album column.
  *
  * It sticks: an artist to the top of the list, a record just under wherever the
  * artist came to rest. `LibraryRows` bounds both by their own sections, so
@@ -295,9 +254,12 @@ function Heading({ head, at, shut, searching, onToggle }: { head: Head; at: stri
       title={searching ? 'Matching tracks stay expanded while searching' : `${shut ? 'Show' : 'Hide'} this ${what} — hold Option for all of them`}
     >
       <span className="mf-heading-caret" aria-hidden="true" />
-      {head.kind === 'album' && <Art at={at} title={head.name} />}
+      {head.kind === 'album' && (head.loose
+        ? <span className="mf-art" data-blank aria-hidden="true" />
+        : <Art at={at} title={head.name} />)}
       <span className="mf-heading-name">{head.name}</span>
-      <span className="mf-heading-count">{head.count}</span>
+      {!head.loose && <span className="mf-heading-kind">{head.kind === 'album' ? 'Album' : 'Artist'}</span>}
+      <span className="mf-heading-count" title={`${head.count} tracks`}>{head.count}</span>
     </button>
   );
 }
@@ -317,8 +279,8 @@ function GridMeta({ song, notes }: { song: Track; notes: Record<string, GridNote
       : '';
   const fact = gridFact(song, note, tempo, notes !== null);
   return (
-    <span className="mf-song-meta" data-grid={fact.state} title={fact.why}>
-      {fact.says}
+    <span className="mf-song-meta" data-grid={fact.state} title={`${fact.says}. ${fact.why}`}>
+      {tempo || (fact.state === 'failed' ? 'no fit' : fact.state === 'unread' ? 'no grid' : '—')}
     </span>
   );
 }

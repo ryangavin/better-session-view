@@ -17,33 +17,32 @@ const drawn = (rows: Row[]): string[] =>
     : `${row.kind === 'album' ? '  ' : ''}[${row.name} ${row.count}]`));
 
 describe('the library rail, ordered by artist', () => {
-  it('gives an album a heading once two of its tracks are here, and not before', () => {
-    const one = listing([
+  it('gives every record a heading, however few of its tracks are here', () => {
+    const rows = listing([
       track({ title: 'Vessel', artist: 'Aperture', album: 'Ceremony' }),
       track({ title: 'Alone', artist: 'Aperture', album: 'Long Division' }),
     ], 'artist');
-    expect(drawn(one)).toEqual(['[Aperture 2]', '  Alone', '  Vessel']);
-
-    const two = listing([
-      track({ title: 'Vessel', artist: 'Aperture', album: 'Ceremony' }),
-      track({ title: 'Low Tide', artist: 'Aperture', album: 'Ceremony' }),
-      track({ title: 'Alone', artist: 'Aperture', album: 'Long Division' }),
-    ], 'artist');
-    expect(drawn(two)).toEqual(['[Aperture 3]', '  Alone', '  [Ceremony 2]', '    Low Tide', '    Vessel']);
+    expect(drawn(rows)).toEqual([
+      '[Aperture 2]', '  [Ceremony 1]', '    Vessel', '  [Long Division 1]', '    Alone',
+    ]);
   });
 
-  it('puts an artist loose tracks above its records, so a stuck heading is never lying', () => {
+  it('puts an artist records above the tracks it has no record for', () => {
     const rows = listing([
       track({ title: 'Vessel', artist: 'Aperture', album: 'Ceremony' }),
       track({ title: 'Low Tide', artist: 'Aperture', album: 'Ceremony' }),
       track({ title: 'Demo', artist: 'Aperture' }),
     ], 'artist');
-    expect(drawn(rows)).toEqual(['[Aperture 3]', '  Demo', '  [Ceremony 2]', '    Low Tide', '    Vessel']);
+    expect(drawn(rows)).toEqual([
+      '[Aperture 3]', '  [Ceremony 2]', '    Low Tide', '    Vessel', '  [No album 1]', '    Demo',
+    ]);
   });
 
-  it('never draws an unknown-album heading', () => {
+  it('never lets a track float at the level of the records beside it', () => {
     const rows = listing([track({ title: 'Demo', artist: 'Aperture' }), track({ title: 'Bounce', artist: 'Aperture' })], 'artist');
-    expect(drawn(rows)).toEqual(['[Aperture 2]', '  Bounce', '  Demo']);
+    expect(drawn(rows)).toEqual(['[Aperture 2]', '  [No album 2]', '    Bounce', '    Demo']);
+    expect(rows.every((row) => row.kind !== 'track' || row.depth === 2)).toBe(true);
+    expect(rows.find((row): row is Head => row.kind === 'album')?.loose).toBe(true);
   });
 
   it('sweeps everything the filename gave no artist for into one pile at the bottom', () => {
@@ -52,7 +51,10 @@ describe('the library rail, ordered by artist', () => {
       track({ title: 'Vessel', artist: 'Zodiac' }),
       track({ title: 'bounce', artist: '  ' }),
     ], 'artist');
-    expect(drawn(rows)).toEqual(['[Zodiac 1]', '  Vessel', '[No artist 2]', '  bounce', '  mixdown_v3']);
+    expect(drawn(rows)).toEqual([
+      '[Zodiac 1]', '  [No album 1]', '    Vessel',
+      '[No artist 2]', '  [No album 2]', '    bounce', '    mixdown_v3',
+    ]);
     expect(rows.find((row) => row.kind !== 'track' && row.name === 'No artist')?.kind).toBe('artist');
   });
 
@@ -62,7 +64,7 @@ describe('the library rail, ordered by artist', () => {
       track({ title: 'a', artist: 'The Chemical Brothers' }),
       track({ title: 'c', artist: 'Aperture' }),
     ], 'artist');
-    expect(rows.filter((row) => row.kind !== 'track').map((row) => row.name))
+    expect(rows.filter((row): row is Head => row.kind === 'artist').map((row) => row.name))
       .toEqual(['Aperture', 'The Chemical Brothers', 'Zodiac']);
   });
 
@@ -71,7 +73,7 @@ describe('the library rail, ordered by artist', () => {
       track({ title: 'a', artist: 'Aphex Twin' }),
       track({ title: 'b', artist: 'aphex twin' }),
     ], 'artist');
-    expect(drawn(rows)).toEqual(['[Aphex Twin 2]', '  a', '  b']);
+    expect(drawn(rows)).toEqual(['[Aphex Twin 2]', '  [No album 2]', '    a', '    b']);
   });
 
   it('takes a records cover from the first track that has one', () => {
@@ -90,9 +92,12 @@ describe('the library rail, ordered by artist', () => {
       track({ title: 'Solo', artist: 'Zodiac' }),
     ];
     expect(drawn(listing(tracks, 'artist', new Set(['artist:aperture']))))
-      .toEqual(['[Aperture 3]', '[Zodiac 1]', '  Solo']);
+      .toEqual(['[Aperture 3]', '[Zodiac 1]', '  [No album 1]', '    Solo']);
     expect(drawn(listing(tracks, 'artist', new Set(['artist:aperture/ceremony']))))
-      .toEqual(['[Aperture 3]', '  Demo', '  [Ceremony 2]', '[Zodiac 1]', '  Solo']);
+      .toEqual([
+        '[Aperture 3]', '  [Ceremony 2]', '  [No album 1]', '    Demo',
+        '[Zodiac 1]', '  [No album 1]', '    Solo',
+      ]);
   });
 
   it('shuts the nameless pile by the key it is drawn with', () => {
@@ -116,8 +121,9 @@ describe('an artist credited more than one way', () => {
 
   it('keeps every collaboration under it, in title order', () => {
     expect(drawn(listing(SKRILLEX, 'artist'))).toEqual([
-      '[Above & Beyond 1]', '  Group Therapy',
-      '[Skrillex 4]', '  Bangarang', '  Purple Lamborghini', '  Raise Your Weapon', '  Rumble',
+      '[Above & Beyond 1]', '  [No album 1]', '    Group Therapy',
+      '[Skrillex 4]', '  [No album 4]',
+      '    Bangarang', '    Purple Lamborghini', '    Raise Your Weapon', '    Rumble',
     ]);
   });
 
@@ -137,9 +143,11 @@ describe('an artist credited more than one way', () => {
     // What the rail does: read the whole folder, then list only what survived the box.
     const read = credits(SKRILLEX.map((t) => t.artist));
     const survived = SKRILLEX.filter((t) => t.artist === 'Skrillex & Rick Ross');
-    expect(drawn(listing(survived, 'artist', new Set(), read))).toEqual(['[Skrillex 1]', '  Purple Lamborghini']);
+    expect(drawn(listing(survived, 'artist', new Set(), read)))
+      .toEqual(['[Skrillex 1]', '  [No album 1]', '    Purple Lamborghini']);
     // Without the folder behind it, the same one row would name itself.
-    expect(drawn(listing(survived, 'artist'))).toEqual(['[Skrillex & Rick Ross 1]', '  Purple Lamborghini']);
+    expect(drawn(listing(survived, 'artist')))
+      .toEqual(['[Skrillex & Rick Ross 1]', '  [No album 1]', '    Purple Lamborghini']);
   });
 });
 
@@ -181,10 +189,10 @@ describe('searching without losing browsing identity', () => {
     expect(drawn(rows)).toEqual(['[Skrillex 1]', '  [Quest For Fire 1]', '    Rumble']);
   });
 
-  it('prunes unrelated albums and artists without assigning loose tracks an album', () => {
+  it('prunes unrelated albums and artists, keeping the unnamed pile of what is left', () => {
     const matches = searchTracks(tracks, 'missy');
     expect(drawn(matchingRows(listing(tracks, 'artist'), new Set(matches.map(t => t.id)))))
-      .toEqual(['[Skrillex 1]', '  RATATA']);
+      .toEqual(['[Skrillex 1]', '  [No album 1]', '    RATATA']);
     expect(matchingRows(listing(tracks, 'artist'), new Set())).toEqual([]);
   });
 

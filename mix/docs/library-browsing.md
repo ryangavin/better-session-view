@@ -23,6 +23,39 @@ Behavior reference: [the library rail](window.md#the-library-rail).
 
 These sources inform the scope; none specifies mix[flow]'s lead-credit heuristic.
 
+## Visual study: density and hierarchy
+
+The first review concentrated on retrieval behavior. That did not establish a coherent
+visual design, and the subsequent stacked-label revision made the rail too tall.
+The following references were inspected as images, not inferred from feature lists:
+
+| Reference | Visible design choices | Application in this rail |
+| --- | --- | --- |
+| [Serato DJ Pro 4 overview](https://support.serato.com/hc/en-us/articles/14173738028175-Software-Overview-Serato-DJ-Pro-4-0) | A dense single-line track table below the decks; one column-label row; aligned metadata; restrained neutral rows and a clear selection stripe. | One header for Track / Stems / BPM; constant fact columns; single-line grouped tracks; selection retains the app's amber edge. |
+| [Traktor browser](https://docs.native-instruments.com/ni-tech-manuals/traktor-pro-manual/en/traktor-overview#browser) | Navigation hierarchy occupies a narrow left tree; tracks have regular rows, small covers and aligned numerical facts. Hierarchy and track facts use distinct spatial roles. | Artist bands and indented album covers identify the outline; track titles occupy the flexible column and facts stay aligned at the right. |
+
+These are qualitative observations from official screenshots. The reference row heights
+were not measured. The implemented sizes are specific to this app: 24px grouped tracks,
+26px artist/album headings, 16px album covers, 36px flat rows. A 15-track artist with one
+album occupies 412px including its two headings, instead of adding three text lines per
+collaboration. All typography and surfaces use existing palette tokens.
+
+The app has a narrow rail rather than these products' wide tables. Showing six labeled
+stem cells, full collaborators, title and tempo simultaneously steals the title column.
+The rail therefore uses a stem count with named hover details, shows collaborator suffixes
+inline only from 400px, and keeps complete credits in the hover hint and search. Below
+270px it hides the stems column. BPM never contains a filename extension or musical key;
+those remain in the metadata tooltip. Small inline Artist / Album labels, weight and
+indentation distinguish headings without large cards, repeated units or extra gaps.
+
+The hierarchy is regular — artist, record, track — so indentation alone carries the
+level. Tracks the catalogue never gave an album gather under a standing-in **No album**
+record rather than floating beside the named ones. The rail's indent scale is one set of
+custom properties (`--rail-pad`, `--step`, `--caret`, `--cover`, `--gap`), and a track's
+title starts in the same column as the album name above it because both are computed from
+those. Nothing draws a connecting guide or branch marks: a ladder into a list whose
+indentation is already regular is decoration competing with the covers and the facts.
+
 ## Project constraints and diagnosis
 
 The manifest has title, artist, album and import time, but no album artist, track
@@ -62,8 +95,9 @@ Four release issues were identified in the initial implementation:
   matching counts. Search temporarily expands results and disables collapse controls.
   Clear or Escape returns to the existing browsing state.
 - Bound sticky artist and album headings by nested sections containing their tracks.
-- Keep one-line grouped rows, full-credit tooltips, collaborator suffixes and
-  track-ID drag payloads. Give the sort selector enough room to show its chosen name.
+- Keep full-credit tooltips, collaborator credits and track-ID drag payloads.
+  Give the sort selector enough room to show its chosen name. Use the compact outline
+  and aligned facts described in the visual study below.
 - Preserve the exact full credit even if the grouping parser trims outer whitespace.
 
 Playlist editing, reverse/secondary sorts, embedded tags, album artist and track-number

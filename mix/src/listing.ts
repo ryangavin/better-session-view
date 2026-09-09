@@ -12,19 +12,17 @@ import type { Track } from './openflow.ts';
  * is a flat list with headings in it, and everything below is about making the
  * headings earn their line.
  *
- * **Depth follows the data.** `album` is sparse: import writes it null
- * (`mix/electron/manifest.ts`) and only the catalogue lookup fills it in, for
- * the subset of tracks whose filename gave up an artist. A strict
- * artist → album → track tree over that is mostly a level that says *unknown*,
- * so there is no unknown-album heading at all, and an album earns a heading
- * only once `TOGETHER` of its tracks are here. A library of singles reads as a
- * flat list of artists; a ripped record reads as a record. That one rule is
- * the difference between this and the naive version, which turns five tracks
- * into five headings and five rows.
+ * **The depth is the same everywhere.** Every track under an artist sits under
+ * a record, including the ones the catalogue never named: `album` is sparse
+ * (import writes it null — `mix/electron/manifest.ts`) and the tracks it left
+ * empty gather under one **No album** heading rather than floating at the
+ * level of the records beside them. A row's indent then means one thing, and
+ * a track is always two steps in, so the eye can tell a record from a song
+ * without reading either.
  *
- * **An artist's loose tracks come before its records.** The renderer wraps
- * each artist and album in a section, bounding sticky headings by the tracks
- * they describe. The domain list remains flat for filtering and counting.
+ * **A record's tracks come before the unnamed pile.** The renderer wraps each
+ * artist and album in a section, bounding sticky headings by the tracks they
+ * describe. The domain list remains flat for filtering and counting.
  *
  * **An artist heading is the lead of a credit, not the whole of it.** A folder
  * of dance records credits the same person four ways — `Skrillex`,
@@ -46,11 +44,11 @@ export const ORDERS: readonly { id: Order; label: string }[] = [
   { id: 'title', label: 'Title' },
 ];
 
-/** How many tracks an album needs here before it is worth a line of its own. */
-const TOGETHER = 2;
-
 /** The pile at the bottom: bounces, rough mixes, anything the filename gave nothing for. */
 export const NAMELESS = 'artist:';
+
+/** What the tracks an artist has no record for are gathered under. */
+export const NO_ALBUM = 'No album';
 
 export interface Head {
   kind: 'artist' | 'album';
@@ -61,13 +59,15 @@ export interface Head {
   count: number;
   /** A cover, relative to the library root, for the heads that carry one. */
   art: string | null;
+  /** Set on the album heading that stands in for a record nobody named. */
+  loose?: true;
 }
 
 export interface Line {
   kind: 'track';
   key: string;
   track: Track;
-  /** 0 flat, 1 under an artist, 2 under one of its albums. */
+  /** 0 flat, 2 under one of an artist's records. */
   depth: number;
   /** How this track's credit reads, or null where nobody has said who it is by. */
   credit: Credit | null;
@@ -106,25 +106,25 @@ function bunched(tracks: readonly Track[], of: (track: Track) => string | null) 
   return bunches;
 }
 
-/** One artist's heading and everything under it: the loose tracks, then the records. */
+/** One artist's heading, then each of its records, then whatever it has no record for. */
 function underArtist(key: string, name: string, tracks: readonly Track[], read: Reading, collapsed: ReadonlySet<string>): Row[] {
   const head: Head = { kind: 'artist', key, name, count: tracks.length, art: null };
   if (collapsed.has(key)) return [head];
 
-  const records = [...bunched(tracks, (track) => track.album)]
-    .filter(([album, bunch]) => album !== '' && bunch.tracks.length >= TOGETHER)
-    .sort(([, a], [, b]) => byName(a.name, b.name));
-  const held = new Set(records.flatMap(([, bunch]) => bunch.tracks.map((track) => track.id)));
+  const bunches = [...bunched(tracks, (track) => track.album)];
+  const records = bunches.filter(([album]) => album !== '').sort(([, a], [, b]) => byName(a.name, b.name));
+  const loose = bunches.find(([album]) => album === '');
 
-  const rows: Row[] = [head, ...lines(tracks.filter((track) => !held.has(track.id)).sort(byTitle), read, 1)];
-  for (const [album, bunch] of records) {
+  const rows: Row[] = [head];
+  for (const [album, bunch] of loose ? [...records, loose] : records) {
     const under = `${key}/${album}`;
     rows.push({
       kind: 'album',
       key: under,
-      name: bunch.name,
+      name: album === '' ? NO_ALBUM : bunch.name,
       count: bunch.tracks.length,
       art: bunch.tracks.find((track) => track.art)?.art ?? null,
+      ...(album === '' ? { loose: true as const } : {}),
     });
     if (!collapsed.has(under)) rows.push(...lines([...bunch.tracks].sort(byTitle), read, 2));
   }
