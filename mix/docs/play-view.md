@@ -89,9 +89,10 @@ vertically; long section lists scroll inside their launcher. Six stems use two c
 of level knobs. Compact layouts fit the checked 1280×720, 1024×768 and 1366×768 viewports.
 
 Loaded waveforms overlay a settings trigger, focused Play and Cue. The trigger opens
-relative group movement and zoom. The compact loop row keeps In, Out,
-Exit/Reloop, halve/double, move back/ahead, quick loop and settings at equal widths
-and 24px heights. Quick loop and its adjacent settings button form one attached pair
+relative group movement and zoom. Loop controls keep their 24px height. With at most
+1490px available to Play, they use two rows: In, Out and Exit/Reloop above the paired
+halve/double, move back/ahead and quick-loop/settings controls. Wider layouts keep
+one row with equally sized actions. Quick loop and its adjacent settings button form one attached pair
 with a single divider; both remain separately focusable. Settings opens loop target
 and Slip. The quick loop's length is one setting for the whole rig, set
 in the header in bars, so the decks cannot disagree about what a loop is; it defaults to

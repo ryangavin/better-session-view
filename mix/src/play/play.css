@@ -28,6 +28,10 @@
 .mf-play .play-performance {min-height:0;overflow:hidden;}
 .mf-play .play-grid {flex:1;min-height:0;max-height:198px;}
 .mf-play .play-deck-loops {flex:none;}
+/* Keep capture above the paired length, movement and quick-loop controls. */
+@container (max-width: 1490px) {
+  .mf-play .play-deck-loops {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+}
 .mf-play .play-scroll {height:min(690px,calc(100% - 204px));}
 /* Keep routing and the three square transport buttons inside each deck. */
 .mf-play .play-decks {height:100%;box-sizing:border-box;--play-deck-min:260px;min-width:1198px;}
