@@ -5,6 +5,13 @@ The bug button joined to the Settings gear at the right of the header opens a ta
 can hand a corrected map back to the app. Waveform lab compares designs using the
 same decoded stems the lanes are drawn from.
 
+## Bass pitch
+
+The **Bass pitch** tab preserves continuous frequency/voicing evidence from the existing
+bass worker and aligns it with the waveform, derived notes, imported references and
+uncertain key-region hypotheses. It supports zoom, passage selection and bass audition.
+See [pitch.md](pitch.md) for the file format, evaluation and current accuracy limits.
+
 ## Beat analysis
 
 The normal **Analyze** is a separate product component,

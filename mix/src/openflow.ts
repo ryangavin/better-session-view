@@ -13,6 +13,7 @@ import type { Fit } from './tempo.ts';
 import type { Follow } from './follow.ts';
 import type { AudioDevice } from './audioDevices.ts';
 import type { LinkAudioAPI } from './linkAudioTypes.ts';
+import type { PitchEvidence } from './pitchMap.ts';
 
 /**
  * Whether this build can separate, and whether it has the engine yet.
@@ -282,6 +283,7 @@ export interface KeptScans {
 
 interface Bridge {
   audioDevices(): Promise<AudioDevice[]>;
+  bassMidi: import('./bassMidi.ts').BassMidiAPI;
   linkAudio: LinkAudioAPI;
   demucs(): Promise<Ready>;
   library: {
@@ -339,12 +341,14 @@ interface Bridge {
     onFinished(hear: (outcome: Outcome) => void): () => void;
   };
   transcribe: {
+    pitchMap(trackId: string): Promise<PitchEvidence | null>;
     busy(): Promise<string | null>;
     run(ask: {
       trackId: string;
       tuning: readonly TuningString[];
       bars: { rate: number; length: number; first: number; samples: readonly number[] } | null;
       transpose: number;
+      requirePitchMap?: boolean;
     }): Promise<TranscribeOutcome>;
     cancel(trackId?: string): Promise<void>;
     reveal(trackId: string): Promise<void>;

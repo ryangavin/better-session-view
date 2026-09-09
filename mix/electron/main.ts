@@ -14,18 +14,20 @@ import { add, artwork, choose, edit, load, matches, reveal, root, youtube } from
 import { MODELS } from './models.ts';
 import { recordStems, type Edits } from './manifest.ts';
 import { busy, cancel, separate, stopAll, type Outcome } from './separate.ts';
-import type { Progress } from './job.ts';
+import { hashOf, type Progress } from './job.ts';
 import {
   cancelTranscription,
   transcribe,
   transcribing,
   type TranscribeOutcome,
 } from './transcribe.ts';
-import { TAB_FILE, transcriptionAt, type TranscribeProgress } from './transcribeJob.ts';
+import { TAB_FILE, readTranscription, transcriptionAt, type TranscribeProgress } from './transcribeJob.ts';
+import { readPitchMap } from './pitchMap.ts';
 import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
 import { stopYoutube } from './youtube.ts';
 import { audioDevices } from './audioDevices.ts';
+import { BassMidiService } from './bassMidi.ts';
 import { LinkAudioService } from './linkAudio.ts';
 import type { LinkBlock, LinkCommand, LinkOutput } from '../src/linkAudioTypes.ts';
 import {
@@ -106,6 +108,12 @@ if (only(app)) {
   // The same mounts the scheme gets, so both are one description of what may
   // be fetched.
   const tabs = reach(MIX, { ipcMain, mounts: { [MOUNT]: root } });
+  const bassMidi = new BassMidiService(path.resolve(__dirname, '../../bin/bass-midi'));
+  ipcMain.handle('openflow:bass-midi-open', () => bassMidi.open());
+  ipcMain.handle('openflow:bass-midi-send', (_event, id: string, data: number[], epochMs: number) => bassMidi.send(id, data, epochMs));
+  ipcMain.handle('openflow:bass-midi-clear', (_event, id: string) => bassMidi.clear(id));
+  ipcMain.handle('openflow:bass-midi-ping', (_event, id: string) => bassMidi.ping(id));
+  ipcMain.handle('openflow:bass-midi-close', (_event, id: string) => bassMidi.close(id));
   const linkAudio = new LinkAudioService(path.resolve(__dirname, '../../bin/link-audio'));
   ipcMain.handle('openflow:link-open', (_event, outputs: LinkOutput[], tempo?: number) => linkAudio.open(outputs, tempo));
   ipcMain.handle('openflow:link-control', (_event, id: string, command: LinkCommand) => linkAudio.control(id, command));
@@ -273,10 +281,21 @@ if (only(app)) {
   );
 
   ipcMain.handle('openflow:transcribing', () => transcribing());
+  ipcMain.handle('openflow:pitch-map', async (_event, trackId: string) => {
+    const library = await load();
+    const track = library.tracks.find(t => t.id === trackId);
+    if (!library.root || !track?.model || !track.stems) return null;
+    const where = transcriptionAt(track.id, track.model);
+    const held = await readTranscription(library.root, where);
+    if (!held?.pitchMap) return null;
+    const hash = await hashOf(path.join(library.root, track.stems, 'bass.wav'));
+    const map = await readPitchMap(library.root, where, hash, held.pitchMap);
+    return map ? { map, notes: held.notes, transpose: held.transpose } : null;
+  });
   ipcMain.handle('openflow:transcribe-cancel', (_event, trackId?: string) => cancelTranscription(trackId));
   ipcMain.handle(
     'openflow:transcribe',
-    async (_event, ask: { trackId: string; tuning: Tuning; bars: Beats | null; transpose: number }): Promise<TranscribeOutcome> => {
+    async (_event, ask: { trackId: string; tuning: Tuning; bars: Beats | null; transpose: number; requirePitchMap?: boolean }): Promise<TranscribeOutcome> => {
       const library = await load();
       const track = library.tracks.find((candidate) => candidate.id === ask.trackId);
       if (!library.root || !track?.stems || !track.model || !track.sources.includes('bass')) {
@@ -292,6 +311,7 @@ if (only(app)) {
           tuning: ask.tuning,
           bars: ask.bars,
           transpose: ask.transpose,
+          requirePitchMap: ask.requirePitchMap === true,
         },
         {
           progress: (trackId: string, progress: TranscribeProgress) =>
@@ -314,6 +334,7 @@ if (only(app)) {
   // `desktop/docs/server.md` records about a server.
   app.on('before-quit', () => {
     linkAudio.stop();
+    bassMidi.stop();
     stopAll();
     stopYoutube();
   });

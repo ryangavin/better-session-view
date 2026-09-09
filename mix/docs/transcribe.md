@@ -21,6 +21,7 @@ Neither is written beside the source audio. They live under the portable library
   bass.mid
   bass.tab.txt
   transcription.json
+  pitch-map.json       # continuous evidence on newly analyzed results
 ```
 
 The separation model is part of the path because the input is that model's `bass.wav`.
@@ -74,6 +75,10 @@ The pitch of a voiced segment is a periodicity-weighted median. That is intentio
 less responsive than reading every frame as a new note: vibrato and the attack's pitch
 settling are not twelve MIDI notes. A sustained slide, hammer-on or pull-off with no new
 onset is therefore one current limitation — it remains one note at the segment median.
+The underlying frequency motion is now retained in `pitch-map.json` before this reduction.
+The **Bass pitch** debug experiment can inspect it beside the derived notes; see
+[pitch.md](pitch.md). Note segmentation and the four-string tab remain separate from
+that instrument-independent evidence.
 
 ## Uncertainty stays visible
 
@@ -131,6 +136,14 @@ The grid and octave correction are deliberately not in that key. Once pitch infe
 exists, laying the same notes against a newly fitted grid rewrites `bass.tab.txt`; changing
 octave rewrites that tab and `bass.mid`. In both cases the detected notes are reused.
 
+New inference also writes the unsnapped frame map, with original and median-filtered
+periodicity, model settings and source SHA-256. Its reference in the sidecar carries a
+content hash and frame count. Ordinary legacy tab caches remain reusable; **Analyze bass**
+in the pitch lab explicitly requests the missing evidence and upgrades them once. A valid
+map is then reused. The upgrade retains an existing global octave correction. Corrupt,
+missing or stale maps are not drawn as valid evidence. Changing layouts never edits the
+frame file. Full details and the measured baseline are in [pitch.md](pitch.md).
+
 Fresh work goes into `<model>.writing` and is renamed only after MIDI, sidecar and tab
 all exist. Cancellation or a failed worker cannot land a partial transcription in the
 library. Separation and transcription share `electron/work.ts`'s single lease: both use
@@ -164,5 +177,7 @@ the Electron cache path: changing the grid rewrote tab from the cached event lis
 
 Unit tests cover event decoding, cache identity and reuse, tuning parsing, fret-path
 choice, grid-aware and timestamped tab, the shared worker lease, nearby-onset suppression,
-and silence after pitched and muted attacks. Model accuracy itself still needs listening
-against each song; it is a transcription aid, not a score recovered from ground truth.
+and silence after pitched and muted attacks. Model accuracy on separated real bass still
+needs independent annotated evidence and listening against each song. The new
+[pitch lab and evaluator](pitch.md) expose those comparisons without promoting model
+output to ground truth.

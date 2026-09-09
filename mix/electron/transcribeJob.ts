@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { bassTranspose, type TranscribedNote } from '../src/tab.ts';
+import type { PitchMapRef } from './pitchMap.ts';
 
 export const TRANSCRIPTIONS = 'transcriptions';
 export const TRANSCRIPTION_SIDECAR = 'transcription.json';
@@ -28,6 +29,8 @@ export interface TranscriptionSidecar {
   transpose: number;
   /** Raw detections. `transpose` is applied when an output is laid out. */
   notes: TranscribedNote[];
+  /** Absent on legacy inference. The large frame arrays are read only by the pitch lab. */
+  pitchMap?: PitchMapRef;
   noteCount: number;
   pitchedCount: number;
   mutedCount: number;
@@ -105,6 +108,7 @@ export function transcriptionSidecar(args: {
     engine: PITCH_ENGINE,
     transpose: bassTranspose(args.transpose ?? 0),
     notes: done.notes,
+    pitchMap: done.pitchMap,
     noteCount: done.noteCount,
     pitchedCount: done.pitchedCount,
     mutedCount: done.mutedCount,

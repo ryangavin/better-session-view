@@ -13,6 +13,7 @@ import type { ExportAsk, ExportProgress, Written } from './export.ts';
 import type { Beats } from '../src/warp.ts';
 import type { TranscribeOutcome } from './transcribe.ts';
 import type { TranscribeProgress } from './transcribeJob.ts';
+import type { PitchEvidence } from '../src/pitchMap.ts';
 import type { Analysis, GridNote, Grid, Peaks, Reading, Scans, SliceKept } from './analysis.ts';
 import type { LinkAudioAPI, LinkBlock, LinkCommand, LinkOutput } from '../src/linkAudioTypes.ts';
 
@@ -35,6 +36,13 @@ import type { LinkAudioAPI, LinkBlock, LinkCommand, LinkOutput } from '../src/li
  */
 expose({
   audioDevices: (): Promise<AudioDevice[]> => ipcRenderer.invoke('openflow:audio-devices'),
+  bassMidi: {
+    open: () => ipcRenderer.invoke('openflow:bass-midi-open'),
+    send: (id: string, data: number[], epochMs: number) => ipcRenderer.invoke('openflow:bass-midi-send', id, data, epochMs),
+    clear: (id: string) => ipcRenderer.invoke('openflow:bass-midi-clear', id),
+    ping: (id: string) => ipcRenderer.invoke('openflow:bass-midi-ping', id),
+    close: (id: string) => ipcRenderer.invoke('openflow:bass-midi-close', id),
+  },
   linkAudio: {
     open: (outputs: LinkOutput[], tempo?: number) => ipcRenderer.invoke('openflow:link-open', outputs, tempo),
     control: (session: string, command: LinkCommand) => ipcRenderer.invoke('openflow:link-control', session, command),
@@ -141,8 +149,9 @@ expose({
     },
   },
   transcribe: {
+    pitchMap: (trackId: string): Promise<PitchEvidence | null> => ipcRenderer.invoke('openflow:pitch-map', trackId),
     busy: (): Promise<string | null> => ipcRenderer.invoke('openflow:transcribing'),
-    run: (ask: { trackId: string; tuning: Tuning; bars: Beats | null; transpose: number }): Promise<TranscribeOutcome> =>
+    run: (ask: { trackId: string; tuning: Tuning; bars: Beats | null; transpose: number; requirePitchMap?: boolean }): Promise<TranscribeOutcome> =>
       ipcRenderer.invoke('openflow:transcribe', ask),
     cancel: (trackId?: string): Promise<void> => ipcRenderer.invoke('openflow:transcribe-cancel', trackId),
     reveal: (trackId: string): Promise<void> => ipcRenderer.invoke('openflow:transcribe-reveal', trackId),

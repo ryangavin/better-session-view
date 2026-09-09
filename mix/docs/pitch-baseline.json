@@ -1,0 +1,706 @@
+{
+  "suite": "oscillator-v1",
+  "results": [
+    {
+      "case": "E1-harmonics",
+      "truth": "synthetic",
+      "sourceHash": "77a3c9a2f6400d5fda21a9c773cf52daf3a42bcc3430eba23027d8a43bda6b80",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 320,
+        "unvoicedReferenceFrames": 80,
+        "detectedVoicedFrames": 317,
+        "falseVoicedFrames": 0,
+        "correct50Cents": 317,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 7.603544705397283,
+        "p95AbsoluteCentsJointlyVoiced": 20.228185168807563,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 2,
+            "correct50": 2
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 315,
+            "correct50": 315
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 0,
+            "correct50": 0
+          }
+        ]
+      },
+      "boundary100ms": {
+        "voicedReferenceFrames": 20,
+        "unvoicedReferenceFrames": 19,
+        "detectedVoicedFrames": 17,
+        "falseVoicedFrames": 0,
+        "correct50Cents": 17,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 5.469792827636187,
+        "p95AbsoluteCentsJointlyVoiced": 16.98034374778435,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 2,
+            "correct50": 2
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 15,
+            "correct50": 15
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 0,
+            "correct50": 0
+          }
+        ]
+      },
+      "wallSeconds": 12.36,
+      "pitchWallSeconds": 12.35,
+      "noteCount": 1
+    },
+    {
+      "case": "B0-below-model-floor",
+      "truth": "synthetic",
+      "sourceHash": "984011ec6e3adff7d695252014065a45c7604464fdc38b41f57ffd9147ffa114",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 320,
+        "unvoicedReferenceFrames": 80,
+        "detectedVoicedFrames": 0,
+        "falseVoicedFrames": 0,
+        "correct50Cents": 0,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": null,
+        "p95AbsoluteCentsJointlyVoiced": null,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 0,
+            "correct50": 0
+          }
+        ]
+      },
+      "wallSeconds": 11.21,
+      "pitchWallSeconds": 11.21,
+      "noteCount": 1
+    },
+    {
+      "case": "missing-fundamental",
+      "truth": "synthetic",
+      "sourceHash": "947d39eeda2560e6336512ea5e258a1011a3844e04a80f5f078e49cc80e08d4d",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 320,
+        "unvoicedReferenceFrames": 80,
+        "detectedVoicedFrames": 317,
+        "falseVoicedFrames": 0,
+        "correct50Cents": 317,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 6.9710314749874,
+        "p95AbsoluteCentsJointlyVoiced": 18.950092933679922,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 1,
+            "correct50": 1
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 2,
+            "correct50": 2
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 314,
+            "correct50": 314
+          }
+        ]
+      },
+      "wallSeconds": 12.7,
+      "pitchWallSeconds": 12.69,
+      "noteCount": 1
+    },
+    {
+      "case": "detuned-23-cents",
+      "truth": "synthetic",
+      "sourceHash": "775f90458adc06901dcf130f5f6d6c041e2c450ef7161bd0a4aba0692d65e387",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 320,
+        "unvoicedReferenceFrames": 80,
+        "detectedVoicedFrames": 319,
+        "falseVoicedFrames": 0,
+        "correct50Cents": 319,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 17.96836704597292,
+        "p95AbsoluteCentsJointlyVoiced": 29.929915436565885,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 2,
+            "correct50": 2
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 317,
+            "correct50": 317
+          }
+        ]
+      },
+      "wallSeconds": 15.0,
+      "pitchWallSeconds": 14.99,
+      "noteCount": 1
+    },
+    {
+      "case": "slide-one-octave",
+      "truth": "synthetic",
+      "sourceHash": "b53ae0bf586bb74719bac7266141239ca912c2465d26c1b462a8ab9a50e8a0be",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 320,
+        "unvoicedReferenceFrames": 80,
+        "detectedVoicedFrames": 318,
+        "falseVoicedFrames": 1,
+        "correct50Cents": 316,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 11.742942787642349,
+        "p95AbsoluteCentsJointlyVoiced": 33.115177332741396,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 1,
+            "correct50": 1
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 45,
+            "correct50": 43
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 191,
+            "correct50": 191
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 81,
+            "correct50": 81
+          }
+        ]
+      },
+      "wallSeconds": 11.07,
+      "pitchWallSeconds": 11.07,
+      "noteCount": 1
+    },
+    {
+      "case": "legato-step",
+      "truth": "synthetic",
+      "sourceHash": "dbb9115c608c5699a927ffd6519387e727c2faed8ecb7140d73f8e01f4ff5cd5",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 320,
+        "unvoicedReferenceFrames": 80,
+        "detectedVoicedFrames": 315,
+        "falseVoicedFrames": 1,
+        "correct50Cents": 315,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 7.315653486537982,
+        "p95AbsoluteCentsJointlyVoiced": 19.133587932974056,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 2,
+            "correct50": 2
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 2,
+            "correct50": 2
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 311,
+            "correct50": 311
+          }
+        ]
+      },
+      "boundary100ms": {
+        "voicedReferenceFrames": 19,
+        "unvoicedReferenceFrames": 0,
+        "detectedVoicedFrames": 16,
+        "falseVoicedFrames": 0,
+        "correct50Cents": 16,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 7.571405350630098,
+        "p95AbsoluteCentsJointlyVoiced": 20.6015895810581,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 1,
+            "correct50": 1
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 15,
+            "correct50": 15
+          }
+        ]
+      },
+      "wallSeconds": 11.34,
+      "pitchWallSeconds": 11.33,
+      "noteCount": 1
+    },
+    {
+      "case": "vibrato",
+      "truth": "synthetic",
+      "sourceHash": "0e51767b830d5aefe6dcad7f2240b9a50df1c425e7175abfe5caa95b278dd3f4",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 320,
+        "unvoicedReferenceFrames": 80,
+        "detectedVoicedFrames": 319,
+        "falseVoicedFrames": 1,
+        "correct50Cents": 319,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 9.393915218317877,
+        "p95AbsoluteCentsJointlyVoiced": 26.984648378460857,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 1,
+            "correct50": 1
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 53,
+            "correct50": 53
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 265,
+            "correct50": 265
+          }
+        ]
+      },
+      "wallSeconds": 11.41,
+      "pitchWallSeconds": 11.4,
+      "noteCount": 1
+    },
+    {
+      "case": "distorted-bass",
+      "truth": "synthetic",
+      "sourceHash": "f6c179c8f8d7b8b6597abf842ebc1e6b8c23e2dcb4358ee48f87f2bfb07751f1",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 320,
+        "unvoicedReferenceFrames": 80,
+        "detectedVoicedFrames": 319,
+        "falseVoicedFrames": 1,
+        "correct50Cents": 319,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": 7.297458393554076,
+        "p95AbsoluteCentsJointlyVoiced": 19.893936431556952,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 2,
+            "correct50": 2
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 317,
+            "correct50": 317
+          }
+        ]
+      },
+      "wallSeconds": 10.89,
+      "pitchWallSeconds": 10.88,
+      "noteCount": 1
+    },
+    {
+      "case": "noise-unvoiced",
+      "truth": "synthetic",
+      "sourceHash": "a6c9de6a41d07d7223fbc3baaefa9dce1db501dc11d957f355bed05a635b5e27",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 0,
+        "unvoicedReferenceFrames": 400,
+        "detectedVoicedFrames": 0,
+        "falseVoicedFrames": 0,
+        "correct50Cents": 0,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": null,
+        "p95AbsoluteCentsJointlyVoiced": null,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 0,
+            "correct50": 0
+          }
+        ]
+      },
+      "wallSeconds": 15.65,
+      "pitchWallSeconds": 15.64,
+      "noteCount": 21
+    },
+    {
+      "case": "silence",
+      "truth": "synthetic",
+      "sourceHash": "f6e7b301c4d5b913202c311406697ff21a9bdad19d27588accba92c06b60cb5e",
+      "engine": {
+        "name": "torchcrepe",
+        "version": "0.0.24",
+        "model": "full",
+        "fmin": 32.7,
+        "fmax": 400.0,
+        "hopMs": 10.0,
+        "decoder": "viterbi",
+        "batchSize": 512,
+        "seed": 0
+      },
+      "metrics": {
+        "voicedReferenceFrames": 0,
+        "unvoicedReferenceFrames": 400,
+        "detectedVoicedFrames": 0,
+        "falseVoicedFrames": 0,
+        "correct50Cents": 0,
+        "octaveErrors": 0,
+        "medianAbsoluteCentsJointlyVoiced": null,
+        "p95AbsoluteCentsJointlyVoiced": null,
+        "periodicityBins": [
+          {
+            "from": 0,
+            "to": 0.2,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.2,
+            "to": 0.4,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.4,
+            "to": 0.6000000000000001,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.6,
+            "to": 0.8,
+            "frames": 0,
+            "correct50": 0
+          },
+          {
+            "from": 0.8,
+            "to": 1.0,
+            "frames": 0,
+            "correct50": 0
+          }
+        ]
+      },
+      "wallSeconds": 8.5,
+      "pitchWallSeconds": 8.5,
+      "noteCount": 0
+    }
+  ],
+  "environment": {
+    "device": "cpu",
+    "torch": "2.13.0",
+    "torchcrepe": "0.0.24",
+    "python": "3.13.3"
+  },
+  "scope": "Generated oscillator diagnostic baseline; not separated-real-bass accuracy or acceptance thresholds."
+}

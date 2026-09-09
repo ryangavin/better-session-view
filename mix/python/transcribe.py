@@ -45,6 +45,7 @@ from pathlib import Path
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 import numpy as np
+from pitch_map import save_map
 
 
 def say(event: str, **fields: object) -> None:
@@ -283,12 +284,17 @@ def main() -> int:
     p.add_argument("--hop-ms", type=float, default=10.0)
     p.add_argument("--batch-size", type=int, default=512)
     p.add_argument("--confidence", type=float, default=0.21, help="periodicity floor for a voiced frame")
+    p.add_argument("--source-hash", default="", help="SHA-256 already measured by the parent")
+    p.add_argument("--seed", type=int, default=0, help="reproducible decoder dithering")
     args = p.parse_args()
 
     import torch
     import torchcrepe
     import pretty_midi
     import soundfile as sf
+    from importlib.metadata import version
+
+    torch.manual_seed(args.seed)
 
     device = args.device or (
         "mps" if torch.backends.mps.is_available()
@@ -334,6 +340,16 @@ def main() -> int:
     cents = hz_to_midi_cents(pitch_hz)
     frame_times = np.arange(len(pitch_hz)) * (hop_length / sr)
     pitch_wall = time.monotonic() - began
+
+    say("stage", stage="saving continuous pitch evidence")
+    pitch_map = save_map(
+        args.out, args.input, args.source_hash,
+        {"name": "torchcrepe", "version": version("torchcrepe"), "model": args.model,
+         "fmin": args.fmin, "fmax": args.fmax, "hopMs": args.hop_ms,
+         "decoder": "viterbi", "batchSize": args.batch_size, "seed": args.seed},
+        mono=mono, sample_rate=sr, hop_length=hop_length, hz=pitch_hz,
+        periodicity=periodicity, smoothed=periodicity_smoothed, threshold=args.confidence,
+    )
 
     say("stage", stage="finding onsets")
     level = envelope_of(mono)
@@ -389,6 +405,7 @@ def main() -> int:
         wall=round(time.monotonic() - began, 2),
         pitchWall=round(pitch_wall, 2),
         file="bass.mid",
+        pitchMap=pitch_map,
     )
     return 0
 

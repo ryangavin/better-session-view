@@ -6,9 +6,11 @@ import { Analysis } from './Analysis.tsx';
 import { WaveformLab } from './waveforms/WaveformLab.tsx';
 import { RenderLab } from './render/RenderLab.tsx';
 import { AlignmentLab } from './alignment/AlignmentLab.tsx';
+import { PitchLab } from './pitch/PitchLab.tsx';
 
 /** Add a component and one entry here. Widgets never need to know about an experiment. */
 const experiments: readonly Experiment<Mix>[] = [
+  { id: 'pitch', title: 'Bass pitch', description: 'Hear bass passages against continuous pitch, derived notes, references and uncertain key regions.', component: ({ context }) => <PitchLab mix={context} /> },
   { id: 'alignment', title: 'Musical alignment', description: 'Choose required musical boundaries, preserve interior timing, and audition a shared-stem varispeed render.', component: ({ context }) => <AlignmentLab mix={context} /> },
   { id: 'beats', title: 'Beat analysis', description: 'Inspect, audition and correct the beat grid.', component: ({ context }) => <Analysis mix={context} /> },
   { id: 'waveforms', title: 'Waveform lab', description: 'Compare visual ideas against the same decoded audio. These views do not change the track.', component: ({ context }) => <WaveformLab mix={context} /> },

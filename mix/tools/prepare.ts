@@ -19,6 +19,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { prepareBassMidi } from './bass-midi.ts';
 import { prepareAudioDevices } from './audio-devices.ts';
 import { prepareLinkAudio } from './link-audio.ts';
 
@@ -261,6 +262,7 @@ async function prepareFfmpeg(): Promise<void> {
 
 try {
   prepareAudioDevices();
+  prepareBassMidi();
   prepareLinkAudio();
   await prepareUv();
   await prepareYtDlp();

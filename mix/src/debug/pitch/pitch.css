@@ -1,0 +1,6 @@
+.mf-pitch-lab { display: flex; flex-direction: column; gap: 10px; }
+.mf-pitch-lab p { margin: 0; color: var(--fg-muted); font-size: 12px; }
+.mf-pitch-lab label { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+.mf-pitch-lab input[type=number] { width: 54px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); }
+.mf-pitch-lab output { font: 12px monospace; }
+.mf-pitch-regions { display: flex; flex-wrap: wrap; gap: 4px; }

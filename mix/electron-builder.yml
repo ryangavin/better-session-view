@@ -32,6 +32,7 @@ files:
   - '!bin/link-sdk/**'
   - '!bin/link-audio.build'
   - '!bin/audio-devices.build'
+  - '!bin/bass-midi.build'
 
 directories:
   output: ../release/mix

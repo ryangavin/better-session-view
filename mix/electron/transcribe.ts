@@ -23,6 +23,7 @@ import {
   type TranscriptionSidecar,
 } from './transcribeJob.ts';
 import { busyWork, cancelWork, claim, hold, release, wasCancelled } from './work.ts';
+import { readPitchMap } from './pitchMap.ts';
 
 const project = (runtime: string): string => process.env.OPENFLOW_DEMUCS ?? places(runtime).env;
 
@@ -37,6 +38,8 @@ export interface TranscribeRequest {
   bars: Beats | null;
   /** Semitones, constrained to the octave choices the renderer exposes. */
   transpose: number;
+  /** The pitch lab may upgrade legacy note-only inference once, explicitly. */
+  requirePitchMap?: boolean;
 }
 
 export interface Transcribed {
@@ -125,14 +128,15 @@ export async function transcribe(
   const key = transcriptionKey(hash);
   const where = transcriptionAt(request.trackId, request.model);
   const already = await reusableTranscription(request.root, where, key);
-  if (already) {
-    const sidecar = await writeLayouts(
+  const transpose = request.requirePitchMap && already ? already.transpose : request.transpose;
+  if (already && (!request.requirePitchMap || await readPitchMap(request.root, where, hash, already.pitchMap))) {
+    const sidecar = request.requirePitchMap ? already : await writeLayouts(
       request.root,
       where,
       already,
       request.tuning,
       request.bars,
-      request.transpose,
+      transpose,
     );
     return {
       ok: true,
@@ -183,6 +187,7 @@ export async function transcribe(
       [
         'run', '--project', project(request.runtime), '--quiet', 'python', worker('transcribe.py'),
         '--input', source, '--out', scratch,
+        '--source-hash', hash,
         '--model', PITCH_ENGINE.model,
         '--fmin', String(PITCH_ENGINE.fmin), '--fmax', String(PITCH_ENGINE.fmax),
         '--hop-ms', String(PITCH_ENGINE.hopMs), '--confidence', String(PITCH_ENGINE.confidence),
@@ -227,16 +232,19 @@ export async function transcribe(
     key,
     source: { file: stemRelative, bytes, hash },
     done,
-    transpose: request.transpose,
+    transpose,
   });
   try {
+    if (!await readPitchMap(request.root, `${where}.writing`, hash, done.pitchMap)) {
+      throw new Error('continuous pitch evidence is missing or invalid');
+    }
     await writeLayouts(
       request.root,
       `${where}.writing`,
       sidecar,
       request.tuning,
       request.bars,
-      request.transpose,
+      transpose,
     );
     await fs.rm(path.join(request.root, where), { recursive: true, force: true });
     await fs.mkdir(path.dirname(path.join(request.root, where)), { recursive: true });
