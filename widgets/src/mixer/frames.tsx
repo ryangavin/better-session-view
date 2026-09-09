@@ -88,7 +88,8 @@ export function FrameWaveform({ deck, index, ink, readFrame, theme, commands }: 
         onPointerDown={() => { if (!alone) commands.setFocus?.(deck.id, lane.id); }}>
         <div className="play-wave-scroll" ref={node => { strips.current[i] = node; }} style={{ width: `${range.length / range.visible * 100}%` }}>
           <Waveform peaks={lane.peaks} spectrum={lane.spectrum} ink={paint} height={48} label={`Deck ${index + 1} ${lane.name} on the shared beat grid`} />
-          <span className="play-wave-grid" style={{ backgroundSize: `${4 / range.length * 100}% 100%` }} />
+          {/* Beats while they are far enough apart to be read as beats; bars alone once they are not, and faintly once a whole song's bars are pixels apart. */}
+          <span className="play-wave-grid" data-grid={range.visible <= 48 ? 'beats' : range.visible <= 160 ? 'bars' : 'faint'} style={{ backgroundSize: `${100 / range.length}% 100%, ${400 / range.length}% 100%` }} />
           {lane.cue !== undefined && lane.cue !== lane.stemCue && <span className="play-cue-marker" style={{ left: `${(lane.cue - range.start) / range.length * 100}%`, top: alone ? 32 : undefined }}>{alone && 'DECK CUE'}</span>}
           {lane.stemCue !== undefined && <span className="play-cue-marker" style={{ left: `${(lane.stemCue - range.start) / range.length * 100}%`, top: alone ? 16 : undefined }}>{alone && 'CUE'}</span>}
           {lane.loop && <div className="play-loop-region" data-enabled={lane.loop.enabled} style={{ left: `${(lane.loop.start - range.start) / range.length * 100}%`, width: `${Math.max(0, (lane.loop.end ?? lane.loop.start) - lane.loop.start) / range.length * 100}%`, '--loop-ink': paint } as CSSProperties}>{alone && <span>{lane.loop.end === null ? 'IN' : `↻ ${Number((lane.loop.end - lane.loop.start).toFixed(1))} beats`}</span>}</div>}

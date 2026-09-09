@@ -18,7 +18,7 @@ export function MixerView({ state, commands, readFrame, theme, params, deckProps
           <>{d.waveform ? <FrameWaveform deck={d} index={index} ink={theme.decks[d.id]?.waveform ?? theme.primary} readFrame={readFrame} theme={theme} commands={commands} /> : <><Waveform peaks={d.peaks} ink={theme.decks[d.id]?.waveform ?? theme.primary} height={48} label={`Deck ${index + 1} waveform on the shared beat grid`} />
           {loop.start !== null && <div className="play-loop-region" data-enabled={loop.enabled} style={{ left: `${Math.max(0, loop.start - Math.floor(beat / 128) * 128) / 128 * 100}%`, width: `${Math.max(0, Math.min(128, (loop.end ?? loop.start) - Math.floor(beat / 128) * 128) - Math.max(0, loop.start - Math.floor(beat / 128) * 128)) / 128 * 100}%`, '--loop-ink': 'var(--amber)' } as CSSProperties}><span>{loop.end === null ? 'IN' : `↻ ${loop.end - loop.start} beats`}</span></div>}
           <span className="play-wave-grid" />
-          <FramePlayhead readFrame={readFrame} deckId={d.id} /></>}</>
+          {d.track ? <FramePlayhead readFrame={readFrame} deckId={d.id} /> : <span className="play-playhead" style={{ left: '25%' }} />}</>}</>
         </WaveControls></div>
       </div>)}
     </div>

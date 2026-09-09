@@ -54,7 +54,7 @@
 .play-wave-label b { font-size: 16px; font-weight: 400; color: var(--deck-ink); }
 .play-wave-label span { font-size: 9px; line-height: 1.5; }
 .play-wave-lane { position: relative; min-width: 0; overflow: hidden; border-top: 1px solid var(--wdg-edge); background: var(--wdg-well); }
-.play-wave-grid { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(90deg,#ffffff14 0 1px,transparent 1px 12.5%); }
+.play-wave-grid { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(90deg,#ffffff26 0 1px,transparent 1px 12.5%); }
 .play-loop-region { position: absolute; top: 0; bottom: 0; border: 1px solid var(--loop-ink); border-bottom: 0; background: color-mix(in srgb,var(--loop-ink) 9%,transparent); pointer-events: none; }
 .play-loop-region[data-enabled='false'] { border-style: dashed; background: transparent; }
 .play-loop-region span { position: absolute; top: 1px; left: 3px; color: var(--loop-ink); background: var(--wdg-well); padding: 1px 3px; font-size: 8px; white-space: nowrap; }
@@ -87,7 +87,10 @@
 
 .play-wave-scroll { position: absolute; inset: 0 auto 0 0; height: 100%; will-change: transform; }
 .play-wave-scroll > canvas { position: absolute; inset: 0; height: 100% !important; }
-.play-wave-scroll .play-wave-grid { background: linear-gradient(90deg,#ffffff16 1px,transparent 1px); }
+.play-wave-scroll .play-wave-grid { --wave-beat: transparent; --wave-bar: transparent; background: linear-gradient(90deg,var(--wave-beat) 1px,transparent 1px), linear-gradient(90deg,var(--wave-bar) 1px,transparent 1px); }
+.play-wave-scroll .play-wave-grid[data-grid='faint'] { --wave-bar: #ffffff16; }
+.play-wave-scroll .play-wave-grid[data-grid='bars'], .play-wave-scroll .play-wave-grid[data-grid='beats'] { --wave-bar: #ffffff33; }
+.play-wave-scroll .play-wave-grid[data-grid='beats'] { --wave-beat: #ffffff1a; }
 .play-wave-position { position: absolute; right: 5px; bottom: 3px; color: var(--wdg-caption); background: var(--wdg-well); font: 8px var(--mono); padding: 1px 3px; pointer-events: none; }
 
 /* Loop capture belongs to its launcher, with a larger escape/reloop target. */

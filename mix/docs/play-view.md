@@ -344,6 +344,14 @@ A newly loaded deck plays the original, so it draws that one lane; switching it 
 draws them all. Loading does not change waveform zoom. The deck sits on the track's first
 beat with its cue point there, rather than on the silence a file starts with.
 
+The grid drawn over a lane shows beats and bars while beats are far enough apart to be
+read as beats, bars alone once they are not, and faint bars at Fit, where a whole song's
+bars are a few pixels apart and anything stronger is a haze over the waveform.
+
+Every lane's playhead sits in the same column, loaded or not: the four rows are read
+against each other, and a deck waiting for a track had put its line at the left edge,
+which reads as a position rather than as an empty deck.
+
 Empty decks keep drop guidance in their header and waveform label. A deck being read
 says so in its own waveform lane, at a size that reads across a booth, over a hatched
 strip that cannot be dragged — there is nothing to draw and nothing to scrub until it
