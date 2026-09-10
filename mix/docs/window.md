@@ -46,9 +46,15 @@ loading, keyboard behavior and the current playback boundary.
 
 ## The library rail
 
-The rail's right edge is a drag handle: pointer or arrow keys, between 190px and 560px,
-kept in the session so a reload comes back the width it was left. Until it is dragged the
-stylesheet's own width stands, so the handle costs nothing to ignore.
+The rail's right edge is a drag handle: pointer or arrow keys, from 190px up to the
+available body width minus one 260px deck viewport. `useLibraryResize.ts` reads that
+limit from the shared `--mf-deck-min` token and keeps the separator's accessible bounds
+in step with its actual size. The DJ grid retains its minimum deck widths and scrolls
+horizontally inside its own area when the library takes more space.
+
+The chosen width is kept in the session. CSS temporarily caps it to the available space
+without overwriting the saved preference. Until it is dragged the stylesheet's own width
+stands, so the handle costs nothing to ignore.
 
 The rail starts with one compact row: filter, an **order** select, and **Import**. Import
 opens the ordinary multi-file picker; dropping a YouTube video link anywhere on the window

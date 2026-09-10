@@ -4,6 +4,7 @@
 :root {
   /* Colors come from the widgets ThemeRoot; this file owns app geometry. */
   --rail-left: 258px;
+  --mf-deck-min: 260px;
   --lane-head: 88px;
 
   --layer-outside: 3;

@@ -1,4 +1,4 @@
-import { useRef, type ReactNode, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useRef, type ReactNode, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { TRACK_DRAG } from '../play/decks.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { Select } from '@openflow/widgets/controls/Select.tsx';
@@ -8,6 +8,7 @@ import type { Credit } from '../credits.ts';
 import { gridFact, type GridNote, type Track } from '../openflow.ts';
 import { tempoText } from '../warp.ts';
 import type { Mix } from '../state.ts';
+import { LIBRARY_MIN, useLibraryResize } from './useLibraryResize.ts';
 import './Library.css';
 
 /**
@@ -15,35 +16,14 @@ import './Library.css';
  * Full credits remain searchable and available in the hover hint.
  * `listing.ts` decides which headings the library earns and where tracks file.
  */
-/** How far the rail may be dragged. Narrower hides the badge strip; wider starves the decks. */
-const NARROWEST = 190, WIDEST = 560;
-const held = (width: number) => Math.round(Math.max(NARROWEST, Math.min(WIDEST, width)));
-
 export function Library({ mix }: { mix: Mix }) {
   const { library } = mix;
-  const rail = useRef<HTMLElement>(null);
-  const width = () => rail.current?.getBoundingClientRect().width ?? NARROWEST;
-  const drag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    const from = width(), start = event.clientX;
-    const move = (moved: PointerEvent) => mix.setLibraryWidth(held(from + moved.clientX - start));
-    const done = () => window.removeEventListener('pointermove', move);
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', done, { once: true });
-    window.addEventListener('pointercancel', done, { once: true });
-  };
-  const nudge = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    const step = event.key === 'ArrowLeft' ? -16 : event.key === 'ArrowRight' ? 16 : 0;
-    if (!step) return;
-    event.preventDefault();
-    mix.setLibraryWidth(held(width() + step));
-  };
+  const { rail, drag, nudge, maximum, current } = useLibraryResize(mix.setLibraryWidth);
 
   return (
     <aside className="mf-library" ref={rail} style={mix.libraryWidth ? { width: `${mix.libraryWidth}px` } : undefined}>
       <div className="mf-library-grip" role="separator" aria-orientation="vertical" aria-label="Library width"
-        aria-valuemin={NARROWEST} aria-valuemax={WIDEST} aria-valuenow={mix.libraryWidth || undefined}
+        aria-valuemin={LIBRARY_MIN} aria-valuemax={maximum} aria-valuenow={current}
         tabIndex={0} onPointerDown={drag} onKeyDown={nudge} />
       <div className="mf-library-top">
         <div className="mf-library-tools">

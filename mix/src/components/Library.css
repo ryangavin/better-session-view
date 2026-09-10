@@ -13,6 +13,7 @@
   position: relative;
   flex: none;
   width: var(--rail-left);
+  max-width: max(190px, calc(100% - var(--mf-deck-min)));
   display: flex;
   flex-direction: column;
   min-height: 0;

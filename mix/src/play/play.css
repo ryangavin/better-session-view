@@ -34,7 +34,7 @@
 }
 .mf-play .play-scroll {height:min(690px,calc(100% - 204px));}
 /* Keep routing and the three square transport buttons inside each deck. */
-.mf-play .play-decks {height:100%;box-sizing:border-box;--play-deck-min:260px;min-width:1198px;}
+.mf-play .play-decks {height:100%;box-sizing:border-box;--play-deck-min:var(--mf-deck-min,260px);min-width:calc(4 * var(--play-deck-min) + 158px);}
 @container (max-height: 780px) {
   .mf-play .play-scroll {min-height:0;}
   .mf-play .play-decks {grid-template-rows:38px minmax(126px,1fr) max-content minmax(211px,max-content) minmax(var(--play-routing-min),max-content) 58px;--play-transport-size:52px;}
@@ -51,7 +51,7 @@
   .mf-play .play-decks {--play-column-gap:4px;}
 }
 @container (max-width: 960px) {
-  .mf-play .play-decks {min-width:1182px;grid-template-columns:repeat(2,minmax(var(--play-deck-min),1fr)) 140px repeat(2,minmax(var(--play-deck-min),1fr));}
+  .mf-play .play-decks {min-width:calc(4 * var(--play-deck-min) + 142px);grid-template-columns:repeat(2,minmax(var(--play-deck-min),1fr)) 140px repeat(2,minmax(var(--play-deck-min),1fr));}
   .mf-play .play-route {gap:4px;}
 }
 @container (max-height: 700px) {
