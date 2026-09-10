@@ -115,7 +115,7 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | `npm run dev:set` | just set[flow]: its dev server and its window, one command, closing either closes both. `npm run dev:visuals` and `npm run dev:mix` are the same for the other two. `dev:mix` also opens [the reach view](#the-reach-view) |
 | `npm run dev:set-ui` | the set[flow] dev server alone, against a device someone else is running |
 | `npm run dev:set-app` | the set[flow] window alone, on a dev server that is already up — hot reload, in the real app |
-| `npm run dev:widgets` | the widget bench alone — no device needed |
+| `npm run dev` in [Widgets](https://github.com/openflowfm/widgets) | the widget bench alone — no device needed |
 | `npm run build:device` | the `.amxd` only — deliberately not watched |
 | `npm test` | unit tests, one project per module — `npm test -- --project=core` runs that module alone |
 | `npm run test:coverage` | the same run with V8 coverage, plus the Vitest report in `report/` — every test with its timing, and the line-by-line coverage under its Coverage tab. CI publishes it to [ryangavin.github.io/better-session-view](https://ryangavin.github.io/better-session-view/) |

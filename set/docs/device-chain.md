@@ -33,7 +33,7 @@ to do.
 
 The mixer's faders proved the gesture crossed the boundary; this is the first component to
 use the chrome. It matters because the boundary is the point of that module:
-[`widgets/`](../../widgets/README.md) imports no protocol, no bridge and nothing that knows
+[`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md) imports no protocol, no bridge and nothing that knows
 Live exists, and everything Live-shaped stops in `DeviceChain.tsx`.
 
 The adapting turns out to be three lines, because a shell is a small thing — `name`, `on`,

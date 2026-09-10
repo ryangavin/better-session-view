@@ -22,7 +22,7 @@ const FREE_Y: Param = { ...FREE_X, shortName: 'Y' };
  * the chain is a shell holding two things: an X-Y control, and the two choosers
  * naming which of the plug-in's parameters that control moves. It is the whole
  * device, which makes it the plainest possible caller of
- * [`XYPad`](../../../../../widgets/src/controls/XYPad.tsx) — a plane with
+ * [`XYPad`](https://github.com/openflowfm/widgets/blob/main/src/controls/XYPad.tsx) — a plane with
  * nothing drawn behind it — and the reason it exists here is to be exactly that.
  *
  * **It is not in [the registry](../faces.ts), on purpose.** Two things would

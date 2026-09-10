@@ -11,7 +11,7 @@ every bit of it is drawn dead on the face rather than left to look live.
 
 ## Why the face is the app's, and the parts aren't
 
-[`widgets/`](../../widgets/README.md) holds the parts a faceplate is made of: a knob, a
+[`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md) holds the parts a faceplate is made of: a knob, a
 value box, a switch, a `Device` shell, a `Panel`'s aligned lanes. It holds them because a
 knob is a knob wherever it's mounted, and the module's whole claim is that it has never
 heard of Live.
@@ -36,7 +36,7 @@ is drawn — which is why no face repeats any of it:
   [`lib/liveParam.ts`](../src/lib/liveParam.ts);
 - the printed reading is Live's own `str_for_value`, carried as `display`, which every
   widget prefers over its own formatter — that optional-and-authoritative rule in
-  [the parameter model](../../widgets/docs/param-model.md) was built for exactly this;
+  [the parameter model](https://github.com/openflowfm/widgets/blob/main/docs/param-model.md) was built for exactly this;
 - a dragged value is held over the reported one by `usePendingValue` until Live's agrees
   or its deadline passes, so a knob doesn't lag a round trip and doesn't lie about a write
   Live clamped;
@@ -88,7 +88,7 @@ Open any device in the footer and its parameters are on screen with their real n
 smallest real device Live has: a plug-in has its own window that Live cannot draw inside,
 so the container is one X-Y control and two choosers naming which of the plug-in's
 parameters that control moves. Nothing else. That makes it the plainest caller of
-[`XYPad`](../../widgets/src/controls/XYPad.tsx) — a plane with no artwork behind it.
+[`XYPad`](https://github.com/openflowfm/widgets/blob/main/src/controls/XYPad.tsx) — a plane with no artwork behind it.
 
 It is deliberately absent from [`faces.ts`](../src/components/devices/faces.ts), and would
 need two things to earn a place. A plug-in's `class_name` is almost certainly
@@ -112,7 +112,7 @@ face re-reads it — the same round trip a control makes through Live, which is 
 worth rehearsing. A face that only *looked* right with values it owned would hide exactly
 the bug that matters.
 
-It is a separate page from [the widget bench](../../widgets/docs/bench.md) because it has
+It is a separate page from [the widget bench](https://github.com/openflowfm/widgets/blob/main/docs/bench.md) because it has
 to be: a face is composed here out of `widgets/`, and that bench may import `widgets/src`
 and nothing else. The split is the same one the modules have — parts there, arrangements
 here — and the practical gain is that a face can be seen in states a real set won't

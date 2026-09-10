@@ -13,7 +13,7 @@ as one band, and it says in a sentence what the pointer â€” or the focus ring â€
 is `HintFooter` from `@openflow/widgets`, and it works off `data-hint` where a control
 has one and the control's `title` where it does not, which is why most of this window
 explained itself the day it was mounted. See
-[widgets/docs/catalogue.md](../../widgets/docs/catalogue.md#what-explains-a-control) for
+[widgets/docs/catalogue.md](https://github.com/openflowfm/widgets/blob/main/docs/catalogue.md#what-explains-a-control) for
 the precedence rule and why the hovered sentence never reaches React.
 
 At rest it reads *Point at anything to read what it does.* rather than going blank: an
@@ -644,7 +644,7 @@ two, and that file is what moves.
 `src/Theme.tsx` wraps the app in the widgets `ThemeRoot`. The shared v1 theme contains
 surface/text/border roles, neutral primary selection, green measured signal, six stem
 identities and paired deck colors. Current favorite is the initial palette, matching the
-widgets mixer bench. See [widgets theme rules](../../widgets/docs/theme.md).
+widgets mixer bench. See [widgets theme rules](https://github.com/openflowfm/widgets/blob/main/docs/theme.md).
 
 Settings in the header opens a stock Modal with Audio and Theme sections. Theme
 contains the shared editor in two columns: palette and color editing on the left,

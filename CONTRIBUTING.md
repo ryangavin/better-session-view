@@ -63,7 +63,7 @@ in [`bridge/docs/multiple-clients.md`](bridge/docs/multiple-clients.md).
 
 ## Modules
 
-Ten projects. Each has its own README; read the one you're touching.
+Local modules and independent libraries each have their own README; read the one you're touching.
 
 [**audio[flow]**](https://github.com/openflowfm/audio) lives in the separate sibling
 `openflow/audio` repository. It contains the headless Rust rendering library design
@@ -73,7 +73,7 @@ and comparison harness, with mix[flow] as its intended first consumer.
 |---|---|---|
 | [`protocol/`](protocol/README.md) | wire types, single source of truth | adding or changing a message |
 | [`core/`](core/README.md) | pure domain logic — no I/O, no React, no Live | naming, colors, anything that deserves tests |
-| [`widgets/`](widgets/README.md) | DAW controls — React, but no Live | knobs, faders, the parameter model, the bench |
+| [`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md) | DAW controls — React, but no Live | knobs, faders, the parameter model, the bench |
 | [`set/`](set/README.md) | the session manager, **set[flow]** — React 19 + Vite | components, the bridge client, dev server |
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
 | [`desktop/`](desktop/README.md) | the Electron main process every app shares | the window, packaging, or adding a new app |
@@ -236,3 +236,17 @@ how derivation, patterns or song identity work; skip it for routine feature work
 
 Roadmap items and the questions only a run against a real set can answer are tracked in
 [Issues](../../issues), not here. A doc goes stale; an issue gets closed.
+
+## Widgets dependency
+
+[Widgets](https://github.com/openflowfm/widgets) lives beside audio at
+`openflow/widgets`. The root manifest and lock pin a full Git commit; all apps keep
+using `@openflow/widgets` deep imports. React and ReactDOM are host-owned peers;
+the Recursive font is a local dependency of Widgets. `npm ci` needs no sibling checkout.
+
+Run the Widgets bench, tests, coverage and declaration build in that repository.
+Its CI and tagged tarball releases are independent. To update a control, commit and
+push Widgets first, then run `npm install 'github:openflowfm/widgets#<full-commit-sha>'`
+here and commit both manifest and lock. Validate this repository with typechecking,
+tests and app builds. Do not use `npm link`: a sibling's React can create a second
+copy in the renderer. Visual changes still need the bench and consumer preview.

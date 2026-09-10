@@ -12,7 +12,7 @@ import './DeviceChain.css';
 /**
  * The selected track's device chain, along the bottom of the window.
  *
- * This is the first thing in the app drawn out of [`widgets/`](../../../widgets/README.md)
+ * This is the first thing in the app drawn out of [`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md)
  * rather than its own components, and the boundary holds the way the mixer's
  * faders proved it could: `widgets/` takes a name and two booleans, and knows
  * nothing about `OpenFlow`, the bridge, or Live. The adapting is all here and in
