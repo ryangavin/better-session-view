@@ -123,7 +123,8 @@ Relative major/minor scales have identical membership and deliberately remain am
 Pedals, sparse phrases and chromatic material can remain Unknown. Modal and harmonic/
 melodic-minor interpretations are not yet modeled. Boundaries have window-level precision;
 different candidate sets are not automatically proof of modulation. Click a candidate
-region to select it for listening. Nothing writes these suggestions into library key tags.
+region to select it for listening. The lab itself does not write these suggestions into library key tags. The explicit
+library analysis below publishes a separate, source-bound estimate.
 
 ## Reproducible evidence
 
@@ -182,3 +183,41 @@ The desktop and in-app browser auditions were exercised on a selected passage wi
 separated bass and original audio. CoreMIDI enumeration confirmed `mix[flow] Bass`; an
 independent native input listener captured channel-1 note-on/off pairs from a four-second
 Sandstorm passage. Live instrument routing and physical devices remain unverified.
+
+## Persisted library keys
+
+The library's **Analyze key / Reanalyze key** action uses the selected song's bass stem.
+It reuses a valid continuous map, or explicitly runs the existing bass transcription
+worker to obtain one. Ordinary browsing loads only the manifest: no inference, audio
+decoding, or frame-array reads. The shared work lease prevents parallel inference.
+
+`src/key.ts` evaluates stable voiced pitch duration against all major/natural-minor
+scales. Whole-song analysis tolerates rests (10% coverage) but requires ten seconds of
+usable pitch, four classes each exceeding 3%, and 90% scale support. Scales within 2.5
+percentage points remain alternatives. A compatible tonic carrying at least 20% of
+usable duration and twice the next compatible tonic's duration can become a provisional
+primary candidate; otherwise up to four choices remain ambiguous. More choices or
+insufficient evidence is Unknown. This bass-root heuristic is useful for DJ inspection,
+not independently calibrated. Relative modes can remain ambiguous; a strong bass root
+can favor one without proving its harmony. Confidence is a qualitative evidence tier,
+never a probability. No indiscriminate quantization or full-mix inference is used.
+
+Sixteen-second compatibility regions retain the stricter lab policy. Different supported
+region labels yield **Multiple / possible changes**, never an unqualified global key.
+Unknown regions remain in the details even when the global histogram supports a guess.
+Alternative scale matches, region times and coverage are available in **Key evidence and
+regions**; row titles carry the same summary. Single guesses carry an estimate marker.
+
+`electron/keyAnalysis.ts` verifies bass bytes and map checksum, computes once, then
+re-reads the manifest before publishing. Optional `Track.keyAnalysis` stores version,
+algorithm, date, bass hash, map hash, separation identity, tonic/mode candidates,
+alternatives, confidence, coverage and regions. Existing `Track.key` is treated as a
+manual override and never overwritten. New separation invalidates automatic evidence;
+manual metadata survives. Version/model/path mismatches read as Unknown. Out-of-band
+changes to the same bass path are checked on explicit reanalysis, not every browse.
+
+Artist → Album → Key lists filter together, then full-text search narrows songs. A song
+with paired candidates is available under either candidate and **Ambiguous**; possible
+changes are available under their regional candidates and **Multiple / possible changes**.
+Unanalyzed, stale and insufficient results remain browseable under **Unknown**. Reset
+filters clears all three lists. Manual keys use their existing literal metadata labels.

@@ -36,6 +36,7 @@ import type { LinkAudioAPI, LinkBlock, LinkCommand, LinkOutput } from '../src/li
  */
 expose({
   audioDevices: (): Promise<AudioDevice[]> => ipcRenderer.invoke('openflow:audio-devices'),
+  analyzeKey: (id: string) => ipcRenderer.invoke('openflow:key-analyze', id),
   bassMidi: {
     open: () => ipcRenderer.invoke('openflow:bass-midi-open'),
     send: (id: string, data: number[], epochMs: number) => ipcRenderer.invoke('openflow:bass-midi-send', id, data, epochMs),

@@ -22,6 +22,8 @@ import {
   type TranscribeOutcome,
 } from './transcribe.ts';
 import { TAB_FILE, readTranscription, transcriptionAt, type TranscribeProgress } from './transcribeJob.ts';
+import { recordKeyAnalysis } from './keyAnalysis.ts';
+import { STANDARD_BASS } from '../src/tab.ts';
 import { readPitchMap } from './pitchMap.ts';
 import type { Tuning } from '../src/tab.ts';
 import type { Beats } from '../src/warp.ts';
@@ -280,6 +282,18 @@ if (only(app)) {
     },
   );
 
+  ipcMain.handle('openflow:key-analyze', async (_event, trackId: string) => {
+    const library = await load(), track = library.tracks.find(t => t.id === trackId);
+    if (!library.root || !track?.stems || !track.model || !track.sources.includes('bass')) throw new Error('Separate a bass stem first');
+    const result = await transcribe({ root: library.root, runtime: RUNTIME, trackId, model: track.model,
+      stems: track.stems, tuning: STANDARD_BASS, bars: null, transpose: 0, requirePitchMap: true }, {
+      progress: (id, progress) => push('openflow:transcribe-progress', { trackId: id, progress }),
+    });
+    push('openflow:transcribe-finished', result);
+    if (!result.ok) throw new Error(result.says);
+    await recordKeyAnalysis(library.root, trackId, track.stems, track.model);
+    return load();
+  });
   ipcMain.handle('openflow:transcribing', () => transcribing());
   ipcMain.handle('openflow:pitch-map', async (_event, trackId: string) => {
     const library = await load();

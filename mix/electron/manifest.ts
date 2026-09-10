@@ -50,6 +50,7 @@ export interface Track {
   /** Null until something detects it, and drawn as unknown rather than as zero. */
   bpm: number | null;
   key: string | null;
+  keyAnalysis?: import('../src/key.ts').KeyAnalysis | null;
   seconds: number | null;
   /** ISO 8601, so a manifest sorts and diffs sensibly by hand. */
   added: string;
@@ -223,6 +224,7 @@ export async function recordStems(
   // stems are on disk and orphaned, which is untidy; writing a row back for a
   // track somebody removed would be worse.
   if (!track) return manifest;
+  track.keyAnalysis = null; // New stem bytes invalidate the bass evidence; manual key stays.
   track.model = found.model;
   track.sources = found.sources;
   track.stems = found.stems;

@@ -1,0 +1,31 @@
+import { afterEach, expect, it } from 'vitest';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { recordKeyAnalysis } from './keyAnalysis.ts';
+import { empty, read, write, recordStems, type Track } from './manifest.ts';
+let root = '';
+afterEach(async () => { if(root) await fs.rm(root,{recursive:true,force:true}); });
+it('persists source-bound evidence, preserves manual metadata, and rejects stale audio', async () => {
+  root = await fs.mkdtemp(path.join(os.tmpdir(),'mix-key-'));
+  const track = {id:'song', title:'Corrected title', key:'F minor', stems:'stems/song/model',model:'model',sources:['bass']} as Track;
+  await write(root,{...empty(),tracks:[track]});
+  const where = 'transcriptions/song/model';
+  await fs.mkdir(path.join(root,track.stems!),{recursive:true});
+  await fs.mkdir(path.join(root,where),{recursive:true});
+  const audio = 'test bass bytes', hash = createHash('sha256').update(audio).digest('hex');
+  await fs.writeFile(path.join(root,track.stems!,'bass.wav'),audio);
+  const map = {openflow:'mix-pitch-map',version:1,source:{hash,bytes:audio.length},engine:{name:'fixture',fmin:20,fmax:400},seconds:12,start:0,step:1,sampleRate:16000,windowSeconds:.064,
+    policy:{periodicityFloor:.21,silenceDb:-60},hz:Array(12).fill(55),periodicity:Array(12).fill(.9),smoothedPeriodicity:Array(12).fill(.9),rmsDb:Array(12).fill(-20),state:Array(12).fill('voiced')};
+  const bytes=JSON.stringify(map), sha256=createHash('sha256').update(bytes).digest('hex');
+  await fs.writeFile(path.join(root,where,'pitch-map.json'),bytes);
+  await fs.writeFile(path.join(root,where,'transcription.json'),JSON.stringify({openflow:'mix-transcription',version:1,notes:[],pitchMap:{file:'pitch-map.json',version:1,frames:12,sha256}}));
+  const result = await recordKeyAnalysis(root,'song',track.stems!,'model');
+  expect(result.tracks[0]).toMatchObject({title:'Corrected title',key:'F minor',keyAnalysis:{status:'unknown',source:{hash,mapHash:sha256}}});
+  expect((await read(root)).tracks[0].keyAnalysis).toBeTruthy();
+  await fs.writeFile(path.join(root,track.stems!,'bass.wav'),'changed');
+  await expect(recordKeyAnalysis(root,'song',track.stems!,'model')).rejects.toThrow('no current');
+  await recordStems(root,'song',{stems:track.stems!,model:'model',sources:['bass']});
+  expect((await read(root)).tracks[0]).toMatchObject({key:'F minor',keyAnalysis:null});
+});

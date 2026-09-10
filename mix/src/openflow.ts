@@ -120,6 +120,7 @@ export interface Track {
   /** Null until something detects it, and drawn as unknown rather than as zero. */
   bpm: number | null;
   key: string | null;
+  keyAnalysis?: import('./key.ts').KeyAnalysis | null;
   seconds: number | null;
   added: string;
   model: string | null;
@@ -283,6 +284,7 @@ export interface KeptScans {
 
 interface Bridge {
   audioDevices(): Promise<AudioDevice[]>;
+  analyzeKey(id: string): Promise<Library>;
   bassMidi: import('./bassMidi.ts').BassMidiAPI;
   linkAudio: LinkAudioAPI;
   demucs(): Promise<Ready>;
