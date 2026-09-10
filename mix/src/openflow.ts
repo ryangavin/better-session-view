@@ -319,6 +319,7 @@ interface Bridge {
       sources: Record<string, Float32Array>,
     ): Promise<void>;
     scans(trackId: string, stems: string): Promise<KeptScans | null>;
+    onScansChanged(hear: (change: { root: string; trackId: string }) => void): () => void;
     keepScans(
       trackId: string,
       stems: string,

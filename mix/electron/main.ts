@@ -213,7 +213,10 @@ if (only(app)) {
       ask: { trackId: string; stems: string; rate: number; sources: Record<string, { bins: number; values: Float32Array }> },
     ) => {
       const where = await root();
-      if (where) await writeScans(where, ask.trackId, ask.stems, ask.rate, ask.sources);
+      if (where) {
+        await writeScans(where, ask.trackId, ask.stems, ask.rate, ask.sources);
+        push('openflow:scans-changed', { root: where, trackId: ask.trackId });
+      }
     },
   );
 

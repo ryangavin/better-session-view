@@ -106,6 +106,11 @@ expose({
     /** Every source a deck plays, walked on a clock, or null when nothing was kept. */
     scans: (trackId: string, stems: string): Promise<Scans | null> =>
       ipcRenderer.invoke('openflow:scans-read', { trackId, stems }),
+    onScansChanged: (hear: (change: { root: string; trackId: string }) => void): (() => void) => {
+      const listener = (_event: unknown, change: { root: string; trackId: string }) => hear(change);
+      ipcRenderer.on('openflow:scans-changed', listener);
+      return () => ipcRenderer.off('openflow:scans-changed', listener);
+    },
     keepScans: (
       trackId: string,
       stems: string,

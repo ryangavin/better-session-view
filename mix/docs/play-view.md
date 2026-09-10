@@ -56,6 +56,10 @@ that has a tempo at all, so this costs nothing against separating first. What it
 is written beside the track, and so is a refusal — a song with nothing steady in it is
 not asked again on every drop. Sections still come from Prep; an unprepared track has
 the one whole-track hot cue.
+When a deck creates a new waveform scan, the desktop publishes a track-scoped notification
+after saving it. An already-mounted library row then displays that saved original waveform
+without a reload; offscreen rows defer the cache read until visible. A failed save sends
+no completion notification. Library browsing still performs no audio analysis.
 Every source is fetched and decoded at once rather than in turn: decoding happens off the
 main thread, so asking for them together is the difference between five seconds and two.
 Saved beat maps (or saved uniform grids) govern Sync and section boundaries. Without a
