@@ -230,6 +230,8 @@ it('keeps display columns movable but fixed and puts shared Reset filters in the
   const reset = view.getByRole('button', { name: 'Reset filters' }) as HTMLButtonElement;
   expect(reset.closest('.mf-library-tools')).toBeTruthy();
   expect(reset.closest('.wdg-button')).toBeTruthy();
+  expect(reset.textContent).toBe('↻');
+  expect([...reset.closest('.mf-library-tools')!.children].map(node => node.className)).toEqual(['mf-library-search', 'wdg wdg-button', 'mf-library-recent', 'wdg wdg-button']);
   expect(view.container.querySelector('.mf-library-browser')!.children).toHaveLength(3);
   expect(reset.disabled).toBe(true);
   fireEvent.change(view.getByRole('textbox'), { target: { value: 'vessel' } });

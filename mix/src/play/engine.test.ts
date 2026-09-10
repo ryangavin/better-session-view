@@ -333,7 +333,9 @@ describe('the four-deck playback owner',()=>{
     ctx.currentTime=4.14;engine.deckLoopIn('deck-a');ctx.currentTime=6.42;engine.deckLoopOut('deck-a');
     expect(engine.snapshot().decks[0].loop).toEqual({start:4,end:6.5,enabled:true});
     engine.cue('deck-a',true);engine.cue('deck-a',false);expect(engine.readFrame().decks['deck-a'].seconds).toBe(4);
-    await engine.sync('deck-a',true);await engine.launch('deck-a','section-1-4','bass');expect(engine.snapshot().decks[0].stems[1].queued).toBe('section-1-4');
+    expect(engine.snapshot().running).toBe(false);
+    await engine.sync('deck-a',true);await engine.launch('deck-a','section-1-4','bass');expect(engine.snapshot().decks[0].stems[1].selected).toBe('section-1-4');
+    expect(engine.snapshot().decks[0].stems[1].queued).toBeUndefined();
   });
   it('snaps a Cue set on a synced deck to the nearest beat while Q is off',async()=>{
     const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);
@@ -559,4 +561,81 @@ describe('the four-deck playback owner',()=>{
 it('keeps unity at the fader rest and A/B/THRU at their conventional endpoints',()=>{
   expect(levelGain(100)).toBe(1);expect(levelGain(0)).toBe(0);
   expect([-100,0,100].map(x=>[routeGain(0,x),routeGain(1,x),routeGain(2,x)])).toEqual([[1,1,0],[1,1,1],[0,1,1]]);
+});
+
+it('restores the corrected source BPM through the canonical setter without seeking or pausing', async () => {
+  const {engine,ctx}=setup(); const corrected=asset();
+  corrected.analysis!.grid={bpm:96,offset:0,bpmAuto:false,beats:null};
+  corrected.audio!.map=evenBeats(48000,64*48000,96,0);
+  await engine.load('deck-a',track,async()=>corrected);
+  expect(engine.normalSpeedBpm).toBeNull();
+  await engine.play('deck-a',true);
+  engine.commands.setMaster('bpm',135);await settle();
+  ctx.currentTime=2;
+  const before=engine.readFrame().decks['deck-a'].seconds!;
+  expect(engine.normalSpeedBpm).toBe(96);
+  engine.normalSpeed();await settle();
+  expect(engine.snapshot().bpm).toBe(96);
+  expect(engine.snapshot().running).toBe(true);
+  expect(engine.snapshot().decks[0].playing).toBe(true);
+  expect(engine.readFrame().decks['deck-a'].seconds).toBeGreaterThanOrEqual(before);
+  expect(engine.readFrame().decks['deck-a'].seconds!-before).toBeLessThan(.2);
+  await engine.play('deck-a',false);
+  expect(engine.normalSpeedBpm).toBeNull();
+});
+it('does not invent a normal-speed BPM for an ungridded track', async () => {
+  const {engine}=setup(); const unknown=asset();unknown.analysis=null;unknown.audio!.map=null;
+  await engine.load('deck-a',{...track,bpm:null},async()=>unknown);await engine.play('deck-a',true);
+  const bpm=engine.snapshot().bpm;engine.normalSpeed();await settle();
+  expect(engine.normalSpeedBpm).toBeNull();expect(engine.snapshot().bpm).toBe(bpm);
+});
+it('stops standalone only after the final active deck pauses, including a zero-volume deck, and resumes', async () => {
+  const {engine,load,ctx}=setup();await load();await load('deck-b');
+  await engine.play('deck-a',true);await engine.play('deck-b',true);
+  engine.commands.setDeck('deck-b','gain',0);ctx.currentTime=2;
+  await engine.play('deck-a',false);expect(engine.snapshot().running).toBe(true);
+  await engine.play('deck-b',false);expect(engine.snapshot().running).toBe(false);
+  const position=engine.position;ctx.currentTime=4;expect(engine.position).toBe(position);
+  await engine.play('deck-b',true);expect(engine.snapshot().running).toBe(true);
+  await engine.play('deck-b',false);await engine.running(true);expect(engine.snapshot().running).toBe(true);
+});
+it('stops at natural end and after the last stem stop, and allows another start', async () => {
+  vi.useFakeTimers();const {engine,load,ctx}=setup();await load();await engine.play('deck-a',true);
+  ctx.currentTime=65;await vi.advanceTimersByTimeAsync(40);
+  expect(engine.snapshot().running).toBe(false);expect(engine.snapshot().decks[0].playing).toBe(false);
+  await engine.launch('deck-a','section-0-0');expect(engine.snapshot().running).toBe(true);
+  ctx.currentTime=130;await vi.advanceTimersByTimeAsync(40);
+  expect(engine.snapshot().running).toBe(false);
+  await engine.play('deck-a',true);expect(engine.snapshot().running).toBe(true);
+  await engine.launch('deck-a',null);expect(engine.snapshot().running).toBe(false);
+  await engine.launch('deck-a','section-0-0');expect(engine.snapshot().running).toBe(true);
+});
+it('keeps held Cue audition running, stops on release, and lets Play latch it', async () => {
+  const {engine,load}=setup();await load();engine.cue('deck-a',true);await settle();
+  expect(engine.snapshot().running).toBe(true);
+  engine.cue('deck-a',false);expect(engine.snapshot().running).toBe(false);
+  engine.cue('deck-a',true);await settle();await engine.play('deck-a',true);engine.cue('deck-a',false);
+  expect(engine.snapshot().running).toBe(true);
+});
+it('ignores inactive Full/stem voices when the selected source group is paused', async () => {
+  const {engine,load}=setup();await load();await engine.play('deck-a',true);
+  engine.commands.setDeck('deck-a','full',true);await engine.play('deck-a',false);
+  expect(engine.snapshot().decks[0].playing).toBe(false);expect(engine.snapshot().running).toBe(false);
+});
+it('keeps Link transport running after pause and natural end without a local tempo leader', async () => {
+  vi.useFakeTimers();const {engine,load,ctx}=setup();await load();await engine.play('deck-a',true);
+  const linked=vi.spyOn(engine,'linkAudio','get').mockReturnValue({...engine.linkAudio,enabled:true});
+  expect(engine.normalSpeedBpm).toBeNull();
+  await engine.play('deck-a',false);expect(engine.snapshot().running).toBe(true);
+  await engine.play('deck-a',true);ctx.currentTime=65;await vi.advanceTimersByTimeAsync(40);
+  expect(engine.snapshot().running).toBe(true);
+  linked.mockRestore();await vi.advanceTimersByTimeAsync(40);expect(engine.snapshot().running).toBe(false);
+});
+
+it('keeps original playback when stale metadata claims stems that were not loaded', async () => {
+  const {engine}=setup();const original=asset();original.audio!.buffers={full:buffer};
+  await engine.load('deck-a',track,async()=>original);
+  expect(engine.snapshot().decks[0].stems.every(s=>!s.available)).toBe(true);
+  engine.commands.setDeck('deck-a','full',false);expect(engine.snapshot().decks[0].full).toBe(true);
+  await engine.play('deck-a',true);expect(engine.snapshot().decks[0].playing).toBe(true);
 });

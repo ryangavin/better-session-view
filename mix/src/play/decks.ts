@@ -124,7 +124,7 @@ export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): Mix
     peaks: asset.peaks, full: true, fullSection: null, fullQueued: undefined,
     message: !grid ? 'No steady tempo found — Sync unavailable' : undefined,
     sections: cuts?.length ? cuts.map((cut, i) => ({id: `section-${i}-${cut.bar}`, name: cut.name})) : [{id:'full-track', name:'Track'}],
-    stems: sources.map(id => ({id, name: id[0].toUpperCase()+id.slice(1), level:100, available: !!track.stems && track.sources.includes(id), selected:null, queued:undefined})),
+    stems: sources.map(id => ({id, name: id[0].toUpperCase()+id.slice(1), level:100, available: asset.audio ? (asset.audio.buffers[id]?.duration ?? 0) > 0 : !!track.stems && track.sources.includes(id), selected:null, queued:undefined})),
   };
 }
 /** Plain Tab switches views; editable controls and modal/menu focus keep native navigation. */

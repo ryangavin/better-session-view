@@ -270,6 +270,13 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
                   : 'Playback tempo with Warp on. To change the source timing, use Edit beat grid'
               }
             />}
+            {playView && <Button onPress={() => mixer?.normalSpeed()} label="Normal speed"
+              disabled={mixer?.normalSpeedBpm == null}
+              title={mixer?.normalSpeedBpm != null
+                ? `Set global tempo to the leader’s original ${bpmText(mixer.normalSpeedBpm)} BPM, including saved grid corrections`
+                : 'Normal speed needs a playing leader with a known BPM; Link owns tempo while enabled'}>
+              1×
+            </Button>}
             {/* Bars are the grid's claim; the clock is what is true whatever
                 tempo anybody decides on. Both, because a slice is placed in one
                 and heard in the other. */}

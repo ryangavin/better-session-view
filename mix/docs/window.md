@@ -56,8 +56,9 @@ The chosen width is kept in the session. CSS temporarily caps it to the availabl
 without overwriting the saved preference. Until it is dragged the stylesheet's own width
 stands, so the handle costs nothing to ignore.
 
-The rail starts with a compact row: filter, **Recent**, **Import**, and the shared
-**Reset filters** button (when songs are present). The reset keeps the same disabled
+The rail starts with a compact row: filter, the shared **↻ Reset filters** icon
+(when songs are present), **Recent**, then **Import**. The 24px reset button keeps
+its accessible name and tooltip without a text caption. The reset keeps the same disabled
 state and clears text, artist, album and key together. Search can shrink to 80px;
 at very narrow rail widths this toolbar scrolls horizontally rather than clipping controls. Import
 opens the ordinary multi-file picker; dropping a YouTube video link anywhere on the window

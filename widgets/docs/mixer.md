@@ -16,7 +16,9 @@ component inventing a successful result.
 - `MixerState` contains deck metadata, available stems, sections, selected/queued IDs,
   control values, transport labels, loop bounds, effects and their IDs. Deck status is
   empty/loading/ready/unavailable. Non-ready launcher fieldsets are disabled, and missing
-  stems disable their individual launch/stop/level controls. The host supplies four deck
+  stems disable their individual launch/stop/level controls. Full is disabled unless
+  the deck is ready with at least one host-reported available stem; original-only
+  playback remains controlled independently by Play. The host supplies four deck
   positions, a variable number of stem positions per deck, and three EQ values; unavailable stems retain
   a placeholder position. Section counts and names can vary between decks.
 - `MixerCommands` contains semantic operations, not React setters. `launch(deckId,

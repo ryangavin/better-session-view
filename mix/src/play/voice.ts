@@ -29,7 +29,7 @@ export class DeckVoice {
     this.output = context.createGain();
     this.stretchFade=context.createGain();this.stretchFade.gain.value=0;this.stretchFade.connect(this.output);
   }
-  get playing(): boolean { return this.active && (this.loop || this.at() < (this.span?.to ?? this.buffer.duration) - 0.001); }
+  get playing(): boolean { return this.active && (this.context.currentTime < this.since || this.loop || this.at() < (this.span?.to ?? this.buffer.duration) - 0.001); }
   get lead(): number { return Math.max(0.03, (this.stretch?.latency ?? 0) + 0.02); }
   async prepare(): Promise<void> {
     if (!this.map) throw new Error('Sync needs a saved beat grid. Prepare this track first.');

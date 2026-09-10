@@ -87,6 +87,8 @@ including after channel fader changes. A new interface can satisfy the same exam
 | Rule | Given → when → expected result | Regression evidence |
 |---|---|---|
 | Deliberate tempo adjustment | A native leader plays → edit header BPM → prepare pitch-preserving playback, apply requested rate, and synced followers follow; loading B still cannot retime A. | engine and header tempo regressions |
+| Restore normal speed | A local leader runs at altered BPM → press header 1× → global BPM returns to the loaded corrected source BPM without pause or seek. No known local leader → disabled. | engine and header normal-speed regressions |
+| Standalone idle clock | Last participating source pauses/stops/ends → freeze clock; another deck, held Cue or scheduled start keeps it running. Start again → resume; finished sources restart. Link enabled → do not auto-stop shared clock. | engine lifecycle regressions |
 | Grouped movement and stem independence | New deck moves together; a stem cell unlocks separate movement; Hot Cue returns to moving together and locks separate movement. | engine regression and browser launcher check |
 | Local tempo ownership | No Link/leader → load tracks → no active global tempo. Start a gridded deck → it leads at its own mapped tempo. | engine: first-track tempo; header: leader tempo |
 | Followers do not retime the leader | A plays → load B with another tempo, enable B Sync/start B → A's speed/position are unchanged; B matches tempo and beat phase. | engine: follower isolation and phase recovery |

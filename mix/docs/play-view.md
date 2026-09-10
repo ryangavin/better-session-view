@@ -25,6 +25,18 @@ and its conditional Link pins remain beside Link Audio. In Play, Space toggles t
 independent. Stop returns all decks to the beginning and clears section selections and
 captured loops. Deck assignments, cue points and mix settings last for the window session.
 
+Standalone Play freezes its transport clock when the final participating source stops or
+pauses. Explicit deck/stem stops and Cue release update it immediately; natural endings
+are detected by the existing 40ms engine tick. Only the selected Full/stems group counts;
+its playing sources count even at zero gain or with headphone-only monitoring. Held Cue
+and scheduled starts keep the clock alive. Auto-stop preserves positions, Cue, loops and
+mix settings; it sends no Link command. With Link enabled the shared transport continues
+when decks finish or pause. The explicit global Pause/Stop commands retain their existing
+Link behavior. Starting again resumes paused sources; a finished source restarts at its
+first mapped beat (or file start without a grid). A launch from an idle standalone clock
+starts immediately instead of waiting for an otherwise empty clock's next bar.
+
+
 The hook retains one engine per library root. A root change aborts loads and disposes
 all voices, effects, Link capture and the AudioContext. Effect cleanup defers disposal
 one microtask so React StrictMode's immediate replay cannot destroy the retained engine;
@@ -68,7 +80,9 @@ A fallback tempo only supplies a waveform display; it is not a fabricated analys
 Reload a deck after saving preparation changes to refresh its sections and grid.
 
 The four standard stem positions remain identifiable; guitar and piano are included when
-present. Missing stems stay disabled. Every deck starts in Full mode, because the original always
+present. Missing stems stay disabled. Full is disabled on empty or original-only decks;
+loaded decoded buffer availability determines whether stems can be selected, rather than
+stale library metadata. The engine also rejects a switch to an empty stem group. Every deck starts in Full mode, because the original always
 sums better than its own stems do; launching any stem clip is itself the request for
 stems, and switches the deck without a separate control.
 
@@ -232,6 +246,15 @@ playing deck to lead. LEADER appears in its header. The main tempo is editable o
 prepares and enables pitch-preserving Sync before applying the requested tempo; synced
 followers receive that rate. Loading a deck cannot change it. Before a leader starts,
 the header shows a dash. Link retains its shared tempo control and external authority.
+
+The header's **1× / Normal speed** button restores the local leader's effective source BPM
+from the loaded saved grid (`loadedDeck` includes manual corrections), not the current
+scaled playback tempo. It calls the same master BPM command as editing the tempo field,
+preserving the existing Sync preparation, phase and scheduling path. It is disabled with
+no playing local leader, an unknown BPM, or Link's external tempo authority. For a variable
+grid this is its analyzed representative BPM, rather than a promise that every beat is
+uniform. Preparing a new grid requires reloading the deck as above.
+
 
 Followers are checked every 250ms and corrected when phase error exceeds 0.025 beat,
 using one scheduled correction for their playing sources. Gesture/Cue holds and queued

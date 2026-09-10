@@ -171,3 +171,14 @@ describe('controlled mixer boundary', () => {
       .toContain('12 dB');
   });
 });
+
+it('disables Full for empty and original-only decks but permits available stems', () => {
+  const props=fixture();props.commands.setDeckPlaying=vi.fn();
+  props.state={...props.state,decks:props.state.decks.map((deck,index)=>index===0 ? {...deck,status:'empty'} : index===1 ? {...deck,full:true,stems:deck.stems.map(s=>({...s,available:false}))} : deck)};
+  const view=render(createElement(MixerView,props));
+  expect((view.getByRole('button',{name:'Deck 1 original full mix'}) as HTMLButtonElement).disabled).toBe(true);
+  const original=view.getByRole('button',{name:'Deck 2 original full mix'}) as HTMLButtonElement;
+  expect(original.disabled).toBe(true);fireEvent.click(original);expect(props.commands.setDeck).not.toHaveBeenCalled();
+  expect((view.getByRole('button',{name:'Deck 2 play/pause'}) as HTMLButtonElement).disabled).toBe(false);
+  expect((view.getByRole('button',{name:'Deck 3 original full mix'}) as HTMLButtonElement).disabled).toBe(false);
+});

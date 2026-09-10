@@ -50,6 +50,9 @@ export function Library({ mix }: { mix: Mix }) {
             {mix.query && <button type="button" className="mf-library-clear" aria-label="Clear library search"
               title="Clear library search" onClick={() => mix.setQuery('')}>×</button>}
           </div>
+          {library.root && library.tracks.length > 0 && <Button width={24} label="Reset filters" onPress={mix.resetLibraryFilters}
+            title="Clear text, artist, album and key filters"
+            disabled={!mix.query && mix.libraryBrowser.artist === null && mix.libraryBrowser.album === null && mix.libraryBrowser.key === null}><span aria-hidden="true">↻</span></Button>}
           <button type="button" className="mf-library-recent" disabled={!library.root}
             aria-pressed={mix.order === 'added'} onClick={() => mix.sortBy('added')}
             title="Sort by import date; click again to reverse">Recent{mix.order === 'added' ? (mix.descending ? ' ↓' : ' ↑') : ''}</button>
@@ -60,9 +63,7 @@ export function Library({ mix }: { mix: Mix }) {
           >
             Import
           </Button>
-          {library.root && library.tracks.length > 0 && <Button onPress={mix.resetLibraryFilters}
-            title="Clear text, artist, album and key filters"
-            disabled={!mix.query && mix.libraryBrowser.artist === null && mix.libraryBrowser.album === null && mix.libraryBrowser.key === null}>Reset filters</Button>}
+
         </div>
       </div>
 
