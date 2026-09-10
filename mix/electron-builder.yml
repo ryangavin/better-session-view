@@ -1,10 +1,10 @@
 # mix[flow], packaged. `npm run pack:mix`.
 #
-# The shape is `desktop/electron-builder.base.yml`; this is what is only true of
+# The shape is `@openflow/desktop/electron-builder.base.yml`; this is what is only true of
 # this app — its name, and the one file it runs that neither vite nor esbuild
 # produced. What it still needs and does not have is a decision about where the
 # Python *environment* comes from in a bundle: see `docs/demucs.md`.
-extends: ../desktop/electron-builder.base.yml
+extends: ../node_modules/@openflow/desktop/electron-builder.base.yml
 
 appId: com.openflow.mix
 productName: mix[flow]

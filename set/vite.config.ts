@@ -15,7 +15,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // which URL it ended up on.
 const BRIDGE = process.env.OPENFLOW_BRIDGE || 'http://127.0.0.1:17800';
 // `OPENFLOW_PORT_BASE` is what every dev server in the repo counts from, and
-// each app's offset from it is `desktop/src/apps.ts` — set[flow] is just the one
+// each app's offset from it is `@openflow/desktop/apps.ts` — set[flow] is just the one
 // that sits on the base itself. The two benches are still counted here, at +100
 // and +200, because neither is an app. One variable moves a whole worktree out
 // of the way of the next.

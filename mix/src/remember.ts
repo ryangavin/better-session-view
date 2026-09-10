@@ -8,7 +8,7 @@ import type { Snap } from './grid.ts';
  * into a minute of clicking. So the window remembers.
  *
  * `localStorage`, keyed on the app's own origin, which is real because
- * `desktop/src/serve.ts` gives the app a scheme rather than `file://` — an
+ * `@openflow/desktop/serve.ts` gives the app a scheme rather than `file://` — an
  * opaque origin that promises nothing. That is what makes this work at all.
  *
  * **The library is not in here, and neither are the stems.** Those live on disk

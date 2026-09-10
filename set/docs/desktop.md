@@ -1,7 +1,7 @@
 # The desktop app
 
 `set/electron/main.ts`, `set/electron/preload.ts`, and — for most of what a window
-actually is — [`@openflow/desktop`](../../desktop/README.md).
+actually is — [`@openflow/desktop`](https://github.com/openflowfm/desktop/blob/main/README.md).
 
 set[flow] used to be a page the Max device served. That put 595 kB of base64 web app inside
 Live's own process, and it made the session manager open whenever the device was loaded.
@@ -21,8 +21,8 @@ Everything underneath — the window, the sandboxed preload, the state directory
 navigation policy, the dev-server retry, the scheme handler, the updater — is
 `@openflow/desktop`, shared with visual[flow] and with every app after it. The reasoning
 for each piece lives there:
-[`window.md`](../../desktop/docs/window.md), [`scheme.md`](../../desktop/docs/scheme.md),
-[`update.md`](../../desktop/docs/update.md), [`packaging.md`](../../desktop/docs/packaging.md).
+[`window.md`](https://github.com/openflowfm/desktop/blob/main/docs/window.md), [`scheme.md`](https://github.com/openflowfm/desktop/blob/main/docs/scheme.md),
+[`update.md`](https://github.com/openflowfm/desktop/blob/main/docs/update.md), [`packaging.md`](https://github.com/openflowfm/desktop/blob/main/docs/packaging.md).
 
 What stayed here is what is only true of set[flow]. The rest of this document is that.
 
@@ -46,7 +46,7 @@ change before the shell is worth revisiting.
 
 ## `set://app`, and the one-time cost of moving there
 
-The mechanism is [`scheme.md`](../../desktop/docs/scheme.md). What is set[flow]'s alone is
+The mechanism is [`scheme.md`](https://github.com/openflowfm/desktop/blob/main/docs/scheme.md). What is set[flow]'s alone is
 what the move cost: the origin used to be `http://127.0.0.1:17800`, so the first launch after
 the change lost saved column widths and the song-index column choice, and ran the
 allowed-colours migration once more.
@@ -71,7 +71,7 @@ only worth having if what crosses it stays this small.
 
 `npm run app -- electron set` esbuilds `main.ts` and `preload.ts` — plus everything they
 import from `@openflow/desktop` — into `set/electron/dist/`. The details are in
-[`packaging.md`](../../desktop/docs/packaging.md).
+[`packaging.md`](https://github.com/openflowfm/desktop/blob/main/docs/packaging.md).
 
 It is deliberately **not** part of `npm run build`. That script is what produces the device;
 it has no business needing an Electron binary. `npm run set` builds what it needs at launch,
@@ -86,7 +86,7 @@ intact — including the connection and the snapshot behind it, which is the who
 [`dev-server.md`](dev-server.md).
 
 `npm run dev:set` starts both halves together and is the one to type; `dev:set-app` alone
-needs a dev server already up (`npm run dev`, or `npm run dev:set-ui`) and starts none. The switches and the retry are [`window.md`](../../desktop/docs/window.md); the port
+needs a dev server already up (`npm run dev`, or `npm run dev:set-ui`) and starts none. The switches and the retry are [`window.md`](https://github.com/openflowfm/desktop/blob/main/docs/window.md); the port
 comes from `OPENFLOW_PORT_BASE` plus this app's offset in `desktop/src/apps.ts`, so a
 worktree that moved its servers takes the app with it rather than being the one thing left
 behind.
@@ -118,7 +118,7 @@ permitted and fails later, somewhere confusing. `OPENFLOW_APPS` moves the destin
 machine where `/Applications` is not yours to write.
 
 The shape of the config, and what an app's own `electron-builder.yml` still has to say, is
-[`packaging.md`](../../desktop/docs/packaging.md). Signing and notarisation are on whenever
+[`packaging.md`](https://github.com/openflowfm/desktop/blob/main/docs/packaging.md). Signing and notarisation are on whenever
 the credentials are present — `.github/workflows/release.yml` supplies both, and no flag
 turns them on.
 

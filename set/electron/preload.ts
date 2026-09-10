@@ -7,6 +7,6 @@ import { expose, flag } from '@openflow/desktop/preload.ts';
  * no business reaching the filesystem or the shell; `contextIsolation` is only
  * worth having if what crosses it stays this small. How the string gets here,
  * and why it is a flag rather than an environment variable, is in
- * `desktop/src/preload.ts`.
+ * `@openflow/desktop/preload.ts`.
  */
 expose({ bridge: flag('bridge') });

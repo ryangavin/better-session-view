@@ -82,7 +82,7 @@ Environment variables, all optional:
 | `OPENFLOW_DEV_URL` | from `OPENFLOW_PORT_BASE` | the same, at an address this could not have worked out |
 
 The offsets themselves are `desktop/src/apps.ts` now, read by the app and by its vite config
-alike — see [`desktop/docs/registry.md`](../../desktop/docs/registry.md).
+alike — see [`desktop/docs/registry.md`](https://github.com/openflowfm/desktop/blob/main/docs/registry.md).
 
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next
 free one. That's deliberate: assign the port, don't discover it.

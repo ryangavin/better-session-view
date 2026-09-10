@@ -8,7 +8,7 @@ import { gridExport } from './harness/vite-export.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// The dev port is this app's offset in `desktop/src/apps.ts`, read here and by
+// The dev port is this app's offset in `@openflow/desktop/apps.ts`, read here and by
 // the app's own main process — one number, one place. A worktree that moves
 // OPENFLOW_PORT_BASE takes every dev server with it.
 //
@@ -32,7 +32,7 @@ export default defineConfig(({ command }) => ({
   root: here,
   resolve: {
     alias: (command === 'serve'
-      ? { electron: path.resolve(here, '../desktop/src/reach-client.ts') }
+      ? { electron: fileURLToPath(import.meta.resolve('@openflow/desktop/reach-client.ts')) }
       : {}) as Record<string, string>,
   },
   // The harness page under harness/ saves hand-corrected beats through the dev server.
