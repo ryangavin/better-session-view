@@ -304,8 +304,9 @@ FX A and B divide their section into equal-height halves. Their headers retain
 equal side spacing. Bypass and dropdown join inside one shared outline, with a
 single internal divider and no extra rule across the effects panel.
 
-A dedicated separator divides the equal FX halves, with parameter knobs centered
-in the space below each header. The master monitoring row uses the same separate
+A dedicated separator divides the equal FX halves. Each header and its parameter
+knob row form one vertically centered group, with equal free space above and below
+and the existing header-to-knob spacing (eight pixels outside compact layouts). The master monitoring row uses the same separate
 dividers and balanced padding as deck routing. Its crossfader fills the bottom
 row to match the transport buttons’ height.
 
