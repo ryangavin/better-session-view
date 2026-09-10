@@ -1,10 +1,11 @@
 import { expect, it, vi } from 'vitest';
+import { KEY_VERSION } from '../src/key.ts';
 import { backfillKeys } from './keyBackfill.ts';
 import type { Library, Track } from '../src/openflow.ts';
 
 const song = (id: string): Track => ({ id, title: id, key: null, stems: `stems/${id}`, model: 'model', sources: ['bass'] } as Track);
 function analyzed(track: Track): Track {
-  return { ...track, keyAnalysis: { version: 1, algorithm: 'bass-scale-compatibility', source: { stems: track.stems!, model: track.model!, hash: 'hash', mapHash: 'map' },
+  return { ...track, keyAnalysis: { version: KEY_VERSION, algorithm: 'bass-scale-compatibility', source: { stems: track.stems!, model: track.model!, hash: 'hash', mapHash: 'map' },
     label: 'Unknown', status: 'unknown', confidence: 'insufficient', analyzedAt: '', candidates: [], alternatives: [], regions: [], coverage: 0, possibleChanges: false } };
 }
 const library = (tracks: Track[]): Library => ({ root: '/library', tracks } as Library);

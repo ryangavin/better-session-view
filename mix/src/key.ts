@@ -1,7 +1,7 @@
 import { midiPitch, type PitchMap } from './pitchMap.ts';
 import { keyRegions, type KeyRegion } from './debug/pitch/evidence.ts';
 
-export const KEY_VERSION = 1;
+export const KEY_VERSION = 2;
 const names = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
 export interface KeyCandidate { tonic: number; mode: 'major' | 'minor'; label: string; support: number }
 export interface KeyAnalysis {
@@ -38,17 +38,22 @@ export function estimateKey(map: PitchMap, source: KeyAnalysis['source'], analyz
   // stable voiced pitch and four meaningful pitch classes. No pedal-key guess.
   const enough = total >= 10 && coverage >= .1 && bins.filter(b => b > total * .03).length >= 4 && scores[0].support >= .9;
   const tied = enough ? scores.filter(s => s.support >= scores[0].support - .025) : [];
-  const roots = tied.map(c => ({ candidate: c, weight: bins[c.tonic] / total })).sort((a, b) => b.weight - a.weight);
-  const dominant = roots.length > 1 && roots[0].weight >= .2 && roots[0].weight >= roots[1].weight * 2;
-  const candidates = dominant ? [roots[0].candidate] : tied.length <= 4 ? tied : [];
   const regions = keyRegions(map, 16);
   const known = new Set(regions.filter(r => r.label !== 'Unknown').map(r => r.label));
   const possibleChanges = known.size > 1;
-  const status = possibleChanges ? 'multiple' : !candidates.length ? 'unknown' : candidates.length > 1 ? 'ambiguous' : 'candidate';
+  const regional = new Set(regions.flatMap(r => r.candidates));
+  const alternatives = enough ? tied : scores.filter(c => regional.has(c.label));
+  const roots = alternatives.map(candidate => ({ candidate, weight: total ? bins[candidate.tonic] / total : 0 }))
+    .sort((a, b) => b.weight - a.weight || b.candidate.support - a.candidate.support);
+  // Prefer one supported tonic, but retain a second when bass emphasis cannot
+  // distinguish them. Never expand library results from regional alternatives.
+  const dominant = roots.length === 1 || roots.length > 1 && roots[0].weight >= .2 && roots[0].weight >= roots[1].weight * 1.5;
+  const candidates = roots.slice(0, dominant ? 1 : 2).map(r => r.candidate);
+  const status = !candidates.length ? 'unknown' : candidates.length > 1 ? 'ambiguous' : 'candidate';
   return { version: KEY_VERSION, algorithm: 'bass-scale-compatibility', analyzedAt, source, status,
     confidence: !candidates.length ? 'insufficient' : coverage >= .5 ? 'moderate' : 'low',
-    label: possibleChanges ? 'Multiple / possible changes' : candidates.length ? candidates.map(c => c.label).join(' / ') : 'Unknown',
-    candidates, alternatives: tied, coverage, regions, possibleChanges };
+    label: candidates.length ? candidates.map(c => c.label).join(' / ') : 'Unknown',
+    candidates, alternatives, coverage, regions, possibleChanges };
 }
 
 type KeyTrack = { key: string | null; keyAnalysis?: KeyAnalysis | null; stems: string | null; model: string | null };
@@ -61,13 +66,11 @@ export function keyFilters(track: KeyTrack): string[] {
   if (track.key?.trim()) return [track.key.trim()];
   const a = savedKey(track);
   if (!a || a.status === 'unknown') return ['Unknown'];
-  const labels = [...a.candidates.map(c => c.label), ...a.regions.filter(r => r.label !== 'Unknown').flatMap(r => r.candidates)];
-  return [...new Set([...labels, a.status === 'multiple' ? 'Multiple / possible changes' : a.status === 'ambiguous' ? 'Ambiguous' : a.label])];
+  return a.candidates.slice(0, 2).map(c => c.label);
 }
 export function keyDescription(track: KeyTrack): string {
   if (track.key?.trim()) return `${track.key} · manual key; bass analysis does not overwrite it`;
   const a = savedKey(track);
   if (!a) return 'Unknown · no current bass key analysis';
-  return `${a.label} · ${a.confidence} evidence · ${Math.round(a.coverage * 100)}% usable bass pitch. ` +
-    a.regions.map(r => `${r.from.toFixed(0)}–${r.to.toFixed(0)}s: ${r.label}`).join('; ');
+  return `${a.label} · estimated key`;
 }

@@ -21,7 +21,7 @@ it('offers a provisional bass-root interpretation and retains alternatives', () 
 it('does not hide different regions under one global key', () => {
   const scale = [24,26,28,29,31,33,35,36];
   const a = estimateKey(map([...scale,...scale,...scale.map(p=>p+6),...scale.map(p=>p+6)]), source);
-  expect(a.status).toBe('multiple'); expect(a.possibleChanges).toBe(true);
+  expect(a.candidates.length).toBeLessThanOrEqual(2); expect(a.possibleChanges).toBe(true);
   expect(a.regions).toHaveLength(2);
 });
 it('manual metadata wins and absent or stale analysis remains filterable', () => {
@@ -30,4 +30,11 @@ it('manual metadata wins and absent or stale analysis remains filterable', () =>
   expect(keyLabel(track)).toBe('G minor'); expect(keyFilters(track)).toEqual(['G minor']);
   expect(savedKey({...track,stems:'stems/b'})).toBeNull();
   expect(keyFilters({...track,key:null,stems:'stems/b'})).toEqual(['Unknown']);
+});
+
+it('caps broad scale matches and library filters at two ranked candidates', () => {
+  const a = estimateKey(map(Array.from({length: 8}, () => [24,26,28,31]).flat()), source);
+  expect(a.alternatives.length).toBeGreaterThan(2);
+  expect(a.candidates).toHaveLength(2);
+  expect(keyFilters({key:null,keyAnalysis:a,stems:source.stems,model:source.model})).toEqual(a.candidates.map(c=>c.label));
 });
