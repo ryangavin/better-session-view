@@ -78,7 +78,7 @@
 .play-hold.wdg-body:hover:not(:disabled):not([data-on]) { color: var(--caution-hover); }
 
 .play-performance { display: flex; flex-direction: column; }
-.play-fx-unit { display:grid; grid-template-rows:auto 1fr auto; gap:0; border: 0; border-radius: 0; box-shadow: none; background: color-mix(in srgb,var(--wdg-face) 55%,transparent); }
+.play-fx-unit { display:grid; grid-template-rows:auto 1fr; gap:0; border: 0; border-radius: 0; box-shadow: none; background: color-mix(in srgb,var(--wdg-face) 55%,transparent); }
 .play-fx-unit > .wdg-select { width: 100%; min-width: 0; }
 .play-fx-unit > .wdg-select > .wdg-select-body { width: 100%; border: 0; border-radius: var(--wdg-radius) var(--wdg-radius) 0 0; background: transparent; }
 .play-fx-unit:has(.play-fx-params:not(:empty)) > .wdg-select { border-bottom: 1px solid var(--wdg-edge); }
@@ -272,6 +272,7 @@
 
 .play-column-rule { margin-inline:0; justify-self:center; }
 
-.play-fx-highpass { width:100%; --wdg-field-height:20px; }
-.play-fx-highpass .wdg-body { width:100%; }
-.play-fx-unit:has(.play-fx-highpass) .play-fx-params { padding-block: 2px; }
+/* Let FX controls use the same three columns and dial size as the sends below. */
+.play-master-strip .play-actions:has(.play-fx-highpass) { padding-inline:0; }
+.play-fx-params:has(.play-fx-highpass) { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; padding-inline:0; }
+.play-fx-params:has(.play-fx-highpass) .wdg-knob { min-width:0; }

@@ -90,7 +90,9 @@ export interface MixerState {
   fxA: string; fxB: string;
   effectsEnabled?: boolean;
   effectEnabled?: {A:boolean;B:boolean};
-  effectHighPass?: {A:boolean;B:boolean};
+  /** Host parameter positions; the host maps these to its DSP cutoff. */
+  effectHighPass?: {A:number;B:number};
+  effectHighPassParam?: Param;
   effectHighPassHint?: string;
   effectTailing?: boolean;
   phonesLevel?: number;
@@ -131,7 +133,7 @@ export interface MixerCommands {
   setPhones?(control:'phonesLevel'|'phonesMix', value:number):void;
   setEffectsEnabled?(enabled:boolean):void;
   setEffectEnabled?(slot:'A'|'B', enabled:boolean):void;
-  setEffectHighPass?(slot:'A'|'B', enabled:boolean):void;
+  setEffectHighPass?(slot:'A'|'B', value:number):void;
   clearEffectTails?():void;
   setEffectParam?(slot: 'A' | 'B', effectId: string, paramId: string, value: number): void;
   setEffect(slot: 'A' | 'B', effectId: string): void;

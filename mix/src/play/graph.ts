@@ -1,4 +1,3 @@
-import { EFFECT_HIGH_PASS_HZ } from './effectHighPass.ts';
 import { FLAT, Split } from '../eq.ts';
 
 export const levelGain = (value: number) => (Math.max(0, Math.min(100, value)) / 100) ** 3;
@@ -44,12 +43,13 @@ export class MixerEffect {
   input: GainNode; output: GainNode;
   private nodes: AudioNode[] = []; private delays: DelayNode[] = []; private feedbacks: GainNode[] = [];
   private meter: AnalyserNode; private samples: Float32Array<ArrayBuffer>;
+  private highPass: BiquadFilterNode;
   private inlet: GainNode; private bypass: GainNode; private filtered: GainNode;
   private tone: BiquadFilterNode; private oscillator?: OscillatorNode; private depth?: GainNode;
   constructor(private ctx: AudioContext, readonly kind: string) {
     this.input = ctx.createGain(); this.output = ctx.createGain(); this.tone = ctx.createBiquadFilter(); this.tone.type = 'lowpass'; this.nodes.push(this.input, this.output, this.tone);
     this.inlet=ctx.createGain();this.bypass=ctx.createGain();this.filtered=ctx.createGain();
-    const high=ctx.createBiquadFilter();high.type='highpass';high.frequency.value=EFFECT_HIGH_PASS_HZ;high.Q.value=Math.SQRT1_2;
+    const high=this.highPass=ctx.createBiquadFilter();high.type='highpass';high.frequency.value=200;high.Q.value=Math.SQRT1_2;
     this.bypass.gain.value=1;this.filtered.gain.value=0;
     this.input.connect(this.bypass);this.bypass.connect(this.inlet);
     this.input.connect(high);high.connect(this.filtered);this.filtered.connect(this.inlet);
@@ -72,7 +72,9 @@ export class MixerEffect {
     }
     this.tone.connect(this.output);this.meter=ctx.createAnalyser();this.meter.fftSize=256;this.samples=new Float32Array(256);this.output.connect(this.meter);this.nodes.push(this.meter);
   }
-  setHighPass(on: boolean) {
+  setHighPass(cutoff: number) {
+    const on=Number.isFinite(cutoff) && cutoff>0;
+    if(on)smooth(this.highPass.frequency,Math.max(20,Math.min(2000,cutoff)),this.ctx.currentTime);
     smooth(this.bypass.gain,on?0:1,this.ctx.currentTime);
     smooth(this.filtered.gain,on?1:0,this.ctx.currentTime);
   }

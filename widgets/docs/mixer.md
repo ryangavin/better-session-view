@@ -77,10 +77,11 @@ renders the selector and its knobs as one subtly shaded control group and emits 
 `effectValues` is keyed by slot, effect and parameter; absent values use Param defaults.
 The master omits a separate title so the padded effect groups can occupy the header
 space while their lower boundary stays aligned with the launchers.
-Optional `setEffectHighPass` adds one High pass toggle per FX slot beneath its two knobs.
-The host supplies `effectHighPass` and `effectHighPassHint`; the widget knows no cutoff
-or DSP topology. The compact parameter padding keeps both toggles within the narrow
-master section, and native pressed state/keyboard activation match the other toggles.
+Optional `setEffectHighPass` and a host `effectHighPassParam` add a third **HP** knob
+beside the two FX knobs. `effectHighPass` contains host parameter positions; the host
+owns the frequency mapping, Off position and persistence. The row removes inner
+horizontal padding and uses the same dial size and three-column layout as the master
+sends below. No smaller knob variant or extra control row is used.
 
 The widget knows no effect algorithms. Mix owns its effect definitions, values and audio graph.
 

@@ -182,9 +182,14 @@ it('disables Full for empty and original-only decks but permits available stems'
   expect((view.getByRole('button',{name:'Deck 2 play/pause'}) as HTMLButtonElement).disabled).toBe(false);
   expect((view.getByRole('button',{name:'Deck 3 original full mix'}) as HTMLButtonElement).disabled).toBe(false);
 });
-it('exposes independent high-pass toggles without adding a third effect knob',()=>{
-  const props=fixture();props.commands.setEffectHighPass=vi.fn();props.state.effectHighPass={A:false,B:true};
+it('places a cutoff knob beside each pair of effect knobs with host parameter values',()=>{
+  const props=fixture();props.commands.setEffectHighPass=vi.fn();props.state.effectHighPass={A:0,B:1};
+  props.state.effectHighPassParam={kind:'enum',min:0,max:2,defaultValue:0,items:['Off','200Hz','2kHz']};
+  props.state.effects=[{id:'delay-id',name:'Delay',controls:[{id:'feedback',name:'Feedback',param},{id:'tone',name:'Tone',param}]}];
   const view=render(createElement(MixerView,props));
-  fireEvent.click(view.getByRole('button',{name:'FX A high pass'}));expect(props.commands.setEffectHighPass).toHaveBeenCalledWith('A',true);
-  fireEvent.click(view.getByRole('button',{name:'FX B high pass'}));expect(props.commands.setEffectHighPass).toHaveBeenCalledWith('B',false);
+  const cutoff=view.getByRole('slider',{name:'FX A high pass cutoff'});
+  expect(cutoff.getAttribute('aria-valuetext')).toBe('Off');
+  expect(cutoff.closest('.play-fx-params')!.querySelectorAll('[role="slider"]')).toHaveLength(3);
+  expect(view.queryByRole('button',{name:'FX A high pass'})).toBeNull();
+  fireEvent.keyDown(cutoff,{key:'ArrowRight'});act(()=>frames.splice(0).forEach(frame=>frame(0)));expect(props.commands.setEffectHighPass).toHaveBeenCalledWith('A',1);
 });

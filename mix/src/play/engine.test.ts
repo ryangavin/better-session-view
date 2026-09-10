@@ -642,9 +642,9 @@ it('keeps original playback when stale metadata claims stems that were not loade
 it('retains each input high-pass setting across type changes and engine recreation', async()=>{
   const saved=new Map<string,string>();vi.stubGlobal('localStorage',{getItem:(key:string)=>saved.get(key)??null,setItem:(key:string,value:string)=>saved.set(key,value)});
   try {
-    const {engine,load}=setup();await load();engine.commands.setEffectHighPass!('A',true);
+    const {engine,load}=setup();await load();engine.commands.setEffectHighPass!('A',49);
     engine.commands.setEffect('A','chorus');engine.commands.setEffect('A','reverb');
-    expect(engine.snapshot().effectHighPass).toEqual({A:true,B:false});
-    const next=setup().engine;expect(next.snapshot().effectHighPass).toEqual({A:true,B:false});
+    expect(engine.snapshot().effectHighPass).toEqual({A:49,B:0});
+    const next=setup().engine;expect(next.snapshot().effectHighPass).toEqual({A:49,B:0});
   } finally { vi.unstubAllGlobals(); }
 });
