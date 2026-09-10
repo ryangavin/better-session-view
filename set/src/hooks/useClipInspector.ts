@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
-import { colorOps } from '@openflow/core/ops.ts';
-import { DEFAULT_CLIP_PATTERN, render } from '@openflow/core/pattern.ts';
-import { roleIn } from '@openflow/core/roles.ts';
-import { titleOf } from '@openflow/core/sceneTitle.ts';
+import { colorOps } from '@openflow/bridge-model/ops.ts';
+import { DEFAULT_CLIP_PATTERN, render } from '../lib/pattern.ts';
+import { roleIn } from '@openflow/bridge-model/roles.ts';
+import { titleOf } from '../lib/sceneTitle.ts';
 import { clipKey, parseClipKey } from '../lib/selection.ts';
 import type { BridgeState } from './useBridge.ts';
 

@@ -22,7 +22,7 @@
 // back, so it can't fail the same way. Asymmetric on purpose, not for want of
 // tidying.
 //
-// Pure and transport-free, like the rest of core/. Nothing here knows what a
+// Pure and transport-free, like the rest of this package. Nothing here knows what a
 // palette index means to Live; colors travel through as opaque numbers.
 
 import { MIN_TEMPO } from './derive.ts';
@@ -237,7 +237,7 @@ export function findRoleProblems(draft: readonly Role[]): Set<number> {
 // The scene equivalent of ops.ts, and here for the same reason: assembling and
 // reversing writes is exactly the logic that has to be provable without Live
 // running. Structurally typed rather than importing OpenFlow.Scene / OpenFlow.SceneOp so
-// core/ stays free of the wire types.
+// these structural input types stay independent of the wire types.
 
 export interface SceneFields {
   s: number;
@@ -336,7 +336,7 @@ export function roleOps(
 /**
  * Color writes for `scenes`, dropping the ones that would change nothing.
  *
- * Takes the RGB alongside the index rather than looking it up: core has no
+ * Takes the RGB alongside the index rather than looking it up: this helper has no
  * palette and shouldn't grow one — the caller already holds it.
  */
 export function sceneColorOps(

@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react';
 import './BulkWorkflow.css';
 import './RecolorModal.css';
 import { hex } from '@openflow/core/color.ts';
-import { songKey, type Derivation } from '@openflow/core/derive.ts';
-import { songFacts } from '@openflow/core/songRows.ts';
+import { songKey, type Derivation } from '@openflow/bridge-model/derive.ts';
+import { songFacts } from '@openflow/bridge-model/songRows.ts';
 import {
   planSongColors,
   type ColorRule,
   type SongColorInput,
-} from '@openflow/core/colorRules.ts';
+} from '../lib/colorRules.ts';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
 import { SwatchGrid } from './SwatchGrid.tsx';
 import { ControlButton, ControlGroup } from './Control.tsx';

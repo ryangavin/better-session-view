@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { derive } from '../../core/src/derive.ts';
-import { SCENE_PATTERNS } from '../../core/src/namePattern.ts';
-import { buildSetModel } from '../../core/src/setModel.ts';
+import { derive } from '@openflow/bridge-model/derive.ts';
+import { SCENE_PATTERNS } from '@openflow/bridge-model/namePattern.ts';
+import { buildSetModel } from '@openflow/bridge-model/setModel.ts';
 import { buildChart } from './chart.ts';
 import { emptySet, type SetState } from './bridge.ts';
 

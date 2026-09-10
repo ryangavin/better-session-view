@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import './RoleMenu.css';
 import { hex } from '@openflow/core/color.ts';
-import { roleKey, type Role } from '@openflow/core/roles.ts';
+import { roleKey, type Role } from '@openflow/bridge-model/roles.ts';
 import { Popup, type PopupBox } from '@openflow/widgets/chrome/Popup.tsx';
 import { useMenuKeyboard } from '../hooks/useMenuKeyboard.ts';
 import { ControlButton } from './Control.tsx';

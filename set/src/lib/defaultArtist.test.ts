@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { derive, type SceneInput } from './derive.ts';
-import { SCENE_PATTERNS } from './namePattern.ts';
+import { derive, type SceneInput } from '@openflow/bridge-model/derive.ts';
+import { SCENE_PATTERNS } from '@openflow/bridge-model/namePattern.ts';
 import { planDefaultArtist } from './defaultArtist.ts';
-import type { SceneFields } from './roles.ts';
+import type { SceneFields } from '@openflow/bridge-model/roles.ts';
 
 const scene = (i: number, name: string): SceneInput => ({
   i,

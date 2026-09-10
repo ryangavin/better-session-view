@@ -17,7 +17,7 @@ Live has no move call (see [`LOM.md`](../LOM.md)), so `move` in `lom.ts` runs fo
 | 3 | property writes | the labels — see below |
 | 4 | `Song.delete_scene` | irreversible |
 
-**The arithmetic isn't here.** It arrives as data from `core/src/sceneMove.ts`, which has
+**The arithmetic isn't here.** It arrives as data from `set/src/lib/sceneMove.ts`, which has
 an exhaustive test. Pass 1 renumbers the whole set underneath us — inserting n blanks
 pushes every index at or after the destination up by n — so the scenes pass 4 deletes are
 not at the indexes the UI found them at. That off-by-n deletes a song instead of moving

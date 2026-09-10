@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { sceneFields } from '@openflow/core/roles.ts';
+import { sceneFields } from '@openflow/bridge-model/roles.ts';
 import { clipKey } from '../lib/selection.ts';
 
 /**
@@ -30,7 +30,7 @@ export function useSnapshotLookups(snapshot: OpenFlow.Snapshot | null) {
     [clips],
   );
 
-  /** The scenes in the shape scene-op assembly wants — see core/src/roles.ts. */
+  /** The scenes in the shape scene-op assembly wants — see bridge/model/src/roles.ts. */
   const scenesForOps = useMemo(() => sceneFields(snapshot?.scenes ?? []), [snapshot]);
 
   const clipsByScene = useMemo(() => {

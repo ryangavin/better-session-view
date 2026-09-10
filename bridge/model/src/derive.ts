@@ -6,7 +6,7 @@
 // after this they don't need one — the name *is* the record.
 //
 // Everything here is a pure function of a snapshot plus a pattern, which is the
-// whole reason it lives in core/. Derivation is the step most likely to be
+// whole reason it is a pure helper. Derivation is the step most likely to be
 // subtly wrong on a real set, and it's the one that can be tested without Live
 // running at all.
 

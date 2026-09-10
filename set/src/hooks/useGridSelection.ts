@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { cellsInBlock, type ActiveCell } from '@openflow/core/gridRange.ts';
+import { cellsInBlock, type ActiveCell } from '../lib/gridRange.ts';
 import { clipKey } from '../lib/selection.ts';
 import type { CellClick } from '../lib/keys.ts';
 import type { BridgeState } from './useBridge.ts';

@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from 'react';
-import { sceneColorOps, type SceneFields } from '@openflow/core/roles.ts';
+import { sceneColorOps, type SceneFields } from '@openflow/bridge-model/roles.ts';
 import {
   scenesOfSongs,
   songsOfScenes,
   type Derivation,
-} from '@openflow/core/derive.ts';
+} from '@openflow/bridge-model/derive.ts';
 import type { BridgeState } from './useBridge.ts';
 
 interface Args {

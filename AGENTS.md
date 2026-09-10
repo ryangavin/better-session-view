@@ -9,7 +9,8 @@ most of what's in them is reasoning about a feature you aren't touching.
 
 | touching | start at |
 |---|---|
-| domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
+| remaining shared music and display helpers | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
+| shared session model, naming, edits and deltas | [`bridge/model/README.md`](bridge/model/README.md) — pure `@openflow/bridge-model` helpers shared by Set and Bridge |
 | the session manager — components, hooks, the client | [`set/README.md`](set/README.md) — 16 topic docs. `@openflow/set`, and **set[flow]** is what it calls itself |
 | an Electron app — its window, its packaging, or adding a new one | [`desktop/README.md`](desktop/README.md) — 6 topic docs. `@openflow/desktop`: the main process set[flow] and visual[flow] share. **Adding an app starts at `desktop/docs/registry.md`** |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](https://github.com/openflowfm/widgets/blob/main/README.md) — its README indexes the topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way**. Also holds `palette.css`, the design language every app imports |
@@ -35,8 +36,9 @@ work in [Issues](../../issues).
 
 ## Rules
 
-1. **`core/` imports no transport, no React, and nothing Live-specific.** It's the only
-   code testable without Ableton running, and what keeps a different backend possible.
+1. **`core/` imports no transport or React; add no further Live-specific helpers.** Pure helpers are tested in their owning modules; shared session logic lives in
+   `bridge/model`, Set-only helpers in `set/src/lib`. The existing Live palette stays
+   in Core pending a separate ownership decision.
    **`widgets/` is the same rule on the other axis** — React, but no protocol, no bridge,
    no `core/`, nothing that knows Live exists. It takes a `Param` and a number, and the
    one adapter that hands it one is `set/src/lib/liveParam.ts`.
@@ -87,11 +89,11 @@ work in [Issues](../../issues).
     `visuals/node_modules/@ktamas77/abletonlink`, and `bridge/` is bundled for a Node
     runtime inside Max that is not ours to pick. Listing either in `workspaces` hoists its
     dependencies to the root, at which point `postinstall` fails with "abletonlink is not
-    installed". The workspaces — `core`, `protocol`, `desktop`, `set`, `mix`, `chart`, `tools` —
+    installed". The workspaces — `core`, `protocol`, `desktop`, `set`, `mix`, `chart`, `tools`, `bridge/model` —
     are safe to hoist only because none of them has dependencies of its own; they are
     workspaces so the packages resolve by name. `desktop/` imports `electron`, but never
     resolves it: esbuild marks it external, because the runtime provides it. Cross-module imports use the package
-    specifier with the real TypeScript extension (`@openflow/core/derive.ts`), and so do
+    specifier with the real TypeScript extension (`@openflow/bridge-model/derive.ts`), and so do
     imports inside a module (`./param.ts`, never `./param.js`).
 
 ## Before you claim something works

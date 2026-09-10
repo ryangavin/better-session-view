@@ -215,7 +215,7 @@ declare namespace OpenFlow {
     colorClash: boolean;
     /**
      * `Scene.tempo` on the song's first scene — the one scene this app writes a
-     * tempo to. Null when it follows the Live Set. See `core/docs/derive.md`.
+     * tempo to. Null when it follows the Live Set. See `bridge/model/docs/derive.md`.
      *
      * **There is deliberately no rendered `tempo` string beside `bpm` here.**
      * Collapsing a song's scene tempos to `128 / 130` says two scenes disagree
@@ -641,7 +641,7 @@ declare namespace OpenFlow {
    * function of *what* is being watched — a run of shells is a couple of
    * observers per device, and one open EQ Eight is forty more — so the bridge
    * unions what every client declared and the LOM side follows the union. See
-   * `core/src/chainWatch.ts`, where that arithmetic lives and is tested.
+   * `bridge/src/chainWatch.ts`, where that arithmetic lives and is tested.
    *
    * A device has no id on the wire, so a run is addressed the way a clip is: by
    * where it sits. `path` is empty for a track's own device list and indexes
@@ -831,7 +831,7 @@ declare namespace OpenFlow {
   }
 
   /**
-   * One moved scene, as `core/src/sceneMove.ts` planned it.
+   * One moved scene, as `set/src/lib/sceneMove.ts` planned it.
    *
    * Both indexes are **post-insert**: they already account for the blank scenes
    * created at the destination, because inserting them renumbers everything at
@@ -904,7 +904,7 @@ declare namespace OpenFlow {
 
   /**
    * One clip copied from where it is to where it's going, as
-   * `core/src/clipMove.ts` ordered it.
+   * `bridge/model/src/clipMove.ts` ordered it.
    *
    * **The order of `steps` is load-bearing and must not be re-sorted.** A drag
    * is a rigid translation, so a clip's target is often another clip's source;

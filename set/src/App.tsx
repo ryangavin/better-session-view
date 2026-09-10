@@ -38,9 +38,9 @@ import {
   saveColumnWidth,
   type ColumnWidth,
 } from './lib/columnWidth.ts';
-import { DEFAULT_SCENE_PATTERN } from '@openflow/core/namePattern.ts';
-import { songKey as songKeyOf } from '@openflow/core/derive.ts';
-import { describeMove } from '@openflow/core/sceneMove.ts';
+import { DEFAULT_SCENE_PATTERN } from '@openflow/bridge-model/namePattern.ts';
+import { songKey as songKeyOf } from '@openflow/bridge-model/derive.ts';
+import { describeMove } from './lib/sceneMove.ts';
 
 /**
  * The composition root. Every concern lives in a hook under hooks/; this

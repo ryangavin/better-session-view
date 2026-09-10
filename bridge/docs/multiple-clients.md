@@ -20,7 +20,7 @@ write — is deliberately **not** fresh. Those are the cases this exists to make
 ### What keeps it current
 
 Everything that can change the set already passes through this process, so the held copy
-is patched from the same signals the clients get, with the same functions from `core/`:
+is patched from the same signals the clients get, with the same functions from `bridge/model/`:
 
 | | held state |
 |---|---|
@@ -169,7 +169,7 @@ observer can report: properties Live exposes with no `observe` at all (`Clip.len
 `Track.fold_state`) plus another M4L device or a remote script. Deciding the set has gone
 stale, and spending Live's main thread to find out, belongs to the process that owns the
 set — not to N tabs each with their own clock, reaching the same conclusion at the same
-moment and asking for the same walk. `shouldWalk` is still the same function in `core/`
+moment and asking for the same walk. `shouldWalk` is still the same function in `bridge/src/backstop.ts`
 with the same tests; only the caller moved. Only a walk that was *kept* resets its clock:
 one answered but not held proves nothing about what we know now.
 

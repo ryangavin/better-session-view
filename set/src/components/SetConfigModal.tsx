@@ -4,8 +4,8 @@ import { hex } from '@openflow/core/color.ts';
 import {
   planDefaultArtist,
   type DefaultArtistPlan,
-} from '@openflow/core/defaultArtist.ts';
-import type { Derivation } from '@openflow/core/derive.ts';
+} from '../lib/defaultArtist.ts';
+import type { Derivation } from '@openflow/bridge-model/derive.ts';
 import {
   findRoleProblems,
   MAX_ROLE_LEN,
@@ -13,7 +13,7 @@ import {
   type Role,
   type SceneFields,
   type SceneWriteOp,
-} from '@openflow/core/roles.ts';
+} from '@openflow/bridge-model/roles.ts';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
 import { SwatchGrid } from './SwatchGrid.tsx';
 import { ControlButton } from './Control.tsx';

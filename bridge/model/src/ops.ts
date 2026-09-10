@@ -7,7 +7,7 @@
 // for it.
 //
 // Structurally typed rather than importing OpenFlow.Clip / OpenFlow.ApplyOp: this needs
-// four fields, and keeping core free of the wire types is what lets it be tested
+// four fields, and keeping these structural inputs independent of the wire types is what lets it be tested
 // without any transport around it.
 
 export interface ClipFields {

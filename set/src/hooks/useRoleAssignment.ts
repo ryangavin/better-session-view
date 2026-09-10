@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { colorOps } from '@openflow/core/ops.ts';
+import { colorOps } from '@openflow/bridge-model/ops.ts';
 import {
   findRole,
   roleIn,
@@ -7,7 +7,7 @@ import {
   sharedRole,
   type Role,
   type SceneFields,
-} from '@openflow/core/roles.ts';
+} from '@openflow/bridge-model/roles.ts';
 import type { PopupBox } from '@openflow/widgets/chrome/Popup.tsx';
 import type { BridgeState } from './useBridge.ts';
 

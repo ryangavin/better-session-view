@@ -19,7 +19,7 @@ The second reason is the walk. A client that has to derive the mapping needs the
 rows, which means it needs a snapshot, which meant a full LOM walk on every join. The
 bridge now holds both the snapshot and the model and keeps them current, so a joining
 client is a payload rather than a walk of every clip slot in the set — see
-[`bridge/docs/multiple-clients.md`](../../bridge/docs/multiple-clients.md).
+[`bridge/docs/multiple-clients.md`](../../../bridge/docs/multiple-clients.md).
 
 ## Who builds one
 

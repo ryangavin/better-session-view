@@ -1,9 +1,9 @@
 import { useMemo, useRef, type CSSProperties } from 'react';
 import './ClipGrid.css';
 import { hex, inkOn } from '@openflow/core/color.ts';
-import { startsBand, type Column } from '@openflow/core/trackColumns.ts';
-import type { SongHeader, TrackShape } from '@openflow/core/songRows.ts';
-import type { ActiveCell } from '@openflow/core/gridRange.ts';
+import { startsBand, type Column } from '../../lib/trackColumns.ts';
+import type { SongHeader, TrackShape } from '@openflow/bridge-model/songRows.ts';
+import type { ActiveCell } from '../../lib/gridRange.ts';
 import { isLaunchModified, LAUNCH_KEY, type CellClick } from '../../lib/keys.ts';
 import {
   metricsFor,

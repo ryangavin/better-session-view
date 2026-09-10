@@ -1,13 +1,13 @@
 import { memo, type CSSProperties, type DragEvent } from 'react';
 import './SongHeaderRow.css';
 import { hex, legibleOn } from '@openflow/core/color.ts';
-import { roleKey } from '@openflow/core/roles.ts';
-import type { Column } from '@openflow/core/trackColumns.ts';
+import { roleKey } from '@openflow/bridge-model/roles.ts';
+import type { Column } from '../../lib/trackColumns.ts';
 import {
   mergeShapes,
   type SongHeader,
   type TrackShape,
-} from '@openflow/core/songRows.ts';
+} from '@openflow/bridge-model/songRows.ts';
 import { IconGroupFold } from '../Icon.tsx';
 import { ControlButton } from '../Control.tsx';
 import { TagChip } from '../TagChip.tsx';

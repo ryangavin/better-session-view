@@ -39,7 +39,22 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 Cross-cutting: **performance notes governs every component under `ClipGrid/`** regardless
 of which feature you came for — a prop that changes identity per render re-renders 848 rows.
 
-The matching domain logic is in [`core/`](../core/README.md); it has its own index.
+Set-only pure helpers live under `src/lib/`; shared session logic is owned by
+[`bridge/model`](../bridge/model/README.md), imported as `@openflow/bridge-model`.
+
+| pure helper | topic |
+|---|---|
+| `src/lib/colorRules.ts` | [colorRules](docs/colorRules.md) |
+| `src/lib/defaultArtist.ts` | [defaultArtist](docs/defaultArtist.md) |
+| `src/lib/gridRange.ts` | [gridRange](docs/gridRange.md) |
+| `src/lib/groupSlot.ts` | [groupSlot](docs/groupSlot.md) |
+| `src/lib/newSong.ts` | [newSong](docs/newSong.md) |
+| `src/lib/pattern.ts` | [pattern](docs/pattern.md) |
+| `src/lib/sceneMove.ts` | [sceneMove](docs/sceneMove.md) |
+| `src/lib/sceneTitle.ts` | [sceneTitle](docs/sceneTitle.md) |
+| `src/lib/songOrder.ts` | [songOrder](docs/songOrder.md) |
+| `src/lib/trackColumns.ts` | [trackColumns](docs/trackColumns.md) |
+
 
 ## Files
 

@@ -11,8 +11,8 @@ import {
   titleOf,
   titleOps,
 } from './sceneTitle.ts';
-import { compilePattern, DEFAULT_SCENE_PATTERN } from './namePattern.ts';
-import type { SceneFields } from './roles.ts';
+import { compilePattern, DEFAULT_SCENE_PATTERN } from '@openflow/bridge-model/namePattern.ts';
+import type { SceneFields } from '@openflow/bridge-model/roles.ts';
 
 describe('parseTitle', () => {
   it('splits the full convention', () => {

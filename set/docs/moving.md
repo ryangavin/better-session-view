@@ -9,7 +9,7 @@ move that scene**. An amber line shows where it lands, and on a header the line 
 the cost — `10 scenes · 84 clips copied · 10 deleted`.
 
 One gesture, two grips, and one plan underneath: `planSceneMove` has always taken a set
-of scene indexes and a destination gap, and a set of one is a scene. Nothing in `core/`
+of scene indexes and a destination gap, and a set of one is a scene. Nothing in `set/src/lib/`
 or the bridge changed to add the second grip.
 
 **The scene number is the grip, not the row.** The row already means "select" and ⇧
@@ -74,7 +74,7 @@ color for "what your gesture is about to act on".
 including the clip about to be replaced, which is why it's an outline and not a fill.
 
 The ordering, the refusals and what gets cleared afterwards all live in
-[`core/src/clipMove.ts`](../../core/docs/clipMove.md). Two things belong here:
+[`bridge/model/src/clipMove.ts`](../../bridge/model/docs/clipMove.md). Two things belong here:
 
 - **An invalid drop draws nothing and does nothing.** `planClipMove` returns `null` for
   the whole drag if any clip would land off the grid, on a group track, or on a track of

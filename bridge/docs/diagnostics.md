@@ -240,11 +240,11 @@ because it is believed. It was believed here — a change reached for that harne
 new bridge logic against, and found nothing to reach for.
 
 `lom.js` needs Live and has no automated coverage either. **It's the file to suspect
-first.** The parts that could be extracted are, in `core/src/lomAtoms.ts`.
+first.** Its atom parser remains in the script. The unused Core mirror and its tests
+were removed; those tests never exercised the actual LOM implementation.
 
-**So logic worth testing goes in `core/`, and the two halves of the device keep only what
-has to live there.** `chainWatch.ts` is the worked example: the union deciding how many
-LOM observers get installed is arithmetic, so it sits in `core/` with tests, and
+**Pure logic is tested within the module that owns it.** `chainWatch.ts` is the worked example: the union deciding how many
+LOM observers get installed is arithmetic, so it sits in `bridge/src/chainWatch.ts` with tests, and
 `bridge.ts` keeps just the per-socket bookkeeping around it.
 
 - **`Scene.tempo` needs `tempo_enabled` set first, and the order is load-bearing.** Live

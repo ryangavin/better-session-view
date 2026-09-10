@@ -22,6 +22,7 @@ export default defineConfig({
   test: {
     projects: [
       module('core', ['core/src/**/*.test.ts']),
+      module('bridge', ['bridge/src/**/*.test.ts', 'bridge/model/src/**/*.test.ts']),
       module('desktop', ['desktop/src/**/*.test.ts']),
       module('mix', ['mix/electron/**/*.test.ts', 'mix/src/**/*.test.ts', 'mix/harness/**/*.test.ts']),
       module('set', [
@@ -49,6 +50,9 @@ export default defineConfig({
       // than go missing.
       include: [
         'core/src/**/*.{ts,tsx}',
+        'bridge/model/src/**/*.ts',
+        'bridge/src/backstop.ts',
+        'bridge/src/chainWatch.ts',
         // Only the registry. Everything else in `desktop/` imports `electron`,
         // which exists only inside a main process — a coverage run that tried
         // to load them would fail rather than report a zero.

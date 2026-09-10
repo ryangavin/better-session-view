@@ -14,7 +14,7 @@
 //
 // `songRows` lays out a `SetModel` — the songs as the bridge read them, facts
 // already rendered. `blockTrackRoles` below reads the clips instead, which is
-// exactly why it is not in the model; see `core/docs/setModel.md`.
+// exactly why it is not in the model; see `bridge/model/docs/setModel.md`.
 
 import type { DerivedSong, SongBlock } from './derive.ts';
 import { roleIn, roleKey } from './roles.ts';

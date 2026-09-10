@@ -124,8 +124,8 @@ This is the part that surprises people, and it's all forced by Max.
   emit now opens with `"use strict"` and `lom.ts` declares the three with `var`,
   which is a legal write to a global however Max provides it.
 - Consequence: **`lom.ts` cannot `import` anything.** That's why the protocol lives in
-  a global `OpenFlow` namespace rather than a module, and why atom-parsing logic is
-  duplicated into `core/src/lomAtoms.ts` so it can be unit-tested.
+  a global `OpenFlow` namespace rather than a module. Atom parsing remains inside
+  `lom.ts`; the unused mirrored Core implementation and tests have been removed.
 
 **`bridge.ts` compiles to CommonJS**, because Node for Max injects `max-api` as a CJS
 module and runs the emitted file directly.
@@ -134,7 +134,7 @@ module and runs the emitted file directly.
 `bridge/lom.js` directly, and it can never import anything regardless (see above).
 `bridge.ts` does not: it's bundled by esbuild instead — `tools/build-bridge.ts` for the
 shipped build, `tools/dev-bridge.ts` for the dev watch loop — specifically so it can
-import across the `core/` package boundary (the song list Push shows needs `derive()`).
+import across the `@openflow/bridge-model` package boundary (the song list Push shows needs `derive()`).
 Bundling doesn't care where an import lives, which is what made that possible;
 `bridge/tsconfig.node.json` is typecheck-only now, and nothing asks `tsc` to emit
 `bridge.ts` at all. It still reads protocol types off the global `OpenFlow` namespace rather

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { planClipMove, type ClipAt } from '@openflow/core/clipMove.ts';
+import { planClipMove, type ClipAt } from '@openflow/bridge-model/clipMove.ts';
 import { parseClipKey } from '../lib/selection.ts';
 import type { BridgeState } from './useBridge.ts';
 

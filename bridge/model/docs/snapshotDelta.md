@@ -6,7 +6,7 @@ only the tracks it touches (`bridge/README.md`, *Following Live*); this is the h
 has to be right for that to be worth doing.
 
 **Scope-then-replace, never upsert by `(t, s)`** — and that distinction is the entire
-reason this is a function in `core/` rather than three inline lines in a hook.
+reason this is a function in `bridge/model/` rather than three inline lines in a hook.
 
 An upsert carries over a clip that is no longer there: a deleted clip has no entry in the
 incoming payload, so nothing overwrites it and the stale copy survives. **A clip moved out

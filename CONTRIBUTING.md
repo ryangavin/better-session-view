@@ -72,7 +72,7 @@ and comparison harness, with mix[flow] as its intended first consumer.
 | module | what it is | read for |
 |---|---|---|
 | [`protocol/`](protocol/README.md) | wire types, single source of truth | adding or changing a message |
-| [`core/`](core/README.md) | pure domain logic — no I/O, no React, no Live | naming, colors, anything that deserves tests |
+| [`core/`](core/README.md) | shared music and display helpers — no I/O or React | colors, chords, playback display |
 | [`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md) | DAW controls — React, but no Live | knobs, faders, the parameter model, the bench |
 | [`set/`](set/README.md) | the session manager, **set[flow]** — React 19 + Vite | components, the bridge client, dev server |
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
@@ -250,3 +250,11 @@ push Widgets first, then run `npm install 'github:openflowfm/widgets#<full-commi
 here and commit both manifest and lock. Validate this repository with typechecking,
 tests and app builds. Do not use `npm link`: a sibling's React can create a second
 copy in the renderer. Visual changes still need the bench and consumer preview.
+
+### Pure helper ownership
+
+Set-only editing and grid helpers live in `set/src/lib`. The bridge owns shared session
+model and edit logic in [`bridge/model`](bridge/model/README.md), a dependency-free
+`@openflow/bridge-model` workspace that both runtimes import as TypeScript source.
+The parent bridge stays outside npm workspaces and retains its own dependencies.
+Pure helpers cannot import the bridge runtime; `lom.ts` remains an import-free script.

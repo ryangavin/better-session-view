@@ -59,14 +59,14 @@ scene index is about to mean a different row.
 
 It is one plan and one `move` message, not a move per song. Live's undo grouping is
 per-message, a half-applied order is the worst state this app can leave a set in, and
-`planSceneReorder` is what makes one plan possible — see [`core/docs/sceneMove.md`](../../core/docs/sceneMove.md).
+`planSceneReorder` is what makes one plan possible — see [`set/docs/sceneMove.md`](../../set/docs/sceneMove.md).
 
 ### Coloring by rule
 
 **A song is one color**, and which color is only worth deciding across the whole set:
 *by key* the bands say what will mix into what, *by bpm* they say where the set changes
 gear. *rainbow* and *random* say nothing and are for when you just need a hundred songs
-told apart. The rules are pure functions in core; this modal is the preview and the
+told apart. The rules are pure functions in `set/src/lib`; this modal is the preview and the
 allowed colors.
 
 - **Which of Live's 70 colors a rule may use is set-owned device state.** It is stored

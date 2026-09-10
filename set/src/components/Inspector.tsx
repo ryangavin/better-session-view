@@ -1,5 +1,5 @@
 import { hex } from '@openflow/core/color.ts';
-import { DEFAULT_CLIP_PATTERN, TOKENS, unknownTokens } from '@openflow/core/pattern.ts';
+import { DEFAULT_CLIP_PATTERN, TOKENS, unknownTokens } from '../lib/pattern.ts';
 import { ColorSelect } from './ColorSelect.tsx';
 import { ControlButton } from './Control.tsx';
 

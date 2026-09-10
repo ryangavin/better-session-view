@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { planSceneMove } from '@openflow/core/sceneMove.ts';
+import { planSceneMove } from '../lib/sceneMove.ts';
 import type { BridgeState } from './useBridge.ts';
 
 /**
@@ -18,7 +18,7 @@ import type { BridgeState } from './useBridge.ts';
  * effect of grabbing one header would move sixty scenes nobody pointed at.
  *
  * This is the only gesture in the app that can destroy work — see
- * core/src/sceneMove.ts. Everything the grid does otherwise is either a view
+ * set/src/lib/sceneMove.ts. Everything the grid does otherwise is either a view
  * change or a write our own undo reverses.
  */
 export function useSceneDrag(

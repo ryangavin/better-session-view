@@ -1,15 +1,15 @@
 import { hex } from '@openflow/core/color.ts';
 import './ScenePanel.css';
-import { MIN_TEMPO } from '@openflow/core/derive.ts';
-import { roleKey, type Role } from '@openflow/core/roles.ts';
+import { MIN_TEMPO } from '@openflow/bridge-model/derive.ts';
+import { roleKey, type Role } from '@openflow/bridge-model/roles.ts';
 import {
   isBpm,
   isKey,
   isTag,
   splitsAsArtist,
   type TitlePatch,
-} from '@openflow/core/sceneTitle.ts';
-import { SUGGESTED_SONG_TAGS } from '@openflow/core/songTags.ts';
+} from '../lib/sceneTitle.ts';
+import { SUGGESTED_SONG_TAGS } from '@openflow/bridge-model/songTags.ts';
 import { ColorSelect } from './ColorSelect.tsx';
 import { ControlButton, ControlSelect } from './Control.tsx';
 

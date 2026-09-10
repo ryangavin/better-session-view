@@ -39,7 +39,7 @@ lom.js     ──[s ---openflow-to-node]──> bridge.js
 | `ping` | |
 
 `watch_chains` is the exception to the shape of every other line here, and the reason is
-in `core/src/chainWatch.ts`: a watch whose cost depends on *what* is being watched cannot
+in `bridge/src/chainWatch.ts`: a watch whose cost depends on *what* is being watched cannot
 be armed by a boolean, and cannot be refcounted per kind either — two clients looking at
 different racks both want it on and neither may release the other's. So the bridge unions
 what every client declared and this side is told the answer. It never sees a client.

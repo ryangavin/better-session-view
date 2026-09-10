@@ -1,7 +1,7 @@
 # chainWatch
 
 Which device runs anyone is looking at, reduced to the one answer the LOM gets asked for.
-`core/src/chainWatch.ts`.
+`bridge/src/chainWatch.ts`.
 
 ## Why this isn't a boolean
 

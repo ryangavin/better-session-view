@@ -24,7 +24,8 @@
     "set",
     "mix",
     "chart",
-    "tools"
+    "tools",
+    "bridge/model"
   ],
   "scripts": {
     "build": "npm run build:bridge && npm run build:device",
@@ -59,7 +60,7 @@
     "dev:mix-ui": "vite --config mix/vite.config.ts",
     "dev:mix-app": "node --disable-warning=ExperimentalWarning tools/app.ts dev mix",
     "dev:devices": "vite --config set/vite.bench.config.ts",
-    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p desktop/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p mix/tsconfig.json && tsc -p mix/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
+    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p bridge/model/tsconfig.json && tsc -p core/tsconfig.json && tsc -p desktop/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p mix/tsconfig.json && tsc -p mix/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "benchmark": "node --disable-warning=ExperimentalWarning tools/benchmark.ts",

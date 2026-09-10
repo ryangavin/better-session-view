@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { mergeVocabulary, roleKey, rolesInUse } from '@openflow/core/roles.ts';
+import { mergeVocabulary, roleKey, rolesInUse } from '@openflow/bridge-model/roles.ts';
 
 /**
  * The role vocabulary as the UI shows it, and the colors it paints.
  *
- * Roles are stored in the scene's own name as `[role]` — see core/src/roles.ts
+ * Roles are stored in the scene's own name as `[role]` — see bridge/model/src/roles.ts
  * for why the set is the storage and why the tag is bracketed. Everything here
  * is pure derivation over the snapshot, the configured roles and the palette.
  */

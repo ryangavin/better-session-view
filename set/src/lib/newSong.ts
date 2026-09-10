@@ -1,4 +1,4 @@
-import { MIN_TEMPO, songKey } from './derive.ts';
+import { MIN_TEMPO, songKey } from '@openflow/bridge-model/derive.ts';
 import {
   ARTIST_SEPARATOR,
   formatTitle,

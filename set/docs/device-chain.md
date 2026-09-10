@@ -59,7 +59,7 @@ this one has to be refcounted per kind *and per target* — two clients looking 
 different tracks both want it on, and neither may release the other's.
 
 That now exists. The footer declares every run it is looking at, the bridge unions those
-across clients ([`core/docs/chainWatch.md`](../../core/docs/chainWatch.md)), and `lom.ts`
+across clients ([`bridge/docs/chainWatch.md`](../../bridge/docs/chainWatch.md)), and `lom.ts`
 follows the union. **A device added, renamed, deactivated or folded in Live now appears
 here without anyone asking**, which is what the refresh button used to stand in for.
 

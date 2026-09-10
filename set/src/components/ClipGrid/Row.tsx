@@ -1,11 +1,11 @@
 import { memo, type DragEvent } from 'react';
 import './Row.css';
 import { hex, inkOn } from '@openflow/core/color.ts';
-import { MIN_TEMPO } from '@openflow/core/derive.ts';
-import { groupSlot } from '@openflow/core/groupSlot.ts';
-import { roleIn, roleKey } from '@openflow/core/roles.ts';
-import { titleOf } from '@openflow/core/sceneTitle.ts';
-import type { Column } from '@openflow/core/trackColumns.ts';
+import { MIN_TEMPO } from '@openflow/bridge-model/derive.ts';
+import { groupSlot } from '../../lib/groupSlot.ts';
+import { roleIn, roleKey } from '@openflow/bridge-model/roles.ts';
+import { titleOf } from '../../lib/sceneTitle.ts';
+import type { Column } from '../../lib/trackColumns.ts';
 import { clipKey } from '../../lib/selection.ts';
 import { LAUNCH_KEY, mods } from '../../lib/keys.ts';
 import { has, type RowMarks } from '../../lib/rowMarks.ts';

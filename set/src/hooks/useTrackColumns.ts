@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { buildColumns } from '@openflow/core/trackColumns.ts';
+import { buildColumns } from '../lib/trackColumns.ts';
 import type { BridgeState } from './useBridge.ts';
 
 /**

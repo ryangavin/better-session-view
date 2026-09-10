@@ -1,4 +1,4 @@
-import type { Derivation, DerivedSong } from '@openflow/core/derive.ts';
+import type { Derivation, DerivedSong } from '@openflow/bridge-model/derive.ts';
 import './SongsModal.css';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
 import { ControlButton } from './Control.tsx';

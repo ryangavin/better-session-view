@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BridgeClient, type ConnectionState } from '../lib/client.ts';
-import { applyOps, inverseOps } from '@openflow/core/ops.ts';
+import { applyOps, inverseOps } from '@openflow/bridge-model/ops.ts';
 import {
   applySceneOps,
   countUnrevertableColors,
   inverseSceneOps,
   sceneFields,
-} from '@openflow/core/roles.ts';
-import type { SceneMovePlan } from '@openflow/core/sceneMove.ts';
-import { canApplyDelta, mergeRows, mergeTrackDelta } from '@openflow/core/snapshotDelta.ts';
-import { applyClipMove, type ClipMovePlan } from '@openflow/core/clipMove.ts';
+} from '@openflow/bridge-model/roles.ts';
+import type { SceneMovePlan } from '../lib/sceneMove.ts';
+import { canApplyDelta, mergeRows, mergeTrackDelta } from '@openflow/bridge-model/snapshotDelta.ts';
+import { applyClipMove, type ClipMovePlan } from '@openflow/bridge-model/clipMove.ts';
 import { LIVE_PALETTE } from '@openflow/core/livePalette.ts';
-import { derive } from '@openflow/core/derive.ts';
-import { SCENE_PATTERNS } from '@openflow/core/namePattern.ts';
-import { buildSetModel } from '@openflow/core/setModel.ts';
+import { derive } from '@openflow/bridge-model/derive.ts';
+import { SCENE_PATTERNS } from '@openflow/bridge-model/namePattern.ts';
+import { buildSetModel } from '@openflow/bridge-model/setModel.ts';
 import { errText, reportSnapshotTiming } from '../lib/snapshotTiming.ts';
 import { useLog, type LogLine } from './useLog.ts';
 import { useDeviceState } from './useDeviceState.ts';
@@ -90,7 +90,7 @@ export interface BridgeState {
    *
    * Nothing draws a song by reading a scene name; the mapping is read once, in
    * the bridge, for Push and every browser tab together. See
-   * `core/docs/setModel.md`, and `reconcile` for the single exception.
+   * `bridge/model/docs/setModel.md`, and `reconcile` for the single exception.
    */
   model: OpenFlow.SetModel | null;
   palette: number[];
@@ -181,7 +181,7 @@ export interface BridgeState {
    *
    * Not a subscribe/unsubscribe pair: the bridge unions these across clients,
    * so an empty list is how you stop and a dropped socket says the same thing.
-   * See [`core/src/chainWatch.ts`](../../../core/docs/chainWatch.md).
+   * See [`bridge/src/chainWatch.ts`](../../../bridge/docs/chainWatch.md).
    */
   watchChains: (subs: OpenFlow.ChainWatch[]) => void;
   /** The watched runs, pushed whenever anything in one of them changes. */

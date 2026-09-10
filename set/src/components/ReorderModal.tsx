@@ -3,20 +3,20 @@ import { ControlButton, ControlSelect } from './Control.tsx';
 import './BulkWorkflow.css';
 import './ReorderModal.css';
 import { hex } from '@openflow/core/color.ts';
-import { songKey, type Derivation, type DerivedSong } from '@openflow/core/derive.ts';
-import { songFacts } from '@openflow/core/songRows.ts';
+import { songKey, type Derivation, type DerivedSong } from '@openflow/bridge-model/derive.ts';
+import { songFacts } from '@openflow/bridge-model/songRows.ts';
 import {
   orderScenes,
   sortSongOrder,
   type SongSortCriterion,
   type SongSortField,
   type SortableSong,
-} from '@openflow/core/songOrder.ts';
+} from '../lib/songOrder.ts';
 import {
   describeMove,
   planSceneReorder,
   type SceneMovePlan,
-} from '@openflow/core/sceneMove.ts';
+} from '../lib/sceneMove.ts';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
 import { TagChip } from './TagChip.tsx';
 

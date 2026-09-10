@@ -66,7 +66,7 @@ Two things still read the names in the browser, and both are deliberate:
 
 - **`useSongLayout`'s `derivation`.** That is the *scene* layer — each scene's parsed
   fields — which the scene-level modals work in and which the model deliberately doesn't
-  carry. See `core/docs/setModel.md` for where the boundary is drawn.
+  carry. See `bridge/model/docs/setModel.md` for where the boundary is drawn.
 - **`reconcile`, after a scene write.** A scene name *is* the mapping, so renaming four
   scenes changes the song headers above them; the copy we just patched needs a model that
   matches it, and the bridge's answer describes what Live confirmed a moment ago. Same
@@ -101,7 +101,7 @@ carries `prevRev`, and it is applied **only** when that equals the rev in hand; 
 else means a message was missed and the answer is `resync()`, not a retry. Applying a
 delta to the wrong base would splice two revisions of the set together — the tracks in
 scope from one, everything else from another — and the result would look plausible.
-`canApplyDelta` and `mergeTrackDelta` are both in `core/` with tests, for the reason
+`canApplyDelta` and `mergeTrackDelta` are both in `bridge/model/` with tests, for the reason
 everything else that merges is: a grid disagreeing with Live gives no hint which of the
 two is lying.
 
@@ -114,7 +114,7 @@ the one that matters most, because in this project the scene name *is* the mappi
 The client's half of that is one line in the `delta` case, and it uses **two** merges on
 purpose. `mergeTrackDelta` replaces clips by scope; `mergeRows` upserts scene and track
 rows by index. They differ because a clip can vanish from a track and a scene cannot —
-the reasoning is on `mergeRows` in `core/`, and it's worth reading before anyone
+the reasoning is on `mergeRows` in `bridge/model/`, and it's worth reading before anyone
 "simplifies" them into one.
 
 A delta also carries a **`model`**, but only when it moved a scene row — a rename or a
@@ -135,7 +135,7 @@ alt-tab to answer a question that is almost always "nothing changed". Focus is a
 convenient moment to ask, not a reason in itself; the trigger that matches the job is
 **age**. Then it moved again, out of the browser entirely: a tab that was merely *open*
 was deciding Live should spend ~2.6s, and several tabs decided it at once. `shouldWalk` is
-still in [`core/`](../../core/README.md) with tests rather than as two constants
+still in [`bridge/src/backstop.ts`](../../bridge/src/backstop.ts) with tests rather than as two constants
 somewhere, and it answers three things at once — `bridge.ts` is what calls it now, on a
 fixed tick:
 
@@ -174,7 +174,7 @@ set that state. Tagging four scenes with a role meant re-reading every clip in t
 be told what we had just written, and on a real set that's the difference between a chip
 that changes instantly and one that changes after a visible pause.
 
-So `write` and `moveClips` patch the copy in hand instead. The arithmetic is in `core/` —
+So `write` and `moveClips` patch the copy in hand instead. The arithmetic is in `bridge/model/` —
 `applyOps`, `applySceneOps`, `applyClipMove` — because a merge that's subtly wrong shows a
 grid disagreeing with Live and gives no hint which of the two is lying, and that deserves
 tests rather than a hook. **The bridge patches its own held copy with the same three

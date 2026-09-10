@@ -1,6 +1,6 @@
-import type { Derivation } from './derive.ts';
+import type { Derivation } from '@openflow/bridge-model/derive.ts';
 import { titleOps } from './sceneTitle.ts';
-import type { SceneFields, SceneWriteOp } from './roles.ts';
+import type { SceneFields, SceneWriteOp } from '@openflow/bridge-model/roles.ts';
 
 export interface DefaultArtistConflict {
   song: string;

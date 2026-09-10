@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
-import { derive } from '@openflow/core/derive.ts';
-import { SCENE_PATTERNS } from '@openflow/core/namePattern.ts';
-import { allSongKeys, blockTrackRoles, songRows } from '@openflow/core/songRows.ts';
+import { derive } from '@openflow/bridge-model/derive.ts';
+import { SCENE_PATTERNS } from '@openflow/bridge-model/namePattern.ts';
+import { allSongKeys, blockTrackRoles, songRows } from '@openflow/bridge-model/songRows.ts';
 
 /** Before the first snapshot lands. A constant, so its identity is stable. */
 const NO_SONGS: OpenFlow.SetModel = {
@@ -18,7 +18,7 @@ const NO_SONGS: OpenFlow.SetModel = {
  *
  * **The songs come from the bridge**, as a `SetModel` — the mapping is read out
  * of the scene names once, there, for Push and every browser tab at the same
- * time (see `core/docs/setModel.md`). Nothing here compiles a pattern to draw a
+ * time (see `bridge/model/docs/setModel.md`). Nothing here compiles a pattern to draw a
  * header.
  *
  * The `derivation` it returns is a different thing and still read here: the
@@ -65,7 +65,7 @@ export function useSongLayout(snapshot: OpenFlow.Snapshot | null, model: OpenFlo
    * This one stays in the browser rather than riding on the model, and the
    * reason is the boundary the model is drawn along: it reads the *clips*, so
    * folding it into the bridge's answer would make every clip edit anywhere in
-   * the set rebuild the whole song list. See `core/docs/setModel.md`.
+   * the set rebuild the whole song list. See `bridge/model/docs/setModel.md`.
    *
    * Computed for every block rather than only the folded ones, deliberately.
    * It's a single pass over the clips, and keying it off the songs instead of

@@ -17,21 +17,21 @@ import fs = require('node:fs');
 import os = require('node:os');
 import path = require('node:path');
 import { WebSocketServer, WebSocket } from 'ws';
-import { MIN_INTERVAL_MS, STALE_MS, shouldWalk } from '@openflow/core/backstop.ts';
-import { applyClipMove } from '@openflow/core/clipMove.ts';
-import { derive } from '@openflow/core/derive.ts';
+import { MIN_INTERVAL_MS, STALE_MS, shouldWalk } from './backstop.ts';
+import { applyClipMove } from '@openflow/bridge-model/clipMove.ts';
+import { derive } from '@openflow/bridge-model/derive.ts';
 import { LIVE_PALETTE } from '@openflow/core/livePalette.ts';
-import { SCENE_PATTERNS } from '@openflow/core/namePattern.ts';
-import { applyOps } from '@openflow/core/ops.ts';
-import { applySceneOps } from '@openflow/core/roles.ts';
-import { buildSetModel } from '@openflow/core/setModel.ts';
+import { SCENE_PATTERNS } from '@openflow/bridge-model/namePattern.ts';
+import { applyOps } from '@openflow/bridge-model/ops.ts';
+import { applySceneOps } from '@openflow/bridge-model/roles.ts';
+import { buildSetModel } from '@openflow/bridge-model/setModel.ts';
 import {
   mergeChainWatches,
   sameChainWatches,
   validChainWatch,
   type ChainWatch,
-} from '@openflow/core/chainWatch.ts';
-import { canApplyDelta, mergeRows, mergeTrackDelta } from '@openflow/core/snapshotDelta.ts';
+} from './chainWatch.ts';
+import { canApplyDelta, mergeRows, mergeTrackDelta } from '@openflow/bridge-model/snapshotDelta.ts';
 
 const PORT = Number(process.env.OPENFLOW_PORT) || 17800;
 /**
@@ -683,7 +683,7 @@ function armDeviceWatches(): void {
 // So a client declares its **whole current view** rather than toggling. There
 // is no `off`: an empty array is how you stop, a dropped socket is exactly
 // equivalent to sending one, and no message a client can send releases a
-// subscription another client is holding. The union is `core/src/chainWatch.ts`,
+// subscription another client is holding. The union is `bridge/src/chainWatch.ts`,
 // where it has tests.
 //
 // One kind today. The map and the recompute are deliberately not specialised to
@@ -769,7 +769,7 @@ function rearmWatches(): void {
 
 interface HeldSet {
   snapshot: OpenFlow.Snapshot;
-  /** Read from `snapshot`. See `core/docs/setModel.md`. */
+  /** Read from `snapshot`. See `bridge/model/docs/setModel.md`. */
   model: OpenFlow.SetModel;
   /**
    * The two host-side costs of the walk this was first read by.
@@ -1138,7 +1138,7 @@ function diagPushBank(): void {
  *
  * Reads the model rather than running its own `derive()`. It used to do the
  * latter, which made the mapping computed twice in this one process and a third
- * time in every browser tab — the drift `core/docs/setModel.md` exists to close.
+ * time in every browser tab — the drift `bridge/model/docs/setModel.md` exists to close.
  */
 function refreshPushSongs(model: OpenFlow.SetModel): void {
   const all = model.songs
@@ -1996,7 +1996,7 @@ async function snapshotDone(
   const hostMs = Date.now() - t0;
   // Read the mapping once, here, and ship it. Every client used to run the same
   // `derive()` over the same scene names to draw its own grid — see
-  // `core/docs/setModel.md`.
+  // `bridge/model/docs/setModel.md`.
   const model = buildSetModel(derive(data.scenes, SCENE_PATTERNS), data.rev);
   // The whole payload is kept, not just its scenes: it is what the next client
   // to ask is answered with — but only if the set is still the one this walk

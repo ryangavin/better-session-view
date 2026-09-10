@@ -16,7 +16,7 @@ Three things follow:
   reads the properties off the source object at move time, so the move carries fields
   the snapshot doesn't even model — `time_signature_numerator` and friends — and can't
   be caught out by a stale snapshot. Keeping the field list here would also put
-  Live-specific knowledge in `core/`, which is the one rule.
+  Live property-reading into this pure plan, which must stay independent of the runtime.
 - **Deletions are emitted descending.** Each one renumbers everything below it, so
   highest-first means the remaining indexes are still the ones they were computed
   against.

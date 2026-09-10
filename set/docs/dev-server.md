@@ -66,7 +66,7 @@ So the bill for an edit is now the honest one:
 One thing that still walks and isn't HMR: the staleness backstop. It runs in the
 **bridge** now, on a fixed tick, so editing for five minutes no longer means the
 next click into the browser spends Live's main thread — coming back to the window
-just re-asks for the set, which is a payload. See `core/src/backstop.ts` for the
+just re-asks for the set, which is a payload. See `bridge/src/backstop.ts` for the
 policy and `bridge.ts`'s `backstopTick` for the caller.
 
 Environment variables, all optional:

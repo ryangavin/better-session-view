@@ -297,7 +297,7 @@ only slots and leaves every index meaning what it meant. Sharing a message would
 caller reach the scene-deleting path by filling in one more field.
 
 **`steps` is ordered and must not be re-sorted.** A drag is a rigid translation, so one
-clip's target is often another's source; `core/src/clipMove.ts` orders the copies against
+clip's target is often another's source; `bridge/model/src/clipMove.ts` orders the copies against
 the direction of travel so nothing is overwritten before it has been read. Re-sorting on
 the far side doesn't raise — it silently drops clips in the overlap.
 

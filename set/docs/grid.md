@@ -79,7 +79,7 @@ Two separate things, and keeping them separate is the point:
 
 - **selection** — a `Set` of `"t:s"` keys. What `apply` writes to.
 - **the active cell** — exactly one cell, `ActiveCell` in
-  [`core/src/gridRange.ts`](../../core/docs/gridRange.md). What you're listening to, what the arrow
+  [`set/src/lib/gridRange.ts`](../../set/docs/gridRange.md). What you're listening to, what the arrow
   keys move, and what will hold the name field. Called *active cell* after spreadsheets
   rather than *cursor*, which in a DAW means a position on the timeline.
 

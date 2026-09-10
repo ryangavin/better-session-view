@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from 'react';
-import { songKey, type Derivation } from '@openflow/core/derive.ts';
-import { songFacts } from '@openflow/core/songRows.ts';
-import type { SongColorInput } from '@openflow/core/colorRules.ts';
-import { sceneColorOps, type SceneFields } from '@openflow/core/roles.ts';
+import { songKey, type Derivation } from '@openflow/bridge-model/derive.ts';
+import { songFacts } from '@openflow/bridge-model/songRows.ts';
+import type { SongColorInput } from '../lib/colorRules.ts';
+import { sceneColorOps, type SceneFields } from '@openflow/bridge-model/roles.ts';
 import { resolveAllowed } from '../lib/allowedColors.ts';
 import type { BridgeState } from './useBridge.ts';
 
@@ -19,7 +19,7 @@ interface Args {
  * Coloring every song from a rule — the bulk counterpart to `useSongColor`,
  * which paints the songs you have selected with a swatch you pressed.
  *
- * The rules themselves are `core/src/colorRules.ts`; this is the part that
+ * The rules themselves are `set/src/lib/colorRules.ts`; this is the part that
  * can't be pure: which colors this device stores for the set, what the set
  * currently states, and turning the answer into scene writes.
  */

@@ -6,7 +6,7 @@
 // back correctly, and the obvious merge is wrong. See mergeTrackDelta.
 //
 // Structurally typed like ops.ts: this needs the address fields and nothing
-// else, and keeping core free of the wire types is what lets it be tested with
+// else, and keeping these structural inputs independent of the wire types is what lets it be tested with
 // no transport around it.
 
 export interface ClipAddress {

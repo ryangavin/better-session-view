@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { hex, legibleOn } from '@openflow/core/color.ts';
-import type { Derivation } from '@openflow/core/derive.ts';
-import { songFacts } from '@openflow/core/songRows.ts';
+import type { Derivation } from '@openflow/bridge-model/derive.ts';
+import { songFacts } from '@openflow/bridge-model/songRows.ts';
 import {
   columnTemplate,
   INDEX_FACTS,

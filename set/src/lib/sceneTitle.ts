@@ -64,8 +64,8 @@ import {
   withRole,
   type SceneFields,
   type SceneWriteOp,
-} from './roles.ts';
-import { isSongTag, SONG_TAG_SHAPE } from './songTags.ts';
+} from '@openflow/bridge-model/roles.ts';
+import { isSongTag, SONG_TAG_SHAPE } from '@openflow/bridge-model/songTags.ts';
 
 export interface SceneTitle {
   song: string;

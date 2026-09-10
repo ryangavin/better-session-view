@@ -97,7 +97,7 @@ behaves the way its name suggests.
   scan: what a group slot *shows* (whether it has anything to fire, and its color) is
   derivable from the member clips already in the snapshot, so reading
   `controls_other_clips` per slot would cost trackCount × sceneCount for an answer we
-  already have. See `core/src/groupSlot.ts`.
+  already have. See `set/src/lib/groupSlot.ts`.
 - **A property Live documents as optional needs its own "absent" value.** A scene's
   `color_index` "Can be None for no color", and `gnum` would report that as palette
   slot 0 — a real color. `gnumOr` exists for this.

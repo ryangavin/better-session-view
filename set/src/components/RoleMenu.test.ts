@@ -2,7 +2,7 @@
 import { createElement } from 'react';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Role } from '@openflow/core/roles.ts';
+import type { Role } from '@openflow/bridge-model/roles.ts';
 import { RoleMenu } from './RoleMenu.tsx';
 afterEach(cleanup);
 

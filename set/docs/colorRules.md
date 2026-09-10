@@ -16,7 +16,7 @@ Three decisions carry it:
   sharing a key would drift apart. bpm orders ascending, so the palette walks with the
   tempo; key orders by first appearance, since keys have no order anyone agrees on and
   first appearance is what derivation already uses.
-- **`random` takes a seed and deals from a shuffled bag.** The seed keeps `core` pure and
+- **`random` takes a seed and deals from a shuffled bag.** The seed keeps the helper pure and
   makes the preview and the write the same roll — re-rolling is a different number, not a
   different function. The bag means every allowed color is used before any repeats, and the
   one swap at each refill means no two songs in a row match. Independent draws clump, and

@@ -3,7 +3,7 @@ import {
   moveActive,
   type ActiveCell,
   type Direction,
-} from '@openflow/core/gridRange.ts';
+} from '../lib/gridRange.ts';
 import { isLaunchModified, isTypingInto } from '../lib/keys.ts';
 import type { BridgeState } from './useBridge.ts';
 

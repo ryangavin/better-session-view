@@ -103,7 +103,7 @@ travel as `sceneRows`, `trackRows` and `tempo`, absent rather than empty so a de
 only about clips stays exactly the message it always was. One flush, one `rev` bump, one
 merge, however many of the three are dirty.
 
-**Rows upsert by index; clips replace by scope.** `mergeRows` in `core/` has the argument:
+**Rows upsert by index; clips replace by scope.** `mergeRows` in `bridge/model/` has the argument:
 a clip can *vanish* from a track — moved out of a slot, it is a deletion at the source, and
 an upsert has no entry with which to represent one. A scene at index 5 cannot vanish that
 way. Either it exists, or the set restructured, and a restructure renumbers everything and
@@ -120,7 +120,7 @@ removing a track, and that is structural.
 
 A delta is broadcast, and `bridge.ts` is one of the things reading it. It holds the last
 snapshot and the `SetModel` read from it, and merges each delta into that copy with the
-same `core/` functions the browser uses — one set of arithmetic with tests, not two.
+same `bridge/model/` functions the browser uses — one set of arithmetic with tests, not two.
 
 **The model is rebuilt only when the delta carried `sceneRows`.** Everything in a
 `SetModel` is a function of scene names and `Scene.tempo`, which is exactly what those rows
@@ -176,10 +176,10 @@ M4L device, a remote script, and possibly undo.
   shared by snapshots and deltas. A delta rewrites only its own scope, so applying one to
   any state but the exact one it was computed against splices two revisions of the set
   together. A mismatch is a *missed message*, and the answer is a full walk, not a retry.
-- **Scope-then-replace, never upsert.** The merge is `mergeTrackDelta` in `core/`, where
+- **Scope-then-replace, never upsert.** The merge is `mergeTrackDelta` in `bridge/model/`, where
   it has tests. An upsert by `(t, s)` keeps a clip the user deleted, because a deleted
   clip has no incoming entry to overwrite it — and a clip moved *out* of a slot is a
-  deletion at the source. See [`core/docs/snapshotDelta.md`](../../core/docs/snapshotDelta.md).
+  deletion at the source. See [`bridge/model/docs/snapshotDelta.md`](../../bridge/model/docs/snapshotDelta.md).
 - **A write in flight defers the flush** — `job`, `moveJob` **and `clipJob`**. Each is
   reconciled by the client from the batch or plan it sent, and a delta computed against a
   half-written set races that. `clipJob` was missing, and a clip drag is precisely the

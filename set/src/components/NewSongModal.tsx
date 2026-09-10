@@ -1,12 +1,12 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import type { Derivation } from '@openflow/core/derive.ts';
+import type { Derivation } from '@openflow/bridge-model/derive.ts';
 import {
   NEW_SONG_SCENES,
   newSongProblems,
   planNewSong,
   type NewSongDraft,
   type NewSongField,
-} from '@openflow/core/newSong.ts';
+} from '../lib/newSong.ts';
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape.ts';
 import { ColorSelect } from './ColorSelect.tsx';
 import { ControlButton, ControlSelect } from './Control.tsx';
