@@ -221,3 +221,18 @@ with paired candidates is available under either candidate and **Ambiguous**; po
 changes are available under their regional candidates and **Multiple / possible changes**.
 Unanalyzed, stale and insufficient results remain browseable under **Unknown**. Reset
 filters clears all three lists. Manual keys use their existing literal metadata labels.
+
+## Debug library backfill
+
+With `npm run dev:mix` running, `node tools/mix-key-backfill.ts` previews the current
+library's missing bass/key analyses. Add `--run` to process them sequentially through
+the same desktop key-analysis operation; add `--reanalyze` to include saved results.
+This is a developer migration tool, not a permanent library control. It does not change
+import behavior, separate missing stems, or backfill waveform/beat analysis.
+
+Saved results, including Unknown, are skipped by default. A missing continuous map is
+computed by the existing worker; a valid map is reused. Each completed song is saved
+immediately, so rerunning resumes missing work. Per-song errors are reported and the
+remaining songs continue. Ctrl+C stops after the current song, retaining its result.
+An occupied engine or changed library stops the run. Progress and totals print to the
+terminal; exit status is nonzero for errors or interruption. Manual keys remain intact.
