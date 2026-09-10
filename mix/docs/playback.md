@@ -479,6 +479,11 @@ facts about the audio and go beside it in `analysis/`. **Not** the
 library and not the stems — those are on disk and are read back every time,
 because a second copy of the truth is the copy that goes stale.
 
+Library column moves use `useLibraryColumns.ts` and their own local-storage key.
+They save immediately, independently of the settled track write below, so closing
+after a move cannot discard it and another window’s track save cannot overwrite it.
+The old session column order is only a migration fallback.
+
 Four things it has to get right, and each was a bug first:
 
 **Switching tracks writes the outgoing one synchronously.** The settled write is

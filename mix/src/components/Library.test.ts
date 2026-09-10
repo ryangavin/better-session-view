@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-import { createElement as h } from 'react';
-import { render, fireEvent, cleanup } from '@testing-library/react';
+import { createElement as h, useState } from 'react';
+import { render, fireEvent, cleanup, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Library } from './Library.tsx';
-import { listing, type Order } from '../listing.ts';
+import { browseLibrary, columnsFrom, listing, moveColumn, nextSort, placeColumn, type Browse, type Sort } from '../listing.ts';
 import { TRACK_DRAG } from '../play/decks.ts';
 import type { Track } from '../openflow.ts';
 import type { Mix } from '../state.ts';
@@ -22,108 +22,164 @@ const TRACKS = [
   track('mixdown_v3', null),
 ];
 
-const CREDITED = [
-  track('Bangarang', 'Skrillex'),
-  track('Purple Lamborghini', 'Skrillex & Rick Ross'),
-];
-
-function rail(order: Order = 'artist', collapsed = new Set<string>(), tracks = TRACKS, query = '') {
-  const toggleHead = vi.fn();
-  const mix = {
-    library: { root: 'library', tracks }, songs: tracks, total: tracks.length,
-    rows: listing(tracks, order, query.trim() ? new Set() : collapsed), order, setOrder: vi.fn(), collapsed, toggleHead,
-    artists: 2, query, setQuery: vi.fn(), loading: false, importing: false, selected: null,
-    artOf: () => null, coverOf: () => null, notes: null, note: null, noteBad: false,
-    select: vi.fn(), importTracks: vi.fn(), chooseFolder: vi.fn(), reveal: vi.fn(),
-    setLibraryWidth: vi.fn(), libraryWidth: 0,
-  } as unknown as Mix;
-  return { toggleHead, setQuery: mix.setQuery, ...render(h(Library, { mix })) };
+function rail(tracks = TRACKS) {
+  const select = vi.fn();
+  function Harness() {
+    const [sort, setSort] = useState<Sort>({ order: 'artist', descending: false });
+    const [columns, setColumns] = useState(() => columnsFrom(undefined));
+    const [query, setQuery] = useState('');
+    const [browse, setBrowse] = useState<Browse>({ artist: null, album: null });
+    const libraryBrowser = browseLibrary(tracks, query, browse);
+    const songs = libraryBrowser.songs;
+    const mix = {
+      libraryBrowser,
+      browseArtist: (artist: string | null) => setBrowse({ artist, album: null }),
+      browseKey: (key: string | null) => setBrowse(was => ({ ...was, key })),
+      browseAlbum: (album: string | null) => setBrowse(was => ({ ...was, album })),
+      resetLibraryFilters: () => { setBrowse({ artist: null, album: null }); setQuery(''); },
+      library: { root: 'library', tracks }, songs, total: tracks.length,
+      rows: listing(songs, sort.order, sort.descending), ...sort, columns,
+      dropColumn: (column: typeof columns[number], target: typeof columns[number]) => setColumns(was => placeColumn(was, column, target)),
+      reorderColumn: (column: typeof columns[number], step: -1 | 1) => setColumns(was => moveColumn(was, column, step)),
+      sortBy: (order: Sort['order']) => setSort(was => nextSort(was, order)),
+      query, setQuery, loading: false, importing: false, selected: 'Vessel',
+      artOf: () => 'art/cover.jpg', notes: null, note: null, noteBad: false,
+      select, importTracks: vi.fn(), chooseFolder: vi.fn(), reveal: vi.fn(),
+      setLibraryWidth: vi.fn(), libraryWidth: 0,
+    } as unknown as Mix;
+    return h(Library, { mix });
+  }
+  return { select, ...render(h(Harness)) };
 }
 
-describe('the library rail', () => {
-  it('draws a heading for every record, and stands one in where nothing named the record', () => {
+const rowTitles = (container: HTMLElement) => [...container.querySelectorAll('.mf-song-title')].map(n => n.textContent);
+
+describe('the flat library table', () => {
+  it('keeps each song, artwork, full artist and album on one row with meaningful headers', () => {
     const view = rail();
-    expect([...view.container.querySelectorAll('.mf-heading-name')].map((n) => n.textContent))
-      .toEqual(['Aperture', 'Ceremony', 'Long Division', 'No artist', 'No album']);
-    expect(view.getByText('Demo').closest('.mf-song')?.getAttribute('data-depth')).toBe('2');
-    expect(view.getByText('Vessel').closest('.mf-song')?.getAttribute('data-depth')).toBe('2');
+    expect(view.getAllByRole('columnheader').map(n => n.textContent?.trim())).toEqual(['Artist ↑', 'Album', 'Song', 'BPM', 'Key', 'Analysis', 'Stems']);
+    const rows = view.container.querySelectorAll('tbody tr');
+    expect(rows).toHaveLength(4);
+    expect(view.container.querySelectorAll('.mf-song .mf-art img')).toHaveLength(4);
+    const vessel = view.getByText('Vessel', { selector: '.mf-song-title' }).closest('tr')!;
+    expect(within(vessel).getByText('Aperture')).toBeTruthy();
+    expect(within(vessel).getByText('Ceremony')).toBeTruthy();
+    expect(view.container.querySelector('[aria-expanded]')).toBeNull();
   });
 
-  it('keeps the column header inside the scroller, where the rows it labels are', () => {
+  it('changes real row order from column buttons and exposes the active direction', () => {
     const view = rail();
-    expect(view.container.querySelector('.mf-library-list > .mf-library-columns')).not.toBeNull();
+    fireEvent.click(view.getByRole('button', { name: 'Song' }));
+    expect(rowTitles(view.container)).toEqual(['Demo', 'Low Tide', 'mixdown_v3', 'Vessel']);
+    fireEvent.click(view.getByRole('button', { name: 'Song' }));
+    expect(rowTitles(view.container)).toEqual(['Vessel', 'mixdown_v3', 'Low Tide', 'Demo']);
+    expect(view.getByRole('columnheader', { name: /Song/ }).getAttribute('aria-sort')).toBe('descending');
+    fireEvent.click(view.getByRole('button', { name: 'Album' }));
+    expect(rowTitles(view.container)).toEqual(['Low Tide', 'Vessel', 'Demo', 'mixdown_v3']);
+    expect(view.getByRole('columnheader', { name: /Album/ }).getAttribute('aria-sort')).toBe('ascending');
   });
 
-  it('spends no line on the artist a heading has already named', () => {
+  it('filters across columns and restores rows with Escape or Clear', () => {
     const view = rail();
-    expect(view.container.querySelector('.mf-song-artist')).toBeNull();
-    expect(view.container.querySelector('.mf-song .mf-art')).toBeNull();
+    fireEvent.change(view.getByRole('textbox'), { target: { value: 'aperture vessel ceremony' } });
+    expect(rowTitles(view.container)).toEqual(['Vessel']);
+    fireEvent.keyDown(view.getByRole('textbox'), { key: 'Escape' });
+    expect(rowTitles(view.container)).toHaveLength(4);
+    fireEvent.change(view.getByRole('textbox'), { target: { value: 'nothing matches' } });
+    expect(view.getByText('Nothing matches that.')).toBeTruthy();
+    fireEvent.click(view.getByRole('button', { name: 'Clear library search' }));
+    expect(rowTitles(view.container)).toHaveLength(4);
   });
 
-  it('gives a track its cover and its artist back where nothing is grouping them', () => {
-    const view = rail('added');
-    expect([...view.container.querySelectorAll('.mf-song-artist')].map((n) => n.textContent))
-      .toEqual(['Aperture', 'Aperture', 'unknown artist', 'Aperture']);
-    expect(view.container.querySelector('.mf-heading')).toBeNull();
-  });
-
-  it('shuts the one heading on a click and every heading on an Option-click', () => {
+  it('selects from any cell and keeps a native song button for keyboard access', () => {
     const view = rail();
-    const head = view.getByRole('button', { name: /Aperture/ });
-    fireEvent.click(head);
-    expect(view.toggleHead).toHaveBeenCalledWith('artist:aperture', false);
-    fireEvent.click(head, { altKey: true });
-    expect(view.toggleHead).toHaveBeenCalledWith('artist:aperture', true);
+    const row = view.getByText('Vessel', { selector: '.mf-song-title' }).closest('tr')!;
+    fireEvent.click(within(row).getByText('Ceremony'));
+    fireEvent.click(within(row).getByRole('button', { name: 'Vessel — Aperture' }));
+    expect(view.select.mock.calls).toEqual([['Vessel'], ['Vessel']]);
+    expect(within(row).getByRole('button').getAttribute('aria-pressed')).toBe('true');
+    expect(row.title).toContain('Original audio; no separated stems');
   });
 
-  it('says a shut heading is shut, and keeps its count where the rows have gone', () => {
-    const view = rail('artist', new Set(['artist:aperture']));
-    const head = view.getByRole('button', { name: /Aperture/ });
-    expect(head.getAttribute('aria-expanded')).toBe('false');
-    expect(head.textContent).toContain('3');
-    expect(view.queryByText('Vessel')).toBeNull();
-  });
-
-  it('draws one heading for an artist credited two ways, and says who else was on it', () => {
-    const view = rail('artist', new Set(), CREDITED);
-    expect([...view.container.querySelectorAll('.mf-heading-name')].map((n) => n.textContent))
-      .toEqual(['Skrillex', 'No album']);
-    expect([...view.container.querySelectorAll('.mf-song-with')].map((n) => n.textContent?.trim())).toEqual(['& Rick Ross']);
-  });
-
-  it('puts the whole stored credit where the hint strip and a hover will find it', () => {
-    const view = rail('artist', new Set(), CREDITED);
-    expect(view.getByText('Purple Lamborghini').closest('.mf-song')?.getAttribute('title'))
-      .toBe('Purple Lamborghini — Skrillex & Rick Ross');
-  });
-
-  it('still hands a track to a deck from inside a record', () => {
+  it('reorders actual columns while keeping artwork with Song and sorting by field', () => {
     const view = rail();
+    const songHeader = view.getByRole('columnheader', { name: 'Song' });
+    const albumHeader = view.getByRole('columnheader', { name: 'Album' });
+    const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' };
+    fireEvent.dragStart(songHeader, { dataTransfer });
+    fireEvent.dragOver(albumHeader, { dataTransfer });
+    fireEvent.drop(albumHeader, { dataTransfer });
+    fireEvent.dragEnd(songHeader);
+    expect(dataTransfer.setData).toHaveBeenCalledWith('application/x-mix-library-column', 'title');
+    expect(view.getAllByRole('columnheader').map(n => n.textContent?.trim())).toEqual(['Artist ↑', 'Song', 'Album', 'BPM', 'Key', 'Analysis', 'Stems']);
+    const vessel = view.getByText('Vessel', { selector: '.mf-song-title' }).closest('tr')!;
+    expect(vessel.children[1].querySelector('img')).not.toBeNull();
+    expect(vessel.children[0].textContent).toBe('Aperture');
+    fireEvent.click(view.getByRole('button', { name: 'Song' }));
+    expect(rowTitles(view.container)).toEqual(['Low Tide', 'Vessel', 'Demo', 'mixdown_v3']);
+    fireEvent.pointerDown(view.getByRole('button', { name: 'Song' }));
+    fireEvent.click(view.getByRole('button', { name: 'Song' }));
+    expect(rowTitles(view.container)).toEqual(['Demo', 'Low Tide', 'mixdown_v3', 'Vessel']);
+    fireEvent.keyDown(view.getByRole('button', { name: 'Song' }), { key: 'ArrowLeft', altKey: true });
+    expect(view.getAllByRole('columnheader').map(n => n.textContent?.trim())).toEqual(['Song ↑', 'Artist', 'Album', 'BPM', 'Key', 'Analysis', 'Stems']);
+    expect(view.getByText('Vessel', { selector: '.mf-song-title' }).closest('tr')!.children[0].querySelector('img')).not.toBeNull();
+  });
+
+  it('combines artist, album and text filters and recovers from empty results', () => {
+    const view = rail();
+    const artists = view.getByRole('listbox', { name: 'Artists' });
+    const albums = view.getByRole('listbox', { name: 'Albums' });
+    fireEvent.change(artists, { target: { value: '1' } });
+    expect(rowTitles(view.container)).toEqual(['Low Tide', 'Vessel', 'Demo']);
+    fireEvent.change(albums, { target: { value: '1' } });
+    expect(rowTitles(view.container)).toEqual(['Low Tide', 'Vessel']);
+    fireEvent.change(view.getByRole('textbox'), { target: { value: 'vessel' } });
+    expect(rowTitles(view.container)).toEqual(['Vessel']);
+    fireEvent.change(view.getByRole('textbox'), { target: { value: 'absent' } });
+    expect(view.getByText('Nothing matches that.')).toBeTruthy();
+    expect(within(artists).getByRole('option', { name: 'Aperture' })).toBeTruthy();
+    fireEvent.click(view.getByRole('button', { name: 'Reset filters' }));
+    expect(rowTitles(view.container)).toHaveLength(4);
+    expect((artists as HTMLSelectElement).value).toBe('0');
+    expect((albums as HTMLSelectElement).value).toBe('0');
+  });
+
+  it('clears album selection when switching artist and lets All restore the scope', () => {
+    const view = rail();
+    const artists = view.getByRole('listbox', { name: 'Artists' });
+    const albums = view.getByRole('listbox', { name: 'Albums' });
+    fireEvent.change(artists, { target: { value: '1' } });
+    fireEvent.change(albums, { target: { value: '1' } });
+    fireEvent.change(artists, { target: { value: '2' } });
+    expect(rowTitles(view.container)).toEqual(['mixdown_v3']);
+    expect((albums as HTMLSelectElement).value).toBe('0');
+    expect(within(albums).queryByRole('option', { name: 'Ceremony' })).toBeNull();
+    fireEvent.change(artists, { target: { value: '0' } });
+    expect(rowTitles(view.container)).toHaveLength(4);
+  });
+
+  it('hands the same track ID to a deck after sorting and filtering', () => {
+    const view = rail();
+    fireEvent.click(view.getByRole('button', { name: 'Album' }));
+    fireEvent.change(view.getByRole('textbox'), { target: { value: 'vessel' } });
     const store = new Map<string, string>();
-    const dataTransfer = { setData: (t: string, v: string) => store.set(t, v), getData: (t: string) => store.get(t) ?? '', effectAllowed: '' };
-    fireEvent.dragStart(view.getByText('Vessel').closest('.mf-song')!, { dataTransfer });
+    const dataTransfer = { setData: (type: string, value: string) => store.set(type, value), effectAllowed: '' };
+    fireEvent.dragStart(view.getByText('Vessel', { selector: '.mf-song-title' }).closest('.mf-song')!, { dataTransfer });
     expect(store.get(TRACK_DRAG)).toBe('Vessel');
   });
 });
 
-it('keeps search results visibly expanded without changing saved collapse state', () => {
-  const view = rail('artist', new Set(['artist:aperture']), TRACKS, 'vessel');
-  const head = view.getByRole('button', { name: /Aperture/ });
-  expect(head.getAttribute('aria-expanded')).toBe('true');
-  expect(head.hasAttribute('disabled')).toBe(true);
-  fireEvent.click(head);
-  expect(view.toggleHead).not.toHaveBeenCalled();
-  fireEvent.click(view.getByRole('button', { name: 'Clear library search' }));
-  expect(view.setQuery).toHaveBeenCalledWith('');
-  fireEvent.keyDown(view.getByRole('textbox'), { key: 'Escape' });
-  expect(view.setQuery).toHaveBeenCalledTimes(2);
-});
-
-it('bounds each sticky album inside its artist and its own tracks', () => {
-  const view = rail();
-  const album = view.getByText('Ceremony').closest('.mf-library-group');
-  expect(album?.querySelectorAll('.mf-song')).toHaveLength(2);
-  expect(album?.parentElement?.querySelector('.mf-heading-name')?.textContent).toBe('Aperture');
-  expect(album?.contains(view.getByText('Demo'))).toBe(false);
-  expect(album?.parentElement?.contains(view.getByText('mixdown_v3'))).toBe(false);
+it('renders Key in its own sortable, movable cell while retaining the Keys filter', () => {
+  const view = rail([{ ...track('Zeta', 'Artist'), key: 'C minor' }, { ...track('Alpha', 'Artist'), key: 'G major' }, track('Missing', 'Artist')]);
+  const zeta = view.getByRole('button', { name: 'Zeta — Artist' });
+  expect(zeta.textContent).not.toContain('C minor');
+  expect(within(zeta.closest('tr')!).getByRole('cell', { name: 'C minor' })).toBeTruthy();
+  fireEvent.click(view.getByRole('button', { name: 'Key' }));
+  expect(rowTitles(view.container)).toEqual(['Zeta', 'Alpha', 'Missing']);
+  fireEvent.click(view.getByRole('button', { name: 'Key' }));
+  expect(rowTitles(view.container)).toEqual(['Alpha', 'Zeta', 'Missing']);
+  fireEvent.keyDown(view.getByRole('button', { name: 'Key' }), { key: 'ArrowLeft', altKey: true });
+  expect(view.getAllByRole('columnheader').map(n => n.textContent?.trim())).toEqual(['Artist', 'Album', 'Song', 'Key ↓', 'BPM', 'Analysis', 'Stems']);
+  fireEvent.change(view.getByRole('listbox', { name: 'Keys' }), { target: { value: '1' } });
+  expect(rowTitles(view.container)).toEqual(['Zeta']);
 });

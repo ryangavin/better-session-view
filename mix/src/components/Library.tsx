@@ -1,24 +1,24 @@
-import { useRef, type ReactNode, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from 'react';
+import { useRef, useState, type DragEvent as ReactDragEvent } from 'react';
+import { keyLabel, keyDescription, savedKey } from '../key.ts';
 import { TRACK_DRAG } from '../play/decks.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
-import { Select } from '@openflow/widgets/controls/Select.tsx';
+import { COLUMN_LABELS, type Choice, type Column } from '../listing.ts';
 import { STEMS } from '../mock.ts';
-import { ORDERS, type Head, type Row } from '../listing.ts';
-import type { Credit } from '../credits.ts';
-import { gridFact, type GridNote, type Track } from '../openflow.ts';
+import { gridFact, type Track } from '../openflow.ts';
 import { tempoText } from '../warp.ts';
 import type { Mix } from '../state.ts';
+import { LibraryAnalysis, LibraryStems } from './LibraryAnalysis.tsx';
 import { LIBRARY_MIN, useLibraryResize } from './useLibraryResize.ts';
 import './Library.css';
 
-/**
- * The library rail: a compact artist/album outline with aligned track facts.
- * Full credits remain searchable and available in the hover hint.
- * `listing.ts` decides which headings the library earns and where tracks file.
- */
+/** One song per row, with its own artwork and unmodified credit. */
+
 export function Library({ mix }: { mix: Mix }) {
   const { library } = mix;
   const { rail, drag, nudge, maximum, current } = useLibraryResize(mix.setLibraryWidth);
+  const draggedColumn = useRef<Column | null>(null);
+  const suppressSort = useRef(false);
+  const [dropTarget, setDropTarget] = useState<Column | null>(null);
 
   return (
     <aside className="mf-library" ref={rail} style={mix.libraryWidth ? { width: `${mix.libraryWidth}px` } : undefined}>
@@ -47,15 +47,9 @@ export function Library({ mix }: { mix: Mix }) {
             {mix.query && <button type="button" className="mf-library-clear" aria-label="Clear library search"
               title="Clear library search" onClick={() => mix.setQuery('')}>×</button>}
           </div>
-          <Select
-            items={ORDERS.map((o) => o.label)}
-            index={Math.max(0, ORDERS.findIndex((o) => o.id === mix.order))}
-            onChange={(i) => mix.setOrder(ORDERS[i].id)}
-            disabled={!library.root}
-            label="Order the library"
-            title="How the library is arranged. Artist groups it into headings; Added puts the newest first"
-            width={64}
-          />
+          <button type="button" className="mf-library-recent" disabled={!library.root}
+            aria-pressed={mix.order === 'added'} onClick={() => mix.sortBy('added')}
+            title="Sort by import date; click again to reverse">Recent{mix.order === 'added' ? (mix.descending ? ' ↓' : ' ↑') : ''}</button>
           <Button
             onPress={() => void mix.importTracks()}
             disabled={!library.root || mix.importing}
@@ -66,10 +60,18 @@ export function Library({ mix }: { mix: Mix }) {
         </div>
       </div>
 
+      {library.root && library.tracks.length > 0 && <div className="mf-library-browser" aria-label="Browse library">
+        <BrowseList label="Artists" all="All artists" choices={mix.libraryBrowser.artists}
+          selected={mix.libraryBrowser.artist} onChange={mix.browseArtist} />
+        <BrowseList label="Albums" all="All albums" choices={mix.libraryBrowser.albums}
+          selected={mix.libraryBrowser.album} onChange={mix.browseAlbum} />
+        <BrowseList label="Keys" all="All keys" choices={mix.libraryBrowser.keys}
+          selected={mix.libraryBrowser.key} onChange={mix.browseKey} />
+        <button type="button" className="mf-library-reset" onClick={mix.resetLibraryFilters}
+          disabled={!mix.query && mix.libraryBrowser.artist === null && mix.libraryBrowser.album === null && mix.libraryBrowser.key === null}>Reset filters</button>
+      </div>}
+
       <div className="mf-library-list">
-        {library.tracks.length > 0 && <div className="mf-library-columns" aria-hidden="true">
-          <span>Track</span><span>Stems</span><span>BPM</span>
-        </div>}
         {!library.root && !mix.loading && (
           <div className="mf-library-blank">
             <p className="mf-blank-lead">No library yet.</p>
@@ -104,7 +106,49 @@ export function Library({ mix }: { mix: Mix }) {
           </div>
         )}
 
-        <LibraryRows rows={mix.rows} mix={mix} />
+        {library.tracks.length > 0 && <table className="mf-library-table" aria-label="Library songs">
+          <colgroup>{mix.columns.map(column => <col key={column} className={`mf-library-col-${column}`}  />)}</colgroup>
+          <thead><tr>{mix.columns.map(column => (
+            <th key={column} scope="col" draggable data-drop-target={dropTarget === column || undefined}
+              aria-sort={mix.order === column ? (mix.descending ? 'descending' : 'ascending') : 'none'}
+              onDragStart={event => {
+                draggedColumn.current = column;
+                suppressSort.current = true;
+                event.dataTransfer.setData('application/x-mix-library-column', column);
+                event.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={event => {
+                if (!draggedColumn.current) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                setDropTarget(column);
+              }}
+              onDrop={event => {
+                if (!draggedColumn.current) return;
+                event.preventDefault();
+                mix.dropColumn(draggedColumn.current, column);
+                draggedColumn.current = null;
+                setDropTarget(null);
+              }}
+              onDragEnd={() => { draggedColumn.current = null; setDropTarget(null); }}>
+              <button type="button" title="Drag to reorder; Alt+Left/Right moves this column from the keyboard"
+                onPointerDown={() => { suppressSort.current = false; }}
+                onKeyDown={event => {
+                  suppressSort.current = false;
+                  if (event.altKey && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+                    event.preventDefault();
+                    mix.reorderColumn(column, event.key === 'ArrowLeft' ? -1 : 1);
+                  }
+                }}
+                onClick={() => {
+                  if (!suppressSort.current && column !== 'analysis' && column !== 'stems') mix.sortBy(column);
+                }}>
+                {COLUMN_LABELS[column]}<span aria-hidden="true">{mix.order === column ? (mix.descending ? ' ↓' : ' ↑') : ''}</span>
+              </button>
+            </th>
+          ))}</tr></thead>
+          <tbody>{mix.rows.map((song) => <Song key={song.id} mix={mix} song={song} />)}</tbody>
+        </table>}
 
         {library.tracks.length > 0 && mix.songs.length === 0 && (
           <p className="mf-library-empty">Nothing matches that.</p>
@@ -116,9 +160,7 @@ export function Library({ mix }: { mix: Mix }) {
           <span>
             {mix.songs.length !== mix.total
               ? `${mix.songs.length} of ${mix.total}`
-              : mix.artists > 0
-                ? `${mix.total} · ${mix.artists} artists`
-                : `${mix.total} indexed`}
+              : `${mix.total} songs`}
           </span>
         )}
         {mix.note ? (
@@ -145,123 +187,51 @@ export function Library({ mix }: { mix: Mix }) {
   );
 }
 
-/** Each sticky heading is bounded by the tracks it describes. */
-function LibraryRows({ rows, mix }: { rows: readonly Row[]; mix: Mix }) {
-  const children: ReactNode[] = [];
-  for (let i = 0; i < rows.length;) {
-    const row = rows[i];
-    if (row.kind === 'track') {
-      children.push(<Song key={row.key} mix={mix} song={row.track} depth={row.depth} credit={row.credit} />);
-      i++;
-      continue;
-    }
-    let end = i + 1;
-    while (end < rows.length && (rows[end].kind === 'track' || (row.kind === 'artist' && rows[end].kind === 'album'))) end++;
-    const searching = Boolean(mix.query.trim());
-    children.push(
-      <section key={row.key} className="mf-library-group" data-kind={row.kind}>
-        <Heading head={row} at={mix.coverOf(row.art)} searching={searching}
-          shut={!searching && mix.collapsed.has(row.key)} onToggle={(all) => mix.toggleHead(row.key, all)} />
-        <LibraryRows rows={rows.slice(i + 1, end)} mix={mix} />
-      </section>,
-    );
-    i = end;
-  }
-  return children;
+/** Native listboxes give keyboard arrows and type-to-select without a second interaction model. */
+function BrowseList({ label, all, choices, selected, onChange }: {
+  label: string; all: string; choices: Choice[]; selected: string | null; onChange(value: string | null): void;
+}) {
+  const index = selected === null ? 0 : choices.findIndex(choice => choice.key === selected) + 1;
+  return <label className="mf-library-facet">
+    <span>{label}</span>
+    <select aria-label={label} size={5} value={index} onChange={event => {
+      const next = Number(event.target.value);
+      onChange(next === 0 ? null : choices[next - 1].key);
+    }}>
+      <option value={0}>{all}</option>
+      {choices.map((choice, index) => <option key={choice.key} value={index + 1} title={choice.name}>{choice.name}</option>)}
+    </select>
+  </label>;
 }
 
-/** Grouped rows omit repeated artist/artwork; flat rows keep their credit below the title. */
-function Song({ mix, song, depth, credit }: { mix: Mix; song: Track; depth: number; credit: Credit | null }) {
-  const held = {
-    type: 'button' as const,
-    className: 'mf-song',
-    draggable: true,
-    onDragStart: (event: ReactDragEvent) => {
+/** The row remains a drag source; its native button provides keyboard selection. */
+function Song({ mix, song }: { mix: Mix; song: Track }) {
+  const note = mix.notes?.[song.id];
+  const tempo = note && note.bpm !== null ? tempoText(note.bpm, note.slowest ?? note.bpm, note.fastest ?? note.bpm) : '';
+  const fact = gridFact(song, note, tempo, mix.notes !== null);
+  const stems = song.sources.length
+    ? `Stems: ${STEMS.filter((stem) => song.sources.includes(stem.id)).map((stem) => stem.name).join(', ')}`
+    : 'Original audio; no separated stems';
+  const detail = `${song.title} — ${song.artist ?? 'Unknown artist'} — ${song.album ?? 'No album'}. ${stems}. ${fact.says}. ${fact.why}. ${keyDescription(song)}`;
+  return (
+    <tr className="mf-song" draggable onDragStart={(event: ReactDragEvent) => {
       event.dataTransfer.setData(TRACK_DRAG, song.id);
       event.dataTransfer.effectAllowed = 'copy';
-    },
-    'data-selected': song.id === mix.selected || undefined,
-    'data-depth': depth || undefined,
-    onClick: () => mix.select(song.id),
-    title: credit ? `${song.title} — ${credit.full}` : song.title,
-  };
-  return (
-    <button {...held}>
-      <span className="mf-song-identity">
-        {depth === 0 && <Art at={mix.artOf(song)} title={song.title} />}
-        <span className="mf-song-body">
-          <span className="mf-song-line">
-            <span className="mf-song-title">{song.title}</span>
-            {depth > 0 && credit?.others && <span className="mf-song-with">{credit.others}</span>}
-          </span>
-          {depth === 0 && <span className="mf-song-artist">{song.artist ?? 'unknown artist'}</span>}
-        </span>
-      </span>
-      <span className="mf-song-sources" title={song.sources.length
-        ? `Available stems: ${STEMS.filter((stem) => song.sources.includes(stem.id)).map((stem) => stem.name).join(', ')}`
-        : 'Original audio; no separated stems'}>
-        {song.sources.length || '—'}
-      </span>
-      <GridMeta song={song} notes={mix.notes} />
-    </button>
-  );
-}
-
-/**
- * An artist, or one of their records — including the standing-in record that
- * holds whatever the catalogue never named, which carries an empty cover cell
- * so its name still starts in the album column.
- *
- * It sticks: an artist to the top of the list, a record just under wherever the
- * artist came to rest. `LibraryRows` bounds both by their own sections, so
- * neither heading can survive above a different group's tracks.
- *
- * Option-click shuts every heading rather than this one. A second button for
- * that would cost a line of chrome the rail does not have, and collapse-all has
- * been on the modifier in every outline view for thirty years.
- */
-function Heading({ head, at, shut, searching, onToggle }: { head: Head; at: string | null; shut: boolean; searching: boolean; onToggle(all: boolean): void }) {
-  const what = head.kind === 'album' ? 'record' : 'artist';
-  return (
-    <button
-      type="button"
-      className="mf-heading"
-      data-kind={head.kind}
-      data-shut={shut || undefined}
-      aria-expanded={!shut}
-      disabled={searching}
-      onClick={(event: ReactMouseEvent) => onToggle(event.altKey)}
-      title={searching ? 'Matching tracks stay expanded while searching' : `${shut ? 'Show' : 'Hide'} this ${what} — hold Option for all of them`}
-    >
-      <span className="mf-heading-caret" aria-hidden="true" />
-      {head.kind === 'album' && (head.loose
-        ? <span className="mf-art" data-blank aria-hidden="true" />
-        : <Art at={at} title={head.name} />)}
-      <span className="mf-heading-name">{head.name}</span>
-      {head.kind === 'artist' && <span className="mf-heading-kind">Artist</span>}
-      <span className="mf-heading-count" title={`${head.count} tracks`}>{head.count}</span>
-    </button>
-  );
-}
-
-/**
- * Where this track's grid stands, in the width of a tempo.
- *
- * The reading is the header's: `warp.ts` decides whether a map is one number
- * or a range, and it decides it here too, so a track cannot be `128.05` in one
- * place and `125–132` in the other.
- */
-function GridMeta({ song, notes }: { song: Track; notes: Record<string, GridNote> | null }) {
-  const note = notes?.[song.id];
-  const tempo =
-    note && note.bpm !== null
-      ? tempoText(note.bpm, note.slowest ?? note.bpm, note.fastest ?? note.bpm)
-      : '';
-  const fact = gridFact(song, note, tempo, notes !== null);
-  return (
-    <span className="mf-song-meta" data-grid={fact.state} title={`${fact.says}. ${fact.why}`}>
-      {tempo || (fact.state === 'failed' ? 'no fit' : fact.state === 'unread' ? 'no grid' : '—')}
-    </span>
+    }} data-selected={song.id === mix.selected || undefined} onClick={() => mix.select(song.id)} title={detail}>
+      {mix.columns.map(column => <td key={column}>{column === 'analysis'
+        ? <LibraryAnalysis song={song} root={mix.library.root} />
+        : column === 'stems' ? <LibraryStems sources={song.sources} />
+        : column === 'bpm' ? <span className="mf-song-bpm" title={`${fact.says}. ${fact.why}.`}>{tempo || '—'}</span>
+        : column === 'key' ? <span className="mf-song-key" title={keyDescription(song)}>{keyLabel(song)}{!song.key && savedKey(song)?.status === 'candidate' ? ' ?' : ''}</span>
+        : column === 'title'
+        ? <button type="button" className="mf-song-identity" aria-pressed={song.id === mix.selected}
+          aria-label={`${song.title} — ${song.artist ?? 'Unknown artist'}`}>
+          <Art at={mix.artOf(song)} title={song.title} /><span className="mf-song-title">{song.title}</span>
+        </button>
+        : <span className={`mf-song-${column}`} title={song[column] ?? (column === 'artist' ? 'Unknown artist' : 'No album')}>
+          {song[column] ?? '—'}
+        </span>}</td>)}
+    </tr>
   );
 }
 

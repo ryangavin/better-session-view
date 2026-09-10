@@ -56,95 +56,113 @@ The chosen width is kept in the session. CSS temporarily caps it to the availabl
 without overwriting the saved preference. Until it is dragged the stylesheet's own width
 stands, so the handle costs nothing to ignore.
 
-The rail starts with one compact row: filter, an **order** select, and **Import**. Import
+The rail starts with a compact row: filter, **Recent**, and **Import**. Import
 opens the ordinary multi-file picker; dropping a YouTube video link anywhere on the window
 imports its audio. There is no URL field or Fetch button. Imports disable while another
 import is in flight, and the rail footer changes from the folder name to the result or the
 useful error.
 
-### Order, and the headings it draws
+### Artist, album and key browser
 
-Three orders, kept in the session with the rail's width: **Artist**, **Added** and
-**Title**. Added is newest first — the manifest appends, so its own order buries whatever
-was imported a minute ago. Artist is the default and the only one with headings in it;
-`src/listing.ts` builds the headings from the whole library before applying search,
-so an album stays identifiable even when only one of its tracks matches. The rail
-wraps each artist and album in its own section to bound its sticky heading.
+Three side-by-side native listboxes sit below text search: **Artists**, **Albums** and **Keys**.
+Each has a bounded 112px scroll area and an **All** entry. They use distinct trimmed,
+case-insensitive stored metadata values, with full collaborator credits kept intact.
+Missing metadata appears as **Unknown artist** or **No album**, both selectable.
 
-**The hierarchy is regular: artist, record, track, always.** `album` is sparse — import
-writes it null and only the catalogue lookup fills it in ([`library.md`](library.md)) —
-and rather than letting those tracks float at the level of the records beside them, they
-gather under one **No album** heading at the end of the artist. Every track is then two
-steps in, so an indent means one thing and the eye separates a record from a song without
-reading either. Tracks whose filename gave up no artist go to one **No artist** pile at
-the bottom rather than under U for unknown — it is the bounces and the rough mixes, and it
-should read like a list of things to fix.
+Artist lists the whole library. Selecting it clears album and key choices and narrows Albums
+and the table to that exact credit. Selecting Album narrows the table and available Keys
+further. Keys uses the saved manual-aware shortlist; Unknown remains selectable. Text search
+then applies to those songs, and the table retains its chosen sort and column order.
+Lists remain stable while typing, so a text query with no results never hides the way out.
+**Reset filters** clears text, artist, album and key together; the text field's ×/Escape clears
+only text. Native arrows and type-to-select support keyboard browsing.
 
-An artist's named records come **before** its unnamed pile. An artist heading pins to the
-top of the list and a record heading just under it. Each heading is constrained by
-its own section: an album cannot remain above another artist's tracks.
+These browse choices last for the current window; changing library roots clears them.
+A selected value removed by a metadata edit falls back to All. `browseLibrary` in
+`listing.ts` derives choices and song results from one library snapshot. No new metadata
+inference or key detection is involved, and the song table remains flat.
 
-Clicking a heading shuts it; the count stays on the heading with the rows gone.
-Option-click shuts every heading the rail is showing; Option-clicking a shut heading
-opens them all. Search matches every whitespace-separated word, in any order, across
-title, full artist credit and album, without regard to case. For example, `skrillex
-rumble` finds a title and artist together. Matching tracks stay expanded, with counts
-of the matches, and heading toggles are disabled until search is cleared. The stored
-collapse state is unchanged. Escape in the field or its clear button restores browsing
-and the previous collapsed headings.
+### A sortable song table
 
-### One heading for an artist credited several ways
+The library is a flat table starting with **Artist**, **Album**, **Song**, **BPM**,
+**Key**, **Analysis**, and **Stems** columns. Each 32px
+row is one song, with a 22px thumbnail beside its title even when neighboring rows share
+artwork. Missing artwork uses the title initial; missing artist or album displays a dash.
+There are no group headings, collapse state, indentation, or vertical rules through song rows. Thin separators divide only the column headings.
+Alternating rows use a quiet blend of the theme's panel and cell surfaces across the full
+table width, including offscreen columns. The stripe follows displayed row position after
+sorting or filtering; hover and selection replace it with their stronger existing states.
+The sticky column header labels only the values below it. The table has a 772px minimum
+width and scrolls horizontally within a narrower rail. Artist and Album take 100px each,
+BPM 64px, Key 152px, Analysis 80px, Stems 60px (room for the full heading and its padding), and Song receives the remaining width. Long values truncate with
+their full text on hover.
+The existing rail resize handle remains available; changing the table does not resize it.
 
-A catalogue writes a collaboration out in full: `Skrillex`, `Skrillex & Rick Ross` and
-`Skrillex, Fred again.. & Flowdan` are three `artistName` values for the same person, and
-filing on the whole string grows a heading for each. `src/credits.ts` reads a credit for
-the name it is **filed** under — its lead — and the rail groups on that. **Nothing is
-rewritten**: the manifest keeps the credit character for character, and Track Details still
-edits the whole of it.
+Click a column to sort alphabetically; click the same column again to reverse its primary
+order. The arrow and `aria-sort` identify the current column and direction. **Artist**
+is the default, with **Album**, then **Song** as ascending tie-breakers. **Album** breaks
+ties by Artist then Song; Song breaks ties by Artist then Album. Leading “The” is ignored,
+case is ignored, and numeric names sort naturally. Missing metadata stays last in either
+direction. **Recent** above the table starts with newest imports first; another click
+reverses it. Sort column and direction survive reloads. Old saved collapse keys are ignored.
 
-Only the lead is read, never the whole list, so being right about one separator is enough.
-A record billed `Boys Noize & Skrillex` files under Boys Noize only when that lead is
-corroborated elsewhere in the library; otherwise it keeps its full heading.
+Drag a column heading onto another heading to move it into that position. A grab cursor
+and an underline on the target show the interaction; completing a drag never sorts the
+rows. Click a heading to sort as before. Focus any heading and use **Alt+Left/Right** to
+move it from the keyboard. There is no Columns menu. Each move saves immediately in
+`mixflow.library-columns.v1` local storage, separately from the delayed track session,
+so the arrangement survives reloads and app reopen. Existing session orders migrate
+without resetting valid positions; unknown or duplicate fields are removed and new
+fields are added without reordering the others. Windows on the same origin adopt
+the latest saved move; desktop and dev-browser origins keep independent preferences.
+Artwork moves with Song. Header drags use their own payload and cannot load
+a track onto a deck. Key uses the displayed manual-aware summary, sorts alphabetically,
+and keeps Unknown last in either direction. It is inserted after BPM when migrating
+an older column order, preserving every existing relative position. BPM sorts numerically by saved average tempo; Analysis and Stems
+are display columns whose headings can still be moved.
 
-**A separator is believed only when the library already holds the name it leaves behind.**
-That guard is the difference between this and splitting on punctuation: `Above & Beyond`,
-`Tyler, The Creator`, `Earth, Wind & Fire` and `Simon & Garfunkel` are single names with a
-join inside them, and no list of exceptions would ever be complete. So the folder is the
-evidence — `Skrillex & Rick Ross` collapses because *Skrillex* is already a credit here on
-his own, and `Above & Beyond` does not because *Above* is not. A folder that gains a solo
-record later starts collapsing that artist's collaborations, which is the right way round.
-Featuring joins need no evidence; ambiguous joins followed by `the` are left intact: `feat.`, `ft.`, `featuring` and
-`w/` are always joins because nobody is called `feat.`, and a join followed by `the` is a
-possible band name — `Nick Cave and the Bad Seeds`, `Florence + The Machine` — however
-well the folder knows the half in front of it. This is a conservative browsing
-heuristic, not artist metadata: a real collaboration with a `The` artist can remain
-unsplit, and ambiguous punctuation cannot establish identity reliably. A slash is not a separator at all, so `AC/DC` never
-comes apart.
+`src/listing.ts` sorts the full stored artist string, without interpreting collaboration
+credits or constructing artist identities. The Artist cell therefore says exactly what is
+stored. Sorting and filtering do not rewrite library metadata.
 
-**The rail is a compact outline with aligned facts.** Artist and album headings are
-26px high. Artist names use a stronger weight and a neutral band; albums sit one level
-in with a 16px cover, a stronger title and a bordered header. A vertical guide with
-short branches connects the album to its songs; their titles align under the album
-name instead of starting to its left. Small inline **Artist** / **Album** labels and right-aligned counts
-identify each heading without adding a second line or space between sections.
+The quick filter matches every whitespace-separated word across title, full artist credit
+(including collaborators), and album, without regard to case. `flowdan quest` can therefore
+find a collaboration on Quest For Fire. Filtering preserves the chosen sort; **Escape**
+in the field or **×** clears it. The footer shows the matching count against the total.
 
-Grouped tracks are 24px single-line rows. One column header names **Track**, **Stems**
-and **BPM**. Stem counts replace the wide colored badge strip; hover the count to read
-which stems are available. A dash means no stems. The BPM column contains a tempo or
-range, **no fit**, **no grid**, or a dash when no reading is available. File type and key
-remain in its hover detail instead of being mixed into a tempo column.
+**BPM** shows the saved measured tempo or range; a dash means no reading. Hover explains
+grid readiness. **Analysis** shows only a 68×18px whole-song waveform folded from the
+existing original-audio scan. A missing or invalid original scan shows a dash, even if
+stem scans exist; it never invents a full mix by adding unrelated stem extrema.
 
-The full stored artist credit remains in the track tooltip, hint strip and search.
-At rail widths of 400px or more, collaborator suffixes also appear beside the title.
-Below 270px, the stems column hides to leave room for names and tempo. Added and Title
-use the same aligned facts with 36px rows, individual covers and a secondary artist
-line. These choices keep the rail's type and surfaces in the shared design system.
+**Stems** is a separate reorderable column, initially following Analysis. It shows only
+available sources as 6px colored tiles in `STEMS` order: four sources form a 2×2 square,
+six a 3×2 grid. One, two, three, or five sources use only their actual tiles; no missing
+source placeholders are drawn. Zero sources shows a dash. Tooltips and accessible
+labels name the sources. Both waveform and tiles occupy fixed centered 18px areas in
+their own cells, so waveform-only, stems-only, both and neither cannot share a visual
+stack with the neighboring song. Adding Stems to an older column arrangement places it
+after Analysis without moving the person's other columns.
 
-Files may also be dropped anywhere on the window. A dashed target covers the window while
-the drag is over it, which both makes the action visible and prevents a file dropped on a
-waveform from navigating the renderer away from the app. Internal library-to-deck drags
-do not activate that file-import target. Drop capture and drag-end clear it even when a
-deck consumes the drop before it bubbles to the window.
+`LibraryAnalysis.tsx` requests the existing `analysis.scans` cache only when a cell becomes
+visible, with at most two disk reads in flight. `libraryOverview.ts` reduces its min/max
+bins to the miniature and averages each column’s saved low/mid/high energy. The shared
+`spectralPainter` uses the current waveform palette and strength, repainting on theme
+changes without rereading the cache. The library has no deck identity, so its miniature
+always uses frequency paint. It never fetches audio, decodes, measures, or writes a cache. Root or
+track replacement clears the view and ignores stale results. A successful scan save emits
+`openflow:scans-changed` with the library root and track ID after atomic publication.
+`scanChanges.ts` shares one IPC listener across mounted rows and notifies only the matching
+track. A visible row rereads through the same two-read queue; an offscreen row waits until
+visible. Notifications during a read coalesce into a fresh read, and obsolete results
+cannot overwrite it. No polling or remount is needed. Pending, missing and failed cache
+reads have distinct accessible descriptions; all keep the existing dash until real data
+arrives. Full preparation
+facts remain in the row's hover detail and bottom hint strip.
+
+Click anywhere on a row to select the Prep track; the Song button also supports keyboard
+selection. Drag any row onto a Play deck's strip or waveform to load it. The drag contains
+the same stable track ID in every order and search result; loading still never starts playback.
 
 ## The header
 
@@ -402,8 +420,8 @@ a lane that reached for them would draw the song you just left.
 band, and described at the point where somebody chooses it, which is the moment the trade
 is actually being made. Wanting guitar on its own means choosing another model in **Analyze**, below the song review.
 
-The library summarizes available stems as a count in its Stems column. Hovering that
-count names them; missing stems do not add empty lanes to the open track.
+The library summarizes available stems as colored tiles in its Stems column. Hovering the
+tiles names them; missing stems do not add empty lanes to the open track.
 
 `Reset` counts against the stems the song has rather than against all six, so a level
 left behind by an earlier separation with a six-source model cannot arm a button against
@@ -670,3 +688,11 @@ set[flow], where the other two are load-bearing.
 avoid the overlap — the words keep their ordinary meanings in both places. Where the two
 genuinely need the same control the answer is `@openflow/widgets`, which is already where
 a fader lives.
+
+## Key browsing and analysis
+
+The third quick-filter list beneath full-text search is **Keys**, alongside Artists and
+Albums. It uses saved bass analysis or manual key metadata. The dedicated Key column shows one preferred key,
+at most two candidates, or Unknown. The library contains no key-analysis buttons or
+evidence panel. Detailed alternatives and regions stay in saved debug evidence; they do
+not add filter entries. The debug backfill prepares existing songs. See [pitch.md](pitch.md).

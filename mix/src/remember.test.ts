@@ -33,7 +33,7 @@ describe('recalling', () => {
   });
 
   it('round-trips a session', () => {
-    const session: Session = { selected: 'a', model: 'htdemucs_ft', loop: false };
+    const session: Session = { selected: 'a', model: 'htdemucs_ft', loop: false, order: 'album', descending: true, columns: ['title', 'artist', 'album'] };
     remember(session);
     expect(recall()).toEqual(session);
   });

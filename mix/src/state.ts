@@ -6,8 +6,8 @@ import { decode, fileUrl, LIBRARY, packed, peaksOf, stemUrl, unpacked, type Peak
 import { REST, Transport, type Level, type Stretching } from './engine.ts';
 import { FLAT, isFlat, type Bands } from './eq.ts';
 import { LINK_AUDIO_OFF, type LinkAudioState } from './linkAudio.ts';
-import { listing, matchingRows, searchTracks, NAMELESS, type Order, type Row } from './listing.ts';
-import { credits } from './credits.ts';
+import { useLibraryColumns } from './useLibraryColumns.ts';
+import { browseLibrary, listing, nextSort, type Browse, type Order, type Sort } from './listing.ts';
 import { loosest, offeredOf, type Every, type Offered } from './pinned.ts';
 import { forTrack, recall, remember, withTrack, type Remembered, type Session } from './remember.ts';
 import { barAt, BEATS_PER_BAR, countOf, evenBeats, moved, placeOf, pulled, resampled, shifted, startOf, sampleOf, tempoOf, type Beats } from './warp.ts';
@@ -190,6 +190,12 @@ export function useMix() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(kept.selected ?? null);
   const [query, setQuery] = useState(kept.query ?? '');
+  const [browse, setBrowse] = useState<Browse>({ artist: null, album: null });
+  const browseArtist = useCallback((artist: string | null) => setBrowse({ artist, album: null }), []);
+  const browseKey = useCallback((key: string | null) => setBrowse(was => ({ ...was, key })), []);
+  const browseAlbum = useCallback((album: string | null) => setBrowse(was => ({ ...was, album })), []);
+  const resetLibraryFilters = useCallback(() => { setBrowse({ artist: null, album: null }); setQuery(''); }, []);
+
   const [models, setModels] = useState<Model[]>([]);
   const [model, setModel] = useState(kept.model ?? 'htdemucs_ft');
   const [level, setLevel] = useState<Record<string, Level>>(() => levels(first.levels));
@@ -270,16 +276,11 @@ export function useMix() {
    */
   const [snap, setSnapState] = useState<Snap>(kept.snap ?? 'grid');
   const [libraryWidth, setLibraryWidth] = useState<number>(kept.libraryWidth ?? 0);
-  /**
-   * How the rail is arranged, and which of its headings are shut.
-   *
-   * Artist by default: the rail is a *library*, and a flat list in the order a
-   * manifest happened to append is nobody's idea of one. What that buries is
-   * the track you imported a minute ago, which is why `added` exists beside it
-   * and why it means newest first. `listing.ts` has the rest.
-   */
-  const [order, setOrder] = useState<Order>(kept.order ?? 'artist');
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set(kept.collapsed ?? []));
+  /** The chosen table column and direction survive a reload. Old heading state is ignored. */
+  const [sort, setSort] = useState<Sort>({ order: kept.order ?? 'artist', descending: kept.descending ?? kept.order === 'added' });
+  const { order, descending } = sort;
+  const sortBy = useCallback((column: Order) => setSort((was) => nextSort(was, column)), []);
+  const { columns, reorderColumn, dropColumn } = useLibraryColumns(kept.columns);
   /**
    * The stretch of the record the loop turns round in, in seconds, or null for
    * all of it.
@@ -521,47 +522,9 @@ export function useMix() {
   /** The head, in bars, for the clock and the playhead. */
   const bar = seconds > 0 ? barAt(grid, position / seconds) : 0;
 
-  const shown = useMemo(() => searchTracks(tracks, query), [tracks, query]);
-
-  /**
-   * The rail's rows: the tracks that survived the filter, with the headings
-   * they earned.
-   *
-   * **Filtering opens everything.** A search that matched a track inside a shut
-   * record has found nothing anybody can see, so while there is a needle the
-   * collapsed set is ignored rather than applied — the headings come back the
-   * way they were the moment the box is cleared.
-   */
-  /**
-   * How every credit in the *folder* reads, which is not the same question as
-   * how the rows on screen read. `credits.ts` decides where a collaboration
-   * files by asking whether the library holds its lead on its own, so the
-   * evidence has to be the whole library — built from `tracks` and not from
-   * `shown`, or a heading would change while somebody typed under it.
-   */
-  const reading = useMemo(() => credits(tracks.map((track) => track.artist)), [tracks]);
-
-  const rows = useMemo(
-    () => query.trim()
-      ? matchingRows(listing(tracks, order, new Set<string>(), reading), new Set(shown.map((track) => track.id)))
-      : listing(tracks, order, collapsed, reading),
-    [tracks, shown, order, query, collapsed, reading],
-  );
-
-  /** Shut a heading, or — with a modifier — every heading the rail is showing. */
-  const toggleHead = useCallback((key: string, all = false) => {
-    if (query.trim()) return;
-    setCollapsed((was) => {
-      const shut = was.has(key);
-      if (!all) {
-        const next = new Set(was);
-        if (shut) next.delete(key);
-        else next.add(key);
-        return next;
-      }
-      return shut ? new Set<string>() : new Set(rows.filter((row) => row.kind !== 'track').map((row) => row.key));
-    });
-  }, [rows, query]);
+  const libraryBrowser = useMemo(() => browseLibrary(tracks, query, browse), [tracks, query, browse]);
+  const shown = libraryBrowser.songs;
+  useEffect(() => { setBrowse({ artist: null, album: null }); }, [library.root]);
 
   /** The library, read once on mount and again after anything that changes it. */
   const refresh = useCallback(async () => {
@@ -588,6 +551,7 @@ export function useMix() {
    * else cannot answer it.
    */
   const [notes, setNotes] = useState<Record<string, GridNote> | null>(null);
+  const rows = useMemo(() => listing(shown, order, descending, notes), [shown, order, descending, notes]);
   const trackIds = tracks.map((t) => t.id).join(',');
   const readNotes = useCallback(async (only?: string) => {
     const bridge = openflow();
@@ -1853,7 +1817,7 @@ export function useMix() {
    */
   useEffect(() => {
     const timer = setTimeout(() => {
-      let next: Session = { ...held.current, selected, model, query, loop, snap, warp, libraryWidth, order, collapsed: [...collapsed] };
+      let next: Session = { ...held.current, selected, model, query, loop, snap, warp, libraryWidth, order, descending, columns };
       if (song) {
         next = withTrack(next, song.id, {
           levels: level,
@@ -1874,7 +1838,8 @@ export function useMix() {
     warp,
     libraryWidth,
     order,
-    collapsed,
+    descending,
+    columns,
     song,
     level,
     gridHeld,
@@ -1896,18 +1861,19 @@ export function useMix() {
     note,
     noteBad,
     songs: shown,
-    /** The rail's rows, headings and all. `listing.ts` says how they are arranged. */
+    libraryBrowser,
+    browseArtist,
+    browseAlbum,
+    browseKey,
+    resetLibraryFilters,
+    /** One song per row, in the selected column order. */
     rows,
-    /**
-     * How many artists the rail is showing, for the footer. Zero where it is
-     * not grouped, and the nameless pile is not one of them — it is the tracks
-     * nobody has said an artist for, which is the opposite of an artist.
-     */
-    artists: rows.reduce((n, row) => n + (row.kind === 'artist' && row.key !== NAMELESS ? 1 : 0), 0),
     order,
-    setOrder,
-    collapsed,
-    toggleHead,
+    descending,
+    columns,
+    sortBy,
+    reorderColumn,
+    dropColumn,
     total: tracks.length,
     withStems: tracks.filter((t) => t.sources.length > 0).length,
     /** What each track's grid amounts to, keyed by track id, or null until asked. */

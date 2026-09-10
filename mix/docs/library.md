@@ -226,8 +226,9 @@ not two hundred beat maps in the renderer to show two hundred tempos. Where that
 cannot be had, a row falls back to the file's type rather than claiming `no grid`: an
 empty answer means nobody could say, not that nothing is there.
 
-Browsing uses Artist, Added and Title orders, full-credit search and collapsible
-artist/album headings. See [window.md](window.md#the-library-rail) for the behavior and
+Browsing uses a flat, reorderable Artist / Album / Song / BPM / Key / Analysis / Stems table, clickable
+column sorting, a Recent import order and full-credit search. Every song keeps its own
+artwork. Analysis miniatures read saved original scans without decoding audio. See [window.md](window.md#the-library-rail) for the behavior and
 [library-browsing.md](library-browsing.md) for the release review and source research.
 
 ## Not yet
@@ -238,3 +239,13 @@ artist/album headings. See [window.md](window.md#the-library-rail) for the behav
 - **Removing a track**, which is a manifest edit plus a decision about whether the audio
   goes with it.
 - **Re-scanning the folder**, for audio somebody dropped in by hand.
+
+## Bass key evidence
+
+Tracks may hold optional `keyAnalysis` from the explicit debug backfill.
+It is derived from the separated bass pitch map and persisted with source hashes,
+algorithm version, confidence/ambiguity, alternatives and timed regions. Existing `key`
+metadata is a manual override and wins. `recordStems` invalidates automatic analysis even
+when a separation is replaced at the same path. See [pitch.md](pitch.md) for evidence
+thresholds, limitations and the Artist/Album/Key filtering contract. Browsing reads saved
+metadata only; a missing analysis remains Unknown.
