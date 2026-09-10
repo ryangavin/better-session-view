@@ -639,3 +639,12 @@ it('keeps original playback when stale metadata claims stems that were not loade
   engine.commands.setDeck('deck-a','full',false);expect(engine.snapshot().decks[0].full).toBe(true);
   await engine.play('deck-a',true);expect(engine.snapshot().decks[0].playing).toBe(true);
 });
+it('retains each input high-pass setting across type changes and engine recreation', async()=>{
+  const saved=new Map<string,string>();vi.stubGlobal('localStorage',{getItem:(key:string)=>saved.get(key)??null,setItem:(key:string,value:string)=>saved.set(key,value)});
+  try {
+    const {engine,load}=setup();await load();engine.commands.setEffectHighPass!('A',true);
+    engine.commands.setEffect('A','chorus');engine.commands.setEffect('A','reverb');
+    expect(engine.snapshot().effectHighPass).toEqual({A:true,B:false});
+    const next=setup().engine;expect(next.snapshot().effectHighPass).toEqual({A:true,B:false});
+  } finally { vi.unstubAllGlobals(); }
+});

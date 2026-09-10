@@ -90,6 +90,8 @@ export interface MixerState {
   fxA: string; fxB: string;
   effectsEnabled?: boolean;
   effectEnabled?: {A:boolean;B:boolean};
+  effectHighPass?: {A:boolean;B:boolean};
+  effectHighPassHint?: string;
   effectTailing?: boolean;
   phonesLevel?: number;
   phonesMix?: number;
@@ -129,6 +131,7 @@ export interface MixerCommands {
   setPhones?(control:'phonesLevel'|'phonesMix', value:number):void;
   setEffectsEnabled?(enabled:boolean):void;
   setEffectEnabled?(slot:'A'|'B', enabled:boolean):void;
+  setEffectHighPass?(slot:'A'|'B', enabled:boolean):void;
   clearEffectTails?():void;
   setEffectParam?(slot: 'A' | 'B', effectId: string, paramId: string, value: number): void;
   setEffect(slot: 'A' | 'B', effectId: string): void;

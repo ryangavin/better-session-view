@@ -143,6 +143,23 @@ to manage headroom when summing tracks.
 
 Deck sends are post-fader/post-crossfader and feed shared wet-only A/B returns. Master
 sends tap the dry deck sum before the effect returns, preventing a return feeding itself.
+Each FX slot has an independent **High pass** toggle below its two parameter knobs.
+It filters the summed deck/master sends entering that effect at 200Hz with a second-order
+Butterworth high-pass (12dB/octave, Q=1/√2). This removes bass from new wet processing;
+the dry/direct path is untouched. Tone remains the existing low-pass on the wet output
+(and delay-style feedback); the input high-pass sits outside feedback loops, so changing
+it does not reshape existing tails or change feedback stability. All five effect types
+use the same input stage. Parallel unity-bypass and filtered paths crossfade with the
+existing 8ms smoothing time constant; off is the original unfiltered input.
+
+The toggles default off. `effectHighPass.ts` saves strict booleans per A/B slot immediately
+in `mixflow.effect-high-pass.v1`; absent, malformed or nonboolean values migrate to off.
+Slot settings survive effect-type changes, context replacement and app reopen. Other
+FX settings retain their existing lifetime. Widgets receive only the state, command and
+host tooltip; filter design stays in mix. The offline browser regression at
+`/harness/fx-highpass/` renders all five real effect graphs without speaker output,
+checking 60Hz attenuation, 2kHz preservation, dry identity, bypass, tails and smooth toggles.
+
 Delay is one beat; Echo is a dotted eighth. Their Feedback/Tone controls map to a bounded
 feedback loop and low-pass filter. Reverb is a parallel-comb network with Decay/Tone.
 Chorus and Flanger modulate a short delay. Each effect keeps its own parameter values

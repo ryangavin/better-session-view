@@ -28,7 +28,8 @@ export function MasterStrip({ state, commands, readFrame, theme, params, externa
               <div className="play-fx-heading">{commands.setEffectEnabled && <ButtonFace size="medium" aria-label={`FX ${slot} enabled`} title={`Enable / bypass FX ${slot}`} aria-pressed={state.effectEnabled?.[slot]!==false} onClick={()=>commands.setEffectEnabled?.(slot,state.effectEnabled?.[slot]===false)}><PowerIcon/></ButtonFace>}
               <Select label={`FX ${slot} effect`} items={state.effects.map(e => `${slot} · ${e.name}`)} index={state.effects.findIndex(e => e.id === selected)} onChange={i => commands.setEffect(slot, state.effects[i].id)} width={100} hint={`Which effect the ${slot} send feeds. Every deck shares it, and its send knob decides how much each one hears.`} /></div>
               <div className="play-fx-params">{effect?.controls?.map(control => <Knob key={`${effect.id}-${control.id}`} name={control.name} label={`FX ${slot} ${effect.name} ${control.name}`} param={control.param} value={state.effectValues?.[slot]?.[effect.id]?.[control.id] ?? control.param.defaultValue} disabled={!commands.setEffectParam} onChange={value => commands.setEffectParam?.(slot, effect.id, control.id, value)} hint={`${control.name} on the ${effect.name} in send ${slot}. What it does depends on the effect chosen above it.`} />)}</div>
-            </div>{slot === 'A' && <Separator/>}</Fragment>;
+              {commands.setEffectHighPass && <Toggle className="play-fx-highpass" label={`FX ${slot} high pass`} on={state.effectHighPass?.[slot] ?? false} onChange={on=>commands.setEffectHighPass?.(slot,on)} title={state.effectHighPassHint} hint={state.effectHighPassHint}>High pass</Toggle>}
+            </div>{slot === 'A'  && <Separator/>}</Fragment>;
           })}
         </div>
         {!externalTransport && <span className="play-clock">{String(Math.floor(beat / 4) + 1).padStart(3, '0')}<b>.{beat % 4 + 1}</b></span>}

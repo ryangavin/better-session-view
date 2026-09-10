@@ -9,6 +9,7 @@ import { DECK_IDS, emptyDeck, initialMixer, loadedDeck, loadDeckAsset, type Deck
 import { DeckVoice } from './voice.ts';
 import { MixerChannel, MixerEffect, levelGain, routeGain, smooth } from './graph.ts';
 import { floorBeat, snapBeat, launchWait, LOOP_LENGTHS } from './timing.ts';
+import { readEffectHighPass, saveEffectHighPass, EFFECT_HIGH_PASS_HINT } from './effectHighPass.ts';
 import { EFFECTS } from './effects.ts';
 import { outputPairs, pairReach, readAudioSettings } from '../audioSettings.ts';
 
@@ -23,7 +24,7 @@ type Loader = typeof loadDeckAsset;
 
 /** One playback owner for all decks, sends, master, output routing and Link. No React. */
 export class MixerEngine {
-  private state = initialMixer();
+  private state: MixerState = { ...initialMixer(), effectHighPass: readEffectHighPass(), effectHighPassHint: EFFECT_HIGH_PASS_HINT };
   private listeners = new Set<() => void>();
   private ctx: AudioContext | null = null;
   private decks = new Map<string, Deck>();
@@ -525,6 +526,7 @@ export class MixerEngine {
       }
       const slot = i === 0 ? 'A' : 'B';
       const defaults = Object.fromEntries(EFFECTS.find(e => e.id === id)?.controls?.map(c => [c.id, c.param.defaultValue]) ?? []);
+      this.effects[i].setHighPass(s.effectHighPass?.[slot] ?? false);
       this.effects[i].apply({ ...defaults, ...s.effectValues?.[slot]?.[id] }, s.bpm);
     });
     smooth(this.phones.gain,(s.phonesLevel ?? 100)/100,now);
@@ -819,6 +821,7 @@ export class MixerEngine {
     loopIn:()=>this.loopIn(),loopOut:()=>this.loopOut(),setLoopEnabled:on=>this.toggleLoop(on),
     setPhones:(control,value)=>{if(!Number.isFinite(value))return;this.publish({...this.state,[control]:Math.max(0,Math.min(100,value))});this.apply();},
     setEffectsEnabled:effectsEnabled=>{this.publish({...this.state,effectsEnabled});this.apply();},
+    setEffectHighPass:(slot,on)=>{const effectHighPass={A:this.state.effectHighPass?.A ?? false,B:this.state.effectHighPass?.B ?? false,[slot]:on};saveEffectHighPass(effectHighPass);this.publish({...this.state,effectHighPass});this.apply();},
     setEffectEnabled:(slot,on)=>{this.publish({...this.state,effectEnabled:{A:this.state.effectEnabled?.A ?? true,B:this.state.effectEnabled?.B ?? true,[slot]:on}});this.apply();},
     clearEffectTails:()=>{if(this.state.effectsEnabled!==false)return;this.effects.forEach(e=>e.dispose());this.retiredEffects.forEach(e=>e.effect.dispose());this.effects=[];this.retiredEffects=[];this.apply();},
     setEffect:(slot,id)=>{this.publish({...this.state,[slot==='A'?'fxA':'fxB']:id});this.apply();},
