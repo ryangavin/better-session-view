@@ -29,17 +29,18 @@
   gap: 6px;
   width: 100%;
   margin: 0;
+  overflow-x: auto;
 }
 
 .mf-library-top .wdg {
-  --wdg-field-height: 24px;
+  --wdg-field-height: var(--ctl-h);
 }
 
 .mf-library-search {
   position: relative;
   display: flex;
   flex: 1;
-  min-width: 0;
+  min-width: 80px;
 }
 
 .mf-library-search:has(.mf-library-clear) input {
@@ -105,16 +106,11 @@
 .mf-library-table {
   width: 100%;
   table-layout: fixed;
-  min-width: 772px;
+  min-width: 0;
   border-spacing: 0;
   text-align: left;
 }
 
-.mf-library-col-artist, .mf-library-col-album { width: 100px; }
-.mf-library-col-bpm { width: 64px; }
-.mf-library-col-key { width: 152px; }
-.mf-library-col-analysis { width: 80px; }
-.mf-library-col-stems { width: 60px; }
 .mf-library-static-heading { padding: 0 6px; color: var(--detail); font-size: var(--text-body); }
 .mf-song-bpm { color: var(--detail); font-size: var(--text-label); font-variant-numeric: tabular-nums; }
 .mf-library-analysis { display: block; width: 68px; height: 18px; }
@@ -130,7 +126,7 @@
   z-index: 1;
   height: 28px;
   padding: 0;
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel), var(--surface-cell) 65%);
   border-bottom: 1px solid var(--bd);
   font-weight: var(--weight-normal);
 }
@@ -142,7 +138,7 @@
   border: 0;
   background: transparent;
   text-align: left;
-  color: var(--detail);
+  color: var(--ui);
   font: inherit;
   font-size: var(--text-body);
   cursor: pointer;
@@ -157,20 +153,7 @@
 .mf-library-table th[aria-sort='descending'] button { color: var(--fg); }
 .mf-library-table th button:hover { background: var(--surface-cell); }
 
-.mf-library-recent {
-  flex: none;
-  height: 24px;
-  padding: 0 5px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--detail);
-  font: inherit;
-  font-size: var(--text-body);
-  cursor: pointer;
-}
-.mf-library-recent[aria-pressed='true'] { color: var(--fg); background: var(--surface-cell); }
-.mf-library-recent:disabled { opacity: .4; cursor: default; }
+
 
 .mf-song { cursor: pointer; }
 .mf-song td { height: 32px; padding: 0 6px; }
@@ -210,8 +193,7 @@
 .mf-song-title { color: var(--ui); }
 .mf-song[data-selected] .mf-song-title { color: var(--fg); }
 .mf-song-identity:focus-visible,
-.mf-library-table th button:focus-visible,
-.mf-library-recent:focus-visible { outline: 1px solid var(--focus); outline-offset: -1px; }
+.mf-library-table th button:focus-visible { outline: 1px solid var(--focus); outline-offset: -1px; }
 
 .mf-art {
   width: 24px;
@@ -489,20 +471,16 @@
 .mf-library-facet option { padding: 3px 5px; overflow: hidden; text-overflow: ellipsis; }
 .mf-library-facet option:checked { background: var(--sel); color: var(--fg); }
 .mf-library-facet select:focus-visible { outline: 1px solid var(--focus); outline-offset: -1px; }
-.mf-library-reset {
-  grid-column: 1 / -1;
-  justify-self: start;
-  border: 0;
-  background: transparent;
-  padding: 2px 0;
-  color: var(--detail);
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--text-label);
-}
-.mf-library-reset:hover:not(:disabled) { color: var(--fg); }
-.mf-library-reset:focus-visible { outline: 1px solid var(--focus); }
-
-.mf-library-reset:disabled { opacity: .4; cursor: default; }
-
 .mf-song-key { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--detail); font-size: var(--text-label); }
+
+/* Each resize target belongs to its own heading, including the last column. */
+.mf-column-resize {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 7px;
+  cursor: col-resize; touch-action: none; user-select: none; z-index: 2;
+}
+.mf-column-resize:hover, .mf-column-resize:focus-visible {
+  background: var(--focus); outline: none;
+}
+.mf-library-table th button { padding-right: 10px; }
+
+.mf-library-stem-empty { width:13px; height:13px; background:var(--caption); opacity:.5; }

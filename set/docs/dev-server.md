@@ -6,7 +6,7 @@ Running the dev server, and what a hot update costs — why BridgeProvider sits 
 
 ```sh
 npm run dev:set        # just this app: its dev server and its window, one command
-npm run dev            # every server in the repo — this, the bridge watchers, the benches
+npm run dev            # every server in the repo — this, the bridge watchers, the device bench
 npm run dev:set-ui     # the dev server alone, against a device someone else is running
 npm run dev:set-app    # the window alone, pointed at a dev server that is already up
 npm run set            # the desktop app, on the built output — see docs/desktop.md
@@ -69,13 +69,13 @@ next click into the browser spends Live's main thread — coming back to the win
 just re-asks for the set, which is a payload. See `core/src/backstop.ts` for the
 policy and `bridge.ts`'s `backstopTick` for the caller.
 
-Seven env vars, all optional:
+Environment variables, all optional:
 
 | var | default | for |
 |---|---|---|
 | `OPENFLOW_PORT_BASE` | `5173` | **every** dev server counts from this — one per worktree |
 | `OPENFLOW_SET_UI_PORT` | from `OPENFLOW_PORT_BASE` | moving this one app without moving the base; every app has the same variable under its own name |
-| `OPENFLOW_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 100 | overriding where the widget bench lands |
+| `OPENFLOW_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 100 | used in the separate Widgets checkout to override its bench port |
 | `OPENFLOW_DEVICE_BENCH_PORT` | `OPENFLOW_PORT_BASE` + 200 | the same, for the device bench |
 | `OPENFLOW_BRIDGE` | `http://127.0.0.1:17800` | pointing at a device other than the local one |
 | `OPENFLOW_DEV` | unset | read by the **app**, not by vite: open on the dev server instead of the bundle |
@@ -87,11 +87,11 @@ alike — see [`desktop/docs/registry.md`](../../desktop/docs/registry.md).
 `strictPort` is on, so a port collision fails loudly instead of drifting to the next
 free one. That's deliberate: assign the port, don't discover it.
 
-Both benches derive their port from this one so a worktree moves all three servers in a
-single variable, and the offsets are 100 and 200 rather than 1 and 2 because worktree ports
-get picked adjacently — see
-[`widgets/docs/bench.md`](../../widgets/docs/bench.md), which also covers why both Vite
-servers have to name their own `cacheDir` now that they run together.
+The device bench uses base + 200. The independent Widgets bench retains base + 100
+when launched in its own checkout with the same environment. Offsets use hundreds
+because worktree base ports are picked adjacently. Run `npm ci` and `npm run dev`
+in [Widgets](https://github.com/openflowfm/widgets); this repository's dev stack
+starts only the device bench. See its [bench guide](https://github.com/openflowfm/widgets/blob/main/docs/bench.md).
 
 The device bench is `set/bench/`, served by `set/vite.bench.config.ts`. It draws the faces
 with the app's palette and no connection at all — no provider, no client, no socket — so

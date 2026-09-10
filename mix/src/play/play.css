@@ -48,10 +48,9 @@
   .mf-play .play-grid {grid-template-columns:minmax(44px,1fr) calc(1px + 2 * var(--play-separator-space)) repeat(var(--play-stems,4),minmax(0,1fr));}
   .mf-play .play-cell, .mf-play .play-cell .wdg, .mf-play .play-cell .wdg-body {width:100%;min-width:0;}
   .mf-play .play-grid > .wdg {width:100%;min-width:0;}
-  .mf-play .play-decks {--play-column-gap:4px;}
 }
 @container (max-width: 960px) {
-  .mf-play .play-decks {min-width:calc(4 * var(--play-deck-min) + 142px);grid-template-columns:repeat(2,minmax(var(--play-deck-min),1fr)) 140px repeat(2,minmax(var(--play-deck-min),1fr));}
+  .mf-play .play-decks {min-width:calc(4 * var(--play-deck-min) + 142px);grid-template-columns:repeat(2,minmax(min-content,1fr)) 140px repeat(2,minmax(min-content,1fr));}
   .mf-play .play-route {gap:4px;}
 }
 @container (max-height: 700px) {

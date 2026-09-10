@@ -1,4 +1,0 @@
-.wdg-workspace:has(.play-example) > .wdg-workspace-description { display: none; }
-.play-theme-tools { position: fixed; top: 9px; left: 170px; z-index: 10; }
-.bench:not(.bench-collapsed) .play-theme-tools { left: 350px; }
-.play-theme-panel { max-height: calc(100vh - 60px); overflow-y: auto; position: absolute; top: 28px; left: 0; border: 1px solid var(--bd3); background: var(--panel); box-shadow: var(--shadow-menu); }

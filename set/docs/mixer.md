@@ -114,7 +114,7 @@ to one per display frame. It does not re-read every track under parameter automa
 ## The three faders are widgets/'s gesture, not this module's
 
 Volume, pan and every send are ordinary parameters dragged the ordinary way, and the way
-is [`widgets/`](../../widgets/README.md)'s: `useParamGesture` for the drag and
+is [`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md)'s: `useParamGesture` for the drag and
 `usePendingValue` for the hold. `lib/liveParam.ts` turns an `OpenFlow.MixerParameterState` into
 a `Param` and is the entire boundary — nothing about Live crosses it.
 

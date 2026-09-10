@@ -22,7 +22,7 @@ export function emptyDeck(id: string, i: number): MixerDeck {
 }
 export function initialMixer(): MixerState {
   return { decks: DECK_IDS.map(emptyDeck), running: false, beat: 0, loop: { start: null, end: null, enabled: false }, canLoopOut: false,
-    bpm: 124, launchBeats: 4, quantize: 0, loopBeats: 8, cross: 0, master: 100, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0,0,0],
+    bpm: 120, launchBeats: 4, quantize: 0, loopBeats: 8, cross: 0, master: 100, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0,0,0],
     effectsEnabled:true,effectEnabled:{A:true,B:true},effectTailing:false,phonesLevel:100,phonesMix:0,
     effects: EFFECTS, fxA: 'delay', fxB: 'reverb', playbackAvailable: false };
 }
@@ -124,7 +124,7 @@ export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): Mix
     peaks: asset.peaks, full: true, fullSection: null, fullQueued: undefined,
     message: !grid ? 'No steady tempo found — Sync unavailable' : undefined,
     sections: cuts?.length ? cuts.map((cut, i) => ({id: `section-${i}-${cut.bar}`, name: cut.name})) : [{id:'full-track', name:'Track'}],
-    stems: sources.map(id => ({id, name: id[0].toUpperCase()+id.slice(1), level:100, available: !!track.stems && track.sources.includes(id), selected:null, queued:undefined})),
+    stems: sources.map(id => ({id, name: id[0].toUpperCase()+id.slice(1), level:100, available: asset.audio ? (asset.audio.buffers[id]?.duration ?? 0) > 0 : !!track.stems && track.sources.includes(id), selected:null, queued:undefined})),
   };
 }
 /** Plain Tab switches views; editable controls and modal/menu focus keep native navigation. */

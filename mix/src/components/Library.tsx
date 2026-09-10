@@ -1,6 +1,7 @@
-import { useRef, useState, type DragEvent as ReactDragEvent } from 'react';
+import { memo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
 import { keyLabel, keyDescription, savedKey } from '../key.ts';
 import { TRACK_DRAG } from '../play/decks.ts';
+import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { COLUMN_LABELS, type Choice, type Column } from '../listing.ts';
 import { STEMS } from '../mock.ts';
@@ -9,12 +10,15 @@ import { tempoText } from '../warp.ts';
 import type { Mix } from '../state.ts';
 import { LibraryAnalysis, LibraryStems } from './LibraryAnalysis.tsx';
 import { LIBRARY_MIN, useLibraryResize } from './useLibraryResize.ts';
+import { isResizableColumn, useLibraryColumnWidths } from '../useLibraryColumnWidths.ts';
+import { ColumnResize } from './ColumnResize.tsx';
 import './Library.css';
 
 /** One song per row, with its own artwork and unmodified credit. */
 
 export function Library({ mix }: { mix: Mix }) {
   const { library } = mix;
+  const { widths, resize } = useLibraryColumnWidths();
   const { rail, drag, nudge, maximum, current } = useLibraryResize(mix.setLibraryWidth);
   const draggedColumn = useRef<Column | null>(null);
   const suppressSort = useRef(false);
@@ -47,9 +51,11 @@ export function Library({ mix }: { mix: Mix }) {
             {mix.query && <button type="button" className="mf-library-clear" aria-label="Clear library search"
               title="Clear library search" onClick={() => mix.setQuery('')}>×</button>}
           </div>
-          <button type="button" className="mf-library-recent" disabled={!library.root}
-            aria-pressed={mix.order === 'added'} onClick={() => mix.sortBy('added')}
-            title="Sort by import date; click again to reverse">Recent{mix.order === 'added' ? (mix.descending ? ' ↓' : ' ↑') : ''}</button>
+          {library.root && library.tracks.length > 0 && <Button width={24} label="Reset filters" onPress={mix.resetLibraryFilters}
+            title="Clear text, artist, album and key filters"
+            disabled={!mix.query && mix.libraryBrowser.artist === null && mix.libraryBrowser.album === null && mix.libraryBrowser.key === null}><span aria-hidden="true">↻</span></Button>}
+          <Toggle width={64} disabled={!library.root} on={mix.order === 'added'} onChange={() => mix.sortBy('added')}
+            title="Sort by import date; click again to reverse">Recent{mix.order === 'added' ? (mix.descending ? ' ↓' : ' ↑') : ''}</Toggle>
           <Button
             onPress={() => void mix.importTracks()}
             disabled={!library.root || mix.importing}
@@ -57,6 +63,7 @@ export function Library({ mix }: { mix: Mix }) {
           >
             Import
           </Button>
+
         </div>
       </div>
 
@@ -67,8 +74,6 @@ export function Library({ mix }: { mix: Mix }) {
           selected={mix.libraryBrowser.album} onChange={mix.browseAlbum} />
         <BrowseList label="Keys" all="All keys" choices={mix.libraryBrowser.keys}
           selected={mix.libraryBrowser.key} onChange={mix.browseKey} />
-        <button type="button" className="mf-library-reset" onClick={mix.resetLibraryFilters}
-          disabled={!mix.query && mix.libraryBrowser.artist === null && mix.libraryBrowser.album === null && mix.libraryBrowser.key === null}>Reset filters</button>
       </div>}
 
       <div className="mf-library-list">
@@ -106,10 +111,11 @@ export function Library({ mix }: { mix: Mix }) {
           </div>
         )}
 
-        {library.tracks.length > 0 && <table className="mf-library-table" aria-label="Library songs">
-          <colgroup>{mix.columns.map(column => <col key={column} className={`mf-library-col-${column}`}  />)}</colgroup>
+        {library.tracks.length > 0 && <table className="mf-library-table" aria-label="Library songs"
+          style={{ width: mix.columns.reduce((total, column) => total + widths[column], 0) }}>
+          <colgroup>{mix.columns.map(column => <col key={column} className={`mf-library-col-${column}`} style={{ width: widths[column] }} />)}</colgroup>
           <thead><tr>{mix.columns.map(column => (
-            <th key={column} scope="col" draggable data-drop-target={dropTarget === column || undefined}
+            <th key={column} scope="col" aria-label={COLUMN_LABELS[column]} draggable data-drop-target={dropTarget === column || undefined}
               aria-sort={mix.order === column ? (mix.descending ? 'descending' : 'ascending') : 'none'}
               onDragStart={event => {
                 draggedColumn.current = column;
@@ -145,6 +151,7 @@ export function Library({ mix }: { mix: Mix }) {
                 }}>
                 {COLUMN_LABELS[column]}<span aria-hidden="true">{mix.order === column ? (mix.descending ? ' ↓' : ' ↑') : ''}</span>
               </button>
+              {isResizableColumn(column) && <ColumnResize column={column} width={widths[column]} resize={resize} />}
             </th>
           ))}</tr></thead>
           <tbody>{mix.rows.map((song) => <Song key={song.id} mix={mix} song={song} />)}</tbody>
@@ -205,7 +212,7 @@ function BrowseList({ label, all, choices, selected, onChange }: {
 }
 
 /** The row remains a drag source; its native button provides keyboard selection. */
-function Song({ mix, song }: { mix: Mix; song: Track }) {
+const Song = memo(function Song({ mix, song }: { mix: Mix; song: Track }) {
   const note = mix.notes?.[song.id];
   const tempo = note && note.bpm !== null ? tempoText(note.bpm, note.slowest ?? note.bpm, note.fastest ?? note.bpm) : '';
   const fact = gridFact(song, note, tempo, mix.notes !== null);
@@ -233,7 +240,7 @@ function Song({ mix, song }: { mix: Mix; song: Track }) {
         </span>}</td>)}
     </tr>
   );
-}
+});
 
 /**
  * The cover in the row, or the initial that stands in for one.

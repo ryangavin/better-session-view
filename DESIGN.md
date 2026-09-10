@@ -6,17 +6,17 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
 ## Foundations
 
 - The interface uses dark surfaces. Semantic color tokens live in
-  [`widgets/src/palette.css`](widgets/src/palette.css): neutral foregrounds and borders,
+  [`widgets/src/palette.css`](https://github.com/openflowfm/widgets/blob/main/src/palette.css): neutral foregrounds and borders,
   amber for selection, active toggles and primary actions, green for playback and success,
   blue for Solo, red for errors, and purple for previews. They sit there rather than in an
   app because more than one app reads them —
-  [`widgets/src/tokens.css`](widgets/src/tokens.css) was already reading them from the
+  [`widgets/src/tokens.css`](https://github.com/openflowfm/widgets/blob/main/src/tokens.css) was already reading them from the
   host with fallbacks, and mix[flow] was the second app to need the same table.
   [`set/src/shared.css`](set/src/shared.css) imports it and adds what is only set[flow]'s:
   the stacking tiers and the grid column widths.
 - Neutral text comes from one five-step ramp, described under *Text* below.
 - **One typeface, two cuts.** Both stacks start with Recursive, a variable font bundled
-  at [`widgets/src/type.css`](widgets/src/type.css) — the only place in the repo that
+  at [`widgets/src/type.css`](https://github.com/openflowfm/widgets/blob/main/src/type.css) — the only place in the repo that
   names a family. `--mono` is used for compact labels, facts and grid headings; `--sans`
   for prose. They are the same font: the difference is the `MONO` axis, carried in
   `--mono-axes` and `--sans-axes`, because a custom axis cannot ride inside a
@@ -27,7 +27,7 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   and one of them runs a show.
 - **Size, weight and tracking are tokens, named for the job.** Seven sizes replace the
   thirty literal values the stylesheets had grown:
-  [`--text-annot`](widgets/src/type.css) 8px is the readout on a control — a pan value, an
+  [`--text-annot`](https://github.com/openflowfm/widgets/blob/main/src/type.css) 8px is the readout on a control — a pan value, an
   EQ status, a node kind; `--text-label` 9px names a thing — chips, field names, column
   heads; `--text-control` 10px is the text inside operable chrome; `--text-body` 11px is
   list and table content; `--text-lead` 12px is primary and editable text; `--text-heading`
@@ -45,7 +45,7 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   resolves to `inset 0 0 0 1px #927b51`. Without that, a ring would need a token per
   colour, which is how thirty-six distinct shadows happened.
 - **A stylesheet reaches the tokens by importing the palette, not by re-declaring them.**
-  [`widgets/src/palette.css`](widgets/src/palette.css) is the only definition; it pulls in
+  [`widgets/src/palette.css`](https://github.com/openflowfm/widgets/blob/main/src/palette.css) is the only definition; it pulls in
   `type.css` itself, so importing the palette is enough. Re-declaring a token with the same
   value is drift waiting to happen — visuals and the widget bench each kept a private copy
   until they didn't. `widgets/` is the exception on purpose: it reads `--wdg-*` aliases so

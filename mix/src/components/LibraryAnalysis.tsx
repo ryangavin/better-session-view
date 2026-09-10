@@ -65,7 +65,7 @@ export function LibraryAnalysis({ song, root }: { song: Track; root: string | nu
   </span>;
 }
 
-/** Only existing sources get tiles. Partial separations leave no invented placeholders. */
+/** Colored tiles represent existing sources; a neutral tile marks an unseparated mix. */
 export function LibraryStems({ sources }: { sources: readonly string[] }) {
   const available = STEMS.filter(stem => sources.includes(stem.id));
   const description = available.length ? `Available stems: ${available.map(stem => stem.name).join(', ')}` : 'No separated stems';
@@ -73,6 +73,6 @@ export function LibraryStems({ sources }: { sources: readonly string[] }) {
     {available.length ? <span className="mf-library-stem-tiles" aria-hidden="true"
       style={{ gridTemplateColumns: `repeat(${available.length > 4 ? 3 : Math.min(2, available.length)}, 6px)` }}>
       {available.map(stem => <span key={stem.id} data-stem={stem.id} style={{ background: stem.ink }} />)}
-    </span> : <span aria-hidden="true">—</span>}
+    </span> : <span className="mf-library-stem-empty" aria-hidden="true" />}
   </span>;
 }

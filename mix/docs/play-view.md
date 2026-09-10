@@ -25,6 +25,18 @@ and its conditional Link pins remain beside Link Audio. In Play, Space toggles t
 independent. Stop returns all decks to the beginning and clears section selections and
 captured loops. Deck assignments, cue points and mix settings last for the window session.
 
+Standalone Play freezes its transport clock when the final participating source stops or
+pauses. Explicit deck/stem stops and Cue release update it immediately; natural endings
+are detected by the existing 40ms engine tick. Only the selected Full/stems group counts;
+its playing sources count even at zero gain or with headphone-only monitoring. Held Cue
+and scheduled starts keep the clock alive. Auto-stop preserves positions, Cue, loops and
+mix settings; it sends no Link command. With Link enabled the shared transport continues
+when decks finish or pause. The explicit global Pause/Stop commands retain their existing
+Link behavior. Starting again resumes paused sources; a finished source restarts at its
+first mapped beat (or file start without a grid). A launch from an idle standalone clock
+starts immediately instead of waiting for an otherwise empty clock's next bar.
+
+
 The hook retains one engine per library root. A root change aborts loads and disposes
 all voices, effects, Link capture and the AudioContext. Effect cleanup defers disposal
 one microtask so React StrictMode's immediate replay cannot destroy the retained engine;
@@ -68,7 +80,9 @@ A fallback tempo only supplies a waveform display; it is not a fabricated analys
 Reload a deck after saving preparation changes to refresh its sections and grid.
 
 The four standard stem positions remain identifiable; guitar and piano are included when
-present. Missing stems stay disabled. Every deck starts in Full mode, because the original always
+present. Missing stems stay disabled. Full is disabled on empty or original-only decks;
+loaded decoded buffer availability determines whether stems can be selected, rather than
+stale library metadata. The engine also rejects a switch to an empty stem group. Every deck starts in Full mode, because the original always
 sums better than its own stems do; launching any stem clip is itself the request for
 stems, and switches the deck without a separate control.
 
@@ -83,7 +97,7 @@ its own position would move the deck by however long the other source was up. So
 agree at the moment the gains cross, and each group keeps its own positions, stopped stems, selections,
 loops and Cue checkpoints. The cost is that both groups run once both have been heard.
 Switching does not start audio. Loading does not establish tempo authority. Without Link, the first playing gridded
-deck becomes leader; the header shows no active tempo until then.
+deck becomes leader; the header always shows the canonical playback tempo, initially 120 BPM.
 
 ## Performance layout
 
@@ -129,6 +143,31 @@ to manage headroom when summing tracks.
 
 Deck sends are post-fader/post-crossfader and feed shared wet-only A/B returns. Master
 sends tap the dry deck sum before the effect returns, preventing a return feeding itself.
+Each FX slot has a third **HP** cutoff knob in the same row as its two effect parameters.
+All three use the same shared dial size as FX A / Filter / FX B below; removing the inner
+horizontal padding gives them the master strip's full width without changing its minimum.
+The host supplies an enum Param: Off, then 20Hz–2kHz in 48 logarithmic steps per decade
+(about 5% per step). Its readout uses Hz/kHz; keyboard arrows move one step and the shared
+double-click reset returns to Off. The actual cutoff is smoothed with the existing 8ms
+time constant, as is the parallel unity-bypass/filtered-input crossfade when entering or
+leaving Off. Off is unfiltered input; there is no extra button or control row.
+
+The second-order Butterworth filter (12dB/octave, Q=1/√2) sits on the summed deck/master
+sends entering each effect. Dry/direct audio remains untouched. Tone remains the existing
+low-pass on wet output and delay-style feedback. The high-pass remains outside feedback,
+so changing cutoff does not reshape existing tails or change feedback stability. All five
+effect types share this input stage.
+
+`effectHighPass.ts` maps widget positions to Hz and saves numeric cutoff values per A/B
+slot immediately in `mixflow.effect-high-pass.v2`. Zero means bypass. Missing/malformed
+values become Off; out-of-range positive frequencies clamp to the supported range.
+The old v1 toggle migrates On to exactly 200Hz and Off to bypass, only when v2 is absent.
+Slot settings survive type changes, context replacement and app reopen. Widgets receive
+the host Param, positions, command and tooltip; filter design stays in mix.
+The offline browser regression at `/harness/fx-highpass/` renders all five real effect
+graphs without speaker output, checking range endpoints, 200Hz response, dry identity,
+bypass, existing tails, real-time cutoff changes and both bypass transitions.
+
 Delay is one beat; Echo is a dotted eighth. Their Feedback/Tone controls map to a bounded
 feedback loop and low-pass filter. Reverb is a parallel-comb network with Decay/Tone.
 Chorus and Flanger modulate a short delay. Each effect keeps its own parameter values
@@ -230,8 +269,21 @@ An unsynced leader supplies its mapped native beat rate; a synced follower becom
 leader retains its current rate. Pause, stop, natural end and replacement allow the next
 playing deck to lead. LEADER appears in its header. The main tempo is editable once a local leader is playing. Editing a native leader
 prepares and enables pitch-preserving Sync before applying the requested tempo; synced
-followers receive that rate. Loading a deck cannot change it. Before a leader starts,
-the header shows a dash. Link retains its shared tempo control and external authority.
+followers receive that rate. Loading a deck cannot change it. The header always displays
+the canonical playback BPM: 120 initially, then the last rate after pause, stop, natural
+end or replacement. This is retained engine state, not a separate display fallback.
+It remains read-only without a local leader or Link; starting a native leader still
+establishes its mapped tempo. Link updates that same value even while stopped or
+without remote peers, and disconnecting retains its last rate.
+
+The header's **1× / Normal speed** button restores the local leader's effective source BPM
+from the loaded saved grid (`loadedDeck` includes manual corrections), not the current
+scaled playback tempo. It calls the same master BPM command as editing the tempo field,
+preserving the existing Sync preparation, phase and scheduling path. It is disabled with
+no playing local leader, an unknown BPM, or Link's external tempo authority. For a variable
+grid this is its analyzed representative BPM, rather than a promise that every beat is
+uniform. Preparing a new grid requires reloading the deck as above.
+
 
 Followers are checked every 250ms and corrected when phase error exceeds 0.025 beat,
 using one scheduled correction for their playing sources. Gesture/Cue holds and queued

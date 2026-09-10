@@ -13,6 +13,8 @@ body {
   font-size: var(--text-lead);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 button {
@@ -88,4 +90,10 @@ button {
 .wdg.mf-primary:hover .wdg-button-body:not(:disabled) {
   background: var(--primary-hover);
   border-color: var(--primary-hover);
+}
+
+/* Display content is a control surface; actual editors retain text selection. */
+input, textarea, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"] {
+  user-select: text;
+  -webkit-user-select: text;
 }

@@ -176,3 +176,8 @@
 }
 .mf-header-icon .wdg-body { padding: 0; }
 .mf-header svg { display: block; flex: none; }
+
+/* Distribute logical groups within the space left by branding and settings. */
+.mf-header-play { grid-template-columns: max-content minmax(0,1fr) max-content; }
+.mf-header-play .mf-header-transport { justify-content:space-evenly; overflow-x:auto; }
+.mf-header-play .mf-header-transport > * { flex:none; }

@@ -72,7 +72,7 @@ function switchedOn(state: OpenFlow.DeviceParameterState | null): boolean {
 }
 
 /**
- * Live's EQ Eight, drawn out of [`widgets/`](../../../../../widgets/README.md)
+ * Live's EQ Eight, drawn out of [`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md)
  * and composed here rather than there.
  *
  * The parts are the library's, because a knob is a knob wherever it's mounted.

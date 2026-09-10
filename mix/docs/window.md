@@ -13,7 +13,7 @@ as one band, and it says in a sentence what the pointer — or the focus ring �
 is `HintFooter` from `@openflow/widgets`, and it works off `data-hint` where a control
 has one and the control's `title` where it does not, which is why most of this window
 explained itself the day it was mounted. See
-[widgets/docs/catalogue.md](../../widgets/docs/catalogue.md#what-explains-a-control) for
+[widgets/docs/catalogue.md](https://github.com/openflowfm/widgets/blob/main/docs/catalogue.md#what-explains-a-control) for
 the precedence rule and why the hovered sentence never reaches React.
 
 At rest it reads *Point at anything to read what it does.* rather than going blank: an
@@ -41,7 +41,7 @@ between single-track stem preparation and the four-deck DJ mixer. Exactly one bu
 selected; the logo stays static with no view-dependent highlight. Plain Tab also switches views. The library rail stays the same, and both preparation
 state and loaded deck settings survive switching. Editable controls and dialogs retain
 normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The header centers the playback controls, tempo and position in both Prep and Play across the
-whole window, with the logo and track identity on the left and Settings on the right. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
+available center region, with the logo and track identity on the left and Settings on the right. Play distributes its logical transport, timing and audio groups evenly across that region; joined controls stay together and the center can scroll horizontally when necessary. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
 loading, keyboard behavior and the current playback boundary.
 
 ## The library rail
@@ -56,7 +56,11 @@ The chosen width is kept in the session. CSS temporarily caps it to the availabl
 without overwriting the saved preference. Until it is dragged the stylesheet's own width
 stands, so the handle costs nothing to ignore.
 
-The rail starts with a compact row: filter, **Recent**, and **Import**. Import
+The rail starts with a compact row: filter, the shared **↻ Reset filters** icon
+(when songs are present), **Recent**, then **Import**. The 24px reset button keeps
+its accessible name and tooltip without a text caption. Reset and Import use shared Buttons and Recent uses the shared Toggle, all at the header control height; disabled actions dim only once. The reset keeps the same disabled
+state and clears text, artist, album and key together. Search can shrink to 80px;
+at very narrow rail widths this toolbar scrolls horizontally rather than clipping controls. Import
 opens the ordinary multi-file picker; dropping a YouTube video link anywhere on the window
 imports its audio. There is no URL field or Fetch button. Imports disable while another
 import is in flight, and the rail footer changes from the folder name to the result or the
@@ -92,11 +96,28 @@ There are no group headings, collapse state, indentation, or vertical rules thro
 Alternating rows use a quiet blend of the theme's panel and cell surfaces across the full
 table width, including offscreen columns. The stripe follows displayed row position after
 sorting or filtering; hover and selection replace it with their stronger existing states.
-The sticky column header labels only the values below it. The table has a 772px minimum
-width and scrolls horizontally within a narrower rail. Artist and Album take 100px each,
-BPM 64px, Key 152px, Analysis 80px, Stems 60px (room for the full heading and its padding), and Song receives the remaining width. Long values truncate with
-their full text on hover.
-The existing rail resize handle remains available; changing the table does not resize it.
+The sticky column header labels only the values below it, with a slightly lighter surface and UI text color for contrast. A shared `colgroup` keeps
+header and row widths aligned; the table's width is their sum, with horizontal scrolling
+inside a narrower rail. Defaults are Artist/Album 100px, Song 216px, BPM 64px,
+Key 152px, Analysis 80px and Stems 60px (772px total). Long values truncate with
+full text on hover. Resizing a column changes only that column, not the rail or filters.
+
+Drag the right edge of Artist, Album, Song, BPM or Key to resize it. Analysis stays
+80px and Stems 60px: both remain reorderable, but have no resize handles or keyboard
+resize targets. Their old saved width overrides are ignored on load and storage
+updates; other saved widths and column order remain intact. The separate 7px handle has a resize
+cursor and focus highlight; the label retains click-to-sort and drag-to-reorder.
+Focus a width handle and use Left/Right for 8px steps; Home or double-click restores
+that column's default. The hover hint explains both controls. `ColumnResize.tsx` captures
+the pointer through the gesture and isolates its events from native header dragging.
+`useLibraryColumnWidths.ts` defines defaults and minimums (room for header labels,
+artwork and analysis controls), caps widths at 1200px, and saves every adjustment
+immediately in `mixflow.library-column-widths.v1`, independently of order and audio
+session writes. Widths follow stable column IDs through reordering and reopening;
+missing/new columns use defaults, removed IDs are ignored, and invalid values are
+repaired. Same-origin windows adopt saved widths without echo writes. Storage failures
+retain usable in-memory controls. Song rows are memoized so local width updates only
+change table geometry, without rebuilding artwork and waveform row contents.
 
 Click a column to sort alphabetically; click the same column again to reverse its primary
 order. The arrow and `aria-sort` identify the current column and direction. **Artist**
@@ -623,7 +644,7 @@ two, and that file is what moves.
 `src/Theme.tsx` wraps the app in the widgets `ThemeRoot`. The shared v1 theme contains
 surface/text/border roles, neutral primary selection, green measured signal, six stem
 identities and paired deck colors. Current favorite is the initial palette, matching the
-widgets mixer bench. See [widgets theme rules](../../widgets/docs/theme.md).
+widgets mixer bench. See [widgets theme rules](https://github.com/openflowfm/widgets/blob/main/docs/theme.md).
 
 Settings in the header opens a stock Modal with Audio and Theme sections. Theme
 contains the shared editor in two columns: palette and color editing on the left,
@@ -696,3 +717,10 @@ Albums. It uses saved bass analysis or manual key metadata. The dedicated Key co
 at most two candidates, or Unknown. The library contains no key-analysis buttons or
 evidence panel. Detailed alternatives and regions stay in saved debug evidence; they do
 not add filter entries. The debug backfill prepares existing songs. See [pitch.md](pitch.md).
+
+Display text throughout the app is not selectable, preventing accidental selections
+while operating controls or dragging rows. Inputs, textareas and editable content
+explicitly retain text selection for normal editing. This is CSS only; it does not
+intercept keyboard shortcuts or pointer gestures. Unseparated library tracks use one
+neutral 13px tile in Stems, with the accessible description “No separated stems”;
+colored tiles still represent only the actual separated sources.

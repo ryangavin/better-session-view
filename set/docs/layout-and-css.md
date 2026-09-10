@@ -27,7 +27,7 @@ inside a component, such as a meter's rules, marker, invisible input and buttons
 
 ### Widget tokens
 
-[`widgets/`](../../widgets/README.md) carries its own token set in `src/tokens.css`, and
+[`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md) carries its own token set in `src/tokens.css`, and
 every one of them is written as `var(--host-token, fallback)` — `--wdg-fill` resolves to
 `--amber`, `--wdg-caption` to `--caption`, and so on. So a control mounted in this app
 inherits `shared.css` and a control on the bench uses its own defaults, without either

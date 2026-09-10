@@ -20,7 +20,7 @@ component retains its full algorithms, band controls and evidence. Its optional 
 presentation remains covered for exact-map application but no longer supplies the product
 page. Pending analysis timers and audition sources are released when unmounted.
 
-The **Beat analysis** tab is `src/debug/Analysis.tsx`, built on [`widgets/src/debug`](../../widgets/docs/debug.md).
+The **Beat analysis** tab is `src/debug/Analysis.tsx`, built on [`widgets/src/debug`](https://github.com/openflowfm/widgets/blob/main/docs/debug.md).
 
 The [grid evidence workbench](grid-evidence.md) adds al Dente audio context, per-stem RMS,
 candidate/kept/saved-grid agreement, signed onset offsets, weak-passage navigation and
