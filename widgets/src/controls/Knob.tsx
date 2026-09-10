@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParamGesture } from '../gesture/useParamGesture.ts';
 import type { Param } from '../param/param.ts';
 import {
@@ -47,6 +48,7 @@ export function Knob({
   hint,
   ink,
 }: KnobProps) {
+  const [pointerFocus, setPointerFocus] = useState(false);
   const gesture = useParamGesture({
     param,
     value,
@@ -78,7 +80,12 @@ export function Knob({
       hint={hint}
       ink={ink}
     >
-      <div className="wdg-knob-dial" {...gesture.props}>
+      <div className="wdg-knob-dial" {...gesture.props}
+        data-pointer-focus={pointerFocus ? '' : undefined}
+        onPointerDown={event => { if (!disabled && event.button === 0) setPointerFocus(true); gesture.props.onPointerDown(event); }}
+        onKeyDown={event => { setPointerFocus(false); gesture.props.onKeyDown(event); }}
+        onBlur={() => setPointerFocus(false)}
+      >
         <svg viewBox={`0 ${DIAL_VIEWBOX_TOP} 40 ${DIAL_VIEWBOX_HEIGHT}`} aria-hidden="true">
           <path className="wdg-knob-empty" d={dialArc(dialAngle(0), dialAngle(1)) ?? undefined} />
           {fill && <path className="wdg-knob-fill" d={fill} />}

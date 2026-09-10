@@ -648,3 +648,31 @@ it('retains each input high-pass setting across type changes and engine recreati
     const next=setup().engine;expect(next.snapshot().effectHighPass).toEqual({A:49,B:0});
   } finally { vi.unstubAllGlobals(); }
 });
+
+
+it.each(['pause','stop','end','replace'] as const)('retains canonical playback tempo after the final source %s', async ending => {
+  vi.useFakeTimers();const {engine,ctx}=setup();
+  expect(engine.snapshot().bpm).toBe(120);
+  const native=asset();native.audio!.map=evenBeats(48000,64*48000,90,0);
+  await engine.load('deck-a',{...track,bpm:90},async()=>native);
+  expect(engine.snapshot().bpm).toBe(120);
+  await engine.play('deck-a',true);expect(engine.snapshot().bpm).toBeCloseTo(90);
+  engine.commands.setMaster('bpm',135);await settle();
+  expect(engine.snapshot().bpm).toBe(135);
+  if(ending==='pause')await engine.play('deck-a',false);
+  if(ending==='stop')engine.stop();
+  if(ending==='end'){ctx.currentTime=100;await vi.advanceTimersByTimeAsync(40);}
+  if(ending==='replace')await engine.load('deck-a',track,async()=>asset());
+  expect(engine.snapshot()).toMatchObject({running:false,bpm:135});
+  await vi.advanceTimersByTimeAsync(300);expect(engine.snapshot().bpm).toBe(135);
+});
+it('uses shared Link tempo while stopped even with no peers, then retains it on disconnect', async()=>{
+  const {engine,load}=setup();await load();
+  const linked=vi.spyOn(engine,'linkAudio','get').mockReturnValue({...engine.linkAudio,enabled:true,peers:0});
+  const clock=engine as unknown as {linkClock(t:import('../linkTiming.ts').LinkTimeline,changed:boolean):void};
+  clock.linkClock({token:1,micros:0,contextTime:0,tempo:137,peers:0,beat:0,playing:false,playingMicros:0,startMicros:0},false);
+  expect(engine.snapshot()).toMatchObject({bpm:137,running:false});expect(engine.normalSpeedBpm).toBeNull();
+  linked.mockRestore();expect(engine.snapshot().bpm).toBe(137);
+  clock.linkClock({token:2,micros:0,contextTime:0,tempo:150,peers:1,beat:0,playing:false,playingMicros:0,startMicros:0},false);
+  expect(engine.snapshot().bpm).toBe(137);
+});

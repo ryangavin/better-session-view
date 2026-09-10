@@ -22,7 +22,7 @@ export function emptyDeck(id: string, i: number): MixerDeck {
 }
 export function initialMixer(): MixerState {
   return { decks: DECK_IDS.map(emptyDeck), running: false, beat: 0, loop: { start: null, end: null, enabled: false }, canLoopOut: false,
-    bpm: 124, launchBeats: 4, quantize: 0, loopBeats: 8, cross: 0, master: 100, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0,0,0],
+    bpm: 120, launchBeats: 4, quantize: 0, loopBeats: 8, cross: 0, master: 100, masterTrim: 0, masterFilter: 0, masterSendA: 0, masterSendB: 0, masterEq: [0,0,0],
     effectsEnabled:true,effectEnabled:{A:true,B:true},effectTailing:false,phonesLevel:100,phonesMix:0,
     effects: EFFECTS, fxA: 'delay', fxB: 'reverb', playbackAvailable: false };
 }

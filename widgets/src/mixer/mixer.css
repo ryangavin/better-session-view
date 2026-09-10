@@ -1,8 +1,8 @@
 .play-example { max-width: 1600px; margin: 0 auto; color: var(--wdg-text); }
 .play-scroll { overflow-x: auto; }
-.play-decks { display: grid; grid-template-columns: minmax(var(--play-deck-min,200px),1fr) minmax(var(--play-deck-min,200px),1fr) 156px minmax(var(--play-deck-min,200px),1fr) minmax(var(--play-deck-min,200px),1fr); grid-template-rows: 30px repeat(5,auto); min-width: 980px; border: 1px solid var(--wdg-edge); background: var(--wdg-face); }
+.play-decks { display: grid; grid-template-columns: minmax(min-content,1fr) minmax(min-content,1fr) 156px minmax(min-content,1fr) minmax(min-content,1fr); grid-template-rows: 30px repeat(5,auto); min-width: 980px; border: 1px solid var(--wdg-edge); background: var(--wdg-face); }
 .play-deck, .play-master-strip { display: grid; grid-row: 1 / span 6; grid-template-rows: subgrid; grid-template-columns: minmax(0,1fr); row-gap: 0; padding: 8px 6px 6px; align-items: stretch; min-width: 0; border-right: 1px solid var(--wdg-edge); }
-.play-deck { background: linear-gradient(90deg,transparent,#ffffff02 50%,transparent); }
+.play-deck { min-width:var(--play-deck-min,200px); grid-template-columns:minmax(min-content,1fr); background: linear-gradient(90deg,transparent,#ffffff02 50%,transparent); }
 .play-deck:last-child { border-right: 0; }
 .play-master-strip { background: var(--wdg-well); }
 .play-track { display: grid; height: 24px; min-height: 24px; max-height: 24px; grid-template-columns: 18px minmax(0,1fr) auto; grid-template-rows: 12px 12px; gap: 0 4px; margin-bottom: 6px; overflow: hidden; }
@@ -211,12 +211,11 @@
 .play-master-stereo > div { display:grid; grid-row:1 / -1; grid-template-rows:subgrid; justify-items:center; row-gap:4px; }
 
 .play-channel-fader > .wdg-slider { align-items:stretch; }
-.play-channel:not(.play-master-channel) > .play-level-stack { justify-self:center; width:100%; max-width:var(--play-fader-max); }
+.play-channel:not(.play-master-channel) > .play-level-stack { justify-self:center; width:100%; max-width:calc(var(--play-fader-max) + 20px + 2 * var(--play-separator-space)); min-width:calc(var(--play-fader-max) * .75 + 20px + 2 * var(--play-separator-space)); }
 .play-master-channel > .play-level-stack { justify-self:stretch; }
 .play-level-stack { align-items:stretch; }
-.play-channel-fader:not(.play-master-stereo) { grid-template-columns:minmax(0,1fr) auto auto; column-gap:var(--play-meter-gap); row-gap:4px; }
+.play-channel-fader:not(.play-master-stereo) { grid-template-columns:minmax(0,1fr) auto auto; column-gap:var(--play-separator-space); row-gap:4px; }
 .play-channel-fader:not(.play-master-stereo) .wdg-meter { --wdg-meter-width:10px; }
-.play-channel-fader > .wdg-slider + .play-meter-column { margin-left:var(--play-fader-meter-gap); }
 .play-channel-fader:not(.play-master-stereo) > .wdg-slider { grid-template-columns:minmax(0,1fr); }
 .play-channel-fader:not(.play-master-stereo) > .wdg-slider { grid-column:1; }
 .play-channel-fader:not(.play-master-stereo) > .wdg-slider { --wdg-track:100%; }
@@ -238,7 +237,7 @@
 .play-crossfader-row > .wdg-slider > .wdg-body { display:flex; flex:1; min-height:0; align-items:stretch; }
 .play-crossfader-row .wdg-slider-horizontal .wdg-slider-body { width:auto; height:100%; flex:1; }
 
-.play-decks { --play-separator-space:6px; --play-column-gap:12px; --play-fader-max:132px; --play-fader-meter-gap:12px; --play-fader-ticks:10; --play-fader-tick-inset:10px; --play-track-side:minmax(auto,1fr); --play-track-centre:minmax(0,3fr); --play-transport-size:44px; --play-meter-gap:6px; --play-routing-min:calc(28px + 2px + 4 * var(--play-separator-space)); }
+.play-decks { --play-separator-space:6px; --play-column-gap:calc(1px + 2 * var(--play-separator-space)); --play-fader-max:88px; --play-fader-ticks:10; --play-fader-tick-inset:10px; --play-track-side:minmax(auto,1fr); --play-track-centre:minmax(min-content,calc(var(--play-fader-max) + 20px + 2 * var(--play-separator-space))); --play-transport-size:44px; --play-meter-gap:6px; --play-routing-min:calc(28px + 2px + 4 * var(--play-separator-space)); }
 .play-separator { box-sizing:content-box; flex-shrink:0; background:var(--wdg-edge); }
 .play-separator-horizontal { height:1px; min-height:1px; margin-block:var(--play-separator-space); align-self:stretch; }
 .play-separator-vertical { width:1px; min-width:1px; margin-inline:var(--play-separator-space); align-self:stretch; }

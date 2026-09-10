@@ -97,7 +97,7 @@ its own position would move the deck by however long the other source was up. So
 agree at the moment the gains cross, and each group keeps its own positions, stopped stems, selections,
 loops and Cue checkpoints. The cost is that both groups run once both have been heard.
 Switching does not start audio. Loading does not establish tempo authority. Without Link, the first playing gridded
-deck becomes leader; the header shows no active tempo until then.
+deck becomes leader; the header always shows the canonical playback tempo, initially 120 BPM.
 
 ## Performance layout
 
@@ -269,8 +269,12 @@ An unsynced leader supplies its mapped native beat rate; a synced follower becom
 leader retains its current rate. Pause, stop, natural end and replacement allow the next
 playing deck to lead. LEADER appears in its header. The main tempo is editable once a local leader is playing. Editing a native leader
 prepares and enables pitch-preserving Sync before applying the requested tempo; synced
-followers receive that rate. Loading a deck cannot change it. Before a leader starts,
-the header shows a dash. Link retains its shared tempo control and external authority.
+followers receive that rate. Loading a deck cannot change it. The header always displays
+the canonical playback BPM: 120 initially, then the last rate after pause, stop, natural
+end or replacement. This is retained engine state, not a separate display fallback.
+It remains read-only without a local leader or Link; starting a native leader still
+establishes its mapped tempo. Link updates that same value even while stopped or
+without remote peers, and disconnecting retains its last rate.
 
 The header's **1× / Normal speed** button restores the local leader's effective source BPM
 from the loaded saved grid (`loadedDeck` includes manual corrections), not the current

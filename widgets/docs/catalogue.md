@@ -432,6 +432,12 @@ reserving the unused top and bottom of a full circle. The caption and readout ke
 generic inter-region gaps and therefore stay in the same shared bands as every other
 control's; only empty artwork space has left layout. The resulting control region is 27px
 tall in every context: alone, in a `Row`, in a `Panel`, or in rack macros.
+Its rectangular hit area uses the ordinary control radius, so keyboard focus follows
+that frame rather than drawing a stretched oval. Pointer selection suppresses only
+the knob's focus ring, including a click on an already keyboard-focused dial; a key
+or blur clears that pointer marker. Dragging, keyboard adjustment and reset still use
+the shared gesture. Disabled Button wrappers apply their opacity once; the nested
+button face does not compound it, while a standalone face still dims itself.
 
 **`layout` is where the regions go; `orientation` is which way the control runs.** They
 are different questions and merging them would be a mistake. `layout="inline"` puts the

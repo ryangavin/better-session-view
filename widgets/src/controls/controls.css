@@ -32,9 +32,12 @@
 .wdg-knob-dial {
   width: var(--wdg-knob-size);
   height: var(--wdg-knob-height);
-  border-radius: 50%;
+  border-radius: var(--wdg-radius);
   cursor: ns-resize;
 }
+
+/* Pointer focus must not inherit a keyboard ring when clicking an already focused dial. */
+.wdg .wdg-knob-dial[data-pointer-focus]:focus-visible { outline: none; }
 
 .wdg-knob-dial svg {
   display: block;
@@ -377,6 +380,9 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* The shared widget wrapper already dims disabled actions once. */
+.wdg > .wdg-button-body:disabled { opacity: 1; }
 
 .wdg-meter-body {
   position: relative;

@@ -193,3 +193,22 @@ it('places a cutoff knob beside each pair of effect knobs with host parameter va
   expect(view.queryByRole('button',{name:'FX A high pass'})).toBeNull();
   fireEvent.keyDown(cutoff,{key:'ArrowRight'});act(()=>frames.splice(0).forEach(frame=>frame(0)));expect(props.commands.setEffectHighPass).toHaveBeenCalledWith('A',1);
 });
+
+it('shows known deck BPM but no empty or unknown BPM placeholder',()=>{
+  const props=fixture();props.state.decks[0].track=null;props.state.decks[1].track!.bpm=null;
+  const view=render(createElement(MixerView,props));
+  const headers=[...view.container.querySelectorAll('.play-track > span')];
+  expect(headers[0].textContent).toBe('');expect(headers[1].textContent).toBe('8A');
+  expect(headers[2].textContent).toBe('128 BPM8A');
+});
+it('clears pointer-only knob focus when keyboard interaction resumes without changing its gesture',()=>{
+  const props=fixture(),view=render(createElement(MixerView,props));
+  const dial=view.getByRole('slider',{name:'Deck 1 effects send A'}) as HTMLElement;
+  dial.setPointerCapture=vi.fn();
+  fireEvent.pointerDown(dial,{button:0,pointerId:1});fireEvent.pointerUp(dial,{pointerId:1});
+  expect(dial.hasAttribute('data-pointer-focus')).toBe(true);
+  fireEvent.keyDown(dial,{key:'ArrowUp'});act(()=>frames.splice(0).forEach(frame=>frame(0)));
+  expect(dial.hasAttribute('data-pointer-focus')).toBe(false);expect(props.commands.setDeck).toHaveBeenCalledWith('left-outside','sendA',1);
+  fireEvent.pointerDown(dial,{button:0,pointerId:2});fireEvent.pointerUp(dial,{pointerId:2});fireEvent.blur(dial);
+  expect(dial.hasAttribute('data-pointer-focus')).toBe(false);
+});

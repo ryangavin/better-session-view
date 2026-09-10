@@ -1,6 +1,7 @@
 import { memo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
 import { keyLabel, keyDescription, savedKey } from '../key.ts';
 import { TRACK_DRAG } from '../play/decks.ts';
+import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { COLUMN_LABELS, type Choice, type Column } from '../listing.ts';
 import { STEMS } from '../mock.ts';
@@ -53,9 +54,8 @@ export function Library({ mix }: { mix: Mix }) {
           {library.root && library.tracks.length > 0 && <Button width={24} label="Reset filters" onPress={mix.resetLibraryFilters}
             title="Clear text, artist, album and key filters"
             disabled={!mix.query && mix.libraryBrowser.artist === null && mix.libraryBrowser.album === null && mix.libraryBrowser.key === null}><span aria-hidden="true">↻</span></Button>}
-          <button type="button" className="mf-library-recent" disabled={!library.root}
-            aria-pressed={mix.order === 'added'} onClick={() => mix.sortBy('added')}
-            title="Sort by import date; click again to reverse">Recent{mix.order === 'added' ? (mix.descending ? ' ↓' : ' ↑') : ''}</button>
+          <Toggle width={64} disabled={!library.root} on={mix.order === 'added'} onChange={() => mix.sortBy('added')}
+            title="Sort by import date; click again to reverse">Recent{mix.order === 'added' ? (mix.descending ? ' ↓' : ' ↑') : ''}</Toggle>
           <Button
             onPress={() => void mix.importTracks()}
             disabled={!library.root || mix.importing}

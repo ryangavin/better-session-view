@@ -21,7 +21,7 @@ export function DeckStrip({ deck: d, index, commands, readFrame, theme, params, 
   const ROUTE = ['A', 'Thru', 'B'];
   const hostProps = deckProps?.(d.id);
   return <div {...hostProps} className={`play-deck ${hostProps?.className ?? ''}`} style={{ ...hostProps?.style, '--play-stems': d.stems.length, '--deck-ink': theme.decks[d.id]?.ink ?? theme.primary } as CSSProperties}>
-        <div className="play-track"><b className="play-letter">{d.letter}</b><div><h3>{d.track?.title ?? 'Empty deck'}</h3><p>{d.track?.artist ?? d.message ?? d.status}</p></div><span>{d.track ? `${d.track.bpm === null ? '—' : Math.round(d.track.bpm)} BPM` : '—'}<br />{d.syncLeader?'LEADER':d.track?.key ?? ''}</span></div>
+        <div className="play-track"><b className="play-letter">{d.letter}</b><div><h3>{d.track?.title ?? 'Empty deck'}</h3><p>{d.track?.artist ?? d.message ?? d.status}</p></div><span>{d.track?.bpm != null && Number.isFinite(d.track.bpm) && d.track.bpm > 0 ? `${Math.round(d.track.bpm)} BPM` : null}<br />{d.syncLeader?'LEADER':d.track?.key ?? ''}</span></div>
 
         <MixerSection className="play-performance">
           <fieldset className="play-grid" data-full={d.full} disabled={d.status !== 'ready'}>

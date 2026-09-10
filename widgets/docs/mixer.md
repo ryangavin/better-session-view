@@ -243,9 +243,9 @@ FX/filter row above it, so stems sit under FX A, the fader under Filter and Trim
 under FX B, with the FX knobs themselves spaced evenly across their row rather than
 pinned to those centres — three small knobs on a three-to-one track sit hard against the
 edges. The master keeps equal thirds in both rows, so its EQ still lands under its FX B.
-The centre takes three times the side columns, because it carries the most;
-the ratio is one pair of tokens the three rows all read, so none can drift from the
-others. Vertical `Separator` elements divide the deck's three sections in the FX, channel and
+The center track follows the fader assembly’s minimum and maximum width; the
+side tracks share the remaining space. All three rows read the same track tokens,
+so their columns cannot drift. Vertical `Separator` elements divide the deck's three sections in the FX, channel and
 routing rows, the same rule the Hot cue divider uses. The channel and routing rows hold
 theirs in gutter tracks; the evenly spaced FX row holds them as siblings, which keeps
 every gap in that row equal. A gutter track and
@@ -324,3 +324,14 @@ and waveform icon. Effects controls also retain their normal size and readouts.
 
 The FX/filter row takes its height from its knobs; it has no fixed-height track
 or additional vertical padding beyond the shared separators.
+
+Deck headers show BPM only when the host provides a positive known value; empty or
+unknown tempo has no placeholder. The global playback tempo belongs to the host header.
+
+The fader and its L/R meters use the same gap as each separator's side clearance.
+Gutter tracks reserve the stroke plus both margins, including compact layouts. There
+is no extra margin before L. The fader itself has an 88px maximum; its assembly adds
+two 10px meters and the two shared gaps. It shrinks with the available center column
+down to 66px (75% of the maximum), without scaling the meters or knobs.
+Deck grid tracks honor that intrinsic minimum and overflow the existing horizontal
+scroll area when needed; the configured deck minimum itself is unchanged. The assembly remains centered in the channel column.

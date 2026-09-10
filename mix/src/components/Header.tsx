@@ -254,7 +254,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
             >
               {loopMark}
             </Toggle>}
-            {playView && !mix.linkAudio.enabled && !mixer?.snapshot().decks.some(d=>d.syncLeader) ? <span className="mf-clock" aria-label="Leader tempo" title="The first playing deck sets tempo; synced decks follow it">{mixer?.snapshot().decks.some(d=>d.syncLeader)?bpmText(mix.targetBpm):'—'}</span> : <NumberField
+            {playView && !mix.linkAudio.enabled && !mixer?.snapshot().decks.some(d=>d.syncLeader) ? <span className="mf-clock" aria-label="Playback tempo" title="Current playback tempo, retained while stopped. The first playing deck establishes the next local leader tempo.">{bpmText(mix.targetBpm)}</span> : <NumberField
               param={mix.linkAudio.enabled ? LINK_TEMPO : TEMPO}
               value={mix.targetBpm}
               display={bpmText(mix.targetBpm)}
@@ -262,10 +262,10 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               editable
               showFill={false}
               width={44}
-              label="Tempo"
+              label={playView ? "Playback tempo" : "Tempo"}
               disabled={mix.editingGrid}
               title={
-                playView ? 'Adjust the leader tempo; synced decks follow. Native leaders enable Sync to preserve pitch.' : mix.beats
+                playView ? mix.linkAudio.enabled ? 'Shared Link playback tempo, including while stopped.' : 'Adjust playback tempo; synced decks follow. Native leaders enable Sync to preserve pitch.' : mix.beats
                   ? 'The tempo the stems play at with warp on. The grid is where the beats are'
                   : 'Playback tempo with Warp on. To change the source timing, use Edit beat grid'
               }

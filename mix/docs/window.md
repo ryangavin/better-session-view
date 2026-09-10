@@ -41,7 +41,7 @@ between single-track stem preparation and the four-deck DJ mixer. Exactly one bu
 selected; the logo stays static with no view-dependent highlight. Plain Tab also switches views. The library rail stays the same, and both preparation
 state and loaded deck settings survive switching. Editable controls and dialogs retain
 normal Tab navigation. Tracks load exclusively by dragging from the library onto deck strips or waveform rows. The header centers the playback controls, tempo and position in both Prep and Play across the
-whole window, with the logo and track identity on the left and Settings on the right. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
+available center region, with the logo and track identity on the left and Settings on the right. Play distributes its logical transport, timing and audio groups evenly across that region; joined controls stay together and the center can scroll horizontally when necessary. Track editing, Snap, Analysis and Export stay in Prep. See [play-view.md](play-view.md) for ownership,
 loading, keyboard behavior and the current playback boundary.
 
 ## The library rail
@@ -58,7 +58,7 @@ stands, so the handle costs nothing to ignore.
 
 The rail starts with a compact row: filter, the shared **↻ Reset filters** icon
 (when songs are present), **Recent**, then **Import**. The 24px reset button keeps
-its accessible name and tooltip without a text caption. The reset keeps the same disabled
+its accessible name and tooltip without a text caption. Reset and Import use shared Buttons and Recent uses the shared Toggle, all at the header control height; disabled actions dim only once. The reset keeps the same disabled
 state and clears text, artist, album and key together. Search can shrink to 80px;
 at very narrow rail widths this toolbar scrolls horizontally rather than clipping controls. Import
 opens the ordinary multi-file picker; dropping a YouTube video link anywhere on the window
@@ -96,7 +96,7 @@ There are no group headings, collapse state, indentation, or vertical rules thro
 Alternating rows use a quiet blend of the theme's panel and cell surfaces across the full
 table width, including offscreen columns. The stripe follows displayed row position after
 sorting or filtering; hover and selection replace it with their stronger existing states.
-The sticky column header labels only the values below it. A shared `colgroup` keeps
+The sticky column header labels only the values below it, with a slightly lighter surface and UI text color for contrast. A shared `colgroup` keeps
 header and row widths aligned; the table's width is their sum, with horizontal scrolling
 inside a narrower rail. Defaults are Artist/Album 100px, Song 216px, BPM 64px,
 Key 152px, Analysis 80px and Stems 60px (772px total). Long values truncate with
@@ -717,3 +717,10 @@ Albums. It uses saved bass analysis or manual key metadata. The dedicated Key co
 at most two candidates, or Unknown. The library contains no key-analysis buttons or
 evidence panel. Detailed alternatives and regions stay in saved debug evidence; they do
 not add filter entries. The debug backfill prepares existing songs. See [pitch.md](pitch.md).
+
+Display text throughout the app is not selectable, preventing accidental selections
+while operating controls or dragging rows. Inputs, textareas and editable content
+explicitly retain text selection for normal editing. This is CSS only; it does not
+intercept keyboard shortcuts or pointer gestures. Unseparated library tracks use one
+neutral 13px tile in Stems, with the accessible description “No separated stems”;
+colored tiles still represent only the actual separated sources.
