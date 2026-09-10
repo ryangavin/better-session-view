@@ -36,3 +36,11 @@ it('adopts another window’s widths without echoing, and remains usable when st
   act(() => view.result.current.resize('artist', 280));
   expect(view.result.current.widths.artist).toBe(280);
 });
+
+it('ignores legacy Stems and Analysis overrides without losing other widths', () => {
+  localStorage.setItem(KEY, JSON.stringify({ stems: 300, analysis: 420, title: 348, artist: 172 }));
+  const view = renderHook(useLibraryColumnWidths);
+  expect(view.result.current.widths).toMatchObject({ stems: 60, analysis: 80, title: 348, artist: 172 });
+  act(() => view.result.current.resize('stems', 500));
+  expect(JSON.parse(localStorage.getItem(KEY)!)).toMatchObject({ stems: 60, analysis: 80, title: 348, artist: 172 });
+});

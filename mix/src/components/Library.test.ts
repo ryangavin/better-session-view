@@ -28,7 +28,7 @@ function rail(tracks = TRACKS) {
     const [sort, setSort] = useState<Sort>({ order: 'artist', descending: false });
     const [columns, setColumns] = useState(() => columnsFrom(undefined));
     const [query, setQuery] = useState('');
-    const [browse, setBrowse] = useState<Browse>({ artist: null, album: null });
+    const [browse, setBrowse] = useState<Browse>({ artist: null, album: null, key: null });
     const libraryBrowser = browseLibrary(tracks, query, browse);
     const songs = libraryBrowser.songs;
     const mix = {
@@ -36,7 +36,7 @@ function rail(tracks = TRACKS) {
       browseArtist: (artist: string | null) => setBrowse({ artist, album: null }),
       browseKey: (key: string | null) => setBrowse(was => ({ ...was, key })),
       browseAlbum: (album: string | null) => setBrowse(was => ({ ...was, album })),
-      resetLibraryFilters: () => { setBrowse({ artist: null, album: null }); setQuery(''); },
+      resetLibraryFilters: () => { setBrowse({ artist: null, album: null, key: null }); setQuery(''); },
       library: { root: 'library', tracks }, songs, total: tracks.length,
       rows: listing(songs, sort.order, sort.descending), ...sort, columns,
       dropColumn: (column: typeof columns[number], target: typeof columns[number]) => setColumns(was => placeColumn(was, column, target)),
@@ -218,4 +218,23 @@ it('resizes without sorting or moving columns, keeps widths through reorder and 
   fireEvent.pointerDown(view.getByRole('button', { name: /Artist/ }));
   fireEvent.click(view.getByRole('button', { name: /Artist/ }));
   expect(view.getByRole('button', { name: /Artist/ }).closest('th')!.getAttribute('aria-sort')).toBe('descending');
+});
+
+it('keeps display columns movable but fixed and puts shared Reset filters in the top toolbar', () => {
+  const view = rail();
+  expect(view.queryByRole('separator', { name: 'Stems column width' })).toBeNull();
+  expect(view.queryByRole('separator', { name: 'Analysis column width' })).toBeNull();
+  expect(view.getByRole('separator', { name: 'Song column width' })).toBeTruthy();
+  fireEvent.keyDown(view.getByRole('button', { name: 'Stems' }), { key: 'ArrowLeft', altKey: true });
+  expect(view.getAllByRole('columnheader').at(-2)!.getAttribute('aria-label')).toBe('Stems');
+  const reset = view.getByRole('button', { name: 'Reset filters' }) as HTMLButtonElement;
+  expect(reset.closest('.mf-library-tools')).toBeTruthy();
+  expect(reset.closest('.wdg-button')).toBeTruthy();
+  expect(view.container.querySelector('.mf-library-browser')!.children).toHaveLength(3);
+  expect(reset.disabled).toBe(true);
+  fireEvent.change(view.getByRole('textbox'), { target: { value: 'vessel' } });
+  expect(reset.disabled).toBe(false);
+  fireEvent.click(reset);
+  expect(reset.disabled).toBe(true);
+  expect(rowTitles(view.container)).toHaveLength(4);
 });

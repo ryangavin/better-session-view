@@ -29,6 +29,7 @@
   gap: 6px;
   width: 100%;
   margin: 0;
+  overflow-x: auto;
 }
 
 .mf-library-top .wdg {
@@ -39,7 +40,7 @@
   position: relative;
   display: flex;
   flex: 1;
-  min-width: 0;
+  min-width: 80px;
 }
 
 .mf-library-search:has(.mf-library-clear) input {
@@ -484,22 +485,6 @@
 .mf-library-facet option { padding: 3px 5px; overflow: hidden; text-overflow: ellipsis; }
 .mf-library-facet option:checked { background: var(--sel); color: var(--fg); }
 .mf-library-facet select:focus-visible { outline: 1px solid var(--focus); outline-offset: -1px; }
-.mf-library-reset {
-  grid-column: 1 / -1;
-  justify-self: start;
-  border: 0;
-  background: transparent;
-  padding: 2px 0;
-  color: var(--detail);
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--text-label);
-}
-.mf-library-reset:hover:not(:disabled) { color: var(--fg); }
-.mf-library-reset:focus-visible { outline: 1px solid var(--focus); }
-
-.mf-library-reset:disabled { opacity: .4; cursor: default; }
-
 .mf-song-key { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--detail); font-size: var(--text-label); }
 
 /* Each resize target belongs to its own heading, including the last column. */

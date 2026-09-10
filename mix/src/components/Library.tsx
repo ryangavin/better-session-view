@@ -9,7 +9,7 @@ import { tempoText } from '../warp.ts';
 import type { Mix } from '../state.ts';
 import { LibraryAnalysis, LibraryStems } from './LibraryAnalysis.tsx';
 import { LIBRARY_MIN, useLibraryResize } from './useLibraryResize.ts';
-import { useLibraryColumnWidths } from '../useLibraryColumnWidths.ts';
+import { isResizableColumn, useLibraryColumnWidths } from '../useLibraryColumnWidths.ts';
 import { ColumnResize } from './ColumnResize.tsx';
 import './Library.css';
 
@@ -60,6 +60,9 @@ export function Library({ mix }: { mix: Mix }) {
           >
             Import
           </Button>
+          {library.root && library.tracks.length > 0 && <Button onPress={mix.resetLibraryFilters}
+            title="Clear text, artist, album and key filters"
+            disabled={!mix.query && mix.libraryBrowser.artist === null && mix.libraryBrowser.album === null && mix.libraryBrowser.key === null}>Reset filters</Button>}
         </div>
       </div>
 
@@ -70,8 +73,6 @@ export function Library({ mix }: { mix: Mix }) {
           selected={mix.libraryBrowser.album} onChange={mix.browseAlbum} />
         <BrowseList label="Keys" all="All keys" choices={mix.libraryBrowser.keys}
           selected={mix.libraryBrowser.key} onChange={mix.browseKey} />
-        <button type="button" className="mf-library-reset" onClick={mix.resetLibraryFilters}
-          disabled={!mix.query && mix.libraryBrowser.artist === null && mix.libraryBrowser.album === null && mix.libraryBrowser.key === null}>Reset filters</button>
       </div>}
 
       <div className="mf-library-list">
@@ -149,7 +150,7 @@ export function Library({ mix }: { mix: Mix }) {
                 }}>
                 {COLUMN_LABELS[column]}<span aria-hidden="true">{mix.order === column ? (mix.descending ? ' ↓' : ' ↑') : ''}</span>
               </button>
-              <ColumnResize column={column} width={widths[column]} resize={resize} />
+              {isResizableColumn(column) && <ColumnResize column={column} width={widths[column]} resize={resize} />}
             </th>
           ))}</tr></thead>
           <tbody>{mix.rows.map((song) => <Song key={song.id} mix={mix} song={song} />)}</tbody>

@@ -56,7 +56,10 @@ The chosen width is kept in the session. CSS temporarily caps it to the availabl
 without overwriting the saved preference. Until it is dragged the stylesheet's own width
 stands, so the handle costs nothing to ignore.
 
-The rail starts with a compact row: filter, **Recent**, and **Import**. Import
+The rail starts with a compact row: filter, **Recent**, **Import**, and the shared
+**Reset filters** button (when songs are present). The reset keeps the same disabled
+state and clears text, artist, album and key together. Search can shrink to 80px;
+at very narrow rail widths this toolbar scrolls horizontally rather than clipping controls. Import
 opens the ordinary multi-file picker; dropping a YouTube video link anywhere on the window
 imports its audio. There is no URL field or Fetch button. Imports disable while another
 import is in flight, and the rail footer changes from the folder name to the result or the
@@ -98,7 +101,10 @@ inside a narrower rail. Defaults are Artist/Album 100px, Song 216px, BPM 64px,
 Key 152px, Analysis 80px and Stems 60px (772px total). Long values truncate with
 full text on hover. Resizing a column changes only that column, not the rail or filters.
 
-Drag the right edge of any heading to resize it. The separate 7px handle has a resize
+Drag the right edge of Artist, Album, Song, BPM or Key to resize it. Analysis stays
+80px and Stems 60px: both remain reorderable, but have no resize handles or keyboard
+resize targets. Their old saved width overrides are ignored on load and storage
+updates; other saved widths and column order remain intact. The separate 7px handle has a resize
 cursor and focus highlight; the label retains click-to-sort and drag-to-reorder.
 Focus a width handle and use Left/Right for 8px steps; Home or double-click restores
 that column's default. The hover hint explains both controls. `ColumnResize.tsx` captures

@@ -485,7 +485,8 @@ after a move cannot discard it and another window’s track save cannot overwrit
 The old session column order is only a migration fallback. Column widths use the same
 immediate preference pattern in `useLibraryColumnWidths.ts`, keyed by stable column
 ID in `mixflow.library-column-widths.v1`; reordering or a later audio-session write
-cannot replace them. New columns receive defaults without resetting saved widths.
+cannot replace them. New columns receive defaults without resetting saved widths. Analysis and Stems
+always use fixed defaults, ignoring any old saved width overrides.
 
 Four things it has to get right, and each was a bug first:
 

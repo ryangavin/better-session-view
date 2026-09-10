@@ -7,11 +7,12 @@ export const COLUMN_SIZES: Record<Column, { default: number; min: number }> = {
   key: { default: 152, min: 104 }, analysis: { default: 80, min: 80 },
   stems: { default: 60, min: 60 },
 };
+export const isResizableColumn = (column: Column) => column !== 'stems' && column !== 'analysis';
 export const COLUMN_MAX = 1200;
 const KEY = 'mixflow.library-column-widths.v1';
 type Widths = Record<Column, number>;
 export const columnWidth = (column: Column, value: number) =>
-  Number.isFinite(value) ? Math.round(Math.max(COLUMN_SIZES[column].min, Math.min(COLUMN_MAX, value))) : COLUMN_SIZES[column].default;
+  isResizableColumn(column) && Number.isFinite(value) ? Math.round(Math.max(COLUMN_SIZES[column].min, Math.min(COLUMN_MAX, value))) : COLUMN_SIZES[column].default;
 function read(raw: string | null): Widths {
   let saved: Record<string, unknown> = {};
   try { const value = JSON.parse(raw ?? '{}'); if (value && typeof value === 'object' && !Array.isArray(value)) saved = value; } catch { /* Defaults repair invalid storage. */ }
