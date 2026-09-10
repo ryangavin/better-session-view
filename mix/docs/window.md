@@ -92,11 +92,25 @@ There are no group headings, collapse state, indentation, or vertical rules thro
 Alternating rows use a quiet blend of the theme's panel and cell surfaces across the full
 table width, including offscreen columns. The stripe follows displayed row position after
 sorting or filtering; hover and selection replace it with their stronger existing states.
-The sticky column header labels only the values below it. The table has a 772px minimum
-width and scrolls horizontally within a narrower rail. Artist and Album take 100px each,
-BPM 64px, Key 152px, Analysis 80px, Stems 60px (room for the full heading and its padding), and Song receives the remaining width. Long values truncate with
-their full text on hover.
-The existing rail resize handle remains available; changing the table does not resize it.
+The sticky column header labels only the values below it. A shared `colgroup` keeps
+header and row widths aligned; the table's width is their sum, with horizontal scrolling
+inside a narrower rail. Defaults are Artist/Album 100px, Song 216px, BPM 64px,
+Key 152px, Analysis 80px and Stems 60px (772px total). Long values truncate with
+full text on hover. Resizing a column changes only that column, not the rail or filters.
+
+Drag the right edge of any heading to resize it. The separate 7px handle has a resize
+cursor and focus highlight; the label retains click-to-sort and drag-to-reorder.
+Focus a width handle and use Left/Right for 8px steps; Home or double-click restores
+that column's default. The hover hint explains both controls. `ColumnResize.tsx` captures
+the pointer through the gesture and isolates its events from native header dragging.
+`useLibraryColumnWidths.ts` defines defaults and minimums (room for header labels,
+artwork and analysis controls), caps widths at 1200px, and saves every adjustment
+immediately in `mixflow.library-column-widths.v1`, independently of order and audio
+session writes. Widths follow stable column IDs through reordering and reopening;
+missing/new columns use defaults, removed IDs are ignored, and invalid values are
+repaired. Same-origin windows adopt saved widths without echo writes. Storage failures
+retain usable in-memory controls. Song rows are memoized so local width updates only
+change table geometry, without rebuilding artwork and waveform row contents.
 
 Click a column to sort alphabetically; click the same column again to reverse its primary
 order. The arrow and `aria-sort` identify the current column and direction. **Artist**

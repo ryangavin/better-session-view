@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent as ReactDragEvent } from 'react';
+import { memo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
 import { keyLabel, keyDescription, savedKey } from '../key.ts';
 import { TRACK_DRAG } from '../play/decks.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
@@ -9,12 +9,15 @@ import { tempoText } from '../warp.ts';
 import type { Mix } from '../state.ts';
 import { LibraryAnalysis, LibraryStems } from './LibraryAnalysis.tsx';
 import { LIBRARY_MIN, useLibraryResize } from './useLibraryResize.ts';
+import { useLibraryColumnWidths } from '../useLibraryColumnWidths.ts';
+import { ColumnResize } from './ColumnResize.tsx';
 import './Library.css';
 
 /** One song per row, with its own artwork and unmodified credit. */
 
 export function Library({ mix }: { mix: Mix }) {
   const { library } = mix;
+  const { widths, resize } = useLibraryColumnWidths();
   const { rail, drag, nudge, maximum, current } = useLibraryResize(mix.setLibraryWidth);
   const draggedColumn = useRef<Column | null>(null);
   const suppressSort = useRef(false);
@@ -106,10 +109,11 @@ export function Library({ mix }: { mix: Mix }) {
           </div>
         )}
 
-        {library.tracks.length > 0 && <table className="mf-library-table" aria-label="Library songs">
-          <colgroup>{mix.columns.map(column => <col key={column} className={`mf-library-col-${column}`}  />)}</colgroup>
+        {library.tracks.length > 0 && <table className="mf-library-table" aria-label="Library songs"
+          style={{ width: mix.columns.reduce((total, column) => total + widths[column], 0) }}>
+          <colgroup>{mix.columns.map(column => <col key={column} className={`mf-library-col-${column}`} style={{ width: widths[column] }} />)}</colgroup>
           <thead><tr>{mix.columns.map(column => (
-            <th key={column} scope="col" draggable data-drop-target={dropTarget === column || undefined}
+            <th key={column} scope="col" aria-label={COLUMN_LABELS[column]} draggable data-drop-target={dropTarget === column || undefined}
               aria-sort={mix.order === column ? (mix.descending ? 'descending' : 'ascending') : 'none'}
               onDragStart={event => {
                 draggedColumn.current = column;
@@ -145,6 +149,7 @@ export function Library({ mix }: { mix: Mix }) {
                 }}>
                 {COLUMN_LABELS[column]}<span aria-hidden="true">{mix.order === column ? (mix.descending ? ' ↓' : ' ↑') : ''}</span>
               </button>
+              <ColumnResize column={column} width={widths[column]} resize={resize} />
             </th>
           ))}</tr></thead>
           <tbody>{mix.rows.map((song) => <Song key={song.id} mix={mix} song={song} />)}</tbody>
@@ -205,7 +210,7 @@ function BrowseList({ label, all, choices, selected, onChange }: {
 }
 
 /** The row remains a drag source; its native button provides keyboard selection. */
-function Song({ mix, song }: { mix: Mix; song: Track }) {
+const Song = memo(function Song({ mix, song }: { mix: Mix; song: Track }) {
   const note = mix.notes?.[song.id];
   const tempo = note && note.bpm !== null ? tempoText(note.bpm, note.slowest ?? note.bpm, note.fastest ?? note.bpm) : '';
   const fact = gridFact(song, note, tempo, mix.notes !== null);
@@ -233,7 +238,7 @@ function Song({ mix, song }: { mix: Mix; song: Track }) {
         </span>}</td>)}
     </tr>
   );
-}
+});
 
 /**
  * The cover in the row, or the initial that stands in for one.

@@ -105,16 +105,11 @@
 .mf-library-table {
   width: 100%;
   table-layout: fixed;
-  min-width: 772px;
+  min-width: 0;
   border-spacing: 0;
   text-align: left;
 }
 
-.mf-library-col-artist, .mf-library-col-album { width: 100px; }
-.mf-library-col-bpm { width: 64px; }
-.mf-library-col-key { width: 152px; }
-.mf-library-col-analysis { width: 80px; }
-.mf-library-col-stems { width: 60px; }
 .mf-library-static-heading { padding: 0 6px; color: var(--detail); font-size: var(--text-body); }
 .mf-song-bpm { color: var(--detail); font-size: var(--text-label); font-variant-numeric: tabular-nums; }
 .mf-library-analysis { display: block; width: 68px; height: 18px; }
@@ -506,3 +501,13 @@
 .mf-library-reset:disabled { opacity: .4; cursor: default; }
 
 .mf-song-key { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--detail); font-size: var(--text-label); }
+
+/* Each resize target belongs to its own heading, including the last column. */
+.mf-column-resize {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 7px;
+  cursor: col-resize; touch-action: none; user-select: none; z-index: 2;
+}
+.mf-column-resize:hover, .mf-column-resize:focus-visible {
+  background: var(--focus); outline: none;
+}
+.mf-library-table th button { padding-right: 10px; }
