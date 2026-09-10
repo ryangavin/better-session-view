@@ -76,7 +76,7 @@ and comparison harness, with mix[flow] as its intended first consumer.
 | [`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md) | DAW controls — React, but no Live | knobs, faders, the parameter model, the bench |
 | [`set/`](set/README.md) | the session manager, **set[flow]** — React 19 + Vite | components, the bridge client, dev server |
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
-| [`desktop/`](desktop/README.md) | the Electron main process every app shares | the window, packaging, or adding a new app |
+| [`desktop/`](https://github.com/openflowfm/desktop/blob/main/README.md) | the Electron main process every app shares | the window, packaging, or adding a new app |
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator, the app driver | changing the patcher, the device type, or how an app is built |
 | [`visuals/`](visuals/README.md) | a VJ rig: Link peer, bridge client, WebGL2 renderer | visuals, the clock, or a second kind of client |
 | [`chart/`](chart/README.md) | what the band reads: a read-only view of the playing song, on a phone | the section list, the LAN binding, or a client with no dependencies |
@@ -250,3 +250,9 @@ push Widgets first, then run `npm install 'github:openflowfm/widgets#<full-commi
 here and commit both manifest and lock. Validate this repository with typechecking,
 tests and app builds. Do not use `npm link`: a sibling's React can create a second
 copy in the renderer. Visual changes still need the bench and consumer preview.
+
+Desktop is maintained independently in [openflowfm/desktop](https://github.com/openflowfm/desktop).
+Its Git dependency is pinned to a complete commit, like Widgets. npm prepares
+compiled exports and declarations on installation; tools keep their package imports.
+The app driver, native preparation and app assets remain in this repository.
+Desktop tests run in its own CI; this repository verifies all consuming apps.

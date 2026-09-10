@@ -11,7 +11,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 |---|---|
 | domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
 | the session manager — components, hooks, the client | [`set/README.md`](set/README.md) — 16 topic docs. `@openflow/set`, and **set[flow]** is what it calls itself |
-| an Electron app — its window, its packaging, or adding a new one | [`desktop/README.md`](desktop/README.md) — 6 topic docs. `@openflow/desktop`: the main process set[flow] and visual[flow] share. **Adding an app starts at `desktop/docs/registry.md`** |
+| an Electron app — its window, its packaging, or adding a new one | [`desktop/README.md`](https://github.com/openflowfm/desktop/blob/main/README.md) — 6 topic docs. `@openflow/desktop`: the main process set[flow] and visual[flow] share. **Adding an app starts at `desktop/docs/registry.md`** |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](https://github.com/openflowfm/widgets/blob/main/README.md) — its README indexes the topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way**. Also holds `palette.css`, the design language every app imports |
 | stem separation, or demucs | [`mix/README.md`](mix/README.md) — 5 topic docs. `@openflow/mix`: **mix[flow]**. It separates, plays and mixes for real; the slices are the last invented thing. It ships `uv` and a lock and **builds its own Python engine on first run** — `mix/docs/demucs.md`. Talks to no bridge and no server |
 | a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. `@openflow/visuals`: its own server and its own `node_modules`, deliberately **not** a workspace; an ordinary **client** of the bridge |
@@ -87,7 +87,7 @@ work in [Issues](../../issues).
     `visuals/node_modules/@ktamas77/abletonlink`, and `bridge/` is bundled for a Node
     runtime inside Max that is not ours to pick. Listing either in `workspaces` hoists its
     dependencies to the root, at which point `postinstall` fails with "abletonlink is not
-    installed". The workspaces — `core`, `protocol`, `desktop`, `set`, `mix`, `chart`, `tools` —
+    installed". The workspaces — `core`, `protocol`, `set`, `mix`, `chart`, `tools` —
     are safe to hoist only because none of them has dependencies of its own; they are
     workspaces so the packages resolve by name. `desktop/` imports `electron`, but never
     resolves it: esbuild marks it external, because the runtime provides it. Cross-module imports use the package
@@ -127,3 +127,9 @@ Widgets lives in [openflowfm/widgets](https://github.com/openflowfm/widgets), lo
 `/Users/ryan/The Source/openflow/widgets`, and is consumed as a commit-pinned Git dependency. Its tests,
 bench, declarations and releases run there. Never add it back to workspaces or
 change the installed copy in node_modules; commit there and update the dependency pin.
+
+Desktop lives in [openflowfm/desktop](https://github.com/openflowfm/desktop), locally
+`/Users/ryan/The Source/openflow/desktop`, consumed as a commit-pinned Git dependency.
+Its tests, declarations and CI run there. Never add it back to workspaces or edit
+the installed copy; commit there and update the consumer pin. App drivers and
+assets remain here; builder configs extend the installed package base.

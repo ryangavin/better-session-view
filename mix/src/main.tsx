@@ -12,7 +12,7 @@ import { App } from './App.tsx';
  * tab has no preload, and an app that finds nothing there draws the empty
  * first-run state and never asks again — so the bridge is built here instead,
  * against the loopback port the main process opens whenever it is pointed at a
- * dev server (`desktop/src/reach.ts`).
+ * dev server (`@openflow/desktop/reach.ts`).
  *
  * The order is the whole thing. The socket has to be open before the preload
  * runs, because the preload's first act is to describe an API that talks over

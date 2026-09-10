@@ -1,8 +1,8 @@
 # set[flow], packaged. `npm run pack:set`.
 #
-# The shape is `desktop/electron-builder.base.yml`; this is what is only true of
+# The shape is `@openflow/desktop/electron-builder.base.yml`; this is what is only true of
 # this app.
-extends: ../desktop/electron-builder.base.yml
+extends: ../node_modules/@openflow/desktop/electron-builder.base.yml
 
 appId: com.openflow.set
 productName: set[flow]

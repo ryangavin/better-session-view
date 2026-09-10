@@ -20,7 +20,6 @@
   "workspaces": [
     "core",
     "protocol",
-    "desktop",
     "set",
     "mix",
     "chart",
@@ -59,7 +58,7 @@
     "dev:mix-ui": "vite --config mix/vite.config.ts",
     "dev:mix-app": "node --disable-warning=ExperimentalWarning tools/app.ts dev mix",
     "dev:devices": "vite --config set/vite.bench.config.ts",
-    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p desktop/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p mix/tsconfig.json && tsc -p mix/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
+    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p mix/tsconfig.json && tsc -p mix/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "benchmark": "node --disable-warning=ExperimentalWarning tools/benchmark.ts",
@@ -105,9 +104,9 @@
     "@openflow/widgets": "git+https://github.com/openflowfm/widgets.git#f107d9dcafeb4c77f9f28f9fb79906bba6c7d27a",
     "@xyflow/react": "^12.11.5",
     "d3-hierarchy": "^3.1.2",
-    "electron-updater": "^6.8.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "signalsmith-stretch": "^1.3.2"
+    "signalsmith-stretch": "^1.3.2",
+    "@openflow/desktop": "git+https://github.com/openflowfm/desktop.git#7f05a98ac019b461238935f9ed9dfdd01e15b43b"
   }
 }
