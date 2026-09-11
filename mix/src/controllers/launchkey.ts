@@ -4,8 +4,8 @@ import type { MixerEngine } from '../play/engine.ts';
 // Novation Launchkey MK4 Programmer's Reference, DAW interface (not MCU/HUI).
 export const launchkeyMode = (enabled: boolean) => [0x9f, 0x0c, enabled ? 127 : 0];
 export const controllerHex = (data: readonly number[]) => data.map(v => v.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-export const KNOBS = ['FX A', 'Filter', 'FX B', 'EQ low', 'EQ mid', 'EQ high', 'Trim', 'Unused'] as const;
-const ranges = [[0,100],[-100,100],[0,100],[-24,12],[-24,12],[-24,12],[-12,12]];
+export const KNOBS = ['FX A', 'Filter', 'FX B', 'Unused', 'EQ low', 'EQ mid', 'EQ high', 'Trim'] as const;
+const ranges = [[0,100],[-100,100],[0,100],[0,0],[-24,12],[-24,12],[-24,12],[-12,12]];
 export type LaunchkeyEvent = {kind:'fader'|'knob'|'relative'; index:number; value:number} | {kind:'focus'; index:number} | {kind:'pad'; index:number; down:boolean} | {kind:'play'|'stop'} | {kind:'mode'; index:number; value:number};
 export function decodeLaunchkey(data: readonly number[]): LaunchkeyEvent | null {
   if (data.length !== 3 || data.some(v => !Number.isInteger(v)) || data.slice(1).some(v => v < 0 || v > 127)) return null;
@@ -187,7 +187,7 @@ export class LaunchkeyController {
     this.sent.set(key,signature);
     try{this.sending=true;this.output.send(packet);this.counts.output++;this.counts.bytes+=packet.length;if(packet[0]===0xf0)this.counts.sysex++;this.log('OUT',packet);}catch(error){void this.disconnect(`MIDI output failed: ${String(error)}. Use Connect to retry.`,false);}finally{this.sending=false;}
   }
-  private knobValues() {const s=this.engine.snapshot(),d=s.decks[this.value.focus];return this.value.focus===8?[s.masterSendA,s.masterFilter,s.masterSendB,...s.masterEq,s.masterTrim]:d?[d.sendA,d.filter,d.sendB,...d.eq,d.trim]:[];}
+  private knobValues() {const s=this.engine.snapshot(),d=s.decks[this.value.focus];return this.value.focus===8?[s.masterSendA,s.masterFilter,s.masterSendB,0,...s.masterEq,s.masterTrim]:d?[d.sendA,d.filter,d.sendB,0,...d.eq,d.trim]:[];}
   private text(target:number,field:number,text:string) {this.send(`text${target}/${field}`,[0xf0,0,0x20,0x29,2,0x14,6,target,field,...Array.from(text.normalize('NFKD').replace(/[^\x20-\x7e]/g,'?').slice(0,32),c=>c.charCodeAt(0)),0xf7]);}
   feedback() {
     if(!this.value.connected)return;this.counts.feedback++;
@@ -196,7 +196,7 @@ export class LaunchkeyController {
       const active=i<4||i===8;
       this.send(`select${i}`,[0x90,37+i,active?(this.value.focus===i?21:1):0]);
     }
-    if(this.modes.knobs===2||this.modes.knobs===1||this.modes.knobs===4)this.knobValues().forEach((value,i)=>{if(!this.touched.has(21+i)&&!this.controls.size){const [min,max]=ranges[i];this.send(`knob${i}`,[0xbf,21+i,Math.round((Math.max(min,Math.min(max,value))-min)/(max-min)*127)]);}});
+    if(this.modes.knobs===2||this.modes.knobs===1||this.modes.knobs===4)this.knobValues().forEach((value,i)=>{if(i!==3&&!this.touched.has(21+i)&&!this.controls.size){const [min,max]=ranges[i];this.send(`knob${i}`,[0xbf,21+i,Math.round((Math.max(min,Math.min(max,value))-min)/(max-min)*127)]);}});
     this.send('play-led',[0xb0,115,s.running?21:1]);this.send('stop-led',[0xb0,116,s.running?1:5]);
     const deck=s.decks[this.value.focus];
     if(this.modes.pads===2)for(let i=0;i<16;i++){
@@ -253,15 +253,15 @@ export class LaunchkeyController {
     const state=this.engine.snapshot(),commands=this.engine.commands,deck=state.decks[this.value.focus];
     if(event.kind==='fader'&&this.modes.faders===1){const value=event.value/127*100;if(event.index===8)commands.setMaster('master',value);else if(event.index<4&&state.decks[event.index])commands.setDeck(state.decks[event.index].id,'gain',value);return;}
     if((event.kind==='knob'&&[1,2,4].includes(this.modes.knobs))||(event.kind==='relative'&&this.modes.knobs===5)){
-      const i=event.index;if(i>=7)return;const [min,max]=ranges[i];
+      const i=event.index;if(i===3||i>=8)return;const [min,max]=ranges[i];
       // Device position feedback is not a new user change (including loopback ports).
       if(event.kind==='knob'&&this.sent.get(`knob${i}`)===controllerHex([0xbf,21+i,event.value]))return;
       // The hardware already holds this absolute position. Cache it before the
       // synchronous engine publish so feedback cannot reset a moving encoder.
       if(event.kind==='knob')this.sent.set(`knob${i}`,controllerHex([0xbf,21+i,event.value]));
       const value=event.kind==='relative'?Math.max(min,Math.min(max,(this.knobValues()[i]??min)+event.value*(max-min)/127)):min+event.value/127*(max-min);
-      if(this.value.focus===8){if(i>=3&&i<=5)commands.setMasterEq(i-3,value);else commands.setMaster(i===0?'masterSendA':i===1?'masterFilter':i===2?'masterSendB':'masterTrim',value);}
-      else if(deck){if(i>=3&&i<=5)commands.setDeckEq(deck.id,i-3,value);else commands.setDeck(deck.id,i===0?'sendA':i===1?'filter':i===2?'sendB':'trim',value);}
+      if(this.value.focus===8){if(i>=4&&i<=6)commands.setMasterEq(i-4,value);else commands.setMaster(i===0?'masterSendA':i===1?'masterFilter':i===2?'masterSendB':'masterTrim',value);}
+      else if(deck){if(i>=4&&i<=6)commands.setDeckEq(deck.id,i-4,value);else commands.setDeck(deck.id,i===0?'sendA':i===1?'filter':i===2?'sendB':'trim',value);}
     }
   }
 }

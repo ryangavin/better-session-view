@@ -57,8 +57,9 @@ Closing the debug panel does not disable auto-connect. The setting survives app 
 | Faders 5–8 | Unused |
 | Fader 9 | Master gain |
 | Fader buttons 1–4 / 9 | Controller focus A–D / Master; matching LED |
-| Knobs 1–7 | Focused deck/master FX A, filter, FX B, low/mid/high EQ, trim |
-| Knob 8 | Unused |
+| Knobs 1–3 | Focused deck/master FX A, Filter, FX B |
+| Knob 4 | Unused |
+| Knobs 5–8 | Focused deck/master Low, Mid, High, Trim |
 | Top pads 1–4 | Focused deck quick loop, half, double, loop on/off |
 | Top pads 5–8 | Unused |
 | Bottom pads 1–5 | Focused deck Play/Pause (green), held Cue (orange), Sync, beat back, beat forward |
@@ -102,7 +103,10 @@ so returning to DAW mode restores colors. This verifies generated packets agains
 MK4 protocol; actual physical colors still require the hardware trial. Knobs 1–3
 mirror the UI as FX A, Filter, FX B in input, outgoing positions and screen labels.
 Filter retains its bipolar −100…100 range in both absolute and relative modes; FX
-sends remain 0…100. EQ low/mid/high and Trim remain knobs 4–7.
+sends remain 0…100. Knob 4 is unused and receives no position feedback. Knobs 5–8 are Low, Mid, High,
+Trim: reading from the right edge gives Trim, High, Mid, Low, matching the app.
+Both absolute and relative modes use the same positions; EQ remains −24…12 dB
+and Trim −12…12 dB.
 
 Debug rate counters sample once a second: input including ignored clock, applied
 continuous controls, engine publishes, feedback passes, output packets/bytes/SysEx,

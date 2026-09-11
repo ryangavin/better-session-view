@@ -189,3 +189,35 @@ it('matches FX A, Filter, FX B for deck/master input, feedback and display label
   for(const [i,label] of ['FX A','Filter','FX B'].entries())expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,6,21+i,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7]);
   f.controller.dispose();vi.useRealTimers();
 });
+
+
+it('places Low, Mid, High, Trim on knobs 5–8 and leaves knob 4 inert for both focuses',async()=>{
+  vi.useFakeTimers();const f=setup(true);await f.connect();
+  for(const focus of [0,8]){
+    f.controller.focus(focus);await vi.advanceTimersByTimeAsync(50);
+    for(let i=4;i<8;i++){
+      f.receive([0xbf,21+i,127]);await vi.advanceTimersByTimeAsync(20);
+      if(i<7){
+        if(focus===8)expect(f.commands.setMasterEq).toHaveBeenLastCalledWith(i-4,12);
+        else expect(f.commands.setDeckEq).toHaveBeenLastCalledWith('deck-a',i-4,12);
+      }else if(focus===8)expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12);
+      else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','trim',12);
+    }
+    for(const command of Object.values(f.commands))command.mockClear();
+    f.receive([0xbf,24,127]);await vi.advanceTimersByTimeAsync(20);
+    f.receive([0xb6,30,5]);f.receive([0xbf,88,65]);await vi.advanceTimersByTimeAsync(20);
+    expect(Object.values(f.commands).every(fn=>fn.mock.calls.length===0)).toBe(true);
+    // The final encoder retains its trim range in relative mode.
+    f.receive([0xbf,92,63]);await vi.advanceTimersByTimeAsync(20);
+    if(focus===8)expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12-24/127);
+    else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','trim',12-24/127);
+    const state=f.engine.snapshot();
+    if(focus===8){state.masterEq=[-24,-12,0];state.masterTrim=0;}
+    else{state.decks[0].eq=[-24,-12,0];state.decks[0].trim=0;}
+    vi.mocked(f.output.send).mockClear();f.receive([0xb6,30,2]);await vi.advanceTimersByTimeAsync(50);
+    for(const [cc,value] of [[25,0],[26,42],[27,85],[28,64]])expect(f.output.send).toHaveBeenCalledWith([0xbf,cc,value]);
+    expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const bytes=Array.from(p);return bytes[0]===0xbf&&bytes[1]===24;})).toBe(false);
+    for(const [i,label] of ['Unused','EQ low','EQ mid','EQ high','Trim'].entries())expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,6,24+i,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7]);
+  }
+  f.controller.dispose();vi.useRealTimers();
+});
