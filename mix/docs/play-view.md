@@ -511,5 +511,6 @@ not machine-dependent time thresholds. A second measurement renders the actual
 four-deck controls: 60 updates took 418–460ms, React p95 7–18ms in these runs. That
 remaining widget work is not claimed to be free. These are happy-dom development
 measurements with no audio/MIDI or browser painting, not live FPS or audio latency.
-A physical fader trial remains necessary; do not declare the original lag resolved
-from the rate limiter or render-isolation test alone.
+The subsequent physical fader trial was accepted by the user as very smooth,
+comparable to their DJ controller. This confirms the reported responsiveness issue
+subjectively on the actual setup; it does not establish a measured FPS or latency.

@@ -57,7 +57,7 @@ Closing the debug panel does not disable auto-connect. The setting survives app 
 | Faders 5–8 | Unused |
 | Fader 9 | Master gain |
 | Fader buttons 1–4 / 9 | Controller focus A–D / Master; matching LED |
-| Knobs 1–7 | Focused deck/master Send A, Send B, filter, low/mid/high EQ, trim |
+| Knobs 1–7 | Focused deck/master FX A, filter, FX B, low/mid/high EQ, trim |
 | Knob 8 | Unused |
 | Top pads 1–4 | Focused deck quick loop, half, double, loop on/off |
 | Top pads 5–8 | Unused |
@@ -99,14 +99,17 @@ engine transport behavior was changed. Play/Cue use stationary channel-1 palette
 colors 22/10 at rest and 21/9 while active, rather than gray 1 while paused. Empty
 or Master focus pads are off. Pad-mode reports clear the sent cache before feedback,
 so returning to DAW mode restores colors. This verifies generated packets against the
-MK4 protocol; actual physical colors still require the hardware trial.
+MK4 protocol; actual physical colors still require the hardware trial. Knobs 1–3
+mirror the UI as FX A, Filter, FX B in input, outgoing positions and screen labels.
+Filter retains its bipolar −100…100 range in both absolute and relative modes; FX
+sends remain 0…100. EQ low/mid/high and Trim remain knobs 4–7.
 
 Debug rate counters sample once a second: input including ignored clock, applied
 continuous controls, engine publishes, feedback passes, output packets/bytes/SysEx,
 local subscriber notifications, maximum event age and bounded pending controls. These
 are diagnostics, not a claim of measured end-to-end audio latency. The sustained-burst
 tests verify the 60Hz bound, final values, summed turns, immediate discrete edges and
-latest-only outgoing feedback. The live rate sample remains part of the hardware trial. The user reported continued
+latest-only outgoing feedback. The rate counters remain available for hardware diagnostics. The user reported continued
 slow drawing despite the limiter. A controlled React measurement then found the full
 App subscription rerendering every library row on every fader update. Mixer state now
 subscribes in PlayView and Header, leaving the engine owner and library untouched.
@@ -123,8 +126,10 @@ button labels in the actual Electron window. The user subsequently confirmed har
 control works. Read-only CoreMIDI capture recorded native BF15 absolute encoder values
 and 90 60/61 pad presses plus A0 aftertouch. A turning sequence advanced in steps of four
 but repeatedly jumped backwards, consistent with host position echoes resetting the
-encoder. The regression test prevents that echo; subjective response after the fix,
-other controls, LED and display behavior still need confirmation. The bounded message monitor records raw incoming/outgoing
+encoder. The regression test prevents that echo. After the App subscription isolation, the user confirmed very smooth fader/UI
+response on the actual keyboard, comparable to their DJ controller. This is subjective
+hardware acceptance, not measured FPS or end-to-end latency. Other controls, LED and
+display behavior still need confirmation. The bounded message monitor records raw incoming/outgoing
 bytes for that trial. A port opening successfully is not proof of every control mapping.
 
 The initial MCU exploration is not active in this adapter. Other Launchkey generations,

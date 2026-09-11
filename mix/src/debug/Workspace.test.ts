@@ -9,6 +9,7 @@ vi.mock('./pitch/PitchLab.tsx', () => ({PitchLab:() => 'Bass MIDI lab fixture'})
 vi.mock('./Analysis.tsx', () => ({Analysis:() => 'Beat analysis fixture'}));
 vi.mock('./alignment/AlignmentLab.tsx', () => ({AlignmentLab:() => null}));
 vi.mock('./waveforms/WaveformLab.tsx', () => ({WaveformLab:() => null}));
+vi.mock('./waveform-v2/WaveformV2.tsx', () => ({WaveformV2:() => 'Waveform V2 fixture'}));
 vi.mock('./render/RenderLab.tsx', () => ({RenderLab:() => null}));
 afterEach(() => {cleanup(); localStorage.clear();});
 it('routes to Key detection while retaining Bass pitch and existing experiments', () => {
@@ -20,4 +21,10 @@ it('routes to Key detection while retaining Bass pitch and existing experiments'
   expect(screen.queryByText('Key panel fixture')).toBeNull();
   fireEvent.click(screen.getByRole('tab',{name:'Beat analysis'}));
   expect(screen.getByText('Beat analysis fixture')).toBeTruthy();
+});
+
+it('opens Waveform V2 separately while retaining the original rendering tab',()=>{
+  render(createElement(DebugWorkspace,{mix:{} as Mix,tab:'waveform-v2'}));
+  expect(screen.getByText('Waveform V2 fixture')).toBeTruthy();
+  expect(screen.getByRole('tab',{name:'Waveform rendering'})).toBeTruthy();
 });

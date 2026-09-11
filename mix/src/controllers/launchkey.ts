@@ -4,8 +4,8 @@ import type { MixerEngine } from '../play/engine.ts';
 // Novation Launchkey MK4 Programmer's Reference, DAW interface (not MCU/HUI).
 export const launchkeyMode = (enabled: boolean) => [0x9f, 0x0c, enabled ? 127 : 0];
 export const controllerHex = (data: readonly number[]) => data.map(v => v.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-export const KNOBS = ['Send A', 'Send B', 'Filter', 'EQ low', 'EQ mid', 'EQ high', 'Trim', 'Unused'] as const;
-const ranges = [[0,100],[0,100],[-100,100],[-24,12],[-24,12],[-24,12],[-12,12]];
+export const KNOBS = ['FX A', 'Filter', 'FX B', 'EQ low', 'EQ mid', 'EQ high', 'Trim', 'Unused'] as const;
+const ranges = [[0,100],[-100,100],[0,100],[-24,12],[-24,12],[-24,12],[-12,12]];
 export type LaunchkeyEvent = {kind:'fader'|'knob'|'relative'; index:number; value:number} | {kind:'focus'; index:number} | {kind:'pad'; index:number; down:boolean} | {kind:'play'|'stop'} | {kind:'mode'; index:number; value:number};
 export function decodeLaunchkey(data: readonly number[]): LaunchkeyEvent | null {
   if (data.length !== 3 || data.some(v => !Number.isInteger(v)) || data.slice(1).some(v => v < 0 || v > 127)) return null;
@@ -187,7 +187,7 @@ export class LaunchkeyController {
     this.sent.set(key,signature);
     try{this.sending=true;this.output.send(packet);this.counts.output++;this.counts.bytes+=packet.length;if(packet[0]===0xf0)this.counts.sysex++;this.log('OUT',packet);}catch(error){void this.disconnect(`MIDI output failed: ${String(error)}. Use Connect to retry.`,false);}finally{this.sending=false;}
   }
-  private knobValues() {const s=this.engine.snapshot(),d=s.decks[this.value.focus];return this.value.focus===8?[s.masterSendA,s.masterSendB,s.masterFilter,...s.masterEq,s.masterTrim]:d?[d.sendA,d.sendB,d.filter,...d.eq,d.trim]:[];}
+  private knobValues() {const s=this.engine.snapshot(),d=s.decks[this.value.focus];return this.value.focus===8?[s.masterSendA,s.masterFilter,s.masterSendB,...s.masterEq,s.masterTrim]:d?[d.sendA,d.filter,d.sendB,...d.eq,d.trim]:[];}
   private text(target:number,field:number,text:string) {this.send(`text${target}/${field}`,[0xf0,0,0x20,0x29,2,0x14,6,target,field,...Array.from(text.normalize('NFKD').replace(/[^\x20-\x7e]/g,'?').slice(0,32),c=>c.charCodeAt(0)),0xf7]);}
   feedback() {
     if(!this.value.connected)return;this.counts.feedback++;
@@ -260,8 +260,8 @@ export class LaunchkeyController {
       // synchronous engine publish so feedback cannot reset a moving encoder.
       if(event.kind==='knob')this.sent.set(`knob${i}`,controllerHex([0xbf,21+i,event.value]));
       const value=event.kind==='relative'?Math.max(min,Math.min(max,(this.knobValues()[i]??min)+event.value*(max-min)/127)):min+event.value/127*(max-min);
-      if(this.value.focus===8){if(i>=3&&i<=5)commands.setMasterEq(i-3,value);else commands.setMaster(i===0?'masterSendA':i===1?'masterSendB':i===2?'masterFilter':'masterTrim',value);}
-      else if(deck){if(i>=3&&i<=5)commands.setDeckEq(deck.id,i-3,value);else commands.setDeck(deck.id,i===0?'sendA':i===1?'sendB':i===2?'filter':'trim',value);}
+      if(this.value.focus===8){if(i>=3&&i<=5)commands.setMasterEq(i-3,value);else commands.setMaster(i===0?'masterSendA':i===1?'masterFilter':i===2?'masterSendB':'masterTrim',value);}
+      else if(deck){if(i>=3&&i<=5)commands.setDeckEq(deck.id,i-3,value);else commands.setDeck(deck.id,i===0?'sendA':i===1?'filter':i===2?'sendB':'trim',value);}
     }
   }
 }

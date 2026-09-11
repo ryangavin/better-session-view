@@ -44,7 +44,7 @@ it('routes gain, master focus, FX knobs and loaded-deck loop pads to application
   f.receive([0x90,38,127]);f.receive([0xbf,21,127]);await vi.waitFor(()=>expect(f.commands.setDeck).toHaveBeenCalledWith('deck-b','sendA',100));expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-b','sendA',100);
   f.receive([0x90,115,127]);expect(f.commands.beatJump).toHaveBeenLastCalledWith('deck-b',-1);
   f.receive([0x90,96,127]);expect(f.commands.quickLoop).toHaveBeenCalledWith('deck-b');
-  f.receive([0x90,45,127]);f.receive([0xbf,22,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalledWith('masterSendB',100));expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterSendB',100);
+  f.receive([0x90,45,127]);f.receive([0xbf,23,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalledWith('masterSendB',100));expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterSendB',100);
   f.receive([0x90,115,127]);expect(f.commands.beatJump).toHaveBeenCalledTimes(1);
   f.receive([0xbf,115,127]);expect(f.commands.setRunning).toHaveBeenCalledWith(true);
   f.receive([0xbf,116,127]);expect(f.commands.stopAll).toHaveBeenCalledOnce();f.controller.dispose();
@@ -160,4 +160,32 @@ it('coalesces a burst of app-state feedback to the newest position instead of se
   expect(f.output.send).not.toHaveBeenCalled();await new Promise(r=>setTimeout(r,60));
   const positions=vi.mocked(f.output.send).mock.calls.map(([p])=>Array.from(p)).filter(p=>p[0]===0xbf&&p[1]===21);
   expect(positions).toEqual([[0xbf,21,Math.round((999%101)/100*127)]]);f.controller.dispose();
+});
+
+
+it('matches FX A, Filter, FX B for deck/master input, feedback and display labels',async()=>{
+  vi.useFakeTimers();const f=setup(true);await f.connect();
+  for(const focus of [0,8]) {
+    f.controller.focus(focus);
+    const keys=focus===8?['masterSendA','masterFilter','masterSendB']:['sendA','filter','sendB'];
+    for(let i=0;i<3;i++){
+      f.receive([0xbf,21+i,127]);await vi.advanceTimersByTimeAsync(20);
+      if(focus===8)expect(f.commands.setMaster).toHaveBeenLastCalledWith(keys[i],100);
+      else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a',keys[i],100);
+      f.receive([0xbf,21+i,0]);await vi.advanceTimersByTimeAsync(20);
+      if(focus===8)expect(f.commands.setMaster).toHaveBeenLastCalledWith(keys[i],i===1?-100:0);
+      else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a',keys[i],i===1?-100:0);
+    }
+    if(focus===8){f.commands.setMaster('masterSendA',25);f.commands.setMaster('masterFilter',0);f.commands.setMaster('masterSendB',75);}
+    else{f.commands.setDeck('deck-a','sendA',25);f.commands.setDeck('deck-a','filter',0);f.commands.setDeck('deck-a','sendB',75);}
+    vi.mocked(f.output.send).mockClear();await vi.advanceTimersByTimeAsync(50);
+    expect(f.output.send).toHaveBeenCalledWith([0xbf,21,32]);expect(f.output.send).toHaveBeenCalledWith([0xbf,22,64]);expect(f.output.send).toHaveBeenCalledWith([0xbf,23,95]);
+    // Relative filter has a bipolar range and reads its own current center.
+    f.receive([0xb6,30,5]);f.receive([0xbf,86,65]);await vi.advanceTimersByTimeAsync(20);
+    if(focus===8)expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterFilter',200/127);
+    else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','filter',200/127);
+    f.receive([0xb6,30,2]);await vi.advanceTimersByTimeAsync(50);
+  }
+  for(const [i,label] of ['FX A','Filter','FX B'].entries())expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,6,21+i,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7]);
+  f.controller.dispose();vi.useRealTimers();
 });

@@ -223,3 +223,6 @@ Evidence is currently specific to stem-ribbon geometry; comparison mode omits th
 but retains table access. The Notes toggle keeps analysis resolution, color semantics
 and expressive-versus-measured limitations available without separating the waveform
 from its controls. No measurement or renderer algorithm changed in this layout pass.
+
+The separate [Waveform V2 tab](waveform-v2.md) compares three-band and spectral RGB topology
+at deck height, with the prior peak/RMS tuning kept under a legacy disclosure. It does not change this browser or its presets.
