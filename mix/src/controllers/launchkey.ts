@@ -7,7 +7,7 @@ import type { MixerEngine } from '../play/engine.ts';
 export const launchkeyMode = (enabled: boolean) => [0x9f, 0x0c, enabled ? 127 : 0];
 export const controllerHex = (data: readonly number[]) => data.map(v => v.toString(16).padStart(2, '0').toUpperCase()).join(' ');
 export const KNOBS = ['FX A', 'Filter', 'FX B', 'EQ low', 'EQ mid', 'EQ high', 'Trim', 'Master Trim'] as const;
-const ranges = [[0,100],[-100,100],[0,100],[-24,12],[-24,12],[-24,12],[-12,12],[-12,12]];
+const ranges = [[0,100],[-100,100],[0,100],[-24,12],[-24,12],[-24,12],[-24,12],[-24,12]];
 export type LaunchkeyEvent = {kind:'fader'|'knob'|'relative'; index:number; value:number} | {kind:'focus'; index:number} | {kind:'pad'; index:number; down:boolean} | {kind:'play'|'stop'} | {kind:'mode'; index:number; value:number};
 export function decodeLaunchkey(data: readonly number[]): LaunchkeyEvent | null {
   if (data.length !== 3 || data.some(v => !Number.isInteger(v)) || data.slice(1).some(v => v < 0 || v > 127)) return null;

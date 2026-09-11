@@ -4,7 +4,7 @@ import { MixerEngine } from './engine.ts';
 import { evenBeats } from '../warp.ts';
 import type { Track } from '../openflow.ts';
 import type { DeckAsset } from './decks.ts';
-import { levelGain, routeGain } from './graph.ts';
+import { MixerChannel, levelGain, routeGain } from './graph.ts';
 const stretching = vi.hoisted(() => ({ prepare: null as Promise<void> | null }));
 vi.mock('../stretch.ts', () => ({
   channelsOf: async () => { await stretching.prepare; return [new Float32Array(8),new Float32Array(8)]; },
@@ -788,4 +788,24 @@ it('bypasses pitch processing for a follower already at the leader tempo',async(
   const {engine,load}=setup();await load();await load('deck-b');await engine.play('deck-a',true);await engine.sync('deck-b',true);await engine.play('deck-b',true);
   expect(engine.preservePitch).toBe(true);
   expect(engine.playbackDiagnostics()['deck-b'].drums).toMatchObject({path:'native',rate:1});
+});
+
+it('clamps deck and Master Trim to -24..12 dB, preserves zero and rejects invalid input',()=>{
+  const {engine}=setup();
+  for(const [input,value] of [[-99,-24],[-24,-24],[12,12],[99,12],[0,0]]){
+    engine.commands.setDeck('deck-a','trim',input);engine.commands.setMaster('masterTrim',input);
+    expect(engine.snapshot().decks[0].trim).toBe(value);expect(engine.snapshot().masterTrim).toBe(value);
+  }
+  for(const input of [NaN,Infinity,-Infinity]){
+    engine.commands.setDeck('deck-a','trim',input);engine.commands.setMaster('masterTrim',input);
+    expect(engine.snapshot().decks[0].trim).toBe(0);expect(engine.snapshot().masterTrim).toBe(0);
+  }
+});
+
+it('applies -24 dB Trim to the audio gain node without the former -12 dB floor',()=>{
+  const channel=new MixerChannel(new Context() as unknown as AudioContext);
+  for(const [trim,amplitude] of [[-24,0.063095734448],[-12,0.251188643151],[0,1],[12,3.981071705535]]){
+    channel.apply(trim,[0,0,0],0,1);expect(channel.input.gain.value).toBeCloseTo(amplitude,9);
+  }
+  channel.dispose();
 });

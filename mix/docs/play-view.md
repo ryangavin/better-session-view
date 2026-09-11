@@ -513,3 +513,7 @@ measurements with no audio/MIDI or browser painting, not live FPS or audio laten
 The subsequent physical fader trial was accepted by the user as very smooth,
 comparable to their DJ controller. This confirms the reported responsiveness issue
 subjectively on the actual setup; it does not establish a measured FPS or latency.
+
+Deck and Master Trim both span −24…+12 dB, matching EQ. Their default/reset is 0 dB.
+The engine clamps Trim commands to that range and ignores non-finite inputs; audio
+continues to use 10^(dB/20), so −24 dB is approximately 0.0631 amplitude.

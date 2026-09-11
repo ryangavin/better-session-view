@@ -30,7 +30,7 @@ export function initialMixer(): MixerState {
 export const params: MixerParams = {
   stemLevel: {kind:'float', min:0, max:100, defaultValue:100, unit:'percent'},
   level: {kind:'float', min:0, max:100, defaultValue:100, unit:'percent'},
-  trim: {kind:'float', min:-12, max:12, defaultValue:0, unit:'decibel'},
+  trim: {kind:'float', min:-24, max:12, defaultValue:0, unit:'decibel'},
   send: {kind:'float', min:0, max:100, defaultValue:0, unit:'percent'},
   eq: {kind:'float', min:-24, max:12, defaultValue:0, unit:'decibel'},
   filter: {kind:'float', min:-100, max:100, defaultValue:0, unit:'int'},

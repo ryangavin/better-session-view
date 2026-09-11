@@ -207,13 +207,13 @@ it('orders Low/Mid/High/deck Trim on 4–7 and always addresses Master Trim on k
     f.receive([0xbf,28,127]);await vi.advanceTimersByTimeAsync(20);
     expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12);
     f.receive([0xb6,30,5]);f.receive([0xbf,92,63]);await vi.advanceTimersByTimeAsync(20);
-    expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12-24/127);
+    expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12-36/127);
     const state=f.engine.snapshot();state.masterTrim=0;
     if(focus===8)state.masterEq=[-24,-12,0];else{state.decks[0].eq=[-24,-12,0];state.decks[0].trim=-12;}
     vi.mocked(f.output.send).mockClear();f.receive([0xb6,30,2]);await vi.advanceTimersByTimeAsync(50);
-    for(const [cc,value] of [[24,85],[25,42],[26,0],[28,64]])expect(f.output.send).toHaveBeenCalledWith([0xbf,cc,value]);
+    for(const [cc,value] of [[24,85],[25,42],[26,0],[28,85]])expect(f.output.send).toHaveBeenCalledWith([0xbf,cc,value]);
     if(focus===8)expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const bytes=Array.from(p);return bytes[0]===0xbf&&bytes[1]===27;})).toBe(false);
-    else expect(f.output.send).toHaveBeenCalledWith([0xbf,27,0]);
+    else expect(f.output.send).toHaveBeenCalledWith([0xbf,27,42]);
     for(const [i,label] of ['EQ low','EQ mid','EQ high',focus===8?'Unused':'Trim','Master Trim'].entries())expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,6,24+i,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7]);
   }
   f.controller.dispose();vi.useRealTimers();
@@ -412,5 +412,18 @@ it('labels all faders truthfully with movement-triggered displays and retains kn
   for(let i=0;i<100;i++)f.receive([0xb0,5,i%127]);
   await vi.advanceTimersByTimeAsync(50);
   expect(vi.mocked(f.output.send).mock.calls.some(([p])=>Array.from(p)[0]===0xf0)).toBe(false);
+  f.controller.dispose();vi.useRealTimers();
+});
+
+it('scales deck and Master Trim across -24 to +12 with zero capture at two-thirds travel',async()=>{
+  vi.useFakeTimers();const f=setup();await f.connect();
+  for(const [cc,id,key] of [[27,'deck-a','trim'],[28,'master','masterTrim']] as const){
+    const command=id==='master'?f.commands.setMaster:f.commands.setDeck;
+    const expected=(v:number)=>id==='master'?[key,v]:[id,key,v];
+    f.receive([0xb0,cc,0]);await vi.advanceTimersByTimeAsync(20);expect(command).toHaveBeenLastCalledWith(...expected(-24));
+    f.receive([0xb0,cc,127]);await vi.advanceTimersByTimeAsync(20);expect(command).toHaveBeenLastCalledWith(...expected(12));
+    f.receive([0xb0,cc,85]);await vi.advanceTimersByTimeAsync(20);expect(command).toHaveBeenLastCalledWith(...expected(0));
+    f.receive([0xb0,cc,64]);await vi.advanceTimersByTimeAsync(20);expect(command).toHaveBeenLastCalledWith(...expected(-24+64*36/127));
+  }
   f.controller.dispose();vi.useRealTimers();
 });

@@ -6,7 +6,7 @@ import { beatAt, sampleOf, tempoAt } from '../warp.ts';
 import type { Span } from '../schedule.ts';
 import { LinkAudioSender, LINK_AUDIO_OFF } from '../linkAudio.ts';
 import { linkBeatAt, type LinkTimeline } from '../linkTiming.ts';
-import { DECK_IDS, emptyDeck, initialMixer, loadedDeck, loadDeckAsset, type DeckAudio } from './decks.ts';
+import { DECK_IDS, params, emptyDeck, initialMixer, loadedDeck, loadDeckAsset, type DeckAudio } from './decks.ts';
 import { DeckVoice } from './voice.ts';
 import { MixerChannel, MixerEffect, levelGain, routeGain, smooth } from './graph.ts';
 import { floorBeat, snapBeat, launchWait, LOOP_LENGTHS } from './timing.ts';
@@ -903,9 +903,9 @@ export class MixerEngine {
     clearEffectTails:()=>{if(this.state.effectsEnabled!==false)return;this.effects.forEach(e=>e.dispose());this.retiredEffects.forEach(e=>e.effect.dispose());this.effects=[];this.retiredEffects=[];this.apply();},
     setEffect:(slot,id)=>{this.publish({...this.state,[slot==='A'?'fxA':'fxB']:id});this.apply();},
     setEffectParam:(slot,id,param,value)=>{this.publish({...this.state,effectValues:{...this.state.effectValues,[slot]:{...this.state.effectValues?.[slot],[id]:{...this.state.effectValues?.[slot]?.[id],[param]:value}}}});this.apply();},
-    setMaster:(control,value)=>{if(control==='bpm')this.run(this.adjustTempo(value));else {this.publish({...this.state,[control]:value});this.apply();}},
+    setMaster:(control,value)=>{if(control==='masterTrim'){if(!Number.isFinite(value))return;value=Math.max(params.trim.min,Math.min(params.trim.max,value));}if(control==='bpm')this.run(this.adjustTempo(value));else {this.publish({...this.state,[control]:value});this.apply();}},
     setMasterEq:(band,value)=>{this.publish({...this.state,masterEq:this.state.masterEq.map((v,i)=>i===band?value:v)});this.apply();},
-    setDeck:(id,control,value)=>{if(control==='full'){this.source(id,!!value);return;}if(control==='cue'&&!this.phonesAvailable&&!this.linkAudio.enabled&&value){this.error('Cue needs a second output pair chosen in Settings, or the Phones stream in Link Audio.',id);return;}this.patchDeck(id,{[control]:value});this.apply();},
+    setDeck:(id,control,value)=>{if(control==='trim'){if(!Number.isFinite(value))return;value=Math.max(params.trim.min,Math.min(params.trim.max,Number(value)));}if(control==='full'){this.source(id,!!value);return;}if(control==='cue'&&!this.phonesAvailable&&!this.linkAudio.enabled&&value){this.error('Cue needs a second output pair chosen in Settings, or the Phones stream in Link Audio.',id);return;}this.patchDeck(id,{[control]:value});this.apply();},
     setDeckEq:(id,band,value)=>{this.patchDeck(id,{eq:this.model(id).eq.map((v,i)=>i===band?value:v)});this.apply();},
     setStemLevel:(id,stem,value)=>{this.patchDeck(id,{stems:this.model(id).stems.map(s=>s.id===stem?{...s,level:value}:s)});this.apply();},
     launch:(id,section,stem)=>this.run(this.launch(id,section,stem),id),

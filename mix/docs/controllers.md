@@ -152,7 +152,8 @@ sends remain 0…100. Knobs 4–6 are Low, Mid, High; engine EQ arrays are store
 High/Mid/Low order, so both input and feedback reverse those three indexes. Knob 7
 addresses deck Trim and is ignored (with no position feedback) in Master focus.
 Knob 8 always addresses global Master Trim and its feedback always reads that value.
-EQ remains −24…12 dB and both trims −12…12 dB.
+EQ and both deck/Master Trim use −24…+12 dB. MIDI knobs7/8 map that full range;
+0 dB is around value85 (two-thirds travel), and the neutral detent remains at 0 dB.
 
 ### Neutral detents
 
@@ -193,7 +194,7 @@ master level has not been reintroduced in the UI and is not controller-accessibl
 the engine's existing `master` gain remains internal. Previous controller use may
 have attenuated a currently running engine. This change never raises that gain
 unexpectedly. A newly created engine defaults it to 100; any live recovery must be
-coordinated with the user while stopped/muted. Master Trim is the bounded ±12 dB
+coordinated with the user while stopped/muted. Master Trim is the bounded −24…+12 dB
 control on knob 8, not a replacement silence-to-unity master fader.
 
 
