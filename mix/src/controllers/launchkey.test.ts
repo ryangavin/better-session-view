@@ -75,3 +75,19 @@ it('cancels an outstanding port open without activating DAW mode',async()=>{
   await f.controller.disconnect();resolve();await connecting;
   expect(f.output.send).not.toHaveBeenCalledWith(launchkeyMode(true));expect(f.controller.snapshot().connected).toBe(false);f.controller.dispose();
 });
+it('accepts the hardware accelerated absolute stream without echoing old positions, but still follows mouse edits',async()=>{
+  const f=setup();await f.connect();vi.mocked(f.output.send).mockClear();
+  // Real capture contains +4 steps followed by backward resets when host echoed CC15.
+  for(const value of [0x64,0x68,0x6c,0x70,0x74])f.receive([0xbf,0x15,value]);
+  expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','sendA',0x74/127*100);
+  expect(vi.mocked(f.output.send).mock.calls.filter(([p])=>Array.from(p)[0]===0xbf)).toHaveLength(0);
+  f.commands.setDeck('deck-a','sendA',30);expect(f.output.send).toHaveBeenCalledWith([0xbf,0x15,38]);
+  expect(f.controller.snapshot().status).toBe('Receiving Launchkey DAW input.');f.controller.dispose();
+});
+it('batches packet log notifications without delaying knob commands',async()=>{
+  vi.useFakeTimers();const f=setup();await f.connect();f.controller.clearLog();
+  f.receive([0xbf,0x15,50]);expect(f.commands.setDeck).toHaveBeenCalledWith('deck-a','sendA',50/127*100);
+  expect(f.controller.snapshot().messages.some(m=>m.startsWith('IN'))).toBe(false);
+  vi.advanceTimersByTime(50);expect(f.controller.snapshot().messages).toContain('IN BF 15 32');
+  f.controller.dispose();vi.useRealTimers();
+});

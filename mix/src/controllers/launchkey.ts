@@ -43,6 +43,8 @@ export class LaunchkeyController {
   private enabled = true;
   private sent = new Map<string,string>();
   private touched = new Set<number>();
+  private logTimer: ReturnType<typeof setTimeout> | undefined;
+  private pendingMessages: string[] = [];
   private modes = {pads:2,knobs:2,faders:1};
   snapshot = () => this.value;
   subscribe = (fn: () => void) => {this.listeners.add(fn); return () => {this.listeners.delete(fn);};};
@@ -52,7 +54,15 @@ export class LaunchkeyController {
     this.value={...this.value,...patch};this.listeners.forEach(fn=>fn());
   }
   private diagnostic(text:string) {this.update({messages:[`INFO ${text}`,...this.value.messages].slice(0,80)});}
-  private log(direction:string, data: readonly number[]) {this.update({messages:[`${direction} ${controllerHex(data)}`,...this.value.messages].slice(0,80)});}
+  private log(direction:string, data: readonly number[]) {
+    this.pendingMessages.unshift(`${direction} ${controllerHex(data)}`);
+    this.pendingMessages.length=Math.min(80,this.pendingMessages.length);
+    if(this.logTimer===undefined)this.logTimer=setTimeout(()=>this.flushLog(),50);
+  }
+  private flushLog() {
+    if(this.logTimer!==undefined)clearTimeout(this.logTimer);this.logTimer=undefined;
+    if(this.pendingMessages.length){const messages=[...this.pendingMessages,...this.value.messages].slice(0,80);this.pendingMessages=[];this.update({messages});}
+  }
   setEnabled(enabled:boolean) {this.enabled=enabled;if(!enabled)void this.disconnect('Disconnected: switch to Play before connecting.');}
   async scan(sysex:boolean) {
     const epoch=++this.epoch;
@@ -93,7 +103,7 @@ export class LaunchkeyController {
       this.diagnostic('Both MIDI ports opened successfully.');
       this.input=input;this.output=output;this.sent.clear();this.modes={pads:2,knobs:2,faders:1};
       input.onmidimessage=event=>{if(event.data)this.receive(Array.from(event.data));};
-      this.update({connected:true,pending:false,status:'Connected: Launchkey native DAW mode. Playback changes only when you press Play.'});
+      this.update({connected:true,pending:false,status:'MIDI ports open; DAW mode requested. Waiting for Launchkey input.'});
       this.send('mode',launchkeyMode(true));
       this.send('pads-mode',[0xb6,29,2]);this.send('knobs-mode',[0xb6,30,2]);this.send('faders-mode',[0xb6,31,1]);
       if(this.value.sysex){this.send('display-config',[0xf0,0,0x20,0x29,2,0x14,4,32,1,0xf7]);}
@@ -112,8 +122,8 @@ export class LaunchkeyController {
     if(input||output)this.diagnostic('Selected pair released.');
   }
   async disconnect(status='Disconnected; Launchkey returned to standalone mode.') {++this.epoch;this.update({pending:false,status});await this.closePorts();}
-  dispose() {if(this.access)this.access.onstatechange=null;void this.disconnect();this.listeners.clear();}
-  clearLog=()=>this.update({messages:[]});
+  dispose() {if(this.access)this.access.onstatechange=null;void this.disconnect();this.flushLog();this.listeners.clear();}
+  clearLog=()=>{if(this.logTimer!==undefined)clearTimeout(this.logTimer);this.logTimer=undefined;this.pendingMessages=[];this.update({messages:[]});};
   focus=(index:number)=>{if(![0,1,2,3,8].includes(index))return;this.update({focus:index});this.sent.clear();this.feedback();};
   private send(key:string,packet:number[]) {
     if(!this.output||!this.value.connected)return;
@@ -141,6 +151,7 @@ export class LaunchkeyController {
     if(data.length===3&&data[0]===0xbe){if(data[2]===127)this.touched.add(data[1]);else{this.touched.delete(data[1]);this.sent.delete(`knob${data[1]-21}`);this.feedback();}return;}
     if([...this.sent.values()].includes(controllerHex(data)))return;
     const event=decodeLaunchkey(data);if(!event)return;
+    if(this.value.status.includes('Waiting for Launchkey input'))this.update({status:'Receiving Launchkey DAW input.'});
     if(event.kind==='mode'){if(event.index===29)this.modes.pads=event.value;if(event.index===30)this.modes.knobs=event.value;if(event.index===31)this.modes.faders=event.value;this.sent.clear();this.feedback();return;}
     const state=this.engine.snapshot(),commands=this.engine.commands,deck=state.decks[this.value.focus];
     if(event.kind==='focus'){this.focus(event.index);return;}
@@ -151,6 +162,9 @@ export class LaunchkeyController {
       const i=event.index;if(i>=7)return;const [min,max]=ranges[i];
       // Device position feedback is not a new user change (including loopback ports).
       if(event.kind==='knob'&&this.sent.get(`knob${i}`)===controllerHex(data))return;
+      // The hardware already holds this absolute position. Cache it before the
+      // synchronous engine publish so feedback cannot reset a moving encoder.
+      if(event.kind==='knob')this.sent.set(`knob${i}`,controllerHex(data));
       const value=event.kind==='relative'?Math.max(min,Math.min(max,(this.knobValues()[i]??min)+event.value*(max-min)/127)):min+event.value/127*(max-min);
       if(this.value.focus===8){if(i>=3&&i<=5)commands.setMasterEq(i-3,value);else commands.setMaster(i===0?'masterSendA':i===1?'masterSendB':i===2?'masterFilter':'masterTrim',value);}
       else if(deck){if(i>=3&&i<=5)commands.setDeckEq(deck.id,i-3,value);else commands.setDeck(deck.id,i===0?'sendA':i===1?'sendB':i===2?'filter':'trim',value);}

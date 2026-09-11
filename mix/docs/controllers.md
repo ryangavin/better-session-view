@@ -23,7 +23,9 @@ Connect opens that pair and sends the documented native DAW enable (`9F 0C 7F`),
 selects DAW pads, Plugin encoders and Volume faders. This is **Novation's native MK4
 protocol, not MCU/HUI**. Disconnect sends `9F 0C 00`, detaches input, releases the state
 subscription and closes both ports. An unplug requires an explicit reconnect; no
-reconnection starts playback. Startup/reconnect feedback comes from the current mixer.
+reconnection starts playback. Startup/reconnect feedback comes from the current mixer. Status distinguishes opened
+ports and a mode request from actual received DAW input; sending a packet is not a mode
+acknowledgement.
 Avoid another DAW simultaneously controlling the same DAW pair.
 
 ## Mapping
@@ -51,7 +53,10 @@ sent. Plugin/Mixer/Sends knobs use absolute positions, initialized from app stat
 Transport encoder mode uses the native relative pivot of 64 (65 means +1, 63 means −1),
 not MCU signed magnitude. Mode reports gate each area; Custom modes are left alone.
 Knob values reflect app changes back to the hardware, except while a reported touch is
-held; release refreshes the position. LEDs report focus, running state and loop state.
+held; release refreshes the position. An incoming absolute position is cached before
+the engine publishes, so it is never echoed straight back into a moving encoder.
+Hardware acceleration is retained without extra scaling. The packet log renders at
+most every 50ms; input actions remain synchronous and are not debounced. LEDs report focus, running state and loop state.
 With SysEx enabled, the screen names mix[flow], focus and the seven knob assignments.
 No encoder LED rings are invented for this hardware.
 
@@ -61,8 +66,12 @@ CoreMIDI enumeration verified the MK4 61 identity and MIDI/DAW pairs. Unit tests
 packet validation, releases/unrelated messages, parameter routing, mode changes, touch
 suppression, deduplicated feedback, output loopback, unplug/reconnect and canceled opens.
 No simulator UI was built. The coordinating task visually verified the panel and its
-button labels in the actual Electron window. Hardware input/LED/display behavior remains unverified until
-physical controls are tried. The bounded message monitor records raw incoming/outgoing
+button labels in the actual Electron window. The user subsequently confirmed hardware
+control works. Read-only CoreMIDI capture recorded native BF15 absolute encoder values
+and 90 60/61 pad presses plus A0 aftertouch. A turning sequence advanced in steps of four
+but repeatedly jumped backwards, consistent with host position echoes resetting the
+encoder. The regression test prevents that echo; subjective response after the fix,
+other controls, LED and display behavior still need confirmation. The bounded message monitor records raw incoming/outgoing
 bytes for that trial. A port opening successfully is not proof of every control mapping.
 
 The initial MCU exploration is not active in this adapter. Other Launchkey generations,
