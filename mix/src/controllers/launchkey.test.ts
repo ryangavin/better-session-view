@@ -299,3 +299,23 @@ it('uses fader Control Changes, not pad notes, and reports raw selection and mod
   expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const b=Array.from(p);return b[0]===0x90&&b[1]>=37&&b[1]<=45;})).toBe(false);
   f.controller.dispose();vi.useRealTimers();
 });
+
+it('shows the selected track persistently and retriggers a brief selection display without flooding knob labels',async()=>{
+  vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks[0].track={id:'song',title:'Some Chords',artist:'Artist',bpm:120,key:'Am'};
+  const packet=(target:number,field:number,text:string)=>[0xf0,0,0x20,0x29,2,0x14,6,target,field,...Array.from(text,c=>c.charCodeAt(0)),0xf7];
+  await f.connect();expect(f.output.send).toHaveBeenCalledWith(packet(32,0,'Deck A'));expect(f.output.send).toHaveBeenCalledWith(packet(32,1,'Some Chords'));
+  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,4,33,1,0xf7]);
+  vi.mocked(f.output.send).mockClear();f.receive([0xbf,38,1]);
+  expect(f.controller.snapshot().focus).toBe(1);expect(f.controller.snapshot().selector).toContain('Deck B · Empty deck');
+  expect(f.output.send).toHaveBeenCalledWith(packet(32,0,'Deck B'));expect(f.output.send).toHaveBeenCalledWith(packet(33,1,'Empty deck'));
+  const trigger=[0xf0,0,0x20,0x29,2,0x14,4,33,127,0xf7];expect(f.output.send).toHaveBeenCalledWith(trigger);
+  vi.mocked(f.output.send).mockClear();f.receive([0xbf,38,127]);expect(f.output.send).toHaveBeenCalledExactlyOnceWith(trigger);
+  f.receive([0xbf,38,0]);expect(f.output.send).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(50);vi.mocked(f.output.send).mockClear();
+  for(let i=0;i<100;i++)f.commands.setDeck('deck-b','gain',i);await vi.advanceTimersByTimeAsync(50);
+  expect(vi.mocked(f.output.send).mock.calls.some(([p])=>Array.from(p)[0]===0xf0)).toBe(false);
+  f.engine.snapshot().decks[1].track={id:'next',title:'New track',artist:'Artist',bpm:100,key:'C'};f.emit();await vi.advanceTimersByTimeAsync(50);
+  expect(f.output.send).toHaveBeenCalledWith(packet(32,1,'New track'));
+  f.receive([0xbf,45,64]);expect(f.output.send).toHaveBeenCalledWith(packet(32,0,'Master'));expect(f.output.send).toHaveBeenCalledWith(packet(33,0,'Master'));
+  expect(f.commands.setDeckPlaying).not.toHaveBeenCalled();f.controller.dispose();vi.useRealTimers();
+});

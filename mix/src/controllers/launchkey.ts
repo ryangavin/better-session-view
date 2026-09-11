@@ -168,7 +168,7 @@ export class LaunchkeyController {
       this.update({faderMode:'Volume requested; awaiting mode report.',selector:'No fader-button presses received.',receiving:false,connected:true,pending:false,status:'MIDI ports open; DAW mode requested. Waiting for Launchkey input.'});
       this.send('mode',launchkeyMode(true));
       this.send('pads-mode',[0xb6,29,2]);this.send('knobs-mode',[0xb6,30,2]);this.send('faders-mode',[0xb6,31,1]);
-      if(this.value.sysex){this.send('display-config',[0xf0,0,0x20,0x29,2,0x14,4,32,1,0xf7]);}
+      if(this.value.sysex){this.send('display-config',[0xf0,0,0x20,0x29,2,0x14,4,32,1,0xf7]);this.send('selection-display-config',[0xf0,0,0x20,0x29,2,0x14,4,33,1,0xf7]);}
       if(!this.value.connected)return;
       this.unsubscribe=this.engine.subscribe(()=>{this.counts.publishes++;this.jog.changed();this.scheduleFeedback();});this.feedback();
       void this.connectWheel();
@@ -222,7 +222,11 @@ export class LaunchkeyController {
   async disconnect(status='Disconnected; automatic connection is off.',intentional=true) {++this.epoch;if(intentional){this.remembered={...this.remembered,enabled:false};this.save();}this.update({autoConnect:this.remembered.enabled,pending:false,status});await this.closePorts();}
   dispose() {if(this.access)this.access.onstatechange=null;void this.disconnect('Controller released.',false);this.flushLog();this.listeners.clear();}
   clearLog=()=>{if(this.logTimer!==undefined)clearTimeout(this.logTimer);this.logTimer=undefined;this.pendingMessages=[];this.update({messages:[]});};
-  focus=(index:number)=>{if(![0,1,2,3,8].includes(index)||index===this.value.focus)return;this.controls.flush();this.jog.reset();this.detents.clear();this.releaseCues();this.update({focus:index});this.sent.clear();this.scheduleFeedback();};
+  focus=(index:number)=>{
+    if(![0,1,2,3,8].includes(index))return;
+    if(index!==this.value.focus){this.controls.flush();this.jog.reset();this.detents.clear();this.releaseCues();this.update({focus:index});this.scheduleFeedback();}
+    this.selectionDisplay(true);
+  };
   private send(key:string,packet:number[]) {
     if(!this.output||!this.value.connected)return;
     const signature=controllerHex(packet);if(this.sent.get(key)===signature)return;
@@ -236,6 +240,20 @@ export class LaunchkeyController {
   };
   private knobValues() {const s=this.engine.snapshot(),d=s.decks[this.value.focus];return this.value.focus===8?[s.masterSendA,s.masterFilter,s.masterSendB,s.masterEq[2],s.masterEq[1],s.masterEq[0],0,s.masterTrim]:d?[d.sendA,d.filter,d.sendB,d.eq[2],d.eq[1],d.eq[0],d.trim,s.masterTrim]:[];}
   private text(target:number,field:number,text:string) {this.send(`text${target}/${field}`,[0xf0,0,0x20,0x29,2,0x14,6,target,field,...Array.from(text.normalize('NFKD').replace(/[^\x20-\x7e]/g,'?').slice(0,32),c=>c.charCodeAt(0)),0xf7]);}
+  private selectionText():readonly [string,string]{
+    const deck=this.engine.snapshot().decks[this.value.focus];
+    return this.value.focus===8?['Master','mix[flow]']: [`Deck ${deck?.letter??'ABCD'[this.value.focus]}`,deck?.track?.title?.trim()||'Empty deck'];
+  }
+  private selectionDisplay(temporary=false){
+    if(!this.value.connected||!this.value.sysex)return;
+    const [name,title]=this.selectionText();this.text(32,0,name);this.text(32,1,title);
+    if(temporary){
+      this.text(33,0,name);this.text(33,1,title);
+      // A trigger is an event, not cached state: pressing the same selector repeats it.
+      this.sent.delete('selection-display-trigger');
+      this.send('selection-display-trigger',[0xf0,0,0x20,0x29,2,0x14,4,33,127,0xf7]);
+    }
+  }
   feedback() {
     if(!this.value.connected)return;this.counts.feedback++;
     const s=this.engine.snapshot();
@@ -264,7 +282,7 @@ export class LaunchkeyController {
       }
       this.send(`pad${i}`,[0x90,i<8?96+i:112+i-8,color]);
     }
-    if(this.value.sysex){this.text(32,0,this.value.receiving?'mix[flow] active':'mix[flow] linked');this.text(32,1,this.value.focus===8?'Master FX':`Deck ${deck?.letter??'?'} FX`);for(let i=0;i<8;i++){this.text(21+i,0,i===6&&this.value.focus===8?'Unused':KNOBS[i]);}}
+    if(this.value.sysex){this.selectionDisplay();for(let i=0;i<8;i++){this.text(21+i,0,i===6&&this.value.focus===8?'Unused':KNOBS[i]);}}
   }
   receive(data:readonly number[],timestamp=performance.now()) {
     if(!this.value.connected||!this.enabled||this.sending)return;
@@ -279,7 +297,7 @@ export class LaunchkeyController {
     if(!this.value.receiving){this.update({receiving:true,status:'Receiving Launchkey DAW input.'});this.scheduleFeedback();}
     if(event.kind==='mode'){this.controls.flush();this.jog.reset();this.detents.clear();this.releaseCues();if(event.index===29)this.modes.pads=event.value;if(event.index===30)this.modes.knobs=event.value;if(event.index===31){this.modes.faders=event.value;this.update({faderMode:event.value===1?'Volume confirmed.':`Mode ${event.value} reported; choose Volume for DAW faders.`});}this.sent.clear();this.scheduleFeedback();return;}
     const state=this.engine.snapshot(),commands=this.engine.commands,deck=state.decks[this.value.focus];
-    if(event.kind==='focus'){const assigned=event.index<4||event.index===8;this.update({selector:`Button ${event.index+1}: ${controllerHex(data)}${assigned?' received.':' received (unassigned).'}`});this.focus(event.index);return;}
+    if(event.kind==='focus'){const assigned=event.index<4||event.index===8;this.focus(event.index);this.update({selector:`Button ${event.index+1}: ${controllerHex(data)}${assigned?` → ${this.selectionText().join(' · ')}`:' received (unassigned).'}`});return;}
     if(event.kind==='pad'||event.kind==='play'||event.kind==='stop')this.jog.finish();
     if(event.kind==='play'){if(!state.running)commands.setRunning(true);return;}
     if(event.kind==='stop'){this.releaseCues();commands.stopAll();return;}

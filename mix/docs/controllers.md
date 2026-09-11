@@ -94,6 +94,9 @@ fader-button press with its raw bytes. No presses received is explicit; a Custom
 report advises choosing Volume. These diagnostics do not open another MIDI connection
 or reset the working one. Hardware acceptance requires pressing selectors 1, 2 and 9,
 seeing `BF 25`, `BF 26`, `BF 2D` and A/B/Master focus, and checking physical lights.
+The user subsequently confirmed selector lighting and receipt in diagnostics. This
+verifies the output/input paths; physical target routing and screen response still
+need their own trial.
 
 Faders are absolute native CCs, not MCU pitch-bend/motor faders; no motor movement is
 sent. Plugin/Mixer/Sends knobs use absolute positions, initialized from app state.
@@ -111,7 +114,19 @@ the final queued value and clears timers. Discrete buttons and Cue releases bypa
 this limiter. Outgoing state feedback is separately coalesced to 20Hz and changed-only;
 SysEx labels do not resend on each engine tick. Clock/realtime and unused poly-aftertouch
 are discarded before packet formatting or log notifications. LEDs report focus, running state and loop state.
-With SysEx enabled, the screen names mix[flow], focus and all eight knob labels (including the unused position in Master focus).
+With SysEx enabled, the stationary screen shows the selected deck letter and track
+title, or Empty deck; Master selection shows Master. All eight knob labels remain
+assigned, including the unused position in Master focus.
+The stationary display uses target32, arrangement1 (two text lines). Target33 uses the
+same arrangement for a brief selection overlay, explicitly triggered with config127
+on each valid selector press, including reselecting the same deck. The hardware's
+existing temporary-display timeout returns to the stationary screen; no host timer
+or display-timeout setting is changed. Knob targets21–28 are untouched. Text is
+sanitized and limited to32ASCII characters per field. Track changes update the idle
+title through changed-only feedback; ordinary mixer publishes do not resend text.
+Selection refreshes only changed values rather than clearing the whole sent cache.
+The diagnostic now includes the resulting deck/title alongside received raw bytes.
+
 No encoder LED rings are invented for this hardware.
 
 Cue uses `cueDeck(id, true/false)`, not the headphone cue control. Note Off and Note On
