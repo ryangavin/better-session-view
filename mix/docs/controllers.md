@@ -59,17 +59,16 @@ Closing the debug panel does not disable auto-connect. The setting survives app 
 | Fader buttons 1–4 / 9 | Controller focus A–D / Master; matching LED |
 | Knobs 1–7 | Focused deck/master Send A, Send B, filter, low/mid/high EQ, trim |
 | Knob 8 | Unused |
-| Top pads 1–2 | Focused deck back/forward one beat |
-| Top pads 3–6 | Dedicated A–D Play/Pause (green) |
-| Top pads 7–8 | Focused deck Sync / Play-Pause |
-| Bottom pads 1–4 | Quick loop, half loop, double loop, loop enabled toggle |
-| Bottom pads 5–8 | Dedicated A–D momentary transport Cue (orange) |
+| Top pads 1–4 | Focused deck quick loop, half, double, loop on/off |
+| Top pads 5–8 | Unused |
+| Bottom pads 1–5 | Focused deck Play/Pause (green), held Cue (orange), Sync, beat back, beat forward |
+| Bottom pads 6–8 | Unused |
 | Play / Stop | Global `setRunning(true)` / `stopAll()` |
 
 Focus belongs to the controller adapter; the app has no global selected-deck action.
 It never selects a Prep song or loads a deck. The on-screen focus buttons provide the
-same choice. Dedicated A–D pads work regardless of controller focus (including Master).
-Focused jump/loop/Sync pads require a selected deck. All transport pads require a ready deck and retain the engine's existing saved-grid,
+same choice. All pads follow that focus and are inactive in Master focus. Bottom-row transport
+order matches the selected deck UI; loop controls occupy the top row. All transport pads require a ready deck and retain the engine's existing saved-grid,
 loop-boundary and playing-state policies. Nothing directly controls the DOM or DSP.
 
 Faders are absolute native CCs, not MCU pitch-bend/motor faders; no motor movement is
@@ -93,17 +92,26 @@ No encoder LED rings are invented for this hardware.
 
 Cue uses `cueDeck(id, true/false)`, not the headphone cue control. Note Off and Note On
 velocity zero both release it. Duplicate presses are ignored; disconnect, mode/focus
-change and global Stop release held cues. Dedicated Play while its Cue is held requests
+change and global Stop release held cues. Play while the focused deck’s Cue is held requests
 `setDeckPlaying(id, true)` even while audition is already playing, preserving the engine's
 existing latch: releasing Cue then neither stops nor returns the position. No DSP or
-engine transport behavior was changed.
+engine transport behavior was changed. Play/Cue use stationary channel-1 palette
+colors 22/10 at rest and 21/9 while active, rather than gray 1 while paused. Empty
+or Master focus pads are off. Pad-mode reports clear the sent cache before feedback,
+so returning to DAW mode restores colors. This verifies generated packets against the
+MK4 protocol; actual physical colors still require the hardware trial.
 
 Debug rate counters sample once a second: input including ignored clock, applied
 continuous controls, engine publishes, feedback passes, output packets/bytes/SysEx,
 local subscriber notifications, maximum event age and bounded pending controls. These
 are diagnostics, not a claim of measured end-to-end audio latency. The sustained-burst
 tests verify the 60Hz bound, final values, summed turns, immediate discrete edges and
-latest-only outgoing feedback. The live rate sample remains part of the hardware trial.
+latest-only outgoing feedback. The live rate sample remains part of the hardware trial. The user reported continued
+slow drawing despite the limiter. A controlled React measurement then found the full
+App subscription rerendering every library row on every fader update. Mixer state now
+subscribes in PlayView and Header, leaving the engine owner and library untouched.
+See [control render isolation](play-view.md#control-render-isolation) for measured
+before/after costs and the live-validation limit.
 
 ## Validation and limits
 

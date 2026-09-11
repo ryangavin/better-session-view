@@ -100,7 +100,7 @@ export function App() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (playView && e.code === 'Space' && !e.defaultPrevented && !target?.closest('input, textarea, select, button, [role=slider], [role=combobox], [role=dialog]')) { e.preventDefault(); mixer.commands.setRunning(!mixer.state.running); return; }
+      if (playView && e.code === 'Space' && !e.defaultPrevented && !target?.closest('input, textarea, select, button, [role=slider], [role=combobox], [role=dialog]')) { e.preventDefault(); mixer.commands.setRunning(!mixer.engine.snapshot().running); return; }
       if (playView || mix.phase !== 'ready' || e.defaultPrevented || target?.closest('input, textarea, select, button, [role=dialog]')) return;
       if (e.key === ' ') {
         // With the grid open, Space is the click audition, and the grid
@@ -121,7 +121,7 @@ export function App() {
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [playView, mixer.commands, mixer.state.running, mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
+  }, [playView, mixer.commands, mixer.engine, mix.editingGrid, mix.phase, mix.playing, mix.setPlaying, mix.activeSlice, mix.removeSlice, mix.loopSlice]);
 
   const carriesLibraryImport = (event: DragEvent): boolean => carriesImport(Array.from(event.dataTransfer.types));
 

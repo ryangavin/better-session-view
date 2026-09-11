@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Track } from '../openflow.ts';
 import { loadDeckAsset, params } from './decks.ts';
 import { MixerEngine } from './engine.ts';
 
-/** The single adapter between the controlled widget face and the playback owner. */
+/** Own lifetime/loading here; consuming views subscribe so control edits never render App. */
 export function useMixerViewModel(tracks: readonly Track[], root: string | null, loader = loadDeckAsset) {
   const engine = useMemo(() => new MixerEngine(), [root]);
   const releases = useRef(new Set<MixerEngine>());
@@ -16,10 +16,9 @@ export function useMixerViewModel(tracks: readonly Track[], root: string | null,
       queueMicrotask(() => { if (releases.current.delete(engine)) engine.dispose(); });
     };
   }, [engine]);
-  const state = useSyncExternalStore(engine.subscribe, engine.snapshot);
   const load = useCallback(async (deckId: string, trackId: string) => {
     const track = tracks.find(t => t.id === trackId);
     if (root && track) await engine.load(deckId, track, loader);
   }, [engine, tracks, root, loader]);
-  return { state, commands: engine.commands, readFrame: engine.readFrame, params, load, engine };
+  return { commands: engine.commands, readFrame: engine.readFrame, params, load, engine };
 }

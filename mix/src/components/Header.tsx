@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useSyncExternalStore, type ReactNode } from 'react';
 import type { MixerEngine } from '../play/engine.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { NumberField } from '@openflow/widgets/controls/NumberField.tsx';
@@ -136,7 +136,11 @@ const SNAPS: readonly { id: Snap; mark: string; says: string }[] = [
   { id: 'half', mark: '½', says: 'Cuts land on half a beat, whatever the zoom' },
 ];
 
+const noMixerSubscription = () => () => {};
+const noMixerSnapshot = () => null;
+
 export function Header({ mix, ready, playView = false, onSelectView, mixer, onSettings }: { mix: Mix; ready: Ready | null; playView?: boolean; onSelectView?(play: boolean): void; mixer?: MixerEngine; onSettings?():void }) {
+  useSyncExternalStore(playView && mixer ? mixer.subscribe : noMixerSubscription, mixer?.snapshot ?? noMixerSnapshot);
   const debugButton = <DebugButton mix={mix} />;
   if (playView && mixer) {
     const state = mixer.snapshot();

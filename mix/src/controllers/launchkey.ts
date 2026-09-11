@@ -201,11 +201,13 @@ export class LaunchkeyController {
     const deck=s.decks[this.value.focus];
     if(this.modes.pads===2)for(let i=0;i<16;i++){
       let color=0;
-      if(i>=2&&i<=5){const d=s.decks[i-2];color=d?.status==='ready'?(d.playing?21:1):0;}
-      else if(i>=12){const d=s.decks[i-12];color=d?.status==='ready'?(d.cueHeld?9:1):0;}
-      else if(i===6)color=deck?.status==='ready'?(deck.synced?21:1):0;
-      else if(i===7)color=deck?.status==='ready'?(deck.playing?21:1):0;
-      else if(deck?.status==='ready')color=i===8&&deck.loop?.enabled?21:i<2?45:i>=8&&i<=11?13:0;
+      if(deck?.status==='ready') {
+        if(i===8)color=deck.playing?21:22;
+        else if(i===9)color=deck.cueHeld?9:10;
+        else if(i===10)color=deck.synced?21:22;
+        else if(i===11||i===12)color=45;
+        else if(i<4)color=(i===0||i===3)&&deck.loop?.enabled?13:14;
+      }
       this.send(`pad${i}`,[0x90,i<8?96+i:112+i-8,color]);
     }
     if(this.value.sysex){this.text(32,0,this.value.receiving?'mix[flow] active':'mix[flow] linked');this.text(32,1,this.value.focus===8?'Master FX':`Deck ${deck?.letter??'?'} FX`);for(let i=0;i<8;i++){this.text(21+i,0,KNOBS[i]);}}
@@ -229,17 +231,20 @@ export class LaunchkeyController {
     if(event.kind==='fader'||event.kind==='knob'||event.kind==='relative'){this.controls.push(event);return;}
     if(event.kind==='pad'&&this.modes.pads===2){
       const index=event.index;
-      if(index>=12){const d=state.decks[index-12];if(!d)return;if(event.down&&d.status==='ready'&&!this.heldCues.has(d.id)){this.heldCues.add(d.id);commands.cueDeck?.(d.id,true);}else if(!event.down&&this.heldCues.delete(d.id))commands.cueDeck?.(d.id,false);return;}
-      if(!event.down)return;
-      if(index>=2&&index<=5){const d=state.decks[index-2];if(d?.status==='ready')commands.setDeckPlaying?.(d.id,this.heldCues.has(d.id)||!d.playing);return;}
-      if(deck?.status!=='ready')return;
-      if(index===6)commands.setDeckSync?.(deck.id,!deck.synced);
-      if(index===7)commands.setDeckPlaying?.(deck.id,this.heldCues.has(deck.id)||!deck.playing);
-      if(index===0||index===1)commands.beatJump?.(deck.id,index===0?-1:1);
-      if(index===8)commands.quickLoop?.(deck.id);
-      if(index===9)commands.resizeLoop?.(deck.id,.5);
-      if(index===10)commands.resizeLoop?.(deck.id,2);
-      if(index===11)commands.setDeckLoopEnabled?.(deck.id,!deck.loop?.enabled);
+      // Release the deck that owns the audition, including after a focus change.
+      if(index===9){
+        if(!event.down){this.releaseCues();return;}
+        if(deck?.status==='ready'&&!this.heldCues.has(deck.id)){this.heldCues.add(deck.id);commands.cueDeck?.(deck.id,true);}
+        return;
+      }
+      if(!event.down||deck?.status!=='ready')return;
+      if(index===8)commands.setDeckPlaying?.(deck.id,this.heldCues.has(deck.id)||!deck.playing);
+      if(index===10)commands.setDeckSync?.(deck.id,!deck.synced);
+      if(index===11||index===12)commands.beatJump?.(deck.id,index===11?-1:1);
+      if(index===0)commands.quickLoop?.(deck.id);
+      if(index===1)commands.resizeLoop?.(deck.id,.5);
+      if(index===2)commands.resizeLoop?.(deck.id,2);
+      if(index===3)commands.setDeckLoopEnabled?.(deck.id,!deck.loop?.enabled);
     }
   }
   private applyContinuous(event:ContinuousControl){

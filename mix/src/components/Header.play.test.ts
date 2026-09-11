@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { createElement } from 'react';
-import { render, fireEvent, cleanup } from '@testing-library/react';
+import { render, fireEvent, cleanup, act } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Header } from './Header.tsx';
 import type { MixerEngine } from '../play/engine.ts';
@@ -31,7 +31,8 @@ it('keeps the existing playback and Link commands in Play without preparation to
 
 it('exposes an editable tempo when a local leader is playing', () => {
   const setMaster=vi.fn(), normalSpeed=vi.fn();
-  const mixer={normalSpeedBpm:96,normalSpeed,snapshot:()=>({running:true,bpm:128,beat:0,loop:{enabled:false},decks:[{status:'ready',syncLeader:true}]}),
+  const state={running:true,bpm:128,beat:0,loop:{enabled:false},decks:[{status:'ready',syncLeader:true}]};
+  const mixer={normalSpeedBpm:96,normalSpeed,snapshot:()=>state,subscribe:()=>()=>{},
     position:0,linkAudio:{enabled:false,outputs:[],dropped:0},monitoring:true,
     commands:{setMaster},setLinkAudio:vi.fn(),setMonitoring:vi.fn()} as unknown as MixerEngine;
   const mix={phase:'idle',song:null} as unknown as Mix;
@@ -50,14 +51,16 @@ it('exposes an editable tempo when a local leader is playing', () => {
 it('shows the engine tempo throughout idle, local playback, and stopped Link states',()=>{
   let state={running:false,bpm:120,beat:0,loop:{enabled:false},decks:[{status:'ready',syncLeader:false}]};
   let link={enabled:false,peers:0,outputs:[],dropped:0};
-  const mixer={snapshot:()=>state,get linkAudio(){return link},normalSpeedBpm:null,position:0,monitoring:true,commands:{}} as unknown as MixerEngine;
+  const listeners=new Set<()=>void>();
+  const emit=()=>act(()=>listeners.forEach(fn=>fn()));
+  const mixer={snapshot:()=>state,subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>listeners.delete(fn);},get linkAudio(){return link},normalSpeedBpm:null,position:0,monitoring:true,commands:{}} as unknown as MixerEngine;
   const props={mix:{phase:'idle',song:null} as Mix,mixer,ready:null,playView:true};
   const view=render(createElement(Header,props));
   expect(view.getByLabelText('Playback tempo').textContent).toBe('120');
-  state={...state,running:true,bpm:135,decks:[{status:'ready',syncLeader:true}]};view.rerender(createElement(Header,props));
+  state={...state,running:true,bpm:135,decks:[{status:'ready',syncLeader:true}]};emit();
   expect(view.getByRole('slider',{name:'Playback tempo'}).getAttribute('aria-valuenow')).toBe('135');
-  state={...state,running:false,decks:[{status:'ready',syncLeader:false}]};view.rerender(createElement(Header,props));
+  state={...state,running:false,decks:[{status:'ready',syncLeader:false}]};emit();
   expect(view.getByLabelText('Playback tempo').textContent).toBe('135');
-  link={...link,enabled:true};state={...state,bpm:137};view.rerender(createElement(Header,props));
+  link={...link,enabled:true};state={...state,bpm:137};emit();
   expect(view.getByRole('slider',{name:'Playback tempo'}).getAttribute('aria-valuenow')).toBe('137');
 });

@@ -44,7 +44,7 @@ describe('deck loading and UI ownership', () => {
     act(() => result.current.commands.setEffectParam!('A', 'reverb', 'decay', 4));
     act(() => result.current.commands.setEffectParam!('B', 'delay', 'feedback', 22));
     act(() => result.current.commands.setEffect('A', 'delay'));
-    expect(result.current.state.effectValues).toEqual({ A: { delay: { feedback: 71 }, reverb: { decay: 4 } }, B: { delay: { feedback: 22 } } });
+    expect(result.current.engine.snapshot().effectValues).toEqual({ A: { delay: { feedback: 71 }, reverb: { decay: 4 } }, B: { delay: { feedback: 22 } } });
     expect(result.current.readFrame().masterLevel).toBe(0);
   });
   it('a newer drop wins even when an older load finishes last', async () => {
@@ -57,11 +57,11 @@ describe('deck loading and UI ownership', () => {
     expect(pending[0].signal.aborted).toBe(true);
     await act(async () => {pending[1].resolve(asset); await second;});
     await act(async () => {pending[0].resolve(asset); await first;});
-    expect(result.current.state.decks[0].track?.id).toBe('two');
-    expect(result.current.state.decks[1].status).toBe('empty');
+    expect(result.current.engine.snapshot().decks[0].track?.id).toBe('two');
+    expect(result.current.engine.snapshot().decks[1].status).toBe('empty');
     expect(result.current.readFrame().masterLevel).toBe(0);
     act(() => result.current.commands.setRunning(true));
-    expect(result.current.state.running).toBe(false);
+    expect(result.current.engine.snapshot().running).toBe(false);
   });
   it('rejects foreign drag IDs and resets/aborts when the library changes', async () => {
     let signal!: AbortSignal, finish!: (value:DeckAsset)=>void;
@@ -74,15 +74,15 @@ describe('deck loading and UI ownership', () => {
     rerender({root:'second'});
     expect(signal.aborted).toBe(true);
     await act(async()=>{finish(asset); await task;});
-    expect(result.current.state.decks[0].status).toBe('empty');
+    expect(result.current.engine.snapshot().decks[0].status).toBe('empty');
   });
   it('reports failures and allows a later drop to recover', async () => {
     const loader=vi.fn().mockRejectedValueOnce(new Error('Missing file')).mockResolvedValue(asset);
     const {result}=renderHook(()=>useMixerViewModel(tracks,'library',loader));
     await act(async()=>{await result.current.load('deck-b','one');});
-    expect(result.current.state.decks[1].message).toBe('Missing file');
+    expect(result.current.engine.snapshot().decks[1].message).toBe('Missing file');
     await act(async()=>{await result.current.load('deck-b','two');});
-    expect(result.current.state.decks[1].status).toBe('ready');
+    expect(result.current.engine.snapshot().decks[1].status).toBe('ready');
   });
 });
 describe('what a deck reads before it can play', () => {

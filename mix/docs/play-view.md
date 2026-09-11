@@ -4,8 +4,10 @@ Intended behavior is governed by [the behavior specification](behavior-specifica
 measured status lives in [validation](dj-controls-validation.md).
 
 `src/play/` connects the controlled widgets mixer to a single app-owned `MixerEngine`.
-`useMixerViewModel` is the React adapter: it subscribes to that engine, supplies stable
-commands and frame readings, and resolves library IDs for loading. Widgets import no
+`useMixerViewModel` owns the engine lifetime, supplies stable commands and frame
+readings, and resolves library IDs for loading. It does not subscribe App to mixer
+state: `PlayView` and `Header` subscribe locally. Space reads the current engine
+snapshot inside the key handler. Widgets import no
 playback or library code. Four copies of the single-track `useMix` are not a mixer.
 
 ## Window and ownership
@@ -357,7 +359,7 @@ never overwrites Cue. Widgets emit intent; the engine owns clamping and state re
 
 `readFrame` reads the AudioContext clock and actual analyser peaks, cached within an audio
 quantum. Widgets animate the scroll and meters at display refresh rate (normally 60 Hz).
-Only low-rate whole-beat/selection/page state rerenders the mixer. Pausing, dropping frames
+Whole-beat/selection/page changes and mixer control edits rerender the mixer. Pausing, dropping frames
 or hiding the browser cannot become the playback clock. Waveforms show the focused source, not a rendered sum of independently launched stems.
 
 The existing LinkAudioSender publishes loaded deck outputs, master and Phones. Header
@@ -490,3 +492,24 @@ and waveform icon. Effects controls also retain their normal size and readouts.
 
 The FX/filter row takes its height from its knobs; it has no fixed-height track
 or additional vertical padding beyond the shared separators.
+
+
+### Control render isolation
+
+Continuous gain/FX edits must not rerender App, its library, or hidden Prep. The former
+App-level mixer subscription did exactly that; `useMix` returned a fresh object and
+invalidated every memoized Song row. The subscription belongs at the consuming view,
+not in the engine-owner hook. Header has its own subscription so transport, tempo and
+Link still update when App does not render. Engine lifetime and loading stay in App.
+
+`src/play/renderIsolation.test.ts` exercises the real Library with 300 rows and 60
+separately flushed gain publishes. Before isolation this produced 18,000 row renders:
+2,368ms total, 1,424ms in Library React rendering, worst Library render 93ms. Afterward
+it produces zero owner/row renders while the subscribed control sees all 60 updates;
+the measured sweep was 2–4ms. The regression asserts render counts and final values,
+not machine-dependent time thresholds. A second measurement renders the actual
+four-deck controls: 60 updates took 418–460ms, React p95 7–18ms in these runs. That
+remaining widget work is not claimed to be free. These are happy-dom development
+measurements with no audio/MIDI or browser painting, not live FPS or audio latency.
+A physical fader trial remains necessary; do not declare the original lag resolved
+from the rate limiter or render-isolation test alone.

@@ -42,10 +42,10 @@ it('routes gain, master focus, FX knobs and loaded-deck loop pads to application
   f.receive([0xbf,5,0]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','gain',0);
   f.receive([0xbf,13,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalled());expect(f.commands.setMaster).toHaveBeenLastCalledWith('master',100);
   f.receive([0x90,38,127]);f.receive([0xbf,21,127]);await vi.waitFor(()=>expect(f.commands.setDeck).toHaveBeenCalledWith('deck-b','sendA',100));expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-b','sendA',100);
-  f.receive([0x90,96,127]);expect(f.commands.beatJump).toHaveBeenLastCalledWith('deck-b',-1);
-  f.receive([0x90,112,127]);expect(f.commands.quickLoop).toHaveBeenCalledWith('deck-b');
+  f.receive([0x90,115,127]);expect(f.commands.beatJump).toHaveBeenLastCalledWith('deck-b',-1);
+  f.receive([0x90,96,127]);expect(f.commands.quickLoop).toHaveBeenCalledWith('deck-b');
   f.receive([0x90,45,127]);f.receive([0xbf,22,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalledWith('masterSendB',100));expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterSendB',100);
-  f.receive([0x90,96,127]);expect(f.commands.beatJump).toHaveBeenCalledTimes(1);
+  f.receive([0x90,115,127]);expect(f.commands.beatJump).toHaveBeenCalledTimes(1);
   f.receive([0xbf,115,127]);expect(f.commands.setRunning).toHaveBeenCalledWith(true);
   f.receive([0xbf,116,127]);expect(f.commands.stopAll).toHaveBeenCalledOnce();f.controller.dispose();
 });
@@ -121,15 +121,33 @@ it('reports denied access without retrying on repeated Play effects',async()=>{
   f.controller.setEnabled(true);f.controller.setEnabled(false);f.controller.setEnabled(true);
   expect(f.request).toHaveBeenCalledTimes(1);f.controller.dispose();
 });
-it('keeps dedicated deck transport independent of focus and releases Cue on both note-off forms, focus change and disconnect',async()=>{
-  const f=setup();await f.connect();f.controller.focus(8);
-  f.receive([0x90,98,45]);expect(f.commands.setDeckPlaying).toHaveBeenCalledWith('deck-a',true);
-  f.receive([0x90,116,127]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-a',true);
-  f.receive([0x90,98,127]);expect(f.commands.setDeckPlaying).toHaveBeenLastCalledWith('deck-a',true);
-  f.receive([0x90,116,0]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-a',false);
-  f.receive([0x90,117,127]);f.receive([0x80,117,10]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-b',false);
-  f.receive([0x90,118,127]);f.controller.focus(0);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-c',false);
-  f.receive([0x90,119,127]);await f.controller.disconnect();expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-d',false);f.controller.dispose();
+it('orders the selected-deck bottom row as Play, Cue, Sync, back, forward and releases the owning cue',async()=>{
+  const f=setup();await f.connect();f.controller.focus(1);
+  f.receive([0x90,112,45]);expect(f.commands.setDeckPlaying).toHaveBeenLastCalledWith('deck-b',true);
+  f.receive([0x90,113,127]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-b',true);
+  f.receive([0x90,113,127]);expect(f.commands.cueDeck).toHaveBeenCalledTimes(1);
+  // Cue can already be playing: Play must latch, never request pause.
+  f.engine.snapshot().decks[1].playing=true;
+  f.receive([0x90,112,127]);expect(f.commands.setDeckPlaying).toHaveBeenLastCalledWith('deck-b',true);
+  f.receive([0x90,113,0]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-b',false);
+  f.receive([0x90,114,127]);expect(f.commands.setDeckSync).toHaveBeenLastCalledWith('deck-b',true);
+  f.receive([0x90,115,127]);expect(f.commands.beatJump).toHaveBeenLastCalledWith('deck-b',-1);
+  f.receive([0x90,116,127]);expect(f.commands.beatJump).toHaveBeenLastCalledWith('deck-b',1);
+  f.receive([0x90,113,127]);f.receive([0x80,113,10]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-b',false);
+  f.receive([0x90,113,127]);f.controller.focus(0);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-b',false);
+  f.receive([0x90,113,0]);expect(f.commands.cueDeck).not.toHaveBeenCalledWith('deck-a',false);
+  f.receive([0x90,113,127]);await f.controller.disconnect();expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-a',false);f.controller.dispose();
+});
+it('keeps paused Play/Cue green/orange, refreshes colors on mode return, and leaves Master pads inactive',async()=>{
+  vi.useFakeTimers();const f=setup();await f.connect();
+  expect(f.output.send).toHaveBeenCalledWith([0x90,112,22]);expect(f.output.send).toHaveBeenCalledWith([0x90,113,10]);
+  f.engine.snapshot().decks[0].playing=true;f.engine.snapshot().decks[0].cueHeld=true;f.emit();await vi.advanceTimersByTimeAsync(50);
+  expect(f.output.send).toHaveBeenCalledWith([0x90,112,21]);expect(f.output.send).toHaveBeenCalledWith([0x90,113,9]);
+  vi.mocked(f.output.send).mockClear();f.receive([0xb6,29,2]);await vi.advanceTimersByTimeAsync(50);
+  expect(f.output.send).toHaveBeenCalledWith([0x90,112,21]);
+  f.controller.focus(8);await vi.advanceTimersByTimeAsync(50);expect(f.output.send).toHaveBeenCalledWith([0x90,112,0]);
+  const presses=f.commands.setDeckPlaying.mock.calls.length;f.receive([0x90,112,127]);expect(f.commands.setDeckPlaying).toHaveBeenCalledTimes(presses);
+  f.controller.dispose();vi.useRealTimers();
 });
 it('drops realtime and unused aftertouch cheaply without logging or application actions',async()=>{
   const f=setup();await f.connect();f.controller.clearLog();

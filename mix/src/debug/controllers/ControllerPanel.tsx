@@ -29,13 +29,13 @@ function ConnectedPanel({controller}:{controller:LaunchkeyController}) {
     </div>
     <p role="status">{state.status}</p>
     <div className="mf-controller-row" aria-label="Controller focus">{['Deck A','Deck B','Deck C','Deck D','Master'].map((name,i)=><Button key={name} label={name} onPress={()=>controller.focus(i===4?8:i)} title={`${name}${state.focus===(i===4?8:i)?' (selected)':''}`}>{name}</Button>)}</div>
-    <p>Controller focus: <strong>{state.focus===8?'Master':`Deck ${'ABCD'[state.focus]}`}</strong>. Fader buttons 1–4 select a deck; button 9 selects Master. This focus chooses what the knobs control.</p>
+    <p>Controller focus: <strong>{state.focus===8?'Master':`Deck ${'ABCD'[state.focus]}`}</strong>. Fader buttons 1–4 select a deck; button 9 selects Master. This focus chooses what the knobs and pads control.</p>
     <table><tbody>
       <tr><th>Faders</th><td>1–4: deck A–D gain · 5–8: unused · 9: master gain</td></tr>
       <tr><th>Knobs 1–8</th><td>{KNOBS.join(' · ')} (for the focused deck or master)</td></tr>
-      <tr><th>Pads, top row</th><td>1–2: beat −/+ · 3–6: A–D Play/Pause (green) · 7: focused Sync · 8: focused Play/Pause</td></tr>
-      <tr><th>Pads, bottom row</th><td>1–4: quick/half/double/toggle loop · 5–8: A–D hold Cue (orange)</td></tr>
-      <tr><th>Play / Stop</th><td>Existing global Play / Stop actions. Deck pads need a loaded deck. Dedicated A–D Play/Cue also work in Master focus. Hold Cue and press that deck’s Play to keep playing after releasing Cue.</td></tr>
+      <tr><th>Pads, top row</th><td>1–4: quick loop · half · double · loop on/off. 5–8: unused.</td></tr>
+      <tr><th>Pads, bottom row</th><td>1–5, left to right: Play/Pause (green) · hold Cue (orange) · Sync · beat back · beat forward. 6–8: unused.</td></tr>
+      <tr><th>Play / Stop</th><td>Existing global Play / Stop actions. Deck pads need a loaded deck. Pads follow the selected deck and are inactive in Master focus. Play and Cue keep their colors while paused. Hold Cue and press Play to keep playing after releasing Cue.</td></tr>
     </tbody></table>
     <p>Port identity verified as Launchkey MK4 61. Physical control mapping still needs a hardware trial. No MCU or other Launchkey-generation compatibility is claimed.</p>
     <div className="mf-controller-row"><h3>Controller debug log</h3><Button label="Clear messages" onPress={controller.clearLog}>Clear messages</Button></div>
