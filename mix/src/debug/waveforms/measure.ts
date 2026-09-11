@@ -1,3 +1,4 @@
+import { defaultCrossovers, validateCrossovers, type Crossovers } from './crossovers.ts';
 /** Preview measurements only: channel-preserving sum, broad crossover energy and stem RMS. */
 export interface AudioSource { id: string; channels: readonly Float32Array[] }
 export interface Measurement {
@@ -12,7 +13,9 @@ export interface Measurement {
 }
 
 /** Cooperatively yields, and cancels on track change/unmount. Never copies full audio buffers. */
-export async function measure(sources: readonly AudioSource[], rate: number, signal: AbortSignal): Promise<Measurement> {
+export async function measure(sources: readonly AudioSource[], rate: number, signal: AbortSignal, crossovers:Crossovers=defaultCrossovers(rate)): Promise<Measurement> {
+  validateCrossovers(crossovers,rate);
+  signal.throwIfAborted();
   if (!sources.length || rate <= 0 || sources.some((s) => !s.channels.length)) throw new Error('No decoded audio');
   const length = Math.max(...sources.flatMap((s) => s.channels.map((c) => c.length)));
   const channels = Math.max(...sources.map((s) => s.channels.length));
@@ -20,15 +23,14 @@ export async function measure(sources: readonly AudioSource[], rate: number, sig
   const count = Math.ceil(length / step);
   const result: Measurement = { seconds: length / rate, step: step / rate, peak: new Float32Array(count), rms: new Float32Array(count), bands: Array.from({ length: 3 }, () => new Float32Array(count)), stems: sources.map((s) => ({ id: s.id, rms: new Float32Array(count) })) };
   const low = new Float64Array(channels), upper = new Float64Array(channels);
-  const a = 1 - Math.exp(-2 * Math.PI * 250 / rate), b = 1 - Math.exp(-2 * Math.PI * 2500 / rate);
+  const a = 1 - Math.exp(-2 * Math.PI * crossovers.low / rate), b = 1 - Math.exp(-2 * Math.PI * crossovers.high / rate);
   for (let bin = 0; bin < count; bin++) {
-    if (bin % 64 === 0) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
-      signal.throwIfAborted();
-    }
     const end = Math.min(length, (bin + 1) * step);
     const n = (end - bin * step) * channels;
-    for (let i = bin * step; i < end; i++) for (let c = 0; c < channels; c++) {
+    for (let i = bin * step; i < end; i++) {
+      // Bound work between yields by decoded frames rather than track-length-dependent bins.
+      if(i % 32768 === 0){await new Promise<void>(resolve=>setTimeout(resolve,0));signal.throwIfAborted();}
+      for (let c = 0; c < channels; c++) {
       let sum = 0;
       for (let s = 0; s < sources.length; s++) {
         const input = sources[s].channels;
@@ -43,6 +45,7 @@ export async function measure(sources: readonly AudioSource[], rate: number, sig
       result.bands[0][bin] += low[c] * low[c];
       result.bands[1][bin] += (upper[c] - low[c]) ** 2;
       result.bands[2][bin] += (sum - upper[c]) ** 2;
+    }
     }
     for (const values of [result.rms, ...result.bands, ...result.stems.map((s) => s.rms)]) values[bin] = Math.sqrt(values[bin] / n);
   }

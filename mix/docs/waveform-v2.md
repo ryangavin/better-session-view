@@ -16,7 +16,8 @@ Both compact rows use the same geometry. **Three-band** divides the mirrored pea
 silhouette into relative low/mid/high RMS layers. **Peak spectrum** uses the production
 `spectralPainter` to blend those frequencies. Band weights affect relative color and
 layer thickness, never the outer peak or audio gain. There is no luminous RMS center.
-The measured first-order crossovers remain 250 and 2500 Hz. Frequency colors are not stems.
+The measured first-order crossovers default to 250 and 2500 Hz and are adjustable in V2.
+Frequency colors are not stems.
 
 A whole-track measured sample-peak reference remains fixed through pan and zoom.
 The production max-reduction ladder retains narrow peaks as detail changes. Smoothing
@@ -25,6 +26,28 @@ round or overshoot between measurements, not higher-resolution analysis. Zero-en
 columns are clipped out so curves do not fill measured silence. Deep zoom remains
 limited to measured bins; the lab does not claim sample-level detail it lacks.
 Frequency and stem activity use duration-weighted RMS, including the partial final bin.
+
+## Frequency crossovers
+
+**Low / mid crossover** and **Mid / high crossover** change the two first-order
+filter coefficients in the shared preview `waveforms/measure.ts` scan. They remeasure
+real decoded channels; the three cached band summaries cannot be split at new cutoffs.
+The broad filters overlap, rather than abruptly classifying every frequency into one band.
+Both layered and blended views use the resulting energies; peak height and stem activity
+are unaffected. Original Waveform lab, Legacy RMS and production keep their default bands.
+
+The controls require finite cutoffs, at least 1 Hz apart, from 20 Hz through the smaller
+of 20 kHz and 45% of the decoded sample rate (below Nyquist). Each slider is bounded by
+its neighbor. Invalid saved pairs reset together. **Reset crossovers** restores 250/2500 Hz
+(or rate-safe defaults for unusually low sample rates), without changing visual settings.
+Crossover storage is separate: `wdg-debug:mix-waveform-v2-crossovers`.
+
+After 350 ms without another edit, measurement reads the existing decoded channel arrays
+again: no new decode, full-track copy or mixture cache. Cost is linear in audio length;
+only bounded 16,384-bin summaries are allocated. The scan yields every 32,768 frames and
+checks cancellation. A newer edit or track change cancels stale work. While pending, the
+last completed preview remains visible and its **Preview crossovers** status states the
+applied values beside a measuring message. Only completed, current results replace it.
 
 ## Vivid peaks finish
 
@@ -87,8 +110,17 @@ emphasis, contrast, RMS options and overlays. Its settings affect only that prev
 
 ## Verification
 
+`waveforms/crossovers.test.ts` covers ordered finite cutoffs and rate-safe defaults.
+`waveforms/measure.test.ts` verifies tone redistribution, overlapping boundary response,
+unchanged peaks/default measurements and cancellation of a running scan.
 `style.test.ts` covers storage recovery and conversion to the production presentation
 API. `topology.test.ts` covers attack preservation, silence, fixed-reference quiet
 zoom, partial-bin weighting and activity floor. Widgets tests cover weighted layers;
 its Drawing / Waveform bench includes both optional presentations alongside unchanged
 default cases. Check V2 in the existing harness at localhost:5673 without playback.
+
+## Additional opt-in color studies
+
+**Prism**, **Aurora**, and **Ember** offer three richer frequency palettes in the
+starting-point selector. They never apply automatically. Their settings, two-source
+rendering evidence and limitations are in [waveform-color-studies.md](waveform-color-studies.md).

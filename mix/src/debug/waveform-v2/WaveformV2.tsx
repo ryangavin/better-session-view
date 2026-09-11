@@ -11,6 +11,7 @@ import type { Mix } from '../../state.ts';
 import { LegacyRMS } from './LegacyRMS.tsx';
 import { paintTopology, paintActivity, paintTime } from './topologyPaint.ts';
 import type { ColorMode } from './topology.ts';
+import { crossoversOf, crossoverLimit, defaultCrossovers, type Crossovers } from '../waveforms/crossovers.ts';
 import { measure } from '../waveforms/measure.ts';
 import { prepare, type Model } from './model.ts';
 import { Slider } from '@openflow/widgets/controls/Slider.tsx';
@@ -28,17 +29,25 @@ function TrackView({mix}:{mix:Mix}){
   const [saved,save]=useRemembered<unknown>('mix-waveform-v2-peak-style',DEFAULT_STYLE);
   const style=useMemo(()=>styleOf(saved),[saved]);
   const change=(patch:Partial<Style>)=>save({...style,...patch});
+  const [savedCrossovers,saveCrossovers]=useRemembered<unknown>('mix-waveform-v2-crossovers',defaultCrossovers(mix.rate));
+  const crossovers=useMemo(()=>crossoversOf(savedCrossovers,mix.rate),[savedCrossovers,mix.rate]);
+  const [applied,setApplied]=useState<Crossovers|null>(null);
+  const [measuring,setMeasuring]=useState(true);
   const [band,setBand]=useState(0);
   const [legacy,setLegacy]=useState(false);
   const [deckHeight]=useState(()=>Math.round(document.querySelector('.play-wave-lane')?.clientHeight||72));
   const [model,setModel]=useState<Model|null>(null),[error,setError]=useState('');
   const sources=mix.song!.sources,audioOf=mix.audioOf;
   useEffect(()=>{
-    const cancel=new AbortController();setModel(null);setError('');
-    const input=sources.flatMap(id=>{const b=audioOf(id);return b?[{id,channels:Array.from({length:b.numberOfChannels},(_,c)=>b.getChannelData(c))}]:[];});
-    void measure(input,mix.rate,cancel.signal).then(data=>{if(!cancel.signal.aborted)setModel(prepare(data));}).catch(e=>{if(!cancel.signal.aborted)setError(String(e));});
-    return()=>cancel.abort();
-  },[sources,audioOf,mix.rate]);
+    const cancel=new AbortController();setError('');setMeasuring(true);
+    const timer=setTimeout(()=>{
+      const input=sources.flatMap(id=>{const b=audioOf(id);return b?[{id,channels:Array.from({length:b.numberOfChannels},(_,c)=>b.getChannelData(c))}]:[];});
+      void measure(input,mix.rate,cancel.signal,crossovers).then(data=>{
+        if(!cancel.signal.aborted){setModel(prepare(data));setApplied(crossovers);setMeasuring(false);}
+      }).catch(e=>{if(!cancel.signal.aborted){setError(String(e));setMeasuring(false);}});
+    },350);
+    return()=>{clearTimeout(timer);cancel.abort();};
+  },[sources,audioOf,mix.rate,crossovers]);
   const axis=useAxis({seconds:mix.seconds,narrowest:Math.max(.1,mix.seconds/16384*100)});
   return <>
     <Toolbar>
@@ -49,6 +58,13 @@ function TrackView({mix}:{mix:Mix}){
     <div className="mf-v2-tuning">
       {([['smooth','Smoothness',0,1],['detail','Detail',.5,2],['height','Height ratio',.4,.95],['blend','Color strength',0,100]] as const).map(([key,label,min,max])=><StyleSlider key={key} label={label} value={style[key]} min={min} max={max} initial={DEFAULT_STYLE[key]} onChange={value=>change({[key]:value})}/>)}
     </div>
+    <div className="mf-v2-tuning">
+      <StyleSlider label="Low / mid crossover" value={crossovers.low} min={20} max={crossovers.high-1} initial={defaultCrossovers(mix.rate).low} unit="Hz" onChange={low=>saveCrossovers({...crossovers,low})}/>
+      <StyleSlider label="Mid / high crossover" value={crossovers.high} min={crossovers.low+1} max={crossoverLimit(mix.rate)} initial={defaultCrossovers(mix.rate).high} unit="Hz" onChange={high=>saveCrossovers({...crossovers,high})}/>
+      <Button onPress={()=>saveCrossovers(defaultCrossovers(mix.rate))}>Reset crossovers</Button>
+    </div>
+    <p className="mf-v2-note" role="status">{measuring?'Measuring frequency bands… ':''}{applied?`Preview crossovers: ${Math.round(applied.low)} Hz / ${Math.round(applied.high)} Hz.`:'Waiting for frequency analysis.'} Broad first-order filters; neighboring bands overlap.</p>
+    {error&&<p className="mf-v2-reading" role="alert">{error}</p>}
     <details className="mf-v2-colors"><summary>Palette & layer balance</summary><div className="mf-v2-tuning">
       <Select label="Frequency band" items={['Low frequencies','Mid frequencies','High frequencies']} index={band} onChange={setBand} width={150}/>
       {([['hues','Hue',359],['saturation','Saturation',100],['lightness','Lightness',100]] as const).map(([key,label,max])=><StyleSlider key={key} label={label} value={style[key][band]} min={0} max={max} initial={DEFAULT_STYLE[key][band]} onChange={value=>{const values=[...style[key]] as Style['hues'];values[band]=value;change({[key]:values});}}/>)}
@@ -60,7 +76,7 @@ function TrackView({mix}:{mix:Mix}){
       <StyleSlider label="High / mid" value={style.high} min={.25} max={3} initial={DEFAULT_STYLE.high} onChange={high=>change({high})}/>
     </div></details>
     <p className="mf-v2-note">{style.finish==='vivid'?'Vivid peaks · the earlier palette and contrast, carried by the peak shape alone.':'Clean finish · frequency color inside the peak shape.'} No inner energy contour. Shared production renderer.</p>
-    {error||!model?<p className="mf-v2-reading" role="status">{error||'Measuring decoded stems…'}</p>:<Scope axis={axis} labels={100}>
+    {!model?<p className="mf-v2-reading" role="status">{error||'Measuring decoded stems…'}</p>:<Scope axis={axis} labels={100}>
       <ScopeRow label="Source time" height={24} ruler draw={paintTime}/>
       <TopologyRow label="Three-band" height={deckHeight} model={model} mode="three-band" style={style}/>
       <TopologyRow label="Peak spectrum" height={deckHeight} model={model} mode="rgb" style={style}/>
@@ -80,7 +96,7 @@ function ActivityRow({model,index}:{model:Model;index:number}){
   return <ScopeRow label={`${model.data.stems[index].id} · RMS`} height={14} draw={draw}/>;
 }
 
-function StyleSlider({label,value,min,max,initial,onChange}:{label:string;value:number;min:number;max:number;initial:number;onChange:(value:number)=>void}){
-  const param=useMemo(()=>({kind:'float' as const,name:label,min,max,defaultValue:initial}),[label,min,max,initial]);
-  return <div className="mf-v2-slider"><span>{label}</span><Slider name="" label={label} param={param} value={value} onChange={onChange} orientation="horizontal" layout="inside" fill length="auto" display={max>3?`${Math.round(value)}`:value.toFixed(2)}/></div>;
+function StyleSlider({label,value,min,max,initial,onChange,unit}:{label:string;value:number;min:number;max:number;initial:number;unit?:string;onChange:(value:number)=>void}){
+  const param=useMemo(()=>({kind:'float' as const,name:label,min,max,defaultValue:Math.max(min,Math.min(max,initial)),exponent:unit==='Hz'?2:1}),[label,min,max,initial,unit]);
+  return <div className="mf-v2-slider"><span>{label}</span><Slider name="" label={label} param={param} value={value} onChange={onChange} orientation="horizontal" layout="inside" fill length="auto" display={unit?`${Math.round(value)} ${unit}`:max>3?`${Math.round(value)}`:value.toFixed(2)}/></div>;
 }

@@ -209,3 +209,14 @@ The vivid and collapsed revision was inspected in the real browser harness on
 “Raise Your Weapon,” including the comparison layout and zoomed collapsed layout.
 Repository type checking and all 522 mix tests passed at that revision. This document
 records those checks; it does not imply automated visual regression coverage.
+
+## Configurable preview crossovers
+
+`measure(sources, rate, signal, crossovers?)` accepts optional ordered low/mid and
+mid/high cutoffs, validated by `crossovers.ts`. Omitting them preserves the established
+250/2500 Hz coefficients (with safe defaults at unusually low sample rates). V2 alone
+currently supplies custom cutoffs; the original lab and legacy callers retain defaults.
+Changing cutoffs requires another scan of decoded samples, since three broad energy
+summaries do not retain enough frequency information for arbitrary reaggregation.
+The scanner yields and checks cancellation every 32,768 decoded frames, keeping the
+work between yields independent of the overall track length. It never copies full audio.
