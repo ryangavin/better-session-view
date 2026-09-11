@@ -39,3 +39,6 @@ visuals/frames-out/
 mix/harness/reports/*
 !mix/harness/reports/truth/
 html/
+
+# local key comparison binaries/venv; never packaged or committed
+mix/.key-experiments/

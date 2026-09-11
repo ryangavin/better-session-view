@@ -7,6 +7,7 @@ import { openflow, type Library, type Track } from '../../openflow.ts';
 import { estimateKey, KEY_VERSION } from '../../key.ts';
 import type { PitchMap } from '../../pitchMap.ts';
 import type { Mix } from '../../state.ts';
+vi.mock('./KeyComparison.tsx', () => ({KeyComparison:() => null}));
 vi.mock('../../openflow.ts', async original => ({...await original<object>(),openflow:vi.fn()}));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 const song = (id:string) => ({id,title:id,key:null,stems:`stems/${id}`,model:'model',sources:['bass']} as Track);

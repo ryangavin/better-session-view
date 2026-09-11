@@ -7,6 +7,10 @@ same decoded stems the lanes are drawn from.
 
 ## Key detection
 
+The [whole-recording comparison](key-experiments.md) runs libkeyfinder and Essentia
+on original audio with an optional cached bass baseline, separate results and references.
+The canonical bass controls described below remain inside their own disclosure.
+
 **Key detection** (`src/debug/key/KeyLab.tsx`, workspace id `keys`) inspects saved
 primary/Unknown, provisional uncertainty, coverage, source hashes, summary version,
 competing scales and timed regions. Selection is local to this panel and does not

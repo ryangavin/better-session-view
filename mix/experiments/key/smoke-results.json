@@ -1,0 +1,132 @@
+{
+  "syntheticOnly": true,
+  "description": "12s mono 44100Hz C/F/G/C sine chords, and 12s silence; no user audio",
+  "runs": [
+    {
+      "id": "0c1c28bb-ae33-4401-aed2-e16017e41e9c",
+      "trackId": "c-major",
+      "title": "c-major",
+      "at": "2026-09-11T04:06:41.424Z",
+      "sourceHash": "7b144333f2f61fd7000b537d6dfcbeb7a3f09b012b1349a934743664fdaddfd5",
+      "file": "audio/c-major.wav",
+      "results": [
+        {
+          "backend": "libkeyfinder",
+          "version": "2.2.8",
+          "input": "original",
+          "status": "key",
+          "labels": [
+            "C major"
+          ],
+          "score": null,
+          "scoreMeaning": "No confidence score exposed by keyOfAudio; no probability inferred.",
+          "runtimeMs": 27.727499999999964,
+          "config": {
+            "sampleRate": 44100,
+            "channels": 1,
+            "format": "f32le",
+            "profile": "libkeyfinder defaults",
+            "revision": "c78e8372e0188c0a11b7b55a653ea0cbbbf70fa5"
+          }
+        },
+        {
+          "backend": "essentia",
+          "version": "2.1b6.dev1438",
+          "input": "original",
+          "status": "key",
+          "labels": [
+            "C major"
+          ],
+          "score": 0.9682680368423462,
+          "scoreMeaning": "KeyExtractor profile correlation strength, not probability; incomparable with bass coverage/support.",
+          "runtimeMs": 45676.488333,
+          "config": {
+            "sampleRate": 44100,
+            "channels": 1,
+            "format": "f32le",
+            "profileType": "bgate",
+            "frameSize": 4096,
+            "hopSize": 4096,
+            "hpcpSize": 12
+          }
+        },
+        {
+          "backend": "bass",
+          "version": "3",
+          "input": "bass",
+          "status": "unavailable",
+          "labels": [],
+          "score": null,
+          "scoreMeaning": "Fraction of usable bass pitch inside a scale; not probability or Essentia strength.",
+          "runtimeMs": 0.031291999999666587,
+          "config": {
+            "summaryVersion": 3,
+            "cachedOnly": true
+          },
+          "message": "Error: No bass stems. Baseline is optional; original-mix backends remain usable."
+        }
+      ]
+    },
+    {
+      "id": "74b56289-5b3d-428b-91a7-4134b3c20d24",
+      "trackId": "silence",
+      "title": "silence",
+      "at": "2026-09-11T04:07:27.300Z",
+      "sourceHash": "9998c35bd0d1a852cc89270ae16a5ca891c813d4ece5dd564918b3b12dc82b71",
+      "file": "audio/silence.wav",
+      "results": [
+        {
+          "backend": "libkeyfinder",
+          "version": "2.2.8",
+          "input": "original",
+          "status": "unknown",
+          "labels": [],
+          "score": null,
+          "scoreMeaning": "No confidence score exposed by keyOfAudio; no probability inferred.",
+          "runtimeMs": 28.383959000006143,
+          "config": {
+            "sampleRate": 44100,
+            "channels": 1,
+            "format": "f32le",
+            "profile": "libkeyfinder defaults",
+            "revision": "c78e8372e0188c0a11b7b55a653ea0cbbbf70fa5"
+          }
+        },
+        {
+          "backend": "essentia",
+          "version": "2.1b6.dev1438",
+          "input": "original",
+          "status": "unknown",
+          "labels": [],
+          "score": null,
+          "scoreMeaning": "KeyExtractor profile correlation strength, not probability; incomparable with bass coverage/support.",
+          "runtimeMs": 44517.606457999995,
+          "config": {
+            "sampleRate": 44100,
+            "channels": 1,
+            "format": "f32le",
+            "profileType": "bgate",
+            "frameSize": 4096,
+            "hopSize": 4096,
+            "hpcpSize": 12
+          }
+        },
+        {
+          "backend": "bass",
+          "version": "3",
+          "input": "bass",
+          "status": "unavailable",
+          "labels": [],
+          "score": null,
+          "scoreMeaning": "Fraction of usable bass pitch inside a scale; not probability or Essentia strength.",
+          "runtimeMs": 0.021124999999301508,
+          "config": {
+            "summaryVersion": 3,
+            "cachedOnly": true
+          },
+          "message": "Error: No bass stems. Baseline is optional; original-mix backends remain usable."
+        }
+      ]
+    }
+  ]
+}

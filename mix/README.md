@@ -58,6 +58,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | playback, the mixer, the waveforms, the beat map, finding the beats, the stretcher, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `warp.ts`, `transients.ts`, `tempo.ts`, `follow.ts`, `schedule.ts`, `stretch.ts`, `remember.ts` |
 | sharing stems or deck outputs with Live through Link Audio | [`docs/link-audio.md`](docs/link-audio.md) — `src/linkAudio.ts`, `linkAudioWorklet.ts`, `electron/linkAudio.ts`, `native/link-audio.cpp` |
 | how a record is held to the grid for playing and export, how densely, and why not every beat | [`docs/pinned.md`](docs/pinned.md) — `src/pinned.ts`, `straighten.ts`, `schedule.ts`, `components/ExportModal.tsx` |
+| comparing original-recording key detectors and published references | [`docs/key-experiments.md`](docs/key-experiments.md) — `electron/keyExperiments.ts`, `src/debug/key/KeyComparison.tsx` |
 | whether the beats it found are right: the analysis harness in the app, the arms, the batch run | [`docs/harness.md`](docs/harness.md) — `src/debug/`, `tools/mix-warp.ts`, `src/trace.ts` |
 | vector waveform designs, spectral fills, and preset comparisons | [`docs/vector-designs.md`](docs/vector-designs.md) — `src/debug/render/DesignBrowser.tsx`, `musicalVector.ts` |
 | comparing grids, inspecting onset agreement, or loading beat references | [`docs/grid-evidence.md`](docs/grid-evidence.md) — `src/debug/AnalysisEvidence.tsx`, `gridEvidence.ts`, `truthReference.ts` |

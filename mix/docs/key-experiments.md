@@ -1,0 +1,97 @@
+# Whole-recording key experiments
+
+Debug → Key detection contains an explicit comparison of libkeyfinder and Essentia
+on each track's **original file**, decoded once to mono 44.1 kHz float PCM. Stems are
+not required. The optional bass baseline only reads an existing checksum-valid pitch
+map; it never launches bass inference or updates the canonical key. Canonical bass
+inspection/backfill remains in its own disclosure below the comparison.
+
+Opening the panel reads availability and saved evidence only. Compare selected track
+runs one recording; Compare checked tracks starts the visible batch sequentially.
+Stop, tab change or unmount stops scheduling after the current recording. Per-track
+failures are logged and the remaining tracks continue. A changed library or occupied
+engine stops the queue. `src/keyQueue.ts` is shared with canonical backfill, and
+`electron/work.ts` provides the same exclusive worker slot. App shutdown cancels its
+owned child; another client's job is never canceled by stopping this renderer queue.
+
+The renderer requires version 1 of the experiment IPC. A missing or stale native
+backend disables execution and asks for a safe rebuild/restart; HMR alone does not
+install main/preload handlers. The standalone Node backend is also usable from tools
+without Electron. Nothing runs automatically at import time as part of this experiment.
+
+## Local tools and reproducibility
+
+From the checkout, explicitly run:
+
+```sh
+node tools/mix-key-experiments-setup.ts
+```
+
+Everything installed is isolated in ignored `mix/.key-experiments/`; nothing enters
+the shipping Python engine or package dependencies. libkeyfinder needs CMake, a C++
+compiler, pkg-config and FFTW3. The adapter pins libkeyfinder 2.2.8 at
+`c78e8372e0188c0a11b7b55a653ea0cbbbf70fa5`. Essentia pins 2.1b6.dev1438, NumPy 2.4.3,
+six 1.17.0 and PyYAML 6.0.3 in a Python 3.14 venv. Setup requires uv and a compatible
+binary wheel (the tested macOS wheel requires macOS 15+); there is no implicit source
+build fallback. Setup records the Python freeze and reports each backend failure.
+It does not restart the app or analyze the library.
+
+[libkeyfinder](https://github.com/mixxxdj/libkeyfinder) is GPL-3.0-or-later and uses
+FFTW. [Essentia licensing](https://essentia.upf.edu/licensing_information.html) describes
+AGPL and commercial options. These dependencies are local opt-in research tools,
+not bundled product dependencies; shipping them needs a separate distribution decision.
+
+libkeyfinder uses its default `keyOfAudio` profile and exposes no confidence score.
+Essentia uses [KeyExtractor](https://essentia.upf.edu/reference/std_KeyExtractor.html)
+with bgate, frameSize/hopSize 4096 and hpcpSize 12; its strength is profile correlation,
+not a probability. Bass support is scale membership and its coverage is separate.
+Scores are never averaged or compared numerically across backends. Runtime includes
+process startup and backend execution but excludes shared decode and version probes.
+Each saved result records version, input, configuration, status, labels and score
+semantics. Unknown, ambiguous, unavailable and error remain distinct outcomes.
+
+## Persistence and references
+
+Runs live at `LIBRARY/experiments/keys/<hex-track-id>/<run-id>.json`. Each is bound to
+SHA-256 of the original audio; a file changed during inference rejects the run. No
+manifest, manual key, saved key analysis, stems or transcription is rewritten.
+`reference.json` beside runs stores separately verified/published keys and provenance.
+Saving a person-verified reference is an explicit action. Download comparison exports
+loaded runs and references; Load library results and references reads all sidecars.
+
+`experiments/key/references-2026-09-11.json` is the inspectable source inventory for
+all 24 current recordings. Only title, artist and version metadata was sent to web
+search, with user authorization; no audio was uploaded. It preserves raw source values,
+direct URLs and recording/version notes. No detector result or filename was used as
+independent truth. Ten entries have published keys, nine have unresolved conflicts,
+three need an exact-version match, and two have no published key. Published metadata
+is fallible and is not a listening-verified gold standard.
+
+```sh
+node tools/mix-key-references.ts '/path/to/library' mix/experiments/key/references-2026-09-11.json
+# Explicitly persist the previewed metadata; never overwrites a person-verified reference:
+node tools/mix-key-references.ts '/path/to/library' mix/experiments/key/references-2026-09-11.json --write
+```
+
+Accuracy uses the latest run per track/backend, exact pitch class and mode, and accepts
+enharmonic spelling and Camelot equivalence. Disputed, missing, version-unverified,
+stale-hash and invalid references are unscored. Unknown/ambiguous predictions abstain
+and stay in the denominator; unavailable/errors do not. Multiple accepted reference
+keys require explicit documented ambiguity; conflicting publications are never silently
+converted into multiple accepted answers. Detector agreement is not accuracy.
+
+## Validation and limits
+
+On 2026-09-11, native libkeyfinder 2.2.8 and Essentia 2.1b6.dev1438 both returned C major
+for a 12-second synthetic C/F/G/C chord progression and Unknown for 12 seconds of
+silence. Bass correctly reported unavailable without stems. Full output is in
+[`../experiments/key/smoke-results.json`](../experiments/key/smoke-results.json).
+libkeyfinder took about 28 ms per fixture; Essentia about 45 seconds, including process
+startup. These are smoke checks, not real-library accuracy or full-song performance.
+No full library experiment has been run. Native setup completed with zero failures.
+
+Automated tests cover original-file selection, decode reuse, separate persistence,
+manual-key preservation, lease conflict/release, unavailable tools, reference import,
+normalization/scoring, explicit UI execution and stop-after-current behavior. Integrated
+browser inspection found an empty disconnected library and disabled Debug; the new
+panel still needs a connected rebuilt native backend for live visual verification.

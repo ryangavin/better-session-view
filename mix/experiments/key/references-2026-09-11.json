@@ -1,0 +1,490 @@
+{
+  "version": 1,
+  "researchedAt": "2026-09-11",
+  "policy": "Published metadata is fallible, not listening-verified ground truth. Disputed, missing and version-unverified entries excluded from scoring. No detector results used. No audio uploaded.",
+  "entries": [
+    {
+      "trackId": "27728257-7899-4684-a33c-076091bf6a6f",
+      "title": "SOFI Needs a Ladder",
+      "artist": "deadmau5 & SOFI",
+      "verification": "disputed",
+      "labels": [
+        "C major",
+        "F major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album listing and reissue disagree.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/sofi-needs-a-ladder/6155214",
+          "value": "C Major",
+          "recording": "Original mix, 2014 reissue, 6:41"
+        },
+        {
+          "url": "https://getsongkey.com/song/sofi-needs-a-ladder/oQKE8Y",
+          "value": "F / Open Key 12d",
+          "recording": "4x4=12, 2010, track 2, 6:34"
+        }
+      ]
+    },
+    {
+      "trackId": "7df63475-9ae5-41d4-be9e-0cf7082343cb",
+      "title": "Some Chords",
+      "artist": "deadmau5",
+      "verification": "disputed",
+      "labels": [
+        "G# minor",
+        "C# major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Transcribed intro and album database disagree.",
+      "sources": [
+        {
+          "url": "https://www.hooktheory.com/theorytab/view/deadmau5/some-chords",
+          "value": "G# minor",
+          "recording": "Intro transcription"
+        },
+        {
+          "url": "https://tunebat.com/Info/Some-Chords-deadmau5/7q3aKYrhCbTnxdRZ6xmkC6",
+          "value": "C# Major / 3B",
+          "recording": "4x4=12, 7:24"
+        }
+      ]
+    },
+    {
+      "trackId": "cd3c9f0d-dac0-4c60-b06a-bd4e83d7129e",
+      "title": "Raise Your Weapon",
+      "artist": "deadmau5",
+      "verification": "published",
+      "labels": [
+        "Ab minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Original mix identified; published reference, no listening verification.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/raise-your-weapon/3307281",
+          "value": "Ab Minor",
+          "recording": "Original mix, 8:22, 2012 reissue"
+        },
+        {
+          "url": "https://larslentzaudio.com/2018/12/14/deadmau5-chords-and-arpeggios/",
+          "value": "G# minor",
+          "recording": "Raise Your Weapon harmonic discussion"
+        }
+      ]
+    },
+    {
+      "trackId": "7384cafb-b281-4f07-b587-33c47481e550",
+      "title": "Sandstorm",
+      "artist": "Darude",
+      "verification": "version-unverified",
+      "labels": [
+        "E minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Local official-video edit not matched to database recording.",
+      "sources": [
+        {
+          "url": "https://tunebat.com/Info/Sandstorm-Darude/6Sy9BUbgFse0n0LPA5lwy5",
+          "value": "E minor / 9A",
+          "recording": "Sandstorm database recording"
+        }
+      ]
+    },
+    {
+      "trackId": "c63f305a-20d0-48d2-a1c0-861d06a54be5",
+      "title": "Blue (Da Ba Dee)",
+      "artist": "Eiffel 65",
+      "verification": "version-unverified",
+      "labels": [
+        "G minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Local remastered music video not conclusively matched to Gabry Ponte video edit.",
+      "sources": [
+        {
+          "url": "https://12notez.in/song/blue-da-ba-dee-gabry-ponte-video-edit-eiffel-65",
+          "value": "G Minor / 6A",
+          "recording": "Gabry Ponte Video Edit"
+        }
+      ]
+    },
+    {
+      "trackId": "0936d958-5a30-48bb-9b09-f5202afe5fa6",
+      "title": "How I Escaped the Matrix",
+      "artist": "Kanye West",
+      "verification": "missing",
+      "labels": [],
+      "provenance": "Web metadata research, 2026-09-11. Exact title/artist search found no musical key reference for this spoken video; not mapped to a different Kanye song.",
+      "sources": []
+    },
+    {
+      "trackId": "f6cb389e-e07b-437c-9a7d-0b1aaa81137b",
+      "title": "Around The World",
+      "artist": "Daft Punk",
+      "verification": "disputed",
+      "labels": [
+        "E minor",
+        "A# minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Music analysis and database disagree; A Dorian passage retained as raw evidence, not relabeled minor. Local video edit also unverified.",
+      "sources": [
+        {
+          "url": "https://www.attackmagazine.com/technique/passing-notes/daft-punk-basslines-the-ultimate-guide/",
+          "value": "E minor; bass A Dorian",
+          "recording": "Around The World bass analysis"
+        },
+        {
+          "url": "https://tunebat.com/Info/Around-the-World-Daft-Punk/1pKYYY0dkg23sQQXi0Q5zN",
+          "value": "A# minor / 3A",
+          "recording": "Around the World database recording"
+        }
+      ]
+    },
+    {
+      "trackId": "deda25dd-fb40-4091-8fad-82f6dc377602",
+      "title": "NeuroE",
+      "artist": "Half Life Beats",
+      "verification": "missing",
+      "labels": [],
+      "provenance": "Web metadata research, 2026-09-11. Exact title/artist search found no relevant published source. Filename and detector guesses are not independent references.",
+      "sources": []
+    },
+    {
+      "trackId": "b1d06f15-7f5b-4f29-a4a2-848b73b50ac3",
+      "title": "I Left My Wallet In El Segundo",
+      "artist": "A Tribe Called Quest",
+      "verification": "version-unverified",
+      "labels": [
+        "D major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Source heading says Official Video but FAQ says Talkie; unresolved recording identity.",
+      "sources": [
+        {
+          "url": "https://chordify.net/es/chords/a-tribe-called-quest-songs/i-left-my-wallet-in-el-segundo-talkie-chords",
+          "value": "D major",
+          "recording": "Official Video heading / Talkie FAQ"
+        }
+      ]
+    },
+    {
+      "trackId": "bfb12d5c-48ad-4f9d-b6d4-7e77b8eda8ee",
+      "title": "Leave Me Like This",
+      "artist": "Skrillex & Bobby Raps",
+      "verification": "disputed",
+      "labels": [
+        "Bb minor",
+        "Eb minor",
+        "F major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Published keys disagree.",
+      "sources": [
+        {
+          "url": "https://songbpm.com/%40skrillex/leave-me-like-this-9MKG3Ze5Gq",
+          "value": "A#/Bb minor",
+          "recording": "3:09"
+        },
+        {
+          "url": "https://songdata.io/track/6NRvZuFXn2ixp8YdzUvG5n/Leave-Me-Like-This-by-Skrillex-Bobby-Raps",
+          "value": "Eb minor / 2A",
+          "recording": "Quest For Fire, 3:08"
+        },
+        {
+          "url": "https://www.beatport.com/artist/skrillex/121017/tracks?page=2&per_page=150",
+          "value": "F Major",
+          "recording": "Leave Me Like This, original mix, 2023-02-17"
+        }
+      ]
+    },
+    {
+      "trackId": "dff3366e-7d5b-4d4a-bdae-b18f0ef62550",
+      "title": "RATATA",
+      "artist": "Skrillex, Missy Elliott & Mr. Oizo",
+      "verification": "disputed",
+      "labels": [
+        "D major",
+        "A major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Two catalogs say D major; DJ playlist says A major. Playlist recording not specified; retained unresolved rather than majority-voted.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/ratata/17426097",
+          "value": "D Major",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        },
+        {
+          "url": "https://www.mixgraph.io/tracks/mr-oizo-ratata",
+          "value": "D Major / 10B",
+          "recording": "2023-02-17, 2:06"
+        },
+        {
+          "url": "https://d11n7da8rpqbjy.cloudfront.net/thedjsvault/44020797997School_Teen_Dance__Hackathon.pdf?kref=fsUP8q6KLG9c&kuid=2f00909d-03c0-404c-aeaf-7fd8b4aebc7a-1748217600",
+          "value": "11B/A",
+          "recording": "DJ playlist RATATA by Skrillex, 124 BPM; edit unspecified"
+        }
+      ]
+    },
+    {
+      "trackId": "22582c50-6813-4f61-a5f7-d7781061167f",
+      "title": "Tears",
+      "artist": "Skrillex, Joker & Sleepnet",
+      "verification": "published",
+      "labels": [
+        "F minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album original, not later Lost Drop version.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/tears/17426099",
+          "value": "F Minor",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        }
+      ]
+    },
+    {
+      "trackId": "ec3af372-ac70-4606-b347-158df558bf20",
+      "title": "Rumble",
+      "artist": "Skrillex, Fred again.. & Flowdan",
+      "verification": "disputed",
+      "labels": [
+        "F# minor",
+        "C# minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album catalog keys disagree.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/artist/skrillex/121017/tracks?page=2&per_page=150",
+          "value": "Gb Minor",
+          "recording": "Rumble original mix, Quest For Fire"
+        },
+        {
+          "url": "https://tunebat.com/Info/Rumble-Skrillex-Fred-again-Flowdan/74fmYjFwt9CqEFAh8ybeBD",
+          "value": "C# Minor / 12A",
+          "recording": "Quest For Fire, 2:27"
+        }
+      ]
+    },
+    {
+      "trackId": "5a7e4ef8-b2c2-422b-a7ac-9e17862bd3ac",
+      "title": "Butterflies",
+      "artist": "Skrillex, Starrah & Four Tet",
+      "verification": "published",
+      "labels": [
+        "D minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album cut, not extended mix.",
+      "sources": [
+        {
+          "url": "https://www.mixgraph.io/tracks/four-tet-butterflies",
+          "value": "D Minor / 7A",
+          "recording": "Quest For Fire original, 3:15"
+        },
+        {
+          "url": "https://songbpm.com/%40skrillex/butterflies-aXeJEvr6aR",
+          "value": "D minor",
+          "recording": "3:16"
+        }
+      ]
+    },
+    {
+      "trackId": "e7cb179b-3cc4-458c-9161-f7a22f8034bf",
+      "title": "Inhale Exhale",
+      "artist": "Skrillex, Aluna & Kito",
+      "verification": "published",
+      "labels": [
+        "F minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album original; streaming master revisions not independently audited.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/inhale-exhale/17426104",
+          "value": "F Minor",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        },
+        {
+          "url": "https://www.mixgraph.io/tracks/aluna-inhale-exhale",
+          "value": "F Minor / 4A",
+          "recording": "Quest For Fire, 3:25"
+        }
+      ]
+    },
+    {
+      "trackId": "aea16c40-42a1-4fa8-84f3-431ba36e6f51",
+      "title": "A Street I Know",
+      "artist": "Skrillex & Eli Keszler",
+      "verification": "published",
+      "labels": [
+        "F minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Single catalog reference; no listening verification.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/a-street-i-know/17426105",
+          "value": "F Minor",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        }
+      ]
+    },
+    {
+      "trackId": "fb9392f4-8a23-4e08-aec2-7000f9453518",
+      "title": "XENA",
+      "artist": "Skrillex & Nai Barghouti",
+      "verification": "disputed",
+      "labels": [
+        "Bb minor",
+        "Db major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Relative major/minor conflict; not accepted as two ground-truth keys.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/xena/17426106",
+          "value": "Bb Minor",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        },
+        {
+          "url": "https://songbpm.com/%40skrillex/xena-BySlP8Ho5d",
+          "value": "C#/Db major",
+          "recording": "4:12"
+        }
+      ]
+    },
+    {
+      "trackId": "5e0150d1-0b69-4f7d-bbb7-46fab170aed1",
+      "title": "TOO BIZARRE (Juked)",
+      "artist": "Skrillex, Swae Lee, Siiickbrain & Posij",
+      "verification": "published",
+      "labels": [
+        "Ab minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Juked album version, not 2021 original.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/too-bizarre-juked/17426107",
+          "value": "Ab Minor",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        }
+      ]
+    },
+    {
+      "trackId": "1c55be0a-f58b-40b4-88dd-48d1e52fea76",
+      "title": "Hydrate",
+      "artist": "Skrillex, Flowdan, BEAM & PEEKABOO",
+      "verification": "published",
+      "labels": [
+        "C major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album original; catalogs agree on key.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/hydrate/17426108",
+          "value": "C Major",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        },
+        {
+          "url": "https://songdata.io/track/5yOx2ezoz2hBfoE9mItGVo/Hydrate-by-Skrillex-Flowdan-BEAM-PEEKABOO",
+          "value": "C Major / 8B",
+          "recording": "Quest For Fire, 3:36"
+        }
+      ]
+    },
+    {
+      "trackId": "0717ad3c-b350-4054-9371-9a0a66ab9d22",
+      "title": "Warped Tour '05",
+      "artist": "Skrillex with pete WENTZ",
+      "verification": "published",
+      "labels": [
+        "E major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album original with pete WENTZ credit.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/artist/skrillex/121017/tracks?page=2&per_page=150",
+          "value": "E Major",
+          "recording": "Warped Tour \u201905 with pete WENTZ, Quest For Fire"
+        }
+      ]
+    },
+    {
+      "trackId": "d18f3f6a-c48c-4d7a-b7b9-e517bd9a5924",
+      "title": "Good Space",
+      "artist": "Skrillex & Starrah",
+      "verification": "published",
+      "labels": [
+        "Db minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album original, 2:12; no listening verification.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/good-space/17426110",
+          "value": "Db Minor",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        }
+      ]
+    },
+    {
+      "trackId": "8d87c278-369d-4a1f-b756-3b73c64e7620",
+      "title": "Supersonic (My Existence)",
+      "artist": "Skrillex, Noisia, josh pan & Dylan Brady",
+      "verification": "disputed",
+      "labels": [
+        "A minor",
+        "A major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Single catalogs disagree; local album master additionally unverified.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/label/owsla/22168/tracks?page=1&perPage=50&per_page=100&preorders=true&sortBy=genreName%2BASC",
+          "value": "A Minor",
+          "recording": "2021 original single"
+        },
+        {
+          "url": "https://tunebat.com/Info/Supersonic-My-Existence-with-Noisia-josh-pan-Dylan-Brady-Skrillex-Noisia-josh-pan-Dylan-Brady/7gCuKTyBb5nurNalzs0Hvp",
+          "value": "A Major / 11B",
+          "recording": "Original single, 2:47"
+        }
+      ]
+    },
+    {
+      "trackId": "565a525f-3026-443b-9f66-f2525ea70682",
+      "title": "Hazel Theme",
+      "artist": "Skrillex",
+      "verification": "published",
+      "labels": [
+        "F major"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album original, 1:51; no listening verification.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/track/hazel-theme/17426112",
+          "value": "F Major",
+          "recording": "Quest For Fire original mix, 2023-02-17"
+        }
+      ]
+    },
+    {
+      "trackId": "c1c8f9ed-821c-422f-806a-de188fda10c8",
+      "title": "Still Here (With The Ones That I Came With)",
+      "artist": "Skrillex, Porter Robinson & Bibi Bourelly",
+      "verification": "disputed",
+      "labels": [
+        "F major",
+        "C major",
+        "D minor"
+      ],
+      "provenance": "Web metadata research, 2026-09-11. Album listings and DJ compilation disagree; not Porter edit.",
+      "sources": [
+        {
+          "url": "https://www.beatport.com/artist/skrillex/121017/tracks?page=2&per_page=150",
+          "value": "F Major",
+          "recording": "Still Here original mix, Quest For Fire"
+        },
+        {
+          "url": "https://songdata.io/track/4cagZASntpw5soVIOcqRSF/Still-Here-with-the-ones-that-I-came-with-by-Skrillex-Porter-Robinson-",
+          "value": "C Major / 8B",
+          "recording": "Quest For Fire, 5:12"
+        },
+        {
+          "url": "https://dj-compilations.com/releases/heavy-hits-24-feb-2023/",
+          "value": "7A",
+          "recording": "Original mix, 5:12"
+        }
+      ]
+    }
+  ]
+}

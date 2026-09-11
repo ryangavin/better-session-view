@@ -36,6 +36,13 @@ import type { LinkAudioAPI, LinkBlock, LinkCommand, LinkOutput } from '../src/li
  */
 expose({
   audioDevices: (): Promise<AudioDevice[]> => ipcRenderer.invoke('openflow:audio-devices'),
+  keyExperiments: {
+    status: () => ipcRenderer.invoke('openflow:key-experiments-status'),
+    busy: () => ipcRenderer.invoke('openflow:key-experiments-busy'),
+    read: (id:string) => ipcRenderer.invoke('openflow:key-experiments-read',id),
+    run: (ask:{trackId:string;backends:import('../src/keyExperiments.ts').KeyBackend[]}) => ipcRenderer.invoke('openflow:key-experiments-run',ask),
+    reference: (ask:{trackId:string;labels:string[];provenance:string}) => ipcRenderer.invoke('openflow:key-experiments-reference',ask),
+  } satisfies import('../src/keyExperiments.ts').KeyExperimentAPI,
   keyVersion: (): Promise<number> => ipcRenderer.invoke('openflow:key-version'),
   analyzeKey: (id: string) => ipcRenderer.invoke('openflow:key-analyze', id),
   bassMidi: {

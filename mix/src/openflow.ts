@@ -284,6 +284,7 @@ export interface KeptScans {
 
 interface Bridge {
   audioDevices(): Promise<AudioDevice[]>;
+  keyExperiments: import('./keyExperiments.ts').KeyExperimentAPI;
   keyVersion(): Promise<number>;
   analyzeKey(id: string): Promise<Library>;
   bassMidi: import('./bassMidi.ts').BassMidiAPI;

@@ -6,6 +6,7 @@ import { openflow, type Library } from '../../openflow.ts';
 import { KEY_VERSION, keyLabel, savedKey } from '../../key.ts';
 import { backfillKeys, keyBackfillPlan, type KeyBackfillProgress } from '../../keyBackfill.ts';
 import './key.css';
+import { KeyComparison } from './KeyComparison.tsx';
 
 export function KeyLab({ mix }: { mix: Mix }) {
   const [library, setLibrary] = useState<Library>(mix.library);
@@ -83,6 +84,8 @@ export function KeyLab({ mix }: { mix: Mix }) {
         <Button disabled={running || !bridge} onPress={() => void refresh()}>Refresh saved evidence</Button>
         <Button disabled={running || !compatible || !bridge || !track?.stems || !track.model || !track.sources.includes('bass')} onPress={() => void run(track?.id)}>Analyze selected track</Button>
       </Group></Toolbar>
+      <KeyComparison key={library.root} track={track} library={library} />
+      <details><summary>Canonical saved bass-key diagnostics and backfill</summary>
       {track && <section aria-label="Saved key evidence">
         <h3>{track.title}: {keyLabel(track)}{!track.key && current?.status === 'candidate' ? ' ?' : ''}</h3>
         {track.key && <p>Manual key: {track.key}. Analysis preserves this override.</p>}
@@ -109,6 +112,7 @@ export function KeyLab({ mix }: { mix: Mix }) {
         {problem && <p role="alert">{problem}. Refresh the preview and retry when ready.</p>}
         <ol aria-label="Analysis log">{messages.map((message, i) => <li key={i}>{message}</li>)}</ol>
       </section>
+      </details>
     </div>
   </Harness>;
 }
