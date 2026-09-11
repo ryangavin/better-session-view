@@ -72,7 +72,7 @@ export function LibraryStems({ sources, title, onSeparate }: { sources: readonly
   const description = available.length ? `Available stems: ${available.map(stem => stem.name).join(', ')}` : 'No separated stems';
   if (!available.length && onSeparate) {
     const label = `Separate stems for ${title ?? 'this track'}`;
-    return <span className="mf-library-stem-cell"><ButtonFace className="mf-library-separate" aria-label={label} title={label}
+    return <span className="mf-library-stem-cell"><ButtonFace tone="quiet" className="mf-library-separate" aria-label={label} title={label}
       draggable onDragStart={event => { event.preventDefault(); event.stopPropagation(); }}
       onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}
       onClick={event => { event.stopPropagation(); onSeparate(); }}>

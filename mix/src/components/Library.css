@@ -485,10 +485,13 @@
 
 .mf-library-stem-empty { width:13px; height:13px; background:var(--caption); opacity:.5; }
 
-.mf-library-separate { width:24px; height:18px; padding:0; flex:none; color:var(--ui); }
-.mf-library-separate svg { display:block; }
-.mf-library-separate.wdg-button-body:hover:not(:disabled),
-.mf-library-separate.wdg-button-body:focus-visible:not(:disabled) {
+.mf-library-separate.wdg-button-body[data-tone='quiet'] {
+  width:24px; height:18px; padding:0; flex:none;
+  border:0; background:none; color:var(--caption);
+}
+.mf-library-separate svg { display:block; color:var(--caption); }
+.mf-library-separate:hover:not(:disabled) svg,
+.mf-library-separate:focus-visible:not(:disabled) svg {
   color:var(--fg);
 }
 .mf-library-separate:focus-visible { outline:1px solid var(--focus); outline-offset:1px; }

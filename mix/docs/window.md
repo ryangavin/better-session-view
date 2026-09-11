@@ -728,6 +728,7 @@ setup or running-job UI, with the existing busy-job policy intact. Pointer activ
 is isolated from row selection and dragging; the native button supports Enter/Space.
 Colored tiles still represent only actual separated sources and remain unchanged.
 Hovering or keyboard-focusing the separation button lights only its icon with the
-shared button marker color; its normal face and border remain unchanged. This standalone
-face uses the app's `--ui` and `--fg` colors directly because widget-local tokens are
+shared button marker color. It uses the quiet-button treatment: a muted `--caption`
+icon at rest, bright `--fg` on hover, and no face or border highlight. The icon uses
+these app colors directly because widget-local tokens are
 scoped to a `.wdg` wrapper, which the library cell does not have.
