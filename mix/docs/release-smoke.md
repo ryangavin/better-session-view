@@ -77,6 +77,33 @@ evidence with the candidate identity before another run replaces it. A harness/s
 failure is distinguished from a reproduced product defect. These checks supplement the
 source gate, not the full-app native smoke.
 
+The offline voice regression is a separate rendered-audio check:
+
+```sh
+npm run test:mix:browser -- --grep 'offline actual voice'
+```
+
+`/harness/tempo-render.html` renders actual DeckVoice/Signalsmith into
+OfflineAudioContext buffers only; creating a real-time AudioContext is forbidden in
+the test. A 220Hz tone and known syncopated percussion at a 100BPM grid establish unity,
+120BPM pitch-preserving and vinyl paths, including repeated 1.2–4.8-second source loops.
+Two additional cases retime 120→121BPM at output second 2 and back at second 4, measuring
+both paths against the integrated piecewise rate. Native playback must reuse its actual
+source node. Position traces are captured during rendering, so later revisions cannot
+rewrite the evidence for an earlier interval.
+The JSON attachment records rendered frequency, percussion peak times and voice-reported
+source positions. It checks groove intervals against uniform scaling and position against
+the actual source markers. The native peak locator allows 1ms because resampling can
+move the largest 1700Hz carrier peak within a burst; constant-rate native interval error
+remains bounded to two 48kHz samples. With rate changes the carrier-peak offset can change,
+so native retime allows 1.5ms source-peak and 1ms interval error. The source advancement
+trace must still agree with integrated rate to within two samples. Stretched envelope peaks allow 5ms (observed movement at most
+2.5ms), distinguishing the fixture's 30/40ms timing displacements. Frequency error must remain below 1Hz. Missing
+audio/transients fail explicitly, and the settled tone must have no silent run of 1ms
+or longer. Retain failed results; do not substitute mocked DSP.
+This is a constant-grid voice test, not proof of musical-grid inference, long-span leader
+correction, all loop seams, UI toggle wiring, Cue audio continuity or real listening.
+
 ### Small separate Electron smoke
 
 After the browser gate, the coordinator launches the identified native candidate in a
@@ -194,10 +221,10 @@ change. Unless a row explicitly starts sound, decks must remain paused.
 
 ## Pending stable-tempo acceptance
 
-These are release requirements for the forthcoming grid/Sync design, **not verified
-behavior or a specification of an unchosen algorithm**. The **Stable musical tempo
-and beat grids** task owns the design and the grid/voice-rate contracts. Implementation
-is authorized and in progress; automated acceptance still awaits the stable contract. Coordinate
+These are release requirements for the grid/Sync design, **not a blanket verification
+claim**. The **Stable musical tempo and beat grids** task owns the design and the
+grid/voice-rate contracts. Its implementation is committed; acceptance remains scoped
+to the observed cases and measurement contracts. Coordinate
 with that owner before promoting these cases into deterministic Playwright tests.
 Keep the existing immediate-Cue and Sync-on/off Play-latch tests unchanged as regressions.
 
@@ -210,7 +237,7 @@ Keep the existing immediate-Cue and Sync-on/off Play-latch tests unchanged as re
 | T5 / Link authority available | Enable Link, change peer tempo, exercise local follower Sync and observe the authority transition back to standalone. | Link tempo/phase remains meaningful; local natural-speed policy must not silently override external authority. Check native peer behavior and effective voice/grid state alongside UI. Keep H2's independent-clock and no-unintended-peer-Stop checks. |
 | T6 / tonal and percussion fixture, fresh default settings | Confirm **Preserve pitch** defaults on; change speed with it on, then off. Exercise a loop and Cue/Play latch on both paths. | On retains source pitch while speed changes; off couples pitch to the tempo ratio like vinyl. This is independent of key sync. Measure rendered tonal frequency and source advancement, not the toggle label alone. Reported/integrated position must agree with rendered output on both paths, including through loop/Cue transitions. |
 
-Before automation, obtain from the tempo owner: deterministic original-audio/beat-grid
+Before automating remaining cases, obtain from the tempo owner: deterministic original-audio/beat-grid
 fixtures (including transient displacement), the stable musical BPM contract, what
 normal speed means at the voice path, correction-span/rate/phase bounds, and a read-only
 measurement surface. Freeze those agreed tolerances in the test with its fixture; do
@@ -225,8 +252,9 @@ inter-onset groove timing after uniform scaling, and residual phase/rate smoothn
 against the raw-grid baseline. Preserve-pitch frequency and rendered-position checks
 extend that evidence to both playback paths. These fixture details are proposals until
 the owner supplies actual tested data, numeric bounds and probes; do not automate an
-assumed correction design. T6 is likewise **BLOCKED** for automation until that evidence
-contract is available. Rendered frequency/position checks do not replace real listening.
+assumed correction design. T6's constant-grid voice-frequency/position subset is now
+automated by the offline suite above; default/toggle wiring and broader engine/rig
+acceptance still require their own evidence. Rendered checks do not replace real listening.
 
 ## Cold setup, failures and physical rig
 

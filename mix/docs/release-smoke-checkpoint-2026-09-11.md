@@ -113,6 +113,78 @@ initially caught an optional-position type error in the concurrent controls test
 controls owner corrected it, and the full repository typecheck rerun passed (exit 0).
 This was not a runtime failure.
 
+## Offline pitch/groove regression
+
+The tempo owner supplied the concrete DeckVoice/diagnostics contract and requested
+actual rendered evidence. Added `harness/tempo-render.html`/`.ts` and
+`e2e/tempo-render.spec.ts`: five OfflineAudioContext renders of a 220Hz tone and known
+syncopated percussion on a 100BPM grid. Cases are native unity, 120BPM with pitch
+preserved, 120BPM vinyl behavior, and both 120BPM paths with a 1.2–4.8-second source
+loop. No real-time AudioContext is permitted by the test; no device output is connected.
+
+This test **found an actual scheduling defect**. Before the owner fix, pitch-preserving
+nonloop playback rendered silence (RMS 0); the loop rendered partially, with a misleading
+117.6Hz whole-window frequency. Native paths correctly rendered 220/264Hz. A read-only
+worklet-message barrier did not change the failure. The tempo owner confirmed that
+future `outputTime` values in DeckVoice.tick prematurely pruned Signalsmith's active
+timeline, and corrected all three boundary/end/loop schedules to use current time as
+the pruning point with a separate future output time. The regression passes against
+that actual source fix; no mocked DSP or fallback was substituted. An earlier harness
+readiness deadline was independently replaced with the real preparation promise.
+
+| Render | Frequency Hz | Max reported-source error | Max groove interval error |
+|---|---|---|---|
+| Native unity | 220.0000 | <0.001ms | 0ms |
+| Pitch preserved 1.2× | 220.3958 | 2.496ms | 1.354ms |
+| Vinyl 1.2× | 264.0000 | 0.396ms | <0.001ms |
+| Pitch preserved loop 1.2× | 220.3960 | 2.071ms | 1.250ms |
+| Vinyl loop 1.2× | 264.0000 | 0.396ms | <0.001ms |
+
+The fixed five-render case passed, then passed **three repetitions / fifteen renders**
+with zero retries (4.8 seconds total, 05:54:51 UTC start). Frequency tolerance is 1Hz;
+stretch source/groove error must be below 5ms, with observed worst error below 2.5ms.
+Native source-peak error allows 1ms because resampling changes which 1700Hz carrier peak
+is largest; native inter-onset error remains within two 48kHz samples. RMS and every
+expected percussion event must be present, so silence cannot pass position assertions.
+The fixture exercises interior groove and loop position; it does not prove every seam,
+musical-grid inference, ongoing leader correction, toggle wiring or audible Cue continuity.
+
+HEAD was `65e7251eb0a18382dd268f823588cf907eb02b4d` with the tempo owner's implementation
+and fix still in the working tree. Its source commit is a required dependency of this
+test. Numerical before/after reports remain local at
+`report/mix-tempo-third-results.json`, `report/mix-tempo-fixed-results.json` and
+`report/mix-tempo-repeat-results.json`; retain them with the eventual candidate identity.
+Physical listening, MIDI and native setup remain separate acceptance evidence.
+
+The complete browser suite then passed **7/7** in 14.7 seconds, including all six
+unchanged library/Cue/latch cases. E2e/fixture typechecking and full repository
+typechecking passed (exit 0), as did `git diff --check` at this checkpoint.
+
+The owner's requested in-flight retime follow-up added two renders: 120→121BPM at
+output second 2, then back to 120 at second 4, for native and stretch paths. It caught
+a second real scheduling edge: a future-end schedule at exactly the new segment's
+start time pruned that active start because Signalsmith removes segments at or after
+the pruning timestamp. The source-position trace still advanced correctly while actual
+output went silent. The owner changed boundary guards to queue strictly after the
+previous boundary; the seven-render case then passed. Preserved-pitch retime measured
+220.3955Hz, 2.306ms max source error and 1.214ms max interval error. Vinyl retime measured
+265.1002Hz over the mixed-rate window (expected 265.1), 0.984ms source error and 0.485ms
+interval error, with exactly one actual native source node reused. Source advancement
+agreed with the piecewise integrated rate within 2.7e-15 seconds on both paths.
+Before/after reports are `report/mix-tempo-retime-trace-results.json` and
+`report/mix-tempo-retime-fixed-results.json`. Native retime's envelope-peak tolerances
+account for a different carrier peak becoming largest as rate changes; the underlying
+source-advancement assertion remains within two samples. The final regression also
+rejects any settled tonal silence lasting 1ms or longer.
+
+Final verification against the owner's committed source **998052b** passed the full
+suite three times: **21/21 Playwright tests in 41.9 seconds**, including 21 actual
+offline renders (seven scenarios per pass), with no retries, skips or flaky results.
+The original six library/Cue/latch cases are unchanged and all passed. Full repository
+and e2e typechecking passed, and the scoped diff is whitespace-clean. The final retained
+report is `report/mix-tempo-final-results.json`; real-song, physical controller and
+hardware listening remain unverified by this task.
+
 ## Next bounded run
 
 After the coordinator freezes the candidate and provides a safe window: record its
