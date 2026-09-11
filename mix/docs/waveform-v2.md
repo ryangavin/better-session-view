@@ -124,3 +124,8 @@ default cases. Check V2 in the existing harness at localhost:5673 without playba
 **Prism**, **Aurora**, and **Ember** offer three richer frequency palettes in the
 starting-point selector. They never apply automatically. Their settings, two-source
 rendering evidence and limitations are in [waveform-color-studies.md](waveform-color-studies.md).
+
+Prism now matches the captured native-window Custom values and the production
+Theme palette: Clean, opacity 1, curve 2.114115, white edge .8788055, RGB lightness
+[50,46,46]. Its two V2 representations use the same captured geometry and weights.
+Existing Custom state survives this preset-definition update unchanged.

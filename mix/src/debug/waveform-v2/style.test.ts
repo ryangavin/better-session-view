@@ -14,3 +14,13 @@ describe('waveform visual settings',()=>{
     expect(presentationOf({...DEFAULT_STYLE,low:3,high:.25},'rgb').weights).toEqual([3,1,.25]);
   });
 });
+
+it.each(['Prism','Aurora','Ember'])('keeps debug %s aligned with its production treatment', async name => {
+  const { SPECTRAL_PRESETS } = await import('@openflow/widgets/theme/spectral.ts');
+  const style = PRESETS.find(p => p.name === name)!.style;
+  const { waveform, ...spectral } = SPECTRAL_PRESETS.find(p => p.name === name)!.style;
+  expect(presentationOf(style,'rgb')).toEqual({layout:waveform!.layout,spectral,
+    weights:waveform!.weights,edge:waveform!.edge,fillOpacity:waveform!.fillOpacity,
+    colorCurve:waveform!.colorCurve,edgeTint:waveform!.edgeTint,background:waveform!.background});
+  expect([style.smooth,style.detail,style.height]).toEqual([waveform!.smooth,waveform!.detail,waveform!.headroom]);
+});

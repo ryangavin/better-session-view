@@ -2,8 +2,9 @@ import { ButtonFace } from '@openflow/widgets/controls/ButtonFace.tsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { openflow, type Track } from '../openflow.ts';
 import { STEMS } from '../mock.ts';
-import { spectralPainter } from '@openflow/widgets/theme/spectral.ts';
-import { useTheme } from '@openflow/widgets/theme/context.ts';
+import { waveformPainter } from '@openflow/widgets/theme/spectral.ts';
+// Use the provider's entry: a separately optimized context.ts can become a second context in Vite.
+import { useTheme } from '@openflow/widgets/theme/ThemeRoot.tsx';
 import { libraryOverview, type LibraryColumn } from '../libraryOverview.ts';
 import { onScanChange } from '../scanChanges.ts';
 
@@ -29,7 +30,8 @@ export function LibraryAnalysis({ song, root }: { song: Track; root: string | nu
   const [columns, setColumns] = useState<LibraryColumn[] | null>(null);
   const [status, setStatus] = useState<'empty' | 'pending' | 'failed'>('empty');
   const theme = useTheme();
-  const paint = useMemo(() => spectralPainter(theme.spectral, theme.waveformBase, theme.waveformSilence),
+  const treatment = theme.spectral.mode === 'spectral' ? theme.spectral.waveform : undefined;
+  const paint = useMemo(() => waveformPainter(theme.spectral, theme.waveformBase, theme.waveformSilence),
     [theme.spectral, theme.waveformBase, theme.waveformSilence]);
   useEffect(() => {
     let cancelled = false, visible = false, dirty = true, inFlight = false, revision = 0;
@@ -60,8 +62,8 @@ export function LibraryAnalysis({ song, root }: { song: Track; root: string | nu
   const description = columns ? 'Saved whole-song waveform' : status === 'pending' ? 'Loading saved waveform'
     : status === 'failed' ? 'Could not read saved waveform' : 'No saved original waveform';
   return <span ref={element} className="mf-library-analysis" role="img" aria-label={description} title={description}>
-    {columns ? <svg viewBox="0 0 68 18" aria-hidden="true">{columns.map((column, index) =>
-      <path key={index} d={column.path} stroke={paint(column.energy)} strokeWidth="1" />)}</svg>
+    {columns ? <svg viewBox="0 0 68 18" aria-hidden="true" style={{background:treatment?.background}}>{columns.map((column, index) =>
+      <path key={index} d={column.path} stroke={paint(column.energy)} strokeWidth="1" opacity={treatment?.fillOpacity} />)}</svg>
       : <span className="mf-library-analysis-empty" aria-hidden="true">—</span>}
   </span>;
 }

@@ -9,7 +9,7 @@ const TOPOLOGY_STYLE:Style={finish:'clean',opacity:1,curve:.5,smooth:.35,detail:
 export const DEFAULT_STYLE:Style={...TOPOLOGY_STYLE,finish:'vivid',opacity:.38,curve:1.4,detail:2,blend:100,edge:.95,low:.5,high:2,hues:[0,120,240],saturation:[100,100,100],lightness:[50,50,50]};
 /** Opt-in color studies. Geometry uses the documented Vivid peaks defaults; no stored state is changed. */
 export const COLOR_STUDIES:{name:string;style:Style}[]=[
-  {name:'Prism',style:{...DEFAULT_STYLE,opacity:.68,curve:2.3,edge:.85,low:.85,high:1.8,hues:[0,120,240],saturation:[100,100,100],lightness:[46,46,46]}},
+  {name:'Prism',style:{...DEFAULT_STYLE,finish:'clean',opacity:1,curve:2.114115,edge:.8788055,low:.85,high:1.8,hues:[0,120,240],saturation:[100,100,100],lightness:[50,46,46]}},
   {name:'Aurora',style:{...DEFAULT_STYLE,opacity:.88,curve:2.3,edge:.88,low:.85,high:1.8,hues:[275,95,185],saturation:[100,100,100],lightness:[30,25,19]}},
   {name:'Ember',style:{...DEFAULT_STYLE,opacity:.88,curve:2.3,edge:.9,low:.85,high:1.8,hues:[22,325,225],saturation:[100,100,100],lightness:[27,23,28]}},
 ];

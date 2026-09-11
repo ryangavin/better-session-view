@@ -168,12 +168,18 @@ their own cells, so waveform-only, stems-only, both and neither cannot share a v
 stack with the neighboring song. Adding Stems to an older column arrangement places it
 after Analysis without moving the person's other columns.
 
+`LibraryAnalysis.tsx` imports `useTheme` through `theme/ThemeRoot.tsx`, the same
+entry as the app provider and Play view. Importing `theme/context.ts` directly can
+create a separate Vite optimized context while ThemeRoot's CSS keeps it served as
+source; that preview reads the default theme rather than the Settings provider.
+
 `LibraryAnalysis.tsx` requests the existing `analysis.scans` cache only when a cell becomes
 visible, with at most two disk reads in flight. `libraryOverview.ts` reduces its min/max
 bins to the miniature and averages each column’s saved low/mid/high energy. The shared
-`spectralPainter` uses the current waveform palette and strength, repainting on theme
+`waveformPainter` uses the current waveform palette, treatment and strength, repainting on theme
 changes without rereading the cache. The library has no deck identity, so its miniature
-always uses frequency paint. It never fetches audio, decodes, measures, or writes a cache. Root or
+uses neutral waveform paint in Deck color mode and frequency paint in Spectral mode.
+It never fetches audio, decodes, measures, or writes a cache. Root or
 track replacement clears the view and ignores stale results. A successful scan save emits
 `openflow:scans-changed` with the library root and track ID after atomic publication.
 `scanChanges.ts` shares one IPC listener across mounted rows and notifies only the matching
@@ -676,6 +682,23 @@ waveforms share exactly the same identities. Guitar and piano have explicit role
 independent of generic status colors. `Waveform` and `WarpLane` subscribe to the theme
 context and repaint when it changes, including while playback is paused. No audio,
 track metadata or playback state is reset to change a theme.
+
+The Theme editor's Spectral palette includes **Prism**, the captured V2 Clean
+finish: RGB hues, saturation 100, lightness [50,46,46], strength 100, opacity 1,
+curve 2.114115, white edge .8788055, weights [.85,1,1.8], smooth .35, detail 2,
+height .86. Production keeps its blended representation and native 250/2500 Hz
+analysis. Shared widgets convert cached power to RMS for this treatment; saved
+analysis never changes. V2 Prism shares these settings for both representations.
+Choosing a palette preserves Spectral/Deck mode. Stored Custom settings are not
+migrated or auto-applied. Library previews repaint loaded numeric columns under
+the current theme, including a cache read completing after a theme change.
+
+**Aurora** and **Ember** are also production Spectral palettes with their reviewed
+Vivid settings unchanged (see waveform-color-studies.md). Library miniatures apply
+the selected RMS frequency weights, contrast, palette, fill opacity and backing.
+They retain their compact 68-column geometry; the production deck waveform applies
+the complete silhouette/edge treatment. Theme changes never invalidate saved scans.
+
 
 ## What is invented
 

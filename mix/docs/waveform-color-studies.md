@@ -1,20 +1,22 @@
 # Opt-in waveform color studies
 
 `COLOR_STUDIES` in `debug/waveform-v2/style.ts` adds **Prism**, **Aurora**, and **Ember**
-to V2's existing selector. They are never applied on opening the page. No initialization,
-local-storage migration, default change, crossover change or production renderer change
-is part of this iteration. Selecting a preset explicitly uses the existing style-selection
-behavior. Ryan's current custom view was unavailable: exact comparison with it is unverified.
+to V2's existing selector. They are never applied on opening the page. Prism now
+matches Ryan's captured native-window Custom settings and is also available in the
+production Theme selector. Aurora and Ember are also available in production and
+retain the original study settings.
+No stored custom settings, crossovers or defaults are changed automatically.
 
 All three use the existing production spectral painter and peak silhouette. Hue varies
 with measured band energy, not time. They retain Vivid peaks' geometry: smoothness 0.35,
 detail 2 and height ratio 0.86. Color strength is 100%; each band's saturation is 100%.
-Relative low/mid/high weights are 0.85/1/1.8 and color contrast is 2.3. These fixed settings
-were checked on two recordings, not fitted or normalized separately for each track.
+Relative low/mid/high weights are 0.85/1/1.8. Color contrast is 2.3 for Aurora/Ember
+and 2.114115 for Prism. The earlier two-recording study is documented below, separately
+from the newly captured Prism settings.
 
 | Study | Low / mid / high hue | Low / mid / high lightness | Fill opacity | Edge |
 |---|---|---|---|---|
-| Prism | 0° / 120° / 240° | 46% / 46% / 46% | 0.68 | 0.85 |
+| Prism | 0° / 120° / 240° | 50% / 46% / 46% | 1 | 0.8788055 (white) |
 | Aurora | 275° / 95° / 185° | 30% / 25% / 19% | 0.88 | 0.88 |
 | Ember | 22° / 325° / 225° | 27% / 23% / 28% | 0.88 | 0.90 |
 
@@ -25,7 +27,16 @@ even rainbow. Aurora offers a cooler violet/green/cyan family. Ember offers oran
 magenta and blue for a warmer, narrower family. Both alternatives restrain individual
 band lightness to avoid clipping where non-primary palette channels add together.
 
+Prism uses Clean (white edge, no special background); Aurora/Ember use Vivid.
+V2 applies the settings to both its layer and spectrum views. Production retains
+its blended waveform representation and converts cached power to RMS before weighting.
+
 ## Evidence and limits
+
+The comparison below records the **earlier Prism study**, with lightness [46,46,46],
+opacity .68, curve 2.3 and spectral edge .85. Those archived images and numerical
+observations are not validation of the newly captured Clean Prism settings.
+
 
 The isolated browser rendering called V2's real `measure` → `prepare` → `paintTopology`
 path and the installed production `paintSpectralOutline`, without a server, playback,

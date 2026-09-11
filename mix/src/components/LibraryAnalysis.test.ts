@@ -111,3 +111,39 @@ it('shows no tile grid when stems are absent', () => {
   expect(view.getByRole('img').getAttribute('aria-label')).toBe('No separated stems');
   expect(view.container.querySelector('[data-stem]')).toBeNull();
 });
+
+it('recolors a mounted preview for theme changes and pending reads without rereading analysis', async () => {
+  const { ThemeRoot } = await import('@openflow/widgets/theme/ThemeRoot.tsx');
+  const { DEFAULT_THEME } = await import('@openflow/widgets/theme/theme.ts');
+  const { PRISM_SPECTRAL, SPECTRAL_PRESETS } = await import('@openflow/widgets/theme/spectral.ts');
+  vi.stubGlobal('IntersectionObserver', class {
+    constructor(private callback: (entries: { isIntersecting: boolean }[]) => void) {}
+    observe() { this.callback([{ isIntersecting: true }]); }
+    disconnect() {}
+  });
+  let release: (value: typeof saved) => void = () => {};
+  scans.mockImplementation(() => new Promise(resolve => { release = resolve; }));
+  const song = { id:'theme-song',stems:'' } as Track;
+  const child = h(LibraryAnalysis,{song,root:'library'});
+  const themed = (spectral = PRISM_SPECTRAL) => h(ThemeRoot,{theme:{...DEFAULT_THEME,spectral}},child);
+  const view = render(themed(SPECTRAL_PRESETS[0].style));
+  await waitFor(() => expect(scans).toHaveBeenCalledTimes(1));
+  view.rerender(themed());
+  await act(async () => release(saved));
+  const path = view.container.querySelector('svg path')!;
+  expect(path.getAttribute('stroke')).toBe('rgb(255, 0, 0)');
+  view.rerender(themed(SPECTRAL_PRESETS.find(p => p.name === 'Warm')!.style));
+  expect(path.getAttribute('stroke')).not.toBe('rgb(255, 0, 0)');
+  for (const name of ['Aurora','Ember']) {
+    view.rerender(themed(SPECTRAL_PRESETS.find(p => p.name === name)!.style));
+    expect(path.getAttribute('stroke')).not.toBe('rgb(255, 0, 0)');
+    expect(path.getAttribute('opacity')).toBe('0.88');
+    expect(view.container.querySelector('svg')!.style.background).toBe('#090913');
+  }
+  view.rerender(themed({...PRISM_SPECTRAL,mode:'deck'}));
+  expect(path.getAttribute('stroke')).toMatch(/^#/);
+  view.rerender(themed());
+  expect(view.container.querySelector('svg path')).toBe(path);
+  expect(path.getAttribute('stroke')).toBe('rgb(255, 0, 0)');
+  expect(scans).toHaveBeenCalledTimes(1);
+});
