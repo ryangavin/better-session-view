@@ -42,3 +42,8 @@ html/
 
 # local key comparison binaries/venv; never packaged or committed
 mix/.key-experiments/
+
+# obsolete local widgets bench build and machine-specific design-sync state
+widgets/bench/dist/
+widgets/ds-bundle/.stories-map.json
+widgets/ds-bundle/_ds_needs_recompile

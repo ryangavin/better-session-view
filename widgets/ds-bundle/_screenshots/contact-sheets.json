@@ -1,0 +1,32 @@
+[
+  {
+    "sheet": 1,
+    "components": [
+      "Chain",
+      "Device",
+      "DevicePortRow",
+      "Divider",
+      "Graph",
+      "GraphNode",
+      "Knob",
+      "Label",
+      "Meter",
+      "NumberField",
+      "Panel",
+      "PanelColumn",
+      "Port",
+      "Rack",
+      "Row",
+      "Segmented"
+    ]
+  },
+  {
+    "sheet": 2,
+    "components": [
+      "Select",
+      "Slider",
+      "Toggle",
+      "Widget"
+    ]
+  }
+]
