@@ -196,7 +196,13 @@ stopped stems stay stopped. Deck Cue stores a combination checkpoint: source pos
 participation, selections and loop regions, excluding gains. Focused Cue addresses only
 one source. Paused away from the checkpoint, Cue stores the current state; playing Cue
 returns and pauses; holding at the checkpoint auditions and release restores it. Play
-while held latches playback. Keyboard Space holds Cue and Enter takes over; release,
+while held latches playback. Cue audition starts immediately, including against a
+running reference, without snapping its onset. The latch is the alignment point:
+with Sync enabled and a running local leader or Link reference, Play applies the
+canonical nearest-beat phase correction. With Sync off it keeps the audition voice
+and timing unchanged. Releasing Cue after either latch keeps playing. A Play press
+while audio resume is still pending retains this policy when the audition starts.
+Keyboard Space holds Cue and Enter takes over; release,
 cancel, lost capture, window blur and unmount cannot leave an audition running. Pending
 preparation/resume and launch revisions prevent obsolete audio from starting.
 

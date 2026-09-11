@@ -9,7 +9,7 @@ function setup(sysex=false,auto=false) {
   const commands={
     setDeck:vi.fn((id:string,key:string,value:number)=>{state={...state,decks:state.decks.map(d=>d.id===id?{...d,[key]:value}:d)};emit();}),
     setMaster:vi.fn((key:string,value:number)=>{state={...state,[key]:value};emit();}),
-    setMasterEq:vi.fn(),setDeckEq:vi.fn(),cueDeck:vi.fn(),setDeckPlaying:vi.fn(),setDeckSync:vi.fn(),setRunning:vi.fn(),stopAll:vi.fn(),beatJump:vi.fn(),quickLoop:vi.fn(),resizeLoop:vi.fn(),setDeckLoopEnabled:vi.fn(),
+    moveDeck:vi.fn(),setMasterEq:vi.fn(),setDeckEq:vi.fn(),cueDeck:vi.fn(),setDeckPlaying:vi.fn(),setDeckSync:vi.fn(),setRunning:vi.fn(),stopAll:vi.fn(),beatJump:vi.fn(),quickLoop:vi.fn(),resizeLoop:vi.fn(),setDeckLoopEnabled:vi.fn(),
   };
   const engine={snapshot:()=>state,subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn);};},commands} as unknown as Pick<MixerEngine,'snapshot'|'subscribe'|'commands'>;
   const input={id:'in',name:'Launchkey MK4 61 DAW Out',state:'connected',open:vi.fn(async()=>{}),close:vi.fn(async()=>{}),onmidimessage:null} as unknown as MIDIInput;
@@ -40,7 +40,7 @@ it('requires explicit scan and connection; initializes native mode without playi
 it('routes gain, master focus, FX knobs and loaded-deck loop pads to application actions',async()=>{
   const f=setup();await f.connect();
   f.receive([0xbf,5,0]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','gain',0);
-  f.receive([0xbf,13,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalled());expect(f.commands.setMaster).toHaveBeenLastCalledWith('master',100);
+  f.receive([0xbf,13,127]);expect(f.commands.setMaster).not.toHaveBeenCalled();
   f.receive([0x90,38,127]);f.receive([0xbf,21,127]);await vi.waitFor(()=>expect(f.commands.setDeck).toHaveBeenCalledWith('deck-b','sendA',100));expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-b','sendA',100);
   f.receive([0x90,115,127]);expect(f.commands.beatJump).toHaveBeenLastCalledWith('deck-b',-1);
   f.receive([0x90,96,127]);expect(f.commands.quickLoop).toHaveBeenCalledWith('deck-b');
@@ -182,8 +182,8 @@ it('matches FX A, Filter, FX B for deck/master input, feedback and display label
     expect(f.output.send).toHaveBeenCalledWith([0xbf,21,32]);expect(f.output.send).toHaveBeenCalledWith([0xbf,22,64]);expect(f.output.send).toHaveBeenCalledWith([0xbf,23,95]);
     // Relative filter has a bipolar range and reads its own current center.
     f.receive([0xb6,30,5]);f.receive([0xbf,86,65]);await vi.advanceTimersByTimeAsync(20);
-    if(focus===8)expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterFilter',200/127);
-    else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','filter',200/127);
+    if(focus===8)expect(f.engine.snapshot().masterFilter).toBe(0);
+    else expect(f.engine.snapshot().decks[0].filter).toBe(0);
     f.receive([0xb6,30,2]);await vi.advanceTimersByTimeAsync(50);
   }
   for(const [i,label] of ['FX A','Filter','FX B'].entries())expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,6,21+i,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7]);
@@ -191,33 +191,92 @@ it('matches FX A, Filter, FX B for deck/master input, feedback and display label
 });
 
 
-it('places Low, Mid, High, Trim on knobs 5–8 and leaves knob 4 inert for both focuses',async()=>{
+it('orders Low/Mid/High/deck Trim on 4–7 and always addresses Master Trim on knob 8',async()=>{
   vi.useFakeTimers();const f=setup(true);await f.connect();
   for(const focus of [0,8]){
     f.controller.focus(focus);await vi.advanceTimersByTimeAsync(50);
-    for(let i=4;i<8;i++){
+    for(let i=3;i<6;i++){
       f.receive([0xbf,21+i,127]);await vi.advanceTimersByTimeAsync(20);
-      if(i<7){
-        if(focus===8)expect(f.commands.setMasterEq).toHaveBeenLastCalledWith(i-4,12);
-        else expect(f.commands.setDeckEq).toHaveBeenLastCalledWith('deck-a',i-4,12);
-      }else if(focus===8)expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12);
-      else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','trim',12);
+      if(focus===8)expect(f.commands.setMasterEq).toHaveBeenLastCalledWith(5-i,12);
+      else expect(f.commands.setDeckEq).toHaveBeenLastCalledWith('deck-a',5-i,12);
     }
     for(const command of Object.values(f.commands))command.mockClear();
-    f.receive([0xbf,24,127]);await vi.advanceTimersByTimeAsync(20);
-    f.receive([0xb6,30,5]);f.receive([0xbf,88,65]);await vi.advanceTimersByTimeAsync(20);
-    expect(Object.values(f.commands).every(fn=>fn.mock.calls.length===0)).toBe(true);
-    // The final encoder retains its trim range in relative mode.
-    f.receive([0xbf,92,63]);await vi.advanceTimersByTimeAsync(20);
-    if(focus===8)expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12-24/127);
-    else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','trim',12-24/127);
-    const state=f.engine.snapshot();
-    if(focus===8){state.masterEq=[-24,-12,0];state.masterTrim=0;}
-    else{state.decks[0].eq=[-24,-12,0];state.decks[0].trim=0;}
+    f.receive([0xbf,27,127]);await vi.advanceTimersByTimeAsync(20);
+    if(focus===8)expect(Object.values(f.commands).every(fn=>fn.mock.calls.length===0)).toBe(true);
+    else expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','trim',12);
+    f.receive([0xbf,28,127]);await vi.advanceTimersByTimeAsync(20);
+    expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12);
+    f.receive([0xb6,30,5]);f.receive([0xbf,92,63]);await vi.advanceTimersByTimeAsync(20);
+    expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterTrim',12-24/127);
+    const state=f.engine.snapshot();state.masterTrim=0;
+    if(focus===8)state.masterEq=[-24,-12,0];else{state.decks[0].eq=[-24,-12,0];state.decks[0].trim=-12;}
     vi.mocked(f.output.send).mockClear();f.receive([0xb6,30,2]);await vi.advanceTimersByTimeAsync(50);
-    for(const [cc,value] of [[25,0],[26,42],[27,85],[28,64]])expect(f.output.send).toHaveBeenCalledWith([0xbf,cc,value]);
-    expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const bytes=Array.from(p);return bytes[0]===0xbf&&bytes[1]===24;})).toBe(false);
-    for(const [i,label] of ['Unused','EQ low','EQ mid','EQ high','Trim'].entries())expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,6,24+i,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7]);
+    for(const [cc,value] of [[24,85],[25,42],[26,0],[28,64]])expect(f.output.send).toHaveBeenCalledWith([0xbf,cc,value]);
+    if(focus===8)expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const bytes=Array.from(p);return bytes[0]===0xbf&&bytes[1]===27;})).toBe(false);
+    else expect(f.output.send).toHaveBeenCalledWith([0xbf,27,0]);
+    for(const [i,label] of ['EQ low','EQ mid','EQ high',focus===8?'Unused':'Trim','Master Trim'].entries())expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,6,24+i,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7]);
   }
   f.controller.dispose();vi.useRealTimers();
+});
+
+it('snaps an incoming filter near neutral without feeding a reset back into the encoder',async()=>{
+  vi.useFakeTimers();const f=setup();await f.connect();f.commands.setDeck('deck-a','filter',10);await vi.advanceTimersByTimeAsync(50);
+  vi.mocked(f.output.send).mockClear();f.receive([0xbf,22,65]);await vi.advanceTimersByTimeAsync(60);
+  expect(f.engine.snapshot().decks[0].filter).toBe(0);
+  expect(vi.mocked(f.output.send).mock.calls.some(([p])=>Array.from(p)[0]===0xbf)).toBe(false);
+  f.receive([0xbf,22,69]);await vi.advanceTimersByTimeAsync(20);expect(f.engine.snapshot().decks[0].filter).toBeGreaterThan(0);
+  f.controller.dispose();vi.useRealTimers();
+});
+
+it('opens only the matching standard MIDI input for wheel CC1 and reconnects it without interrupting DAW controls',async()=>{
+  const f=setup();const wheel={id:'wheel',name:'Launchkey MK4 61 MIDI Out',state:'connected',open:vi.fn(async()=>{}),close:vi.fn(async()=>{}),onmidimessage:null} as unknown as MIDIInput;
+  (f.access.inputs as unknown as Map<string,MIDIInput>).set('wheel',wheel);
+  await f.connect();await vi.waitFor(()=>expect(wheel.onmidimessage).not.toBeNull());
+  expect(JSON.parse(f.storage.getItem()).wheel).toEqual({id:'wheel',name:wheel.name});
+  f.controller.receiveWheel([0x90,60,127]);f.controller.receiveWheel([0xb0,7,100]);expect(f.commands.moveDeck).not.toHaveBeenCalled();
+  f.controller.receiveWheel([0xb0,1,50]);expect(f.commands.moveDeck).not.toHaveBeenCalled();f.controller.receiveWheel([0xb0,1,60]);
+  expect(f.commands.moveDeck).toHaveBeenLastCalledWith('deck-a','move',40/127);
+  expect(f.controller.snapshot().wheel).toContain('channel 1');expect(f.commands.setDeckPlaying).not.toHaveBeenCalled();
+  f.controller.focus(1);expect(f.commands.moveDeck).toHaveBeenLastCalledWith('deck-a','commit');
+  const calls=f.commands.moveDeck.mock.calls.length;f.controller.receiveWheel([0xb0,1,70]);expect(f.commands.moveDeck).toHaveBeenCalledTimes(calls);
+  Object.assign(wheel,{state:'disconnected'});f.access.onstatechange!({} as MIDIConnectionEvent);await vi.waitFor(()=>expect(f.controller.snapshot().wheel).toContain('Waiting'));
+  expect(f.controller.snapshot().connected).toBe(true);expect(f.output.close).not.toHaveBeenCalled();
+  Object.assign(wheel,{state:'connected'});f.access.onstatechange!({} as MIDIConnectionEvent);await vi.waitFor(()=>expect(wheel.onmidimessage).not.toBeNull());
+  await f.controller.disconnect();expect(wheel.onmidimessage).toBeNull();expect(wheel.close).toHaveBeenCalled();f.controller.dispose();
+});
+it('selects and lights empty decks without loading/playing, and keeps focus when a track arrives',async()=>{
+  vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks.forEach(d=>{d.status='empty';});await f.connect();
+  f.receive([0x90,39,127]);await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
+  expect(f.output.send).toHaveBeenCalledWith([0x90,39,37]);expect(f.output.send).toHaveBeenCalledWith([0x90,112,0]);
+  f.receive([0xbf,21,127]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-c','sendA',100);
+  f.receive([0x90,112,127]);f.receive([0x90,113,127]);expect(f.commands.setDeckPlaying).not.toHaveBeenCalled();expect(f.commands.cueDeck).not.toHaveBeenCalled();
+  f.engine.snapshot().decks[2].status='ready';f.emit();await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
+  expect(f.output.send).toHaveBeenCalledWith([0x90,112,22]);f.controller.dispose();vi.useRealTimers();
+});
+
+it('leaves the ninth fader unassigned while its button still selects Master',async()=>{
+  const f=setup();await f.connect();
+  for(const value of [0,64,127])f.receive([0xbf,13,value]);
+  await vi.waitFor(()=>expect(f.controller.snapshot().connected).toBe(true));
+  expect(f.commands.setMaster).not.toHaveBeenCalled();expect(f.engine.snapshot().master).toBe(100);
+  f.receive([0x90,45,127]);expect(f.controller.snapshot().focus).toBe(8);
+  f.controller.dispose();
+});
+
+it('keeps all four empty-deck selectors lit and uses brighter matching RGB colors for the selected deck',async()=>{
+  vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks.forEach(d=>d.status='empty');
+  f.controller.setDeckColors([[200,100,50],[180,120,60],[50,200,100],[60,180,120]]);await f.connect();
+  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,37,100,50,25,0xf7]);
+  for(const note of [38,39,40])expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const v=Array.from(p);return v[0]===0xf0&&v[8]===note&&v.slice(9,12).some(n=>n>0);})).toBe(true);
+  f.controller.focus(2);await vi.advanceTimersByTimeAsync(50);
+  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,39,25,100,50,0xf7]);
+  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,37,35,17,9,0xf7]);
+  f.controller.dispose();vi.useRealTimers();
+});
+it('closes a late-opening wheel input after disconnect and does not attach its handler',async()=>{
+  const f=setup();let release!:()=>void;
+  const wheel={id:'wheel',name:'Launchkey MK4 61 MIDI Out',state:'connected',open:vi.fn(()=>new Promise<void>(resolve=>{release=resolve;})),close:vi.fn(async()=>{}),onmidimessage:null} as unknown as MIDIInput;
+  (f.access.inputs as unknown as Map<string,MIDIInput>).set('wheel',wheel);
+  await f.connect();expect(wheel.open).toHaveBeenCalledOnce();await f.controller.disconnect();release();
+  await vi.waitFor(()=>expect(wheel.close).toHaveBeenCalled());expect(wheel.onmidimessage).toBeNull();expect(f.controller.snapshot().connected).toBe(false);f.controller.dispose();
 });

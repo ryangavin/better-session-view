@@ -54,12 +54,13 @@ Closing the debug panel does not disable auto-connect. The setting survives app 
 | Hardware | Existing application action |
 |---|---|
 | Faders 1–4 | Deck A–D gain, 0–100 |
-| Faders 5–8 | Unused |
-| Fader 9 | Master gain |
+| Faders 5–9 | Unused |
 | Fader buttons 1–4 / 9 | Controller focus A–D / Master; matching LED |
 | Knobs 1–3 | Focused deck/master FX A, Filter, FX B |
-| Knob 4 | Unused |
-| Knobs 5–8 | Focused deck/master Low, Mid, High, Trim |
+| Knobs 4–6 | Focused deck/master Low, Mid, High |
+| Knob 7 | Focused deck Trim; unused in Master focus |
+| Knob 8 | Master Trim, regardless of focus |
+| Mod wheel | Selected deck scrub: movement up/down moves forward/back |
 | Top pads 1–4 | Focused deck quick loop, half, double, loop on/off |
 | Top pads 5–8 | Unused |
 | Bottom pads 1–5 | Focused deck Play/Pause (green), held Cue (orange), Sync, beat back, beat forward |
@@ -68,7 +69,13 @@ Closing the debug panel does not disable auto-connect. The setting survives app 
 
 Focus belongs to the controller adapter; the app has no global selected-deck action.
 It never selects a Prep song or loads a deck. The on-screen focus buttons provide the
-same choice. All pads follow that focus and are inactive in Master focus. Bottom-row transport
+same choice, show a selected state, and work with empty decks. Deck EQ, filter, sends
+and Trim can be set before loading; loading retains controller focus. Select buttons
+1–4 stay lit even when empty. `ControllerIndicator` passes the resolved deck inks from
+the existing theme through a leaf effect: RGB SysEx matches those colors, with the
+selected button at full brightness and others at 35%. Without SysEx, four distinct
+palette colors remain lit with brighter selection. No color work reaches App renders.
+All pads follow that focus and are inactive in Master focus. Bottom-row transport
 order matches the selected deck UI; loop controls occupy the top row. All transport pads require a ready deck and retain the engine's existing saved-grid,
 loop-boundary and playing-state policies. Nothing directly controls the DOM or DSP.
 
@@ -88,25 +95,71 @@ the final queued value and clears timers. Discrete buttons and Cue releases bypa
 this limiter. Outgoing state feedback is separately coalesced to 20Hz and changed-only;
 SysEx labels do not resend on each engine tick. Clock/realtime and unused poly-aftertouch
 are discarded before packet formatting or log notifications. LEDs report focus, running state and loop state.
-With SysEx enabled, the screen names mix[flow], focus and the seven knob assignments.
+With SysEx enabled, the screen names mix[flow], focus and all eight knob labels (including the unused position in Master focus).
 No encoder LED rings are invented for this hardware.
 
 Cue uses `cueDeck(id, true/false)`, not the headphone cue control. Note Off and Note On
 velocity zero both release it. Duplicate presses are ignored; disconnect, mode/focus
 change and global Stop release held cues. Play while the focused deck’s Cue is held requests
 `setDeckPlaying(id, true)` even while audition is already playing, preserving the engine's
-existing latch: releasing Cue then neither stops nor returns the position. No DSP or
-engine transport behavior was changed. Play/Cue use stationary channel-1 palette
+latch: releasing Cue then neither stops nor returns the position. The shared engine
+auditions immediately without beat-phase correction; pressing Play while held aligns
+to the running reference only with Sync enabled. Sync off retains the existing voice
+and timing. The same behavior applies to on-screen controls. Play/Cue use stationary channel-1 palette
 colors 22/10 at rest and 21/9 while active, rather than gray 1 while paused. Empty
 or Master focus pads are off. Pad-mode reports clear the sent cache before feedback,
 so returning to DAW mode restores colors. This verifies generated packets against the
 MK4 protocol; actual physical colors still require the hardware trial. Knobs 1–3
 mirror the UI as FX A, Filter, FX B in input, outgoing positions and screen labels.
 Filter retains its bipolar −100…100 range in both absolute and relative modes; FX
-sends remain 0…100. Knob 4 is unused and receives no position feedback. Knobs 5–8 are Low, Mid, High,
-Trim: reading from the right edge gives Trim, High, Mid, Low, matching the app.
-Both absolute and relative modes use the same positions; EQ remains −24…12 dB
-and Trim −12…12 dB.
+sends remain 0…100. Knobs 4–6 are Low, Mid, High; engine EQ arrays are stored in
+High/Mid/Low order, so both input and feedback reverse those three indexes. Knob 7
+addresses deck Trim and is ignored (with no position feedback) in Master focus.
+Knob 8 always addresses global Master Trim and its feedback always reads that value.
+EQ remains −24…12 dB and both trims −12…12 dB.
+
+### Neutral detents
+
+`detent.ts` is MIDI-only. Filter, three EQ bands and both trims capture their actual
+neutral value 0 within two MIDI steps and remain there until movement exceeds four
+steps. EQ's asymmetric range is respected: neutral is not its normalized midpoint.
+Relative raw travel is remembered while output stays snapped, so deliberate turns
+escape instead of sticking forever. External edits invalidate that remembered base;
+focus, mode and disconnect clear it. FX sends have no detent. Incoming absolute
+positions cache the resulting app value before publication, preventing the soft
+capture from feeding a position reset into the moving encoder. Unchanged values do
+not publish again. The original 60Hz limiter and local React subscriptions stay intact.
+
+### Mod-wheel input and scrub
+
+The MK4 exposes wheels through its standard MIDI interface, separate from DAW controls.
+After the selected DAW pair opens, the adapter opens only its matching `MIDI Out`
+input (on this machine `Launchkey MK4 61 MIDI Out`), remembered by ID and exact name.
+It accepts CC1 on the keyboard's configured channel; the panel reports the actual
+received channel and bounded log records the bytes. Notes, pitch bend and other CCs
+are ignored. Missing/failed/ambiguous standard ports leave DAW controls working; port
+return reconnects only that input. Disconnect, Prep and disposal release it too.
+No MIDI output is opened for scrubbing and no playback is started by connection.
+
+`jog.ts` primes its baseline from the first CC1 value without moving audio. Later
+value differences are summed in bounded 60Hz batches: a full 127-step sweep moves
+four beats. A single canonical `moveDeck` gesture retains the source group's playing
+or paused state and clamps at audio bounds; it ends after 120ms without movement.
+Discrete transport finishes the gesture first. Focus/disconnect flush the old target
+then reset the baseline; track replacement and port loss discard stale pending
+movement. Empty/Master targets do not move. Wheel channel and physical feel remain
+part of the hardware trial, not claims inferred from the parser tests.
+
+### Unassigned ninth fader
+
+CC13 from physical fader 9 is ignored. Button 9 still selects Master. The removed
+master level has not been reintroduced in the UI and is not controller-accessible;
+the engine's existing `master` gain remains internal. Previous controller use may
+have attenuated a currently running engine. This change never raises that gain
+unexpectedly. A newly created engine defaults it to 100; any live recovery must be
+coordinated with the user while stopped/muted. Master Trim is the bounded ±12 dB
+control on knob 8, not a replacement silence-to-unity master fader.
+
 
 Debug rate counters sample once a second: input including ignored clock, applied
 continuous controls, engine publishes, feedback passes, output packets/bytes/SysEx,

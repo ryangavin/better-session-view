@@ -259,7 +259,17 @@ export class MixerEngine {
   async play(id: string, on: boolean, when?: number, audition = false, stem?: string): Promise<void> {
     const d=this.decks.get(id); if(!d || d.move) return;
     const key=stem ?? (this.model(id).full ? 'full' : 'deck'), hold=d.holds.get(key);
-    if (on && hold?.phase==='audition' && !audition) { hold.latched=true; this.selection(id); return; }
+    if (on && hold?.phase==='audition' && !audition) {
+      if(hold.latched)return;
+      hold.latched=true;
+      const start=this.ctx!.currentTime+this.lead(),playing=this.target(id,stem).filter(([,s])=>s.voice.playing);
+      const anchor=playing.find(([name])=>name===this.model(id).focus) ?? playing[0];
+      // Audition is immediate/off-beat; pressing Play is the alignment point.
+      if(anchor){const correction=this.playCorrection(id,this.beatOf(id,anchor[1].voice.at(start)),start);
+        if(correction)for(const [name,s] of playing)this.startSlot(id,name,s,this.secondsOf(id,this.beatOf(id,s.voice.at(start))+correction),start);
+      }
+      this.selection(id);return;
+    }
     const operation=d.operation, chosen=this.target(id,stem);
     if (!audition) { d.holds.delete(key); if(!stem) d.holds.clear(); }
     const revisions=new Map(chosen.map(([,s])=>[s,++s.revision]));
@@ -277,9 +287,13 @@ export class MixerEngine {
     this.refreshLeader();
     const anchor=eligible.find(([name])=>name===this.model(id).focus) ?? eligible[0];
     if(!this.linkAudio.enabled && !this.leader){const b=this.beatOf(id,anchor[1].voice.at()),duration=this.secondsOf(id,Math.floor(b)+1)-this.secondsOf(id,Math.floor(b));if(duration>0)this.tempo(60/duration,false);}
-    const correction=this.model(id).synced && (this.linkAudio.enabled || this.leader?.id && this.leader.id!==id)?((this.syncBeat(start)-this.beatOf(id,anchor[1].voice.at())+.5)%1+1)%1-.5:0;
+    const correction=!audition || hold?.latched ? this.playCorrection(id,this.beatOf(id,anchor[1].voice.at()),start) : 0;
     for(const [name,s] of eligible) this.startSlot(id,name,s,this.secondsOf(id,this.beatOf(id,s.voice.at())+correction),start);
     d.initialized=true; this.selection(id); this.apply();
+  }
+  private playCorrection(id:string,beat:number,when:number) {
+    return this.model(id).synced && (this.linkAudio.enabled || this.leader && this.leader.id!==id)
+      ? ((this.syncBeat(when)-beat+.5)%1+1)%1-.5 : 0;
   }
   cue(id: string, held: boolean, stem?: string) {
     const d=this.decks.get(id); if(!d || d.move) return;

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ModWheelJog } from '../controllers/jog.ts';
 import { MixerEngine } from './engine.ts';
 import { evenBeats } from '../warp.ts';
 import type { Track } from '../openflow.ts';
@@ -675,4 +676,45 @@ it('uses shared Link tempo while stopped even with no peers, then retains it on 
   linked.mockRestore();expect(engine.snapshot().bpm).toBe(137);
   clock.linkClock({token:2,micros:0,contextTime:0,tempo:150,peers:1,beat:0,playing:false,playingMicros:0,startMicros:0},false);
   expect(engine.snapshot().bpm).toBe(137);
+});
+
+
+it.each([false,true])('auditions Cue immediately with a running reference and aligns only a Sync=%s Play latch',async(synced)=>{
+  vi.useFakeTimers();const {engine,ctx,load}=setup();await load();await load('deck-b');
+  if(synced)await engine.sync('deck-b',true);
+  await engine.play('deck-a',true);ctx.currentTime=.17;
+  engine.cue('deck-b',true);await settle();
+  expect(engine.snapshot().decks[1].playing).toBe(true);
+  ctx.currentTime=.27;
+  const audition=engine.readFrame().decks['deck-b'].beat,reference=engine.readFrame().decks['deck-a'].beat;
+  expect(audition).toBeGreaterThan(0);expect(audition).toBeLessThan(.25);
+  expect(Math.abs((reference-audition)-Math.round(reference-audition))).toBeGreaterThan(.1);
+  ctx.currentTime=.34;const before=engine.readFrame().decks['deck-b'].beat;
+  await engine.play('deck-b',true);engine.cue('deck-b',false);ctx.currentTime=.45;
+  expect(engine.snapshot().decks[1].playing).toBe(true);
+  const a=engine.readFrame().decks['deck-a'].beat,b=engine.readFrame().decks['deck-b'].beat;
+  if(synced)expect(a-b).toBeCloseTo(Math.round(a-b),5);
+  else expect(b).toBeCloseTo(before+(.45-.34)*2,5);
+});
+it('keeps an early Cue-to-Play latch aligned when audio resume completes later',async()=>{
+  vi.useFakeTimers();const {engine,ctx,load}=setup();await load();await load('deck-b');await engine.sync('deck-b',true);await engine.play('deck-a',true);
+  ctx.currentTime=.17;let release!:()=>void;ctx.resume.mockImplementation(()=>new Promise<void>(resolve=>{release=resolve;}));
+  engine.cue('deck-b',true);await engine.play('deck-b',true);release();await settle();ctx.currentTime=.35;
+  engine.cue('deck-b',false);expect(engine.snapshot().decks[1].playing).toBe(true);
+  const frame=engine.readFrame();const delta=frame.decks['deck-a'].beat-frame.decks['deck-b'].beat;expect(delta).toBeCloseTo(Math.round(delta),5);
+});
+
+it.each([false,true])('mod-wheel scrubbing preserves playing=%s and clamps instead of wrapping at the file bounds',async(playing)=>{
+  vi.useFakeTimers();const {engine,ctx,load}=setup();await load();if(playing)await engine.play('deck-a',true);
+  const jog=new ModWheelJog(()=>engine.snapshot().decks[0],engine.commands);
+  jog.receive(0);const before=engine.readFrame().decks['deck-a'].seconds!;jog.receive(127);vi.advanceTimersByTime(20);
+  ctx.currentTime=.2;expect(engine.readFrame().decks['deck-a'].seconds).toBeGreaterThan(before+1.9);jog.finish();
+  expect(engine.snapshot().decks[0].playing).toBe(playing);
+  engine.move('deck-a','begin');engine.move('deck-a','move',10000);engine.move('deck-a','commit');ctx.currentTime=.3;
+  jog.reset();jog.receive(0);jog.receive(127);jog.finish();ctx.currentTime=.4;
+  expect(engine.readFrame().decks['deck-a'].seconds).toBeGreaterThan(63.9);
+  expect(engine.readFrame().decks['deck-a'].seconds).toBeLessThanOrEqual(64);
+  // No start command is issued to a paused deck, even when moving away from the end.
+  if(!playing)expect(engine.snapshot().decks[0].playing).toBe(false);
+  jog.reset();
 });
