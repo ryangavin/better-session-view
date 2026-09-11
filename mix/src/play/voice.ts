@@ -2,6 +2,7 @@ import { channelsOf, stretchOf, type Stretch } from '../stretch.ts';
 import { pinnedOf, type Pinned } from '../pinned.ts';
 import { passOf, sourceAt, type Pass, type Span } from '../schedule.ts';
 import type { Beats } from '../warp.ts';
+import { speedAt, outputOf } from '../pinned.ts';
 import { loopBuffer } from './loopBuffer.ts';
 
 /** One independently launchable source, sharing the mixer's context and sample clock. */
@@ -24,6 +25,17 @@ export class DeckVoice {
   private span?: Span;
   private loop = false;
   private scheduledEnd = false;
+  private preservePitch = true;
+  private tempo: number | null = null;
+  private reuseNative = false;
+  /** Read-only rendering diagnostics: the actual source/output rate. */
+  get diagnostics() { return { path: this.source ? 'native' : this.pinned ? 'stretch' : 'stopped', rate: this.pinned ? speedAt(this.pinned,outputOf(this.pinned,this.at()*this.pinned.rate)) : 1, tempo: this.tempo, preservePitch:this.preservePitch }; }
+  retime(tempo:number|null,when:number,preservePitch=this.preservePitch) {
+    if(!this.playing || tempo===this.tempo && preservePitch===this.preservePitch)return;
+    this.reuseNative=!!this.source;
+    this.start(this.at(when),when,tempo,this.span,this.loop,preservePitch);
+    this.reuseNative=false;
+  }
   private nativeLoop?: { from: number; to: number; buffer: AudioBuffer };
   constructor(readonly context: AudioContext, readonly buffer: AudioBuffer, readonly map: Beats | null) {
     this.output = context.createGain();
@@ -56,9 +68,13 @@ export class DeckVoice {
     const pos = this.from + elapsed;
     return this.loop && end > start ? start + ((pos - start) % (end - start) + end - start) % (end - start) : Math.min(end, pos);
   }
-  start(at: number, when: number, tempo: number | null, span?: Span, loop = false): void {
+  start(at: number, when: number, tempo: number | null, span?: Span, loop = false, preservePitch = true): void {
     if (this.disposed) return;
-    if (tempo !== null && !this.stretch) throw new Error('Sync is still preparing');
+    const nextPinned=tempo !== null && this.map ? pinnedOf(this.map,tempo,this.map.musical?.segments.slice(1).map(s=>s.beat/4) ?? [],8) : null;
+    // A unity mapping needs no spectral processing, including a matched follower.
+    const stretchNeeded=preservePitch && !!nextPinned && passOf(nextPinned,at,span).boundaries.some(b=>Math.abs(b.rate-1)>1e-5);
+    this.reuseNative=this.reuseNative && !stretchNeeded;
+    if (stretchNeeded && !this.stretch) throw new Error('Sync is still preparing');
     const previous = { active:this.active, from:this.from, since:this.since, pinned:this.pinned, loop:this.loop, span:this.span, before:this.context.currentTime < this.since ? this.beforeStart : null };
     this.beforeStart = time => {
       if (!previous.active) return previous.from;
@@ -68,53 +84,62 @@ export class DeckVoice {
       const start = previous.span?.from ?? 0, end = previous.span?.to ?? this.buffer.duration;
       return previous.loop ? start + ((previous.from+elapsed-start)%(end-start)+(end-start))%(end-start) : Math.min(end,previous.from+elapsed);
     };
-    const wasStretched=this.active && !!this.pinned;
-    this.halt(when,tempo!==null);
+    const wasStretched=this.active && !!this.pinned && !this.source;
+    if(!this.reuseNative)this.halt(when,stretchNeeded);
+    this.preservePitch=preservePitch;this.tempo=tempo;
     this.span = span; this.loop = loop; this.from = Math.max(span?.from ?? 0, Math.min(at, span?.to ?? this.buffer.duration));
     if (this.from >= (span?.to ?? this.buffer.duration) - 0.001) this.from = span?.from ?? 0;
     this.since = when; this.active = true;
-    this.pinned = tempo !== null && this.map ? pinnedOf(this.map, tempo, [], 'beat') : null;
-    if (this.pinned && this.stretch) {
+    this.pass=null;
+    this.pinned = nextPinned;
+    if(this.pinned){this.pass=passOf(this.pinned,this.from,span);this.passAt=when;this.next=1;this.scheduledEnd=false;}
+    if (this.pinned && stretchNeeded && this.stretch) {
       if(!wasStretched){const gain=this.stretchFade.gain;gain.cancelScheduledValues(when);gain.setValueAtTime(0,when);gain.linearRampToValueAtTime(1,when+.02);}
       this.pass = passOf(this.pinned, this.from, span); this.passAt = when; this.next = 1; this.scheduledEnd = false;
       const first = this.pass.boundaries[0];
       void this.stretch.node.schedule({ outputTime: this.context.currentTime, output: when, active: true, input: first.input, rate: first.rate, loopStart: 0, loopEnd: 0 });
       this.tick();
     } else {
-      const source = this.context.createBufferSource();
+      const source = this.reuseNative ? this.source! : this.context.createBufferSource();
+      source.playbackRate?.cancelScheduledValues(when);
+      source.playbackRate?.setValueAtTime(this.pass?.boundaries[0].rate ?? 1,when);
       source.loop = loop; source.loopStart = span?.from ?? 0; source.loopEnd = span?.to ?? this.buffer.duration;
       let offset = this.from;
       if (loop) {
         const from = source.loopStart, to = source.loopEnd;
         if (!this.nativeLoop || this.nativeLoop.from !== from || this.nativeLoop.to !== to)
           this.nativeLoop = { from, to, buffer: loopBuffer(this.context, this.buffer, from, to) };
-        source.buffer = this.nativeLoop.buffer;
-        source.loopStart = 0; source.loopEnd = source.buffer.duration;
+        if(!this.reuseNative)source.buffer = this.nativeLoop.buffer;
+        source.loopStart = 0; source.loopEnd = this.nativeLoop.buffer.duration;
         offset -= from;
-      } else source.buffer = this.buffer;
-      const fade = this.context.createGain(); fade.gain.setValueAtTime(0, when); fade.gain.linearRampToValueAtTime(1, when + (wasStretched ? 0.02 : 0.004));
-      source.connect(fade); fade.connect(this.output);
+      } else if(!this.reuseNative)source.buffer = this.buffer;
+      const fade = this.reuseNative ? this.sourceFade! : this.context.createGain(); if(!this.reuseNative)fade.gain.setValueAtTime(0, when); fade.gain.linearRampToValueAtTime(1, when + (wasStretched ? 0.02 : 0.004));
+      if(!this.reuseNative){source.connect(fade); fade.connect(this.output);}
       source.onended = () => { source.disconnect(); fade.disconnect(); };
       this.source = source; this.sourceFade=fade;
-      source.start(when, offset);
-      if (!loop) source.stop(when + (span?.to ?? this.buffer.duration) - this.from);
+      if(!this.reuseNative)source.start(when, offset);
+      if (!loop) source.stop(when + (this.pass?.length ?? (span?.to ?? this.buffer.duration) - this.from));
+      this.tick();
     }
   }
-  private tick(): void {
-    if (!this.active || !this.pinned || !this.pass || !this.stretch || this.disposed) return;
+  /** Queue only after the preceding boundary: Signalsmith replaces events at outputTime too. */
+  tick(): void {
+    if (!this.active || !this.pinned || !this.pass || this.disposed) return;
     for (let guard = 0; guard < 128; guard++) {
       const pass = this.pass;
       if (this.next < pass.boundaries.length) {
-        if (this.context.currentTime < this.passAt + pass.boundaries[this.next - 1].output) return;
+        if (this.context.currentTime <= this.passAt + pass.boundaries[this.next - 1].output) return;
         const boundary = pass.boundaries[this.next++], at = this.passAt + boundary.output;
-        void this.stretch.node.schedule({ outputTime: at, output: at, input: boundary.input, rate: boundary.rate, active: true });
+        if(this.source)this.source.playbackRate?.setValueAtTime(boundary.rate,at);
+        else if(this.stretch)void this.stretch.node.schedule({ outputTime: this.context.currentTime, output: at, input: boundary.input, rate: boundary.rate, active: true });
       } else {
-        if (this.scheduledEnd || this.context.currentTime < this.passAt + pass.boundaries.at(-1)!.output) return;
+        if (this.scheduledEnd || this.context.currentTime <= this.passAt + pass.boundaries.at(-1)!.output) return;
         const end = this.passAt + pass.length;
-        if (!this.loop) { void this.stretch.node.schedule({ outputTime: end, output: end, active: false }); this.scheduledEnd = true; return; }
+        if (!this.loop) { if(!this.source && this.stretch)void this.stretch.node.schedule({ outputTime: this.context.currentTime, output: end, active: false }); this.scheduledEnd = true; return; }
         this.pass = passOf(this.pinned, this.span?.from ?? 0, this.span); this.passAt = end; this.next = 1;
         const first = this.pass.boundaries[0];
-        void this.stretch.node.schedule({ outputTime: end, output: end, input: first.input, rate: first.rate, active: true });
+        if(this.source)this.source.playbackRate?.setValueAtTime(first.rate,end);
+        else if(this.stretch)void this.stretch.node.schedule({ outputTime: this.context.currentTime, output: end, input: first.input, rate: first.rate, active: true });
       }
     }
   }

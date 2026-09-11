@@ -5,8 +5,8 @@ for the stretcher. Issue #41 is the plan this comes from.
 
 ## Two questions, kept apart
 
-`warp.ts` answers *where were the beats*: a sample for every beat, as it was
-heard. This answers *where does the audio go*: a **pin** is a source sample that
+`warp.ts` supplies the effective musical grid: a sample for every beat. Automatic
+grids retain detector observations separately through [musical tempo](musical-tempo.md). This answers *where does the audio go*: a **pin** is a source sample that
 plays at an output sample, and between two pins the record runs at one speed.
 They used to be the same thing. The beat map was the time map, so every beat was
 pinned to its line on export and under warp alike, and on a record made to a
@@ -81,7 +81,7 @@ are warped and neither loops in Live at the tempo on the file. So each
 section is laid at the whole number nearest the median beat inside it —
 `tempoBetween` in `warp.ts` — which on a steady section is no warp at all,
 the least there is; the file carries that tempo in its name, the folder the
-range (`Raise Your Weapon 128-140bpm`), and the dialog's list shows the
+range (`Example 128-140bpm`), and the dialog's list shows the
 tempo beside each section before anything is written. A ramp gets the median
 of its own beats, which is as honest as one number can be about a ramp, and
 it is not the section anyone loops. The header keeps saying the range; the
@@ -163,4 +163,4 @@ finding as a bar number. [`harness.md`](harness.md) has the batch run.
 - **2026-09-06** — a record may change tempo, and the header says so as a
   range; the export does not varispeed it to one number. Cut into sections,
   each is laid at its own tempo — the minimal warp — so the steady sections
-  loop in Live at the tempo on the file. Raise Your Weapon: 128, a ramp, 140.
+  loop in Live at the tempo on the file. Synthetic tempo changes illustrate distinct export tempos.

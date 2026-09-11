@@ -171,9 +171,9 @@ it is. Position is seconds, and where the beats fall is `warp.ts`'s `Beats`:
 **the sample of every beat**, bar 1's downbeat as beat zero, counted in the rate
 the file was heard at. That is the one source of truth about timing. Between
 two beats the grid is drawn straight; past either end the neighbouring
-spacing carries on. Nothing else about timing is stored — there is no BPM in the
-map, a tempo is the spacing of two beats read off on demand, and a tempo
-change is nothing more than the spacing changing. Which is what makes an edit
+spacing carries on. Automatic maps now carry a versioned musical interpretation and
+their original detector observations. A tempo change requires sustained evidence, not
+one short inter-onset interval; see [musical tempo](musical-tempo.md). Manual editing remains
 local: drag one beat and its neighbours hold, the two spacings beside
 it take up the difference, and nothing further away can tell.
 
@@ -232,9 +232,11 @@ the same pixel at whole-track width.
 
 ## Finding the beats
 
-Three files, in the order the work happens: `transients.ts` hears where the
+The detector evidence comes from three files, in the order the work happens: `transients.ts` hears where the
 drums hit, `tempo.ts` reads a tempo and a downbeat off all of them, and
-`follow.ts` finds every beat and places it on a sample.
+`follow.ts` finds every beat and places it on a sample. Production automatic grids then
+pass through `musical.ts`, which separates musical tempo from attack jitter while
+retaining raw observations. Diagnostic algorithms keep their original results.
 
 ### Where the drums hit, to the millisecond
 

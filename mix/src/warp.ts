@@ -5,10 +5,10 @@
  * its sample — the exact one it falls on — and every question about time is
  * answered by interpolating between two beats: where the bar lines are
  * drawn, where a slice starts, where a loop wraps, how fast a stretch of the
- * record has to play to land its next beat on the grid. Nothing else about
- * timing is stored. There is no BPM in here; a tempo is the spacing of two
- * beats read off on demand, and a tempo change is nothing more than the
- * spacing changing. That is what makes an edit local: drag one beat and its
+ * record has to play to land its next beat on the grid. Automatic maps carry versioned musical-fit metadata and retain the raw
+ * detector observations separately. Their regional tempo is established by
+ * sustained evidence, not one short interval; see musical.ts. Manual maps
+ * still answer local timing directly from beat spacing. That is what makes an edit local: drag one beat and its
  * two neighbours hold, the two segments beside it re-tempo, and
  * nothing further away can tell. The other edit is a bar pulled: the beats
  * since the last point a hand set stretch to follow it, and the beats after
@@ -34,6 +34,8 @@ export const BEATS_PER_BAR = 4;
 
 /** Where the beats fall on a file. */
 export interface Beats {
+  /** Fitted musical-grid provenance and original detector observations. */
+  musical?: import('./musical.ts').MusicalEvidence;
   /** Samples per second the beats count in. */
   rate: number;
   /** How many samples the file is. */
@@ -136,8 +138,10 @@ export function tempoAt(beats: Beats, beat: number): number {
   return (60 * beats.rate) / (samples[i + 1] - samples[i]);
 }
 
-/** The slowest and fastest the map runs at. One number twice for a straight line. */
+/** Supported musical-region extremes, or exact interval extremes for a manual/raw map. */
 export function tempoRange(beats: Beats): { slowest: number; fastest: number } {
+  const regions=beats.set?.length ? undefined : beats.musical?.segments;
+  if(regions?.length)return {slowest:Math.min(...regions.map(s=>s.bpm)),fastest:Math.max(...regions.map(s=>s.bpm))};
   let slowest = Infinity;
   let fastest = 0;
   for (let i = 0; i + 1 < beats.samples.length; i++) {
@@ -195,6 +199,7 @@ export const bpmText = (bpm: number): string =>
  * read and the second decimal is not what a range is saying.
  */
 export function rangeText(beats: Beats): string {
+  if(beats.musical?.ambiguous && !beats.set?.length)return 'Check beat count';
   const { slowest, fastest } = tempoRange(beats);
   return tempoText(tempoOf(beats), slowest, fastest);
 }
@@ -473,7 +478,7 @@ export function pulled(beats: Beats, beat: number, sample: number): Beats {
     const scale = (samples[hi] - to) / (samples[hi] - samples[i]);
     out = samples.map((s, k) => (k > hi ? s : k >= i ? samples[hi] - Math.round((samples[hi] - s) * scale) : s + to - samples[i]));
   }
-  return { ...beatsOf(beats.rate, beats.length, first, out), set };
+  return { ...beatsOf(beats.rate, beats.length, first, out), set, ...(beats.musical && {musical:{...beats.musical,segments:[]}}) };
 }
 
 /**
@@ -485,6 +490,7 @@ export function pulled(beats: Beats, beat: number, sample: number): Beats {
 export const renumbered = (beats: Beats, beat: number): Beats => ({
   ...beats,
   first: beats.first - beat,
+  ...(beats.musical && {musical:{...beats.musical,segments:beats.musical.segments.map(s=>({...s,beat:s.beat-beat}))}}),
   ...(beats.set && { set: beats.set.map((b) => b - beat) }),
 });
 
@@ -519,7 +525,7 @@ export function retimed(beats: Beats, num: number, den: number): Beats {
   const out: number[] = [];
   for (let k = from; k <= upto; k++) out.push(Math.round(sampleOf(beats, (k * den) / num)));
   const set = beats.set?.flatMap((b) => ((b * num) % den === 0 ? [(b * num) / den] : [])).filter((b) => b >= from && b <= upto);
-  return { ...beatsOf(beats.rate, beats.length, from, out), ...(set && { set }) };
+  return { ...beatsOf(beats.rate, beats.length, from, out), ...(set && { set }), ...(beats.musical && {musical:{...beats.musical,segments:[]}}) };
 }
 
 /** The same map counted in another rate, for a file decoded to a different one. */
@@ -529,5 +535,6 @@ export function resampled(beats: Beats, rate: number, length: number): Beats {
   return {
     ...beatsOf(rate, length, beats.first, beats.samples.map((s) => Math.round(s * scale))),
     ...(beats.set && { set: beats.set }),
+    ...(beats.musical && { musical: beats.musical }),
   };
 }

@@ -293,3 +293,18 @@ describe('the slices', () => {
     expect(await readAnalysis(root, TRACK)).toBeNull();
   });
 });
+
+it('summarizes a musical BPM without rewriting the saved detector evidence',async()=>{
+  const rate=48000,samples=Array.from({length:600},(_,i)=>Math.round(rate*(.12+i*60/129+(i%2?.012:-.012))));
+  await writeAnalysis(root,TRACK,{grid:{bpm:129,bpmAuto:true,offset:.12,beats:{rate,length:240*rate,first:0,samples}},fit:null,algorithm:'ellis'});
+  const file=path.join(root,analysisAt(TRACK),ANALYSIS_FILE),before=await fs.readFile(file,'utf8');
+  const notes=await gridNotes(root,[TRACK]);
+  expect(notes[TRACK].bpm).toBe(129);
+  expect(notes[TRACK].fastest!-notes[TRACK].slowest!).toBeLessThan(.01);
+  expect(await fs.readFile(file,'utf8')).toBe(before);
+});
+it('does not advertise a tempo range for an unresolved half/double count',async()=>{
+  const rate=48000,samples=Array.from({length:600},(_,i)=>Math.round(rate*(Math.min(i,300)*.5+Math.max(0,i-300))));
+  await writeAnalysis(root,TRACK,{grid:{bpm:120,bpmAuto:true,offset:0,beats:{rate,length:samples.at(-1)!,first:0,samples}},fit:null,algorithm:'ellis'});
+  expect((await gridNotes(root,[TRACK]))[TRACK]).toMatchObject({bpm:null,slowest:null,fastest:null,failed:true});
+});

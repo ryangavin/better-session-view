@@ -1,7 +1,8 @@
 import { createAudioContext } from '../audioSettings.ts';
 import type { MixerCommands, MixerDeck, MixerFrame, MixerState, MixerWaveLane } from '@openflow/widgets/mixer/model.ts';
 import type { Track } from '../openflow.ts';
-import { beatAt, sampleOf } from '../warp.ts';
+import { correctionRate } from './syncRate.ts';
+import { beatAt, sampleOf, tempoAt } from '../warp.ts';
 import type { Span } from '../schedule.ts';
 import { LinkAudioSender, LINK_AUDIO_OFF } from '../linkAudio.ts';
 import { linkBeatAt, type LinkTimeline } from '../linkTiming.ts';
@@ -59,6 +60,38 @@ export class MixerEngine {
   private wasLinked = false;
   private phaseCorrectedAt = -Infinity;
   private playingOrder: string[] = [];
+  private speedOverrides=new Map<string,number>();
+  private corrections=new Map<string,number>();
+  preservePitch=true;
+  private pitchRequest=0;
+  setPreservePitch = async (on:boolean) => {
+    const request=++this.pitchRequest;
+    if(on===this.preservePitch)return;
+    try {
+      if(on)await Promise.all([...this.decks.values()].flatMap(d=>[...d.slots.values()].filter(s=>s.voice.playing && s.voice.map).map(s=>s.voice.prepare())));
+    } catch(error) { this.error(error); return; }
+    if(this.disposed || request!==this.pitchRequest)return;
+    this.preservePitch=on;
+    const when=(this.ctx?.currentTime ?? 0)+this.lead();
+    this.decks.forEach((d,id)=>d.slots.forEach(s=>s.voice.retime(this.playbackTempo(id),when,on)));
+    this.publish();
+  };
+  /** Read-only probe of renderer path and actual source advancement, for acceptance. */
+  playbackDiagnostics = () => Object.fromEntries([...this.decks].map(([id,d])=>[id,Object.fromEntries([...d.slots].map(([name,s])=>[name,s.voice.diagnostics]))]));
+  private playbackTempo(id:string):number|null {
+    if(!this.model(id).synced)return null;
+    if(this.linkAudio.enabled)return this.state.bpm;
+    const leading=this.leader?.id===id || ![...this.decks.keys()].some(other=>other!==id && this.deckPlaying(other));
+    return leading ? this.speedOverrides.get(id) ?? null : this.state.bpm;
+  }
+  private nativeTempo(id:string,at:number):number {
+    const map=this.decks.get(id)?.audio.map;
+    if(!map)return this.model(id).track?.bpm ?? 120;
+    const beat=beatAt(map,at*map.rate),segments=map.set?.length ? undefined : map.musical?.segments;
+    let region=segments?.[0];
+    for(const s of segments ?? [])if(s.beat<=beat)region=s;
+    return Number((region?.bpm ?? tempoAt(map,beat)).toFixed(2));
+  }
   private leader?: {id:string;source:string};
   private loopScheduled = new Map<string,number>();
   constructor(private contextFactory = () => createAudioContext()) {}
@@ -140,13 +173,18 @@ export class MixerEngine {
   private startClock(when: number) { if (!this.state.running) { this.anchor = { beat: this.anchor.beat, time: when }; this.publish({ ...this.state, running: true }); } }
   /** Link owns tempo authority while enabled, so it has no local track leader. */
   get normalSpeedBpm(): number | null {
-    const bpm = this.state.decks.find(deck => deck.syncLeader)?.track?.bpm;
+    const leader=this.state.decks.find(deck => deck.syncLeader);
+    const source=leader && this.focused(leader.id)?.[1];
+    const bpm=leader && source ? this.nativeTempo(leader.id,source.voice.at()) : leader?.track?.bpm;
     return !this.linkAudio.enabled && typeof bpm === 'number' && Number.isFinite(bpm) && bpm > 0 ? bpm : null;
   }
   normalSpeed = () => {
     this.refreshLeader();
     const bpm = this.normalSpeedBpm;
-    if (bpm !== null) this.commands.setMaster('bpm', bpm);
+    if (bpm !== null) {
+      const id=this.leader!.id;this.speedOverrides.delete(id);this.tempo(bpm,false);
+      const when=this.ctx!.currentTime+this.lead();this.target(id).forEach(([,s])=>s.voice.retime(null,when,this.preservePitch));
+    }
   };
   private deckPlaying(id: string) { return this.target(id).some(([,slot]) => slot.enabled && slot.voice.playing); }
   /** Freeze only our idle clock: never reset positions, cancel Cue, or send Link Stop. */
@@ -214,7 +252,7 @@ export class MixerEngine {
   }
   private remove(id: string) {
     const deck = this.decks.get(id); if (!deck) return;
-    deck.operation++; deck.slots.forEach(slot => slot.voice.dispose()); deck.channel.dispose(); deck.sends.forEach(s => s.disconnect()); deck.phones.disconnect(); this.decks.delete(id);
+    deck.operation++; deck.slots.forEach(slot => slot.voice.dispose()); deck.channel.dispose(); deck.sends.forEach(s => s.disconnect()); deck.phones.disconnect(); this.decks.delete(id);this.speedOverrides.delete(id);this.corrections.delete(id);
     this.clearLoop(id);
     this.publishOutputs();
     this.stopIdleClock();
@@ -232,8 +270,9 @@ export class MixerEngine {
   private startSlot(id: string, name: string, slot: Slot, at: number, when: number) {
     const model = this.model(id), span = slot.span;
     const d=this.decks.get(id)!;
-    if(span && model.slip && !d.backgrounds.has(name))d.backgrounds.set(name,{at:slot.voice.at(when),time:when,bpm:model.synced?this.state.bpm:null});
-    slot.voice.start(at, when, model.synced ? this.state.bpm : null, span, !!span); slot.enabled = true;
+    if(span && model.slip && !d.backgrounds.has(name))d.backgrounds.set(name,{at:slot.voice.at(when),time:when,bpm:this.playbackTempo(id)});
+    this.corrections.delete(id);
+    slot.voice.start(at, when, this.playbackTempo(id), span, !!span, this.preservePitch); slot.enabled = true;
   }
   private target(id: string, stem?: string): [string, Slot][] {
     const d = this.decks.get(id)!;
@@ -275,7 +314,7 @@ export class MixerEngine {
     const revisions=new Map(chosen.map(([,s])=>[s,++s.revision]));
     if(!on) { chosen.forEach(([name,s])=>{d.backgrounds.delete(name);s.pending=undefined;s.voice.pause();}); this.selection(id); return; }
     await this.resumeAudio();
-    if(this.model(id).synced) await Promise.all(chosen.map(([,s])=>s.voice.prepare()));
+    if(this.model(id).synced && this.preservePitch) await Promise.all(chosen.map(([,s])=>s.voice.prepare()));
     if(this.disposed || d.operation!==operation || this.decks.get(id)!==d) return;
     const start=Math.max(when ?? 0,this.ctx!.currentTime+this.lead());
     const eligible=chosen.filter(([,s])=>s.revision===revisions.get(s) && (s.enabled || !!stem || !d.initialized));
@@ -286,7 +325,7 @@ export class MixerEngine {
     this.startClock(start);
     this.refreshLeader();
     const anchor=eligible.find(([name])=>name===this.model(id).focus) ?? eligible[0];
-    if(!this.linkAudio.enabled && !this.leader){const b=this.beatOf(id,anchor[1].voice.at()),duration=this.secondsOf(id,Math.floor(b)+1)-this.secondsOf(id,Math.floor(b));if(duration>0)this.tempo(60/duration,false);}
+    if(!this.linkAudio.enabled && !this.leader)this.tempo(this.speedOverrides.get(id) ?? this.nativeTempo(id,anchor[1].voice.at()),false);
     const correction=!audition || hold?.latched ? this.playCorrection(id,this.beatOf(id,anchor[1].voice.at()),start) : 0;
     for(const [name,s] of eligible) this.startSlot(id,name,s,this.secondsOf(id,this.beatOf(id,s.voice.at())+correction),start);
     d.initialized=true; this.selection(id); this.apply();
@@ -355,10 +394,15 @@ export class MixerEngine {
           if(playing.has(name))this.startSlot(id,name,s,p.at,when);else s.voice.seek(p.at);});
         d.move=undefined;
       }
-      else if(phase==='commit') { d.move=undefined; this.phaseCorrectedAt=-Infinity; }
+      else if(phase==='commit') {
+        d.move=undefined;
+        const slots=this.target(id).filter(([,s])=>s.voice.playing),anchor=slots.find(([name])=>name===this.model(id).focus) ?? slots[0];
+        if(anchor){const delta=this.playCorrection(id,this.beatOf(id,anchor[1].voice.at(when)),when);if(delta)slots.forEach(([name,s])=>this.startSlot(id,name,s,this.secondsOf(id,this.beatOf(id,s.voice.at(when))+delta),when));}
+        this.phaseCorrectedAt=-Infinity;
+      }
       else if(Number.isFinite(delta)) {
         let low=-Infinity,high=Infinity;
-        const positions=new Map([...before].map(([name,p])=>[name,playing.has(name)?(this.model(id).synced?this.beatOf(id,p.at)+(when-time)*this.state.bpm/60:this.beatOf(id,p.at+when-time)):this.beatOf(id,p.at)]));
+        const positions=new Map([...before].map(([name,p])=>[name,playing.has(name)?(this.playbackTempo(id)!==null?this.beatOf(id,p.at)+(when-time)*this.state.bpm/60:this.beatOf(id,p.at+when-time)):this.beatOf(id,p.at)]));
         before.forEach((p,name)=>{const at=positions.get(name)!;low=Math.max(low,this.beatOf(id,0)-at);high=Math.min(high,this.beatOf(id,d.slots.get(name)!.voice.buffer.duration-(playing.has(name)?.002:0))-at);});
         delta=Math.max(low,Math.min(high,delta));d.move.delta=delta;
         before.forEach((p,name)=>{const s=d.slots.get(name)!;if(s.span)this.loopSpans.set(`${id}/${name}`,s.span);s.span=undefined;s.selected=null;d.backgrounds.delete(name);this.loopStarts.delete(`${id}/${name}`);
@@ -385,16 +429,18 @@ export class MixerEngine {
   }
   async sync(id: string, on: boolean) {
     const d = this.decks.get(id); if (!d) return;
+    if(on && !d.audio.map){this.error('Sync needs a reviewed beat grid. Prepare this track first.',id);return;}
     const op = ++d.operation;
-    if (on) { this.patchDeck(id, { message: 'Preparing Sync…' }); await Promise.all([...d.slots.values()].map(s => s.voice.prepare())); }
+    if (on && this.preservePitch) { this.patchDeck(id, { message: 'Preparing Sync…' }); await Promise.all([...d.slots.values()].map(s => s.voice.prepare())); }
     if (this.disposed || this.decks.get(id) !== d || op !== d.operation) return;
+    if(!on)this.speedOverrides.delete(id);
     this.patchDeck(id, { synced: on, message: undefined });
     const when = this.ctx!.currentTime + this.lead();
     const playing=this.target(id).filter(([,s])=>s.voice.playing);
     const anchor=playing.find(([name])=>name===this.focused(id)?.[0]) ?? playing[0];
     let delta=0;
     if(on && d.audio.map && anchor && (this.linkAudio.enabled || this.leader?.id!==id)){const beat=this.beatOf(id,anchor[1].voice.at(when)),target=this.syncBeat(when);delta=((target-beat+.5)%1+1)%1-.5;}
-    for(const [name,s] of playing){const bg=d.backgrounds.get(name);if(bg){bg.at=this.backgroundAt(id,bg,when);bg.time=when;bg.bpm=on?this.state.bpm:null;}
+    for(const [name,s] of playing){const bg=d.backgrounds.get(name);if(bg){bg.at=this.backgroundAt(id,bg,when);bg.time=when;bg.bpm=this.playbackTempo(id);}
       this.startSlot(id,name,s,this.secondsOf(id,this.beatOf(id,s.voice.at(when))+delta),when);
     }
     if(on){const spans=new Map(this.target(id).flatMap(([name,s])=>s.span?[[name,s.span] as const]:[]));if(spans.size)this.installLoops(id,spans,true);}
@@ -461,16 +507,23 @@ export class MixerEngine {
     const now=this.ctx.currentTime;if(now-this.phaseCorrectedAt<.25)return;
     this.phaseCorrectedAt=now;
     const leader=this.leader, slot=this.decks.get(leader.id)!.slots.get(leader.source)!;
-    if(!this.model(leader.id).synced){const b=this.beatOf(leader.id,slot.voice.at()),duration=this.secondsOf(leader.id,Math.floor(b)+1)-this.secondsOf(leader.id,Math.floor(b));
-      if(duration>0 && Math.abs(60/duration-this.state.bpm)>.01)this.tempo(60/duration,false);}
+    if(this.playbackTempo(leader.id)===null){
+      this.tempo(this.nativeTempo(leader.id,slot.voice.at()),false);
+    }
+    this.target(leader.id).forEach(([,s])=>s.voice.retime(this.playbackTempo(leader.id),now+this.lead(),this.preservePitch));
     const when=now+this.lead(),target=this.syncBeat(when);
     for(const [id,d] of this.decks){
       if(id===leader.id || !this.model(id).synced || d.move || d.holds.size || (this.loopScheduled.get(id) ?? 0)>now)continue;
       const playing=this.target(id).filter(([,s])=>s.voice.playing);if(playing.some(([,s])=>s.pending))continue;
       const anchor=playing.find(([name])=>name===this.model(id).focus) ?? playing[0];if(!anchor)continue;
       const correction=((target-this.beatOf(id,anchor[1].voice.at(when))+.5)%1+1)%1-.5;
-      if(Math.abs(correction)>.025)for(const [name,s] of playing)this.startSlot(id,name,s,this.secondsOf(id,this.beatOf(id,s.voice.at(when))+correction),when);
+      this.correct(id,playing.map(([,s])=>s),correction,when);
     }
+  }
+  private correct(id:string,slots:Slot[],error:number,when:number) {
+    const amount=correctionRate(error,this.corrections.get(id) ?? 0);
+    this.corrections.set(id,amount);
+    for(const s of slots)s.voice.retime(this.state.bpm*(1+amount),when,this.preservePitch);
   }
   private loopWhen(id:string) {
     let when=this.ctx!.currentTime+this.lead();
@@ -560,6 +613,7 @@ export class MixerEngine {
   private tempoRequest = 0;
   private async adjustTempo(bpm: number) {
     if (!Number.isFinite(bpm)) return;
+    bpm=Math.max(20,Math.min(999,bpm));
     const request=++this.tempoRequest;
     this.refreshLeader();
     const leader=this.leader?.id;
@@ -567,16 +621,18 @@ export class MixerEngine {
       await this.sync(leader,true);
       if(request!==this.tempoRequest || this.leader?.id!==leader || !this.model(leader).synced)return;
     }
+    if(!this.linkAudio.enabled && leader){if(Math.abs(bpm-(this.normalSpeedBpm ?? 0))<.001)this.speedOverrides.delete(leader);else this.speedOverrides.set(leader,bpm);}
     this.tempo(bpm);
+    if(leader && !this.linkAudio.enabled){const when=this.ctx!.currentTime+this.lead();this.target(leader).forEach(([,s])=>s.voice.retime(this.playbackTempo(leader),when,this.preservePitch));}
   }
   private tempo(bpm: number, announce = true) {
     if (!Number.isFinite(bpm)) return; bpm = Math.max(20, Math.min(999, bpm));
     if (announce && this.linkAudio.enabled) { this.publisher!.setTempo(bpm); return; }
     if (bpm === this.state.bpm) return;
-    const when = (this.ctx?.currentTime ?? 0) + this.lead(), positions = [...this.decks].flatMap(([id,d]) => [...d.slots].filter(([,s]) => s.voice.playing).map(([name,s]) => ({id,name,s,at:s.voice.at(when)})));
+    const when = (this.ctx?.currentTime ?? 0) + this.lead(), positions = [...this.decks].flatMap(([id,d]) => [...d.slots].filter(([,s]) => s.voice.playing).map(([,s]) => ({id,s})));
     this.decks.forEach((d,id)=>d.backgrounds.forEach(bg=>{if(bg.bpm!==null){bg.at=this.backgroundAt(id,bg,when);bg.time=when;bg.bpm=bpm;}}));
     this.anchor = { beat: this.beat(when), time: when }; this.publish({ ...this.state, bpm });
-    positions.forEach(({id,name,s,at}) => { if (this.model(id).synced) this.startSlot(id,name,s,at,when); }); this.apply();
+    positions.forEach(({id,s}) => { if (this.model(id).synced) s.voice.retime(this.playbackTempo(id),when,this.preservePitch); }); this.apply();
   }
   async running(on: boolean, announce = true) {
     const op = ++this.operation;
@@ -585,7 +641,7 @@ export class MixerEngine {
     await this.resumeAudio();
     // Prepare every synced voice before choosing a shared start sample.
     const ready = [...this.decks].map(([id, d]) => ({ id, d, operation: d.operation }));
-    await Promise.all(ready.flatMap(({ id, d }) => this.model(id).synced ? this.chosen(d, this.model(id)).map(([, s]) => s.voice.prepare()) : []));
+    await Promise.all(ready.flatMap(({ id, d }) => this.model(id).synced && this.preservePitch ? this.chosen(d, this.model(id)).map(([, s]) => s.voice.prepare()) : []));
     if (op !== this.operation || this.disposed) return;
     let when = this.ctx!.currentTime + this.lead() + 0.02;
     if (this.linkAudio.enabled) {
@@ -726,7 +782,15 @@ export class MixerEngine {
   private loopOut() { this.decks.forEach((_,id) => this.deckLoopOut(id)); }
   toggleLoop(on: boolean) { this.decks.forEach((_,id) => this.setDeckLoopEnabled(id,on)); }
   setMonitoring = (on: boolean) => { this.monitoring=on; if(this.ctx) smooth(this.local.gain,on?1:0,this.ctx.currentTime); this.publish(); };
-  setLinkAudio = (on: boolean) => { if (!on && !this.ctx) return; this.audio(); this.problem=null; this.publisher!.enable(on); };
+  setLinkAudio = (on: boolean) => {
+    if (!on && !this.ctx) return;
+    this.audio();this.problem=null;
+    const wasLinked=this.linkAudio.enabled;
+    this.publisher!.enable(on);
+    // Leaving an intentional shared clock must not silently change playback speed.
+    // Treat its last rate as the new local leader's override until Normal speed.
+    if(wasLinked && !on){this.refreshLeader();const id=this.leader?.id;if(id && this.model(id).synced)this.speedOverrides.set(id,this.state.bpm);}
+  };
   private linkClock(timeline: LinkTimeline, changed: boolean) {
     if (!this.linkAudio.enabled) return;
     this.tempo(timeline.tempo,false);
@@ -742,10 +806,8 @@ export class MixerEngine {
         if(d.move || d.holds.size || d.backgrounds.size || (this.loopScheduled.get(id) ?? 0)>this.ctx!.currentTime || playing.some(([,s])=>s.pending))return;
         const anchor=playing.find(([name])=>name===this.focused(id)?.[0]) ?? playing[0];if(!anchor)return;
         const beat=this.beatOf(id,anchor[1].voice.at(when)),correction=((target-beat+.5)%1+1)%1-.5;
-        if(Math.abs(correction)>.08){
-          for(const [name,s] of playing)this.startSlot(id,name,s,this.secondsOf(id,this.beatOf(id,s.voice.at(when))+correction),when);
-          this.phaseCorrectedAt=this.ctx!.currentTime;
-        }
+        this.correct(id,playing.map(([,s])=>s),correction,when);
+        this.phaseCorrectedAt=this.ctx!.currentTime;
       });
     }
   }
@@ -802,6 +864,7 @@ export class MixerEngine {
   }
   private tick() {
     if(this.disposed) return;
+    this.decks.forEach(d=>d.slots.forEach(s=>s.voice.tick()));
     this.maintainSync();
     this.stopIdleClock();
     for(const [id,when] of this.loopScheduled)if(this.ctx!.currentTime>=when){this.loopScheduled.delete(id);if(this.decks.has(id))this.patchDeck(id,{message:undefined});}

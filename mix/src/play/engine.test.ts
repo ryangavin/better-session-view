@@ -15,7 +15,7 @@ class Param {
   cancelScheduledValues() {} setValueAtTime(v:number){this.value=v;return this;} setTargetAtTime(v:number,at:number){this.value=v;this.at=at;return this;} linearRampToValueAtTime(v:number){this.value=v;return this;}
 }
 class Node {
-  gain=new Param(); frequency=new Param(); Q=new Param(); delayTime=new Param();
+  gain=new Param(); playbackRate=new Param(); frequency=new Param(); Q=new Param(); delayTime=new Param();
   maxChannelCount=2; channelCount=2; type=''; fftSize=1024; buffer:AudioBuffer|null=null; loop=false;loopStart=0;loopEnd=0;
   merger=0;
   connections:unknown[]=[]; wires:{node:unknown;output:number;input:number}[]=[];
@@ -249,7 +249,7 @@ describe('the four-deck playback owner',()=>{
     await engine.load('deck-a',track,async()=>shifted);
     engine.move('deck-a','begin');engine.move('deck-a','move',-.4);engine.move('deck-a','commit');
     await engine.sync('deck-a',true);await engine.play('deck-a',true);
-    expect(ctx.sources).toHaveLength(0);ctx.currentTime=.56;expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(.6,4);
+    expect(ctx.sources).toHaveLength(1);ctx.currentTime=.56;expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(.6,4);
   });
   it('keeps queued launches and the playhead on the audible section until the bar',async()=>{
     vi.useFakeTimers();
@@ -717,4 +717,75 @@ it.each([false,true])('mod-wheel scrubbing preserves playing=%s and clamps inste
   // No start command is issued to a paused deck, even when moving away from the end.
   if(!playing)expect(engine.snapshot().decks[0].playing).toBe(false);
   jog.reset();
+});
+
+describe('musical tempo rendering policy',()=>{
+  it.each(['deck-a','deck-b','deck-c','deck-d'])('only playing %s leads at native speed even with other decks loaded and Sync armed',async(id)=>{
+    vi.useFakeTimers();const {engine,ctx,load}=setup();
+    for(const deck of ['deck-a','deck-b','deck-c','deck-d'])await load(deck);
+    await engine.sync(id,true);await engine.play(id,true);ctx.currentTime=1;await vi.advanceTimersByTimeAsync(300);
+    expect(engine.snapshot().decks.filter(d=>d.syncLeader).map(d=>d.id)).toEqual([id]);
+    expect(engine.snapshot().bpm).toBe(120);
+    expect(engine.playbackDiagnostics()[id].drums).toMatchObject({path:'native',rate:1,tempo:null});
+    const a=engine.readFrame().decks[id].seconds!;ctx.currentTime+=10;
+    expect(engine.readFrame().decks[id].seconds!-a).toBeCloseTo(10,8);
+  });
+  it.each([true,false])('matches tempo at one steady ratio with Preserve pitch=%s and keeps source-time integration',async(preserve)=>{
+    vi.useFakeTimers();const {engine,ctx,load}=setup();await load();
+    const slow=asset();slow.audio!.map=evenBeats(48000,64*48000,100,0);slow.analysis!.grid!.bpm=100;
+    await engine.load('deck-b',{...track,bpm:100},async()=>slow);engine.commands.setDeck('deck-b','full',false);
+    await engine.setPreservePitch(preserve);await engine.play('deck-a',true);await engine.sync('deck-b',true);await engine.play('deck-b',true);
+    ctx.currentTime=1;await vi.advanceTimersByTimeAsync(300);
+    expect(engine.playbackDiagnostics()['deck-b'].drums).toMatchObject({path:preserve?'stretch':'native',preservePitch:preserve});
+    expect(engine.playbackDiagnostics()['deck-b'].drums.rate).toBeCloseTo(1.2,5);
+    const a=engine.readFrame().decks['deck-b'].seconds!;ctx.currentTime=6;
+    expect(engine.readFrame().decks['deck-b'].seconds!-a).toBeCloseTo(6,4);
+    // Stopping the former leader leaves this deck at normal native speed, not its old follower ratio.
+    await engine.play('deck-a',false);await vi.advanceTimersByTimeAsync(300);ctx.currentTime=6.5;
+    expect(engine.playbackDiagnostics()['deck-b'].drums).toMatchObject({path:'native',rate:1});
+    expect(engine.snapshot().bpm).toBe(100);
+  });
+  it.each([true,false])('corrects drift by bounded continuous advancement without source jumps, pitch=%s',async(preserve)=>{
+    vi.useFakeTimers();const {engine,ctx,load}=setup();await load();await load('deck-b');await engine.setPreservePitch(preserve);
+    await engine.play('deck-a',true);await engine.sync('deck-b',true);await engine.play('deck-b',true);
+    ctx.currentTime=1;
+    engine.move('deck-a','begin');engine.move('deck-a','move',.4);engine.move('deck-a','commit');
+    const initial=engine.readFrame().decks['deck-b'].seconds!;
+    let previous=initial,rate=engine.playbackDiagnostics()['deck-b'].drums.rate;
+    for(let n=1;n<=80;n++){
+      ctx.currentTime=1+n*.25;await vi.advanceTimersByTimeAsync(250);
+      const next=engine.readFrame().decks['deck-b'].seconds!,actual=engine.playbackDiagnostics()['deck-b'].drums.rate;
+      expect(next-previous).toBeGreaterThan(.249);expect(next-previous).toBeLessThan(.253);
+      expect(Math.abs(actual-1)).toBeLessThanOrEqual(.01001);
+      expect(Math.abs(actual-rate)).toBeLessThanOrEqual(.00251);
+      previous=next;rate=actual;
+    }
+    const frame=engine.readFrame(),delta=frame.decks['deck-a'].beat-frame.decks['deck-b'].beat;
+    expect(Math.abs(delta-Math.round(delta))).toBeLessThan(.08);
+    expect(engine.snapshot().bpm).toBe(120);
+  });
+  it('keeps explicit tempo edits through solo playback, and Normal speed removes the override',async()=>{
+    vi.useFakeTimers();const {engine,ctx,load}=setup();await load();await engine.play('deck-a',true);
+    engine.commands.setMaster('bpm',132);await settle();ctx.currentTime=1;await vi.advanceTimersByTimeAsync(300);
+    expect(engine.playbackDiagnostics()['deck-a'].drums.rate).toBeCloseTo(1.1,5);
+    await engine.setPreservePitch(false);expect(engine.playbackDiagnostics()['deck-a'].drums.path).toBe('native');
+    ctx.currentTime=3;await vi.advanceTimersByTimeAsync(300);expect(engine.snapshot().bpm).toBe(132);
+    engine.normalSpeed();ctx.currentTime=3.5;await vi.advanceTimersByTimeAsync(300);
+    expect(engine.playbackDiagnostics()['deck-a'].drums).toMatchObject({path:'native',rate:1,tempo:null});
+  });
+});
+it('retains the intentional Link rate on disconnect until Normal speed',async()=>{
+  vi.useFakeTimers();const {engine,ctx,load}=setup();await load();await engine.sync('deck-a',true);await engine.play('deck-a',true);
+  const linked=vi.spyOn(engine,'linkAudio','get').mockReturnValue({...engine.linkAudio,enabled:true,peers:0});
+  const clock=engine as unknown as {linkClock(t:import('../linkTiming.ts').LinkTimeline,changed:boolean):void};
+  clock.linkClock({token:1,micros:0,contextTime:0,tempo:132,peers:0,beat:0,playing:true,playingMicros:0,startMicros:0},false);
+  engine.setLinkAudio(false);linked.mockRestore();ctx.currentTime=1;await vi.advanceTimersByTimeAsync(300);
+  expect(engine.snapshot().bpm).toBe(132);expect(engine.playbackDiagnostics()['deck-a'].drums.rate).toBeCloseTo(1.1,5);
+  engine.normalSpeed();ctx.currentTime=2;await vi.advanceTimersByTimeAsync(300);
+  expect(engine.snapshot().bpm).toBe(120);expect(engine.playbackDiagnostics()['deck-a'].drums.rate).toBe(1);
+});
+it('bypasses pitch processing for a follower already at the leader tempo',async()=>{
+  const {engine,load}=setup();await load();await load('deck-b');await engine.play('deck-a',true);await engine.sync('deck-b',true);await engine.play('deck-b',true);
+  expect(engine.preservePitch).toBe(true);
+  expect(engine.playbackDiagnostics()['deck-b'].drums).toMatchObject({path:'native',rate:1});
 });

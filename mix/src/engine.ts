@@ -704,8 +704,9 @@ export class Transport {
    *
    * One ahead, never more: the node keeps what it is given and drops what is
    * filed after a new change, so a boundary goes over only once the one
-   * before it is playing, filed at its own time so it queues behind rather
-   * than replaces. Driven by the node's own update messages rather than a
+   * before it is playing. `output` is the future boundary; `outputTime` is
+   * now, because the worklet prunes elapsed segments using that clock. Passing
+   * the future boundary as now discards audio that has not played yet. Driven by the node's own update messages rather than a
    * timer, because a hidden window's timers are throttled and a boundary
    * that lands late is a jump in the sound.
    */
@@ -717,12 +718,12 @@ export class Transport {
     const node = this.stretch.node;
     for (let guard = 0; guard < 64; guard++) {
       const { boundaries, length } = this.pass;
-      const begun = (i: number) => now >= this.passAt + boundaries[i].output;
+      const begun = (i: number) => now > this.passAt + boundaries[i].output;
       if (this.next < boundaries.length) {
         if (!begun(this.next - 1)) return;
         const boundary = boundaries[this.next];
         const at = this.passAt + boundary.output;
-        void node.schedule({ outputTime: at, output: at, input: boundary.input, rate: boundary.rate, active: true });
+        void node.schedule({ outputTime: now, output: at, input: boundary.input, rate: boundary.rate, active: true });
         this.next++;
         continue;
       }
@@ -731,13 +732,13 @@ export class Transport {
       if (this.looping) {
         const pass = passOf(this.pinned, this.spanning().from, this.span ?? undefined);
         const first = pass.boundaries[0];
-        void node.schedule({ outputTime: end, output: end, input: first.input, rate: first.rate, active: true });
+        void node.schedule({ outputTime: now, output: end, input: first.input, rate: first.rate, active: true });
         this.pass = pass;
         this.passAt = end;
         this.next = 1;
         continue;
       }
-      void node.schedule({ outputTime: end, output: end, active: false });
+      void node.schedule({ outputTime: now, output: end, active: false });
       this.done = true;
       return;
     }

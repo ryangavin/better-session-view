@@ -1,4 +1,6 @@
 import fsp from 'node:fs/promises';
+import { playbackGrid, musicalTempo } from '../src/musical.ts';
+import { tempoRange } from '../src/warp.ts';
 import path from 'node:path';
 import { SIDECAR } from './job.ts';
 
@@ -38,6 +40,7 @@ export const SCAN_VALUES = 5;
 
 /** The beat map, restated from `src/warp.ts` for the same reason `openflow.ts` restates. */
 export interface BeatMap {
+  musical?: import('../src/musical.ts').MusicalEvidence;
   rate: number;
   length: number;
   first: number;
@@ -141,18 +144,6 @@ function wholeOf(beats: BeatMap): number | null {
   return span > 0 ? (60 * beats.rate * (samples.length - 1)) / span : null;
 }
 
-/** The slowest and fastest a map runs at, matching `src/warp.ts`'s `tempoRange`. */
-function endsOf(beats: BeatMap): { slowest: number; fastest: number } {
-  let slowest = Infinity;
-  let fastest = 0;
-  for (let i = 0; i + 1 < beats.samples.length; i++) {
-    const bpm = (60 * beats.rate) / (beats.samples[i + 1] - beats.samples[i]);
-    if (bpm < slowest) slowest = bpm;
-    if (bpm > fastest) fastest = bpm;
-  }
-  return { slowest, fastest };
-}
-
 /** One track's note, from its sidecar. Absent, unreadable and ungridded read alike. */
 export async function gridNote(root: string, trackId: string): Promise<GridNote> {
   const held = await readAnalysis(root, trackId);
@@ -162,16 +153,17 @@ export async function gridNote(root: string, trackId: string): Promise<GridNote>
   const algorithm = held.algorithm ?? null;
   if (!held.grid) return { ...none, failed };
   const byHand = !held.grid.bpmAuto;
-  const map = held.grid.beats;
+  const map = playbackGrid(held.grid, held.algorithm).beats;
   if (!map) {
     const { bpm } = held.grid;
     return { bpm, slowest: bpm, fastest: bpm, byHand, failed, algorithm };
   }
+  if(map.musical?.ambiguous && !map.set?.length)return {...none,failed:true,byHand,algorithm};
   const whole = wholeOf(map);
   if (whole === null) return { ...none, byHand, failed, algorithm };
-  const { slowest, fastest } = endsOf(map);
+  const { slowest, fastest } = tempoRange(map);
   return {
-    bpm: whole,
+    bpm: musicalTempo(map),
     slowest: Number.isFinite(slowest) ? slowest : whole,
     fastest: Number.isFinite(fastest) && fastest > 0 ? fastest : whole,
     byHand,
@@ -270,6 +262,12 @@ export async function readAnalysis(root: string, trackId: string): Promise<Analy
     if (held.grid?.beats && !Array.isArray(held.grid.beats.samples)) return null;
     // A set list nobody can read costs its map nothing: the beats are where
     // they are, and the next pull stretches from bar 1.
+    const evidence=held.grid?.beats?.musical;
+    if(evidence && (evidence.version!==1 || !Array.isArray(evidence.segments) || !evidence.raw ||
+      !(evidence.raw.rate>0) || !Number.isFinite(evidence.raw.first) || !Array.isArray(evidence.raw.samples) ||
+      !evidence.raw.samples.every(Number.isFinite) || !evidence.segments.every(s=>s && Number.isFinite(s.beat) && s.bpm>0 && Number.isFinite(s.bpm)))) {
+      held.grid!.beats={...held.grid!.beats!,musical:undefined};
+    }
     const set: unknown = held.grid?.beats?.set;
     if (held.grid?.beats && set !== undefined && !(Array.isArray(set) && set.every(Number.isInteger))) {
       held.grid.beats = { ...held.grid.beats, set: undefined };

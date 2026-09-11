@@ -30,7 +30,8 @@ same draft, so the same number — and drops the last fit's agreement from its t
 because that fit measured a grid this may no longer be.
 
 **Find beats** runs the chosen algorithm on the drums — `OFFERED`, with `FIRST_CHOICE`
-preselected, which is exactly what an import runs — and makes the result the draft:
+preselected, which is exactly what an import runs — and fits its evidence into the
+[musical grid](musical-tempo.md) before making it the draft:
 drawn over the saved grid in the warp lane, auditioned with the click, undone with
 Undo. The **▾** beside it is where the choice lives, a `Select` drawn as the caret
 alone: the offered algorithms with the chosen one marked, and **Advanced…** last, which

@@ -206,7 +206,7 @@ Keyboard Space holds Cue and Enter takes over; release,
 cancel, lost capture, window blur and unmount cannot leave an audition running. Pending
 preparation/resume and launch revisions prevent obsolete audio from starting.
 
-Unsynced voices use native AudioBufferSourceNodes with 4ms start/stop fades.
+Normal-speed leaders and unsynced voices use native AudioBufferSourceNodes with 4ms start/stop fades. Pitch preservation off also uses native sources at the mapped rate.
 Native loops cache one region buffer per voice, blending 4ms on each side of the
 wrap with a smooth complementary gain curve. The region retains its sample-rounded
 length and source markers; only the seam changes. The blend can borrow up to 4ms
@@ -272,35 +272,28 @@ Missing grids disable the arrows. Held Cue or an active waveform move ignores ju
 
 ### Local leader and loop scheduling
 
-Outside Link, the oldest still-playing gridded deck leads; a stable playing source in
-that deck supplies beat phase. Loading or syncing another deck never sets the tempo.
-An unsynced leader supplies its mapped native beat rate; a synced follower becoming
-leader retains its current rate. Pause, stop, natural end and replacement allow the next
-playing deck to lead. LEADER appears in its header. The main tempo is editable once a local leader is playing. Editing a native leader
-prepares and enables pitch-preserving Sync before applying the requested tempo; synced
-followers receive that rate. Loading a deck cannot change it. The header always displays
-the canonical playback BPM: 120 initially, then the last rate after pause, stop, natural
-end or replacement. This is retained engine state, not a separate display fallback.
-It remains read-only without a local leader or Link; starting a native leader still
-establishes its mapped tempo. Link updates that same value even while stopped or
-without remote peers, and disconnecting retains its last rate.
+Outside Link, the oldest still-playing gridded deck leads. Loaded or paused decks have
+no vote. A sole playing deck uses native unity playback at its musical tempo even with
+Sync armed; the flag is readiness to follow, not a request to straighten its groove.
+A follower becoming the only playing deck returns to its native speed unless an explicit
+user tempo override belongs to it. Manual tempo changes remain effective until Normal
+speed, Sync off or track replacement clears the override. Link owns external tempo; disconnecting
+while a synced deck plays retains that shared rate as its local override until Normal speed.
 
-The header's **1× / Normal speed** button restores the local leader's effective source BPM
-from the loaded saved grid (`loadedDeck` includes manual corrections), not the current
-scaled playback tempo. It calls the same master BPM command as editing the tempo field,
-preserving the existing Sync preparation, phase and scheduling path. It is disabled with
-no playing local leader, an unknown BPM, or Link's external tempo authority. For a variable
-grid this is its analyzed representative BPM, rather than a promise that every beat is
-uniform. Preparing a new grid requires reloading the deck as above.
+The header retains the canonical playback BPM while stopped. **1× / Normal speed**
+clears the leader's explicit speed override and returns to native playback at the current
+musical region's source BPM. It is disabled without a gridded playing leader or under
+Link. **Preserve pitch**, on by default, chooses pitch-preserving stretch for changed
+speed; off uses native rate/pitch coupling. It never matches another song's key.
 
+Followers use a uniform ratio through steady musical regions, with broad eight-bar
+mapping spans and confirmed tempo-region boundaries. Ongoing phase correction changes
+rate continuously from the current source position, with a deadband and bounded speed
+correction; it does not seek on every beat. Explicit launch, Cue latch and scrub commit
+still acquire beat phase. Q and quick-loop size do not govern stretching. The numerical
+policy, estimator provenance and evidence limits are in [musical tempo](musical-tempo.md).
+Gesture/Cue holds and queued launches remain outside ongoing correction.
 
-Followers are checked every 250ms and corrected when phase error exceeds 0.025 beat,
-using one scheduled correction for their playing sources. Gesture/Cue holds and queued
-operations defer correction; scrub commit requests it immediately. This is a bounded
-correction policy, not a claim of mathematically zero error at every sample. It does not
-reunify independent song sections. Synced loop entry/reloop/edit waits for the next leader
-bar, with a queued message. Synced regions snap to whole beats with at least one beat;
-sub-beat quick-loop choices remain available with Sync off. Exit is immediate.
 
 ### Playing scrub and whole-source view
 

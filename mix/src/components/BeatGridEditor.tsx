@@ -1,3 +1,4 @@
+import { musicalBeats } from '../musical.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReviewPlayback } from './reviewPlayback.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
@@ -102,7 +103,7 @@ export function BeatGridEditor({ mix, off, inspect, follow }: { mix: Mix; off: r
         const got = run(algorithm, channelsOf(drums), drums.sampleRate, {});
         const next = got?.beats ?? (got?.fit ? evenBeats(grid.rate, grid.length, got.fit.bpm, got.fit.offset) : null);
         if (!next) { setProblem(`${describe(algorithm).name} found no steady beat; the grid is as it was.`); return; }
-        mix.editGrid(next);
+        mix.editGrid(musicalBeats(next));
         inspect(sampleOf(next, 0) / next.rate);
       } catch (error) {
         setProblem(`Could not find the beats: ${String(error)}`);

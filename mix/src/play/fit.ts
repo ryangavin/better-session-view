@@ -1,3 +1,5 @@
+import { playbackGrid } from '../musical.ts';
+import { FIRST_CHOICE } from '../algorithms.ts';
 import { monoOf } from '../flux.ts';
 import type { Analysis } from '../openflow.ts';
 import type { Found } from './fit.worker.ts';
@@ -43,7 +45,7 @@ export function gridOf(found: Found): Pick<Analysis,'grid'|'fit'> {
   const beats = found.beats ?? ('beats' in found.found ? found.found.beats : null);
   const { beats: _held, ...reading } = { beats: undefined, ...found.found };
   return {
-    grid: { bpm: found.found.bpm, bpmAuto: true, offset: found.found.offset, beats: beats ?? null },
+    grid: playbackGrid({ bpm: found.found.bpm, bpmAuto: true, offset: found.found.offset, beats: beats ?? null }, FIRST_CHOICE),
     fit: reading,
   };
 }

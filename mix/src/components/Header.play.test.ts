@@ -30,9 +30,9 @@ it('keeps the existing playback and Link commands in Play without preparation to
 });
 
 it('exposes an editable tempo when a local leader is playing', () => {
-  const setMaster=vi.fn(), normalSpeed=vi.fn();
+  const setMaster=vi.fn(), normalSpeed=vi.fn(), setPreservePitch=vi.fn();
   const state={running:true,bpm:128,beat:0,loop:{enabled:false},decks:[{status:'ready',syncLeader:true}]};
-  const mixer={normalSpeedBpm:96,normalSpeed,snapshot:()=>state,subscribe:()=>()=>{},
+  const mixer={preservePitch:true,setPreservePitch,normalSpeedBpm:96,normalSpeed,snapshot:()=>state,subscribe:()=>()=>{},
     position:0,linkAudio:{enabled:false,outputs:[],dropped:0},monitoring:true,
     commands:{setMaster},setLinkAudio:vi.fn(),setMonitoring:vi.fn()} as unknown as MixerEngine;
   const mix={phase:'idle',song:null} as unknown as Mix;
@@ -44,6 +44,9 @@ it('exposes an editable tempo when a local leader is playing', () => {
   expect(setMaster).toHaveBeenCalledWith('bpm',135);
   fireEvent.click(view.getByRole('button',{name:'Normal speed'}));
   expect(normalSpeed).toHaveBeenCalledOnce();
+  expect(view.getByRole('button',{name:'Preserve pitch'}).getAttribute('aria-pressed')).toBe('true');
+  fireEvent.click(view.getByRole('button',{name:'Preserve pitch'}));
+  expect(setPreservePitch).toHaveBeenCalledWith(false);
   expect(view.getByRole('button',{name:'Normal speed'}).title).toContain('96');
 });
 

@@ -151,7 +151,10 @@ The quick filter matches every whitespace-separated word across title, full arti
 find a collaboration on Quest For Fire. Filtering preserves the chosen sort; **Escape**
 in the field or **×** clears it. The footer shows the matching count against the total.
 
-**BPM** shows the saved measured tempo or range; a dash means no reading. Hover explains
+**BPM** shows the musical tempo, with a range only for supported sustained regions;
+attack jitter in an identified automatic grid does not create a range. A dash means no
+usable reading, including an unresolved half/double beat-count change. See
+[musical tempo](musical-tempo.md). Hover explains
 grid readiness. **Analysis** shows only a 68×18px whole-song waveform folded from the
 existing original-audio scan. A missing or invalid original scan shows a dash, even if
 stem scans exist; it never invents a full mix by adding unrelated stem extrema.
@@ -206,7 +209,7 @@ The title and artist share a keyboard-accessible button that opens Track Details
 renaming happens there alongside the album and cover. The header text truncates when
 space is tight. The button is disabled during beat-grid editing. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
 their names in the tooltip. The centered controls form three separate compact groups:
-Transport holds play/stop, Prep's loop, tempo and position; Timing holds Play's launch
+Transport holds play/stop, Prep's loop, tempo and position; Play also offers **Preserve pitch**, on by default, independently of Sync; Timing holds Play's launch
 timing, marker quantization and quick-loop length; Audio holds Link Audio and Local
 audio, followed by Prep's conditional Link pins and the Link status reading. Each group
 has its own outline, with a small gap between groups. Timing appears only in Play;

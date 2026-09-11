@@ -1,3 +1,4 @@
+import { playbackGrid, musicalBeats, musicalTempo } from './musical.ts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBeatEdit } from './beatEdit.ts';
 import { STEMS } from './mock.ts';
@@ -487,10 +488,11 @@ export function useMix() {
     if (!(seconds > 0)) return UNKNOWN;
     const rate = audio.rate || NOMINAL_RATE;
     const length = Math.round(seconds * rate);
-    return beats ? resampled(beats, rate, length) : evenBeats(rate, length, targetBpm, offset);
+    const effective=playbackGrid({bpm:targetBpm,bpmAuto,offset,beats},madeBy).beats;
+    return effective ? resampled(effective, rate, length) : evenBeats(rate, length, targetBpm, offset);
     // `peaks` is here because the graph's rate is only known once something
     // has been decoded, and decoding is what fills them in.
-  }, [seconds, targetBpm, offset, beats, audio, peaks]);
+  }, [seconds, targetBpm, offset, beats, audio, peaks, bpmAuto, madeBy]);
 
   // Rendering and audition may use a draft; persistence reads beats/offset above.
   const gridEdit = useBeatEdit(selected, savedGrid);
@@ -1426,9 +1428,11 @@ export function useMix() {
       setFitFailed(found === null);
       setMadeBy(found ? by : null);
       if (!found) return;
-      setTargetBpm(found.bpm);
-      setOffset(found.offset);
-      setBeats(exact ?? ('beats' in found ? found.beats : null));
+      const raw=exact ?? ('beats' in found ? found.beats : null);
+      const effective=raw && by && by!=='hand' ? musicalBeats(raw) : raw;
+      setTargetBpm(effective?.musical ? musicalTempo(effective) : found.bpm);
+      setOffset(effective ? sampleOf(effective,0)/effective.rate : found.offset);
+      setBeats(effective);
       setBpmAuto(true);
       setManual(null);
       const rate = audio.rate || NOMINAL_RATE;
@@ -1453,7 +1457,7 @@ export function useMix() {
       setTargetBpm(tempoOf(reviewed));
       setOffset(sampleOf(reviewed, 0) / reviewed.rate);
       setBeats(reviewed);
-      setBpmAuto(true);
+      setBpmAuto(by !== null && by !== 'hand');
       setManual(null);
       const held = countOf(reviewed);
       setBarMarks([{ at: 0, label: '1' }, { at: held - 1, label: String(held) }]);

@@ -269,7 +269,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               label={playView ? "Playback tempo" : "Tempo"}
               disabled={mix.editingGrid}
               title={
-                playView ? mix.linkAudio.enabled ? 'Shared Link playback tempo, including while stopped.' : 'Adjust playback tempo; synced decks follow. Native leaders enable Sync to preserve pitch.' : mix.beats
+                playView ? mix.linkAudio.enabled ? 'Shared Link playback tempo, including while stopped.' : 'Adjust playback tempo; synced decks follow. Leaders enable tempo control; Preserve pitch selects whether pitch stays unchanged.' : mix.beats
                   ? 'The tempo the stems play at with warp on. The grid is where the beats are'
                   : 'Playback tempo with Warp on. To change the source timing, use Edit beat grid'
               }
@@ -281,6 +281,10 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
                 : 'Normal speed needs a playing leader with a known BPM; Link owns tempo while enabled'}>
               1×
             </Button>}
+            {playView && mixer && <Toggle on={mixer.preservePitch} onChange={on=>void mixer.setPreservePitch(on)}
+              label="Preserve pitch" title="Keep original pitch when playback speed changes. Off: speed and pitch change together, like vinyl.">
+              Preserve pitch
+            </Toggle>}
             {/* Bars are the grid's claim; the clock is what is true whatever
                 tempo anybody decides on. Both, because a slice is placed in one
                 and heard in the other. */}

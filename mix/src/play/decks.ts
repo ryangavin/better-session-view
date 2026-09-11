@@ -1,11 +1,12 @@
 import type { SpectralEnergy } from '@openflow/widgets/theme/spectral.ts';
+import { playbackGrid, musicalTempo } from '../musical.ts';
 import { EFFECTS } from './effects.ts';
 import type { MixerDeck, MixerParams, MixerState } from '@openflow/widgets/mixer/model.ts';
 import { decode, fileUrl, stemUrl, type Peak } from '../audio.ts';
 import { openflow, type Track, type Analysis } from '../openflow.ts';
 import { FIRST_CHOICE } from '../algorithms.ts';
 import { findGrid, gridOf } from './fit.ts';
-import { evenBeats, tempoOf, type Beats } from '../warp.ts';
+import { evenBeats, type Beats } from '../warp.ts';
 
 import { measureScan, overviewOf, type Overview } from './overview.ts';
 import { binsOf, SCAN_RATE, SCAN_VALUES, type Scan } from './scan.ts';
@@ -102,8 +103,9 @@ export async function loadDeckAsset(track: Track, signal: AbortSignal, context?:
     void bridge.analysis.write(track.id, measured.grid, measured.fit, analysis?.slices ?? null, measured.fitFailed, measured.grid ? FIRST_CHOICE : null).catch(() => undefined);
   }
   const held = measured ? {...(analysis ?? emptyAnalysis(track.id)), ...measured} : analysis;
-  const grid = held?.grid ?? null;
-  const map = grid ? grid.beats ?? evenBeats(original.sampleRate, original.length, grid.bpm, grid.offset) : null;
+  const grid = held?.grid ? playbackGrid(held.grid, held.algorithm ?? (measured ? FIRST_CHOICE : null)) : null;
+  if(held && grid) held.grid=grid;
+  const map = grid && !(grid.beats?.musical?.ambiguous && !grid.beats.set?.length) ? grid.beats ?? evenBeats(original.sampleRate, original.length, grid.bpm, grid.offset) : null;
   const displayMap = map ?? evenBeats(original.sampleRate, original.length, track.bpm ?? 120, 0);
   const sourceOverviews: Record<string, Overview> = Object.fromEntries(
     Object.entries(scans).map(([id, scan]) => [id, overviewOf(scan, displayMap, buffers[id].duration)]));
@@ -117,12 +119,13 @@ export async function loadDeckAsset(track: Track, signal: AbortSignal, context?:
 }
 export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): MixerDeck {
   const grid = asset.analysis?.grid;
+  const ambiguous=grid?.beats?.musical?.ambiguous && !grid.beats.set?.length;
   const sources = track.stems ? [...STANDARD, ...track.sources.filter(id => !STANDARD.includes(id))] : STANDARD;
   const cuts = asset.analysis?.slices;
-  return { ...deck, status: 'ready', track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: grid?.beats ? tempoOf(grid.beats) : grid?.bpm ?? track.bpm, key: track.key ?? '—' },
-    focus: track.sources.includes('drums') ? 'drums' : track.sources[0] ?? 'full', moveTogether: true, independentStems: false, zoom: 32, gridAvailable: !!grid,
+  return { ...deck, status: 'ready', track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: ambiguous ? null : grid?.beats ? musicalTempo(grid.beats) : grid?.bpm ?? track.bpm, key: track.key ?? '—' },
+    focus: track.sources.includes('drums') ? 'drums' : track.sources[0] ?? 'full', moveTogether: true, independentStems: false, zoom: 32, gridAvailable: !!grid && !ambiguous,
     peaks: asset.peaks, full: true, fullSection: null, fullQueued: undefined,
-    message: !grid ? 'No steady tempo found — Sync unavailable' : undefined,
+    message: ambiguous ? 'Beat count changes by half/double — review grid before Sync.' : !grid ? 'No steady tempo found — Sync unavailable' : undefined,
     sections: cuts?.length ? cuts.map((cut, i) => ({id: `section-${i}-${cut.bar}`, name: cut.name})) : [{id:'full-track', name:'Track'}],
     stems: sources.map(id => ({id, name: id[0].toUpperCase()+id.slice(1), level:100, available: asset.audio ? (asset.audio.buffers[id]?.duration ?? 0) > 0 : !!track.stems && track.sources.includes(id), selected:null, queued:undefined})),
   };
