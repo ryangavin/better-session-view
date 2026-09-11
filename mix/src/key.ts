@@ -1,7 +1,7 @@
 import { midiPitch, type PitchMap } from './pitchMap.ts';
 import { keyRegions, type KeyRegion } from './debug/pitch/evidence.ts';
 
-export const KEY_VERSION = 2;
+export const KEY_VERSION = 3;
 const names = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
 export interface KeyCandidate { tonic: number; mode: 'major' | 'minor'; label: string; support: number }
 export interface KeyAnalysis {
@@ -45,11 +45,11 @@ export function estimateKey(map: PitchMap, source: KeyAnalysis['source'], analyz
   const alternatives = enough ? tied : scores.filter(c => regional.has(c.label));
   const roots = alternatives.map(candidate => ({ candidate, weight: total ? bins[candidate.tonic] / total : 0 }))
     .sort((a, b) => b.weight - a.weight || b.candidate.support - a.candidate.support);
-  // Prefer one supported tonic, but retain a second when bass emphasis cannot
-  // distinguish them. Never expand library results from regional alternatives.
-  const dominant = roots.length === 1 || roots.length > 1 && roots[0].weight >= .2 && roots[0].weight >= roots[1].weight * 1.5;
-  const candidates = roots.slice(0, dominant ? 1 : 2).map(r => r.candidate);
-  const status = !candidates.length ? 'unknown' : candidates.length > 1 ? 'ambiguous' : 'candidate';
+  // Bass scale membership cannot establish harmonic modulation. Publish the
+  // highest-ranked interpretation only; ties and changing regional hypotheses
+  // remain diagnostic evidence, never additional song keys or filter entries.
+  const candidates = roots.slice(0, 1).map(r => r.candidate);
+  const status = candidates.length ? 'candidate' : 'unknown';
   return { version: KEY_VERSION, algorithm: 'bass-scale-compatibility', analyzedAt, source, status,
     confidence: !candidates.length ? 'insufficient' : coverage >= .5 ? 'moderate' : 'low',
     label: candidates.length ? candidates.map(c => c.label).join(' / ') : 'Unknown',
@@ -66,7 +66,7 @@ export function keyFilters(track: KeyTrack): string[] {
   if (track.key?.trim()) return [track.key.trim()];
   const a = savedKey(track);
   if (!a || a.status === 'unknown') return ['Unknown'];
-  return a.candidates.slice(0, 2).map(c => c.label);
+  return a.candidates.slice(0, 1).map(c => c.label);
 }
 export function keyDescription(track: KeyTrack): string {
   if (track.key?.trim()) return `${track.key} · manual key; bass analysis does not overwrite it`;

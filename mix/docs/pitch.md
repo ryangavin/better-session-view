@@ -191,21 +191,23 @@ map, or runs the existing bass transcription worker to obtain one. The library s
 saved keys and filters only: no analysis controls, evidence panel, inference, audio
 decoding, or frame-array reads. The shared work lease prevents parallel inference.
 
-`src/key.ts` version 2 evaluates stable voiced pitch duration against all major/natural-minor
+`src/key.ts` version 3 evaluates stable voiced pitch duration against all major/natural-minor
 scales. Whole-song analysis tolerates rests (10% coverage) but requires ten seconds of
 usable pitch, four classes each exceeding 3%, and 90% scale support. Scales within 2.5
 percentage points remain diagnostic alternatives. Candidates rank by compatible tonic
-duration, then scale support. A tonic with at least 20% of usable duration and 1.5 times
-the next tonic's duration yields one provisional key; otherwise only the top two are
-published. If global support is insufficient, supported regional candidates can supply
-that shortlist. No supported candidates means Unknown. This ranking is a heuristic,
-not independently calibrated; its qualitative confidence is not a probability.
+duration, then scale support. Only the highest-ranked interpretation is published,
+with the provisional `?` marker even when competing hypotheses tie. If global support
+is insufficient, supported regional candidates can supply that primary interpretation.
+No supported candidates means Unknown. This ranking is a heuristic, not independently
+calibrated; its qualitative confidence is not a probability.
 
 Sixteen-second regions retain the stricter lab policy, including possible changes.
-Those diagnostics remain saved, but do not expand the library shortlist or introduce
-extra filter categories. The library shows a single estimated key when supported,
-at most two candidates otherwise, or Unknown. Existing version 1 results need a cheap
-backfill from their saved pitch maps before they display again.
+These are bass scale-membership hypotheses, not independent harmonic evidence: even
+sustained contrasting regions cannot reliably establish modulation. Version 3 therefore
+never publishes multiple automatic song keys. Alternatives, timed regions and
+`possibleChanges` remain diagnostic and never become extra filter categories.
+Earlier summary versions need a cheap refresh from their saved pitch maps before they
+display again; no new inference or separation is needed for valid cached maps.
 
 `electron/keyAnalysis.ts` verifies bass bytes and map checksum, computes once, then
 re-reads the manifest before publishing. Optional `Track.keyAnalysis` stores version,
@@ -216,8 +218,7 @@ manual metadata survives. Version/model/path mismatches read as Unknown. Out-of-
 changes to the same bass path are checked on explicit reanalysis, not every browse.
 
 Artist → Album → Key lists filter together, then full-text search narrows songs. A song
-with two candidates appears under each of those keys, without adding regional or
-alternative matches. Unanalyzed, stale and insufficient results remain under Unknown.
+appears only under its primary key, without adding regional or alternative matches. Unanalyzed, stale and insufficient results remain under Unknown.
 Reset filters clears all three lists. Manual keys retain their literal metadata labels.
 
 ## Debug library backfill
