@@ -517,3 +517,6 @@ subjectively on the actual setup; it does not establish a measured FPS or latenc
 Deck and Master Trim both span −24…+12 dB, matching EQ. Their default/reset is 0 dB.
 The engine clamps Trim commands to that range and ignores non-finite inputs; audio
 continues to use 10^(dB/20), so −24 dB is approximately 0.0631 amplitude.
+
+Deck panels A–D use the same `--wdg-well` background as the master strip.
+Deck accents, focus states and the highlighted file-drop target remain distinct.
