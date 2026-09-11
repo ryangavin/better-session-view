@@ -43,3 +43,18 @@ it('stops on a changed library or occupied engine without starting work', async 
   await expect(backfillKeys({ read: async () => held, busy: async () => true, analyze }, options)).rejects.toThrow('engine is busy');
   expect(analyze).not.toHaveBeenCalled();
 });
+
+it('reanalyzes saved Unknown only when explicitly requested and reports final progress', async () => {
+  const held = library([analyzed(song('done'))]);
+  const analyze = vi.fn(async () => held), progress = vi.fn();
+  await backfillKeys({read:async () => held,busy:async () => false,analyze}, {...options, reanalyze:true,progress});
+  expect(analyze).toHaveBeenCalledWith('done');
+  expect(progress).toHaveBeenLastCalledWith({completed:1,failed:0,skipped:0,stopped:false,total:1,current:null});
+});
+it('honors a stop requested during the asynchronous preflight without starting a worker', async () => {
+  let stopped = false;
+  const held = library([song('one')]), analyze = vi.fn();
+  const result = await backfillKeys({read:async () => held,busy:async () => { stopped = true; return false; },analyze}, {...options,stopped:() => stopped});
+  expect(result.stopped).toBe(true);
+  expect(analyze).not.toHaveBeenCalled();
+});

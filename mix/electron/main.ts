@@ -22,6 +22,7 @@ import {
   type TranscribeOutcome,
 } from './transcribe.ts';
 import { TAB_FILE, readTranscription, transcriptionAt, type TranscribeProgress } from './transcribeJob.ts';
+import { KEY_VERSION } from '../src/key.ts';
 import { recordKeyAnalysis } from './keyAnalysis.ts';
 import { STANDARD_BASS } from '../src/tab.ts';
 import { readPitchMap } from './pitchMap.ts';
@@ -285,6 +286,7 @@ if (only(app)) {
     },
   );
 
+  ipcMain.handle('openflow:key-version', () => KEY_VERSION);
   ipcMain.handle('openflow:key-analyze', async (_event, trackId: string) => {
     const library = await load(), track = library.tracks.find(t => t.id === trackId);
     if (!library.root || !track?.stems || !track.model || !track.sources.includes('bass')) throw new Error('Separate a bass stem first');

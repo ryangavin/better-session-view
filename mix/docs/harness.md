@@ -5,6 +5,39 @@ The bug button joined to the Settings gear at the right of the header opens a ta
 can hand a corrected map back to the app. Waveform lab compares designs using the
 same decoded stems the lanes are drawn from.
 
+## Key detection
+
+**Key detection** (`src/debug/key/KeyLab.tsx`, workspace id `keys`) inspects saved
+primary/Unknown, provisional uncertainty, coverage, source hashes, summary version,
+competing scales and timed regions. Selection is local to this panel and does not
+load a Prep track or audition audio. Opening it never runs inference. Ordinary library
+rows retain only the primary summary and filter; evidence controls live here.
+
+Analyze selected track explicitly refreshes that track. The library preview defaults
+to **Analyze missing keys**; saved Unknown counts as completed. The explicit reanalysis
+checkbox includes current saved results. Counts/list distinguish eligible tracks,
+already analyzed tracks and missing bass stems. **Refresh saved evidence** rereads
+metadata without inference. Manual key overrides are preserved. A read-only `keyVersion` IPC query must match
+`KEY_VERSION` before either analysis control enables, and is rechecked before every
+worker call. Missing/older handlers fail closed with a rebuild/restart message while
+diagnostics remain available; Refresh checks again. This prevents a newer renderer
+from running an older summary policy after HMR.
+
+The panel and CLI share `src/keyBackfill.ts`; `electron/keyBackfill.ts` re-exports it
+for existing callers. The current bass-backed implementation calls canonical `analyzeKey` sequentially through the existing
+engine lease, reusing validated pitch maps or obtaining missing maps with the existing
+bass worker. No automatic separation, scan analysis or import changes occur. Progress
+shows the current track and completed/failed/skipped counts; per-track failures are
+logged and remaining tracks continue. Occupied engine or changed library stops the
+batch with a recoverable error. Refresh and rerun to retry missing results.
+
+**Stop after current track**, switching debug tabs, resetting the tab or closing the
+workspace stops scheduling after the current track; it does not cancel another
+client's job or discard the current result. Completed results persist immediately,
+and the normal library rereads metadata after each result. Reloading/closing the
+renderer cannot retain its queue; the main-process job already started may finish.
+See [pitch.md](pitch.md) for estimator limits and the CLI equivalent.
+
 ## Bass pitch
 
 The **Bass pitch** tab preserves continuous frequency/voicing evidence from the existing

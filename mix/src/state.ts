@@ -1866,6 +1866,7 @@ export function useMix() {
     browseAlbum,
     browseKey,
     resetLibraryFilters,
+    refreshLibrary: refresh,
     /** One song per row, in the selected column order. */
     rows,
     order,

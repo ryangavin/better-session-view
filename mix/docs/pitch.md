@@ -186,7 +186,7 @@ Sandstorm passage. Live instrument routing and physical devices remain unverifie
 
 ## Persisted library keys
 
-The debug backfill invokes bass/key analysis explicitly. It reuses a valid continuous
+The Key detection debug panel and CLI backfill invoke bass/key analysis explicitly. It reuses a valid continuous
 map, or runs the existing bass transcription worker to obtain one. The library shows
 saved keys and filters only: no analysis controls, evidence panel, inference, audio
 decoding, or frame-array reads. The shared work lease prevents parallel inference.
@@ -223,10 +223,19 @@ Reset filters clears all three lists. Manual keys retain their literal metadata 
 
 ## Debug library backfill
 
+Open **Debug & experiments → Key detection** for the interactive preview, selected
+track analysis and bulk controls. Default **Analyze missing keys** skips saved Unknown;
+select **Reanalyze already analyzed tracks** to include them. No inference starts on
+opening, previewing or selecting tracks. **Stop after current track** retains its result
+and stops the queue; closing/switching tabs uses the same policy. Per-track errors stay
+visible and other songs continue; an occupied engine or library change stops the run.
+The normal library is refreshed after saved results. See [harness.md](harness.md).
+
+
 With `npm run dev:mix` running, `node tools/mix-key-backfill.ts` previews the current
 library's missing bass/key analyses. Add `--run` to process them sequentially through
 the same desktop key-analysis operation; add `--reanalyze` to include saved results.
-This is a developer migration tool, not a permanent library control. It does not change
+The CLI and debug panel share the same batch policy in `src/keyBackfill.ts`; neither adds a normal library control. It does not change
 import behavior, separate missing stems, or backfill waveform/beat analysis.
 
 Saved results, including Unknown, are skipped by default. A missing continuous map is

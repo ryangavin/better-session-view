@@ -1,0 +1,7 @@
+.mf-key-lab { padding: 12px; overflow: auto; }
+.mf-key-lab section { margin-block: 16px; }
+.mf-key-lab p { max-width: 90ch; }
+.mf-key-lab table { border-collapse: collapse; }
+.mf-key-lab th, .mf-key-lab td { padding: 4px 12px; text-align: left; }
+.mf-key-lab dd { overflow-wrap: anywhere; }
+.mf-key-lab select { max-width: 320px; color: inherit; background: transparent; font: inherit; }
