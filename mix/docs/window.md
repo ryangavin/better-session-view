@@ -211,8 +211,10 @@ second row so the view group remains readable.
 The title and artist share a keyboard-accessible button that opens Track Details;
 renaming happens there alongside the album and cover. The header text truncates when
 space is tight. The button is disabled during beat-grid editing. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
-their names in the tooltip. They sit beside Prep/Play in one joined **View and audio**
-group, followed in Play by **Preserve pitch** (on by default, independently of Sync).
+their names in the tooltip. Prep/Play forms its own left-aligned group; the adjacent
+**Audio** group holds Link Audio, Local audio and, in Play, **Preserve pitch**
+(on by default, independently of Sync). The groups have the same 8px gap as
+Transport and Timing.
 Prep/Play remains an exclusive view selection; the three audio controls remain
 independent toggles. Prep's conditional Link pins and Link status follow in that
 same group. Transport holds play/stop, Prep's loop, tempo and position; Timing holds

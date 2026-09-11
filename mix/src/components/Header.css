@@ -182,7 +182,7 @@
 .mf-header-play .mf-header-transport { justify-content:center; overflow-x:auto; }
 .mf-header-play .mf-header-transport > * { flex:none; }
 
-/* View choices and independent audio switches share one widgets surface. */
+/* View selection and audio are separate left-aligned groups, using the shared 8px gap. */
 .mf-view-controls { flex: none; }
 @media (max-width: 1100px) {
   .mf-header { grid-template-columns: minmax(0, 1fr) auto; height: auto; }

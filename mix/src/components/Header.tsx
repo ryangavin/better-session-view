@@ -181,7 +181,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
         )}
 
         {logo}
-        <div className="wdg wdg-control-group mf-group mf-view-controls" role="group" aria-label="View and audio">
+        <div className="wdg wdg-control-group mf-group mf-view-controls" role="group" aria-label="View selection">
           <Segmented
             items={['Prep', 'Play']}
             index={playView ? 1 : 0}
@@ -189,7 +189,8 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
             label="View"
             title="Prep: stem separation · Play: DJ mixer (Tab to switch)"
           />
-          {(live || playView) && <>
+        </div>
+        {(live || playView) && <div className="wdg wdg-control-group mf-group" role="group" aria-label="Audio">
             <Toggle on={mix.linkAudio.enabled}
               onChange={mix.setLinkAudio}
               label="Link Audio"
@@ -216,8 +217,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
               {linkSays}
             </span>}
-          </>}
-        </div>
+        </div>}
 
         {!playView && <div className="mf-open">
           {song ? (
