@@ -1,3 +1,5 @@
+import { OutputProtection, alignedCue } from './outputProtection.ts';
+import { clampStemGain } from './stemGain.ts';
 import { createAudioContext } from '../audioSettings.ts';
 import type { MixerCommands, MixerDeck, MixerFrame, MixerState, MixerWaveLane } from '@openflow/widgets/mixer/model.ts';
 import type { Track } from '../openflow.ts';
@@ -30,6 +32,7 @@ export class MixerEngine {
   private ctx: AudioContext | null = null;
   private decks = new Map<string, Deck>();
   private requests = new Map<string, AbortController>();
+  private masterLimiter!:OutputProtection; private phonesLimiter!:OutputProtection; private cueDelay!:DelayNode;
   private master!: MixerChannel; private dry!: GainNode; private local!: GainNode; private phones!: GainNode; private phonesCue!: GainNode; private phonesMaster!: GainNode;
   private masterSends: GainNode[] = []; private effects: MixerEffect[] = [];
   private retiredEffects: {effect:MixerEffect;since:number}[]=[];
@@ -106,7 +109,9 @@ export class MixerEngine {
     if (this.ctx) return this.ctx;
     const ctx = this.ctx = prepared ?? this.contextFactory();
     this.master = new MixerChannel(ctx,true); this.dry = ctx.createGain(); this.dry.connect(this.master.input);
-    this.local = ctx.createGain(); this.local.gain.value = this.monitoring ? 1 : 0; this.phones = ctx.createGain(); this.phonesCue=ctx.createGain();this.phonesMaster=ctx.createGain();this.phonesMaster.gain.value=0;this.phonesCue.connect(this.phones);this.master.output.connect(this.phonesMaster);this.phonesMaster.connect(this.phones);this.master.output.connect(this.local);
+    this.masterLimiter=new OutputProtection(ctx,error=>this.error(`Master: ${String(error)}`));this.phonesLimiter=new OutputProtection(ctx,error=>this.error(`Headphones: ${String(error)}`));
+    this.master.output.connect(this.masterLimiter.input);this.cueDelay=alignedCue(ctx);
+    this.local = ctx.createGain(); this.local.gain.value = this.monitoring ? 1 : 0; this.phones = ctx.createGain(); this.phonesCue=ctx.createGain();this.phonesMaster=ctx.createGain();this.phonesMaster.gain.value=0;this.phonesCue.connect(this.cueDelay);this.cueDelay.connect(this.phones);this.masterLimiter.output.connect(this.phonesMaster);this.phonesMaster.connect(this.phones);this.phones.connect(this.phonesLimiter.input);this.masterLimiter.output.connect(this.local);
     /**
      * The mix and the cue go to the pairs the person chose, not to 1/2 and 3/4.
      *
@@ -126,7 +131,7 @@ export class MixerEngine {
       const merge = ctx.createChannelMerger(ctx.destination.channelCount);
       const feed = (node: AudioNode, pair: number) => { const split = ctx.createChannelSplitter(2); node.connect(split); split.connect(merge, 0, pair * 2); split.connect(merge, 1, pair * 2 + 1); };
       feed(this.local, chosen.main);
-      if (chosen.cue !== null) feed(this.phones, chosen.cue);
+      if (chosen.cue !== null) feed(this.phonesLimiter.output, chosen.cue);
       merge.connect(ctx.destination);
     } else this.local.connect(ctx.destination);
     this.masterSends = [ctx.createGain(), ctx.createGain()]; this.masterSends.forEach(send => {send.gain.value=0;this.dry.connect(send);});
@@ -140,9 +145,9 @@ export class MixerEngine {
     this.publish({ ...this.state, playbackAvailable: true });
     return ctx;
   }
-  private async resumeAudio() { const ctx=this.audio(); if(typeof OfflineAudioContext==='undefined' || !(ctx instanceof OfflineAudioContext)) await ctx.resume(); }
+  private async resumeAudio() { const ctx=this.audio();const resumed=typeof OfflineAudioContext==='undefined'||!(ctx instanceof OfflineAudioContext)?ctx.resume():Promise.resolve();await Promise.all([resumed,this.masterLimiter.ready,this.phonesLimiter.ready]); }
   /** Read-only audio output for metering/recording, including the dev render harness. */
-  output(id: string): AudioNode | null { return id==='master' ? this.master?.output ?? null : id==='phones' ? this.phones ?? null : id==='fx-a' ? this.effects[0]?.output ?? null : id==='fx-b' ? this.effects[1]?.output ?? null : this.decks.get(id)?.channel.output ?? null; }
+  output(id: string): AudioNode | null { return id==='master' ? this.masterLimiter?.output ?? null : id==='phones' ? this.phonesLimiter?.output ?? null : id==='fx-a' ? this.effects[0]?.output ?? null : id==='fx-b' ? this.effects[1]?.output ?? null : this.decks.get(id)?.channel.output ?? null; }
   get audioContext(): AudioContext | null { return this.ctx; }
 
   /** Audio preferences restart sound, retaining the complete deck configuration. */
@@ -154,7 +159,7 @@ export class MixerEngine {
     this.setLinkAudio(false); this.publisher?.dispose(); this.publisher=null;
     this.decks.forEach(d=>{d.operation++;d.slots.forEach(s=>s.voice.dispose());d.channel.dispose();d.sends.forEach(s=>s.disconnect());d.phones.disconnect();});
     this.decks.clear();this.retiredEffects.forEach(e=>e.effect.dispose());this.retiredEffects=[];this.effects.forEach(e=>e.dispose());this.effects=[];
-    this.master?.dispose();this.masterSends.forEach(s=>s.disconnect());this.dry?.disconnect();this.local?.disconnect();this.phones?.disconnect();this.phonesCue?.disconnect();this.phonesMaster?.disconnect();
+    this.masterLimiter?.dispose();this.phonesLimiter?.dispose();this.cueDelay?.disconnect();this.master?.dispose();this.masterSends.forEach(s=>s.disconnect());this.dry?.disconnect();this.local?.disconnect();this.phones?.disconnect();this.phonesCue?.disconnect();this.phonesMaster?.disconnect();
     if(this.timer)clearInterval(this.timer);
     const old=this.ctx;this.ctx=null;this.publish({...this.state,running:false});this.audio(context);
     for(const saved of held) {
@@ -167,7 +172,7 @@ export class MixerEngine {
 
   private publishOutputs() {
     if (!this.publisher) return;
-    this.publisher.setInputs([...DECK_IDS.flatMap((id, i) => this.decks.has(id) ? [{ id, name: `Deck ${'ABCD'[i]}`, node: this.decks.get(id)!.channel.output }] : []), { id: 'master', name: 'Master', node: this.master.output }, { id: 'phones', name: 'Phones', node: this.phones }]);
+    this.publisher.setInputs([...DECK_IDS.flatMap((id, i) => this.decks.has(id) ? [{ id, name: `Deck ${'ABCD'[i]}`, node: this.decks.get(id)!.channel.output }] : []), { id: 'master', name: 'Master', node: this.masterLimiter.output }, { id: 'phones', name: 'Phones', node: this.phonesLimiter.output }]);
   }
   private beat(when = this.ctx?.currentTime ?? 0) { return this.state.running ? this.anchor.beat + Math.max(0, when - this.anchor.time) * this.state.bpm / 60 : this.anchor.beat; }
   private startClock(when: number) { if (!this.state.running) { this.anchor = { beat: this.anchor.beat, time: when }; this.publish({ ...this.state, running: true }); } }
@@ -820,7 +825,7 @@ export class MixerEngine {
   private sampleFrame = (): MixerFrame => ({ decks: Object.fromEntries([...this.decks].map(([id,d]) => {
     const active=this.focused(id)?.[1]; const at=active?.voice.at() ?? 0;
     return [id,{sources:Object.fromEntries(this.target(id).map(([name,s])=>[name,{seconds:s.voice.at(),beat:this.beatOf(id,s.voice.at()),playing:s.voice.playing,enabled:s.enabled,backgroundBeat:d.backgrounds.has(name)?this.beatOf(id,this.backgroundAt(id,d.backgrounds.get(name)!,this.ctx!.currentTime)):undefined}])),seconds:at,duration:d.audio.duration,beat:d.audio.map ? beatAt(d.audio.map,at*d.audio.map.rate) : at*(this.model(id).track?.bpm ?? 120)/60,level:d.channel.level(),stereo:d.channel.stereoLevels()}];
-  })),masterLevel:this.ctx ? this.master.level() : 0,masterStereo:this.ctx ? this.master.stereoLevels() : [0,0] });
+  })),masterLevel:this.ctx ? this.masterLimiter.level() : 0,masterStereo:this.ctx ? this.masterLimiter.stereoLevels() : [0,0] });
   /**
    * One lane per source the deck is playing: the original, or every stem.
    *
@@ -907,9 +912,9 @@ export class MixerEngine {
     setMasterEq:(band,value)=>{this.publish({...this.state,masterEq:this.state.masterEq.map((v,i)=>i===band?value:v)});this.apply();},
     setDeck:(id,control,value)=>{if(control==='trim'){if(!Number.isFinite(value))return;value=Math.max(params.trim.min,Math.min(params.trim.max,Number(value)));}if(control==='full'){this.source(id,!!value);return;}if(control==='cue'&&!this.phonesAvailable&&!this.linkAudio.enabled&&value){this.error('Cue needs a second output pair chosen in Settings, or the Phones stream in Link Audio.',id);return;}this.patchDeck(id,{[control]:value});this.apply();},
     setDeckEq:(id,band,value)=>{this.patchDeck(id,{eq:this.model(id).eq.map((v,i)=>i===band?value:v)});this.apply();},
-    setStemLevel:(id,stem,value)=>{this.patchDeck(id,{stems:this.model(id).stems.map(s=>s.id===stem?{...s,level:value}:s)});this.apply();},
+    setStemLevel:(id,stem,value)=>{if(!Number.isFinite(value))return;value=clampStemGain(value);this.patchDeck(id,{stems:this.model(id).stems.map(s=>s.id===stem?{...s,level:value}:s)});this.apply();},
     launch:(id,section,stem)=>this.run(this.launch(id,section,stem),id),
   };
   cancelLoads() { this.requests.forEach(r => r.abort()); this.requests.clear(); }
-  dispose() { this.disposed=true; this.operation++; this.requests.forEach(r=>r.abort()); this.requests.clear(); this.publisher?.dispose(); this.publisher=null; this.decks.forEach(d=>{d.operation++;d.slots.forEach(s=>s.voice.dispose());d.channel.dispose();d.sends.forEach(s=>s.disconnect());d.phones.disconnect();});this.decks.clear();this.retiredEffects.forEach(e=>e.effect.dispose());this.retiredEffects=[];this.effects.forEach(e=>e.dispose());if(this.timer)clearInterval(this.timer);if(this.ctx && 'close' in this.ctx)void this.ctx.close();this.listeners.clear(); }
+  dispose() { this.masterLimiter?.dispose();this.phonesLimiter?.dispose();this.cueDelay?.disconnect();this.disposed=true; this.operation++; this.requests.forEach(r=>r.abort()); this.requests.clear(); this.publisher?.dispose(); this.publisher=null; this.decks.forEach(d=>{d.operation++;d.slots.forEach(s=>s.voice.dispose());d.channel.dispose();d.sends.forEach(s=>s.disconnect());d.phones.disconnect();});this.decks.clear();this.retiredEffects.forEach(e=>e.effect.dispose());this.retiredEffects=[];this.effects.forEach(e=>e.dispose());if(this.timer)clearInterval(this.timer);if(this.ctx && 'close' in this.ctx)void this.ctx.close();this.listeners.clear(); }
 }

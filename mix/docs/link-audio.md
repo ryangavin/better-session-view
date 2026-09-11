@@ -59,7 +59,10 @@ guarantee for Live or a network.
 the future Play engine can supply Deck A, Deck B, Deck C, Deck D and Master as five
 stereo channels. **The widgets Play room remains a silent study.** It has no audio
 engine to connect and imports none of this. Deck effect, crossfader and master tap
-positions belong to that engine's integration, not to the publisher.
+positions belong to that engine's integration, not to the publisher. Play Master is
+tapped after its peak limiter, and Phones after its separate final limiter. Published
+decks have no per-deck limiter; PCM16 encoding still saturates their overs at the
+transport boundary. Keep individual deck feeds in range when publishing them.
 
 ## One audio clock and bounded buffers
 

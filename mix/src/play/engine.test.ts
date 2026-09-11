@@ -5,6 +5,14 @@ import { evenBeats } from '../warp.ts';
 import type { Track } from '../openflow.ts';
 import type { DeckAsset } from './decks.ts';
 import { MixerChannel, levelGain, routeGain } from './graph.ts';
+vi.mock('./outputProtection.ts',()=>({
+  OutputProtection:class {
+    input:GainNode;output:GainNode;ready=Promise.resolve();
+    constructor(ctx:AudioContext){this.input=ctx.createGain();this.output=ctx.createGain();this.input.connect(this.output);}
+    dispose(){}level(){return 0;}stereoLevels(){return [0,0];}
+  },
+  alignedCue:(ctx:AudioContext)=>{const delay=ctx.createDelay();delay.delayTime.value=.005;return delay;},
+}));
 const stretching = vi.hoisted(() => ({ prepare: null as Promise<void> | null }));
 vi.mock('../stretch.ts', () => ({
   channelsOf: async () => { await stretching.prepare; return [new Float32Array(8),new Float32Array(8)]; },
@@ -808,4 +816,16 @@ it('applies -24 dB Trim to the audio gain node without the former -12 dB floor',
     channel.apply(trim,[0,0,0],0,1);expect(channel.input.gain.value).toBeCloseTo(amplitude,9);
   }
   channel.dispose();
+});
+
+it('keeps old linear stem values and allows +6 dB while zero remains true mute',async()=>{
+  const {engine,load}=setup();await load();
+  for(const value of [0,37,100,100*10**(.3)]){
+    engine.commands.setStemLevel('deck-a','drums',value);
+    expect(engine.snapshot().decks[0].stems.find(s=>s.id==='drums')!.level).toBe(value);
+  }
+  engine.commands.setStemLevel('deck-a','drums',999);
+  expect(engine.snapshot().decks[0].stems.find(s=>s.id==='drums')!.level).toBeCloseTo(199.5262315);
+  engine.commands.setStemLevel('deck-a','drums',NaN);
+  expect(engine.snapshot().decks[0].stems.find(s=>s.id==='drums')!.level).toBeCloseTo(199.5262315);
 });

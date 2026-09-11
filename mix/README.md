@@ -58,6 +58,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 | separation: models, jobs, progress, the sidecar, where stems go | [`docs/stems.md`](docs/stems.md) — `electron/models.ts`, `job.ts`, `separate.ts`, `python/separate.py` |
 | bass transcription, MIDI, tuning-aware tab, or its cache | [`docs/transcribe.md`](docs/transcribe.md) — `electron/transcribeJob.ts`, `transcribe.ts`, `python/transcribe.py`, `src/tab.ts` |
 | stable BPM, raw beat evidence, gentle Sync or Preserve pitch | [`docs/musical-tempo.md`](docs/musical-tempo.md) — `src/musical.ts`, Play rate policy and research boundary |
+| master/headphone limiting, stem dB gain or output headroom | [docs/output-protection.md](docs/output-protection.md) — outputProtection.ts, peakLimiter.ts, limiterWorklet.ts, stemGain.ts |
 | playback, the mixer, the waveforms, the beat map, finding the beats, the stretcher, or what survives a reload | [`docs/playback.md`](docs/playback.md) — `src/audio.ts`, `engine.ts`, `warp.ts`, `transients.ts`, `tempo.ts`, `follow.ts`, `schedule.ts`, `stretch.ts`, `remember.ts` |
 | sharing stems or deck outputs with Live through Link Audio | [`docs/link-audio.md`](docs/link-audio.md) — `src/linkAudio.ts`, `linkAudioWorklet.ts`, `electron/linkAudio.ts`, `native/link-audio.cpp` |
 | how a record is held to the grid for playing and export, how densely, and why not every beat | [`docs/pinned.md`](docs/pinned.md) — `src/pinned.ts`, `straighten.ts`, `schedule.ts`, `components/ExportModal.tsx` |

@@ -1,5 +1,6 @@
 import type { SpectralEnergy } from '@openflow/widgets/theme/spectral.ts';
 import { playbackGrid, musicalTempo } from '../musical.ts';
+import { STEM_GAIN_MAX, stemGainText } from './stemGain.ts';
 import { EFFECTS } from './effects.ts';
 import type { MixerDeck, MixerParams, MixerState } from '@openflow/widgets/mixer/model.ts';
 import { decode, fileUrl, stemUrl, type Peak } from '../audio.ts';
@@ -28,7 +29,8 @@ export function initialMixer(): MixerState {
     effects: EFFECTS, fxA: 'delay', fxB: 'reverb', playbackAvailable: false };
 }
 export const params: MixerParams = {
-  stemLevel: {kind:'float', min:0, max:100, defaultValue:100, unit:'percent'},
+  stemLevel: {kind:'float', min:0, max:STEM_GAIN_MAX, defaultValue:100, exponent:3},
+  stemLevelDisplay: stemGainText,
   level: {kind:'float', min:0, max:100, defaultValue:100, unit:'percent'},
   trim: {kind:'float', min:-24, max:12, defaultValue:0, unit:'decibel'},
   send: {kind:'float', min:0, max:100, defaultValue:0, unit:'percent'},

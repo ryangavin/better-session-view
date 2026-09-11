@@ -137,12 +137,15 @@ bipolar high/low-pass filter, fader and crossfade assignment, then the master. T
 has its own trim/EQ/filter and separate left/right output meters; it has no level fader
 in the Play interface. Parameter changes ramp to avoid zipper noise.
 
-All stem, channel and master volumes default to **100% = unity**. Zero is silence, and
-volume controls cannot boost; trim supplies gain above unity. Stem gains are linear;
-channel faders use a cubic taper. Neutral EQ is 0 dB, filter center is neutral.
-Crossfade A is audible on the left, B on the right, both at center; Thru bypasses the
-crossfader. There is no automatic gain matching or limiting. Use trim and the real meters
-to manage headroom when summing tracks.
+Stem knobs display **−∞ to +6 dB**, with **0 dB** as default/reset. Stored linear-percent
+values keep their amplitude: 0 is mute, 100 unity, 199.526 is +6 dB. Existing values
+are not reinterpreted as dB. A stable host display callback formats the shared stem
+Param; its cubic gesture taper makes low gains easier to reach. Channel/master volume
+remains 100% unity and cannot boost; channel faders use a cubic taper. Trim and EQ
+provide −24…+12 dB. Filter center is neutral. Crossfade A is left, B right, both at
+center; Thru bypasses it. Master and final headphones have independent stereo-linked
+sample-peak limiters, with no automatic gain matching or makeup gain. See
+[output protection](output-protection.md) for routing, latency and verification.
 
 Deck sends are post-fader/post-crossfader and feed shared wet-only A/B returns. Master
 sends tap the dry deck sum before the effect returns, preventing a return feeding itself.
