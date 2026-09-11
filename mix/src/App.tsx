@@ -1,10 +1,12 @@
+import { LaunchkeyController } from './controllers/launchkey.ts';
+import { ControllerContext } from './controllers/context.ts';
 import { DebugModal } from './components/DebugButton.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
 import { HintFooter } from '@openflow/widgets/chrome/HintFooter.tsx';
 import { PlayView } from './play/PlayView.tsx';
 import { useMixerViewModel } from './play/useMixerViewModel.ts';
 import { isViewShortcut } from './play/decks.ts';
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { Empty } from './components/Empty.tsx';
 import { DetailsModal } from './components/DetailsModal.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
@@ -55,6 +57,9 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const showPrep = useCallback(() => setPlayView(false), []);
   const mixer = useMixerViewModel(mix.library.tracks, mix.library.root);
+  const controller = useMemo(() => new LaunchkeyController(mixer.engine), [mixer.engine]);
+  useEffect(() => () => controller.dispose(), [controller]);
+  useEffect(() => controller.setEnabled(playView), [controller, playView]);
   const previousMode = useRef(playView);
   useEffect(() => {
     if (previousMode.current === playView) return;
@@ -183,7 +188,7 @@ export function App() {
           <HintFooter resting="Point at anything to read what it does." />
         </div>
       </main>
-      <DebugModal mix={mix} />
+      <ControllerContext.Provider value={controller}><DebugModal mix={mix} /></ControllerContext.Provider>
       {settingsOpen && <SettingsModal mix={mix} mixer={mixer.engine} playView={playView} onClose={() => setSettingsOpen(false)} />}
       {mix.exporting && <ExportModal mix={mix} />}
       {mix.details && <DetailsModal mix={mix} ready={ready} />}

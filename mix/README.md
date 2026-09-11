@@ -44,6 +44,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 
 | touching | read |
 |---|---|
+| a hardware controller, Launchkey or Web MIDI control | [`docs/controllers.md`](docs/controllers.md) — `src/controllers/`, `src/debug/controllers/` |
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
 | audio interface, supported sample rates, latency or restarting the audio graphs | [`docs/audio-settings.md`](docs/audio-settings.md) — `src/audioSettings.ts`, `src/components/SettingsModal.tsx` |
 | switching Prep/Play, library-to-deck loading, or four-deck playback | [`docs/play-view.md`](docs/play-view.md) — `src/play/`, `src/App.tsx` |

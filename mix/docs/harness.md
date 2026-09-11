@@ -305,3 +305,10 @@ completion must not change which audio a named lane displays. **Track stems** sh
 available stems. **6-lane stress test** fills six rows for timing; repeated sources retain
 their real names and colors and explicitly say **(copy)**. A four-source track has Other,
 not an invented Guitar lane. Both the vector path and column comparison read the same ID.
+
+## Controllers
+
+The **Controllers** tab connects a user-selected Launchkey MK4 DAW pair to the Play
+mixer. It includes a raw message monitor; no emulator or automatic connection. The
+connection survives closing the workspace and is released on switching to Prep. See
+[controllers.md](controllers.md) for mappings, permissions and hardware validation limits.

@@ -1,0 +1,6 @@
+.mf-controller { padding:16px; color:var(--ui); overflow:auto; height:100%; box-sizing:border-box; }
+.mf-controller-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:12px 0; }
+.mf-controller label { display:flex; align-items:center; gap:6px; }
+.mf-controller select { max-width:300px; background:var(--panel); color:var(--fg); border:1px solid var(--bd); padding:5px; }
+.mf-controller th, .mf-controller td { text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--bd); }
+.mf-controller pre { max-height:240px; overflow:auto; user-select:text; -webkit-user-select:text; background:var(--panel); padding:10px; font-size:11px; }

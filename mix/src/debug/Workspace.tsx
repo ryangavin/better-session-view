@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { ControllerPanel } from './controllers/ControllerPanel.tsx';
 import { Workspace, type Experiment } from '@openflow/widgets/debug/Workspace.tsx';
 import { useRemembered } from '@openflow/widgets/debug/useRemembered.ts';
 import type { Mix } from '../state.ts';
@@ -11,6 +12,7 @@ import { PitchLab } from './pitch/PitchLab.tsx';
 
 /** Add a component and one entry here. Widgets never need to know about an experiment. */
 const experiments: readonly Experiment<Mix>[] = [
+  { id: 'controllers', title: 'Controllers', description: 'Connect a Launchkey MK4 DAW pair to the Play mixer.', component: () => <ControllerPanel /> },
   { id: 'keys', title: 'Key detection', description: 'Inspect saved key evidence and explicitly analyze missing library keys.', component: ({ context }) => <KeyLab mix={context} /> },
   { id: 'pitch', title: 'Bass pitch', description: 'Hear bass passages against continuous pitch, derived notes, references and uncertain key regions.', component: ({ context }) => <PitchLab mix={context} /> },
   { id: 'alignment', title: 'Musical alignment', description: 'Choose required musical boundaries, preserve interior timing, and audition a shared-stem varispeed render.', component: ({ context }) => <AlignmentLab mix={context} /> },
