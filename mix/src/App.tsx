@@ -4,7 +4,7 @@ import { HintFooter } from '@openflow/widgets/chrome/HintFooter.tsx';
 import { PlayView } from './play/PlayView.tsx';
 import { useMixerViewModel } from './play/useMixerViewModel.ts';
 import { isViewShortcut } from './play/decks.ts';
-import { useEffect, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import { Empty } from './components/Empty.tsx';
 import { DetailsModal } from './components/DetailsModal.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
@@ -53,6 +53,7 @@ export function App() {
   const mix = useMix();
   const [playView, setPlayView] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const showPrep = useCallback(() => setPlayView(false), []);
   const mixer = useMixerViewModel(mix.library.tracks, mix.library.root);
   const previousMode = useRef(playView);
   useEffect(() => {
@@ -166,7 +167,7 @@ export function App() {
     >
       <Header onSettings={() => setSettingsOpen(true)} mixer={mixer.engine} mix={mix} ready={ready} playView={playView} onSelectView={setPlayView} />
       <main className="mf-body">
-        <Library mix={mix} />
+        <Library mix={mix} onShowPrep={showPrep} />
         {/* Prep and Play are the same column, so the strip along its bottom
             explains both. It used to live inside the Prep section, which left
             the four-deck mixer — the part of the app with the fewest labels on

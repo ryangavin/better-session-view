@@ -484,3 +484,7 @@
 .mf-library-table th button { padding-right: 10px; }
 
 .mf-library-stem-empty { width:13px; height:13px; background:var(--caption); opacity:.5; }
+
+.mf-library-separate { width:24px; height:18px; padding:0; flex:none; }
+.mf-library-separate svg { display:block; }
+.mf-library-separate:focus-visible { outline:1px solid var(--focus); outline-offset:1px; }

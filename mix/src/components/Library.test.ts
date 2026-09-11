@@ -23,7 +23,7 @@ const TRACKS = [
 ];
 
 function rail(tracks = TRACKS) {
-  const select = vi.fn();
+  const select = vi.fn(), onShowPrep = vi.fn();
   function Harness() {
     const [sort, setSort] = useState<Sort>({ order: 'artist', descending: false });
     const [columns, setColumns] = useState(() => columnsFrom(undefined));
@@ -47,9 +47,9 @@ function rail(tracks = TRACKS) {
       select, importTracks: vi.fn(), chooseFolder: vi.fn(), reveal: vi.fn(),
       setLibraryWidth: vi.fn(), libraryWidth: 0,
     } as unknown as Mix;
-    return h(Library, { mix });
+    return h(Library, { mix, onShowPrep });
   }
-  return { select, ...render(h(Harness)) };
+  return { select, onShowPrep, ...render(h(Harness)) };
 }
 
 const rowTitles = (container: HTMLElement) => [...container.querySelectorAll('.mf-song-title')].map(n => n.textContent);
@@ -97,7 +97,7 @@ describe('the flat library table', () => {
     fireEvent.click(within(row).getByText('Ceremony'));
     fireEvent.click(within(row).getByRole('button', { name: 'Vessel — Aperture' }));
     expect(view.select.mock.calls).toEqual([['Vessel'], ['Vessel']]);
-    expect(within(row).getByRole('button').getAttribute('aria-pressed')).toBe('true');
+    expect(within(row).getByRole('button', { name: 'Vessel — Aperture' }).getAttribute('aria-pressed')).toBe('true');
     expect(row.title).toContain('Original audio; no separated stems');
   });
 
@@ -239,4 +239,13 @@ it('keeps display columns movable but fixed and puts shared Reset filters in the
   fireEvent.click(reset);
   expect(reset.disabled).toBe(true);
   expect(rowTitles(view.container)).toHaveLength(4);
+});
+
+it('opens separation preparation for the requested track without activating its row drag',()=>{
+  const view=rail();const button=view.getByRole('button',{name:'Separate stems for Low Tide'});
+  fireEvent.click(button);
+  expect(view.select).toHaveBeenCalledExactlyOnceWith('Low Tide');expect(view.onShowPrep).toHaveBeenCalledOnce();
+  const setData=vi.fn();expect(fireEvent.dragStart(button,{dataTransfer:{setData}})).toBe(false);
+  expect(setData).not.toHaveBeenCalled();
+  expect(button.tagName).toBe('BUTTON');expect(button.getAttribute('type')).toBe('button');
 });

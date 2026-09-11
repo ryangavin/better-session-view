@@ -714,13 +714,16 @@ a fader lives.
 
 The third quick-filter list beneath full-text search is **Keys**, alongside Artists and
 Albums. It uses saved bass analysis or manual key metadata. The dedicated Key column shows one preferred key,
-at most two candidates, or Unknown. The library contains no key-analysis buttons or
+with a provisional `?` marker, or Unknown. Competing hypotheses never appear as extra keys. The library contains no key-analysis buttons or
 evidence panel. Detailed alternatives and regions stay in saved debug evidence; they do
 not add filter entries. The debug backfill prepares existing songs. See [pitch.md](pitch.md).
 
 Display text throughout the app is not selectable, preventing accidental selections
 while operating controls or dragging rows. Inputs, textareas and editable content
 explicitly retain text selection for normal editing. This is CSS only; it does not
-intercept keyboard shortcuts or pointer gestures. Unseparated library tracks use one
-neutral 13px tile in Stems, with the accessible description “No separated stems”;
-colored tiles still represent only the actual separated sources.
+intercept keyboard shortcuts or pointer gestures. Unseparated library tracks show a compact three-lane icon button in Stems, named
+“Separate stems for [track]”. It selects that exact track and opens Prep through the
+existing view switch; it does not start separation. The normal track/job phase chooses
+setup or running-job UI, with the existing busy-job policy intact. Pointer activation
+is isolated from row selection and dragging; the native button supports Enter/Space.
+Colored tiles still represent only actual separated sources and remain unchanged.

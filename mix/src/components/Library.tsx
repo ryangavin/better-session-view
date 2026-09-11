@@ -16,7 +16,7 @@ import './Library.css';
 
 /** One song per row, with its own artwork and unmodified credit. */
 
-export function Library({ mix }: { mix: Mix }) {
+export function Library({ mix, onShowPrep }: { mix: Mix; onShowPrep?(): void }) {
   const { library } = mix;
   const { widths, resize } = useLibraryColumnWidths();
   const { rail, drag, nudge, maximum, current } = useLibraryResize(mix.setLibraryWidth);
@@ -154,7 +154,7 @@ export function Library({ mix }: { mix: Mix }) {
               {isResizableColumn(column) && <ColumnResize column={column} width={widths[column]} resize={resize} />}
             </th>
           ))}</tr></thead>
-          <tbody>{mix.rows.map((song) => <Song key={song.id} mix={mix} song={song} />)}</tbody>
+          <tbody>{mix.rows.map((song) => <Song key={song.id} mix={mix} song={song} onShowPrep={onShowPrep} />)}</tbody>
         </table>}
 
         {library.tracks.length > 0 && mix.songs.length === 0 && (
@@ -212,7 +212,7 @@ function BrowseList({ label, all, choices, selected, onChange }: {
 }
 
 /** The row remains a drag source; its native button provides keyboard selection. */
-const Song = memo(function Song({ mix, song }: { mix: Mix; song: Track }) {
+const Song = memo(function Song({ mix, song, onShowPrep }: { mix: Mix; song: Track; onShowPrep?(): void }) {
   const note = mix.notes?.[song.id];
   const tempo = note && note.bpm !== null ? tempoText(note.bpm, note.slowest ?? note.bpm, note.fastest ?? note.bpm) : '';
   const fact = gridFact(song, note, tempo, mix.notes !== null);
@@ -227,7 +227,7 @@ const Song = memo(function Song({ mix, song }: { mix: Mix; song: Track }) {
     }} data-selected={song.id === mix.selected || undefined} onClick={() => mix.select(song.id)} title={detail}>
       {mix.columns.map(column => <td key={column}>{column === 'analysis'
         ? <LibraryAnalysis song={song} root={mix.library.root} />
-        : column === 'stems' ? <LibraryStems sources={song.sources} />
+        : column === 'stems' ? <LibraryStems sources={song.sources} title={song.title} onSeparate={() => { mix.select(song.id); onShowPrep?.(); }} />
         : column === 'bpm' ? <span className="mf-song-bpm" title={`${fact.says}. ${fact.why}.`}>{tempo || '—'}</span>
         : column === 'key' ? <span className="mf-song-key" title={keyDescription(song)}>{keyLabel(song)}{!song.key && savedKey(song)?.status === 'candidate' ? ' ?' : ''}</span>
         : column === 'title'

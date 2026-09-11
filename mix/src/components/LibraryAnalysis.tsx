@@ -1,3 +1,4 @@
+import { ButtonFace } from '@openflow/widgets/controls/ButtonFace.tsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { openflow, type Track } from '../openflow.ts';
 import { STEMS } from '../mock.ts';
@@ -66,9 +67,20 @@ export function LibraryAnalysis({ song, root }: { song: Track; root: string | nu
 }
 
 /** Colored tiles represent existing sources; a neutral tile marks an unseparated mix. */
-export function LibraryStems({ sources }: { sources: readonly string[] }) {
+export function LibraryStems({ sources, title, onSeparate }: { sources: readonly string[]; title?: string; onSeparate?(): void }) {
   const available = STEMS.filter(stem => sources.includes(stem.id));
   const description = available.length ? `Available stems: ${available.map(stem => stem.name).join(', ')}` : 'No separated stems';
+  if (!available.length && onSeparate) {
+    const label = `Separate stems for ${title ?? 'this track'}`;
+    return <span className="mf-library-stem-cell"><ButtonFace className="mf-library-separate" aria-label={label} title={label}
+      draggable onDragStart={event => { event.preventDefault(); event.stopPropagation(); }}
+      onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}
+      onClick={event => { event.stopPropagation(); onSeparate(); }}>
+      <svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" aria-hidden="true">
+        <rect x="1.5" y="1.5" width="3" height="11" rx=".5" /><rect x="6.5" y="3.5" width="3" height="9" rx=".5" /><rect x="11.5" y="2.5" width="3" height="10" rx=".5" />
+      </svg>
+    </ButtonFace></span>;
+  }
   return <span className="mf-library-stem-cell" role="img" aria-label={description} title={description}>
     {available.length ? <span className="mf-library-stem-tiles" aria-hidden="true"
       style={{ gridTemplateColumns: `repeat(${available.length > 4 ? 3 : Math.min(2, available.length)}, 6px)` }}>
