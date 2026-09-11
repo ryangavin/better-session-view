@@ -487,4 +487,10 @@
 
 .mf-library-separate { width:24px; height:18px; padding:0; flex:none; }
 .mf-library-separate svg { display:block; }
+.mf-library-separate.wdg-button-body:hover:not(:disabled),
+.mf-library-separate.wdg-button-body:focus-visible:not(:disabled) {
+  background:var(--primary);
+  border-color:var(--primary);
+  color:var(--on-primary);
+}
 .mf-library-separate:focus-visible { outline:1px solid var(--focus); outline-offset:1px; }
