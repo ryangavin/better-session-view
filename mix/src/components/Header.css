@@ -177,9 +177,9 @@
 .mf-header-icon .wdg-body { padding: 0; }
 .mf-header svg { display: block; flex: none; }
 
-/* Distribute logical groups within the space left by branding and settings. */
+/* Center the logical groups together, retaining their shared 8px gap. */
 .mf-header-play { grid-template-columns: max-content minmax(0,1fr) max-content; }
-.mf-header-play .mf-header-transport { justify-content:space-evenly; overflow-x:auto; }
+.mf-header-play .mf-header-transport { justify-content:center; overflow-x:auto; }
 .mf-header-play .mf-header-transport > * { flex:none; }
 
 /* View choices and independent audio switches share one widgets surface. */

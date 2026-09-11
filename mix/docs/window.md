@@ -202,7 +202,8 @@ Clicking the title or artist opens Track Details; Snap uses a magnet; Edit beat 
 stretch arrows; Export an arrow leaving a tray; Settings a gear. Every icon action keeps
 its accessible name and a descriptive tooltip. Title, artist, tempo, position and status
 remain text. Prep centers its transport between equal-width side columns; Play
-uses the space between its view group and Settings for Transport and Timing.
+centers Transport and Timing together between its view group and Settings, with
+a consistent 8px gap between those sections.
 Track identity yields by ellipsis on the left; editing actions and the joined
 Debug/Settings group align right. Below 1100px, Transport and Timing move to a
 second row so the view group remains readable.
