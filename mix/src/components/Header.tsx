@@ -35,6 +35,7 @@ const gridMark = headerIcon(<><rect x="4" y="4" width="16" height="16" rx="1" />
 const snapMark = headerIcon(<><path d="M5 4v9a7 7 0 0 0 14 0V4h-4v9a3 3 0 0 1-6 0V4zM5 8h4M15 8h4" /></>);
 const warpMark = headerIcon(<><path d="M3 12h18M6 8l-4 4 4 4M18 8l4 4-4 4M10 5v14M14 5v14" /></>);
 const exportMark = headerIcon(<><path d="M12 15V3M7 8l5-5 5 5M4 14v6h16v-6" /></>);
+const preservePitchMark = headerIcon(<><path d="M9 16V4l10-2v8M9 7l10-2" /><ellipse cx="6" cy="17" rx="3" ry="2" /><rect x="14" y="15" width="7" height="6" rx="1" /><path d="M15.5 15v-2a2 2 0 0 1 4 0v2" /></>);
 const settingsMark = headerIcon(<><path d="M10 3h4l.7 3 2 .9 2.6-.9 2 3.4-2 2.2v2.3l2 2.2-2 3.4-2.6-.9-2 .9-.7 3h-4l-.7-3-2-.9-2.6.9-2-3.4 2-2.2v-2.3l-2-2.2 2-3.4 2.6.9 2-.9z" /><circle cx="12" cy="12.2" r="3" /></>);
 
 const play = (
@@ -202,8 +203,8 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
             >{speakerMark}</Toggle>
             {playView && mixer && <Toggle on={mixer.preservePitch} onChange={on=>void mixer.setPreservePitch(on)}
-              width={100} label="Preserve pitch" title="Keep original pitch when playback speed changes. Off: speed and pitch change together, like vinyl.">
-              Preserve pitch
+              width={26} label="Preserve pitch" title="Keep original pitch when playback speed changes. Off: speed and pitch change together, like vinyl.">
+              {preservePitchMark}
             </Toggle>}
             {!playView && mix.linkAudio.enabled && <Select
               items={['4 bars', '8 bars', '16 bars', 'Sections']}

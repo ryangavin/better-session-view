@@ -213,7 +213,9 @@ renaming happens there alongside the album and cover. The header text truncates 
 space is tight. The button is disabled during beat-grid editing. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
 their names in the tooltip. Prep/Play forms its own left-aligned group; the adjacent
 **Audio** group holds Link Audio, Local audio and, in Play, **Preserve pitch**
-(on by default, independently of Sync). The groups have the same 8px gap as
+(a note-and-lock icon, on by default, independently of Sync). All three audio
+toggles use the same compact icon width and retain their accessible names/tooltips.
+The groups have the same 8px gap as
 Transport and Timing.
 Prep/Play remains an exclusive view selection; the three audio controls remain
 independent toggles. Prep's conditional Link pins and Link status follow in that
