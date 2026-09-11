@@ -201,20 +201,23 @@ logo, track identity, grouped controls and standalone actions share one vertical
 Clicking the title or artist opens Track Details; Snap uses a magnet; Edit beat grid a grid; Warp horizontal
 stretch arrows; Export an arrow leaving a tray; Settings a gear. Every icon action keeps
 its accessible name and a descriptive tooltip. Title, artist, tempo, position and status
-remain text. Prep and Play keep their transport centered across the full window, using equal-width
-side columns. Track identity yields by ellipsis on the left; editing actions and the
-joined Debug/Settings group align right.
+remain text. Prep centers its transport between equal-width side columns; Play
+uses the space between its view group and Settings for Transport and Timing.
+Track identity yields by ellipsis on the left; editing actions and the joined
+Debug/Settings group align right. Below 1100px, Transport and Timing move to a
+second row so the view group remains readable.
 
 The title and artist share a keyboard-accessible button that opens Track Details;
 renaming happens there alongside the album and cover. The header text truncates when
 space is tight. The button is disabled during beat-grid editing. Link Audio and Local audio are two icon toggles — two rings, a speaker — with
-their names in the tooltip. The centered controls form three separate compact groups:
-Transport holds play/stop, Prep's loop, tempo and position; Play also offers **Preserve pitch**, on by default, independently of Sync; Timing holds Play's launch
-timing, marker quantization and quick-loop length; Audio holds Link Audio and Local
-audio, followed by Prep's conditional Link pins and the Link status reading. Each group
-has its own outline, with a small gap between groups. Timing appears only in Play;
-all controls retain their existing availability and behavior. The Link reading is left
-out entirely when it has nothing to say, since an empty child still takes a divider.
+their names in the tooltip. They sit beside Prep/Play in one joined **View and audio**
+group, followed in Play by **Preserve pitch** (on by default, independently of Sync).
+Prep/Play remains an exclusive view selection; the three audio controls remain
+independent toggles. Prep's conditional Link pins and Link status follow in that
+same group. Transport holds play/stop, Prep's loop, tempo and position; Timing holds
+Play's launch timing, marker quantization and quick-loop length. All controls retain
+their existing availability and behavior. The Link reading is left out entirely when
+it has nothing to say, since an empty child still takes a divider.
 
 **Link Audio** shares the loaded stems as separate stereo inputs in Live. It starts off
 on every window load. The adjacent text reports connecting, discovered peers, capture

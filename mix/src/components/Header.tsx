@@ -181,13 +181,43 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
         )}
 
         {logo}
-        <Segmented
-          items={['Prep', 'Play']}
-          index={playView ? 1 : 0}
-          onChange={index => onSelectView?.(index === 1)}
-          label="View"
-          title="Prep: stem separation · Play: DJ mixer (Tab to switch)"
-        />
+        <div className="wdg wdg-control-group mf-group mf-view-controls" role="group" aria-label="View and audio">
+          <Segmented
+            items={['Prep', 'Play']}
+            index={playView ? 1 : 0}
+            onChange={index => onSelectView?.(index === 1)}
+            label="View"
+            title="Prep: stem separation · Play: DJ mixer (Tab to switch)"
+          />
+          {(live || playView) && <>
+            <Toggle on={mix.linkAudio.enabled}
+              onChange={mix.setLinkAudio}
+              label="Link Audio"
+              title="Link Audio: share the stems with Live, follow its tempo, and start and stop with it"
+              width={26}
+            >{linkMark}</Toggle>
+            <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
+              label="Local audio" width={26}
+              title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
+            >{speakerMark}</Toggle>
+            {playView && mixer && <Toggle on={mixer.preservePitch} onChange={on=>void mixer.setPreservePitch(on)}
+              width={100} label="Preserve pitch" title="Keep original pitch when playback speed changes. Off: speed and pitch change together, like vinyl.">
+              Preserve pitch
+            </Toggle>}
+            {!playView && mix.linkAudio.enabled && <Select
+              items={['4 bars', '8 bars', '16 bars', 'Sections']}
+              index={OFFERED.indexOf(mix.linkEvery)}
+              onChange={(next) => mix.setLinkEvery(OFFERED[next])}
+              label="Link pins"
+              title="While linked: how often playback is held to Live's grid — every 4, 8 or 16 bars, or at the sections only. The original feel stays between pins. Export has its own choice, on the export dialog"
+              width={74}
+            />}
+            {linkSays && <span className={`mf-link${mix.linkAudio.problem || mix.linkAudio.dropped ? ' mf-link-problem' : ''}`}
+              title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
+              {linkSays}
+            </span>}
+          </>}
+        </div>
 
         {!playView && <div className="mf-open">
           {song ? (
@@ -281,10 +311,6 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
                 : 'Normal speed needs a playing leader with a known BPM; Link owns tempo while enabled'}>
               1×
             </Button>}
-            {playView && mixer && <Toggle on={mixer.preservePitch} onChange={on=>void mixer.setPreservePitch(on)}
-              label="Preserve pitch" title="Keep original pitch when playback speed changes. Off: speed and pitch change together, like vinyl.">
-              Preserve pitch
-            </Toggle>}
             {/* Bars are the grid's claim; the clock is what is true whatever
                 tempo anybody decides on. Both, because a slice is placed in one
                 and heard in the other. */}
@@ -315,30 +341,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
               width={72}
             />
           </div>}
-          <div className="wdg wdg-control-group mf-group" role="group" aria-label="Audio">
-            <Toggle on={mix.linkAudio.enabled}
-              onChange={mix.setLinkAudio}
-              label="Link Audio"
-              title="Link Audio: share the stems with Live, follow its tempo, and start and stop with it"
-              width={26}
-            >{linkMark}</Toggle>
-            <Toggle on={mix.monitoring} onChange={mix.setMonitoring}
-              label="Local audio" width={26}
-              title="Local audio: hear the mix through this computer's speakers. What Live receives is unaffected"
-            >{speakerMark}</Toggle>
-            {!playView && mix.linkAudio.enabled && <Select
-              items={['4 bars', '8 bars', '16 bars', 'Sections']}
-              index={OFFERED.indexOf(mix.linkEvery)}
-              onChange={(next) => mix.setLinkEvery(OFFERED[next])}
-              label="Link pins"
-              title="While linked: how often playback is held to Live's grid — every 4, 8 or 16 bars, or at the sections only. The original feel stays between pins. Export has its own choice, on the export dialog"
-              width={74}
-            />}
-            {linkSays && <span className={`mf-link${mix.linkAudio.problem || mix.linkAudio.dropped ? ' mf-link-problem' : ''}`}
-              title={mix.linkAudio.problem ?? `${mix.linkAudio.outputs.join(', ')} · ${mix.linkAudio.dropped} dropped blocks`}>
-              {linkSays}
-            </span>}
-          </div>
+
 
         </>
       )}

@@ -181,3 +181,14 @@
 .mf-header-play { grid-template-columns: max-content minmax(0,1fr) max-content; }
 .mf-header-play .mf-header-transport { justify-content:space-evenly; overflow-x:auto; }
 .mf-header-play .mf-header-transport > * { flex:none; }
+
+/* View choices and independent audio switches share one widgets surface. */
+.mf-view-controls { flex: none; }
+@media (max-width: 1100px) {
+  .mf-header { grid-template-columns: minmax(0, 1fr) auto; height: auto; }
+  .mf-header-start { grid-column: 1; grid-row: 1; }
+  .mf-header-end { grid-column: 2; grid-row: 1; }
+  .mf-header-transport { grid-column: 1 / -1; grid-row: 2; justify-content: center; overflow-x: auto; }
+  .mf-header-transport > * { flex: none; }
+  .mf-header-play .mf-header-transport { justify-content: center; }
+}

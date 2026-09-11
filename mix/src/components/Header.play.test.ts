@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { createElement } from 'react';
-import { render, fireEvent, cleanup, act } from '@testing-library/react';
+import { render, fireEvent, cleanup, act, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Header } from './Header.tsx';
 import type { MixerEngine } from '../play/engine.ts';
@@ -36,7 +36,17 @@ it('exposes an editable tempo when a local leader is playing', () => {
     position:0,linkAudio:{enabled:false,outputs:[],dropped:0},monitoring:true,
     commands:{setMaster},setLinkAudio:vi.fn(),setMonitoring:vi.fn()} as unknown as MixerEngine;
   const mix={phase:'idle',song:null} as unknown as Mix;
-  const view=render(createElement(Header,{mix,mixer,ready:null,playView:true}));
+  const onSelectView=vi.fn();
+  const view=render(createElement(Header,{mix,mixer,ready:null,playView:true,onSelectView}));
+  const group=within(view.getByRole('group',{name:'View and audio'}));
+  expect(group.getAllByRole('radio')).toHaveLength(2);
+  expect(group.getByRole('radio',{name:'Play'}).getAttribute('aria-checked')).toBe('true');
+  for(const name of ['Link Audio','Local audio','Preserve pitch'])expect(group.getByRole('button',{name})).toBeTruthy();
+  fireEvent.click(group.getByRole('button',{name:'Local audio'}));
+  expect(mixer.setMonitoring).toHaveBeenCalledWith(false);
+  expect(onSelectView).not.toHaveBeenCalled();
+  fireEvent.click(group.getByRole('radio',{name:'Prep'}));
+  expect(onSelectView).toHaveBeenCalledWith(false);
   const tempo=view.getByRole('slider',{name:'Playback tempo'});
   fireEvent.keyDown(tempo,{key:'Enter'});
   const input=view.getByRole('textbox',{name:'Playback tempo'});fireEvent.change(input,{target:{value:'135'}});fireEvent.keyDown(input,{key:'Enter'});
