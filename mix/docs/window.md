@@ -696,7 +696,8 @@ the current theme, including a cache read completing after a theme change.
 **Aurora** and **Ember** are also production Spectral palettes with their reviewed
 Vivid settings unchanged (see waveform-color-studies.md). Library miniatures apply
 the selected RMS frequency weights, contrast, palette, fill opacity and backing.
-They retain their compact 68-column geometry; the production deck waveform applies
+A sidebar-only .72 opacity keeps these miniatures below library text contrast while
+preserving hue and relative theme opacity. They retain their compact 68-column geometry; the production deck waveform applies
 the complete silhouette/edge treatment. Theme changes never invalidate saved scans.
 
 

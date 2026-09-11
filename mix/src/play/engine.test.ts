@@ -92,27 +92,29 @@ describe('the four-deck playback owner',()=>{
     expect(ctx.sources).toHaveLength(before);
     expect(engine.readFrame().decks['deck-a'].sources!.drums.playing).toBe(true);
   });
-  it('indexes the full-track overview from its negative beat origin, including after a page change', async () => {
+  it.each([undefined,100,256])('indexes overview density %s from its negative beat origin across page changes', async density => {
     vi.useFakeTimers();
     const {engine,ctx} = setup();
     const loaded = asset();
+    const columnsPerBeat = density ?? 8;
+    loaded.audio!.overviewColumnsPerBeat = density;
     loaded.audio!.overviewStart = -8;
-    loaded.audio!.overview = Array.from({length:1024},(_,i)=>({min:0,max:i/1024}));
-    loaded.audio!.overviewSpectrum = Array.from({length:1024},(_,i)=>[i,0,0] as const);
+    loaded.audio!.overview = Array.from({length:128*columnsPerBeat},(_,i)=>({min:0,max:i/(128*columnsPerBeat)}));
+    loaded.audio!.overviewSpectrum = Array.from({length:128*columnsPerBeat},(_,i)=>[i,0,0] as const);
     await engine.load('deck-a',track,async()=>loaded);
     await vi.advanceTimersByTimeAsync(40);
     let d = engine.snapshot().decks[0];
     expect(d.waveform?.start).toBe(-32);
-    // Beat -8 appears at index 192 of the 96-beat window; beat zero at 256.
-    expect(d.waveform!.lanes[0].peaks[256].max).toBe(64/1024);
-    expect(d.waveform!.lanes[0].spectrum?.[256]).toEqual([64,0,0]);
+    // Negative lead-in and page boundaries use the reading density, including legacy eight.
+    expect(d.waveform!.lanes[0].peaks[32*columnsPerBeat].max).toBe(64/1024);
+    expect(d.waveform!.lanes[0].spectrum?.[32*columnsPerBeat]).toEqual([8*columnsPerBeat,0,0]);
     await engine.launch('deck-a','section-0-0');
     ctx.currentTime = 20;
     await vi.advanceTimersByTimeAsync(40);
     d = engine.snapshot().decks[0];
     expect(d.waveform?.start).toBe(0);
     expect(d.waveform!.lanes[0].peaks[0].max).toBe(64/1024);
-    expect(d.waveform!.lanes[0].spectrum?.[0]).toEqual([64,0,0]);
+    expect(d.waveform!.lanes[0].spectrum?.[0]).toEqual([8*columnsPerBeat,0,0]);
   });
   it('restarts on a new output while retaining tracks, positions and mixer controls', async () => {
     const { engine, ctx, load } = setup(); await load();

@@ -3,8 +3,8 @@ import { beatAt, sampleOf, type Beats } from '../warp.ts';
 import type { Peak } from '../audio.ts';
 import { SCAN_RATE, SCAN_VALUES, walk, type Samples, type Scan } from './scan.ts';
 
-/** Original-track overview; its origin can precede bar 1. Eight measurements per beat. */
-export interface Overview { start: number; peaks: Peak[]; spectrum: SpectralEnergy[] }
+/** Original-track overview; its origin can precede bar 1. Density is retained with the reading. */
+export interface Overview { start: number; columnsPerBeat?: number; peaks: Peak[]; spectrum: SpectralEnergy[] }
 
 /**
  * Somewhere for a long walk to let the window past, without a timer.
@@ -54,19 +54,24 @@ export async function measureScan(buffer: AudioBuffer, signal: AbortSignal, rate
 /**
  * The columns a grid asks for, gathered out of a scan.
  *
- * A column covers whatever span of time its eighth of a beat covers, which is
- * a handful of scan bins; a column falling entirely past the end of the audio
+ * A column covers its density-defined fraction of a beat, gathered from
+ * the saved scan; a column falling entirely past the end of the audio
  * is silent, the way walking the samples there found nothing.
  */
 export function overviewOf(scan: Scan, map: Beats, duration: number): Overview {
-  const start = Math.floor(beatAt(map, 0) * 8) / 8;
-  const end = Math.ceil(beatAt(map, duration * map.rate) * 8) / 8;
-  const count = Math.max(1, Math.round((end - start) * 8));
+  // Keep the saved scan's transient detail on the beat grid. Bound exceptional
+  // slow/irregular maps; this is a visual reading, never a new audio analysis.
+  let secondsPerBeat = 0;
+  for (let i = 1; i < map.samples.length; i++) secondsPerBeat = Math.max(secondsPerBeat, (map.samples[i]-map.samples[i-1])/map.rate);
+  const columnsPerBeat = Math.max(8, Math.min(256, Math.ceil(scan.rate * secondsPerBeat)));
+  const start = Math.floor(beatAt(map, 0) * columnsPerBeat) / columnsPerBeat;
+  const end = Math.ceil(beatAt(map, duration * map.rate) * columnsPerBeat) / columnsPerBeat;
+  const count = Math.max(1, Math.round((end - start) * columnsPerBeat));
   const binAt = (beat: number) => Math.round(sampleOf(map, beat) / map.rate * scan.rate);
   const peaks: Peak[] = [], spectrum: SpectralEnergy[] = [];
   let from = binAt(start);
   for (let column = 0; column < count; column++) {
-    const to = column === count - 1 ? scan.bins : binAt(start + (column + 1) / 8);
+    const to = column === count - 1 ? scan.bins : binAt(start + (column + 1) / columnsPerBeat);
     const lo = Math.max(0, from), hi = Math.min(scan.bins, Math.max(lo + 1, to));
     if (lo >= scan.bins) { peaks.push({min:0,max:0}); spectrum.push([0,0,0]); from = to; continue; }
     let min = 0, max = 0, low = 0, mid = 0, high = 0;
@@ -79,5 +84,5 @@ export function overviewOf(scan: Scan, map: Beats, duration: number): Overview {
     peaks.push({min,max}); spectrum.push([low/spread, mid/spread, high/spread]);
     from = to;
   }
-  return {start, peaks, spectrum};
+  return {start, columnsPerBeat, peaks, spectrum};
 }

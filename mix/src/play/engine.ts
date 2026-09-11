@@ -847,9 +847,10 @@ export class MixerEngine {
     const lanes = drawn.map((name,i): MixerWaveLane => {
       const overview = d.audio.sourceOverviews?.[name];
       const columns = overview?.peaks ?? d.audio.overview, bands = overview?.spectrum ?? d.audio.overviewSpectrum;
-      const offset = Math.round((start - (overview?.start ?? d.audio.overviewStart ?? 0)) * 8);
-      const peaks = cached ? previous.lanes[i].peaks : Array.from({length:Math.ceil(length*8)},(_,k) => columns[offset + k] ?? {min:0,max:0});
-      const spectrum = cached ? previous.lanes[i].spectrum : bands && Array.from({length:Math.ceil(length*8)},(_,k) => bands[offset + k] ?? [0,0,0] as const);
+      const columnsPerBeat = overview?.columnsPerBeat ?? d.audio.overviewColumnsPerBeat ?? 8;
+      const offset = Math.round((start - (overview?.start ?? d.audio.overviewStart ?? 0)) * columnsPerBeat);
+      const peaks = cached ? previous.lanes[i].peaks : Array.from({length:Math.ceil(length*columnsPerBeat)},(_,k) => columns[offset + k] ?? {min:0,max:0});
+      const spectrum = cached ? previous.lanes[i].spectrum : bands && Array.from({length:Math.ceil(length*columnsPerBeat)},(_,k) => bands[offset + k] ?? [0,0,0] as const);
       const slot = d.slots.get(name), own = d.checkpoints.get(name)?.get(name)?.at;
       const activeSpan = slot?.span, span = activeSpan ?? this.loopSpans.get(`${id}/${name}`);
       const pending = model.loop?.start != null && model.loop?.end === null ? this.loopStarts.get(`${id}/${name}`) : undefined;

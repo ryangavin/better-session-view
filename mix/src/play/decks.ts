@@ -39,7 +39,7 @@ export const params: MixerParams = {
   tempo: {kind:'float', min:20, max:300, defaultValue:124, unit:'float'},
   cross: {kind:'float', min:-100, max:100, defaultValue:0, unit:'int'},
 };
-export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[]; overviewStart?: number; overviewSpectrum?: SpectralEnergy[]; sourceOverviews?: Record<string, Overview> }
+export interface DeckAudio { buffers: Record<string, AudioBuffer>; map: Beats | null; duration: number; overview: Peak[]; overviewStart?: number; overviewColumnsPerBeat?: number; overviewSpectrum?: SpectralEnergy[]; sourceOverviews?: Record<string, Overview> }
 export interface DeckAsset { analysis: Analysis | null; peaks: Peak[]; audio?: DeckAudio }
 /**
  * Decode the original and available stems into the engine's shared context.
@@ -117,7 +117,7 @@ export async function loadDeckAsset(track: Track, signal: AbortSignal, context?:
     Object.fromEntries(Object.entries(scans).map(([id, scan]) => [id, {bins: scan.bins, values: scan.values}]))).catch(() => undefined);
   const overview = sourceOverviews.full;
   return {analysis: held, peaks: overview.peaks.slice(0, 1024), audio: { buffers, map, duration: original.duration,
-    sourceOverviews, overview: overview.peaks, overviewStart: overview.start, overviewSpectrum: overview.spectrum }};
+    sourceOverviews, overview: overview.peaks, overviewStart: overview.start, overviewColumnsPerBeat: overview.columnsPerBeat, overviewSpectrum: overview.spectrum }};
 }
 export function loadedDeck(deck: MixerDeck, track: Track, asset: DeckAsset): MixerDeck {
   const grid = asset.analysis?.grid;

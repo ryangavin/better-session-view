@@ -320,7 +320,29 @@ beat extent and overview bins; widgets own only rendering and input.
 Each decoded source produces beat-normalized overview peaks and frequency
 shading in `overview.ts`. The overview begins at the beat containing file sample zero,
 which can be negative: audio before the first downbeat must not be discarded. Its
-explicit origin is retained when extracting each scrolling window. Map samples and
+explicit origin and columns-per-beat density are retained when extracting each
+scrolling window. Density follows the saved 200 Hz scan and the map's longest beat,
+bounded to 8–256 columns per beat; legacy readings without metadata remain eight.
+The old fixed eight-column reduction merged short transients and gaps before drawing.
+The shared renderer now receives the visible fraction of its scrolling strip for
+zoom-appropriate detail. Peak ladders bound path size; unchanged frames reuse the
+same arrays and translate the cached canvas, with no audio or timing changes.
+Existing loaded assets keep their old density until the next normal load; the app
+never resets a session to upgrade a visual reading.
+
+The finer reading trades memory for detail. On the existing 218.455-second NeuroE
+scan, density rose from 8 to 113 columns/beat (3,208 to 45,298 columns). A GC-isolated
+Node measurement retained approximately 0.66 MB for the old overview and 7.35 MB per
+source for the new one; a map stressing the 256 cap retained 16.54 MB. These are
+observations, not universal budgets, and exclude decoded audio. Overview construction
+was about 2.2/6.7/10.9 ms respectively. A 96-beat lane is bounded to 24,576 entries;
+these arrays reference the overview's measurements. At a 900×50 viewport, NeuroE's
+32-beat view used 2,213 path points/2,712 ladder reads; its 8-beat view used 10,848.
+Isolated Chromium canvas command submission rose from about 0.5 to 5.5–6 ms per
+repaint (GPU/compositor completion was not timed). Playback frames still translate
+cached strips without rebuilding paths. No claim of per-frame repaint at that cost
+is intended. The before/after used the same saved scan, Prism, and 0–96 beat strip,
+without decoding, new analysis, or playback. Map samples and
 decoder samples are converted through seconds, so differing sample rates stay aligned.
 The measured end of the map determines the overview length, not an estimated tempo.
 
