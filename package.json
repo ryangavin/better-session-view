@@ -60,6 +60,7 @@
     "dev:devices": "vite --config set/vite.bench.config.ts",
     "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p mix/tsconfig.json && tsc -p mix/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
+    "test:mix:browser": "playwright test --config mix/e2e/playwright.config.ts",
     "test:coverage": "vitest run --coverage",
     "benchmark": "node --disable-warning=ExperimentalWarning tools/benchmark.ts",
     "postinstall": "cd bridge && npm install --no-audit --no-fund && cd ../visuals && npm install --ignore-scripts --no-audit --no-fund && npm run build:link && cd .. && npm run dev:check-singletons",
@@ -81,6 +82,7 @@
     "loops:mix": "node --disable-warning=ExperimentalWarning tools/mix-loops.ts"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@testing-library/react": "^16.3.3",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^26.4.1",

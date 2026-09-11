@@ -59,9 +59,59 @@ The playbook now separates N8a (immediate Cue with idle/running reference, Sync 
 N8b (deliberately offbeat audition, Sync-on Play latch aligns to the running reference
 and survives Cue release), and N8c (Sync-off latch preserves audition timing without
 snap). Repeat each through UI and MIDI. The controls owner has the implementation
-request. **Running-reference immediate Cue and synced/unsynced latch scenarios remain
-NOT RUN/unverified at this follow-up**, with no new runtime checks performed here.
+request. **Running-reference immediate Cue and synced/unsynced latch scenarios remained
+NOT RUN/unverified at that follow-up**, before the browser slice below was added.
 Earlier test totals above do not validate this requested behavior.
+
+## First Playwright slice
+
+The user subsequently requested browser-first exploration followed by retained
+Playwright regressions, with only a small separate native smoke. No prior Playwright
+runner/dependency existed. Added pinned `@playwright/test` 1.63.0, its matching Chromium
+153.0.8010.12 and a test-owned Vite server on 127.0.0.1:15773. The generated fixture
+mounts actual Library/PlayView/MixerEngine; no preload, native library, controller or
+shared preview is used. Each case has a fresh isolated browser context, muted engine
+monitoring, and guards against external HTTP/WebSocket and MIDI access.
+
+`npm run test:mix:browser` passed **6/6** in 15.2 seconds. The bounded repeatability run,
+`npm run test:mix:browser -- --repeat-each=3`, passed **18/18** in 40.7 seconds, with
+zero retries/skips/flaky results (05:25:34 UTC start). It covers filter recovery/sorting,
+column drag/width persistence across reload, target-only deck drag without auto-play or
+Prep selection, pointer Cue release outside its button, keyboard latch/release, and
+two-deck offbeat Sync-on/off latch source phase. Assertions inspect read-only real
+engine state while commands come through production UI. Both latch cases check phase
+while Cue is still held, before follower maintenance could conceal a broken latch.
+
+| Source-phase evidence (beats) | Audition | After Play latch | After Cue release |
+|---|---|---|---|
+| Sync off, three runs | −0.499229 / −0.476009 / −0.487619 | Same as audition | Same as audition |
+| Sync on, three runs | 0.280181 / 0.280181 / 0.285986 | 0 in each run | 0 within floating-point precision |
+
+This is **browser engine-state/source-phase evidence**, not physical MIDI confirmation,
+measured audio onset latency or musical listening. The immediate-idle-Cue user report
+remains the only user-confirmed timing observation. Bluetooth headphones are a possible
+latency confound raised by the user, not a proven diagnosis. Native launch/preload,
+import/separation/packaging and physical routing remain outside this automated slice.
+An isolated native-profile startup procedure is not yet established here; the playbook
+reserves that small smoke for the coordinator instead of launching the user's app.
+
+HEAD was `114b784ed6fd572105eecd030d6616520c2a15f6` with the controls owner's uncommitted
+Cue engine patch present. The patch is a test dependency, not part of the smoke commit;
+repeat against the eventual frozen candidate. The first trial exposed ambiguous test
+selectors because strips and waveforms share a drop label; scoping to the strip fixed
+the runner. No product failure was reproduced. The report output path was subsequently
+made absolute to keep it at repository `report/` rather than under the config directory.
+The retained repeat report is local `report/mix-playwright-repeat-results.json`; future
+normal runs write `report/mix-playwright-results.json`. Preserve reports with candidate
+identity before rerunning. Typechecking the e2e config/fixture passed.
+
+After correcting report location, the complete six-case run passed again in 13.4
+seconds; the final explicit post-release phase assertion passed both affected cases
+in 7.9 seconds. Reports are retained locally as `report/mix-playwright-full-results.json`
+and `report/mix-playwright-results.json`, respectively. A full-repository typecheck
+initially caught an optional-position type error in the concurrent controls test; the
+controls owner corrected it, and the full repository typecheck rerun passed (exit 0).
+This was not a runtime failure.
 
 ## Next bounded run
 

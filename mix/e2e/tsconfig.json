@@ -1,0 +1,4 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["*.ts", "../harness/smoke.tsx", "../../types/assets.d.ts", "../../types/signalsmith-stretch.d.ts"]
+}

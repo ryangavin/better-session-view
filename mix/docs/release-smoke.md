@@ -23,6 +23,77 @@ Three evidence levels must stay separate:
 | Browser | Renderer gestures; actual Web Audio sample captures | Packaged IPC, cold setup, native file dialogs or physical output |
 | Electron + rig | Native build, filesystem persistence, listening, MIDI and Link | Other machines/devices/platforms |
 
+## Discover manually, then retain the regression
+
+Agents first explore a meaningful workflow in an agreed isolated browser/native window,
+record its concrete trigger and expected result, then promote stable expectations into
+Playwright. Prefer user-visible actions and real engine outcomes; avoid replaying a long
+fragile click script or replacing the app with an emulator. A newly found defect gets a
+small failing regression and an owning task. Keep physical controller, musical listening
+and output-latency observations manual even when their underlying commands have tests.
+
+### Browser-first automated slice
+
+```sh
+npm ci
+npx playwright install chromium
+npm run test:mix:browser
+# A bounded repeatability run; every failure is retained, no automatic retries:
+npm run test:mix:browser -- --repeat-each=3
+npx tsc -p mix/e2e/tsconfig.json
+```
+
+Dependency installation belongs to an isolated setup window; `npm ci` runs this repo's
+existing native preparation hooks. On an already prepared checkout, run only the last
+three commands. Playwright is pinned in the root dev dependencies; Chromium is its
+matching downloaded browser, not the user's browser profile. Downloads are development
+setup, not runtime CDN dependencies of mix[flow].
+
+`mix/e2e/playwright.config.ts` owns a separate Vite process at `127.0.0.1:15773`, uses
+one worker and tears it down on completion. `MIX_SMOKE_PORT` can select another unused
+test port. It refuses to reuse a process already on that port. This test-only lifecycle
+is allowed; it never starts/stops the shared preview or native app. Each test gets fresh
+browser storage. HTTP/WebSocket requests outside the test origin and MIDI access are
+blocked; no preload/reach adapter or controller is installed by the fixture.
+
+`/harness/smoke.html` mounts production Library, column hooks, PlayView,
+useMixerViewModel and MixerEngine with the existing generated `dj-fixture.ts` assets.
+The small host supplies in-memory rows/filter state; it does not emulate Electron or
+assert native import/analysis persistence. Monitoring is disabled. A read-only probe
+reports engine state/phase; tests issue commands only through actual UI input.
+
+The first slice covers filter recovery/sorting, real column drag and saved widths/order
+after reload, native browser drag into only the intended paused deck, Cue pointer capture
+and outside release, keyboard latch, and Sync-on/off latch with a running reference.
+The phase checks deliberately begin audition off beat, assert alignment/preservation
+**while Cue remains held**, then verify release keeps playback advancing. Otherwise a
+later follower-maintenance correction could hide a broken latch. These are source-phase
+and state assertions; they do not measure speaker onset latency or waveform discontinuity.
+Use B1–B3 for captured samples and the rig rows for listening/MIDI.
+
+Read `report/mix-playwright-results.json` for all outcomes, source-state and phase
+attachments; failure screenshots/traces live in `report/mix-playwright/`. Copy this
+evidence with the candidate identity before another run replaces it. A harness/selector
+failure is distinguished from a reproduced product defect. These checks supplement the
+source gate, not the full-app native smoke.
+
+### Small separate Electron smoke
+
+After the browser gate, the coordinator launches the identified native candidate in a
+disposable account/profile and verifies its first window renders, the essential preload
+API connects (including current key backend generation), and its real folder/import
+boundary works on a temporary fixture. Record app path/version and native error output.
+This remains a small coordinated native check: no broad Electron automation or browser
+IPC emulator. Run E1–E3 separately for packaging, first setup and actual separation;
+browser fixture success proves none of these. This first Playwright slice does not yet
+automate native launch/connectivity because isolated native-profile startup is not
+established here.
+
+Bluetooth headphones are a **possible latency confound**, not a diagnosed cause.
+Record output device/connection and compare wired/local output in an agreed listening
+window before attributing perceived Cue delay to either the app or Bluetooth. Engine
+phase assertions and a user's immediate-idle-Cue report cannot establish end-to-end latency.
+
 The main browser app can use the real Electron backend through the dev reach
 adapter. Treat its import, detection, separation and metadata buttons as real writes.
 Only the generated DJ/FX fixtures below are independent of the user's library.

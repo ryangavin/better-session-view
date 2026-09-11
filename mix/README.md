@@ -44,7 +44,7 @@ The slices are read off the stems and are then yours to cut, drag and name.
 
 | touching | read |
 |---|---|
-| repeatable release smoke, native setup, browser captures or hardware acceptance | [`docs/release-smoke.md`](docs/release-smoke.md) — safe fixtures, actions, outcomes and evidence gates |
+| repeatable release smoke, Playwright, native setup or hardware acceptance | [`docs/release-smoke.md`](docs/release-smoke.md) — `e2e/`, generated fixtures, actions and evidence gates |
 | a hardware controller, Launchkey or Web MIDI control | [`docs/controllers.md`](docs/controllers.md) — `src/controllers/`, `src/debug/controllers/` |
 | the library folder, the manifest, or importing | [`docs/library.md`](docs/library.md) — `electron/manifest.ts`, `electron/library.ts` |
 | audio interface, supported sample rates, latency or restarting the audio graphs | [`docs/audio-settings.md`](docs/audio-settings.md) — `src/audioSettings.ts`, `src/components/SettingsModal.tsx` |
