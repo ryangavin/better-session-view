@@ -74,8 +74,8 @@ export function KeyLab({ mix }: { mix: Mix }) {
   }
   return <Harness title="Key detection">
     <div className="mf-key-lab">
-      <p>Saved bass evidence only. Opening this panel does not analyze audio. Estimates are provisional; alternatives and regions are not confirmed key changes.</p>
-      {compatible !== true && <p role="status">{compatible === null ? 'Checking backend key version…' : 'Analysis unavailable: backend key version is missing or incompatible. Rebuild and restart the desktop app when its current job and playback are safely finished, then refresh saved evidence. Read-only diagnostics remain available.'}</p>}
+      <KeyComparison key={library.root} track={track} library={library} onSelect={select} />
+      <details className="mf-key-canonical"><summary>Advanced · canonical bass analysis</summary>
       <Toolbar><Group caption="Track">
         <select aria-label="Key detection track" value={track?.id ?? ''} onChange={e => select(e.target.value)}>
           {!library.tracks.length && <option value="">No tracks</option>}
@@ -84,8 +84,7 @@ export function KeyLab({ mix }: { mix: Mix }) {
         <Button disabled={running || !bridge} onPress={() => void refresh()}>Refresh saved evidence</Button>
         <Button disabled={running || !compatible || !bridge || !track?.stems || !track.model || !track.sources.includes('bass')} onPress={() => void run(track?.id)}>Analyze selected track</Button>
       </Group></Toolbar>
-      <KeyComparison key={library.root} track={track} library={library} />
-      <details><summary>Canonical saved bass-key diagnostics and backfill</summary>
+      {compatible !== true && <p role="status">{compatible === null ? 'Checking backend key version…' : 'Analysis unavailable: backend key version is missing or incompatible. Rebuild and restart the desktop app, then refresh saved evidence.'}</p>}
       {track && <section aria-label="Saved key evidence">
         <h3>{track.title}: {keyLabel(track)}{!track.key && current?.status === 'candidate' ? ' ?' : ''}</h3>
         {track.key && <p>Manual key: {track.key}. Analysis preserves this override.</p>}

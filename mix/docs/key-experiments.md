@@ -6,8 +6,19 @@ not required. The optional bass baseline only reads an existing checksum-valid p
 map; it never launches bass inference or updates the canonical key. Canonical bass
 inspection/backfill remains in its own disclosure below the comparison.
 
-Opening the panel reads availability and saved evidence only. Compare selected track
-runs one recording; Compare checked tracks starts the visible batch sequentially.
+Opening the panel reads availability and the library’s saved results/references only.
+The dashboard shows analyzed tracks, usable reference coverage and per-detector match
+counts over scored reference/result pairs, separate from reference coverage. With no
+scored results it says Not evaluated rather than displaying zero accuracy. The song matrix shows large keys and text/symbol
+badges for Match, Different, Uncertain, Unavailable and Not run. No result is invented
+for an empty cell. Select a song in the matrix to inspect it without loading audio.
+
+**Analyze library** is the primary action; **Analyze selected song** scopes it to one
+recording. Progress and Stop after current appear only while running. Source links,
+reference editing and full result evidence live under Sources & selected-song details.
+Settings & diagnostics holds detector choices, refresh/download, custom batch and
+logs. Canonical bass controls live under Advanced · canonical bass analysis.
+All explicit batches run sequentially.
 Stop, tab change or unmount stops scheduling after the current recording. Per-track
 failures are logged and the remaining tracks continue. A changed library or occupied
 engine stops the queue. `src/keyQueue.ts` is shared with canonical backfill, and
@@ -56,8 +67,8 @@ Runs live at `LIBRARY/experiments/keys/<hex-track-id>/<run-id>.json`. Each is bo
 SHA-256 of the original audio; a file changed during inference rejects the run. No
 manifest, manual key, saved key analysis, stems or transcription is rewritten.
 `reference.json` beside runs stores separately verified/published keys and provenance.
-Saving a person-verified reference is an explicit action. Download comparison exports
-loaded runs and references; Load library results and references reads all sidecars.
+Saving a person-verified reference is an explicit action. Download evidence exports
+loaded runs and references; Refresh detectors & results rereads their sidecars.
 
 `experiments/key/references-2026-09-11.json` is the inspectable source inventory for
 all 24 current recordings. Only title, artist and version metadata was sent to web
@@ -92,6 +103,7 @@ No full library experiment has been run. Native setup completed with zero failur
 
 Automated tests cover original-file selection, decode reuse, separate persistence,
 manual-key preservation, lease conflict/release, unavailable tools, reference import,
-normalization/scoring, explicit UI execution and stop-after-current behavior. Integrated
-browser inspection found an empty disconnected library and disabled Debug; the new
-panel still needs a connected rebuilt native backend for live visual verification.
+normalization/scoring, explicit UI execution and stop-after-current behavior. The connected in-app harness was visually checked at its existing viewport: 24 songs,
+10 usable references, both detectors ready, no runs, visible primary/selected actions,
+and working row selection. No resize, native restart, playback or analysis was needed.
+The comparison UI spec uses `.test.ts`, matching the project test discovery pattern.
