@@ -192,6 +192,31 @@ change. Unless a row explicitly starts sound, decks must remain paused.
 | N11 / representative library, active fixture audio | Move fader continuously for 10 seconds, release at known value; scroll/filter library, resize a column; repeat with controller debug open/closed if available. | Value follows gesture and ends exactly; no accumulating delayed changes. Meter/waveform frames remain responsive and no audible stalls. Record machine, row count, viewport, trace/frame stalls and input-age counters where available. Unit render isolation and visual smoothness are separate evidence. |
 | N12 / record settings first | Coordinator reloads renderer then quits/relaunches candidate. Reopen library/key editor/settings. | Library, manual keys and saved analysis survive on disk; column sort/order/width, panel width, audio preferences and FX HP survive in their documented stores. Prep remembered state survives. Play deck assignments/Cue/mix settings are window-session state: do not require deck restoration across reload. Nothing resumes automatically. Recheck N2/N5 after a native rebuild. |
 
+## Pending stable-tempo acceptance
+
+These are release requirements for the forthcoming grid/Sync design, **not verified
+behavior or a specification of an unchosen algorithm**. The **Stable musical tempo
+and beat grids** task owns the design and the grid/voice-rate contracts. Coordinate
+with that owner before promoting these cases into deterministic Playwright tests.
+Keep the existing immediate-Cue and Sync-on/off Play-latch tests unchanged as regressions.
+
+| ID / setup | Actions | Required acceptance evidence |
+|---|---|---|
+| T1 / one to four loaded decks, no explicit speed change or Link | Play only one deck; repeat with that sole playing track in each deck position and with other decks loaded/paused. Load or replace another paused deck. | The sole playing track is leader regardless of slot or load order. Its musical BPM remains stable; other loaded tracks do not alter its authority or rate. Check UI leadership/tempo **and actual voice/clock state**. |
+| T2 / leader at normal speed, recording with steady pulse but displaced/noisy transients | Play across transient irregularities; use **1× / Normal speed** after an explicit speed edit. | At normal speed the leader follows the original recording naturally, without local stretching to chase transient markers. Verify unity source advancement/rate and the actual native/stretch path or equivalent rate contract, not just a 1× label. Musical BPM/grid evidence is stable despite transient noise. |
+| T3 / running leader and follower with a different musical BPM | Engage follower Sync; play through several correction spans and transient irregularities, then perform a supported seek/loop transition. | Follower follows the leader's stable musical BPM. Corrections are smooth over the design's longer musical span; there is no transient-by-transient rate jitter. Record timestamped actual voice-rate/source-advancement and phase traces plus grid targets across the span. Listening remains separate. |
+| T4 / same decks, explicit speed command | Change playback tempo, observe both decks, then return to normal speed. | The explicit speed request has its intended audible/engine effect; stable-tempo handling does not ignore or immediately undo it. UI, effective voice rates and grid/clock targets agree. Normal speed restores the leader's natural original-speed behavior. |
+| T5 / Link authority available | Enable Link, change peer tempo, exercise local follower Sync and observe the authority transition back to standalone. | Link tempo/phase remains meaningful; local natural-speed policy must not silently override external authority. Check native peer behavior and effective voice/grid state alongside UI. Keep H2's independent-clock and no-unintended-peer-Stop checks. |
+
+Before automation, obtain from the tempo owner: deterministic original-audio/beat-grid
+fixtures (including transient displacement), the stable musical BPM contract, what
+normal speed means at the voice path, correction-span/rate/phase bounds, and a read-only
+measurement surface. Freeze those agreed tolerances in the test with its fixture; do
+not invent a threshold or pass because a rounded BPM label stopped moving. Preserve
+each trace and command time so a smooth average cannot hide rapid rate oscillations.
+If the required measurement surface or contract is unavailable, mark T1–T5 **BLOCKED**
+for automation and leave their manual/physical observations separately identified.
+
 ## Cold setup, failures and physical rig
 
 These are required for the claimed capabilities; unavailable is **blocked**, not pass.
