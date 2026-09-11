@@ -75,7 +75,11 @@ and Trim can be set before loading; loading retains controller focus. Select but
 the existing theme through a leaf effect: RGB SysEx matches those colors, with the
 selected deck or Master button green and unselected deck colors at 35%. Without SysEx,
 four distinct dim palette colors remain lit and selection is still green. No color work reaches App renders.
-All pads follow that focus and are inactive in Master focus. Bottom-row transport
+Assigned pads stay lit for every selected deck, including empty decks. Top-row loop
+pads use the selected deck's theme ink at 35%; quick-loop and loop-toggle brighten to
+100% when its loaded loop is enabled. Pad RGB uses selector43h; without SysEx, distinct
+deck palette colors provide dim/bright states. Unassigned pads and all Master-focus
+pads stay off. Track-dependent pad commands still require a ready deck. Bottom-row transport
 order matches the selected deck UI; loop controls occupy the top row. All transport pads require a ready deck and retain the engine's existing saved-grid,
 loop-boundary and playing-state policies. Nothing directly controls the DOM or DSP.
 
@@ -91,8 +95,8 @@ uses B0 and button RGB uses SysEx selector53h (pads use43h).
 The panel's **Fader buttons · CC/RGB v2** diagnostic shows mode and raw selection evidence;
 **Last hardware button packet** remains visible independently of continuous controls.
 Manual Debug focus changes have been physically verified to update screen labels and
-selector LEDs. Physical button-driven focus after removing channel filtering still
-requires a hardware trial. No extra MIDI connection or permission request is introduced.
+selector LEDs. The user confirmed physical button-driven focus works after removing channel filtering.
+The new empty-deck layout and deck-colored loop pads still require a physical trial. No extra MIDI connection or permission request is introduced.
 
 Faders are absolute native CCs, not MCU pitch-bend/motor faders; no motor movement is
 sent. Plugin/Mixer/Sends knobs use absolute positions, initialized from app state.
@@ -138,8 +142,8 @@ latch: releasing Cue then neither stops nor returns the position. The shared eng
 auditions immediately without beat-phase correction; pressing Play while held aligns
 to the running reference only with Sync enabled. Sync off retains the existing voice
 and timing. The same behavior applies to on-screen controls. Play/Cue use stationary channel-1 palette
-colors 22/10 at rest and 21/9 while active, rather than gray 1 while paused. Empty
-or Master focus pads are off. Pad-mode reports clear the sent cache before feedback,
+colors 22/10 at rest and 21/9 while active, including the resting layout on empty decks.
+Master focus pads are off. Pad-mode reports clear the sent cache before feedback,
 so returning to DAW mode restores colors. This verifies generated packets against the
 MK4 protocol; actual physical colors still require the hardware trial. Knobs 1–3
 mirror the UI as FX A, Filter, FX B in input, outgoing positions and screen labels.
@@ -245,3 +249,17 @@ is API acceptance, not a hardware acknowledgement. These fields observe the exis
 without changing display configuration, permissions, ports or playback. The earlier blank
 screen report was superseded by the manual-selection trial; the remaining mismatch was
 physical B0 selector input rejected by the BF-only decoder.
+
+### Fader labels and touch terminology
+
+With SysEx enabled, targets5–8 display **Deck A Level** through **Deck D Level**.
+Targets9–13 say **Unused**, matching unassigned faders5–9. Configuration44h selects the
+numeric layout and automatic display on movement, without the touch-trigger bit.
+The numeric value is the hardware MIDI value, not a dB claim. Existing knob labels and
+stationary deck/title remain intact; configuration and text are cached rather than
+resent during continuous movement.
+
+Novation documents continuous-control touch messages on channel15. Its display config
+describes the touch gesture as Shift + rotate; this is not evidence of capacitive
+touch-sensitive hardware. Touch reporting stays disabled in the all-channel input mode.
+Movement labels and new pad colors require physical verification.

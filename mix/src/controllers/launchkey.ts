@@ -289,16 +289,32 @@ export class LaunchkeyController {
     const deck=s.decks[this.value.focus];
     if(this.modes.pads===2)for(let i=0;i<16;i++){
       let color=0;
-      if(deck?.status==='ready') {
+      if(deck) {
         if(i===8)color=deck.playing?21:22;
         else if(i===9)color=deck.cueHeld?9:10;
         else if(i===10)color=deck.synced?21:22;
         else if(i===11||i===12)color=45;
-        else if(i<4)color=(i===0||i===3)&&deck.loop?.enabled?13:14;
+        else if(i<4){
+          const active=deck.status==='ready'&&(i===0||i===3)&&deck.loop?.enabled;
+          const ink=this.deckColors[this.value.focus];
+          if(this.value.sysex&&ink){
+            this.send(`pad${i}`,[0xf0,0,0x20,0x29,2,0x14,1,0x43,96+i,...ink.map(v=>Math.round(v/255*127*(active?1:.35))),0xf7]);
+            continue;
+          }
+          color=(active?[9,49,37,21]:[10,50,38,22])[this.value.focus];
+        }
       }
       this.send(`pad${i}`,[0x90,i<8?96+i:112+i-8,color]);
     }
-    if(this.value.sysex){this.selectionDisplay();for(let i=0;i<8;i++){this.text(21+i,0,i===6&&this.value.focus===8?'Unused':KNOBS[i]);}}
+    if(this.value.sysex){
+      this.selectionDisplay();
+      for(let i=0;i<8;i++)this.text(21+i,0,i===6&&this.value.focus===8?'Unused':KNOBS[i]);
+      for(let i=0;i<9;i++){
+        // Numeric layout, automatic display on movement; no touch trigger.
+        this.send(`fader-display${i}`,[0xf0,0,0x20,0x29,2,0x14,4,5+i,0x44,0xf7]);
+        this.text(5+i,0,i<4?`Deck ${'ABCD'[i]} Level`:'Unused');
+      }
+    }
   }
   receive(data:readonly number[],timestamp=performance.now()) {
     if(!this.value.connected||!this.enabled||this.sending)return;

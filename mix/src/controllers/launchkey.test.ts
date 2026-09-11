@@ -247,7 +247,7 @@ it('opens only the matching standard MIDI input for wheel CC1 and reconnects it 
 it('selects and lights empty decks without loading/playing, and keeps focus when a track arrives',async()=>{
   vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks.forEach(d=>{d.status='empty';});await f.connect();
   f.receive([0xbf,39,127]);await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
-  expect(f.output.send).toHaveBeenCalledWith([0xb0,39,21]);expect(f.output.send).toHaveBeenCalledWith([0x90,112,0]);
+  expect(f.output.send).toHaveBeenCalledWith([0xb0,39,21]);expect(f.output.send).toHaveBeenCalledWith([0x90,112,22]);
   f.receive([0xbf,21,127]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-c','sendA',100);
   f.receive([0x90,112,127]);f.receive([0x90,113,127]);expect(f.commands.setDeckPlaying).not.toHaveBeenCalled();expect(f.commands.cueDeck).not.toHaveBeenCalled();
   f.engine.snapshot().decks[2].status='ready';f.emit();await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
@@ -375,4 +375,42 @@ it('disables overlapping touch output before initializing knob positions without
   expect(f.commands.setDeck).not.toHaveBeenCalled();
   expect(packets.some(p=>p[0]===0xb6&&p[1]===71&&p[2]!==0)).toBe(false);
   f.controller.dispose();
+});
+
+it('keeps the empty-deck pad layout visible, uses deck RGB for loops, and sends only changes',async()=>{
+  vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks.forEach(d=>d.status='empty');
+  await f.connect();f.controller.setDeckColors([[255,0,0],[0,255,0],[0,0,255],[255,128,0]]);
+  await vi.advanceTimersByTimeAsync(50);
+  for(let i=0;i<4;i++)expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,96+i,44,0,0,0xf7]);
+  for(const [note,color] of [[112,22],[113,10],[114,22],[115,45],[116,45]])expect(f.output.send).toHaveBeenCalledWith([0x90,note,color]);
+  for(const note of [96,97,98,99,112,113,114,115,116])f.receive([0x90,note,127]);
+  for(const action of [f.commands.quickLoop,f.commands.resizeLoop,f.commands.setDeckLoopEnabled,f.commands.setDeckPlaying,f.commands.cueDeck,f.commands.setDeckSync,f.commands.beatJump])expect(action).not.toHaveBeenCalled();
+  vi.mocked(f.output.send).mockClear();for(let i=0;i<100;i++)f.emit();await vi.advanceTimersByTimeAsync(50);expect(f.output.send).not.toHaveBeenCalled();
+  f.controller.focus(1);await vi.advanceTimersByTimeAsync(50);
+  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,96,0,44,0,0xf7]);
+  const deck=f.engine.snapshot().decks[1];deck.status='ready';deck.loop={start:0,end:4,enabled:true};f.emit();await vi.advanceTimersByTimeAsync(50);
+  for(const note of [96,99])expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,note,0,127,0,0xf7]);
+  f.controller.focus(8);await vi.advanceTimersByTimeAsync(50);
+  for(const note of [96,97,98,99,112,113,114,115,116])expect(f.output.send).toHaveBeenCalledWith([0x90,note,0]);
+  f.controller.dispose();vi.useRealTimers();
+});
+it('uses distinct deck palette fallbacks for loop pads without SysEx',async()=>{
+  vi.useFakeTimers();const f=setup();await f.connect();
+  for(let i=0;i<4;i++){f.controller.focus(i);await vi.advanceTimersByTimeAsync(50);expect(f.output.send).toHaveBeenCalledWith([0x90,96,[10,50,38,22][i]]);}
+  f.controller.dispose();vi.useRealTimers();
+});
+
+it('labels all faders truthfully with movement-triggered displays and retains knob names',async()=>{
+  vi.useFakeTimers();const f=setup(true);await f.connect();
+  const text=(target:number,label:string)=>[0xf0,0,0x20,0x29,2,0x14,6,target,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7];
+  for(let i=0;i<9;i++){
+    expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,4,5+i,0x44,0xf7]);
+    expect(f.output.send).toHaveBeenCalledWith(text(5+i,i<4?`Deck ${'ABCD'[i]} Level`:'Unused'));
+  }
+  expect(f.output.send).toHaveBeenCalledWith(text(21,'FX A'));expect(f.output.send).toHaveBeenCalledWith(text(28,'Master Trim'));
+  vi.mocked(f.output.send).mockClear();
+  for(let i=0;i<100;i++)f.receive([0xb0,5,i%127]);
+  await vi.advanceTimersByTimeAsync(50);
+  expect(vi.mocked(f.output.send).mock.calls.some(([p])=>Array.from(p)[0]===0xf0)).toBe(false);
+  f.controller.dispose();vi.useRealTimers();
 });
