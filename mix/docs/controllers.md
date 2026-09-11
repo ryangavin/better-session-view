@@ -79,6 +79,22 @@ All pads follow that focus and are inactive in Master focus. Bottom-row transpor
 order matches the selected deck UI; loop controls occupy the top row. All transport pads require a ready deck and retain the engine's existing saved-grid,
 loop-boundary and playing-state policies. Nothing directly controls the DOM or DSP.
 
+Fader selector buttons use **Control Change on channel 16**, CC37–45 (`BF 25` through
+`BF 2D`), not pad Note On messages. Releases are value zero. Palette feedback uses
+channel-1 Control Change (`B0`), and RGB SysEx uses selector `53h` for buttons; `43h`
+is for pads. The current HTML programmer guide distinguishes these RGB targets; the
+older PDF's combined pads/buttons sentence omitted the button form. The earlier
+adapter incorrectly used notes and pad RGB for selectors, which explains why its
+mock tests passed while hardware selection and lights failed. The fader diagram's
+numeric identifiers were correct; its message type was not.
+
+The panel's **Fader buttons · CC/RGB v2** diagnostic identifies this implementation,
+distinguishes requested Volume mode from a received mode report, and keeps the last
+fader-button press with its raw bytes. No presses received is explicit; a Custom-mode
+report advises choosing Volume. These diagnostics do not open another MIDI connection
+or reset the working one. Hardware acceptance requires pressing selectors 1, 2 and 9,
+seeing `BF 25`, `BF 26`, `BF 2D` and A/B/Master focus, and checking physical lights.
+
 Faders are absolute native CCs, not MCU pitch-bend/motor faders; no motor movement is
 sent. Plugin/Mixer/Sends knobs use absolute positions, initialized from app state.
 Transport encoder mode uses the native relative pivot of 64 (65 means +1, 63 means −1),

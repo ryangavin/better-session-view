@@ -28,7 +28,7 @@ function ConnectedPanel({controller}:{controller:LaunchkeyController}) {
       <Button label="Connect Launchkey" disabled={state.pending||state.connected||!input||!output} onPress={()=>void controller.connect(input,output)}>Connect Launchkey</Button>
       <Button label="Disconnect" disabled={!state.pending&&!state.connected} onPress={()=>void controller.disconnect()}>Disconnect</Button>
     </div>
-    <p role="status">{state.status}</p><p>{state.wheel}</p>
+    <p role="status">{state.status}</p><p>{state.wheel}</p><p aria-label="Fader button diagnostics">Fader buttons · CC/RGB v2 · {state.faderMode} {state.selector}</p>
     <div className="mf-controller-row" aria-label="Controller focus">{['Deck A','Deck B','Deck C','Deck D','Master'].map((name,i)=><Toggle key={name} label={name} on={state.focus===(i===4?8:i)} onChange={()=>controller.focus(i===4?8:i)} title={`${name}${state.focus===(i===4?8:i)?' (selected)':''}`}>{name}</Toggle>)}</div>
     <p>Controller focus: <strong>{state.focus===8?'Master':`Deck ${'ABCD'[state.focus]}`}</strong>. Fader buttons 1–4 select a deck; button 9 selects Master. This focus chooses what the knobs and pads control.</p>
     <p>Filter, EQ and Trim snap gently to neutral. Mod wheel: up scrubs forward, down scrubs back; a full sweep is four beats. The first movement establishes its position.</p>

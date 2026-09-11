@@ -14,6 +14,7 @@ export function decodeLaunchkey(data: readonly number[]): LaunchkeyEvent | null 
   const [status,key,value] = data;
   if(status === 0xb6 && key >= 29 && key <= 31) return {kind:'mode', index:key, value};
   if(status === 0xbf) {
+    if(value>0 && key>=37 && key<=45)return {kind:'focus',index:key-37};
     if(key >= 5 && key <= 13) return {kind:'fader',index:key-5,value};
     if(key >= 21 && key <= 28) return {kind:'knob',index:key-21,value};
     if(key >= 85 && key <= 92) return {kind:'relative',index:key-85,value:value-64};
@@ -22,7 +23,6 @@ export function decodeLaunchkey(data: readonly number[]): LaunchkeyEvent | null 
   }
   if(status === 0x90 || status === 0x80) {
     const down=status===0x90 && value>0;
-    if(down && key >= 37 && key <= 45) return {kind:'focus',index:key-37};
     if(key >= 96 && key <= 103) return {kind:'pad',index:key-96,down};
     if(key >= 112 && key <= 119) return {kind:'pad',index:key-112+8,down};
   }
@@ -40,6 +40,8 @@ export interface ControllerStatus {
   receiving:boolean;
   metrics:string;
   wheel:string;
+  faderMode:string;
+  selector:string;
   connected: boolean; pending: boolean; status: string; focus: number; sysex: boolean;
   inputs: readonly {id:string;name:string}[]; outputs: readonly {id:string;name:string}[];
   messages: readonly string[];
@@ -48,7 +50,7 @@ const portName = (port: MIDIPort) => /Launchkey.*MK4.*DAW/i.test(port.name ?? ''
 const identity = (port: MIDIPort) => (port.name ?? '').replace(/\s+(In|Out)$/i,'');
 /** Native MK4 connection is opt-in. A controller focus does not select a Prep song. */
 export class LaunchkeyController {
-  private value: ControllerStatus = {wheel:'Mod wheel not connected.',receiving:false,metrics:'No MIDI rate sample yet.',autoConnect:true,connected:false,pending:false,status:'Disconnected. Choose the Launchkey DAW pair.',focus:0,sysex:false,inputs:[],outputs:[],messages:[]};
+  private value: ControllerStatus = {faderMode:'Fader mode not reported.',selector:'No fader-button presses received.',wheel:'Mod wheel not connected.',receiving:false,metrics:'No MIDI rate sample yet.',autoConnect:true,connected:false,pending:false,status:'Disconnected. Choose the Launchkey DAW pair.',focus:0,sysex:false,inputs:[],outputs:[],messages:[]};
   private listeners = new Set<() => void>();
   private access?: MIDIAccess;
   private input?: MIDIInput;
@@ -163,7 +165,7 @@ export class LaunchkeyController {
       this.remembered={wheel:this.remembered.wheel,enabled:true,sysex:this.value.sysex,input:{id:input.id,name:input.name!},output:{id:output.id,name:output.name!}};this.save();this.update({autoConnect:true});
       this.input=input;this.output=output;this.sent.clear();this.modes={pads:2,knobs:2,faders:1};
       input.onmidimessage=event=>{if(event.data)this.receive(Array.from(event.data),event.timeStamp);};
-      this.update({receiving:false,connected:true,pending:false,status:'MIDI ports open; DAW mode requested. Waiting for Launchkey input.'});
+      this.update({faderMode:'Volume requested; awaiting mode report.',selector:'No fader-button presses received.',receiving:false,connected:true,pending:false,status:'MIDI ports open; DAW mode requested. Waiting for Launchkey input.'});
       this.send('mode',launchkeyMode(true));
       this.send('pads-mode',[0xb6,29,2]);this.send('knobs-mode',[0xb6,30,2]);this.send('faders-mode',[0xb6,31,1]);
       if(this.value.sysex){this.send('display-config',[0xf0,0,0x20,0x29,2,0x14,4,32,1,0xf7]);}
@@ -242,10 +244,10 @@ export class LaunchkeyController {
       const selected=this.value.focus===i;
       if(i<4&&this.value.sysex&&this.deckColors[i]){
         const rgb=this.deckColors[i].map(v=>Math.round(v/255*127*(selected?1:.35)));
-        this.send(`select${i}`,[0xf0,0,0x20,0x29,2,0x14,1,0x43,37+i,...rgb,0xf7]);
+        this.send(`select${i}`,[0xf0,0,0x20,0x29,2,0x14,1,0x53,37+i,...rgb,0xf7]);
       }else {
         const bright=[9,49,37,21],dim=[10,50,38,22];
-        this.send(`select${i}`,[0x90,37+i,i<4?(selected?bright[i]:dim[i]):active?(selected?21:1):0]);
+        this.send(`select${i}`,[0xb0,37+i,i<4?(selected?bright[i]:dim[i]):active?(selected?21:1):0]);
       }
     }
     if(this.modes.knobs===2||this.modes.knobs===1||this.modes.knobs===4)this.knobValues().forEach((value,i)=>{if(!(i===6&&this.value.focus===8)&&!this.touched.has(21+i)&&!this.controls.size){const [min,max]=ranges[i];this.send(`knob${i}`,[0xbf,21+i,Math.round((Math.max(min,Math.min(max,value))-min)/(max-min)*127)]);}});
@@ -275,9 +277,9 @@ export class LaunchkeyController {
     if(data.length===3&&data[0]===0xbe){if(data[2]===127)this.touched.add(data[1]);else{this.touched.delete(data[1]);this.sent.delete(`knob${data[1]-21}`);this.scheduleFeedback();}return;}
     const event=decodeLaunchkey(data);if(!event)return;
     if(!this.value.receiving){this.update({receiving:true,status:'Receiving Launchkey DAW input.'});this.scheduleFeedback();}
-    if(event.kind==='mode'){this.controls.flush();this.jog.reset();this.detents.clear();this.releaseCues();if(event.index===29)this.modes.pads=event.value;if(event.index===30)this.modes.knobs=event.value;if(event.index===31)this.modes.faders=event.value;this.sent.clear();this.scheduleFeedback();return;}
+    if(event.kind==='mode'){this.controls.flush();this.jog.reset();this.detents.clear();this.releaseCues();if(event.index===29)this.modes.pads=event.value;if(event.index===30)this.modes.knobs=event.value;if(event.index===31){this.modes.faders=event.value;this.update({faderMode:event.value===1?'Volume confirmed.':`Mode ${event.value} reported; choose Volume for DAW faders.`});}this.sent.clear();this.scheduleFeedback();return;}
     const state=this.engine.snapshot(),commands=this.engine.commands,deck=state.decks[this.value.focus];
-    if(event.kind==='focus'){this.focus(event.index);return;}
+    if(event.kind==='focus'){const assigned=event.index<4||event.index===8;this.update({selector:`Button ${event.index+1}: ${controllerHex(data)}${assigned?' received.':' received (unassigned).'}`});this.focus(event.index);return;}
     if(event.kind==='pad'||event.kind==='play'||event.kind==='stop')this.jog.finish();
     if(event.kind==='play'){if(!state.running)commands.setRunning(true);return;}
     if(event.kind==='stop'){this.releaseCues();commands.stopAll();return;}

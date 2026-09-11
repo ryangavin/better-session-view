@@ -26,7 +26,7 @@ function setup(sysex=false,auto=false) {
 it('parses native faders, absolute/relative knobs, note pads, and ignores other channels/releases/malformed data',()=>{
   expect(decodeLaunchkey([0xbf,5,64])).toEqual({kind:'fader',index:0,value:64});
   expect(decodeLaunchkey([0xbf,85,63])).toEqual({kind:'relative',index:0,value:-1});
-  expect(decodeLaunchkey([0x90,45,127])).toEqual({kind:'focus',index:8});
+  expect(decodeLaunchkey([0xbf,45,127])).toEqual({kind:'focus',index:8});
   expect(decodeLaunchkey([0x90,112,127])).toEqual({kind:'pad',index:8,down:true});
   for(const data of [[0xbf,5],[0xbf,5,128],[0xbf,5,NaN],[0xb0,5,64],[0x90,60,127],[0xa0,112,127]])expect(decodeLaunchkey(data)).toBeNull();
 });
@@ -41,10 +41,10 @@ it('routes gain, master focus, FX knobs and loaded-deck loop pads to application
   const f=setup();await f.connect();
   f.receive([0xbf,5,0]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','gain',0);
   f.receive([0xbf,13,127]);expect(f.commands.setMaster).not.toHaveBeenCalled();
-  f.receive([0x90,38,127]);f.receive([0xbf,21,127]);await vi.waitFor(()=>expect(f.commands.setDeck).toHaveBeenCalledWith('deck-b','sendA',100));expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-b','sendA',100);
+  f.receive([0xbf,38,127]);f.receive([0xbf,21,127]);await vi.waitFor(()=>expect(f.commands.setDeck).toHaveBeenCalledWith('deck-b','sendA',100));expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-b','sendA',100);
   f.receive([0x90,115,127]);expect(f.commands.beatJump).toHaveBeenLastCalledWith('deck-b',-1);
   f.receive([0x90,96,127]);expect(f.commands.quickLoop).toHaveBeenCalledWith('deck-b');
-  f.receive([0x90,45,127]);f.receive([0xbf,23,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalledWith('masterSendB',100));expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterSendB',100);
+  f.receive([0xbf,45,127]);f.receive([0xbf,23,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalledWith('masterSendB',100));expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterSendB',100);
   f.receive([0x90,115,127]);expect(f.commands.beatJump).toHaveBeenCalledTimes(1);
   f.receive([0xbf,115,127]);expect(f.commands.setRunning).toHaveBeenCalledWith(true);
   f.receive([0xbf,116,127]);expect(f.commands.stopAll).toHaveBeenCalledOnce();f.controller.dispose();
@@ -246,8 +246,8 @@ it('opens only the matching standard MIDI input for wheel CC1 and reconnects it 
 });
 it('selects and lights empty decks without loading/playing, and keeps focus when a track arrives',async()=>{
   vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks.forEach(d=>{d.status='empty';});await f.connect();
-  f.receive([0x90,39,127]);await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
-  expect(f.output.send).toHaveBeenCalledWith([0x90,39,37]);expect(f.output.send).toHaveBeenCalledWith([0x90,112,0]);
+  f.receive([0xbf,39,127]);await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
+  expect(f.output.send).toHaveBeenCalledWith([0xb0,39,37]);expect(f.output.send).toHaveBeenCalledWith([0x90,112,0]);
   f.receive([0xbf,21,127]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-c','sendA',100);
   f.receive([0x90,112,127]);f.receive([0x90,113,127]);expect(f.commands.setDeckPlaying).not.toHaveBeenCalled();expect(f.commands.cueDeck).not.toHaveBeenCalled();
   f.engine.snapshot().decks[2].status='ready';f.emit();await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
@@ -259,18 +259,18 @@ it('leaves the ninth fader unassigned while its button still selects Master',asy
   for(const value of [0,64,127])f.receive([0xbf,13,value]);
   await vi.waitFor(()=>expect(f.controller.snapshot().connected).toBe(true));
   expect(f.commands.setMaster).not.toHaveBeenCalled();expect(f.engine.snapshot().master).toBe(100);
-  f.receive([0x90,45,127]);expect(f.controller.snapshot().focus).toBe(8);
+  f.receive([0xbf,45,127]);expect(f.controller.snapshot().focus).toBe(8);
   f.controller.dispose();
 });
 
 it('keeps all four empty-deck selectors lit and uses brighter matching RGB colors for the selected deck',async()=>{
   vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks.forEach(d=>d.status='empty');
   f.controller.setDeckColors([[200,100,50],[180,120,60],[50,200,100],[60,180,120]]);await f.connect();
-  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,37,100,50,25,0xf7]);
+  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x53,37,100,50,25,0xf7]);
   for(const note of [38,39,40])expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const v=Array.from(p);return v[0]===0xf0&&v[8]===note&&v.slice(9,12).some(n=>n>0);})).toBe(true);
   f.controller.focus(2);await vi.advanceTimersByTimeAsync(50);
-  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,39,25,100,50,0xf7]);
-  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x43,37,35,17,9,0xf7]);
+  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x53,39,25,100,50,0xf7]);
+  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x53,37,35,17,9,0xf7]);
   f.controller.dispose();vi.useRealTimers();
 });
 it('closes a late-opening wheel input after disconnect and does not attach its handler',async()=>{
@@ -279,4 +279,23 @@ it('closes a late-opening wheel input after disconnect and does not attach its h
   (f.access.inputs as unknown as Map<string,MIDIInput>).set('wheel',wheel);
   await f.connect();expect(wheel.open).toHaveBeenCalledOnce();await f.controller.disconnect();release();
   await vi.waitFor(()=>expect(wheel.close).toHaveBeenCalled());expect(wheel.onmidimessage).toBeNull();expect(f.controller.snapshot().connected).toBe(false);f.controller.dispose();
+});
+
+it('uses fader Control Changes, not pad notes, and reports raw selection and mode evidence',async()=>{
+  vi.useFakeTimers();const f=setup();await f.connect();
+  expect(f.controller.snapshot().selector).toContain('No fader-button');
+  for(const [cc,index] of [[37,0],[38,1],[40,3],[45,8]]){
+    expect(decodeLaunchkey([0xbf,cc,127])).toEqual({kind:'focus',index});
+    expect(decodeLaunchkey([0xbf,cc,0])).toBeNull();
+    expect(decodeLaunchkey([0x90,cc,127])).toBeNull();
+    expect(decodeLaunchkey([0xb0,cc,127])).toBeNull();
+    f.receive([0xbf,cc,127]);expect(f.controller.snapshot().focus).toBe(index);
+    expect(f.controller.snapshot().selector).toContain(`Button ${index+1}: BF`);
+  }
+  f.receive([0xb6,31,6]);expect(f.controller.snapshot().faderMode).toContain('choose Volume');
+  f.receive([0xb6,31,1]);expect(f.controller.snapshot().faderMode).toBe('Volume confirmed.');
+  await vi.advanceTimersByTimeAsync(50);
+  for(const cc of [37,38,39,40,45])expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const b=Array.from(p);return b[0]===0xb0&&b[1]===cc&&b[2]>0;})).toBe(true);
+  expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const b=Array.from(p);return b[0]===0x90&&b[1]>=37&&b[1]<=45;})).toBe(false);
+  f.controller.dispose();vi.useRealTimers();
 });
