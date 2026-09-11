@@ -489,8 +489,7 @@
 .mf-library-separate svg { display:block; }
 .mf-library-separate.wdg-button-body:hover:not(:disabled),
 .mf-library-separate.wdg-button-body:focus-visible:not(:disabled) {
-  background:var(--primary);
-  border-color:var(--primary);
-  color:var(--on-primary);
+  border-color:var(--wdg-edge);
+  color:var(--wdg-marker);
 }
 .mf-library-separate:focus-visible { outline:1px solid var(--focus); outline-offset:1px; }

@@ -727,5 +727,5 @@ existing view switch; it does not start separation. The normal track/job phase c
 setup or running-job UI, with the existing busy-job policy intact. Pointer activation
 is isolated from row selection and dragging; the native button supports Enter/Space.
 Colored tiles still represent only actual separated sources and remain unchanged.
-Hovering or keyboard-focusing the separation button fills its face with the primary
-color and contrasts the icon, distinguishing its action from selecting the row.
+Hovering or keyboard-focusing the separation button lights only its icon with the
+shared button marker color; its normal face and border remain unchanged.
