@@ -185,6 +185,23 @@ and e2e typechecking passed, and the scoped diff is whitespace-clean. The final 
 report is `report/mix-tempo-final-results.json`; real-song, physical controller and
 hardware listening remain unverified by this task.
 
+## DSP suite separation
+
+The rendered-audio regression now lives in `mix/dsp/tempo-render.test.ts`, run by
+`npm run test:mix:dsp` under Vitest. Chromium remains the actual OfflineAudioContext
+and AudioWorklet runtime, using the existing launcher dependency; there are no UI
+gestures or Playwright test definitions in this suite. All seven render scenarios and
+their assertions are retained. The manual diagnostic page shares the exported renderer.
+The earlier 21/21 Playwright result above records the original suite organization.
+
+After separation, the Vitest DSP test passed all seven renders in 1.49 seconds total;
+the independent Playwright UI suite passed 6/6 in 13.9 seconds. Its test listing contains
+only those six workflows. The UI run used isolated port 15774 because 15773 was occupied;
+the occupied process was left untouched. Full repository, DSP and e2e typechecks passed.
+New DSP evidence lives in `report/mix-dsp/results.json` and
+`report/mix-dsp/tempo-render.json`; UI evidence remains in the Playwright report paths.
+No production audio code, native app state, user library or dependencies changed.
+
 ## Next bounded run
 
 After the coordinator freezes the candidate and provides a safe window: record its

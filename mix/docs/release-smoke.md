@@ -27,7 +27,7 @@ Three evidence levels must stay separate:
 
 Agents first explore a meaningful workflow in an agreed isolated browser/native window,
 record its concrete trigger and expected result, then promote stable expectations into
-Playwright. Prefer user-visible actions and real engine outcomes; avoid replaying a long
+Playwright for UI workflows or the separate Vitest DSP suite for rendered audio. Prefer user-visible actions and real engine outcomes; avoid replaying a long
 fragile click script or replacing the app with an emulator. A newly found defect gets a
 small failing regression and an owning task. Keep physical controller, musical listening
 and output-latency observations manual even when their underlying commands have tests.
@@ -80,10 +80,19 @@ source gate, not the full-app native smoke.
 The offline voice regression is a separate rendered-audio check:
 
 ```sh
-npm run test:mix:browser -- --grep 'offline actual voice'
+npm run test:mix:dsp
+npx tsc -p mix/dsp/tsconfig.json
 ```
 
-`/harness/tempo-render.html` renders actual DeckVoice/Signalsmith into
+`mix/dsp/tempo-render.test.ts` uses Vitest assertions and the already installed Chromium
+launcher solely to execute Web Audio. It owns an ephemeral localhost Vite server and
+closes both processes after the run; it adds no dependencies. It calls the render module
+directly, without UI gestures. Playwright's suite and UI list only the six user workflows.
+HTTP/WebSocket requests outside the test origin and MIDI access are blocked.
+`report/mix-dsp/results.json` holds the test outcome and
+`report/mix-dsp/tempo-render.json` holds all seven renders, browser version and errors.
+Copy these before a later run replaces them. The optional manual diagnostic page
+`/harness/tempo-render.html` uses the same module to render actual DeckVoice/Signalsmith into
 OfflineAudioContext buffers only; creating a real-time AudioContext is forbidden in
 the test. A 220Hz tone and known syncopated percussion at a 100BPM grid establish unity,
 120BPM pitch-preserving and vinyl paths, including repeated 1.2–4.8-second source loops.
@@ -91,7 +100,7 @@ Two additional cases retime 120→121BPM at output second 2 and back at second 4
 both paths against the integrated piecewise rate. Native playback must reuse its actual
 source node. Position traces are captured during rendering, so later revisions cannot
 rewrite the evidence for an earlier interval.
-The JSON attachment records rendered frequency, percussion peak times and voice-reported
+The render JSON records rendered frequency, percussion peak times and voice-reported
 source positions. It checks groove intervals against uniform scaling and position against
 the actual source markers. The native peak locator allows 1ms because resampling can
 move the largest 1700Hz carrier peak within a burst; constant-rate native interval error

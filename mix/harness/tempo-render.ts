@@ -143,13 +143,10 @@ const scenarios:Scenario[]=[
   {name:'pitch preserved retime 1.2→1.21→1.2',ratio:1.2,preservePitch:true,loop:false,retime:true},
   {name:'vinyl retime 1.2→1.21→1.2',ratio:1.2,preservePitch:false,loop:false,retime:true},
 ];
-const button=document.querySelector<HTMLButtonElement>('#run')!,result=document.querySelector<HTMLPreElement>('#result')!;
-button.onclick=async()=>{
-  button.disabled=true; result.dataset.complete='false';
+export async function renderTempoScenarios(progress:(name:string)=>void=()=>{}):Promise<{results:TempoRenderResult[];error?:string}> {
   const results:TempoRenderResult[]=[];
   try{
-    for(const scenario of scenarios){result.textContent=`Rendering ${scenario.name}…`;results.push(await render(scenario));}
-    result.textContent=JSON.stringify({results},null,2);
-  }catch(error){result.textContent=JSON.stringify({results,error:String(error)},null,2);}
-  finally{result.dataset.complete='true';button.disabled=false;}
-};
+    for(const scenario of scenarios){progress(scenario.name);results.push(await render(scenario));}
+    return {results};
+  }catch(error){return {results,error:String(error)};}
+}
