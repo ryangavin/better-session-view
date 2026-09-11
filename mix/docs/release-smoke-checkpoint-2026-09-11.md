@@ -47,6 +47,22 @@ today. Retain it as unresolved acceptance risk until the candidate's repeated ca
 and musical listening have evidence; do not infer either failure or resolution from
 today's unit pass.
 
+## Cue acceptance follow-up
+
+The coordinator subsequently relayed the user's physical confirmation that **Cue
+audition begins immediately when nothing else is playing**. Only that idle immediate
+Cue observation is user-verified; its exact input path and Sync setting were not
+specified in the relay. It does not establish immediate Cue with a running second
+deck, or either latch timing outcome.
+
+The playbook now separates N8a (immediate Cue with idle/running reference, Sync off/on),
+N8b (deliberately offbeat audition, Sync-on Play latch aligns to the running reference
+and survives Cue release), and N8c (Sync-off latch preserves audition timing without
+snap). Repeat each through UI and MIDI. The controls owner has the implementation
+request. **Running-reference immediate Cue and synced/unsynced latch scenarios remain
+NOT RUN/unverified at this follow-up**, with no new runtime checks performed here.
+Earlier test totals above do not validate this requested behavior.
+
 ## Next bounded run
 
 After the coordinator freezes the candidate and provides a safe window: record its
