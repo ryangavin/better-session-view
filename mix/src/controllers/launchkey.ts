@@ -12,8 +12,10 @@ export type LaunchkeyEvent = {kind:'fader'|'knob'|'relative'; index:number; valu
 export function decodeLaunchkey(data: readonly number[]): LaunchkeyEvent | null {
   if (data.length !== 3 || data.some(v => !Number.isInteger(v)) || data.slice(1).some(v => v < 0 || v > 127)) return null;
   const [status,key,value] = data;
-  if(status === 0xb6 && key >= 29 && key <= 31) return {kind:'mode', index:key, value};
-  if(status === 0xbf) {
+  if(status<0x80||status>0xef)return null;
+  const type=status&0xf0;
+  if(type === 0xb0 && key >= 29 && key <= 31) return {kind:'mode', index:key, value};
+  if(type === 0xb0) {
     if(value>0 && key>=37 && key<=45)return {kind:'focus',index:key-37};
     if(key >= 5 && key <= 13) return {kind:'fader',index:key-5,value};
     if(key >= 21 && key <= 28) return {kind:'knob',index:key-21,value};
@@ -21,8 +23,8 @@ export function decodeLaunchkey(data: readonly number[]): LaunchkeyEvent | null 
     if(value === 127 && key === 115) return {kind:'play'};
     if(value === 127 && key === 116) return {kind:'stop'};
   }
-  if(status === 0x90 || status === 0x80) {
-    const down=status===0x90 && value>0;
+  if(type === 0x90 || type === 0x80) {
+    const down=type===0x90 && value>0;
     if(key >= 96 && key <= 103) return {kind:'pad',index:key-96,down};
     if(key >= 112 && key <= 119) return {kind:'pad',index:key-112+8,down};
   }
@@ -67,8 +69,12 @@ export class LaunchkeyController {
   private autoAttempt='';
   private closing=false;
   private deckColors:readonly (readonly number[])[]=[];
+  lastButtonInput='No button packet received.';
+  private displayTx=0;
+  private displayLast='none';
+  private displayError='';
+  private displayConfigs=new Map<number,number>();
   private sent = new Map<string,string>();
-  private touched = new Set<number>();
   private controls=new ContinuousControls(event=>this.applyContinuous(event));
   private detents=new NeutralDetents();
   private heldCues=new Set<string>();
@@ -163,10 +169,12 @@ export class LaunchkeyController {
       if(input.state!=='connected'||output.state!=='connected')throw new Error('The MIDI pair disconnected');
       this.diagnostic('Both MIDI ports opened successfully.');
       this.remembered={wheel:this.remembered.wheel,enabled:true,sysex:this.value.sysex,input:{id:input.id,name:input.name!},output:{id:output.id,name:output.name!}};this.save();this.update({autoConnect:true});
-      this.input=input;this.output=output;this.sent.clear();this.modes={pads:2,knobs:2,faders:1};
+      this.input=input;this.output=output;this.sent.clear();this.displayTx=0;this.displayLast='none';this.displayError='';this.displayConfigs.clear();this.modes={pads:2,knobs:2,faders:1};
       input.onmidimessage=event=>{if(event.data)this.receive(Array.from(event.data),event.timeStamp);};
       this.update({faderMode:'Volume requested; awaiting mode report.',selector:'No fader-button presses received.',receiving:false,connected:true,pending:false,status:'MIDI ports open; DAW mode requested. Waiting for Launchkey input.'});
       this.send('mode',launchkeyMode(true));
+      // Touch and position CCs overlap when input channels are intentionally ignored.
+      this.send('touch-events',[0xb6,71,0]);
       this.send('pads-mode',[0xb6,29,2]);this.send('knobs-mode',[0xb6,30,2]);this.send('faders-mode',[0xb6,31,1]);
       if(this.value.sysex){this.send('display-config',[0xf0,0,0x20,0x29,2,0x14,4,32,1,0xf7]);this.send('selection-display-config',[0xf0,0,0x20,0x29,2,0x14,4,33,1,0xf7]);}
       if(!this.value.connected)return;
@@ -213,7 +221,7 @@ export class LaunchkeyController {
     if(wheel)wheel.onmidimessage=null;
     if(input)input.onmidimessage=null;
     if(output?.state==='connected'){try{output.send(launchkeyMode(false));this.log('OUT',launchkeyMode(false));}catch(error){this.diagnostic(`DAW mode release failed: ${String(error)}`);}}
-    this.sent.clear();this.touched.clear();this.update({connected:false,receiving:false,wheel:'Mod wheel disconnected.'});
+    this.sent.clear();this.update({connected:false,receiving:false,wheel:'Mod wheel disconnected.'});
     const closed=await Promise.allSettled([input?.close(),output?.close(),wheel?.close()]);
     closed.forEach((result,i)=>{if(result.status==='rejected')this.diagnostic(`${i?'Output':'Input'} close failed: ${String(result.reason)}`);});
     if(input||output)this.diagnostic('Selected pair released.');
@@ -227,11 +235,19 @@ export class LaunchkeyController {
     if(index!==this.value.focus){this.controls.flush();this.jog.reset();this.detents.clear();this.releaseCues();this.update({focus:index});this.scheduleFeedback();}
     this.selectionDisplay(true);
   };
+  get displayDiagnostic(){
+    const permission=this.access?.sysexEnabled===true,gate=this.value.sysex;
+    const state=!this.value.connected?'Disconnected':!permission||!gate?'Blocked: SysEx is not enabled on this connection':'SysEx enabled';
+    return `${state}. Display commands sent: ${this.displayTx}. Stationary configured: ${this.displayConfigs.has(32)?'yes':'no'}; selection configured: ${this.displayConfigs.has(33)?'yes':'no'}. Last: ${this.displayLast}.${this.displayError?` Send error: ${this.displayError}`:''} Sent means the MIDI API accepted the command, not that the keyboard displayed it.`;
+  }
   private send(key:string,packet:number[]) {
     if(!this.output||!this.value.connected)return;
     const signature=controllerHex(packet);if(this.sent.get(key)===signature)return;
     this.sent.set(key,signature);
-    try{this.sending=true;this.output.send(packet);this.counts.output++;this.counts.bytes+=packet.length;if(packet[0]===0xf0)this.counts.sysex++;this.log('OUT',packet);}catch(error){void this.disconnect(`MIDI output failed: ${String(error)}. Use Connect to retry.`,false);}finally{this.sending=false;}
+    const display=packet[0]===0xf0&&(packet[6]===4||packet[6]===6);
+    try{this.sending=true;this.output.send(packet);
+      if(display){this.displayTx++;const target=packet[7]===32?'stationary':packet[7]===33?'selection':`parameter ${packet[7]}`;this.displayLast=`${target} ${packet[6]===4?(packet[8]===127?'trigger':`configure layout ${packet[8]}`):`text field ${packet[8]}`}`;if(packet[6]===4&&packet[8]>0&&packet[8]<127)this.displayConfigs.set(packet[7],packet[8]);}
+      this.counts.output++;this.counts.bytes+=packet.length;if(packet[0]===0xf0)this.counts.sysex++;this.log('OUT',packet);}catch(error){if(display)this.displayError=String(error);void this.disconnect(`MIDI output failed: ${String(error)}. Use Connect to retry.`,false);}finally{this.sending=false;}
   }
   setDeckColors=(colors:readonly (readonly number[])[])=>{
     if(colors.length!==4||colors.some(rgb=>rgb.length!==3||rgb.some(v=>!Number.isFinite(v)||v<0||v>255)))return;
@@ -260,15 +276,15 @@ export class LaunchkeyController {
     for(let i=0;i<9;i++) {
       const active=i<4||i===8;
       const selected=this.value.focus===i;
-      if(i<4&&this.value.sysex&&this.deckColors[i]){
-        const rgb=this.deckColors[i].map(v=>Math.round(v/255*127*(selected?1:.35)));
+      if(i<4&&!selected&&this.value.sysex&&this.deckColors[i]){
+        const rgb=this.deckColors[i].map(v=>Math.round(v/255*127*.35));
         this.send(`select${i}`,[0xf0,0,0x20,0x29,2,0x14,1,0x53,37+i,...rgb,0xf7]);
       }else {
-        const bright=[9,49,37,21],dim=[10,50,38,22];
-        this.send(`select${i}`,[0xb0,37+i,i<4?(selected?bright[i]:dim[i]):active?(selected?21:1):0]);
+        const dim=[10,50,38,22];
+        this.send(`select${i}`,[0xb0,37+i,i<4?(selected?21:dim[i]):active?(selected?21:1):0]);
       }
     }
-    if(this.modes.knobs===2||this.modes.knobs===1||this.modes.knobs===4)this.knobValues().forEach((value,i)=>{if(!(i===6&&this.value.focus===8)&&!this.touched.has(21+i)&&!this.controls.size){const [min,max]=ranges[i];this.send(`knob${i}`,[0xbf,21+i,Math.round((Math.max(min,Math.min(max,value))-min)/(max-min)*127)]);}});
+    if(this.modes.knobs===2||this.modes.knobs===1||this.modes.knobs===4)this.knobValues().forEach((value,i)=>{if(!(i===6&&this.value.focus===8)&&!this.controls.size){const [min,max]=ranges[i];this.send(`knob${i}`,[0xbf,21+i,Math.round((Math.max(min,Math.min(max,value))-min)/(max-min)*127)]);}});
     this.send('play-led',[0xb0,115,s.running?21:1]);this.send('stop-led',[0xb0,116,s.running?1:5]);
     const deck=s.decks[this.value.focus];
     if(this.modes.pads===2)for(let i=0;i<16;i++){
@@ -290,10 +306,11 @@ export class LaunchkeyController {
     if(data.length===1&&data[0]>=0xf8){this.counts.clock++;return;}
     this.counts.maxAge=Math.max(this.counts.maxAge,Math.max(0,performance.now()-timestamp));
     // Poly-aftertouch is unused: do not spend rendering/logging work on its stream.
-    if(data[0]===0xa0)return;
+    if((data[0]&0xf0)===0xa0)return;
     this.log('IN',data);
-    if(data.length===3&&data[0]===0xbe){if(data[2]===127)this.touched.add(data[1]);else{this.touched.delete(data[1]);this.sent.delete(`knob${data[1]-21}`);this.scheduleFeedback();}return;}
-    const event=decodeLaunchkey(data);if(!event)return;
+    const event=decodeLaunchkey(data);
+    if(data.length===3&&((data[0]&0xf0)===0x80||(data[0]&0xf0)===0x90||(data[0]&0xf0)===0xb0&&data[1]>=37&&data[1]<=45))this.lastButtonInput=`IN ${controllerHex(data)} · ${event?.kind??'unhandled'}`;
+    if(!event)return;
     if(!this.value.receiving){this.update({receiving:true,status:'Receiving Launchkey DAW input.'});this.scheduleFeedback();}
     if(event.kind==='mode'){this.controls.flush();this.jog.reset();this.detents.clear();this.releaseCues();if(event.index===29)this.modes.pads=event.value;if(event.index===30)this.modes.knobs=event.value;if(event.index===31){this.modes.faders=event.value;this.update({faderMode:event.value===1?'Volume confirmed.':`Mode ${event.value} reported; choose Volume for DAW faders.`});}this.sent.clear();this.scheduleFeedback();return;}
     const state=this.engine.snapshot(),commands=this.engine.commands,deck=state.decks[this.value.focus];

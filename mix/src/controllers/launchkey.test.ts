@@ -23,16 +23,17 @@ function setup(sysex=false,auto=false) {
   const receive=(data:number[])=>controller.receive(data);
   return {controller,commands,input,output,access,request,connect,receive,emit,listeners,storage,engine};
 }
-it('parses native faders, absolute/relative knobs, note pads, and ignores other channels/releases/malformed data',()=>{
+it('parses native faders, absolute/relative knobs, note pads, and ignores unrelated IDs/releases/malformed data',()=>{
   expect(decodeLaunchkey([0xbf,5,64])).toEqual({kind:'fader',index:0,value:64});
   expect(decodeLaunchkey([0xbf,85,63])).toEqual({kind:'relative',index:0,value:-1});
   expect(decodeLaunchkey([0xbf,45,127])).toEqual({kind:'focus',index:8});
   expect(decodeLaunchkey([0x90,112,127])).toEqual({kind:'pad',index:8,down:true});
-  for(const data of [[0xbf,5],[0xbf,5,128],[0xbf,5,NaN],[0xb0,5,64],[0x90,60,127],[0xa0,112,127]])expect(decodeLaunchkey(data)).toBeNull();
+  for(const data of [[0xbf,5],[0xbf,5,128],[0xbf,5,NaN],[0x1bf,5,64],[0x90,60,127],[0xa0,112,127]])expect(decodeLaunchkey(data)).toBeNull();
 });
 it('requires explicit scan and connection; initializes native mode without playing or SysEx',async()=>{
   const f=setup();expect(f.request).not.toHaveBeenCalled();expect(f.output.open).not.toHaveBeenCalled();
   await f.connect();expect(f.output.send).toHaveBeenCalledWith(launchkeyMode(true));
+  expect(f.output.send).toHaveBeenCalledWith([0xb6,71,0]);
   expect(f.commands.setRunning).not.toHaveBeenCalled();
   expect(vi.mocked(f.output.send).mock.calls.some(([p])=>Array.from(p)[0]===0xf0)).toBe(false);
   f.controller.dispose();
@@ -54,12 +55,11 @@ it('respects hardware mode changes and uses the MK4 relative pivot, not MCU sign
   expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','sendA',100/127);
   f.commands.setDeck.mockClear();f.receive([0xb6,31,6]);f.receive([0xbf,5,50]);expect(f.commands.setDeck).not.toHaveBeenCalled();f.controller.dispose();
 });
-it('does not feed output back into actions or resend unchanged state, and suppresses touched knob feedback',async()=>{
+it('does not feed output back into actions or resend unchanged state',async()=>{
   const f=setup();vi.mocked(f.output.send).mockImplementation(data=>f.receive(Array.from(data)));await f.connect();
   vi.mocked(f.output.send).mockClear();f.emit();await new Promise(r=>setTimeout(r,60));
   expect(f.commands.setDeck).not.toHaveBeenCalled();expect(f.commands.beatJump).not.toHaveBeenCalled();expect(f.output.send).not.toHaveBeenCalled();
-  f.receive([0xbe,21,127]);f.commands.setDeck('deck-a','sendA',70);expect(f.output.send).not.toHaveBeenCalledWith([0xbf,21,89]);
-  f.receive([0xbe,21,0]);await vi.waitFor(()=>expect(f.output.send).toHaveBeenCalledWith([0xbf,21,89]));f.controller.dispose();
+  f.controller.dispose();
 });
 it('disconnects both ports, drops late input, removes subscription, and explicitly reconnects',async()=>{
   const f=setup();await f.connect();Object.defineProperty(f.input,'state',{value:'disconnected',configurable:true});
@@ -247,7 +247,7 @@ it('opens only the matching standard MIDI input for wheel CC1 and reconnects it 
 it('selects and lights empty decks without loading/playing, and keeps focus when a track arrives',async()=>{
   vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks.forEach(d=>{d.status='empty';});await f.connect();
   f.receive([0xbf,39,127]);await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
-  expect(f.output.send).toHaveBeenCalledWith([0xb0,39,37]);expect(f.output.send).toHaveBeenCalledWith([0x90,112,0]);
+  expect(f.output.send).toHaveBeenCalledWith([0xb0,39,21]);expect(f.output.send).toHaveBeenCalledWith([0x90,112,0]);
   f.receive([0xbf,21,127]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-c','sendA',100);
   f.receive([0x90,112,127]);f.receive([0x90,113,127]);expect(f.commands.setDeckPlaying).not.toHaveBeenCalled();expect(f.commands.cueDeck).not.toHaveBeenCalled();
   f.engine.snapshot().decks[2].status='ready';f.emit();await vi.advanceTimersByTimeAsync(50);expect(f.controller.snapshot().focus).toBe(2);
@@ -263,13 +263,13 @@ it('leaves the ninth fader unassigned while its button still selects Master',asy
   f.controller.dispose();
 });
 
-it('keeps all four empty-deck selectors lit and uses brighter matching RGB colors for the selected deck',async()=>{
+it('keeps empty-deck colors lit and makes the selected deck green',async()=>{
   vi.useFakeTimers();const f=setup(true);f.engine.snapshot().decks.forEach(d=>d.status='empty');
   f.controller.setDeckColors([[200,100,50],[180,120,60],[50,200,100],[60,180,120]]);await f.connect();
-  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x53,37,100,50,25,0xf7]);
+  expect(f.output.send).toHaveBeenCalledWith([0xb0,37,21]);
   for(const note of [38,39,40])expect(vi.mocked(f.output.send).mock.calls.some(([p])=>{const v=Array.from(p);return v[0]===0xf0&&v[8]===note&&v.slice(9,12).some(n=>n>0);})).toBe(true);
   f.controller.focus(2);await vi.advanceTimersByTimeAsync(50);
-  expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x53,39,25,100,50,0xf7]);
+  expect(f.output.send).toHaveBeenCalledWith([0xb0,39,21]);
   expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,1,0x53,37,35,17,9,0xf7]);
   f.controller.dispose();vi.useRealTimers();
 });
@@ -288,7 +288,7 @@ it('uses fader Control Changes, not pad notes, and reports raw selection and mod
     expect(decodeLaunchkey([0xbf,cc,127])).toEqual({kind:'focus',index});
     expect(decodeLaunchkey([0xbf,cc,0])).toBeNull();
     expect(decodeLaunchkey([0x90,cc,127])).toBeNull();
-    expect(decodeLaunchkey([0xb0,cc,127])).toBeNull();
+    expect(decodeLaunchkey([0xb0,cc,127])).toEqual({kind:'focus',index});
     f.receive([0xbf,cc,127]);expect(f.controller.snapshot().focus).toBe(index);
     expect(f.controller.snapshot().selector).toContain(`Button ${index+1}: BF`);
   }
@@ -318,4 +318,61 @@ it('shows the selected track persistently and retriggers a brief selection displ
   expect(f.output.send).toHaveBeenCalledWith(packet(32,1,'New track'));
   f.receive([0xbf,45,64]);expect(f.output.send).toHaveBeenCalledWith(packet(32,0,'Master'));expect(f.output.send).toHaveBeenCalledWith(packet(33,0,'Master'));
   expect(f.commands.setDeckPlaying).not.toHaveBeenCalled();f.controller.dispose();vi.useRealTimers();
+});
+
+it('reports actual screen permission, configuration and accepted display sends separately from button input',async()=>{
+  const off=setup();await off.connect();off.receive([0xbf,38,127]);
+  expect(off.controller.snapshot().selector).toContain('Button 2');expect(off.controller.displayDiagnostic).toContain('Blocked: SysEx is not enabled');expect(off.controller.displayDiagnostic).toContain('Display commands sent: 0');off.controller.dispose();
+  const on=setup(true);await on.connect();expect(on.controller.displayDiagnostic).toContain('SysEx enabled');expect(on.controller.displayDiagnostic).toContain('Stationary configured: yes; selection configured: yes');
+  on.receive([0xbf,38,127]);expect(on.controller.displayDiagnostic).toContain('selection trigger');
+  const sent=on.controller.displayDiagnostic;on.receive([0xbf,38,0]);expect(on.controller.displayDiagnostic).toBe(sent);on.controller.dispose();
+});
+it('retains a failed display command error instead of counting it as sent',async()=>{
+  const f=setup(true);vi.mocked(f.output.send).mockImplementation(packet=>{const p=Array.from(packet);if(p[0]===0xf0&&p[6]===4)throw new Error('Display output rejected');});
+  await f.connect();expect(f.controller.displayDiagnostic).toContain('Display commands sent: 0');expect(f.controller.displayDiagnostic).toContain('Send error: Error: Display output rejected');f.controller.dispose();
+});
+
+it('keeps the last unhandled physical button packet visible without treating it as selection',async()=>{
+  const f=setup();await f.connect();f.receive([0x9f,38,127]);expect(f.controller.lastButtonInput).toBe('IN 9F 26 7F · unhandled');expect(f.controller.snapshot().focus).toBe(0);
+  f.receive([0xf8]);f.receive([0xbf,5,40]);expect(f.controller.lastButtonInput).toContain('9F 26 7F');
+  f.receive([0xbf,38,127]);expect(f.controller.lastButtonInput).toBe('IN BF 26 7F · focus');f.controller.dispose();
+});
+
+it('accepts mapped messages on all 16 channels, with releases and unrelated IDs still respected',async()=>{
+  for(let ch=0;ch<16;ch++){
+    for(const [key,value,event] of [
+      [5,64,{kind:'fader',index:0,value:64}],[21,50,{kind:'knob',index:0,value:50}],
+      [85,65,{kind:'relative',index:0,value:1}],[38,127,{kind:'focus',index:1}],
+      [115,127,{kind:'play'}],[116,127,{kind:'stop'}],[31,1,{kind:'mode',index:31,value:1}],
+    ] as const)expect(decodeLaunchkey([0xb0|ch,key,value])).toEqual(event);
+    expect(decodeLaunchkey([0x90|ch,113,127])).toEqual({kind:'pad',index:9,down:true});
+    for(const status of [0x80|ch,0x90|ch])expect(decodeLaunchkey([status,113,0])).toEqual({kind:'pad',index:9,down:false});
+    for(const key of [37,38,39,45,115,116,99])expect(decodeLaunchkey([0xb0|ch,key,0])).toBeNull();
+    const f=setup();await f.connect();f.receive([0xb0|ch,38,127]);f.receive([0xb0|ch,21,127]);
+    expect(f.commands.setDeck).toHaveBeenCalledWith('deck-b','sendA',100);
+    f.receive([0x90|ch,113,127]);f.receive([0x80|ch,113,0]);
+    expect(f.commands.cueDeck).toHaveBeenCalledWith('deck-b',true);expect(f.commands.cueDeck).toHaveBeenCalledWith('deck-b',false);f.controller.dispose();
+  }
+});
+it('routes captured B0 selector presses to focus, screen and green feedback, ignoring releases',async()=>{
+  vi.useFakeTimers();const f=setup(true);await f.connect();f.controller.focus(8);await vi.advanceTimersByTimeAsync(50);
+  for(const [key,index,label] of [[0x25,0,'Deck A'],[0x27,2,'Deck C'],[0x26,1,'Deck B'],[0x2d,8,'Master']] as const){
+    vi.mocked(f.output.send).mockClear();const previous=f.controller.snapshot().focus;
+    f.receive([0xb0,key,0]);expect(f.controller.snapshot().focus).toBe(previous);expect(f.output.send).not.toHaveBeenCalled();
+    f.receive([0xb0,key,127]);expect(f.controller.snapshot().focus).toBe(index);
+    expect(f.output.send).toHaveBeenCalledWith([0xf0,0,0x20,0x29,2,0x14,6,33,0,...Array.from(label,c=>c.charCodeAt(0)),0xf7]);
+    await vi.advanceTimersByTimeAsync(50);expect(f.output.send).toHaveBeenCalledWith([0xb0,key,21]);
+  }
+  f.controller.dispose();vi.useRealTimers();
+});
+
+it('disables overlapping touch output before initializing knob positions without changing parameters',async()=>{
+  const f=setup();await f.connect();
+  const packets=vi.mocked(f.output.send).mock.calls.map(([p])=>Array.from(p));
+  const touch=packets.findIndex(p=>p[0]===0xb6&&p[1]===71&&p[2]===0);
+  const position=packets.findIndex(p=>p[0]===0xbf&&p[1]===21);
+  expect(touch).toBeGreaterThan(-1);expect(position).toBeGreaterThan(touch);
+  expect(f.commands.setDeck).not.toHaveBeenCalled();
+  expect(packets.some(p=>p[0]===0xb6&&p[1]===71&&p[2]!==0)).toBe(false);
+  f.controller.dispose();
 });

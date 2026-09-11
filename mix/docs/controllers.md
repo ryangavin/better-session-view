@@ -73,37 +73,38 @@ same choice, show a selected state, and work with empty decks. Deck EQ, filter, 
 and Trim can be set before loading; loading retains controller focus. Select buttons
 1–4 stay lit even when empty. `ControllerIndicator` passes the resolved deck inks from
 the existing theme through a leaf effect: RGB SysEx matches those colors, with the
-selected button at full brightness and others at 35%. Without SysEx, four distinct
-palette colors remain lit with brighter selection. No color work reaches App renders.
+selected deck or Master button green and unselected deck colors at 35%. Without SysEx,
+four distinct dim palette colors remain lit and selection is still green. No color work reaches App renders.
 All pads follow that focus and are inactive in Master focus. Bottom-row transport
 order matches the selected deck UI; loop controls occupy the top row. All transport pads require a ready deck and retain the engine's existing saved-grid,
 loop-boundary and playing-state policies. Nothing directly controls the DOM or DSP.
 
-Fader selector buttons use **Control Change on channel 16**, CC37–45 (`BF 25` through
-`BF 2D`), not pad Note On messages. Releases are value zero. Palette feedback uses
-channel-1 Control Change (`B0`), and RGB SysEx uses selector `53h` for buttons; `43h`
-is for pads. The current HTML programmer guide distinguishes these RGB targets; the
-older PDF's combined pads/buttons sentence omitted the button form. The earlier
-adapter incorrectly used notes and pad RGB for selectors, which explains why its
-mock tests passed while hardware selection and lights failed. The fader diagram's
-numeric identifiers were correct; its message type was not.
+Incoming controller messages accept all 16 MIDI channels on the existing chosen inputs.
+Message type, control/note number, value and hardware mode still determine routing.
+Fader selectors use CC37–45 with nonzero presses and zero releases. The user's physical
+capture was channel 1: `B0 25 7F`, `B0 27 7F`, `B0 26 7F`, `B0 2D 7F`, each with
+zero-value releases. The previous BF-only selector decoder rejected these presses.
+Faders, absolute/relative knobs, pads, transport and mode reports now also ignore the
+channel nibble. Outgoing protocol channels remain unchanged: selector palette feedback
+uses B0 and button RGB uses SysEx selector53h (pads use43h).
 
-The panel's **Fader buttons · CC/RGB v2** diagnostic identifies this implementation,
-distinguishes requested Volume mode from a received mode report, and keeps the last
-fader-button press with its raw bytes. No presses received is explicit; a Custom-mode
-report advises choosing Volume. These diagnostics do not open another MIDI connection
-or reset the working one. Hardware acceptance requires pressing selectors 1, 2 and 9,
-seeing `BF 25`, `BF 26`, `BF 2D` and A/B/Master focus, and checking physical lights.
-The user subsequently confirmed selector lighting and receipt in diagnostics. This
-verifies the output/input paths; physical target routing and screen response still
-need their own trial.
+The panel's **Fader buttons · CC/RGB v2** diagnostic shows mode and raw selection evidence;
+**Last hardware button packet** remains visible independently of continuous controls.
+Manual Debug focus changes have been physically verified to update screen labels and
+selector LEDs. Physical button-driven focus after removing channel filtering still
+requires a hardware trial. No extra MIDI connection or permission request is introduced.
 
 Faders are absolute native CCs, not MCU pitch-bend/motor faders; no motor movement is
 sent. Plugin/Mixer/Sends knobs use absolute positions, initialized from app state.
 Transport encoder mode uses the native relative pivot of 64 (65 means +1, 63 means −1),
 not MCU signed magnitude. Mode reports gate each area; Custom modes are left alone.
-Knob values reflect app changes back to the hardware, except while a reported touch is
-held; release refreshes the position. An incoming absolute position is cached before
+Knob values reflect app changes back to the hardware. Channel-specific touch suppression
+is disabled: touch CC21–28 and absolute knob CC21–28 cannot be distinguished when channels
+are ignored, so these IDs always mean positions. Connection initialization disables DAW touch events
+using documented feature CC71 on channel 7 (`B6 47 00`) before knob feedback. If another
+application enables touch output, its events cannot be distinguished from positions
+without channel information. Other overlapping feature-control replies likewise use
+the mapped control interpretation; the adapter does not enable all feature replies. An incoming absolute position is cached before
 the engine publishes, so it is never echoed straight back into a moving encoder.
 Hardware acceleration is retained without extra scaling. The packet log renders at
 most every 50ms. Continuous controls use `continuous.ts`: the leading value applies
@@ -207,7 +208,7 @@ before/after costs and the live-validation limit.
 ## Validation and limits
 
 CoreMIDI enumeration verified the MK4 61 identity and MIDI/DAW pairs. Unit tests exercise
-packet validation, releases/unrelated messages, parameter routing, mode changes, touch
+packet validation, releases/unrelated messages, parameter routing, mode changes,
 suppression, deduplicated feedback, output loopback, unplug/reconnect and canceled opens.
 No simulator UI was built. The coordinating task visually verified the panel and its
 button labels in the actual Electron window. The user subsequently confirmed hardware
@@ -226,9 +227,21 @@ firmware changes are outside this prototype.
 
 ## Protocol references
 
+- [Novation feature controls](https://userguides.novationmusic.com/hc/en-gb/articles/23754916107922-Launchkey-feature-controls)
 - [Novation MK4 DAW protocol](https://userguides.novationmusic.com/hc/en-gb/articles/23754923378066-Launchkey-Programmer-s-DAW-mode)
 - [Novation MK4 programmer reference, diagrams](https://fael-downloads-prod.focusrite.com/customer/prod/downloads/launchkey_mk4_programmer_s_reference_guide_v2_en.pdf)
 
 The guide maps faders to BF CC5–13, Plugin encoders to BF CC21–28, relative encoders to
-BF CC85–92, fader buttons to notes37–45, top pads to notes96–103 and bottom pads to
+BF CC85–92, fader buttons to CC37–45, top pads to notes96–103 and bottom pads to
 notes112–119. Transport buttons use BF CC115/116. Only the DAW pair is used.
+
+
+### Screen diagnostics
+
+Manual Debug deck selection has been physically verified to update the hardware screen.
+**Screen output** reports actual SysEx permission, successful MIDI API display-send count,
+stationary/selection configuration, last operation and caught output errors. A send count
+is API acceptance, not a hardware acknowledgement. These fields observe the existing path
+without changing display configuration, permissions, ports or playback. The earlier blank
+screen report was superseded by the manual-selection trial; the remaining mismatch was
+physical B0 selector input rejected by the BF-only decoder.
