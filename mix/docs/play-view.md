@@ -45,7 +45,8 @@ The header's [Audio settings](audio-settings.md) select the shared output device
 processing rate and latency preference. Applying them pauses both engines and replaces
 their contexts while retaining loaded tracks, positions and mixer configuration.
 
-The mixer fills available height. Spare height enlarges the four aligned waveform rows;
+The mixer fills available height. The four-track overview has no outer vertical margin;
+its existing border meets the adjacent sections without empty bands. Spare height enlarges the four aligned waveform rows;
 controls keep their established spacing. Song headers have two text rows with more
 vertical room. At widths below the minimum control geometry the mixer scrolls horizontally
 instead of shrinking touch targets. The library stays visible.
