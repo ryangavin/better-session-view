@@ -1,3 +1,4 @@
+import { ControllerIndicator } from './controllers/ControllerIndicator.tsx';
 import { LaunchkeyController } from './controllers/launchkey.ts';
 import { ControllerContext } from './controllers/context.ts';
 import { DebugModal } from './components/DebugButton.tsx';
@@ -185,7 +186,7 @@ export function App() {
             {mix.phase === 'running' && <Running mix={mix} />}
             {mix.phase === 'ready' && <Lanes mix={mix} />}
           </section>
-          <HintFooter resting="Point at anything to read what it does." />
+          <div className="mf-footer"><HintFooter resting="Point at anything to read what it does." /><ControllerIndicator controller={controller} onOpen={() => mix.openDebug('controllers')} /></div>
         </div>
       </main>
       <ControllerContext.Provider value={controller}><DebugModal mix={mix} /></ControllerContext.Provider>

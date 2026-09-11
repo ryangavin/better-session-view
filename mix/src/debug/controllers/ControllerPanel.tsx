@@ -33,12 +33,12 @@ function ConnectedPanel({controller}:{controller:LaunchkeyController}) {
     <table><tbody>
       <tr><th>Faders</th><td>1–4: deck A–D gain · 5–8: unused · 9: master gain</td></tr>
       <tr><th>Knobs 1–8</th><td>{KNOBS.join(' · ')} (for the focused deck or master)</td></tr>
-      <tr><th>Pads, top row</th><td>1: back one beat · 2: forward one beat · 3–8: unused</td></tr>
-      <tr><th>Pads, bottom row</th><td>1: quick loop · 2: half loop · 3: double loop · 4: loop on/off · 5–8: unused</td></tr>
-      <tr><th>Play / Stop</th><td>Existing global Play / Stop actions. Pads need a loaded deck; Master focus leaves pads inactive.</td></tr>
+      <tr><th>Pads, top row</th><td>1–2: beat −/+ · 3–6: A–D Play/Pause (green) · 7: focused Sync · 8: focused Play/Pause</td></tr>
+      <tr><th>Pads, bottom row</th><td>1–4: quick/half/double/toggle loop · 5–8: A–D hold Cue (orange)</td></tr>
+      <tr><th>Play / Stop</th><td>Existing global Play / Stop actions. Deck pads need a loaded deck. Dedicated A–D Play/Cue also work in Master focus. Hold Cue and press that deck’s Play to keep playing after releasing Cue.</td></tr>
     </tbody></table>
     <p>Port identity verified as Launchkey MK4 61. Physical control mapping still needs a hardware trial. No MCU or other Launchkey-generation compatibility is claimed.</p>
     <div className="mf-controller-row"><h3>Controller debug log</h3><Button label="Clear messages" onPress={controller.clearLog}>Clear messages</Button></div>
-    <pre aria-label="Controller MIDI messages">{state.messages.join('\n')||'No controller activity yet.'}</pre>
+    <p aria-label="Controller rate metrics">{state.metrics}</p><pre aria-label="Controller MIDI messages">{state.messages.join('\n')||'No controller activity yet.'}</pre>
   </div>;
 }

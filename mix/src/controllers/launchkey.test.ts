@@ -9,7 +9,7 @@ function setup(sysex=false,auto=false) {
   const commands={
     setDeck:vi.fn((id:string,key:string,value:number)=>{state={...state,decks:state.decks.map(d=>d.id===id?{...d,[key]:value}:d)};emit();}),
     setMaster:vi.fn((key:string,value:number)=>{state={...state,[key]:value};emit();}),
-    setMasterEq:vi.fn(),setDeckEq:vi.fn(),setRunning:vi.fn(),stopAll:vi.fn(),beatJump:vi.fn(),quickLoop:vi.fn(),resizeLoop:vi.fn(),setDeckLoopEnabled:vi.fn(),
+    setMasterEq:vi.fn(),setDeckEq:vi.fn(),cueDeck:vi.fn(),setDeckPlaying:vi.fn(),setDeckSync:vi.fn(),setRunning:vi.fn(),stopAll:vi.fn(),beatJump:vi.fn(),quickLoop:vi.fn(),resizeLoop:vi.fn(),setDeckLoopEnabled:vi.fn(),
   };
   const engine={snapshot:()=>state,subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn);};},commands} as unknown as Pick<MixerEngine,'snapshot'|'subscribe'|'commands'>;
   const input={id:'in',name:'Launchkey MK4 61 DAW Out',state:'connected',open:vi.fn(async()=>{}),close:vi.fn(async()=>{}),onmidimessage:null} as unknown as MIDIInput;
@@ -27,8 +27,8 @@ it('parses native faders, absolute/relative knobs, note pads, and ignores other 
   expect(decodeLaunchkey([0xbf,5,64])).toEqual({kind:'fader',index:0,value:64});
   expect(decodeLaunchkey([0xbf,85,63])).toEqual({kind:'relative',index:0,value:-1});
   expect(decodeLaunchkey([0x90,45,127])).toEqual({kind:'focus',index:8});
-  expect(decodeLaunchkey([0x90,112,127])).toEqual({kind:'pad',index:8});
-  for(const data of [[0xbf,5],[0xbf,5,128],[0xbf,5,NaN],[0xb0,5,64],[0x90,112,0],[0x80,112,127],[0x90,60,127],[0xa0,112,127]])expect(decodeLaunchkey(data)).toBeNull();
+  expect(decodeLaunchkey([0x90,112,127])).toEqual({kind:'pad',index:8,down:true});
+  for(const data of [[0xbf,5],[0xbf,5,128],[0xbf,5,NaN],[0xb0,5,64],[0x90,60,127],[0xa0,112,127]])expect(decodeLaunchkey(data)).toBeNull();
 });
 it('requires explicit scan and connection; initializes native mode without playing or SysEx',async()=>{
   const f=setup();expect(f.request).not.toHaveBeenCalled();expect(f.output.open).not.toHaveBeenCalled();
@@ -40,11 +40,11 @@ it('requires explicit scan and connection; initializes native mode without playi
 it('routes gain, master focus, FX knobs and loaded-deck loop pads to application actions',async()=>{
   const f=setup();await f.connect();
   f.receive([0xbf,5,0]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','gain',0);
-  f.receive([0xbf,13,127]);expect(f.commands.setMaster).toHaveBeenLastCalledWith('master',100);
-  f.receive([0x90,38,127]);f.receive([0xbf,21,127]);expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-b','sendA',100);
+  f.receive([0xbf,13,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalled());expect(f.commands.setMaster).toHaveBeenLastCalledWith('master',100);
+  f.receive([0x90,38,127]);f.receive([0xbf,21,127]);await vi.waitFor(()=>expect(f.commands.setDeck).toHaveBeenCalledWith('deck-b','sendA',100));expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-b','sendA',100);
   f.receive([0x90,96,127]);expect(f.commands.beatJump).toHaveBeenLastCalledWith('deck-b',-1);
   f.receive([0x90,112,127]);expect(f.commands.quickLoop).toHaveBeenCalledWith('deck-b');
-  f.receive([0x90,45,127]);f.receive([0xbf,22,127]);expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterSendB',100);
+  f.receive([0x90,45,127]);f.receive([0xbf,22,127]);await vi.waitFor(()=>expect(f.commands.setMaster).toHaveBeenCalledWith('masterSendB',100));expect(f.commands.setMaster).toHaveBeenLastCalledWith('masterSendB',100);
   f.receive([0x90,96,127]);expect(f.commands.beatJump).toHaveBeenCalledTimes(1);
   f.receive([0xbf,115,127]);expect(f.commands.setRunning).toHaveBeenCalledWith(true);
   f.receive([0xbf,116,127]);expect(f.commands.stopAll).toHaveBeenCalledOnce();f.controller.dispose();
@@ -55,12 +55,11 @@ it('respects hardware mode changes and uses the MK4 relative pivot, not MCU sign
   f.commands.setDeck.mockClear();f.receive([0xb6,31,6]);f.receive([0xbf,5,50]);expect(f.commands.setDeck).not.toHaveBeenCalled();f.controller.dispose();
 });
 it('does not feed output back into actions or resend unchanged state, and suppresses touched knob feedback',async()=>{
-  const f=setup();await f.connect();
-  const packets=vi.mocked(f.output.send).mock.calls.map(([data])=>Array.from(data));
-  vi.mocked(f.output.send).mockClear();packets.forEach(f.receive);f.emit();
+  const f=setup();vi.mocked(f.output.send).mockImplementation(data=>f.receive(Array.from(data)));await f.connect();
+  vi.mocked(f.output.send).mockClear();f.emit();await new Promise(r=>setTimeout(r,60));
   expect(f.commands.setDeck).not.toHaveBeenCalled();expect(f.commands.beatJump).not.toHaveBeenCalled();expect(f.output.send).not.toHaveBeenCalled();
   f.receive([0xbe,21,127]);f.commands.setDeck('deck-a','sendA',70);expect(f.output.send).not.toHaveBeenCalledWith([0xbf,21,89]);
-  f.receive([0xbe,21,0]);expect(f.output.send).toHaveBeenCalledWith([0xbf,21,89]);f.controller.dispose();
+  f.receive([0xbe,21,0]);await vi.waitFor(()=>expect(f.output.send).toHaveBeenCalledWith([0xbf,21,89]));f.controller.dispose();
 });
 it('disconnects both ports, drops late input, removes subscription, and explicitly reconnects',async()=>{
   const f=setup();await f.connect();Object.defineProperty(f.input,'state',{value:'disconnected',configurable:true});
@@ -81,9 +80,9 @@ it('accepts the hardware accelerated absolute stream without echoing old positio
   const f=setup();await f.connect();vi.mocked(f.output.send).mockClear();
   // Real capture contains +4 steps followed by backward resets when host echoed CC15.
   for(const value of [0x64,0x68,0x6c,0x70,0x74])f.receive([0xbf,0x15,value]);
-  expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','sendA',0x74/127*100);
+  await vi.waitFor(()=>expect(f.commands.setDeck).toHaveBeenLastCalledWith('deck-a','sendA',0x74/127*100));
   expect(vi.mocked(f.output.send).mock.calls.filter(([p])=>Array.from(p)[0]===0xbf)).toHaveLength(0);
-  f.commands.setDeck('deck-a','sendA',30);expect(f.output.send).toHaveBeenCalledWith([0xbf,0x15,38]);
+  f.commands.setDeck('deck-a','sendA',30);await vi.waitFor(()=>expect(f.output.send).toHaveBeenCalledWith([0xbf,0x15,38]));
   expect(f.controller.snapshot().status).toBe('Receiving Launchkey DAW input.');f.controller.dispose();
 });
 it('batches packet log notifications without delaying knob commands',async()=>{
@@ -121,4 +120,26 @@ it('reports denied access without retrying on repeated Play effects',async()=>{
   f.controller.setEnabled(true);await vi.waitFor(()=>expect(f.controller.snapshot().pending).toBe(false));
   f.controller.setEnabled(true);f.controller.setEnabled(false);f.controller.setEnabled(true);
   expect(f.request).toHaveBeenCalledTimes(1);f.controller.dispose();
+});
+it('keeps dedicated deck transport independent of focus and releases Cue on both note-off forms, focus change and disconnect',async()=>{
+  const f=setup();await f.connect();f.controller.focus(8);
+  f.receive([0x90,98,45]);expect(f.commands.setDeckPlaying).toHaveBeenCalledWith('deck-a',true);
+  f.receive([0x90,116,127]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-a',true);
+  f.receive([0x90,98,127]);expect(f.commands.setDeckPlaying).toHaveBeenLastCalledWith('deck-a',true);
+  f.receive([0x90,116,0]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-a',false);
+  f.receive([0x90,117,127]);f.receive([0x80,117,10]);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-b',false);
+  f.receive([0x90,118,127]);f.controller.focus(0);expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-c',false);
+  f.receive([0x90,119,127]);await f.controller.disconnect();expect(f.commands.cueDeck).toHaveBeenLastCalledWith('deck-d',false);f.controller.dispose();
+});
+it('drops realtime and unused aftertouch cheaply without logging or application actions',async()=>{
+  const f=setup();await f.connect();f.controller.clearLog();
+  for(let i=0;i<1000;i++){f.receive([0xf8]);f.receive([0xa0,96,50]);}
+  expect(f.controller.snapshot().messages).toEqual([]);expect(f.commands.setDeck).not.toHaveBeenCalled();expect(f.commands.beatJump).not.toHaveBeenCalled();f.controller.dispose();
+});
+it('coalesces a burst of app-state feedback to the newest position instead of sending a MIDI backlog',async()=>{
+  const f=setup();await f.connect();vi.mocked(f.output.send).mockClear();
+  for(let i=0;i<1000;i++)f.commands.setDeck('deck-a','sendA',i%101);
+  expect(f.output.send).not.toHaveBeenCalled();await new Promise(r=>setTimeout(r,60));
+  const positions=vi.mocked(f.output.send).mock.calls.map(([p])=>Array.from(p)).filter(p=>p[0]===0xbf&&p[1]===21);
+  expect(positions).toEqual([[0xbf,21,Math.round((999%101)/100*127)]]);f.controller.dispose();
 });

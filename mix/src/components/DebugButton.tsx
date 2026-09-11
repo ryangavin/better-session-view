@@ -19,5 +19,5 @@ export function DebugButton({ mix }: { mix: Mix }) {
 }
 
 export function DebugModal({ mix }: { mix: Mix }) {
-  return mix.debugTab !== null && mix.song ? <Modal title="debug & experiments" label="Debug workspace" className="mf-harness" onClose={mix.closeDebug}><DebugWorkspace mix={mix} tab={mix.debugTab || undefined} /></Modal> : null;
+  return mix.debugTab !== null && (mix.song || mix.debugTab === 'controllers') ? <Modal title="debug & experiments" label="Debug workspace" className="mf-harness" onClose={mix.closeDebug}><DebugWorkspace mix={mix} tab={mix.debugTab || undefined} /></Modal> : null;
 }

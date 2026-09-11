@@ -97,3 +97,8 @@ input, textarea, [contenteditable="true"], [contenteditable=""], [contenteditabl
   user-select: text;
   -webkit-user-select: text;
 }
+
+.mf-footer { display:flex; align-items:stretch; flex:none; min-width:0; border-top:1px solid var(--bd); }
+.mf-footer > .wdg-hint { flex:1; min-width:0; border-top:0; }
+.mf-controller-indicator { flex:none; display:flex; align-items:center; min-height:24px; color:var(--detail); background:transparent; border:0; padding:6px 10px; font-family:var(--mono); font-variation-settings:var(--mono-axes); font-size:var(--text-label); cursor:pointer; }
+.mf-controller-indicator[data-connected] { color:var(--success); }

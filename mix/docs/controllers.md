@@ -5,8 +5,11 @@ opens `src/debug/controllers/ControllerPanel.tsx`; App owns its lifetime, so clo
 workspace keeps the chosen controller working. Switching to Prep releases it until
 Play resumes; changing the library or restarting the app restores the remembered pair.
 Connection never starts audio. Auto-connect can be turned off in the panel, and an
-intentional Disconnect persists that opt-out. The panel is currently reached through
-the existing debug button, which requires a library track.
+intentional Disconnect persists that opt-out. The footer connection indicator opens the panel even with an empty library. It has
+its own leaf subscription so controller logs/metrics never invalidate the Play tree.
+Its text distinguishes disconnected/waiting, port linked/awaiting input, and receiving
+DAW input without relying on loaded tracks or running audio. Hardware focus LEDs and
+the optional linked/active screen title also work with empty decks.
 
 ## Connection
 
@@ -57,13 +60,16 @@ Closing the debug panel does not disable auto-connect. The setting survives app 
 | Knobs 1–7 | Focused deck/master Send A, Send B, filter, low/mid/high EQ, trim |
 | Knob 8 | Unused |
 | Top pads 1–2 | Focused deck back/forward one beat |
+| Top pads 3–6 | Dedicated A–D Play/Pause (green) |
+| Top pads 7–8 | Focused deck Sync / Play-Pause |
 | Bottom pads 1–4 | Quick loop, half loop, double loop, loop enabled toggle |
-| Other pads | Unused; all pads inactive in Master focus |
+| Bottom pads 5–8 | Dedicated A–D momentary transport Cue (orange) |
 | Play / Stop | Global `setRunning(true)` / `stopAll()` |
 
 Focus belongs to the controller adapter; the app has no global selected-deck action.
 It never selects a Prep song or loads a deck. The on-screen focus buttons provide the
-same choice. Pads require a ready deck and retain the engine's existing saved-grid,
+same choice. Dedicated A–D pads work regardless of controller focus (including Master).
+Focused jump/loop/Sync pads require a selected deck. All transport pads require a ready deck and retain the engine's existing saved-grid,
 loop-boundary and playing-state policies. Nothing directly controls the DOM or DSP.
 
 Faders are absolute native CCs, not MCU pitch-bend/motor faders; no motor movement is
@@ -74,9 +80,30 @@ Knob values reflect app changes back to the hardware, except while a reported to
 held; release refreshes the position. An incoming absolute position is cached before
 the engine publishes, so it is never echoed straight back into a moving encoder.
 Hardware acceleration is retained without extra scaling. The packet log renders at
-most every 50ms; input actions remain synchronous and are not debounced. LEDs report focus, running state and loop state.
+most every 50ms. Continuous controls use `continuous.ts`: the leading value applies
+immediately, then at most 60 batches/second retain only the latest absolute value per
+control or sum relative deltas. There is no growing event queue or trailing debounce.
+Focus/mode changes flush the final value before changing targets; disconnect preserves
+the final queued value and clears timers. Discrete buttons and Cue releases bypass
+this limiter. Outgoing state feedback is separately coalesced to 20Hz and changed-only;
+SysEx labels do not resend on each engine tick. Clock/realtime and unused poly-aftertouch
+are discarded before packet formatting or log notifications. LEDs report focus, running state and loop state.
 With SysEx enabled, the screen names mix[flow], focus and the seven knob assignments.
 No encoder LED rings are invented for this hardware.
+
+Cue uses `cueDeck(id, true/false)`, not the headphone cue control. Note Off and Note On
+velocity zero both release it. Duplicate presses are ignored; disconnect, mode/focus
+change and global Stop release held cues. Dedicated Play while its Cue is held requests
+`setDeckPlaying(id, true)` even while audition is already playing, preserving the engine's
+existing latch: releasing Cue then neither stops nor returns the position. No DSP or
+engine transport behavior was changed.
+
+Debug rate counters sample once a second: input including ignored clock, applied
+continuous controls, engine publishes, feedback passes, output packets/bytes/SysEx,
+local subscriber notifications, maximum event age and bounded pending controls. These
+are diagnostics, not a claim of measured end-to-end audio latency. The sustained-burst
+tests verify the 60Hz bound, final values, summed turns, immediate discrete edges and
+latest-only outgoing feedback. The live rate sample remains part of the hardware trial.
 
 ## Validation and limits
 

@@ -26,5 +26,6 @@ export function DebugWorkspace({ mix, tab }: { mix: Mix; tab?: string }) {
   useEffect(() => {
     if (tab && experiments.some((e) => e.id === tab)) select(tab);
   }, [tab, select]);
-  return <Workspace experiments={experiments} context={mix} selected={selected} onSelect={select} />;
+  const available = mix.phase === 'empty' ? experiments.filter(e => e.id === 'controllers') : experiments;
+  return <Workspace experiments={available} context={mix} selected={selected} onSelect={select} />;
 }
