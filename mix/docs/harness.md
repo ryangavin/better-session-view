@@ -309,6 +309,7 @@ not an invented Guitar lane. Both the vector path and column comparison read the
 ## Controllers
 
 The **Controllers** tab connects a user-selected Launchkey MK4 DAW pair to the Play
-mixer. It includes a raw message monitor; no emulator or automatic connection. The
-connection survives closing the workspace and is released on switching to Prep. See
+mixer. It includes a connection/message log and remembers the working pair for automatic
+reconnection in Play or after unplugging. Disconnect opts out. The connection survives
+closing the workspace and is released on switching to Prep. See
 [controllers.md](controllers.md) for mappings, permissions and hardware validation limits.

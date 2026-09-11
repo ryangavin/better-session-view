@@ -9,14 +9,15 @@ export function ControllerPanel() {
 }
 function ConnectedPanel({controller}:{controller:LaunchkeyController}) {
   const state=useSyncExternalStore(controller.subscribe,controller.snapshot);
-  const [sysex,setSysex]=useState(false),[input,setInput]=useState(''),[output,setOutput]=useState('');
+  const [sysex,setSysex]=useState(state.sysex),[input,setInput]=useState(''),[output,setOutput]=useState('');
   useEffect(() => {
     if(state.inputs.length===1 && state.outputs.length===1) {setInput(state.inputs[0].id);setOutput(state.outputs[0].id);}
   }, [state.inputs, state.outputs]);
   return <div className="mf-controller">
     <h2>Launchkey MK4 · hardware prototype</h2>
-    <p>Use the matching <strong>DAW Out / DAW In</strong> ports. Connect enables native Launchkey DAW mode; it does not start playback. The connection stays active when this panel closes. Disconnect or switch to Prep to release it.</p>
+    <p>Use the matching <strong>DAW Out / DAW In</strong> ports. Connect enables native Launchkey DAW mode; it does not start playback. The connection stays active when this panel closes. Switching to Prep releases it until Play resumes. Disconnect turns automatic connection off.</p>
     <div className="mf-controller-row">
+      <label><input type="checkbox" checked={state.autoConnect} onChange={e=>controller.setAutoConnect(e.target.checked)}/> Auto-connect remembered Launchkey</label>
       <label><input type="checkbox" checked={sysex} disabled={state.connected||state.pending} onChange={e=>setSysex(e.target.checked)}/> Screen labels (requests SysEx permission)</label>
       <Button label="Find MIDI ports" disabled={state.pending||state.connected} onPress={()=>void controller.scan(sysex)}>Find MIDI ports</Button>
     </div>

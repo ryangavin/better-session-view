@@ -24,7 +24,15 @@ export function decodeLaunchkey(data: readonly number[]): LaunchkeyEvent | null 
   }
   return null;
 }
+const PREFERENCE_KEY='mix.launchkey.controller.v1';
+interface RememberedPair { enabled:boolean; sysex:boolean; input:{id:string;name:string}; output:{id:string;name:string} }
+const establishedPair:RememberedPair={enabled:true,sysex:true,input:{id:'',name:'Launchkey MK4 61 DAW Out'},output:{id:'',name:'Launchkey MK4 61 DAW In'}};
+export function rememberedPort<T extends {id:string;name:string|null;state:string}>(ports:Iterable<T>, saved:{id:string;name:string}):T|undefined {
+  const candidates=[...ports].filter(p=>p.state==='connected'&&p.name===saved.name);
+  return candidates.find(p=>p.id===saved.id) ?? (candidates.length===1?candidates[0]:undefined);
+}
 export interface ControllerStatus {
+  autoConnect:boolean;
   connected: boolean; pending: boolean; status: string; focus: number; sysex: boolean;
   inputs: readonly {id:string;name:string}[]; outputs: readonly {id:string;name:string}[];
   messages: readonly string[];
@@ -33,7 +41,7 @@ const portName = (port: MIDIPort) => /Launchkey.*MK4.*DAW/i.test(port.name ?? ''
 const identity = (port: MIDIPort) => (port.name ?? '').replace(/\s+(In|Out)$/i,'');
 /** Native MK4 connection is opt-in. A controller focus does not select a Prep song. */
 export class LaunchkeyController {
-  private value: ControllerStatus = {connected:false,pending:false,status:'Disconnected. Choose the Launchkey DAW pair.',focus:0,sysex:false,inputs:[],outputs:[],messages:[]};
+  private value: ControllerStatus = {autoConnect:true,connected:false,pending:false,status:'Disconnected. Choose the Launchkey DAW pair.',focus:0,sysex:false,inputs:[],outputs:[],messages:[]};
   private listeners = new Set<() => void>();
   private access?: MIDIAccess;
   private input?: MIDIInput;
@@ -41,6 +49,10 @@ export class LaunchkeyController {
   private unsubscribe?: () => void;
   private epoch = 0;
   private enabled = true;
+  private remembered:RememberedPair=establishedPair;
+  private requested=false;
+  private autoAttempt='';
+  private closing=false;
   private sent = new Map<string,string>();
   private touched = new Set<number>();
   private logTimer: ReturnType<typeof setTimeout> | undefined;
@@ -48,7 +60,26 @@ export class LaunchkeyController {
   private modes = {pads:2,knobs:2,faders:1};
   snapshot = () => this.value;
   subscribe = (fn: () => void) => {this.listeners.add(fn); return () => {this.listeners.delete(fn);};};
-  constructor(private engine: Pick<MixerEngine,'snapshot'|'subscribe'|'commands'>, private request = (sysex:boolean) => navigator.requestMIDIAccess({sysex})) {}
+  constructor(private engine: Pick<MixerEngine,'snapshot'|'subscribe'|'commands'>, private request = (sysex:boolean) => navigator.requestMIDIAccess({sysex}), private storage:Pick<Storage,'getItem'|'setItem'>|null=typeof localStorage==='undefined'?null:localStorage) {
+    try {const saved=JSON.parse(this.storage?.getItem(PREFERENCE_KEY)??'null');if(saved&&typeof saved.enabled==='boolean'&&typeof saved.sysex==='boolean'&&[saved.input,saved.output].every(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&/Launchkey.*MK4.*DAW/.test(p.name)))this.remembered=saved;}catch{/* Invalid preference uses only the established device name. */}
+    this.value={...this.value,autoConnect:this.remembered.enabled,sysex:this.remembered.sysex};
+  }
+  private save() {try{this.storage?.setItem(PREFERENCE_KEY,JSON.stringify(this.remembered));}catch{this.diagnostic('Could not save controller preference; this session still works.');}}
+  setAutoConnect=(enabled:boolean)=>{
+    this.remembered={...this.remembered,enabled};this.save();this.update({autoConnect:enabled});
+    if(enabled){this.autoAttempt='';if(this.access)this.tryAuto();else {this.requested=false;void this.restore();}}
+  };
+  private async restore() {
+    if(!this.enabled||!this.remembered.enabled||this.requested)return;
+    this.requested=true;await this.scan(this.remembered.sysex);
+  }
+  private tryAuto() {
+    if(!this.enabled||!this.remembered.enabled||this.value.pending||this.value.connected||this.closing||!this.access)return;
+    const input=rememberedPort(this.access.inputs.values(),this.remembered.input),output=rememberedPort(this.access.outputs.values(),this.remembered.output);
+    if(!input||!output){this.autoAttempt='';this.update({status:'Waiting for the remembered Launchkey DAW pair. If names are ambiguous, choose the pair manually.'});return;}
+    const attempt=`${input.id}/${output.id}`;if(this.autoAttempt===attempt)return;this.autoAttempt=attempt;
+    this.diagnostic('Automatically reconnecting the remembered Launchkey DAW pair.');void this.connect(input.id,output.id);
+  }
   private update(patch: Partial<ControllerStatus>) {
     if(patch.status && patch.status!==this.value.status)patch.messages=[`STATUS ${patch.status}`,...this.value.messages].slice(0,80);
     this.value={...this.value,...patch};this.listeners.forEach(fn=>fn());
@@ -63,7 +94,7 @@ export class LaunchkeyController {
     if(this.logTimer!==undefined)clearTimeout(this.logTimer);this.logTimer=undefined;
     if(this.pendingMessages.length){const messages=[...this.pendingMessages,...this.value.messages].slice(0,80);this.pendingMessages=[];this.update({messages});}
   }
-  setEnabled(enabled:boolean) {this.enabled=enabled;if(!enabled)void this.disconnect('Disconnected: switch to Play before connecting.');}
+  setEnabled(enabled:boolean) {this.enabled=enabled;if(!enabled){this.autoAttempt='';void this.disconnect('Disconnected in Prep; auto-connect resumes in Play.',false);}else if(this.access)this.tryAuto();else void this.restore();}
   async scan(sysex:boolean) {
     const epoch=++this.epoch;
     this.update({pending:true,status:'Requesting MIDI access…'});
@@ -80,10 +111,12 @@ export class LaunchkeyController {
         this.diagnostic(`Detected ${inputs.length} inputs: ${inputs.map(p=>`${p.name} (${p.state})`).join('; ')||'none'}`);
         this.diagnostic(`Detected ${outputs.length} outputs: ${outputs.map(p=>`${p.name} (${p.state})`).join('; ')||'none'}`);
         this.update({inputs:[...access.inputs.values()].filter(p=>p.state==='connected'&&portName(p)).map(p=>({id:p.id,name:p.name!})),outputs:[...access.outputs.values()].filter(p=>p.state==='connected'&&portName(p)).map(p=>({id:p.id,name:p.name!}))});
-        if(this.value.connected && (this.input?.state!=='connected'||this.output?.state!=='connected'))void this.disconnect('Launchkey disconnected. Reconnect explicitly when it returns.');
+        if(this.value.connected && (this.input?.state!=='connected'||this.output?.state!=='connected')){this.autoAttempt='';void this.disconnect('Launchkey disconnected; waiting for the remembered pair.',false).then(()=>this.tryAuto());}
+        else this.tryAuto();
       };
       access.onstatechange=refresh;refresh();
-      this.update({sysex:access.sysexEnabled,pending:false,status:this.value.inputs.length&&this.value.outputs.length?'Launchkey DAW ports found. Click Connect Launchkey.':'No connected Launchkey MK4 DAW pair found. See detected ports below.'});
+      this.update({sysex:access.sysexEnabled,pending:false,status:this.value.inputs.length&&this.value.outputs.length?'Launchkey DAW ports found.':'No connected Launchkey MK4 DAW pair found. See detected ports below.'});
+      this.tryAuto();
     } catch(error) {if(epoch===this.epoch)this.update({pending:false,status:`MIDI unavailable: ${String(error)}. For controls without display text, retry with SysEx unchecked.`});}
   }
   async connect(inputId:string,outputId:string) {
@@ -101,6 +134,7 @@ export class LaunchkeyController {
       if(epoch!==this.epoch){await Promise.allSettled([input.close(),output.close()]);return;}
       if(input.state!=='connected'||output.state!=='connected')throw new Error('The MIDI pair disconnected');
       this.diagnostic('Both MIDI ports opened successfully.');
+      this.remembered={enabled:true,sysex:this.value.sysex,input:{id:input.id,name:input.name!},output:{id:output.id,name:output.name!}};this.save();this.update({autoConnect:true});
       this.input=input;this.output=output;this.sent.clear();this.modes={pads:2,knobs:2,faders:1};
       input.onmidimessage=event=>{if(event.data)this.receive(Array.from(event.data));};
       this.update({connected:true,pending:false,status:'MIDI ports open; DAW mode requested. Waiting for Launchkey input.'});
@@ -109,9 +143,10 @@ export class LaunchkeyController {
       if(this.value.sysex){this.send('display-config',[0xf0,0,0x20,0x29,2,0x14,4,32,1,0xf7]);}
       if(!this.value.connected)return;
       this.unsubscribe=this.engine.subscribe(()=>this.feedback());this.feedback();
-    }catch(error){await Promise.allSettled([input.close(),output.close()]);if(epoch===this.epoch)await this.disconnect(`Connection failed: ${String(error)}`);}
+    }catch(error){await Promise.allSettled([input.close(),output.close()]);if(epoch===this.epoch)await this.disconnect(`Connection failed: ${String(error)}. Use Connect to retry.`,false);}
   }
   private async closePorts() {
+    this.closing=true;
     this.unsubscribe?.();this.unsubscribe=undefined;
     const input=this.input,output=this.output;this.input=undefined;this.output=undefined;
     if(input)input.onmidimessage=null;
@@ -120,16 +155,17 @@ export class LaunchkeyController {
     const closed=await Promise.allSettled([input?.close(),output?.close()]);
     closed.forEach((result,i)=>{if(result.status==='rejected')this.diagnostic(`${i?'Output':'Input'} close failed: ${String(result.reason)}`);});
     if(input||output)this.diagnostic('Selected pair released.');
+    this.closing=false;
   }
-  async disconnect(status='Disconnected; Launchkey returned to standalone mode.') {++this.epoch;this.update({pending:false,status});await this.closePorts();}
-  dispose() {if(this.access)this.access.onstatechange=null;void this.disconnect();this.flushLog();this.listeners.clear();}
+  async disconnect(status='Disconnected; automatic connection is off.',intentional=true) {++this.epoch;if(intentional){this.remembered={...this.remembered,enabled:false};this.save();}this.update({autoConnect:this.remembered.enabled,pending:false,status});await this.closePorts();}
+  dispose() {if(this.access)this.access.onstatechange=null;void this.disconnect('Controller released.',false);this.flushLog();this.listeners.clear();}
   clearLog=()=>{if(this.logTimer!==undefined)clearTimeout(this.logTimer);this.logTimer=undefined;this.pendingMessages=[];this.update({messages:[]});};
   focus=(index:number)=>{if(![0,1,2,3,8].includes(index))return;this.update({focus:index});this.sent.clear();this.feedback();};
   private send(key:string,packet:number[]) {
     if(!this.output||!this.value.connected)return;
     const signature=controllerHex(packet);if(this.sent.get(key)===signature)return;
     this.sent.set(key,signature);
-    try{this.output.send(packet);this.log('OUT',packet);}catch(error){void this.disconnect(`MIDI output failed: ${String(error)}`);}
+    try{this.output.send(packet);this.log('OUT',packet);}catch(error){void this.disconnect(`MIDI output failed: ${String(error)}. Use Connect to retry.`,false);}
   }
   private knobValues() {const s=this.engine.snapshot(),d=s.decks[this.value.focus];return this.value.focus===8?[s.masterSendA,s.masterSendB,s.masterFilter,...s.masterEq,s.masterTrim]:d?[d.sendA,d.sendB,d.filter,...d.eq,d.trim]:[];}
   private text(target:number,field:number,text:string) {this.send(`text${target}/${field}`,[0xf0,0,0x20,0x29,2,0x14,6,target,field,...Array.from(text.normalize('NFKD').replace(/[^\x20-\x7e]/g,'?').slice(0,32),c=>c.charCodeAt(0)),0xf7]);}

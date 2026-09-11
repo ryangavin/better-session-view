@@ -10,7 +10,7 @@ afterEach(cleanup);
 it('prints all action labels, logs discovery, and selects a unique pair without opening it',async()=>{
   const input={id:'in',name:'Launchkey MK4 61 DAW Out',state:'connected',open:vi.fn()},output={id:'out',name:'Launchkey MK4 61 DAW In',state:'connected',open:vi.fn()};
   const request=vi.fn(async()=>({inputs:new Map([['in',input]]),outputs:new Map([['out',output]]),sysexEnabled:false} as unknown as MIDIAccess));
-  const controller=new LaunchkeyController({} as MixerEngine,request);
+  const controller=new LaunchkeyController({} as MixerEngine,request,{getItem:()=>JSON.stringify({enabled:false,sysex:false,input:{id:'in',name:input.name},output:{id:'out',name:output.name}}),setItem:()=>{}});
   render(createElement(ControllerContext.Provider,{value:controller},createElement(ControllerPanel)));
   for(const label of ['Find MIDI ports','Connect Launchkey','Disconnect','Deck A','Deck B','Deck C','Deck D','Master','Clear messages'])expect(screen.getByRole('button',{name:label}).textContent).toBe(label);
   fireEvent.click(screen.getByRole('button',{name:'Find MIDI ports'}));

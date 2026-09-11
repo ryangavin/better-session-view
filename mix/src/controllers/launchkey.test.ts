@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest';
 import { initialMixer } from '../play/decks.ts';
 import type { MixerEngine } from '../play/engine.ts';
-import { decodeLaunchkey, LaunchkeyController, launchkeyMode } from './launchkey.ts';
-function setup(sysex=false) {
+import { decodeLaunchkey, LaunchkeyController, launchkeyMode, rememberedPort } from './launchkey.ts';
+function setup(sysex=false,auto=false) {
   let state=initialMixer();state={...state,decks:state.decks.map(d=>({...d,status:'ready' as const}))};
   const listeners=new Set<()=>void>();
   const emit=()=>listeners.forEach(fn=>fn());
@@ -16,10 +16,12 @@ function setup(sysex=false) {
   const output={id:'out',name:'Launchkey MK4 61 DAW In',state:'connected',open:vi.fn(async()=>{}),close:vi.fn(async()=>{}),send:vi.fn()} as unknown as MIDIOutput;
   const access={inputs:new Map([['in',input]]),outputs:new Map([['out',output]]),sysexEnabled:sysex,onstatechange:null} as unknown as MIDIAccess;
   const request=vi.fn(async()=>access);
-  const controller=new LaunchkeyController(engine,request);
+  let saved=JSON.stringify({enabled:auto,sysex,input:{id:'in',name:input.name},output:{id:'out',name:output.name}});
+  const storage={getItem:()=>saved,setItem:(_key:string,value:string)=>{saved=value;}};
+  const controller=new LaunchkeyController(engine,request,storage);
   const connect=async()=>{await controller.scan(sysex);await controller.connect('in','out');};
   const receive=(data:number[])=>controller.receive(data);
-  return {controller,commands,input,output,access,request,connect,receive,emit,listeners};
+  return {controller,commands,input,output,access,request,connect,receive,emit,listeners,storage,engine};
 }
 it('parses native faders, absolute/relative knobs, note pads, and ignores other channels/releases/malformed data',()=>{
   expect(decodeLaunchkey([0xbf,5,64])).toEqual({kind:'fader',index:0,value:64});
@@ -90,4 +92,33 @@ it('batches packet log notifications without delaying knob commands',async()=>{
   expect(f.controller.snapshot().messages.some(m=>m.startsWith('IN'))).toBe(false);
   vi.advanceTimersByTime(50);expect(f.controller.snapshot().messages).toContain('IN BF 15 32');
   f.controller.dispose();vi.useRealTimers();
+});
+it('restores a successful pair in Play and reconnects on return without starting audio',async()=>{
+  const f=setup(false,true);f.controller.setEnabled(true);
+  await vi.waitFor(()=>expect(f.controller.snapshot().connected).toBe(true));
+  expect(f.commands.setRunning).not.toHaveBeenCalled();
+  Object.defineProperty(f.input,'state',{value:'disconnected',configurable:true});f.access.onstatechange?.({} as MIDIConnectionEvent);
+  await vi.waitFor(()=>expect(f.controller.snapshot().connected).toBe(false));
+  Object.defineProperty(f.input,'state',{value:'connected'});f.access.onstatechange?.({} as MIDIConnectionEvent);
+  await vi.waitFor(()=>expect(f.controller.snapshot().connected).toBe(true));
+  expect(f.commands.setRunning).not.toHaveBeenCalled();f.controller.dispose();
+});
+it('persists explicit Disconnect as opt-out across a new app instance',async()=>{
+  const f=setup(true,true);f.controller.setEnabled(true);await vi.waitFor(()=>expect(f.controller.snapshot().connected).toBe(true));
+  await f.controller.disconnect();f.controller.setEnabled(false);f.controller.setEnabled(true);
+  const next=new LaunchkeyController(f.engine,f.request,f.storage);next.setEnabled(true);
+  expect(next.snapshot().autoConnect).toBe(false);expect(next.snapshot().sysex).toBe(true);expect(f.request).toHaveBeenCalledTimes(1);
+  next.setAutoConnect(true);await vi.waitFor(()=>expect(next.snapshot().connected).toBe(true));next.dispose();f.controller.dispose();
+});
+it('uses a unique exact name if IDs changed, but does not choose an ambiguous or unrelated device',()=>{
+  const saved={id:'old',name:'Launchkey MK4 61 DAW Out'},one={id:'new',name:saved.name,state:'connected'};
+  expect(rememberedPort([one],saved)).toBe(one);
+  expect(rememberedPort([one,{...one,id:'other'}],saved)).toBeUndefined();
+  expect(rememberedPort([{...one,name:'Model16'}],saved)).toBeUndefined();
+});
+it('reports denied access without retrying on repeated Play effects',async()=>{
+  const f=setup(false,true);f.request.mockRejectedValue(new Error('Permission denied'));
+  f.controller.setEnabled(true);await vi.waitFor(()=>expect(f.controller.snapshot().pending).toBe(false));
+  f.controller.setEnabled(true);f.controller.setEnabled(false);f.controller.setEnabled(true);
+  expect(f.request).toHaveBeenCalledTimes(1);f.controller.dispose();
 });

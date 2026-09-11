@@ -2,9 +2,10 @@
 
 `src/controllers/launchkey.ts` owns a renderer-only Web MIDI adapter. Debug → Controllers
 opens `src/debug/controllers/ControllerPanel.tsx`; App owns its lifetime, so closing the
-workspace keeps the chosen controller working. Switching to Prep, changing the library
-(which replaces the mixer), or leaving the app releases the pair. Nothing scans, connects,
-changes hardware modes, or starts audio on mount. The panel is currently reached through
+workspace keeps the chosen controller working. Switching to Prep releases it until
+Play resumes; changing the library or restarting the app restores the remembered pair.
+Connection never starts audio. Auto-connect can be turned off in the panel, and an
+intentional Disconnect persists that opt-out. The panel is currently reached through
 the existing debug button, which requires a library track.
 
 ## Connection
@@ -17,16 +18,33 @@ After explicit discovery, a single matching pair is preselected. Choose input
 The bounded debug log includes discovery, permission outcome, all detected port names,
 selected pair, open/close results and MIDI packets, so an empty discovery is diagnosable.
 These names were read from CoreMIDI on the user's machine, rather than inferred from a
-remembered model. Discovery opens no device ports and sends no packets.
+remembered model. Discovery itself only requests access and inventories ports. With auto-connect enabled,
+a matching remembered pair is then opened automatically.
 
 Connect opens that pair and sends the documented native DAW enable (`9F 0C 7F`), then
 selects DAW pads, Plugin encoders and Volume faders. This is **Novation's native MK4
 protocol, not MCU/HUI**. Disconnect sends `9F 0C 00`, detaches input, releases the state
-subscription and closes both ports. An unplug requires an explicit reconnect; no
-reconnection starts playback. Startup/reconnect feedback comes from the current mixer. Status distinguishes opened
+subscription and closes both ports. An unplug waits for the same pair to return and reconnects automatically while in
+Play with auto-connect enabled; no reconnection starts playback. Startup/reconnect feedback comes from the current mixer. Status distinguishes opened
 ports and a mode request from actual received DAW input; sending a packet is not a mode
 acknowledgement.
 Avoid another DAW simultaneously controlling the same DAW pair.
+
+## Remembered connection
+
+`mix.launchkey.controller.v1` stores enabled, SysEx preference and both selected port
+IDs/names after a successful connection. Startup/Play requests access once; a denied or
+gesture-required request stays visible and requires manual Find/opt-in to retry. Port
+state events reconnect a returned pair. Exact IDs also require the remembered name;
+changed IDs may use a unique exact-name match. Ambiguity never picks another device.
+The already-configured initial prototype had not persisted anything; migration is
+restricted to its verified Launchkey MK4 61 DAW names and last-observed labels-on setting.
+Subsequent successful choices replace that migration default.
+
+Disconnect disables and saves auto-connect. Turning its checkbox off prevents future
+automatic connections while leaving a currently connected surface usable; explicit
+Disconnect releases it. Turning the checkbox on or explicitly connecting opts back in.
+Closing the debug panel does not disable auto-connect. The setting survives app exit.
 
 ## Mapping
 
