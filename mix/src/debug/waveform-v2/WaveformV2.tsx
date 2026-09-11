@@ -25,7 +25,7 @@ export function WaveformV2({mix}:{mix:Mix}){
 function TrackView({mix}:{mix:Mix}){
   const [large,setLarge]=useRemembered('mix-waveform-v2-large',false);
   const [stems,setStems]=useRemembered('mix-waveform-v2-stems',false);
-  const [saved,save]=useRemembered<unknown>('mix-waveform-v2-style',DEFAULT_STYLE);
+  const [saved,save]=useRemembered<unknown>('mix-waveform-v2-peak-style',DEFAULT_STYLE);
   const style=useMemo(()=>styleOf(saved),[saved]);
   const change=(patch:Partial<Style>)=>save({...style,...patch});
   const [band,setBand]=useState(0);
@@ -42,7 +42,7 @@ function TrackView({mix}:{mix:Mix}){
   const axis=useAxis({seconds:mix.seconds,narrowest:Math.max(.1,mix.seconds/16384*100)});
   return <>
     <Toolbar>
-      <Group caption="Starting point"><Select label="Waveform starting point" items={[...PRESETS.map(p=>p.name),'Custom']} index={Math.max(0,PRESETS.findIndex(p=>JSON.stringify(p.style)===JSON.stringify(style))<0?PRESETS.length:PRESETS.findIndex(p=>JSON.stringify(p.style)===JSON.stringify(style)))} onChange={i=>{if(PRESETS[i])save(PRESETS[i].style);}} width={170}/><Button onPress={()=>save(DEFAULT_STYLE)}>Reset style</Button></Group>
+      <Group caption="Starting point"><Select label="Waveform starting point" items={[...PRESETS.map(p=>p.name),'Custom']} index={Math.max(0,PRESETS.findIndex(p=>JSON.stringify(styleOf(p.style))===JSON.stringify(style))<0?PRESETS.length:PRESETS.findIndex(p=>JSON.stringify(styleOf(p.style))===JSON.stringify(style)))} onChange={i=>{if(PRESETS[i])save(PRESETS[i].style);}} width={170}/><Button onPress={()=>save(DEFAULT_STYLE)}>Reset style</Button></Group>
       <Group caption="View"><Toggle width={90} on={large} onChange={setLarge}>Larger view</Toggle><Toggle width={90} on={stems} onChange={setStems}>Stem activity</Toggle></Group>
       <Group caption="Range"><Button onPress={axis.whole}>Whole track</Button><Button label="Zoom V2 in" onPress={()=>axis.zoom(.5,.5)}>+</Button><Button label="Zoom V2 out" onPress={()=>axis.zoom(2,.5)}>−</Button></Group>
     </Toolbar>
@@ -52,15 +52,18 @@ function TrackView({mix}:{mix:Mix}){
     <details className="mf-v2-colors"><summary>Palette & layer balance</summary><div className="mf-v2-tuning">
       <Select label="Frequency band" items={['Low frequencies','Mid frequencies','High frequencies']} index={band} onChange={setBand} width={150}/>
       {([['hues','Hue',359],['saturation','Saturation',100],['lightness','Lightness',100]] as const).map(([key,label,max])=><StyleSlider key={key} label={label} value={style[key][band]} min={0} max={max} initial={DEFAULT_STYLE[key][band]} onChange={value=>{const values=[...style[key]] as Style['hues'];values[band]=value;change({[key]:values});}}/>)}
+      <Select label="Waveform finish" items={['Vivid · colored edge','Clean · white edge']} index={style.finish==='vivid'?0:1} onChange={i=>change({finish:i===0?'vivid':'clean'})} width={170}/>
+      <StyleSlider label="Fill opacity" value={style.opacity} min={.1} max={1} initial={DEFAULT_STYLE.opacity} onChange={opacity=>change({opacity})}/>
+      <StyleSlider label="Color contrast" value={style.curve} min={.25} max={2.5} initial={DEFAULT_STYLE.curve} onChange={curve=>change({curve})}/>
       <StyleSlider label="Edge" value={style.edge} min={0} max={1} initial={DEFAULT_STYLE.edge} onChange={edge=>change({edge})}/>
-      <StyleSlider label="Low / mid" value={style.low} min={.25} max={3} initial={1} onChange={low=>change({low})}/>
-      <StyleSlider label="High / mid" value={style.high} min={.25} max={3} initial={1} onChange={high=>change({high})}/>
+      <StyleSlider label="Low / mid" value={style.low} min={.25} max={3} initial={DEFAULT_STYLE.low} onChange={low=>change({low})}/>
+      <StyleSlider label="High / mid" value={style.high} min={.25} max={3} initial={DEFAULT_STYLE.high} onChange={high=>change({high})}/>
     </div></details>
-    <p className="mf-v2-note">Shared production outline engine · layered bands and blended spectrum. Presets are visual starting points, not proprietary analysis emulations.</p>
+    <p className="mf-v2-note">{style.finish==='vivid'?'Vivid peaks · the earlier palette and contrast, carried by the peak shape alone.':'Clean finish · frequency color inside the peak shape.'} No inner energy contour. Shared production renderer.</p>
     {error||!model?<p className="mf-v2-reading" role="status">{error||'Measuring decoded stems…'}</p>:<Scope axis={axis} labels={100}>
       <ScopeRow label="Source time" height={24} ruler draw={paintTime}/>
       <TopologyRow label="Three-band" height={deckHeight} model={model} mode="three-band" style={style}/>
-      <TopologyRow label="Spectrum" height={deckHeight} model={model} mode="rgb" style={style}/>
+      <TopologyRow label="Peak spectrum" height={deckHeight} model={model} mode="rgb" style={style}/>
       {large&&<><TopologyRow label="3-band large" height={220} model={model} mode="three-band" style={style}/><TopologyRow label="RGB large" height={220} model={model} mode="rgb" style={style}/></>}
       {stems&&model.data.stems.map((stem,i)=><ActivityRow key={stem.id} model={model} index={i}/>)}
     </Scope>}

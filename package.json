@@ -104,7 +104,7 @@
     "vitest": "5.0.0"
   },
   "dependencies": {
-    "@openflow/widgets": "git+https://github.com/openflowfm/widgets.git#0293ef5cb6ef063ea72ae49dce77ff60bfdad142",
+    "@openflow/widgets": "git+https://github.com/openflowfm/widgets.git#1a78a829b6091f26102a19976660db863ffdb4ec",
     "@xyflow/react": "^12.11.5",
     "d3-hierarchy": "^3.1.2",
     "react": "^19.0.0",

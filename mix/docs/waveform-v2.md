@@ -13,7 +13,7 @@ widgets `edgesOf` / `densityFor`, then `paintSpectralOutline`. The production wi
 existing production path remains unchanged when the prop is absent.
 
 Both compact rows use the same geometry. **Three-band** divides the mirrored peak
-silhouette into relative low/mid/high RMS layers. **Spectrum** uses the production
+silhouette into relative low/mid/high RMS layers. **Peak spectrum** uses the production
 `spectralPainter` to blend those frequencies. Band weights affect relative color and
 layer thickness, never the outer peak or audio gain. There is no luminous RMS center.
 The measured first-order crossovers remain 250 and 2500 Hz. Frequency colors are not stems.
@@ -26,19 +26,36 @@ columns are clipped out so curves do not fill measured silence. Deep zoom remain
 limited to measured bins; the lab does not claim sample-level detail it lacks.
 Frequency and stem activity use duration-weighted RMS, including the partial final bin.
 
+## Vivid peaks finish
+
+The initial **Vivid peaks** setting keeps the earlier experiment's visual finish:
+`#090913` backing, fully saturated red/green/blue band colors, relative weights 1/2/4,
+color exponent 1.4, peak fill opacity 0.38, and a same-color edge at 0.95 opacity.
+The low/mid and high/mid controls express those weights as 0.5 and 2. It carries only
+the outer peak contour: no RMS-derived height, luminous inner path, RMS emphasis or
+amplitude contrast transform. Color contrast changes frequency mixing, never height.
+
+Those finish fields belong to widgets `SpectralOutlineStyle`, so production's optional
+`presentation` and V2 use the identical painter. Its unspecified fields keep existing
+production output unchanged. Translucent layers are disjoint bands; alpha does not
+accumulate into an artificial bright center. The original Legacy RMS view stays
+collapsed and available as a visual reference. Previous tuning storage is preserved
+under its old key; the new peak-style key starts with this requested finish.
+
 ## Tuning
 
 Four shared-widget sliders stay visible: **Smoothness** (0–1), **Detail** (0.5–2 times
 the production zoom density), **Height ratio** (0.40–0.95 of lane half-height), and
 **Color strength** (neutral to full palette). **Palette & layer balance** opens a band
 selector with hue/saturation/lightness, low-to-mid and high-to-mid weights, and edge
-opacity. Shape settings apply to both rows, making comparisons controlled.
+opacity. **Fill opacity**, **Color contrast**, and the **Waveform finish** selector
+control the translucent treatment and colored versus white edge. Shape settings apply to both rows, making comparisons controlled.
 
-Starting points are **Topology A**, **Rekordbox inspired**, **Denon inspired**,
+Starting points are **Vivid peaks**, **Topology A**, **Rekordbox inspired**, **Denon inspired**,
 **Traktor inspired**, and **RGB**. They share a single renderer and our controls and
 styling. They are aesthetic starting points, not proprietary analysis emulations or
-copied skins. **Reset style** restores Topology A. Changing a value shows Custom.
-Guarded settings persist separately under `wdg-debug:mix-waveform-v2-style` and survive
+copied skins. **Reset style** restores Vivid peaks. Changing a value shows Custom.
+Guarded settings persist separately under `wdg-debug:mix-waveform-v2-peak-style` and survive
 track changes. They do not change the app theme or playback.
 
 The compact rows sample the existing Play lane height on mount (72px fallback).
