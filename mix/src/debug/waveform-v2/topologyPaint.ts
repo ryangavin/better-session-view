@@ -1,22 +1,29 @@
 import type { View } from '@openflow/widgets/debug/axis.ts';
 import { ink } from '@openflow/widgets/debug/ink.ts';
 import type { Model } from './model.ts';
-import { columns, bandShares, spectralColor, activity, type ColorMode } from './topology.ts';
-const palette=['#548ddc','#e9a259','#e6e9ef'];
-export function paintTopology(g:CanvasRenderingContext2D,v:View,model:Model,mode:ColorMode){
-  const middle=v.height/2,reach=Math.max(0,middle-5);
-  g.save();g.fillStyle=ink(g.canvas,'--bg','#111218');g.fillRect(0,0,v.width,v.height);
-  columns(model,v.from,v.to,v.width).forEach((c,x)=>{
-    const h=c.peak*reach;if(!h)return;
-    if(mode==='rgb'){
-      g.fillStyle=`rgb(${spectralColor(c.bands).join(',')})`;g.globalAlpha=.58;g.fillRect(x,middle-h,1,h*2);
-    }else{
-      let offset=0;
-      bandShares(c.bands).forEach((share,i)=>{const size=share*h;g.fillStyle=palette[i];g.globalAlpha=.62;g.fillRect(x,middle-offset-size,1,size);g.fillRect(x,middle+offset,1,size);offset+=size;});
-    }
-    g.globalAlpha=.82;g.fillRect(x,middle-h,1,Math.min(1,h));g.fillRect(x,middle+h-Math.min(1,h),1,Math.min(1,h));
-  });g.restore();
+import { columns, activity, type ColorMode } from './topology.ts';
+import { levelsOf } from '@openflow/widgets/wave/levels.ts';
+import { densityFor, edgesOf } from '@openflow/widgets/wave/outline.ts';
+import { presentationOf, type Style } from './style.ts';
+import { paintSpectralOutline } from '@openflow/widgets/wave/spectralOutline.ts';
+const ladders=new WeakMap<Model,ReturnType<typeof levelsOf>>();
+function levels(model:Model){
+  let found=ladders.get(model);if(found)return found;
+  const packed=new Float32Array(model.data.peak.length*2);
+  model.data.peak.forEach((p,i)=>{const value=model.reference?p/model.reference:0;packed[i*2]=-value;packed[i*2+1]=value;});
+  found=levelsOf(packed);ladders.set(model,found);return found;
 }
+/** Production envelope ladder, zoom density and cubic path; no alternate silhouette. */
+export function paintTopology(g:CanvasRenderingContext2D,v:View,model:Model,mode:ColorMode,style:Style){
+  if(!model.data.peak.length||!v.width)return;
+  const duration=model.data.step*model.data.peak.length;
+  const measured=columns(model,v.from,v.to,v.width);
+  const edges=edgesOf(levels(model),{from:v.from/duration,to:v.to/duration,width:v.width,height:v.height,density:densityFor((v.to-v.from)/duration)*style.detail,smooth:style.smooth,headroom:style.height});
+  g.save();g.fillStyle=ink(g.canvas,'--bg','#111218');g.fillRect(0,0,v.width,v.height);
+  paintSpectralOutline(g,edges,measured.map(c=>c.bands as [number,number,number]),{width:v.width,height:v.height,from:0,to:1,smooth:style.smooth,neutral:'#888888',silence:'#000000'},presentationOf(style,mode));
+  g.restore();
+}
+
 export function paintActivity(g:CanvasRenderingContext2D,v:View,model:Model,index:number){
   g.save();g.fillStyle=ink(g.canvas,`--stem-${model.data.stems[index].id}`,'#aaa');
   columns(model,v.from,v.to,v.width).forEach((c,x)=>{g.globalAlpha=activity(c.stems[index]);g.fillRect(x,2,1,v.height-4);});g.restore();

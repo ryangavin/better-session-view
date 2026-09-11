@@ -9,3 +9,12 @@
 @media(max-width:850px) { .mf-v2-adjustments { grid-template-columns:repeat(2,minmax(110px,1fr)); gap:12px 24px; } }
 .mf-v2-legacy { margin:16px; color:var(--detail); font-size:var(--text-label); }
 .mf-v2-legacy > summary { cursor:pointer; padding:8px 0; }
+
+.mf-v2-tuning { display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)); gap:18px; padding:12px 16px; }
+.mf-v2-colors { padding:0 16px; color:var(--detail); font-size:var(--text-label); }
+.mf-v2-colors summary { cursor:pointer; padding:8px 0; }
+.mf-v2-colors .mf-v2-tuning { padding:12px 0; }
+@media(max-width:850px) { .mf-v2-tuning { grid-template-columns:repeat(2,minmax(120px,1fr)); } }
+
+.mf-v2-slider { min-width:0; display:flex; flex-direction:column; gap:6px; }
+.mf-v2-slider > span { color:var(--fg); font-size:var(--text-label); }
