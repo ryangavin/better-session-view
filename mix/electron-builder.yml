@@ -33,6 +33,8 @@ files:
   - '!bin/link-audio.build'
   - '!bin/audio-devices.build'
   - '!bin/bass-midi.build'
+  - '!bin/keyfinder.build'
+  # keyfinder + keyfinder-source/** are a standalone GPL command and its corresponding source.
 
 directories:
   output: ../release/mix

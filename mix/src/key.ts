@@ -1,3 +1,4 @@
+import { detectedKey, type KeyDetection } from './keyDetection.ts';
 import { midiPitch, type PitchMap } from './pitchMap.ts';
 import { keyRegions, type KeyRegion } from './debug/pitch/evidence.ts';
 
@@ -56,21 +57,15 @@ export function estimateKey(map: PitchMap, source: KeyAnalysis['source'], analyz
     candidates, alternatives, coverage, regions, possibleChanges };
 }
 
-type KeyTrack = { key: string | null; keyAnalysis?: KeyAnalysis | null; stems: string | null; model: string | null };
+type KeyTrack = { file?:string; keyDetection?:KeyDetection|null; key: string | null; keyAnalysis?: KeyAnalysis | null; stems: string | null; model: string | null };
 export function savedKey(track: KeyTrack): KeyAnalysis | null {
   const a = track.keyAnalysis;
   return a?.version === KEY_VERSION && a.algorithm === 'bass-scale-compatibility' && a.source?.stems === track.stems && a.source.model === track.model && Array.isArray(a.candidates) && Array.isArray(a.regions) ? a : null;
 }
-export function keyLabel(track: KeyTrack): string { return track.key?.trim() || savedKey(track)?.label || 'Unknown'; }
-export function keyFilters(track: KeyTrack): string[] {
-  if (track.key?.trim()) return [track.key.trim()];
-  const a = savedKey(track);
-  if (!a || a.status === 'unknown') return ['Unknown'];
-  return a.candidates.slice(0, 1).map(c => c.label);
-}
+export function keyLabel(track: KeyTrack): string { return track.key?.trim() || detectedKey(track)?.label || 'Unknown'; }
+export function keyFilters(track: KeyTrack): string[] { return [keyLabel(track)]; }
 export function keyDescription(track: KeyTrack): string {
-  if (track.key?.trim()) return `${track.key} · manual key; bass analysis does not overwrite it`;
-  const a = savedKey(track);
-  if (!a) return 'Unknown · no current bass key analysis';
-  return `${a.label} · estimated key`;
+  if (track.key?.trim()) return `${track.key} · manual key; analysis preserves this correction`;
+  const a = detectedKey(track);
+  return a ? `${a.label} · estimated from original audio by libkeyfinder ${a.detectorVersion}; click to edit` : 'Unknown · no current original-song key; click to edit';
 }

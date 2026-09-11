@@ -121,6 +121,7 @@ export interface Track {
   bpm: number | null;
   key: string | null;
   keyAnalysis?: import('./key.ts').KeyAnalysis | null;
+  keyDetection?: import('./keyDetection.ts').KeyDetection | null;
   seconds: number | null;
   added: string;
   model: string | null;
@@ -142,6 +143,7 @@ export interface Imported extends Library {
 
 /** The fields a person may correct. Nothing about the disk is in here. */
 export interface Edits {
+  key?: string | null;
   title?: string;
   artist?: string | null;
   album?: string | null;

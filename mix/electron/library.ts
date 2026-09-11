@@ -163,7 +163,8 @@ export async function artwork(id: string, url: string): Promise<Library> {
   return load();
 }
 
-export async function add(win: BrowserWindow | null, files?: string[]): Promise<Imported> {
+type DetectImported=(root:string,ids:readonly string[])=>Promise<string[]>;
+export async function add(win: BrowserWindow | null, files?: string[], detect?:DetectImported): Promise<Imported> {
   const root = await readRoot();
   if (!root) return { ...(await load()), added: 0, refused: ['no library folder chosen'] };
 
@@ -182,16 +183,18 @@ export async function add(win: BrowserWindow | null, files?: string[]): Promise<
 
   const done = await addFiles(root, chosen);
   await enrich(root, done.ids);
+  if(detect)done.refused.push(...await detect(root,done.ids));
   return { ...(await load()), added: done.added, refused: done.refused };
 }
 
 /** Fetch one YouTube video's best audio stream, then import it like any other file. */
-export async function youtube(url: string): Promise<Imported> {
+export async function youtube(url: string, detect?:DetectImported): Promise<Imported> {
   const root = await readRoot();
   if (!root) return { ...(await load()), added: 0, refused: ['no library folder chosen'] };
   try {
     const done = await addYoutube(root, url);
     await enrich(root, done.ids);
+  if(detect)done.refused.push(...await detect(root,done.ids));
     return { ...(await load()), added: done.added, refused: done.refused };
   } catch (why) {
     return { ...(await load()), added: 0, refused: [(why as Error).message] };

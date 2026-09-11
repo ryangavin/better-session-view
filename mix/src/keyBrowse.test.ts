@@ -1,3 +1,4 @@
+import { KEY_DETECTION_VERSION, KEYFINDER_CONFIG, KEYFINDER_VERSION } from './keyDetection.ts';
 import { expect, it } from 'vitest';
 import { browseLibrary } from './listing.ts';
 import { estimateKey } from './key.ts';
@@ -19,7 +20,7 @@ it('offers and matches only the primary key for an ambiguous analyzed song', () 
   const map = {seconds:pitches.length,start:0,step:1,hz:pitches.map(p => 440 * 2 ** ((p - 69) / 12)),state:pitches.map(() => 'voiced')} as PitchMap;
   const source = {hash:'bass',mapHash:'map',stems:'stems/song',model:'model'};
   const keyAnalysis = estimateKey(map,source);
-  const tracks = [{id:'song',title:'Song',artist:'Artist',album:'Album',key:null,stems:source.stems,model:source.model,keyAnalysis}, {id:'manual',title:'Other song',artist:'Artist',album:'Album',key:'A minor'}] as Track[];
+  const tracks = [{id:'song',title:'Song',artist:'Artist',album:'Album',key:null,file:'song.wav',keyDetection:{version:KEY_DETECTION_VERSION,algorithm:'libkeyfinder',detectorVersion:KEYFINDER_VERSION,source:{file:'song.wav',hash:'original'},config:{...KEYFINDER_CONFIG},status:'key',label:'C major',confidence:'provisional',analyzedAt:''},stems:source.stems,model:source.model,keyAnalysis}, {id:'manual',title:'Other song',artist:'Artist',album:'Album',key:'A minor'}] as Track[];
   expect(keyAnalysis.alternatives.map(c => c.label)).toContain('A minor');
   expect(browseLibrary(tracks,'',{artist:null,album:null}).keys.map(c => c.name)).toEqual(['A minor','C major']);
   expect(browseLibrary(tracks,'',{artist:null,album:null,key:'A minor'}).songs.map(t => t.id)).toEqual(['manual']);

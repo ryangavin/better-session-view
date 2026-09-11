@@ -1,18 +1,17 @@
 import { expect, it, vi } from 'vitest';
-import { KEY_VERSION } from '../src/key.ts';
+import { KEY_DETECTION_VERSION, KEYFINDER_CONFIG, KEYFINDER_VERSION } from '../src/keyDetection.ts';
 import { backfillKeys } from './keyBackfill.ts';
 import type { Library, Track } from '../src/openflow.ts';
 
-const song = (id: string): Track => ({ id, title: id, key: null, stems: `stems/${id}`, model: 'model', sources: ['bass'] } as Track);
+const song = (id: string): Track => ({ id, file:`audio/${id}.wav`, title: id, key: null, stems: `stems/${id}`, model: 'model', sources: ['bass'] } as Track);
 function analyzed(track: Track): Track {
-  return { ...track, keyAnalysis: { version: KEY_VERSION, algorithm: 'bass-scale-compatibility', source: { stems: track.stems!, model: track.model!, hash: 'hash', mapHash: 'map' },
-    label: 'Unknown', status: 'unknown', confidence: 'insufficient', analyzedAt: '', candidates: [], alternatives: [], regions: [], coverage: 0, possibleChanges: false } };
+  return {...track,keyDetection:{version:KEY_DETECTION_VERSION,algorithm:'libkeyfinder',detectorVersion:KEYFINDER_VERSION,source:{file:track.file,hash:'original'},config:{...KEYFINDER_CONFIG},status:'unknown',label:'Unknown',confidence:'provisional',analyzedAt:''}};
 }
 const library = (tracks: Track[]): Library => ({ root: '/library', tracks } as Library);
 const options = { run: true, report: () => {} };
 
-it('resumes past saved Unknown results, skips missing stems, and continues after a song fails', async () => {
-  const held = library([analyzed(song('done')), { ...song('no-bass'), sources: [] }, song('bad'), song('good')]);
+it('resumes past saved Unknown results, skips missing originals, and continues after a song fails', async () => {
+  const held = library([analyzed(song('done')), { ...song('no-original'), file:'' }, song('bad'), song('good')]);
   const analyze = vi.fn(async (id: string) => {
     if (id === 'bad') throw new Error('broken source');
     held.tracks = held.tracks.map(t => t.id === id ? analyzed(t) : t);

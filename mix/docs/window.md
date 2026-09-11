@@ -713,10 +713,12 @@ a fader lives.
 ## Key browsing and analysis
 
 The third quick-filter list beneath full-text search is **Keys**, alongside Artists and
-Albums. It uses saved bass analysis or manual key metadata. The dedicated Key column shows one preferred key,
-with a provisional `?` marker, or Unknown. Competing hypotheses never appear as extra keys. The library contains no key-analysis buttons or
-evidence panel. Detailed alternatives and regions stay in saved debug evidence; they do
-not add filter entries. The debug backfill prepares existing songs. See [pitch.md](pitch.md).
+Albums. It uses original-song libkeyfinder detection or manual key metadata. The Key
+column shows one plain preferred key or Unknown. Click it to correct the key, choose
+Unknown, or use the detected result again; corrections survive reanalysis. Its minimum
+width is 80px, independently of the editor. The library contains no debug evidence
+panel. **Update library keys** in Debug → Key detection backfills existing songs, while
+new imports detect automatically. See [keys.md](keys.md).
 
 Display text throughout the app is not selectable, preventing accidental selections
 while operating controls or dragging rows. Inputs, textareas and editable content

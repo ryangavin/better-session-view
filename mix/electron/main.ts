@@ -22,11 +22,11 @@ import {
   type TranscribeOutcome,
 } from './transcribe.ts';
 import { TAB_FILE, readTranscription, transcriptionAt, type TranscribeProgress } from './transcribeJob.ts';
-import { KEY_VERSION } from '../src/key.ts';
 import { keyExperimentStatus, readKeyExperiments, runKeyExperiment, saveKeyReference } from './keyExperiments.ts';
 import { KEY_EXPERIMENT_VERSION, type KeyBackend } from '../src/keyExperiments.ts';
 import { busyWork } from './work.ts';
-import { recordKeyAnalysis } from './keyAnalysis.ts';
+import { detectTrackKey, detectImportedKeys } from './keyDetection.ts';
+import { KEY_LIBRARY_VERSION } from '../src/keyDetection.ts';
 import { STANDARD_BASS } from '../src/tab.ts';
 import { readPitchMap } from './pitchMap.ts';
 import type { Tuning } from '../src/tab.ts';
@@ -87,6 +87,7 @@ const DIST = path.resolve(__dirname, '..', '..', 'dist');
  * stays testable.
  */
 const RUNTIME = path.join(app.getPath('userData'), 'runtime');
+const KEY_TOOLS={keyfinder:path.resolve(__dirname,'../../bin/keyfinder'),ffmpeg:path.resolve(__dirname,'../../bin/ffmpeg')};
 
 const DEV = devUrl(MIX);
 /** Where the window opens, and the only address it is allowed to stay on. */
@@ -136,8 +137,8 @@ if (only(app)) {
   const window_ = () => BrowserWindow.getAllWindows()[0] ?? null;
   ipcMain.handle('openflow:library', () => load());
   ipcMain.handle('openflow:library-choose', () => choose(window_()));
-  ipcMain.handle('openflow:library-add', (_event, files?: string[]) => add(window_(), files));
-  ipcMain.handle('openflow:library-youtube', (_event, url: string) => youtube(url));
+  ipcMain.handle('openflow:library-add', (_event, files?: string[]) => add(window_(), files, (root,ids)=>detectImportedKeys(root,ids,KEY_TOOLS)));
+  ipcMain.handle('openflow:library-youtube', (_event, url: string) => youtube(url,(root,ids)=>detectImportedKeys(root,ids,KEY_TOOLS)));
   ipcMain.handle('openflow:library-reveal', () => reveal());
   ipcMain.handle('openflow:library-edit', (_event, ask: { id: string; edits: Edits }) =>
     edit(ask.id, ask.edits),
@@ -289,25 +290,17 @@ if (only(app)) {
     },
   );
 
-  const experimentTools = {home:path.resolve(__dirname,'../../.key-experiments'),script:path.resolve(__dirname,'../../experiments/key/essentia_worker.py'),ffmpeg:path.resolve(__dirname,'../../bin/ffmpeg')};
+  const experimentTools = {keyfinder:KEY_TOOLS.keyfinder,home:path.resolve(__dirname,'../../.key-experiments'),script:path.resolve(__dirname,'../../experiments/key/essentia_worker.py'),ffmpeg:path.resolve(__dirname,'../../bin/ffmpeg')};
   const experimentRoot = async () => { const where=await root(); if(!where)throw new Error('Choose a library first'); return where; };
   ipcMain.handle('openflow:key-experiments-status', async () => ({version:KEY_EXPERIMENT_VERSION,backends:await keyExperimentStatus(experimentTools)}));
   ipcMain.handle('openflow:key-experiments-busy', () => !!busyWork());
   ipcMain.handle('openflow:key-experiments-read', async (_event,id:string) => readKeyExperiments(await experimentRoot(),id));
   ipcMain.handle('openflow:key-experiments-run', async (_event,ask:{trackId:string;backends:KeyBackend[]}) => runKeyExperiment(await experimentRoot(),ask.trackId,ask.backends,experimentTools));
   ipcMain.handle('openflow:key-experiments-reference', async (_event,ask:{trackId:string;labels:string[];provenance:string}) => saveKeyReference(await experimentRoot(),ask.trackId,ask.labels,ask.provenance));
-  ipcMain.handle('openflow:key-version', () => KEY_VERSION);
+  ipcMain.handle('openflow:key-version', () => KEY_LIBRARY_VERSION);
   ipcMain.handle('openflow:key-analyze', async (_event, trackId: string) => {
-    const library = await load(), track = library.tracks.find(t => t.id === trackId);
-    if (!library.root || !track?.stems || !track.model || !track.sources.includes('bass')) throw new Error('Separate a bass stem first');
-    const result = await transcribe({ root: library.root, runtime: RUNTIME, trackId, model: track.model,
-      stems: track.stems, tuning: STANDARD_BASS, bars: null, transpose: 0, requirePitchMap: true }, {
-      progress: (id, progress) => push('openflow:transcribe-progress', { trackId: id, progress }),
-    });
-    push('openflow:transcribe-finished', result);
-    if (!result.ok) throw new Error(result.says);
-    await recordKeyAnalysis(library.root, trackId, track.stems, track.model);
-    return load();
+    const library=await load();if(!library.root)throw new Error('Choose a library first');
+    await detectTrackKey(library.root,trackId,KEY_TOOLS);return load();
   });
   ipcMain.handle('openflow:transcribing', () => transcribing());
   ipcMain.handle('openflow:pitch-map', async (_event, trackId: string) => {

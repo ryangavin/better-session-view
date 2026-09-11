@@ -44,3 +44,9 @@ it('ignores legacy Stems and Analysis overrides without losing other widths', ()
   act(() => view.result.current.resize('stems', 500));
   expect(JSON.parse(localStorage.getItem(KEY)!)).toMatchObject({ stems: 60, analysis: 80, title: 348, artist: 172 });
 });
+
+it('allows an 80px Key column and retains that width on reopening',()=>{
+  const first=renderHook(useLibraryColumnWidths);
+  act(()=>first.result.current.resize('key',80));expect(first.result.current.widths.key).toBe(80);
+  first.unmount();expect(renderHook(useLibraryColumnWidths).result.current.widths.key).toBe(80);
+});

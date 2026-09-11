@@ -1,6 +1,7 @@
+import { detectedKey } from './keyDetection.ts';
 import { runKeyQueue, type KeyQueueProgress } from './keyQueue.ts';
 import type { Library } from './openflow.ts';
-import { keyLabel, savedKey } from './key.ts';
+import { keyLabel } from './key.ts';
 
 export interface KeyBackfillAPI {
   read(): Promise<Library>;
@@ -9,10 +10,10 @@ export interface KeyBackfillAPI {
 }
 
 export function keyBackfillPlan(library: Library, reanalyze = false) {
-  const eligible = library.tracks.filter(t => t.stems && t.model && t.sources.includes('bass'));
-  const pending = eligible.filter(t => reanalyze || !savedKey(t));
+  const eligible = library.tracks.filter(t => !!t.file);
+  const pending = eligible.filter(t => reanalyze || !detectedKey(t));
   return { pending, eligible: eligible.length, alreadyDone: eligible.length - pending.length,
-    missingStems: library.tracks.length - eligible.length };
+    missingOriginal: library.tracks.length - eligible.length };
 }
 export type KeyBackfillProgress = KeyQueueProgress;
 
@@ -26,9 +27,9 @@ export async function backfillKeys(api: KeyBackfillAPI, options: {
 }) {
   const library = await api.read();
   if (!library.root || library.problem) throw new Error(library.problem || 'Choose a library in mix[flow] first');
-  const { pending, alreadyDone, missingStems } = keyBackfillPlan(library, options.reanalyze);
+  const { pending, alreadyDone, missingOriginal } = keyBackfillPlan(library, options.reanalyze);
   const result = { completed: 0, failed: 0, skipped: library.tracks.length - pending.length, stopped: false };
-  options.report(`${pending.length} to analyze; ${alreadyDone} already analyzed; ${missingStems} without bass stems.`);
+  options.report(`${pending.length} to analyze; ${alreadyDone} already analyzed; ${missingOriginal} without original audio.`);
   if (!options.run) {
     options.progress?.({ ...result, total: pending.length, current: null });
     for (const track of pending) options.report(`Would analyze: ${track.title}`);
@@ -39,7 +40,7 @@ export async function backfillKeys(api: KeyBackfillAPI, options: {
     execute: async track => {
       const updated = await api.analyze(track.id);
       const song = updated.tracks.find(t => t.id === track.id);
-      if (!song || !savedKey(song)) throw new Error('No saved key analysis returned');
+      if (!song || !detectedKey(song)) throw new Error('No saved key analysis returned');
       return keyLabel(song);
     },
   });

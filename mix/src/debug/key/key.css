@@ -70,3 +70,6 @@
 .mf-key-canonical { margin-top: 4px; }
 .mf-key-canonical section { margin-block: 16px; }
 @media (max-width: 700px) { .mf-key-lab { padding: 12px; } .mf-key-heading { align-items: flex-start; gap: 12px; } .mf-key-heading h2 { font-size: 22px; } .mf-key-lab .mf-key-dashboard .mf-key-primary .wdg-button-body { padding: 8px 12px; } .mf-key-overview { grid-template-columns: repeat(2,minmax(0,1fr)); } .mf-key-selected { align-items: flex-start; } }
+
+.mf-key-lab .mf-key-update .wdg-button-body { background: var(--amber); color: var(--bg); min-height: 36px; padding: 8px 18px; font-weight: 600; }
+.mf-key-lab .mf-key-update .wdg-button-body:disabled { background: var(--sel); color: var(--detail); }

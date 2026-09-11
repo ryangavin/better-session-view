@@ -56,8 +56,8 @@ passes the resulting paths to `addFiles`. The renderer never receives a filesyst
 and cannot invent one through the bridge.
 
 FLAC files are accepted alongside WAV, AIFF, MP3, M4A, AAC, Ogg, Opus and WebM;
-extensions are case-insensitive. Import copies the original bytes without decoding or
-transcoding. Separation decodes the audio later through the local engine.
+extensions are case-insensitive. Import preserves the original bytes and then attempts [key detection](keys.md)
+on a temporary decoded copy. Separation still runs separately when requested.
 
 Folder drops recursively discover supported audio files, visiting entries in sorted filename
 order and preserving the order of top-level dropped items. Unsupported folder contents are
@@ -249,3 +249,11 @@ metadata is a manual override and wins. `recordStems` invalidates automatic anal
 when a separation is replaced at the same path. See [pitch.md](pitch.md) for evidence
 thresholds, limitations and the Artist/Album/Key filtering contract. Browsing reads saved
 metadata only; a missing analysis remains Unknown.
+
+## Correcting a key
+
+Click a plain key/Unknown value in a library row to edit it. Save key sets a manual
+correction; Use detected clears it, and Detect from original refreshes automatic
+evidence. Manual corrections survive reanalysis. The key editor does not load audio
+or a deck, and its modal width does not limit the 80 px minimum Key column width.
+See [keys.md](keys.md) for source identity, backfill, engine availability and packaging.

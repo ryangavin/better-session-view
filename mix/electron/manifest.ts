@@ -1,3 +1,4 @@
+import { normalizedKey, keyName } from '../src/keyNames.ts';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -51,6 +52,7 @@ export interface Track {
   bpm: number | null;
   key: string | null;
   keyAnalysis?: import('../src/key.ts').KeyAnalysis | null;
+  keyDetection?: import('../src/keyDetection.ts').KeyDetection | null;
   seconds: number | null;
   /** ISO 8601, so a manifest sorts and diffs sensibly by hand. */
   added: string;
@@ -168,6 +170,7 @@ export interface Added {
 
 /** The fields a person may correct, and the only ones anything may write back. */
 export interface Edits {
+  key?: string | null;
   title?: string;
   artist?: string | null;
   album?: string | null;
@@ -191,6 +194,10 @@ export async function editTrack(root: string, id: string, edits: Edits): Promise
   const manifest = await read(root);
   const track = manifest.tracks.find((t) => t.id === id);
   if (!track) return manifest;
+  if (edits.key !== undefined) {
+    if(edits.key!==null&&(typeof edits.key!=='string'||!normalizedKey(edits.key)))throw new Error('Choose a major/minor key or Unknown, or use the detected key');
+    track.key=edits.key===null?null:keyName(edits.key);
+  }
   if (edits.title !== undefined && edits.title.trim()) track.title = edits.title.trim();
   if (edits.artist !== undefined) track.artist = edits.artist?.trim() || null;
   if (edits.album !== undefined) track.album = edits.album?.trim() || null;

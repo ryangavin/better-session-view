@@ -1,3 +1,4 @@
+import { keyName } from '../../keyNames.ts';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
 import { openflow, type Library, type Track } from '../../openflow.ts';
@@ -80,7 +81,7 @@ export function KeyComparison({track,library,onSelect}:{track:Track|undefined;li
     if(!held)return <div className="mf-key-result is-empty"><span className="mf-key-value">—</span><span className="mf-key-badge">{available===false?'! Unavailable':'○ Not run'}</span></div>;
     const {run,result}=held,outcome=referenceMatch(run,result,data[id]?.reference??null);
     const badge=result.status==='error'?'! Failed':result.status==='unavailable'?'! Unavailable':result.status==='unknown'?'? Unknown':result.status==='ambiguous'?'? Uncertain':outcome==='match'?'✓ Match':outcome==='mismatch'?'≠ Different':'◇ Unscored';
-    return <div className={`mf-key-result is-${outcome}`} title={result.message}><span className="mf-key-value">{result.labels.join(' / ')||'—'}</span><span className="mf-key-badge">{badge}</span><small>{(result.runtimeMs/1000).toFixed(1)}s</small></div>;
+    return <div className={`mf-key-result is-${outcome}`} title={result.message}><span className="mf-key-value" title={result.labels.join(' / ')}>{result.labels.map(keyName).join(' / ')||'—'}</span><span className="mf-key-badge">{badge}</span><small>{(result.runtimeMs/1000).toFixed(1)}s</small></div>;
   }
   return <section className="mf-key-dashboard" aria-label="Original audio key experiments">
     <header className="mf-key-heading"><div><h2>Key comparison</h2><p>Whole recording · {library.tracks.length} songs · Library keys stay unchanged</p></div>
@@ -96,7 +97,7 @@ export function KeyComparison({track,library,onSelect}:{track:Track|undefined;li
     {running&&progress&&<div className="mf-key-progress" role="status"><div><strong>{stopping?'Stopping after this song':progress.current??'Preparing…'}</strong><span>{progress.completed+progress.failed} / {progress.total} · {progress.failed} failed</span><progress aria-label="Batch progress" max={Math.max(1,progress.total)} value={progress.completed+progress.failed}/></div><Button disabled={stopping} onPress={()=>{stop.current=true;setStopping(true);}}>Stop after current</Button></div>}
     {!running&&progress&&<p role="status" className="mf-key-complete">{problem?'Stopped with error':progress.stopped?'Stopped':'Finished'} · {progress.completed} completed · {progress.failed} failed</p>}
     <div className="mf-key-matrix-wrap"><table className="mf-key-matrix" aria-label="Song key comparison"><thead><tr><th>Song</th><th>Reference</th>{columns.map(id=><th key={id}>{displayName(id)}<small>{backends.find(b=>b.id===id)?.available?'Ready':'Unavailable'}</small></th>)}</tr></thead><tbody>
-      {library.tracks.map(song=>{const reference=data[song.id]?.reference??null;return <tr key={song.id} className={track?.id===song.id?'is-selected':''}><th scope="row"><Button tone="quiet" onPress={()=>onSelect?.(song.id)} className="mf-key-song"><span>{song.title}</span><small>{song.artist||'Unknown artist'}</small></Button></th><td><div className="mf-key-result"><span className="mf-key-value">{eligible(reference)?reference!.labels.join(' / '):'—'}</span><span className="mf-key-badge">{data[song.id]?referenceState(reference):'Loading…'}</span></div></td>{columns.map(id=><td key={id}>{resultCell(song.id,id)}</td>)}</tr>;})}
+      {library.tracks.map(song=>{const reference=data[song.id]?.reference??null;return <tr key={song.id} className={track?.id===song.id?'is-selected':''}><th scope="row"><Button tone="quiet" onPress={()=>onSelect?.(song.id)} className="mf-key-song"><span>{song.title}</span><small>{song.artist||'Unknown artist'}</small></Button></th><td><div className="mf-key-result"><span className="mf-key-value">{eligible(reference)?reference!.labels.map(keyName).join(' / '):'—'}</span><span className="mf-key-badge">{data[song.id]?referenceState(reference):'Loading…'}</span></div></td>{columns.map(id=><td key={id}>{resultCell(song.id,id)}</td>)}</tr>;})}
     </tbody></table></div>
     {!analyzedCount&&<p className="mf-key-empty">○ No analysis yet. Analyze the library or choose a song.</p>}
     {track&&<div className="mf-key-selected"><div><small>SELECTED SONG</small><h3>{track.title}</h3><span>{track.key?`Library key: ${track.key}`:'No manual key'} · {held?.runs.length?experimentAgreement(held.runs.at(-1)!.results):'Not run'}</span></div><Button disabled={!canRun} onPress={()=>void run([track.id])}>Analyze selected song</Button></div>}

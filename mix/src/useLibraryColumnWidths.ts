@@ -4,7 +4,7 @@ import { DEFAULT_COLUMNS, type Column } from './listing.ts';
 export const COLUMN_SIZES: Record<Column, { default: number; min: number }> = {
   artist: { default: 100, min: 72 }, album: { default: 100, min: 72 },
   title: { default: 216, min: 120 }, bpm: { default: 64, min: 64 },
-  key: { default: 152, min: 104 }, analysis: { default: 80, min: 80 },
+  key: { default: 152, min: 80 }, analysis: { default: 80, min: 80 },
   stems: { default: 60, min: 60 },
 };
 export const isResizableColumn = (column: Column) => column !== 'stems' && column !== 'analysis';

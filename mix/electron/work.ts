@@ -1,7 +1,7 @@
 import type { ChildProcess } from 'node:child_process';
 
 /** One torch-backed worker owns the GPU at a time, whatever kind of work it is. */
-export type WorkKind = 'separate' | 'transcribe' | 'key-experiment';
+export type WorkKind = 'separate' | 'transcribe' | 'key-experiment' | 'key-detect';
 
 export interface Lease {
   readonly kind: WorkKind;

@@ -10,7 +10,7 @@ import { readPitchMap } from './pitchMap.ts';
 import { transcriptionAt, readTranscription } from './transcribeJob.ts';
 import { estimateKey, KEY_VERSION } from '../src/key.ts';
 import { EXPERIMENT_BACKENDS, normalizedKey, type KeyBackend, type KeyBackendStatus, type KeyExperimentData, type KeyExperimentResult, type KeyExperimentRun, type KeyReference } from '../src/keyExperiments.ts';
-export interface KeyExperimentTools { home:string; script:string; ffmpeg:string }
+export interface KeyExperimentTools { home:string; script:string; ffmpeg:string; keyfinder?:string }
 const SETUP = 'Run node tools/mix-key-experiments-setup.ts from the source checkout; then refresh experiment backends.';
 const semantics = {libkeyfinder:'No confidence score exposed by keyOfAudio; no probability inferred.',essentia:'KeyExtractor profile correlation strength, not probability; incomparable with bass coverage/support.',bass:'Fraction of usable bass pitch inside a scale; not probability or Essentia strength.'};
 function command(file:string,args:string[],lease?:Lease, timeout=15*60*1000):Promise<string> {
@@ -24,7 +24,7 @@ export async function keyExperimentStatus(tools:KeyExperimentTools):Promise<KeyB
   for(const id of ['libkeyfinder','essentia'] as const) {
     try {
       await fs.access(tools.ffmpeg);
-      const version=await command(id==='essentia'?path.join(tools.home,'venv/bin/python'):path.join(tools.home,'keyfinder'),id==='essentia'?[tools.script,'--version']:['--version'],undefined,10000);
+      const version=await command(id==='essentia'?path.join(tools.home,'venv/bin/python'):(tools.keyfinder??path.join(tools.home,'keyfinder')),id==='essentia'?[tools.script,'--version']:['--version'],undefined,10000);
       result.push({id,available:true,version,message:'Original audio; no stems required',license:id==='essentia'?'AGPLv3 / commercial options (UPF)':'GPL-3.0-or-later'});
     } catch(error) {result.push({id,available:false,version:'unavailable',message:`${String(error)}. ${SETUP}`,license:id==='essentia'?'AGPLv3 / commercial options (UPF)':'GPL-3.0-or-later'});}
   }
@@ -95,7 +95,7 @@ export async function runKeyExperiment(root:string,id:string,backends:KeyBackend
         } else {
           if(!decoded){await command(tools.ffmpeg,['-v','error','-nostdin','-i',file,'-vn','-ac','1','-ar','44100','-f','f32le',pcm],lease);decoded=true;}
           start=performance.now();
-          const output=await command(backend==='essentia'?path.join(tools.home,'venv/bin/python'):path.join(tools.home,'keyfinder'),backend==='essentia'?[tools.script,pcm]:[pcm],lease);
+          const output=await command(backend==='essentia'?path.join(tools.home,'venv/bin/python'):(tools.keyfinder??path.join(tools.home,'keyfinder')),backend==='essentia'?[tools.script,pcm]:[pcm],lease);
           const value=JSON.parse(output) as {label:string;score:number|null};
           if(!normalizedKey(value.label)||(value.score!==null&&!Number.isFinite(value.score)))throw new Error('Invalid backend result');
           result.status=value.label==='Unknown'?'unknown':'key';result.labels=result.status==='key'?[value.label]:[];result.score=value.score;

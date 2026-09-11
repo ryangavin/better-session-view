@@ -1,5 +1,6 @@
+import { LibraryKey } from './LibraryKey.tsx';
 import { memo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
-import { keyLabel, keyDescription, savedKey } from '../key.ts';
+import { keyDescription } from '../key.ts';
 import { TRACK_DRAG } from '../play/decks.ts';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
@@ -229,7 +230,7 @@ const Song = memo(function Song({ mix, song, onShowPrep }: { mix: Mix; song: Tra
         ? <LibraryAnalysis song={song} root={mix.library.root} />
         : column === 'stems' ? <LibraryStems sources={song.sources} title={song.title} onSeparate={() => { mix.select(song.id); onShowPrep?.(); }} />
         : column === 'bpm' ? <span className="mf-song-bpm" title={`${fact.says}. ${fact.why}.`}>{tempo || '—'}</span>
-        : column === 'key' ? <span className="mf-song-key" title={keyDescription(song)}>{keyLabel(song)}{!song.key && savedKey(song)?.status === 'candidate' ? ' ?' : ''}</span>
+        : column === 'key' ? <LibraryKey song={song} edit={mix.editTrack} refresh={mix.refreshLibrary} />
         : column === 'title'
         ? <button type="button" className="mf-song-identity" aria-pressed={song.id === mix.selected}
           aria-label={`${song.title} — ${song.artist ?? 'Unknown artist'}`}>

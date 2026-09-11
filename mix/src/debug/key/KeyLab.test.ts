@@ -4,24 +4,22 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { KeyLab } from './KeyLab.tsx';
 import { openflow, type Library, type Track } from '../../openflow.ts';
-import { estimateKey, KEY_VERSION } from '../../key.ts';
-import type { PitchMap } from '../../pitchMap.ts';
+import { KEY_LIBRARY_VERSION, KEY_DETECTION_VERSION, KEYFINDER_CONFIG, KEYFINDER_VERSION } from '../../keyDetection.ts';
 import type { Mix } from '../../state.ts';
 vi.mock('./KeyComparison.tsx', () => ({KeyComparison:() => null}));
 vi.mock('../../openflow.ts', async original => ({...await original<object>(),openflow:vi.fn()}));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
-const song = (id:string) => ({id,title:id,key:null,stems:`stems/${id}`,model:'model',sources:['bass']} as Track);
+const song = (id:string) => ({id,file:`audio/${id}.wav`,title:id,key:null,stems:`stems/${id}`,model:'model',sources:['bass']} as Track);
 function saved(t:Track) {
-  const map = {seconds:12,start:0,step:1,hz:Array(12).fill(55),state:Array(12).fill('voiced')} as PitchMap;
-  return {...t,keyAnalysis:estimateKey(map,{hash:'bass',mapHash:'map',stems:t.stems!,model:t.model!})};
+  return {...t,keyDetection:{version:KEY_DETECTION_VERSION,algorithm:'libkeyfinder' as const,detectorVersion:KEYFINDER_VERSION,source:{file:t.file,hash:'original'},config:{...KEYFINDER_CONFIG},status:'unknown' as const,label:'Unknown',confidence:'provisional' as const,analyzedAt:''}};
 }
 function fixture(tracks:Track[]) {
   let library = {root:'/library',tracks} as Library;
   const analyze = vi.fn(async (id:string) => { library = {...library,tracks:library.tracks.map(t => t.id === id ? saved(t) : t)}; return library; });
   const busy = vi.fn(async () => null);
-  const keyVersion = vi.fn(async () => KEY_VERSION);
+  const keyVersion = vi.fn(async () => KEY_LIBRARY_VERSION);
   const read = vi.fn(async () => library);
-  vi.mocked(openflow).mockReturnValue({library:{read},keyVersion,analyzeKey:analyze,separate:{busy},transcribe:{busy}} as unknown as NonNullable<ReturnType<typeof openflow>>);
+  vi.mocked(openflow).mockReturnValue({library:{read},keyVersion,analyzeKey:analyze,separate:{busy},transcribe:{busy},keyExperiments:{busy}} as unknown as NonNullable<ReturnType<typeof openflow>>);
   const refreshLibrary = vi.fn(async () => {});
   const mix = {library,song:tracks[0],refreshLibrary} as unknown as Mix;
   return {mix,analyze,busy,refreshLibrary,keyVersion};
@@ -29,11 +27,11 @@ function fixture(tracks:Track[]) {
 it('opens stored diagnostics without inference and previews only missing keys by default', () => {
   const f = fixture([saved(song('done')),{...song('stemless'),stems:null},song('pending')]);
   render(createElement(KeyLab,{mix:f.mix}));
-  expect(screen.getByText(/1 to analyze · 2 with bass stems · 1 already analyzed/)).toBeTruthy();
-  expect(screen.getByText(/Stored primary: Unknown/)).toBeTruthy();
+  expect(screen.getByText(/2 to analyze · 3 with original audio · 1 already analyzed/)).toBeTruthy();
+  expect(screen.getByText(/Detected: Unknown/)).toBeTruthy();
   expect(f.analyze).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('checkbox'));
-  expect(screen.getByText(/2 to analyze · 2 with bass stems · 0 already analyzed/)).toBeTruthy();
+  expect(screen.getByText(/3 to analyze · 3 with original audio · 0 already analyzed/)).toBeTruthy();
   expect(f.analyze).not.toHaveBeenCalled();
 });
 it('runs missing tracks sequentially, updates the library, and preserves manual metadata', async () => {
@@ -96,14 +94,14 @@ it('reports a failed song and continues to the next without hiding failures', as
 it.each(['missing','older'])('fails closed for a %s backend version without losing read-only evidence', async mode => {
   const f = fixture([saved(song('done')),song('pending')]);
   if (mode === 'missing') f.keyVersion.mockRejectedValue(new Error('No handler registered'));
-  else f.keyVersion.mockResolvedValue(KEY_VERSION - 1);
+  else f.keyVersion.mockResolvedValue(KEY_LIBRARY_VERSION - 1);
   render(createElement(KeyLab,{mix:f.mix}));
-  await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Analysis unavailable'));
+  await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Restart the desktop app'));
   expect((screen.getByRole('button',{name:'Analyze missing keys'}) as HTMLButtonElement).disabled).toBe(true);
-  expect((screen.getByRole('button',{name:'Analyze selected track'}) as HTMLButtonElement).disabled).toBe(true);
-  expect(screen.getByText(/Stored primary: Unknown/)).toBeTruthy();
+  expect((screen.getByRole('button',{name:'Detect selected key'}) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByText(/Detected: Unknown/)).toBeTruthy();
   expect(f.analyze).not.toHaveBeenCalled();
-  f.keyVersion.mockResolvedValue(KEY_VERSION);
+  f.keyVersion.mockResolvedValue(KEY_LIBRARY_VERSION);
   fireEvent.click(screen.getByRole('button',{name:'Refresh saved evidence'}));
   await waitFor(() => expect((screen.getByRole('button',{name:'Analyze missing keys'}) as HTMLButtonElement).disabled).toBe(false));
 });
@@ -111,7 +109,7 @@ it('rechecks backend compatibility immediately before starting each worker', asy
   const f = fixture([song('one')]);
   render(createElement(KeyLab,{mix:f.mix}));
   await waitFor(() => expect((screen.getByRole('button',{name:'Analyze missing keys'}) as HTMLButtonElement).disabled).toBe(false));
-  f.keyVersion.mockResolvedValue(KEY_VERSION - 1);
+  f.keyVersion.mockResolvedValue(KEY_LIBRARY_VERSION - 1);
   fireEvent.click(screen.getByRole('button',{name:'Analyze missing keys'}));
   await waitFor(() => expect(screen.getByText(/one: failed/)).toBeTruthy());
   expect(f.analyze).not.toHaveBeenCalled();

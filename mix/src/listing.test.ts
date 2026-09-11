@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { browseLibrary, columnsFrom, listing, moveColumn, nextSort, placeColumn, searchTracks } from './listing.ts';
 import type { Track } from './openflow.ts';
-import { KEY_VERSION, type KeyAnalysis } from './key.ts';
+import { KEY_DETECTION_VERSION, KEYFINDER_CONFIG, KEYFINDER_VERSION, type KeyDetection } from './keyDetection.ts';
 
 let n = 0;
 const track = (held: Partial<Track>): Track => ({
@@ -91,10 +91,9 @@ it('sorts BPM numerically, keeping missing readings last in either direction', (
 });
 
 it('sorts the displayed key, honoring manual overrides and keeping Unknown last', () => {
-  const evidence = { version: KEY_VERSION, algorithm: 'bass-scale-compatibility', source: { stems: 'stem', model: 'model' },
-    label: 'C major / A minor', candidates: [], regions: [] } as unknown as KeyAnalysis;
-  const tracks = [track({ title: 'Unknown' }), track({ title: 'Manual', key: 'G minor', keyAnalysis: evidence, stems: 'stem', model: 'model' }),
-    track({ title: 'Estimated', keyAnalysis: evidence, stems: 'stem', model: 'model' })];
+  const file=track({}).file;
+  const evidence:KeyDetection={version:KEY_DETECTION_VERSION,algorithm:'libkeyfinder',detectorVersion:KEYFINDER_VERSION,source:{file,hash:'original'},config:{...KEYFINDER_CONFIG},status:'key',label:'C major',confidence:'provisional',analyzedAt:''};
+  const tracks=[track({title:'Unknown'}),track({title:'Manual',key:'G minor',keyDetection:evidence}),track({title:'Estimated',keyDetection:evidence})];
   expect(titles(listing(tracks, 'key'))).toEqual(['Estimated', 'Manual', 'Unknown']);
   expect(titles(listing(tracks, 'key', true))).toEqual(['Manual', 'Estimated', 'Unknown']);
 });

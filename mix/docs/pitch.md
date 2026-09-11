@@ -123,8 +123,7 @@ Relative major/minor scales have identical membership and deliberately remain am
 Pedals, sparse phrases and chromatic material can remain Unknown. Modal and harmonic/
 melodic-minor interpretations are not yet modeled. Boundaries have window-level precision;
 different candidate sets are not automatically proof of modulation. Click a candidate
-region to select it for listening. The lab itself does not write these suggestions into library key tags. The explicit
-library analysis below publishes a separate, source-bound estimate.
+region to select it for listening. The lab itself does not write these suggestions into library key tags. The optional detector-comparison baseline reads these hypotheses without changing library keys.
 
 ## Reproducible evidence
 
@@ -184,63 +183,12 @@ separated bass and original audio. CoreMIDI enumeration confirmed `mix[flow] Bas
 independent native input listener captured channel-1 note-on/off pairs from a four-second
 Sandstorm passage. Live instrument routing and physical devices remain unverified.
 
-## Persisted library keys
+## Library keys and the bass baseline
 
-The Key detection debug panel and CLI backfill invoke bass/key analysis explicitly. It reuses a valid continuous
-map, or runs the existing bass transcription worker to obtain one. The library shows
-saved keys and filters only: no analysis controls, evidence panel, inference, audio
-decoding, or frame-array reads. The shared work lease prevents parallel inference.
-
-`src/key.ts` version 3 evaluates stable voiced pitch duration against all major/natural-minor
-scales. Whole-song analysis tolerates rests (10% coverage) but requires ten seconds of
-usable pitch, four classes each exceeding 3%, and 90% scale support. Scales within 2.5
-percentage points remain diagnostic alternatives. Candidates rank by compatible tonic
-duration, then scale support. Only the highest-ranked interpretation is published,
-with the provisional `?` marker even when competing hypotheses tie. If global support
-is insufficient, supported regional candidates can supply that primary interpretation.
-No supported candidates means Unknown. This ranking is a heuristic, not independently
-calibrated; its qualitative confidence is not a probability.
-
-Sixteen-second regions retain the stricter lab policy, including possible changes.
-These are bass scale-membership hypotheses, not independent harmonic evidence: even
-sustained contrasting regions cannot reliably establish modulation. Version 3 therefore
-never publishes multiple automatic song keys. Alternatives, timed regions and
-`possibleChanges` remain diagnostic and never become extra filter categories.
-Earlier summary versions need a cheap refresh from their saved pitch maps before they
-display again; no new inference or separation is needed for valid cached maps.
-
-`electron/keyAnalysis.ts` verifies bass bytes and map checksum, computes once, then
-re-reads the manifest before publishing. Optional `Track.keyAnalysis` stores version,
-algorithm, date, bass hash, map hash, separation identity, tonic/mode candidates,
-alternatives, confidence, coverage and regions. Existing `Track.key` is treated as a
-manual override and never overwritten. New separation invalidates automatic evidence;
-manual metadata survives. Version/model/path mismatches read as Unknown. Out-of-band
-changes to the same bass path are checked on explicit reanalysis, not every browse.
-
-Artist → Album → Key lists filter together, then full-text search narrows songs. A song
-appears only under its primary key, without adding regional or alternative matches. Unanalyzed, stale and insufficient results remain under Unknown.
-Reset filters clears all three lists. Manual keys retain their literal metadata labels.
-
-## Debug library backfill
-
-Open **Debug & experiments → Key detection** for the interactive preview, selected
-track analysis and bulk controls. Default **Analyze missing keys** skips saved Unknown;
-select **Reanalyze already analyzed tracks** to include them. No inference starts on
-opening, previewing or selecting tracks. **Stop after current track** retains its result
-and stops the queue; closing/switching tabs uses the same policy. Per-track errors stay
-visible and other songs continue; an occupied engine or library change stops the run.
-The normal library is refreshed after saved results. See [harness.md](harness.md).
-
-
-With `npm run dev:mix` running, `node tools/mix-key-backfill.ts` previews the current
-library's missing bass/key analyses. Add `--run` to process them sequentially through
-the same desktop key-analysis operation; add `--reanalyze` to include saved results.
-The CLI and debug panel share the same batch policy in `src/keyBackfill.ts`; neither adds a normal library control. It does not change
-import behavior, separate missing stems, or backfill waveform/beat analysis.
-
-Saved results, including Unknown, are skipped by default. A missing continuous map is
-computed by the existing worker; a valid map is reused. Each completed song is saved
-immediately, so rerunning resumes missing work. Per-song errors are reported and the
-remaining songs continue. Ctrl+C stops after the current song, retaining its result.
-An occupied engine or changed library stops the run. Progress and totals print to the
-terminal; exit status is nonzero for errors or interruption. Manual keys remain intact.
+Library keys now use [libkeyfinder on the original recording](keys.md), independent
+of stems. Manual correction and the explicit canonical update are documented there.
+The former v3 bass `keyAnalysis` stays available as legacy diagnostic evidence; it
+is not the default library/filter key. `src/key.ts` still computes the same bass
+scale-membership hypotheses for the optional cached baseline, without claiming
+modulation or calibrated confidence. New separation invalidates only that bass evidence,
+not original-song `keyDetection` or manual corrections.

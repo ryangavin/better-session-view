@@ -1,9 +1,13 @@
-// Experimental adapter only; linked locally to GPL-3.0-or-later libkeyfinder.
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Ryan Gavin. Standalone PCM-to-key command.
+// This helper links libkeyfinder/FFTW; the Electron application does not.
 #include <keyfinder/keyfinder.h>
 #include <fstream>
 #include <iostream>
 #include <cmath>
 #include <string>
+#include <stdexcept>
+#include <limits>
 int main(int argc, char** argv) {
   if (argc == 2 && std::string(argv[1]) == "--version") { std::cout << "2.2.8"; return 0; }
   if (argc != 2) return 2;
@@ -11,7 +15,7 @@ int main(int argc, char** argv) {
     std::ifstream input(argv[1], std::ios::binary | std::ios::ate);
     if (!input) throw std::runtime_error("Cannot read mono float32 PCM");
     auto bytes = input.tellg();
-    if (bytes <= 0 || bytes % 4 != 0) throw std::runtime_error("Empty or incomplete PCM");
+    if (bytes <= 0 || bytes % 4 != 0 || bytes / 4 > std::numeric_limits<unsigned int>::max()) throw std::runtime_error("Empty or incomplete PCM");
     input.seekg(0);
     KeyFinder::AudioData audio;
     audio.setFrameRate(44100); audio.setChannels(1); audio.addToSampleCount(bytes / 4);

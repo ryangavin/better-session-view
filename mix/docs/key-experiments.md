@@ -1,10 +1,10 @@
 # Whole-recording key experiments
 
-Debug → Key detection contains an explicit comparison of libkeyfinder and Essentia
+Debug → Key detection → Compare detectors · experiments contains an explicit comparison of libkeyfinder and Essentia
 on each track's **original file**, decoded once to mono 44.1 kHz float PCM. Stems are
 not required. The optional bass baseline only reads an existing checksum-valid pitch
-map; it never launches bass inference or updates the canonical key. Canonical bass
-inspection/backfill remains in its own disclosure below the comparison.
+map; it never launches bass inference or updates the canonical key. The default library detector is now [libkeyfinder](keys.md); **Update library keys**
+saves canonical results. The comparison controls continue to save only experiments.
 
 Opening the panel reads availability and the library’s saved results/references only.
 The dashboard shows analyzed tracks, usable reference coverage and per-detector match
@@ -17,7 +17,8 @@ for an empty cell. Select a song in the matrix to inspect it without loading aud
 recording. Progress and Stop after current appear only while running. Source links,
 reference editing and full result evidence live under Sources & selected-song details.
 Settings & diagnostics holds detector choices, refresh/download, custom batch and
-logs. Canonical bass controls live under Advanced · canonical bass analysis.
+logs. Canonical libkeyfinder controls live under Advanced · library key detection, with
+Update library keys above the optional comparison.
 All explicit batches run sequentially.
 Stop, tab change or unmount stops scheduling after the current recording. Per-track
 failures are logged and the remaining tracks continue. A changed library or occupied
@@ -50,7 +51,8 @@ It does not restart the app or analyze the library.
 [libkeyfinder](https://github.com/mixxxdj/libkeyfinder) is GPL-3.0-or-later and uses
 FFTW. [Essentia licensing](https://essentia.upf.edu/licensing_information.html) describes
 AGPL and commercial options. These dependencies are local opt-in research tools,
-not bundled product dependencies; shipping them needs a separate distribution decision.
+Essentia remains an unbundled experiment. The separately packaged default libkeyfinder
+helper and its source distribution are documented in [keys.md](keys.md).
 
 libkeyfinder uses its default `keyOfAudio` profile and exposes no confidence score.
 Essentia uses [KeyExtractor](https://essentia.upf.edu/reference/std_KeyExtractor.html)
@@ -99,7 +101,14 @@ silence. Bass correctly reported unavailable without stems. Full output is in
 [`../experiments/key/smoke-results.json`](../experiments/key/smoke-results.json).
 libkeyfinder took about 28 ms per fixture; Essentia about 45 seconds, including process
 startup. These are smoke checks, not real-library accuracy or full-song performance.
-No full library experiment has been run. Native setup completed with zero failures.
+The user subsequently ran all 24 recordings: all paired results saved in about 39.4 s.
+Median recorded backend times were 0.423 s for libkeyfinder (0.102–1.213 s) and
+0.788 s for Essentia (0.732–0.972 s), including process startup but excluding shared
+decode/version probes/hash/persistence. The earlier 45 s cold smoke invocation was
+not representative; its cause was not established. Normalized detector agreement was
+16/24, or 16/23 after excluding the spoken non-song. Published-reference agreement was
+9/10 for libkeyfinder and 10/10 for Essentia; those ten references remain fallible.
+The user chose libkeyfinder as the practical default; this is not proof it is more accurate. Native setup completed with zero failures.
 
 Automated tests cover original-file selection, decode reuse, separate persistence,
 manual-key preservation, lease conflict/release, unavailable tools, reference import,

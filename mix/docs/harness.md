@@ -7,40 +7,20 @@ same decoded stems the lanes are drawn from.
 
 ## Key detection
 
-The [whole-recording comparison](key-experiments.md) runs libkeyfinder and Essentia
-on original audio with an optional cached bass baseline, separate results and references.
-The canonical bass controls described below remain inside their own disclosure.
+The panel opens with **Update library keys**, the canonical libkeyfinder operation
+on original recordings. It checks all songs, reuses exact valid saved/experimental
+results, preserves manual corrections and updates the library. The Advanced disclosure
+retains missing-only preview, inclusion of current results, selected-song detection,
+progress/errors and stop-after-current. A stale native backend fails closed until a
+safe rebuild/restart. See [keys.md](keys.md) for editing, migration and packaging.
 
-**Key detection** (`src/debug/key/KeyLab.tsx`, workspace id `keys`) inspects saved
-primary/Unknown, provisional uncertainty, coverage, source hashes, summary version,
-competing scales and timed regions. Selection is local to this panel and does not
-load a Prep track or audition audio. Opening it never runs inference. Ordinary library
-rows retain only the primary summary and filter; evidence controls live here.
-
-Analyze selected track explicitly refreshes that track. The library preview defaults
-to **Analyze missing keys**; saved Unknown counts as completed. The explicit reanalysis
-checkbox includes current saved results. Counts/list distinguish eligible tracks,
-already analyzed tracks and missing bass stems. **Refresh saved evidence** rereads
-metadata without inference. Manual key overrides are preserved. A read-only `keyVersion` IPC query must match
-`KEY_VERSION` before either analysis control enables, and is rechecked before every
-worker call. Missing/older handlers fail closed with a rebuild/restart message while
-diagnostics remain available; Refresh checks again. This prevents a newer renderer
-from running an older summary policy after HMR.
-
-The panel and CLI share `src/keyBackfill.ts`; `electron/keyBackfill.ts` re-exports it
-for existing callers. The current bass-backed implementation calls canonical `analyzeKey` sequentially through the existing
-engine lease, reusing validated pitch maps or obtaining missing maps with the existing
-bass worker. No automatic separation, scan analysis or import changes occur. Progress
-shows the current track and completed/failed/skipped counts; per-track failures are
-logged and remaining tracks continue. Occupied engine or changed library stops the
-batch with a recoverable error. Refresh and rerun to retry missing results.
-
-**Stop after current track**, switching debug tabs, resetting the tab or closing the
-workspace stops scheduling after the current track; it does not cancel another
-client's job or discard the current result. Completed results persist immediately,
-and the normal library rereads metadata after each result. Reloading/closing the
-renderer cannot retain its queue; the main-process job already started may finish.
-See [pitch.md](pitch.md) for estimator limits and the CLI equivalent.
+The collapsed **Compare detectors · experiments** dashboard retains the
+[whole-recording comparison](key-experiments.md): large keys, normalized comparison
+badges, explicit scored/reference denominators and saved source inspection. Its
+**Analyze library** and selected-song controls save experimental sidecars only.
+Essentia and cached bass remain optional. Selecting/reading never starts inference
+or loads audio. Both queues share `src/keyQueue.ts` and the engine lease; stopping
+or closing a panel stops scheduling after the active song without discarding results.
 
 ## Bass pitch
 

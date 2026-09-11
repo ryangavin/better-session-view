@@ -33,11 +33,11 @@ it('manual metadata wins and absent or stale analysis remains filterable', () =>
   expect(keyFilters({...track,key:null,stems:'stems/b'})).toEqual(['Unknown']);
 });
 
-it('excludes runner-up scale matches from the library Keys filter', () => {
+it('keeps legacy bass guesses out of the default library Keys filter', () => {
   const a = estimateKey(map(Array.from({length: 8}, () => [24,26,28,31]).flat()), source);
   expect(a.alternatives.length).toBeGreaterThan(2);
   expect(a.candidates).toHaveLength(1);
-  expect(keyFilters({key:null,keyAnalysis:a,stems:source.stems,model:source.model})).toEqual(a.candidates.map(c=>c.label));
+  expect(keyFilters({key:null,keyAnalysis:a,stems:source.stems,model:source.model})).toEqual(['Unknown']);
 });
 
 it('keeps sustained contrasting regions out of published keys without harmonic verification', () => {
