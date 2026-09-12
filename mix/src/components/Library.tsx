@@ -1,5 +1,6 @@
+import { LIBRARY_ENVELOPE_HEIGHT } from '../libraryOverview.ts';
 import { LibraryKey } from './LibraryKey.tsx';
-import { memo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
+import { memo, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent } from 'react';
 import { keyDescription } from '../key.ts';
 import { TRACK_DRAG } from '../play/decks.ts';
 import { Toggle } from '@openflow/widgets/controls/Toggle.tsx';
@@ -21,6 +22,7 @@ export function Library({ mix, onShowPrep }: { mix: Mix; onShowPrep?(): void }) 
   const { library } = mix;
   const { widths, resize } = useLibraryColumnWidths();
   const { rail, drag, nudge, maximum, current } = useLibraryResize(mix.setLibraryWidth);
+  const heading = useRef<HTMLTableRowElement>(null);
   const draggedColumn = useRef<Column | null>(null);
   const suppressSort = useRef(false);
   const [dropTarget, setDropTarget] = useState<Column | null>(null);
@@ -113,9 +115,10 @@ export function Library({ mix, onShowPrep }: { mix: Mix; onShowPrep?(): void }) 
         )}
 
         {library.tracks.length > 0 && <table className="mf-library-table" aria-label="Library songs"
-          style={{ width: mix.columns.reduce((total, column) => total + widths[column], 0) }}>
+          style={{ '--library-columns': mix.columns.map(column => `${widths[column]}px`).join(' '),
+            '--library-table-width': `${mix.columns.reduce((total, column) => total + widths[column], 0)}px` } as CSSProperties}>
           <colgroup>{mix.columns.map(column => <col key={column} className={`mf-library-col-${column}`} style={{ width: widths[column] }} />)}</colgroup>
-          <thead><tr>{mix.columns.map(column => (
+          <thead><tr ref={heading}>{mix.columns.map(column => (
             <th key={column} scope="col" aria-label={COLUMN_LABELS[column]} draggable data-drop-target={dropTarget === column || undefined}
               aria-sort={mix.order === column ? (mix.descending ? 'descending' : 'ascending') : 'none'}
               onDragStart={event => {
@@ -155,7 +158,7 @@ export function Library({ mix, onShowPrep }: { mix: Mix; onShowPrep?(): void }) 
               {isResizableColumn(column) && <ColumnResize column={column} width={widths[column]} resize={resize} />}
             </th>
           ))}</tr></thead>
-          <tbody>{mix.rows.map((song) => <Song key={song.id} mix={mix} song={song} onShowPrep={onShowPrep} />)}</tbody>
+          <tbody onScroll={event => { if (heading.current) heading.current.style.transform = `translateX(${-event.currentTarget.scrollLeft}px)`; }}>{mix.rows.map((song) => <Song key={song.id} mix={mix} song={song} onShowPrep={onShowPrep} />)}</tbody>
         </table>}
 
         {library.tracks.length > 0 && mix.songs.length === 0 && (
@@ -226,8 +229,8 @@ const Song = memo(function Song({ mix, song, onShowPrep }: { mix: Mix; song: Tra
       event.dataTransfer.setData(TRACK_DRAG, song.id);
       event.dataTransfer.effectAllowed = 'copy';
     }} data-selected={song.id === mix.selected || undefined} onClick={() => mix.select(song.id)} title={detail}>
-      {mix.columns.map(column => <td key={column}>{column === 'analysis'
-        ? <LibraryAnalysis song={song} root={mix.library.root} />
+      {mix.columns.map(column => <td key={column} data-column={column}>{column === 'analysis'
+        ? <LibraryAnalysis key={LIBRARY_ENVELOPE_HEIGHT} song={song} root={mix.library.root} />
         : column === 'stems' ? <LibraryStems sources={song.sources} title={song.title} onSeparate={() => { mix.select(song.id); onShowPrep?.(); }} />
         : column === 'bpm' ? <span className="mf-song-bpm" title={`${fact.says}. ${fact.why}.`}>{tempo || '—'}</span>
         : column === 'key' ? <LibraryKey song={song} edit={mix.editTrack} refresh={mix.refreshLibrary} />

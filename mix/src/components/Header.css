@@ -145,8 +145,14 @@
   background: var(--danger);
 }
 
-.mf-clock-time {
-  color: var(--caption);
+.mf-clock-toggle {
+  width: 94px;
+  flex: none;
+  font-family: var(--mono);
+  font-variation-settings: var(--mono-axes);
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+  justify-content: center;
 }
 
 .mf-fit i {

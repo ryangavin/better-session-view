@@ -1,3 +1,4 @@
+import { PositionDisplay } from './PositionDisplay.tsx';
 import { useSyncExternalStore, type ReactNode } from 'react';
 import type { MixerEngine } from '../play/engine.ts';
 import { Button } from '@openflow/widgets/controls/Button.tsx';
@@ -107,20 +108,6 @@ const TEMPO: Param = {
   customUnit: '%0.1f',
 };
 const LINK_TEMPO: Param = { ...TEMPO, min: 20, max: 999 };
-
-/** bar.beat.sixteenth, one-based, from a position measured in bars. */
-function position(bar: number, bars: number): string {
-  const whole = Math.floor(bar);
-  const beat = Math.floor((bar - whole) * 4);
-  const sixteenth = Math.floor(((bar - whole) * 4 - beat) * 4);
-  return `${Math.min(whole, Math.max(0, bars - 1)) + 1}.${beat + 1}.${sixteenth + 1}`;
-}
-
-/** `3:07`, beside the bar count, because a length in bars is a claim and this is not. */
-function clockOf(seconds: number): string {
-  const whole = Math.max(0, Math.floor(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
-}
 
 /**
  * The rungs a cut can be held to, coarsest first.
@@ -312,11 +299,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
                 : 'Normal speed needs a playing leader with a known BPM; Link owns tempo while enabled'}>
               1×
             </Button>}
-            {/* Bars are the grid's claim; the clock is what is true whatever
-                tempo anybody decides on. Both, because a slice is placed in one
-                and heard in the other. */}
-            <span className="mf-clock">{position(mix.bar, mix.bars)}</span>
-            <span className="mf-clock mf-clock-time">{clockOf(mix.position)}</span>
+            <PositionDisplay bar={mix.bar} bars={mix.bars} seconds={mix.position} />
           </div>
           {playView && mixer && <div className="wdg wdg-control-group mf-group" role="group" aria-label="Timing">
             <Select

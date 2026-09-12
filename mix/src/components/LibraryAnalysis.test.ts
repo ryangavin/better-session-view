@@ -70,7 +70,7 @@ it('exposes a failed cache read and recovers on the next saved scan', async () =
   const view = render(h(LibraryAnalysis, { song: { id: 'one', stems: '' } as Track, root: 'library' }));
   await waitFor(() => expect(view.getByRole('img').getAttribute('aria-label')).toBe('Could not read saved waveform'));
   changed('one');
-  await waitFor(() => expect(view.getByRole('img').getAttribute('aria-label')).toBe('Saved whole-song waveform'));
+  await waitFor(() => expect(view.getByRole('img').getAttribute('aria-label')).toBe('Saved whole-song envelope'));
 });
 
 it('reads only saved scans when visible and renders a colored waveform without stems', async () => {
@@ -91,7 +91,7 @@ it('reads only saved scans when visible and renders a colored waveform without s
   await waitFor(() => expect(view.container.querySelector('svg path')).not.toBeNull());
   expect(view.container.querySelector('svg path')?.getAttribute('stroke')).toMatch(/^rgb\(/);
   expect(scans).toHaveBeenCalledExactlyOnceWith('song-1', 'stems/song-1/model');
-  expect(view.getByRole('img').getAttribute('aria-label')).toContain('Saved whole-song waveform');
+  expect(view.getByRole('img').getAttribute('aria-label')).toContain('Saved whole-song envelope');
 });
 
 it.each([

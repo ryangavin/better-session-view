@@ -545,3 +545,9 @@ continues to use 10^(dB/20), so −24 dB is approximately 0.0631 amplitude.
 
 Deck panels A–D use the same `--wdg-well` background as the master strip.
 Deck accents, focus states and the highlighted file-drop target remain distinct.
+
+Loop move-left/right and halve/double each have their own shared joined control
+group on every deck. Bottom beat-jump arrows use the same grouping with their
+existing responsive orientation. Commands and disabled conditions are unchanged.
+The header position display toggles beats/elapsed time as a display preference only;
+it defaults to beats, keeps its prior formatting and does not seek or start playback.

@@ -5,7 +5,7 @@ import { STEMS } from '../mock.ts';
 import { waveformPainter } from '@openflow/widgets/theme/spectral.ts';
 // Use the provider's entry: a separately optimized context.ts can become a second context in Vite.
 import { useTheme } from '@openflow/widgets/theme/ThemeRoot.tsx';
-import { libraryOverview, type LibraryColumn } from '../libraryOverview.ts';
+import { libraryOverview, LIBRARY_ENVELOPE_HEIGHT, type LibraryColumn } from '../libraryOverview.ts';
 import { onScanChange } from '../scanChanges.ts';
 
 // Disk-cache reads only, limited to two at once. Rows never start audio analysis.
@@ -57,12 +57,15 @@ export function LibraryAnalysis({ song, root }: { song: Track; root: string | nu
     const unsubscribe = onScanChange(root, song.id, () => { revision++; dirty = true; load(); });
     observer.observe(node);
     return () => { cancelled = true; observer.disconnect(); unsubscribe(); };
-  }, [song, root]);
+  // Geometry producer identity also invalidates cached paths during a visual hot update.
+  }, [song, root, libraryOverview]);
 
-  const description = columns ? 'Saved whole-song waveform' : status === 'pending' ? 'Loading saved waveform'
+  // Cached paths carry their coordinate space; never paint a prior geometry in a new viewBox.
+  const envelope = columns?.[0]?.height === LIBRARY_ENVELOPE_HEIGHT ? columns : null;
+  const description = envelope ? 'Saved whole-song envelope' : status === 'pending' ? 'Loading saved waveform'
     : status === 'failed' ? 'Could not read saved waveform' : 'No saved original waveform';
   return <span ref={element} className="mf-library-analysis" role="img" aria-label={description} title={description}>
-    {columns ? <svg viewBox="0 0 68 18" aria-hidden="true" style={{background:treatment?.background}}>{columns.map((column, index) =>
+    {envelope ? <svg viewBox={`0 0 68 ${envelope[0].height}`} aria-hidden="true" style={{background:treatment?.background}}>{envelope.map((column, index) =>
       <path key={index} d={column.path} stroke={paint(column.energy)} strokeWidth="1" opacity={treatment?.fillOpacity} />)}</svg>
       : <span className="mf-library-analysis-empty" aria-hidden="true">—</span>}
   </span>;
@@ -73,13 +76,13 @@ export function LibraryStems({ sources, title, onSeparate }: { sources: readonly
   const available = STEMS.filter(stem => sources.includes(stem.id));
   const description = available.length ? `Available stems: ${available.map(stem => stem.name).join(', ')}` : 'No separated stems';
   if (!available.length && onSeparate) {
-    const label = `Separate stems for ${title ?? 'this track'}`;
+    const label = `Generate stems for ${title ?? 'this track'}`;
     return <span className="mf-library-stem-cell"><ButtonFace tone="quiet" className="mf-library-separate" aria-label={label} title={label}
       draggable onDragStart={event => { event.preventDefault(); event.stopPropagation(); }}
       onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}
       onClick={event => { event.stopPropagation(); onSeparate(); }}>
       <svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" aria-hidden="true">
-        <rect x="1.5" y="1.5" width="3" height="11" rx=".5" /><rect x="6.5" y="3.5" width="3" height="9" rx=".5" /><rect x="11.5" y="2.5" width="3" height="10" rx=".5" />
+        <path d="M1 7H6M6 3V11M6 3H14M6 7H14M6 11H14" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </ButtonFace></span>;
   }

@@ -1,4 +1,5 @@
 .mf-library {
+  --library-row-icon-size: 22px;
   container-type: inline-size;
   font-variation-settings: var(--sans-axes);
   --rail-pad: 10px;
@@ -86,7 +87,9 @@
 
 .mf-library-list {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 
@@ -104,6 +107,13 @@
 }
 
 .mf-library-table {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  font-family: var(--sans);
+  font-variation-settings: var(--sans-axes);
+  font-size: var(--text-body);
   width: 100%;
   table-layout: fixed;
   min-width: 0;
@@ -111,10 +121,18 @@
   text-align: left;
 }
 
+/* One semantic table; only its body owns scrollbars. Both row groups share exact column tracks. */
+.mf-library-table colgroup { display: none; }
+.mf-library-table thead { display: block; flex: none; overflow: clip; background: var(--surface-cell); }
+.mf-library-table tbody { display: block; flex: 1; min-height: 0; overflow: auto; }
+.mf-library-table tr { display: grid; grid-template-columns: var(--library-columns); width: var(--library-table-width); }
+.mf-library-table td { display: flex; align-items: center; min-width: 0; }
+.mf-song td[data-column="analysis"], .mf-song td[data-column="stems"] { justify-content: center; }
+
 .mf-library-static-heading { padding: 0 6px; color: var(--detail); font-size: var(--text-body); }
-.mf-song-bpm { color: var(--detail); font-size: var(--text-label); font-variant-numeric: tabular-nums; }
-.mf-library-analysis { display: block; width: 68px; height: 18px; }
-.mf-library-analysis svg { width: 100%; height: 18px; color: var(--detail); opacity: .72; }
+.mf-song-bpm { color: var(--detail); font-size: inherit; font-variant-numeric: tabular-nums; }
+.mf-library-analysis { display: flex; align-items: center; width: 68px; height: var(--library-row-icon-size); }
+.mf-library-analysis svg { width: 100%; height: var(--library-row-icon-size); color: var(--detail); opacity: .72; }
 .mf-library-stem-cell { display: flex; align-items: center; justify-content: center; height: 18px; color: var(--caption); font-size: var(--text-label); }
 .mf-library-stem-tiles { display: grid; gap: 1px; }
 .mf-library-stem-tiles > span { width: 6px; height: 6px; }
@@ -324,7 +342,7 @@
   background: none;
 }
 
-.mf-song .mf-art { width: 22px; height: 22px; }
+.mf-song .mf-art { width: var(--library-row-icon-size); height: var(--library-row-icon-size); }
 .mf-art img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm); }
 
 .mf-strip {

@@ -242,10 +242,19 @@ it('keeps display columns movable but fixed and puts shared Reset filters in the
 });
 
 it('opens separation preparation for the requested track without activating its row drag',()=>{
-  const view=rail();const button=view.getByRole('button',{name:'Separate stems for Low Tide'});
+  const view=rail();const button=view.getByRole('button',{name:'Generate stems for Low Tide'});
   fireEvent.click(button);
   expect(view.select).toHaveBeenCalledExactlyOnceWith('Low Tide');expect(view.onShowPrep).toHaveBeenCalledOnce();
   const setData=vi.fn();expect(fireEvent.dragStart(button,{dataTransfer:{setData}})).toBe(false);
   expect(setData).not.toHaveBeenCalled();
   expect(button.tagName).toBe('BUTTON');expect(button.getAttribute('type')).toBe('button');
+});
+
+it('moves the header with body horizontal scrolling without replacing song rows', () => {
+  const view=rail(),table=view.getByRole('table',{name:'Library songs'});
+  const body=table.querySelector('tbody')!,row=body.querySelector('tr');
+  body.scrollLeft=140;
+  fireEvent.scroll(body);
+  expect(table.querySelector('thead tr')!.getAttribute('style')).toContain('translateX(-140px)');
+  expect(body.querySelector('tr')).toBe(row);
 });

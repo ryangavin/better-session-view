@@ -155,16 +155,22 @@ in the field or **×** clears it. The footer shows the matching count against th
 attack jitter in an identified automatic grid does not create a range. A dash means no
 usable reading, including an unresolved half/double beat-count change. See
 [musical tempo](musical-tempo.md). Hover explains
-grid readiness. **Analysis** shows only a 68×18px whole-song waveform folded from the
-existing original-audio scan. A missing or invalid original scan shows a dash, even if
+grid readiness. **Analysis** shows a 68×22px representative whole-song envelope folded from the
+existing original-audio scan. It blends 80% mean saved 5ms extrema with 20% regional
+peak, separately above and below zero, then applies a fixed 1.4 amplitude contrast
+curve. No per-track normalization or invented variation is used. This avoids a
+multi-second maximum holding every column at the display ceiling; it does not imply
+that the audio clipped. Quiet regions remain quiet and isolated transients still
+contribute. The production timeline continues to use true peak extrema. A missing or invalid original scan shows a dash, even if
 stem scans exist; it never invents a full mix by adding unrelated stem extrema.
 
 **Stems** is a separate reorderable column, initially following Analysis. It shows only
 available sources as 6px colored tiles in `STEMS` order: four sources form a 2×2 square,
 six a 3×2 grid. One, two, three, or five sources use only their actual tiles; no missing
-source placeholders are drawn. Zero sources shows a dash. Tooltips and accessible
-labels name the sources. Both waveform and tiles occupy fixed centered 18px areas in
-their own cells, so waveform-only, stems-only, both and neither cannot share a visual
+source placeholders are drawn. Zero sources shows the Generate stems action, a plain branching-line symbol. Tooltips and accessible
+labels name the sources. Waveform and artwork share the 22px maximum icon-size token. All cells center content
+vertically; Analysis and Stems center horizontally too, while text and Song remain
+left-aligned, so waveform-only, stems-only, both and neither cannot share a visual
 stack with the neighboring song. Adding Stems to an older column arrangement places it
 after Analysis without moving the person's other columns.
 
@@ -173,9 +179,13 @@ entry as the app provider and Play view. Importing `theme/context.ts` directly c
 create a separate Vite optimized context while ThemeRoot's CSS keeps it served as
 source; that preview reads the default theme rather than the Settings provider.
 
+`LibraryColumn` retains its viewBox height with its path. Thumbnail component keys
+follow that coordinate height, and geometry-producer changes invalidate the cache, and old-coordinate paths are not painted in a new
+viewBox during hot updates. This only rereads saved analysis, never audio.
+
 `LibraryAnalysis.tsx` requests the existing `analysis.scans` cache only when a cell becomes
-visible, with at most two disk reads in flight. `libraryOverview.ts` reduces its min/max
-bins to the miniature and averages each column’s saved low/mid/high energy. The shared
+visible, with at most two disk reads in flight. `libraryOverview.ts` reduces its saved extrema
+to the representative miniature and averages each column’s saved low/mid/high energy. The shared
 `waveformPainter` uses the current waveform palette, treatment and strength, repainting on theme
 changes without rereading the cache. The library has no deck identity, so its miniature
 uses neutral waveform paint in Deck color mode and frequency paint in Spectral mode.
@@ -758,8 +768,8 @@ new imports detect automatically. See [keys.md](keys.md).
 Display text throughout the app is not selectable, preventing accidental selections
 while operating controls or dragging rows. Inputs, textareas and editable content
 explicitly retain text selection for normal editing. This is CSS only; it does not
-intercept keyboard shortcuts or pointer gestures. Unseparated library tracks show a compact three-lane icon button in Stems, named
-“Separate stems for [track]”. It selects that exact track and opens Prep through the
+intercept keyboard shortcuts or pointer gestures. Unseparated library tracks show a compact branching-line icon button in Stems, named
+“Generate stems for [track]”. It selects that exact track and opens Prep through the
 existing view switch; it does not start separation. The normal track/job phase chooses
 setup or running-job UI, with the existing busy-job policy intact. Pointer activation
 is isolated from row selection and dragging; the native button supports Enter/Space.
@@ -769,3 +779,16 @@ shared button marker color. It uses the quiet-button treatment: a muted `--capti
 icon at rest, bright `--fg` on hover, and no face or border highlight. The icon uses
 these app colors directly because widget-local tokens are
 scoped to a `.wdg` wrapper, which the library cell does not have.
+
+Library headers and row text use the shared proportional family/axes and 11px body
+size, including BPM and the Key button. The table body alone owns vertical and
+horizontal scrolling. Header and body use the same explicit CSS column tracks;
+horizontal scroll translates the header row through a DOM ref without React state
+or song-row renders. Reordering and resizing retain native table/column semantics.
+
+The header has one position button, showing beats by default. Clicking or pressing
+Space/Enter toggles the existing bar.beat.sixteenth and minutes:seconds formats,
+using the same data sources as before. A fixed 94px width prevents movement. The
+current/next-mode accessible label and tooltip explain the action. The display-only
+preference is stored at `mixflow.header-position.v1`; invalid or unavailable storage
+falls back to beats and never affects transport. App playback shortcuts exclude buttons.
