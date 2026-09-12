@@ -1,3 +1,4 @@
+import { Pointing } from '@openflow/widgets/controls/Pointing.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { BridgeState } from '../hooks/useBridge.ts';
 import './Header.css';
@@ -365,6 +366,7 @@ export function Header({
       </div>
 
       <div className="header-section header-right">
+        <Pointing />
         <ControlButton
           icon
           aria-label="Set configuration"

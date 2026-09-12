@@ -1,3 +1,4 @@
+import { Pointing } from '@openflow/widgets/controls/Pointing.tsx';
 import { PositionDisplay } from './PositionDisplay.tsx';
 import { useSyncExternalStore, type ReactNode } from 'react';
 import type { MixerEngine } from '../play/engine.ts';
@@ -406,6 +407,7 @@ export function Header({ mix, ready, playView = false, onSelectView, mixer, onSe
         {exportMark}
       </Button>}
         <div className="wdg wdg-control-group mf-group mf-settings-button" role="group" aria-label="Settings and debug">
+        <Pointing className="mf-header-icon" />
         {debugButton}
         {onSettings && <Button className="mf-header-icon" width={26} onPress={onSettings} label="Settings" title="Audio and theme settings">{settingsMark}</Button>}
         </div>

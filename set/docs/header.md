@@ -60,3 +60,14 @@ with 6px of air above and below plus its 1px bottom border.
   on — amber everywhere except the transport, where record follows Live and lights red.
 - **The empty state shows the glyph, not the word.** It used to say *hit **Snapshot***, and
   pointing at a label that no longer exists is worse than no instruction.
+
+## Pointing for screenshots
+
+The shared `@openflow/widgets/controls/Pointing.tsx` pointer button sits with the
+header's settings/utility controls (beside Debug and Settings in mix). It lights while
+active; **Clear** appears alongside it and resets annotation letters to A. It works
+identically in the browser harness and packaged Electron app. No hotkeys, native menu,
+preload integration, audio state, or application subscriptions are involved. Each
+clicked control receives a letter and colored outline while its normal action still
+runs. The pointing controls themselves are excluded. Turning off or unmounting clears
+the marks. The DOM engine and control behavior are owned and tested by Widgets.

@@ -792,3 +792,14 @@ using the same data sources as before. A fixed 94px width prevents movement. The
 current/next-mode accessible label and tooltip explain the action. The display-only
 preference is stored at `mixflow.header-position.v1`; invalid or unavailable storage
 falls back to beats and never affects transport. App playback shortcuts exclude buttons.
+
+## Pointing for screenshots
+
+The shared `@openflow/widgets/controls/Pointing.tsx` pointer button sits with the
+header's settings/utility controls (beside Debug and Settings in mix). It lights while
+active; **Clear** appears alongside it and resets annotation letters to A. It works
+identically in the browser harness and packaged Electron app. No hotkeys, native menu,
+preload integration, audio state, or application subscriptions are involved. Each
+clicked control receives a letter and colored outline while its normal action still
+runs. The pointing controls themselves are excluded. Turning off or unmounting clears
+the marks. The DOM engine and control behavior are owned and tested by Widgets.
