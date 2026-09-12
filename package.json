@@ -105,7 +105,7 @@
   },
   "dependencies": {
     "@openflow/widgets": "git+https://github.com/openflowfm/widgets.git#c820811eb76f5dc91c66c1645a16c5542510f04a",
-    "@xyflow/react": "^12.11.5",
+    "@xyflow/react": "^12.11.6",
     "d3-hierarchy": "^3.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
