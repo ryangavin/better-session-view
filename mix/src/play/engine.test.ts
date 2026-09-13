@@ -119,13 +119,14 @@ describe('the four-deck playback owner',()=>{
   it('restarts on a new output while retaining tracks, positions and mixer controls', async () => {
     const { engine, ctx, load } = setup(); await load();
     engine.commands.setDeck('deck-a', 'trim', 4);
+    engine.commands.setDeck('deck-a', 'filterResonance', 9);
     await engine.launch('deck-a', 'section-1-4', 'bass'); ctx.currentTime = 2;
     const before = engine.readFrame().decks['deck-a'].beat;
     const next = new Context(); next.sampleRate = 96000;
     engine.replaceAudioContext(next as unknown as AudioContext);
     expect(ctx.close).toHaveBeenCalledOnce(); expect(next.sources).toHaveLength(0);
     expect(engine.snapshot().running).toBe(false);
-    expect(engine.snapshot().decks[0]).toMatchObject({ playing: false, trim: 4, track: { id: 'song' } });
+    expect(engine.snapshot().decks[0]).toMatchObject({ playing: false, trim: 4, filterResonance: 9, track: { id: 'song' } });
     expect(engine.snapshot().decks[0].stems.find(s => s.id === 'bass')?.selected).toBe('section-1-4');
     expect(engine.readFrame().decks['deck-a'].beat).toBeCloseTo(before);
     await engine.play('deck-a', true);
@@ -377,7 +378,7 @@ describe('the four-deck playback owner',()=>{
   });
   it('keeps the fader and Sync across a new track on the same deck',async()=>{
     const {engine,ctx,load}=setup();ctx.destination.maxChannelCount=4;await load();
-    const desk={gain:42,trim:-3,filter:-25,sendA:20,sendB:30,route:2,cue:true} as const;
+    const desk={gain:42,trim:-3,filter:-25,filterResonance:8,sendA:20,sendB:30,route:2,cue:true} as const;
     for(const [control,value] of Object.entries(desk)) engine.commands.setDeck('deck-a',control as 'gain',value as never);
     [4,-2,6].forEach((db,band)=>engine.commands.setDeckEq('deck-a',band,db));
     await engine.sync('deck-a',true);
@@ -830,4 +831,37 @@ it('keeps old linear stem values and allows +6 dB while zero remains true mute',
   expect(engine.snapshot().decks[0].stems.find(s=>s.id==='drums')!.level).toBeCloseTo(199.5262315);
   engine.commands.setStemLevel('deck-a','drums',NaN);
   expect(engine.snapshot().decks[0].stems.find(s=>s.id==='drums')!.level).toBeCloseTo(199.5262315);
+});
+
+it('clamps resonance per deck and ignores non-finite or boolean commands',async()=>{
+  const {engine,load}=setup();await load();await load('deck-b');
+  for(const [input,value] of [[30,12],[-4,0],[6,6]]){
+    engine.commands.setDeck('deck-a','filterResonance',input);
+    expect(engine.snapshot().decks[0].filterResonance).toBe(value);
+    expect(engine.snapshot().decks[1].filterResonance).toBe(0);
+  }
+  for(const input of [NaN,Infinity,-Infinity,true])engine.commands.setDeck('deck-a','filterResonance',input);
+  expect(engine.snapshot().decks[0].filterResonance).toBe(6);
+});
+
+it('ramps only the active filter Q, resets at center, and reapplies resonance after reconstruction',async()=>{
+  const {engine,ctx,load}=setup();
+  const calls=vi.spyOn(MixerChannel.prototype,'apply');
+  await load();await load('deck-b');
+  engine.commands.setDeck('deck-a','filter',50);engine.commands.setDeck('deck-a','filterResonance',12);
+  expect(calls.mock.calls.some(c=>c[2]===50 && c[4]===12)).toBe(true);
+  engine.replaceAudioContext(new Context() as unknown as AudioContext);
+  expect(calls.mock.calls.at(-2)?.[4]).toBe(12);
+  expect(calls.mock.calls.at(-1)?.[4]).toBe(0);
+  calls.mockRestore();
+  const filters:Node[]=[];ctx.createBiquadFilter=()=>{const n=new Node();filters.push(n);return n;};
+  const channel=new MixerChannel(ctx as unknown as AudioContext),[high,low]=filters.slice(-2);
+  const h=vi.spyOn(high.Q,'setTargetAtTime'),l=vi.spyOn(low.Q,'setTargetAtTime');
+  const cancel=vi.spyOn(high.Q,'cancelScheduledValues');ctx.currentTime=3;
+  for(const [position,resonance,hq,lq] of [[50,99,12,0],[-50,7,0,7],[0,12,0,0],[50,-5,0,0],[50,NaN,0,0]]){
+    channel.apply(0,[0,0,0],position,1,resonance);
+    expect(h).toHaveBeenLastCalledWith(hq,3,.008);expect(l).toHaveBeenLastCalledWith(lq,3,.008);
+    expect(cancel).toHaveBeenLastCalledWith(3);
+  }
+  channel.dispose();
 });

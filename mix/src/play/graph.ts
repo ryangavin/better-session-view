@@ -5,6 +5,8 @@ export const dbGain = (value: number) => 10 ** (value / 20);
 export const routeGain = (route: number, cross: number) => route === 1 ? 1 : route === 0 ? Math.min(1, (100 - cross) / 100) : Math.min(1, (100 + cross) / 100);
 export function smooth(param: AudioParam, value: number, now: number) { param.cancelScheduledValues(now); param.setTargetAtTime(value, now, 0.008); }
 
+export const clampFilterResonance = (value: number) => Number.isFinite(value) ? Math.max(0, Math.min(12, value)) : 0;
+
 /** Channel EQ/filter, pre-fader phones tap, post-fader output and measurement. */
 export class MixerChannel {
   input: GainNode; output: GainNode; pre: GainNode;
@@ -22,12 +24,16 @@ export class MixerChannel {
       this.stereoMeters=[0,1].map(channel=>{const meter=ctx.createAnalyser();meter.fftSize=1024;this.splitter!.connect(meter,channel);return meter;});
     }
   }
-  apply(trim: number, bands: readonly number[], filter: number, gain: number) {
+  apply(trim: number, bands: readonly number[], filter: number, gain: number, filterResonance = 0) {
     const now = this.ctx.currentTime;
     smooth(this.input.gain, dbGain(trim), now);
     this.eq.apply({ ...FLAT, high: bands[0], mid: bands[1], low: bands[2] }, now, 0.015);
     smooth(this.high.frequency, filter > 0 ? 20 * 1000 ** (filter / 100) : 10, now);
     smooth(this.low.frequency, filter < 0 ? 20000 * (40 / 20000) ** (-filter / 100) : this.ctx.sampleRate / 2, now);
+    // Web Audio low/high-pass Q is expressed in dB, unlike peaking-filter Q.
+    const resonance = clampFilterResonance(filterResonance);
+    smooth(this.high.Q, filter > 0 ? resonance : 0, now);
+    smooth(this.low.Q, filter < 0 ? resonance : 0, now);
     smooth(this.output.gain, gain, now);
   }
   level(): number { this.meter.getFloatTimeDomainData(this.samples); let peak = 0; for (const n of this.samples) peak = Math.max(peak, Math.abs(n)); return Math.min(1, peak); }

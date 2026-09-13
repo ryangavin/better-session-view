@@ -10,7 +10,7 @@ import { LinkAudioSender, LINK_AUDIO_OFF } from '../linkAudio.ts';
 import { linkBeatAt, type LinkTimeline } from '../linkTiming.ts';
 import { DECK_IDS, params, emptyDeck, initialMixer, loadedDeck, loadDeckAsset, type DeckAudio } from './decks.ts';
 import { DeckVoice } from './voice.ts';
-import { MixerChannel, MixerEffect, levelGain, routeGain, smooth } from './graph.ts';
+import { MixerChannel, clampFilterResonance, MixerEffect, levelGain, routeGain, smooth } from './graph.ts';
 import { floorBeat, snapBeat, launchWait, LOOP_LENGTHS } from './timing.ts';
 import { readEffectHighPass, saveEffectHighPass, highPassHz, highPassPosition, EFFECT_HIGH_PASS_PARAM, EFFECT_HIGH_PASS_HINT } from './effectHighPass.ts';
 import { EFFECTS } from './effects.ts';
@@ -210,7 +210,7 @@ export class MixerEngine {
     // arrives at the fader the last one left, and on a deck that is still
     // synced. Everything the track owns — sections, stems, grid — is fresh.
     const held = this.model(id), wasSynced = held.synced ?? false;
-    const desk = { gain: held.gain, trim: held.trim, eq: [...held.eq], filter: held.filter, sendA: held.sendA, sendB: held.sendB, route: held.route, cue: held.cue };
+    const desk = { gain: held.gain, trim: held.trim, eq: [...held.eq], filter: held.filter, filterResonance: held.filterResonance ?? 0, sendA: held.sendA, sendB: held.sendB, route: held.route, cue: held.cue };
     const fresh = emptyDeck(id, DECK_IDS.indexOf(id));
     this.patchDeck(id, { ...fresh, ...desk, track: { id: track.id, title: track.title, artist: track.artist ?? '', bpm: track.bpm, key: track.key ?? '—' }, status: 'loading', message: 'Loading audio…' });
     try {
@@ -609,7 +609,7 @@ export class MixerEngine {
     this.masterSends.forEach((send,i) => smooth(send.gain, (i ? s.masterSendB : s.masterSendA) / 100 * gate(i), now));
     this.decks.forEach((d,id) => {
       const m = this.model(id);
-      d.channel.apply(m.trim, m.eq, m.filter, levelGain(m.gain) * routeGain(m.route, s.cross));
+      d.channel.apply(m.trim, m.eq, m.filter, levelGain(m.gain) * routeGain(m.route, s.cross), m.filterResonance);
       d.sends.forEach((send,i) => smooth(send.gain, (i ? m.sendB : m.sendA) / 100 * gate(i), now));
       smooth(d.phones.gain, m.cue ? 1 : 0, now);
       d.slots.forEach((slot,name) => smooth(slot.voice.output.gain, name === 'full' ? (m.full ? 1 : 0) : m.full ? 0 : (m.stems.find(stem => stem.id === name)?.level ?? 0) / 100, now));
@@ -911,7 +911,7 @@ export class MixerEngine {
     setEffectParam:(slot,id,param,value)=>{this.publish({...this.state,effectValues:{...this.state.effectValues,[slot]:{...this.state.effectValues?.[slot],[id]:{...this.state.effectValues?.[slot]?.[id],[param]:value}}}});this.apply();},
     setMaster:(control,value)=>{if(control==='masterTrim'){if(!Number.isFinite(value))return;value=Math.max(params.trim.min,Math.min(params.trim.max,value));}if(control==='bpm')this.run(this.adjustTempo(value));else {this.publish({...this.state,[control]:value});this.apply();}},
     setMasterEq:(band,value)=>{this.publish({...this.state,masterEq:this.state.masterEq.map((v,i)=>i===band?value:v)});this.apply();},
-    setDeck:(id,control,value)=>{if(control==='trim'){if(!Number.isFinite(value))return;value=Math.max(params.trim.min,Math.min(params.trim.max,Number(value)));}if(control==='full'){this.source(id,!!value);return;}if(control==='cue'&&!this.phonesAvailable&&!this.linkAudio.enabled&&value){this.error('Cue needs a second output pair chosen in Settings, or the Phones stream in Link Audio.',id);return;}this.patchDeck(id,{[control]:value});this.apply();},
+    setDeck:(id,control,value)=>{if(control==='filterResonance'){if(typeof value!=='number'||!Number.isFinite(value))return;value=clampFilterResonance(value);}if(control==='trim'){if(!Number.isFinite(value))return;value=Math.max(params.trim.min,Math.min(params.trim.max,Number(value)));}if(control==='full'){this.source(id,!!value);return;}if(control==='cue'&&!this.phonesAvailable&&!this.linkAudio.enabled&&value){this.error('Cue needs a second output pair chosen in Settings, or the Phones stream in Link Audio.',id);return;}this.patchDeck(id,{[control]:value});this.apply();},
     setDeckEq:(id,band,value)=>{this.patchDeck(id,{eq:this.model(id).eq.map((v,i)=>i===band?value:v)});this.apply();},
     setStemLevel:(id,stem,value)=>{if(!Number.isFinite(value))return;value=clampStemGain(value);this.patchDeck(id,{stems:this.model(id).stems.map(s=>s.id===stem?{...s,level:value}:s)});this.apply();},
     launch:(id,section,stem)=>this.run(this.launch(id,section,stem),id),

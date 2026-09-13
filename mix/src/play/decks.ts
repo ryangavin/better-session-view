@@ -20,7 +20,7 @@ const STANDARD = ['drums', 'bass', 'other', 'vocals'];
 export function emptyDeck(id: string, i: number): MixerDeck {
   return { id, letter: 'ABCD'[i], track: null, status: 'empty', message: 'Drop a library track here', peaks: [], sections: [],
     stems: STANDARD.map(id => ({ id, name: id[0].toUpperCase() + id.slice(1), available: false, level: 100, selected: null, queued: undefined })),
-    full: false, fullSection: null, fullQueued: undefined, gain: 100, trim: 0, sendA: 0, sendB: 0, filter: 0, eq: [0,0,0], route: i % 2 ? 2 : 0, cue: false };
+    full: false, fullSection: null, fullQueued: undefined, gain: 100, trim: 0, sendA: 0, sendB: 0, filter: 0, filterResonance: 0, eq: [0,0,0], route: i % 2 ? 2 : 0, cue: false };
 }
 export function initialMixer(): MixerState {
   return { decks: DECK_IDS.map(emptyDeck), running: false, beat: 0, loop: { start: null, end: null, enabled: false }, canLoopOut: false,
@@ -35,6 +35,7 @@ export const params: MixerParams = {
   trim: {kind:'float', min:-24, max:12, defaultValue:0, unit:'decibel'},
   send: {kind:'float', min:0, max:100, defaultValue:0, unit:'percent'},
   eq: {kind:'float', min:-24, max:12, defaultValue:0, unit:'decibel'},
+  filterResonance: {kind:'float', min:0, max:12, defaultValue:0, unit:'decibel'},
   filter: {kind:'float', min:-100, max:100, defaultValue:0, unit:'int'},
   tempo: {kind:'float', min:20, max:300, defaultValue:124, unit:'float'},
   cross: {kind:'float', min:-100, max:100, defaultValue:0, unit:'int'},

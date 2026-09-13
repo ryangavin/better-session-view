@@ -422,7 +422,7 @@ with a vertical rule. Hot cues play through; stem cells loop independently.
 The hot cue column and the stem columns share one width, so every launcher button in a
 deck measures the same.
 
-Loading a track leaves the channel as the desk was set: fader, trim, EQ, filter, both FX sends, crossfader assignment and headphone cue all keep their positions, and a synced deck stays synced provided the arriving track has a grid to hold it to. Everything the track owns — sections, waveform, grid, loops and Cue — is fresh, and every stem returns to full level. A deck loads playing the original track; its stems are chosen explicitly.
+Loading a track leaves the channel as the desk was set: fader, trim, EQ, filter, resonance, both FX sends, crossfader assignment and headphone cue all keep their positions, and a synced deck stays synced provided the arriving track has a grid to hold it to. Everything the track owns — sections, waveform, grid, loops and Cue — is fresh, and every stem returns to full level. A deck loads playing the original track; its stems are chosen explicitly.
 
 A newly loaded deck plays the original, so it draws that one lane; switching it to stems
 draws them all. Loading does not change waveform zoom. The deck sits on the track's first
@@ -551,3 +551,27 @@ group on every deck. Bottom beat-jump arrows use the same grouping with their
 existing responsive orientation. Commands and disabled conditions are unchanged.
 The header position display toggles beats/elapsed time as a display preference only;
 it defaults to beats, keeps its prior formatting and does not seek or start playback.
+
+### Deck filter resonance
+
+Filter and Resonance sit together between FX A and FX B. Resonance defaults/resets
+at 0 dB and spans 0–12 dB; the generic `setDeck` path clamps finite values and
+ignores invalid values. The graph defensively clamps too. Web Audio high/low-pass
+Q uses decibels: positive Filter applies resonance only to the high-pass, negative
+Filter only to the low-pass, and center targets zero on both. Cutoff and Q share
+an 8 ms exponential time constant, including when crossing center. At rest in the
+center, any resonance setting produces exactly the same output as zero resonance.
+Master resonance stays zero; controller mappings are unchanged.
+
+Resonance is a desk setting: track replacement and audio-context reconstruction
+retain it. It lasts for the window session, like the other deck mixer controls.
+It can raise peaks above unity before output protection; the existing master/phones
+limiter still bounds their outputs, while deck taps retain the unprotected signal.
+Use Trim to manage headroom rather than relying on limiting as gain matching.
+
+`engine.test.ts` covers command bounds, invalid inputs, isolated deck state, graph
+reconstruction, replacement and Q automation. `dsp/filter-resonance.test.ts` renders
+real Web Audio at 44.1/48/96 kHz, comparing center output sample-for-sample and the
+1 kHz cutoff response in both directions; it also measures overload before/after
+the existing limiter and finite output during sweeps through center. These offline
+renders do not establish subjective sound quality or physical output behavior.
