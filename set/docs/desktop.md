@@ -41,7 +41,8 @@ re-validation. What does hold is that **Tauri's macOS webview is WKWebView**, an
 visual[flow] draws its show *inside* the webview — so moving would put a projector in a
 renderer with fewer levers and lose the anti-throttling switches it depends on. This app
 would survive the move; that one would not, and one engine across both is worth more than
-either. `visuals/docs/engine.md` works through the whole trade, including what would have to
+either. visual[flow]'s [`docs/engine.md`](https://github.com/openflowfm/visuals/blob/main/docs/engine.md)
+works through the whole trade, including what would have to
 change before the shell is worth revisiting.
 
 ## `set://app`, and the one-time cost of moving there

@@ -78,14 +78,15 @@ and comparison harness, with mix[flow] as its intended first consumer.
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
 | [`desktop/`](https://github.com/openflowfm/desktop/blob/main/README.md) | the Electron main process every app shares | the window, packaging, or adding a new app |
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator, the app driver | changing the patcher, the device type, or how an app is built |
-| [`visuals/`](visuals/README.md) | a VJ rig: Link peer, bridge client, WebGL2 renderer | visuals, the clock, or a second kind of client |
+| [`visuals`](https://github.com/openflowfm/visuals/blob/main/README.md) | a VJ rig: Link peer, bridge client, WebGL2 renderer | visuals, the clock, or a second kind of client |
 | [`chart/`](chart/README.md) | what the band reads: a read-only view of the playing song, on a phone | the section list, the LAN binding, or a client with no dependencies |
 | [`mix/`](mix/README.md) | stem separation with Demucs, **mix[flow]** — a skeleton | the model, the job runner, or what a third app costs |
 
-`visuals/` is the first thing to take rule 5 up on its offer of "a second kind of client":
-it follows the bridge, perturbs nothing, and needs no browser open anywhere else. It is a
+`visuals` was the first thing to take rule 5 up on its offer of "a second kind of client":
+it follows the bridge, perturbs nothing, and needs no browser open anywhere else. It was a
 separate process because Ableton Link is a native addon and the bridge's Node lives inside
-Max, and because it is meant to run on a different machine entirely.
+Max, and because it is meant to run on a different machine entirely — reasons that hold
+just as well now that it lives in its own repo, [openflowfm/visuals](https://github.com/openflowfm/visuals).
 
 `chart/` is the second, and it is separate for a different reason: its clients are other
 people's phones. The device binds `127.0.0.1` on purpose, so putting a chart on the band's
@@ -156,7 +157,7 @@ The apps make their own at launch, which is what keeps them from ever being stal
 
 ```
 set/dist/  set/electron/dist/            `npm run set`
-visuals/dist/  visuals/electron/dist/    `npm run visuals`
+mix/dist/  mix/electron/dist/            `npm run mix`
 chart/dist/                              the band's page — `npm run build:chart`
 release/                                 packaged .app and .dmg — `npm run pack`
 ```
@@ -171,18 +172,19 @@ the addon, and failing that is a warning rather than an error.
 Not silence, and the difference between the lines matters. Each of these has been chased
 to its cause; none is a to-do nobody got to.
 
-**`bridge/` and `visuals/` keep their own `node_modules`, and neither may hold a second
-React.** The first ships beside Live with no dependency tree at all; the second has the
-native Ableton Link addon and `!node_modules/**` in its `electron-builder.yml`. Both are
-right. What neither can hold is a package that only works as one copy — install anything
-with a React peer dependency into `visuals/` and npm will satisfy that peer *there*, giving
-the tree two module registries and every `useContext` under the second one a null
-dispatcher. The error surfaces from library code nowhere near the install.
+**`bridge/` keeps its own `node_modules`, and it may not hold a second React.** It ships
+beside Live with no dependency tree at all, which is right. What it can't hold is a package
+that only works as one copy — install anything with a React peer dependency into `bridge/`
+and npm will satisfy that peer *there*, giving the tree two module registries and every
+`useContext` under the second one a null dispatcher. The error surfaces from library code
+nowhere near the install.
 
 The split is by side, not by folder: the UI is bundled by the root toolchain, so React,
-React Flow and `d3-hierarchy` are root dependencies, while `visuals/package.json` holds the
-server and Electron side — Link, `ws`, `zod`, the MCP SDK. `npm run dev:check-singletons`
-enforces it and runs on `postinstall`.
+React Flow and `d3-hierarchy` are root dependencies, while `bridge/package.json` holds the
+device side — `ws`, `zod`, the MCP SDK. `npm run dev:check-singletons`
+enforces it and runs on `postinstall`. visual[flow] used to be the same arrangement, for
+the native Ableton Link addon and `!node_modules/**` in its `electron-builder.yml`, and the
+same rule holds in its own repo now that it is checked out separately.
 
 **Four deprecation warnings — `inflight`, `glob@7`, `rimraf@2`, `boolean` — are all
 electron-builder's.** Every one traces to `app-builder-lib`: `@electron/asar` pulls old

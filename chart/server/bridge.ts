@@ -14,7 +14,8 @@
  * renderer. This serves phones over SSE, which `node:http` already speaks, so
  * `chart/` installs nothing at all and runs from a fresh clone.
  *
- * It is the same shape as `visuals/server/bridge.ts` and deliberately not shared
+ * It is the same shape as visual[flow]'s own `server/bridge.ts`
+ * (https://github.com/openflowfm/visuals) and deliberately not shared
  * with it: that one carries a renderer's worth of state — clips, meters, the
  * mixer — and lives in a process that has `ws` for the addon's sake. This one
  * keeps five fields. **If a third client appears, this is the thing to extract**;

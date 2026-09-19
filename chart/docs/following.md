@@ -83,7 +83,8 @@ Bundlers all resolve that to `derive.ts`; **Node's type stripping does not**, an
 `core/` file only when that file imports nothing itself, which is true of `livePalette.ts`
 and of very little else.
 
-This is why `visuals/server/show.ts` carries a private `roleOf` regex rather than calling
+This is why visual[flow]'s [`server/show.ts`](https://github.com/openflowfm/visuals/blob/main/server/show.ts)
+carries a private `roleOf` regex rather than calling
 `roles.ts`. It is a real constraint on any Node-side client of this project, and the answer
 taken here was to put the per-scene facts on the wire instead of finding a way to re-read
 the names — the mapping being read exactly once is the better property anyway, and it is

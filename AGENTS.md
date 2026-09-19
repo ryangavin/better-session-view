@@ -14,7 +14,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 | an Electron app — its window, its packaging, or adding a new one | [`desktop/README.md`](https://github.com/openflowfm/desktop/blob/main/README.md) — 6 topic docs. `@openflow/desktop`: the main process set[flow] and visual[flow] share. **Adding an app starts at `desktop/docs/registry.md`** |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](https://github.com/openflowfm/widgets/blob/main/README.md) — its README indexes the topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way**. Also holds `palette.css`, the design language every app imports |
 | stem separation, or demucs | [`mix/README.md`](mix/README.md) — 5 topic docs. `@openflow/mix`: **mix[flow]**. It separates, plays and mixes for real; the slices are the last invented thing. It ships `uv` and a lock and **builds its own Python engine on first run** — `mix/docs/demucs.md`. Talks to no bridge and no server |
-| a VJ rig, Ableton Link, WebGL, or how a set becomes a show | [`visuals/README.md`](visuals/README.md) — 5 topic docs. `@openflow/visuals`: its own server and its own `node_modules`, deliberately **not** a workspace; an ordinary **client** of the bridge |
+| a VJ rig, Ableton Link, WebGL, or how a set becomes a show | its own repo now — [openflowfm/visuals](https://github.com/openflowfm/visuals#readme). An ordinary **client** of the bridge |
 | what the band reads off a phone | [`chart/README.md`](chart/README.md) — 2 topic docs. `@openflow/chart`: no dependencies; a **read-only** client of the bridge, and the only thing here that binds the LAN |
 | anything involving Live | [`bridge/README.md`](bridge/README.md) — 8 topic docs. **Most constraints in this project live here** |
 | "does Live expose X?" | [`bridge/LOM.md`](bridge/LOM.md) — **look it up, don't guess.** Includes where the published docs are wrong |
@@ -81,13 +81,11 @@ work in [Issues](../../issues).
     wrong, fix the doc — don't append a note saying it's wrong.
 
 12. **Local modules are `@openflow/*` packages, and the dependency-free ones are npm
-    workspaces — but `bridge/` and `visuals/` must never become workspaces.** Both keep a
-    `node_modules` of their own on purpose: `visuals/tools/build-link.ts` repairs and
-    compiles the Ableton Link native addon at the hard-coded path
-    `visuals/node_modules/@ktamas77/abletonlink`, and `bridge/` is bundled for a Node
-    runtime inside Max that is not ours to pick. Listing either in `workspaces` hoists its
-    dependencies to the root, at which point `postinstall` fails with "abletonlink is not
-    installed". The workspaces — `core`, `protocol`, `set`, `mix`, `chart`, `tools` —
+    workspaces — but `bridge/` must never become a workspace.** It keeps a
+    `node_modules` of its own on purpose: it is bundled for a Node
+    runtime inside Max that is not ours to pick. Listing it in `workspaces` hoists its
+    dependencies to the root, at which point `postinstall` fails against a runtime it was
+    never meant for. The workspaces — `core`, `protocol`, `set`, `mix`, `chart`, `tools` —
     are safe to hoist only because none of them has dependencies of its own; they are
     workspaces so the packages resolve by name. `desktop/` imports `electron`, but never
     resolves it: esbuild marks it external, because the runtime provides it. Cross-module imports use the package
@@ -106,13 +104,12 @@ on the module and use it to check usability changes.
 
 ```sh
 npm run typecheck     # every project
-npm test              # every module's unit tests; --project=visuals for one
+npm test              # every module's unit tests; --project=chart for one
 npm run test:coverage # the same tests, and what they reach — report/index.html
 npm run dev:mutate -- <file>   # would its spec notice the file changing? see .claude/skills/set-spec
 npm run dev:record -- <name>   # a real session into set/test/corpus/ — needs Live
 npm run build         # the device: bridge.js, lom.js, the .amxd. No front end.
 npm run set           # the session manager, in its window
-npm run visuals       # the VJ rig, its server and its window
 npm run mix           # stem separation — a skeleton, and the newest app
 npm run app -- pack   # every app as a .app and a .dmg, from desktop/src/apps.ts
 npm run benchmark     # every flow's frame cost, with nothing pacing it

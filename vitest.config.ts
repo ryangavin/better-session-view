@@ -1,22 +1,11 @@
 import { defineConfig } from 'vitest/config';
 
 // One project per module, so a run can be read — or taken — a module at a
-// time: `npm test -- --project=visuals`, and a named group in the report
+// time: `npm test -- --project=chart`, and a named group in the report
 // rather than seventy-eight files in one list.
 const module = (name: string, include: string[], exclude?: string[]) => ({
   test: { name, include, exclude, environment: 'node' as const },
 });
-
-// visuals is three: the renderer, the server, and the modules both are built
-// on. The third is what is left rather than a list, so a test in a directory
-// nobody has thought of yet still runs — vitest's own exclude defaults go with
-// it, since naming one replaces them all.
-const VISUALS_SHARED = [
-  'visuals/client/**',
-  'visuals/server/**',
-  '**/node_modules/**',
-  '**/dist/**',
-];
 
 export default defineConfig({
   test: {
@@ -27,9 +16,6 @@ export default defineConfig({
         'set/src/components/**/*.test.ts',
         'set/src/hooks/**/*.test.ts',
       ]),
-      module('visuals', ['visuals/**/*.test.ts'], VISUALS_SHARED),
-      module('visuals/client', ['visuals/client/**/*.test.ts']),
-      module('visuals/server', ['visuals/server/**/*.test.ts']),
       module('chart', ['chart/**/*.test.ts']),
     ],
     // Vitest 5's HTML reporter takes a directory rather than outputFile.
@@ -57,8 +43,6 @@ export default defineConfig({
         'mix/electron/models.ts',
         'mix/electron/runtime.ts',
         'mix/electron/youtube.ts',
-        'visuals/client/**/*.{ts,tsx}',
-        'visuals/server/**/*.{ts,tsx}',
         'chart/src/**/*.{ts,tsx}',
         'chart/server/**/*.{ts,tsx}',
       ],

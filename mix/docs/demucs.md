@@ -178,7 +178,8 @@ change too, and is most of why the old arrangement could not have shipped.
 
 `tools/app.ts` runs `<app>/tools/prepare.ts` before an app's main process, for any app
 that has one. mix[flow] is the only one that does, and the seam is the same shape as
-`visuals/tools/build-link.ts`: the thing neither vite nor esbuild makes.
+visual[flow]'s [`tools/build-link.ts`](https://github.com/openflowfm/visuals/blob/main/tools/build-link.ts):
+the thing neither vite nor esbuild makes.
 
 Both inputs are pinned by version **and** by digest: the published `uv` archive and the
 official FFmpeg source tarball. A build step that fetches whatever is newest cannot be

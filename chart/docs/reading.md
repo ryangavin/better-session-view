@@ -12,7 +12,8 @@ The **dominant** `playing_slot_index` across the tracks, not any one track's.
 A scene launch moves every track at once, so what most of the set is playing *is* the
 scene. A track somebody reached past the grid to fire on its own is the "and now something
 else" gesture of a live set, and it does not get to rename the section for everyone else.
-`visuals/server/show.ts` reads the playing scene the same way, for the same reason.
+visual[flow]'s [`server/show.ts`](https://github.com/openflowfm/visuals/blob/main/server/show.ts)
+reads the playing scene the same way, for the same reason.
 
 "Next" is the dominant `fired` index on the same terms. **Live's `-2` is the track's stop
 button, not a scene**, so only indexes at or above zero are counted — folding the two
