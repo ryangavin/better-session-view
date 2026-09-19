@@ -21,7 +21,6 @@ const VISUALS_SHARED = [
 export default defineConfig({
   test: {
     projects: [
-      module('core', ['core/src/**/*.test.ts']),
       module('mix', ['mix/electron/**/*.test.ts', 'mix/src/**/*.test.ts', 'mix/harness/**/*.test.ts']),
       module('set', [
         'set/src/lib/**/*.test.ts',
@@ -47,7 +46,6 @@ export default defineConfig({
       // nobody imports is the interesting case, and it should read 0% rather
       // than go missing.
       include: [
-        'core/src/**/*.{ts,tsx}',
         'set/src/**/*.{ts,tsx}',
         'mix/src/**/*.{ts,tsx}',
         // Not the whole of electron/: main.ts and library.ts import electron,

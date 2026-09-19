@@ -17,7 +17,7 @@
     "bench/**/*.tsx",
     "vite.config.ts",
     "vite.bench.config.ts",
-    "../protocol/global.d.ts",
+    "../node_modules/@openflow/protocol/global.d.ts",
     "../types/assets.d.ts"
   ]
 }

@@ -1,4 +1,4 @@
-import { keyRoot, spellsFlat } from '../../core/src/chords.ts';
+import { keyRoot, spellsFlat } from '@openflow/core/chords.ts';
 import type { BasslineNote, ChartBassline } from '../protocol.ts';
 import type { SetState } from './bridge.ts';
 

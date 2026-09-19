@@ -4,7 +4,7 @@ import {
   type PianoRollKey,
   type PianoRollNote,
 } from '@openflow/widgets/notation/PianoRoll.tsx';
-import { hex } from '../../core/src/color.ts';
+import { hex } from '@openflow/core/color.ts';
 import {
   degreeColor,
   degreeName,
@@ -13,12 +13,12 @@ import {
   keyColor,
   keyRoot,
   noteName,
-} from '../../core/src/chords.ts';
+} from '@openflow/core/chords.ts';
 import {
   formatSecondsLeft,
   loopBars,
   trackStatus,
-} from '../../core/src/trackStatus.ts';
+} from '@openflow/core/trackStatus.ts';
 import {
   BASSLINE_EVENT,
   CHART_EVENT,

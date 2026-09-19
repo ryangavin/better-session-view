@@ -18,8 +18,6 @@
     "node": ">=26"
   },
   "workspaces": [
-    "core",
-    "protocol",
     "set",
     "mix",
     "chart",
@@ -58,7 +56,7 @@
     "dev:mix-ui": "vite --config mix/vite.config.ts",
     "dev:mix-app": "node --disable-warning=ExperimentalWarning tools/app.ts dev mix",
     "dev:devices": "vite --config set/vite.bench.config.ts",
-    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p core/tsconfig.json && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p mix/tsconfig.json && tsc -p mix/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
+    "typecheck": "tsc -p bridge/tsconfig.node.json --noEmit && tsc -p bridge/tsconfig.v8.json --noEmit && tsc -p set/tsconfig.json && tsc -p set/tsconfig.electron.json && tsc -p mix/tsconfig.json && tsc -p mix/tsconfig.electron.json && tsc -p visuals/tsconfig.electron.json && tsc -p tools/tsconfig.json && tsc -p visuals/tsconfig.json && tsc -p chart/tsconfig.json",
     "test": "vitest run",
     "test:mix:browser": "playwright test --config mix/e2e/playwright.config.ts",
     "test:mix:dsp": "vitest run --config mix/dsp/vitest.config.ts",
@@ -110,6 +108,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "signalsmith-stretch": "^1.3.2",
-    "@openflow/desktop": "git+https://github.com/openflowfm/desktop.git#7f05a98ac019b461238935f9ed9dfdd01e15b43b"
+    "@openflow/desktop": "git+https://github.com/openflowfm/desktop.git#7f05a98ac019b461238935f9ed9dfdd01e15b43b",
+    "@openflow/protocol": "github:openflowfm/protocol#918e52b61afcc9945d433a445557a3043e532af1",
+    "@openflow/core": "github:openflowfm/core#685db6fd1a8ba77bb8e575c66935a11fb56acce9"
   }
 }

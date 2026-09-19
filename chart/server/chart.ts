@@ -1,4 +1,4 @@
-import { LIVE_PALETTE } from '../../core/src/livePalette.ts';
+import { LIVE_PALETTE } from '@openflow/core/livePalette.ts';
 import type { Chart, ChartSection, ChartSong } from '../protocol.ts';
 import type { SetState } from './bridge.ts';
 
