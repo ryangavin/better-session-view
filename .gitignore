@@ -2,8 +2,10 @@ node_modules/
 # generated: tsc output consumed directly by node.script and [v8]
 bridge/bridge.js
 bridge/lom.js
-# generated: the chart's vite build
-chart/dist/
+# generated: every module's build output — the chart's vite build, and whatever a
+# sibling app checkout left behind
+*/dist/
+*/electron/dist/
 # generated: packaged .app and .dmg from an earlier checkout, or a sibling app repo
 release/
 # generated: device binary + debug patcher
