@@ -393,7 +393,7 @@ ritardando, a tempo step, a jump from house to a drop, a drummer with eight
 milliseconds of wobble, a sixteen-bar breakdown, a half-time section — and
 what they assert is the sample of a beat deep in the song. They passed while two
 records out of five were refused, which is why there is also
-`tools/mix-warp.ts`: `npm run warp:mix` runs the whole pipeline on every track
+`tools/mix-warp.ts`: `npm run warp` runs the whole pipeline on every track
 in the library with a drums stem and prints what came out beside what is known
 to be true, from `tools/mix-warp-truth.json`. A truth is a tempo, and for a
 song that changes tempo, the sections it changes at. The worst eight-bar

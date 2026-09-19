@@ -98,7 +98,7 @@ async function loadIndex(): Promise<void> {
   const asked = new URLSearchParams(location.search).get('track');
   if (asked) {
     if (entries.some((e) => e.id === asked)) want = asked;
-    else el('#summary').textContent = `no report for ${asked} — run npm run warp:mix -- --report`;
+    else el('#summary').textContent = `no report for ${asked} — run npm run warp -- --report`;
   }
   try {
     algorithm = localStorage.getItem(ALGORITHM_KEY) ?? '';

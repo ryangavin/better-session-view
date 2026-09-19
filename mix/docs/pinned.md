@@ -119,7 +119,7 @@ writing reads its worst line on the same lattice the sentence did.
 
 ## Measured on the library
 
-`npm run loops:mix` — `tools/mix-loops.ts` — lays every track's drums stem
+`npm run loops` — `tools/mix-loops.ts` — lays every track's drums stem
 pinned every 4, 8 and 16 bars, hears the output again, and writes how far each
 lattice line is from the kick nearest it to `harness/reports/loops.md`: median
 and worst per track per length. No threshold is asserted. A line tens of

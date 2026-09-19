@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { read } from '../mix/electron/manifest.ts';
-import { importKeyReference } from '../mix/electron/keyExperiments.ts';
-import type { KeyReference } from '../mix/src/keyExperiments.ts';
+import { read } from '../electron/manifest.ts';
+import { importKeyReference } from '../electron/keyExperiments.ts';
+import type { KeyReference } from '../src/keyExperiments.ts';
 const [root,inventory,flag]=process.argv.slice(2);
 if(!root||!inventory||(flag&&flag!=='--write'))throw new Error('Usage: node tools/mix-key-references.ts LIBRARY INVENTORY.json [--write] (default: preview only)');
 const document=JSON.parse(await fs.readFile(inventory,'utf8')) as {version:number;entries:(Omit<KeyReference,'sourceHash'>&{trackId:string;title:string;artist:string})[]};

@@ -94,17 +94,17 @@ call the Export sheet makes. The folder drops into Live like a loop off a pack.
 ## The batch run
 
 ```
-npm run warp:mix                        every track in the library, tempo found vs known
-npm run warp:mix -- --ab --report       every algorithm, scored side by side into harness/reports/ab.md
-npm run warp:mix -- --only=Sandstorm
-npm run loops:mix                       the drums stem of every track laid pinned every 4, 8 and 16 bars,
+npm run warp                        every track in the library, tempo found vs known
+npm run warp -- --ab --report       every algorithm, scored side by side into harness/reports/ab.md
+npm run warp -- --only=Sandstorm
+npm run loops                       the drums stem of every track laid pinned every 4, 8 and 16 bars,
                                         heard again, each lattice line against its nearest kick → harness/reports/loops.md
 ```
 
 `tools/mix-warp.ts` runs the algorithms headless over the app's library and, with
 `--report`, writes what each saw. The truth files and the scorer it reads are the
 previous page's (`harness/`), which still opens at `/harness/` under
-`npm run dev:mix-ui` with the reports beside it; the in-app page supersedes it for
+`npm run ui` with the reports beside it; the in-app page supersedes it for
 looking and listening, and the batch run is what the algorithms are still for.
 
 ## Where
@@ -166,7 +166,7 @@ buffers so the previous song is never drawn under the new title.
    available, not mandatory. Keep experiment-specific calculations in its own directory.
 4. Dispose of audio and effects and cancel pending work on unmount. Render async errors
    locally. The workspace isolates render failures and provides Reset tab.
-5. Run `npm run dev:mix` and open the mix dev server in a browser (normally
+5. Run `npm run watch` and open the mix dev server in a browser (normally
    port 5673). This is the app’s real preload and library in a browser, not mock data.
    Open the bug button, choose the tab, and inspect the results there.
 

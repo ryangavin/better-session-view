@@ -81,9 +81,9 @@ three need an exact-version match, and two have no published key. Published meta
 is fallible and is not a listening-verified gold standard.
 
 ```sh
-node tools/mix-key-references.ts '/path/to/library' mix/experiments/key/references-2026-09-11.json
+node tools/mix-key-references.ts '/path/to/library' experiments/key/references-2026-09-11.json
 # Explicitly persist the previewed metadata; never overwrites a person-verified reference:
-node tools/mix-key-references.ts '/path/to/library' mix/experiments/key/references-2026-09-11.json --write
+node tools/mix-key-references.ts '/path/to/library' experiments/key/references-2026-09-11.json --write
 ```
 
 Accuracy uses the latest run per track/backend, exact pitch class and mode, and accepts

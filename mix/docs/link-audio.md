@@ -122,7 +122,7 @@ source, Asio source, license and standalone build command ship in
 `bin/link-audio-source/`. The build checkout and fingerprint do not ship. This component
 is distinct from the LGPL FFmpeg decoder.
 
-`npm run typecheck` and `npm test -- --project=mix` cover types, input validation,
+`npm run typecheck` and `npm test` cover types, input validation,
 five-way sample routing, silence, clipping, timestamps, snapshot changes, bounded
 buffer recovery, quantized scheduling, late-plan cancellation, remote starts, and
 retiming from shared beat position. After preparation, `node mix/tools/check-link-audio.ts` builds a real

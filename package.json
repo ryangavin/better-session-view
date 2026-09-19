@@ -61,10 +61,7 @@
     "postinstall": "cd bridge && npm install --no-audit --no-fund && cd .. && npm run dev:check-singletons",
     "build:chart": "vite build --config chart/vite.config.ts",
     "dev:chart": "node --watch --disable-warning=ExperimentalWarning chart/server/index.ts",
-    "dev:chart-ui": "vite --config chart/vite.config.ts",
-    "demo:mix": "node --disable-warning=ExperimentalWarning tools/mix-demo.ts",
-    "warp:mix": "node --disable-warning=ExperimentalWarning tools/mix-warp.ts",
-    "loops:mix": "node --disable-warning=ExperimentalWarning tools/mix-loops.ts"
+    "dev:chart-ui": "vite --config chart/vite.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

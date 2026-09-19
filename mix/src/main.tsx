@@ -42,7 +42,7 @@ async function bridged(root: HTMLElement): Promise<boolean> {
     const box = document.createElement('div');
     box.style.cssText =
       'font:13px/1.6 ui-monospace,Menlo,monospace;color:#b8b0a6;background:#0b0a09;padding:24px;height:100vh;white-space:pre-wrap';
-    box.textContent = `No app is answering.\n\nNothing is listening on ${where}.\n\nStart the app:\n\n    npm run dev:mix\n\nThe window opens this port whenever it is pointed at a dev server. A packaged build never does.`;
+    box.textContent = `No app is answering.\n\nNothing is listening on ${where}.\n\nStart the app:\n\n    npm run watch\n\nThe window opens this port whenever it is pointed at a dev server. A packaged build never does.`;
     root.append(box);
     return false;
   }

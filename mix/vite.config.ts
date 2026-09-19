@@ -41,9 +41,6 @@ export default defineConfig(({ command }) => ({
     truthWriter(path.resolve(here, 'harness', 'reports')),
     gridExport(path.resolve(here, 'harness', 'reports')),
   ],
-  // Named, because `npm run dev` runs several of these at once and the default
-  // resolves to the same `node_modules/.vite` for all of them.
-  cacheDir: path.resolve(here, '../node_modules/.vite/mix'),
   // Nothing may come from a CDN — this eventually runs on stage.
   build: {
     outDir: path.resolve(here, 'dist'),
@@ -54,7 +51,5 @@ export default defineConfig(({ command }) => ({
   server: {
     port: PORT,
     strictPort: true,
-    // widgets/ lives outside this root, and Vite refuses paths above it.
-    fs: { allow: [path.resolve(here, '..')] },
   },
 }));

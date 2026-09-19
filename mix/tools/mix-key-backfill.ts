@@ -1,11 +1,11 @@
-import { KEY_LIBRARY_VERSION } from '../mix/src/keyDetection.ts';
-import { backfillKeys } from '../mix/electron/keyBackfill.ts';
-import type { Library } from '../mix/src/openflow.ts';
+import { KEY_LIBRARY_VERSION } from '../src/keyDetection.ts';
+import { backfillKeys } from '../electron/keyBackfill.ts';
+import type { Library } from '../src/openflow.ts';
 
 const args = process.argv.slice(2);
 if (args.some(arg => !['--run', '--reanalyze', '--help'].includes(arg))) throw new Error('Use --run, --reanalyze, or --help');
 if (args.includes('--help')) {
-  console.log('node tools/mix-key-backfill.ts [--run] [--reanalyze]\nRequires npm run dev:mix. Default previews; --run saves original-song key detection.\nExisting results (including Unknown) are skipped unless --reanalyze.\nBass stems are not required. Ctrl+C stops after the current song.');
+  console.log('node tools/mix-key-backfill.ts [--run] [--reanalyze]\nRequires npm run watch. Default previews; --run saves original-song key detection.\nExisting results (including Unknown) are skipped unless --reanalyze.\nBass stems are not required. Ctrl+C stops after the current song.');
 } else {
   let stopped = false;
   const stop = () => { stopped = true; console.log('Stopping after the current song; completed results remain saved.'); };

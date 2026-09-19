@@ -5,9 +5,9 @@
 else, from a file you already have or a YouTube URL, on a machine you already own.
 
 ```sh
-npm run dev:mix      # working on it: the dev server and the window, one command
-npm run mix          # the app, on what is built
-npm run pack:mix     # a .app and a .dmg under release/mix/
+npm run watch      # working on it: the dev server and the window, one command
+npm start          # the app, on what is built
+npm run pack     # a .app and a .dmg under release/mix/
 ```
 
 **The app installs its own engine.** Demucs is Python, and none of it ships inside the

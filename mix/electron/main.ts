@@ -365,7 +365,7 @@ if (only(app)) {
     // The build, and the library folder beside it. `mix://app/library/audio/x.wav`
     // is how the renderer reaches audio a person owns: streamed rather than
     // copied through IPC, and confined to whichever folder is the library right
-    // now. Under `npm run dev:mix` the page is on vite's origin instead, which
+    // now. Under `npm run watch` the page is on vite's origin instead, which
     // is why the mount answers with an allow-origin header.
     serve(MIX, DIST, { [MOUNT]: root });
     window();

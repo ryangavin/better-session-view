@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 // Measure mix[flow]'s beat finding against the real library.
 //
-//   npm run warp:mix                      the library the app is pointed at
-//   npm run warp:mix -- --library=/path   another one
-//   npm run warp:mix -- --only=Sandstorm  one track, by a word of its title
-//   npm run warp:mix -- --ab              every algorithm of the beat finding — ours,
+//   npm run warp                      the library the app is pointed at
+//   npm run warp -- --library=/path   another one
+//   npm run warp -- --only=Sandstorm  one track, by a word of its title
+//   npm run warp -- --ab              every algorithm of the beat finding — ours,
 //                                         and the library's stages swapped in
 //                                         one at a time, see harness/algorithms.ts —
 //                                         on the drums and on the whole,
 //                                         scored side by side; --algorithms=ours,ellis
 //                                         for some of them
-//   npm run warp:mix -- --report          also write what the pipeline saw,
+//   npm run warp -- --report          also write what the pipeline saw,
 //                                         one JSON per track, for the harness
 //                                         page under mix/harness to draw, and
 //                                         score each track whose beats were
 //                                         corrected by hand in the page, into
 //                                         reports/errors/;
 //                                         --report=/path to put it elsewhere
-//   npm run warp:mix -- --file=/a.wav     bring a file into the harness's own
-//   npm run warp:mix -- --youtube=URL     library, separate it, and run on that
+//   npm run warp -- --file=/a.wav     bring a file into the harness's own
+//   npm run warp -- --youtube=URL     library, separate it, and run on that
 //                                         library instead (--model= to choose)
 //
 // The synthetic fixtures under mix/src pass while real records fail, which is
@@ -33,16 +33,16 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { addFiles, read as readManifest, recordStems } from '../mix/electron/manifest.ts';
-import { separate } from '../mix/electron/separate.ts';
-import { addYoutube } from '../mix/electron/youtube.ts';
-import { agreementOf, ALGORITHMS, IDS, INPUTS, run, variantOf, type Agreement, type Algorithm, type Input } from '../mix/src/algorithms.ts';
-import { score, toMarkdown, type Score } from '../mix/harness/score.ts';
-import type { IndexEntry, KnownTempo, Report, Truth } from '../mix/harness/types.ts';
-import { peaksOf, readWav } from '../mix/src/audio.ts';
-import { followOf, type Follow } from '../mix/src/follow.ts';
-import type { Trace } from '../mix/src/trace.ts';
-import { tempoOf, type Beats } from '../mix/src/warp.ts';
+import { addFiles, read as readManifest, recordStems } from '../electron/manifest.ts';
+import { separate } from '../electron/separate.ts';
+import { addYoutube } from '../electron/youtube.ts';
+import { agreementOf, ALGORITHMS, IDS, INPUTS, run, variantOf, type Agreement, type Algorithm, type Input } from '../src/algorithms.ts';
+import { score, toMarkdown, type Score } from '../harness/score.ts';
+import type { IndexEntry, KnownTempo, Report, Truth } from '../harness/types.ts';
+import { peaksOf, readWav } from '../src/audio.ts';
+import { followOf, type Follow } from '../src/follow.ts';
+import type { Trace } from '../src/trace.ts';
+import { tempoOf, type Beats } from '../src/warp.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -73,7 +73,7 @@ const ALGORITHMS_ASKED = arg('algorithms').split(',').filter(Boolean) as Algorit
 const FILE = arg('file');
 const YOUTUBE = arg('youtube');
 const INTAKE = Boolean(FILE || YOUTUBE);
-const REPORT = process.argv.includes('--report') || INTAKE ? path.resolve(here, '..', 'mix', 'harness', 'reports') : arg('report');
+const REPORT = process.argv.includes('--report') || INTAKE ? path.resolve(here, '..', 'harness', 'reports') : arg('report');
 
 /**
  * A file or a video brought into the harness's own library and separated

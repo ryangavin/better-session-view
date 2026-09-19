@@ -37,9 +37,9 @@ and output-latency observations manual even when their underlying commands have 
 ```sh
 npm ci
 npx playwright install chromium
-npm run test:mix:browser
+npm run test:browser
 # A bounded repeatability run; every failure is retained, no automatic retries:
-npm run test:mix:browser -- --repeat-each=3
+npm run test:browser -- --repeat-each=3
 npx tsc -p mix/e2e/tsconfig.json
 ```
 
@@ -80,7 +80,7 @@ source gate, not the full-app native smoke.
 The offline voice regression is a separate rendered-audio check:
 
 ```sh
-npm run test:mix:dsp
+npm run test:dsp
 npx tsc -p mix/dsp/tsconfig.json
 ```
 
@@ -173,17 +173,15 @@ From the repository root, preserve output and exit status for each command:
 git rev-parse HEAD
 git status --short
 node --version
-npm test -- --project=mix --reporter=default
+npm test --reporter=default
 npm run typecheck
 git diff --check
 ```
 
 Use `--reporter=default` to avoid competing writes to the shared HTML test report.
-For release, the coordinator also runs the full repository `npm test` and
-`npm run build:mix`, then `npm run pack:mix` for the actual artifact. Build preparation
-can download/compile native tools; coordinate it with the owners. `npm run build`
-alone builds the Ableton device, not mix. Never use the broad destructive `npm run qa`
-as a shortcut for this smoke run.
+For release, the coordinator also runs the full `npm test` and `npm run build`,
+then `npm run pack` for the actual artifact. Build preparation can download/compile
+native tools; coordinate it with the owners.
 
 Useful focused reruns are the existing `mix/src/play/engine.test.ts`,
 `renderIsolation.test.ts`, `decks.test.ts`, `mix/src/controllers/launchkey.test.ts`,

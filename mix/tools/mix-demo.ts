@@ -2,8 +2,8 @@
 // Serve mix[flow]'s window over plain HTTP, so it can be looked at on a device
 // that cannot run Electron — a phone on the same WiFi, a tablet, another laptop.
 //
-//   npm run demo:mix -- --library=/path/to/a/library
-//   npm run demo:mix -- --library=… --port=8080
+//   npm run demo -- --library=/path/to/a/library
+//   npm run demo -- --library=… --port=8080
 //
 // **The window is the real build. The bridge is a stub, and it is the only fake
 // thing here.** Everything the renderer does with audio — fetching the stems,
@@ -21,8 +21,8 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MODELS } from '../mix/electron/models.ts';
-import { read } from '../mix/electron/manifest.ts';
+import { MODELS } from '../electron/models.ts';
+import { read } from '../electron/manifest.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -33,11 +33,11 @@ const arg = (name: string, fallback = ''): string => {
 
 const LIBRARY = path.resolve(arg('library'));
 const PORT = Number(arg('port', '8770'));
-const DIST = path.join(root, 'mix', 'dist');
+const DIST = path.join(root, 'dist');
 
 if (!arg('library')) throw new Error('demo:mix needs --library=/path/to/a/library');
 if (!fs.existsSync(path.join(DIST, 'index.html'))) {
-  throw new Error(`no build at ${DIST} — run \`npm run build:mix\` first`);
+  throw new Error(`no build at ${DIST} — run \`npm run build\` first`);
 }
 
 const TYPES: Record<string, string> = {

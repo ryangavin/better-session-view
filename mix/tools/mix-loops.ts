@@ -13,9 +13,9 @@
 // on a clean record; a line tens of milliseconds out is a grid that is wrong
 // there, not a pin — that track goes to the beat finding as a bar number.
 //
-//   npm run loops:mix                       every track, into mix/harness/reports/loops.md
-//   npm run loops:mix -- --only=Sandstorm   one track, by a piece of its title
-//   npm run loops:mix -- --library=/path    a library other than the app's
+//   npm run loops                       every track, into mix/harness/reports/loops.md
+//   npm run loops -- --only=Sandstorm   one track, by a piece of its title
+//   npm run loops -- --library=/path    a library other than the app's
 //
 // Lines with no kick within half a beat — a breakdown, a silence, the padded
 // end — are counted and left out of the numbers, so a drop that stops the kick
@@ -26,12 +26,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readAnalysis } from '../mix/electron/analysis.ts';
-import { read as readManifest } from '../mix/electron/manifest.ts';
-import { readWav } from '../mix/src/audio.ts';
-import { straightened } from '../mix/src/straighten.ts';
-import { heardIn } from '../mix/src/transients.ts';
-import { BEATS_PER_BAR, type Beats } from '../mix/src/warp.ts';
+import { readAnalysis } from '../electron/analysis.ts';
+import { read as readManifest } from '../electron/manifest.ts';
+import { readWav } from '../src/audio.ts';
+import { straightened } from '../src/straighten.ts';
+import { heardIn } from '../src/transients.ts';
+import { BEATS_PER_BAR, type Beats } from '../src/warp.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -53,7 +53,7 @@ const LOOP_LENGTHS = [4, 8, 16] as const;
 
 const ONLY = arg('only').toLowerCase();
 const LIBRARY = arg('library') || appLibrary();
-const REPORT = path.resolve(here, '..', 'mix', 'harness', 'reports', 'loops.md');
+const REPORT = path.resolve(here, '..', 'harness', 'reports', 'loops.md');
 
 interface Track {
   id: string;

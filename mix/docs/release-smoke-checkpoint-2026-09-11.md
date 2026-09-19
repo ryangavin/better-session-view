@@ -13,7 +13,7 @@ the candidate settles. No packaged/native build was run or identified by this ta
 
 | Check | Result | Evidence |
 |---|---|---|
-| `npm test -- --project=mix --reporter=default` | PASS: 96 files, 936 tests, 8.79 seconds, exit 0 | Local `/tmp/mix-release-smoke-tests.log`; run started 01:10:52 local time |
+| `npm test --reporter=default` | PASS: 96 files, 936 tests, 8.79 seconds, exit 0 | Local `/tmp/mix-release-smoke-tests.log`; run started 01:10:52 local time |
 | `npm run typecheck` | PASS: full repository chain, exit 0 | Local `/tmp/mix-release-smoke-types.log` |
 | `git diff --check` | PASS at checkpoint | Exit 0 |
 | Existing preview inventory | No in-app tabs accessible in this task | CUA inventory; no new preview created |
@@ -73,8 +73,8 @@ mounts actual Library/PlayView/MixerEngine; no preload, native library, controll
 shared preview is used. Each case has a fresh isolated browser context, muted engine
 monitoring, and guards against external HTTP/WebSocket and MIDI access.
 
-`npm run test:mix:browser` passed **6/6** in 15.2 seconds. The bounded repeatability run,
-`npm run test:mix:browser -- --repeat-each=3`, passed **18/18** in 40.7 seconds, with
+`npm run test:browser` passed **6/6** in 15.2 seconds. The bounded repeatability run,
+`npm run test:browser -- --repeat-each=3`, passed **18/18** in 40.7 seconds, with
 zero retries/skips/flaky results (05:25:34 UTC start). It covers filter recovery/sorting,
 column drag/width persistence across reload, target-only deck drag without auto-play or
 Prep selection, pointer Cue release outside its button, keyboard latch/release, and
@@ -188,7 +188,7 @@ hardware listening remain unverified by this task.
 ## DSP suite separation
 
 The rendered-audio regression now lives in `mix/dsp/tempo-render.test.ts`, run by
-`npm run test:mix:dsp` under Vitest. Chromium remains the actual OfflineAudioContext
+`npm run test:dsp` under Vitest. Chromium remains the actual OfflineAudioContext
 and AudioWorklet runtime, using the existing launcher dependency; there are no UI
 gestures or Playwright test definitions in this suite. All seven render scenarios and
 their assertions are retained. The manual diagnostic page shares the exported renderer.

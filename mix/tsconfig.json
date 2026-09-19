@@ -1,5 +1,5 @@
 {
-  "extends": "../tsconfig.base.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -15,7 +15,9 @@
     "harness/**/*.ts",
     "harness/**/*.tsx",
     "vite.config.ts",
-    "../types/assets.d.ts",
-    "../types/signalsmith-stretch.d.ts"
+    "vitest.config.ts",
+    "tools/**/*.ts",
+    "types/assets.d.ts",
+    "types/signalsmith-stretch.d.ts"
   ]
 }

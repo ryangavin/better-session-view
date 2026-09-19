@@ -240,7 +240,7 @@ Opened `http://localhost:5673` in the Codex in-app browser and switched to Play.
 
 Port 5673 belonged to node PID 55456 with cwd `/Users/ryan/The Source/better-session-view`, **not this worktree**. That checkout had the same HEAD but concurrent uncommitted widget/help changes. Its observed UI inventory is corroborating evidence only; it is not proof this isolated branch runs. The other task's reported historical tests were not adopted as fresh results.
 
-Inspected the existing engine/widget tests. Attempted the focused command `npm test -- --project=mix mix/src/play/engine.test.ts --project=widgets widgets/src/mixer/MixerView.test.ts`; it could not run because `vitest` is not installed in this worktree (`sh: vitest: command not found`). No product code changed, no test dependencies were installed, and no playback/hardware pass is claimed.
+Inspected the existing engine/widget tests. Attempted the focused command `npm test mix/src/play/engine.test.ts --project=widgets widgets/src/mixer/MixerView.test.ts`; it could not run because `vitest` is not installed in this worktree (`sh: vitest: command not found`). No product code changed, no test dependencies were installed, and no playback/hardware pass is claimed.
 
 ## Concrete validation scenarios
 
