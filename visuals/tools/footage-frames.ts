@@ -12,7 +12,7 @@ import {
   cyclicMotion,
   metricsOf,
   type FrameMetrics,
-} from '../visuals/frameMetrics.ts';
+} from '../frameMetrics.ts';
 
 const arg = (name: string, fallback = ''): string => {
   const found = process.argv.find((each) => each.startsWith(`--${name}=`));

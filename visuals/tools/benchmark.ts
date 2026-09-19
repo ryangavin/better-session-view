@@ -22,18 +22,18 @@ import { execSync, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { mediaRoot, serveMedia } from '../visuals/server/media.ts';
-import { MODEL_HASH } from '../visuals/model.ts';
-import { modelPlace, openModelStore } from '../visuals/server/models.ts';
-import { merge } from '../visuals/server/scheme.ts';
+import { bin, visualsRoot } from './bin.ts';
+import { mediaRoot, serveMedia } from '../server/media.ts';
+import { MODEL_HASH } from '../model.ts';
+import { modelPlace, openModelStore } from '../server/models.ts';
+import { merge } from '../server/scheme.ts';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = visualsRoot;
 const arg = (name: string, fallback: string): string => {
   const found = process.argv.find((each) => each.startsWith(`--${name}=`));
   return found ? found.slice(name.length + 3) : fallback;
 };
-const SCHEME = path.resolve(arg('scheme', path.join(root, 'visuals', 'scheme.json')));
+const SCHEME = path.resolve(arg('scheme', path.join(root, 'scheme.json')));
 const MODEL_ROOT = arg('models', '');
 const chosen = merge(JSON.parse(fs.readFileSync(SCHEME, 'utf8')));
 const modelStore = openModelStore(MODEL_ROOT ? modelPlace(path.resolve(MODEL_ROOT)) : modelPlace());
@@ -59,7 +59,7 @@ const EDGES = named
   : process.argv.includes('--sweep')
     ? '1280,1920,2560,3840'
     : '1920';
-const runner = path.join(root, 'visuals', 'bench-dist', 'runner.cjs');
+const runner = path.join(root, 'bench-dist', 'runner.cjs');
 
 interface PacedResult {
   hz: number;
@@ -372,7 +372,7 @@ if (busy.length) {
   );
 }
 
-run('npx', ['vite', 'build', '--config', 'visuals/vite.bench.config.ts'], 'bench build');
+run(bin('vite'), ['build', '--config', path.join(root, 'vite.bench.config.ts')], 'bench build');
 
 /**
  * The page, over HTTP rather than off disk.
@@ -392,7 +392,7 @@ const TYPES: Record<string, string> = {
   '.css': 'text/css',
 };
 
-const dir = path.join(root, 'visuals', 'bench-dist');
+const dir = path.join(root, 'bench-dist');
 const media = mediaRoot();
 const serving = http.createServer((request, response) => {
   const asked = decodeURIComponent((request.url ?? '/').split('?')[0]);
@@ -474,7 +474,7 @@ fs.writeFileSync(runner, MAIN);
  * It cost an afternoon. A server and a synchronous wait cannot share a process.
  */
 const collected = await new Promise<string>((done, fail) => {
-  const child = spawn(path.join(root, 'node_modules', '.bin', 'electron'), [runner], {
+  const child = spawn(bin('electron'), [runner], {
     cwd: root,
     env: {
       ...process.env,

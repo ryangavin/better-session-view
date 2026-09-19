@@ -8,13 +8,13 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { cyclicMotion } from '../visuals/frameMetrics.ts';
+import { cyclicMotion } from '../frameMetrics.ts';
 import {
   materialStructureDifference,
   materialStructureOf,
   structuralDifference,
   structureOf,
-} from '../visuals/structuralMetrics.ts';
+} from '../structuralMetrics.ts';
 
 const arg = (name: string, fallback = ''): string => {
   const found = process.argv.find((each) => each.startsWith(`--${name}=`));

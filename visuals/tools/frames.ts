@@ -25,12 +25,12 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { EXAMPLES, merge } from '../visuals/server/scheme.ts';
-import { MODEL_HASH } from '../visuals/model.ts';
-import { modelPlace, openModelStore } from '../visuals/server/models.ts';
+import { bin, visualsRoot } from './bin.ts';
+import { EXAMPLES, merge } from '../server/scheme.ts';
+import { MODEL_HASH } from '../model.ts';
+import { modelPlace, openModelStore } from '../server/models.ts';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = visualsRoot;
 const arg = (name: string, fallback: string): string => {
   const found = process.argv.find((each) => each.startsWith(`--${name}=`));
   return found ? found.slice(name.length + 3) : fallback;
@@ -42,7 +42,7 @@ const FLOWS = arg('flows', '');
 const AT = arg('at', '0,1,2,3');
 const COLORWAY = arg('colorway', '');
 const SETTLE = arg('settle', '90');
-const OUT = path.resolve(arg('out', path.join(root, 'visuals', 'frames-out')));
+const OUT = path.resolve(arg('out', path.join(root, 'frames-out')));
 /** `examples`, a user-scheme id, or an explicit JSON file for a scratch comparison. */
 const SCHEME = arg('scheme', 'examples');
 /** Optional isolated model library root; defaults to the product's real one. */
@@ -113,9 +113,9 @@ interface FramesReport {
 }
 
 const built = spawnSync(
-  path.join(root, 'node_modules', '.bin', 'vite'),
-  ['build', '--config', 'vite.frames.config.ts'],
-  { cwd: path.join(root, 'visuals'), stdio: 'inherit' },
+  bin('vite'),
+  ['build', '--config', path.join(root, 'vite.frames.config.ts')],
+  { cwd: root, stdio: 'inherit' },
 );
 if (built.status !== 0) {
   console.error('frames: the page did not build');
@@ -132,7 +132,7 @@ const TYPES: Record<string, string> = {
   '.map': 'application/json',
   '.css': 'text/css',
 };
-const dir = path.join(root, 'visuals', 'frames-dist');
+const dir = path.join(root, 'frames-dist');
 
 let written = 0;
 const serving = http.createServer((request, response) => {
@@ -224,7 +224,7 @@ if (FLOWS) query.set('flows', FLOWS);
 if (COLORWAY) query.set('colorway', COLORWAY);
 const url = `http://127.0.0.1:${port}/frames.html?${query}`;
 
-const runner = path.join(root, 'visuals', 'frames-dist', 'runner.cjs');
+const runner = path.join(root, 'frames-dist', 'runner.cjs');
 fs.writeFileSync(
   runner,
   `
@@ -279,7 +279,7 @@ app.whenReady().then(async () => {
 // The window then sits on a blank document forever and it looks like a slow
 // render rather than a deadlock. The benchmark next door documents the same trap.
 const collected = await new Promise<string>((done, fail) => {
-  const child = spawn(path.join(root, 'node_modules', '.bin', 'electron'), [runner], {
+  const child = spawn(bin('electron'), [runner], {
     cwd: root,
     env: {
       ...process.env,

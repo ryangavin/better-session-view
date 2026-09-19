@@ -18,10 +18,10 @@ import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { bin, visualsRoot } from './bin.ts';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const server = path.join(root, 'visuals', 'server', 'index.ts');
+const root = visualsRoot;
+const server = path.join(root, 'server', 'index.ts');
 const PORT = Number(process.env.OPENFLOW_VISUALS_PORT) || 17900;
 const RIG = `http://localhost:${PORT}`;
 const BROWSE = !process.argv.includes('--no-browse');
@@ -104,7 +104,7 @@ const openWindow = async () => {
     return;
   }
   if (process.platform !== 'darwin') {
-    console.log(`visuals: open ${RIG} — and see tools/README.md for the flags worth using`);
+    console.log(`visuals: open ${RIG} — and see README.md for the flags worth using`);
     return;
   }
   const app = CHROME.find((at) => fs.existsSync(at));
@@ -123,7 +123,10 @@ const openWindow = async () => {
   console.log(`visuals: ${RIG} in its own Chrome — profile ${profile}`);
 };
 
-const build = spawnSync('npm', ['run', 'build:visuals'], { cwd: root, stdio: 'inherit' });
+const build = spawnSync(bin('vite'), ['build', '--config', path.join(root, 'vite.config.ts')], {
+  cwd: root,
+  stdio: 'inherit',
+});
 if (build.status !== 0) {
   console.error('visuals: the renderer did not build — not starting the server');
   process.exit(build.status ?? 1);
