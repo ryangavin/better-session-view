@@ -10,7 +10,7 @@ most of what's in them is reasoning about a feature you aren't touching.
 | touching | start at |
 |---|---|
 | domain logic — naming, colors, ordering, anything deserving tests | [`core/README.md`](core/README.md) — an index; docs mirror source, so `core/src/X.ts` is explained in `core/docs/X.md` and you can go straight there |
-| the session manager — components, hooks, the client | [`set/README.md`](set/README.md) — 16 topic docs. `@openflow/set`, and **set[flow]** is what it calls itself |
+| the session manager — components, hooks, the client | its own repo now — [openflowfm/set](https://github.com/openflowfm/set#readme). **set[flow]** is what it calls itself |
 | an Electron app — its window, its packaging, or adding a new one | [`desktop/README.md`](https://github.com/openflowfm/desktop/blob/main/README.md) — 6 topic docs. `@openflow/desktop`: the main process set[flow] and visual[flow] share. **Adding an app starts at `desktop/docs/registry.md`** |
 | a knob, a fader, anything a device chain is drawn from | [`widgets/README.md`](https://github.com/openflowfm/widgets/blob/main/README.md) — its README indexes the topic docs. The package `@openflow/widgets`, imported by name; **knows nothing about Live, and must stay that way**. Also holds `palette.css`, the design language every app imports |
 | stem separation, or demucs | its own repo now — [openflowfm/mix](https://github.com/openflowfm/mix#readme). **mix[flow]** talks to no bridge and no server |
@@ -25,8 +25,6 @@ most of what's in them is reasoning about a feature you aren't touching.
 
 Two docs are worth reading even when they aren't obviously your topic:
 
-- [`set/docs/performance.md`](set/docs/performance.md) — governs **anything reaching a
-  memoized row**. A prop that changes identity per render re-renders 848 rows.
 - [`bridge/docs/lom-gotchas.md`](bridge/docs/lom-gotchas.md) — before any `lom.ts` edit.
 
 [`README.md`](README.md) is for users, not for you: what the app is, install, build. Keep
@@ -39,7 +37,7 @@ work in [Issues](../../issues).
    code testable without Ableton running, and what keeps a different backend possible.
    **`widgets/` is the same rule on the other axis** — React, but no protocol, no bridge,
    no `core/`, nothing that knows Live exists. It takes a `Param` and a number, and the
-   one adapter that hands it one is `set/src/lib/liveParam.ts`.
+   one adapter that hands it one is set[flow]'s `src/lib/liveParam.ts`.
 2. **`bridge/src/lom.ts` is the only file that touches the Live Object Model.** Everything
    else talks to it through the protocol.
 3. **`lom.ts` cannot `import` anything** — it compiles as a script, not a module, so
@@ -85,7 +83,7 @@ work in [Issues](../../issues).
     `node_modules` of its own on purpose: it is bundled for a Node
     runtime inside Max that is not ours to pick. Listing it in `workspaces` hoists its
     dependencies to the root, at which point `postinstall` fails against a runtime it was
-    never meant for. The workspaces — `set`, `chart`, `tools` —
+    never meant for. The workspaces — `chart`, `tools` —
     are safe to hoist only because none of them has dependencies of its own; they are
     workspaces so the packages resolve by name. `desktop/` imports `electron`, but never
     resolves it: esbuild marks it external, because the runtime provides it. Cross-module imports use the package
@@ -101,12 +99,7 @@ work in [Issues](../../issues).
 npm run typecheck     # every project
 npm test              # every module's unit tests; --project=chart for one
 npm run test:coverage # the same tests, and what they reach — report/index.html
-npm run dev:mutate -- <file>   # would its spec notice the file changing? see .claude/skills/set-spec
-npm run dev:record -- <name>   # a real session into set/test/corpus/ — needs Live
 npm run build         # the device: bridge.js, lom.js, the .amxd. No front end.
-npm run set           # the session manager, in its window
-npm run app -- pack   # every app as a .app and a .dmg, from desktop/src/apps.ts
-npm run benchmark     # every flow's frame cost, with nothing pacing it
 ```
 
 If a change touches the LOM, say plainly that it's unverified rather than implying it

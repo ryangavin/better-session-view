@@ -1,7 +1,0 @@
-node_modules/
-dist/
-electron/dist/
-release/
-coverage/
-report/
-.DS_Store

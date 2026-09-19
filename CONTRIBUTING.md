@@ -26,8 +26,8 @@ JS files — no app bundle, no code signing, no updater — and `bridge.js` is b
 
 It used to serve the session manager too, with the built app inlined as base64: 595 kB
 of web app, three quarters of `bridge.js`, parsed inside Live's process on every device
-load. The front ends are desktop apps now — [`set/docs/desktop.md`](set/docs/desktop.md)
-— and what is left here is the one job that has to happen inside Max.
+load. The front ends are desktop apps now, each in its own repo —
+[openflowfm/set](https://github.com/openflowfm/set) first among them — and what is left here is the one job that has to happen inside Max.
 
 Set-owned configuration lives in a hidden parameter on the bridge device, so Live
 stores it directly in the `.als`. The fixed Live color table is compiled into the app.
@@ -74,7 +74,7 @@ and comparison harness, with mix[flow] as its intended first consumer.
 | [`protocol/`](protocol/README.md) | wire types, single source of truth | adding or changing a message |
 | [`core/`](core/README.md) | pure domain logic — no I/O, no React, no Live | naming, colors, anything that deserves tests |
 | [`widgets/`](https://github.com/openflowfm/widgets/blob/main/README.md) | DAW controls — React, but no Live | knobs, faders, the parameter model, the bench |
-| [`set/`](set/README.md) | the session manager, **set[flow]** — React 19 + Vite | components, the bridge client, dev server |
+| [`set`](https://github.com/openflowfm/set/blob/main/README.md) | the session manager, **set[flow]** — React 19 + Vite | components, the bridge client, dev server |
 | [`bridge/`](bridge/README.md) | the M4L device: Node + `v8` halves | **anything touching Live.** The most constraints live here |
 | [`desktop/`](https://github.com/openflowfm/desktop/blob/main/README.md) | the Electron main process every app shares | the window, packaging, or adding a new app |
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator, the app driver | changing the patcher, the device type, or how an app is built |
@@ -112,8 +112,8 @@ the second app to leave for its own repo, [openflowfm/mix](https://github.com/op
 
 `core/` and `widgets/` are the same rule on two axes, and between them they are what keeps
 a DAW of our own possible: domain logic that has never heard of a transport, and controls
-that have never heard of Live. `set/` is the only module allowed to know both, and it does
-the joining in one adapter — [`set/src/lib/liveParam.ts`](set/src/lib/liveParam.ts).
+that have never heard of Live. set[flow] is the only app allowed to know both, and it does
+the joining in one adapter — [`src/lib/liveParam.ts`](https://github.com/openflowfm/set/blob/main/src/lib/liveParam.ts).
 
 [`bridge/LOM.md`](bridge/LOM.md) is the Live Object Model itself — every class, property
 and function with its type and access mode, plus the places Cycling '74's docs are wrong
@@ -152,12 +152,10 @@ bridge/bridge.js  bridge/lom.js          tsc output, run directly by Max
 bridge/SessionBridge.amxd  .maxpat       device + debug patcher
 ```
 
-The apps make their own at launch, which is what keeps them from ever being stale:
+The chart makes its own:
 
 ```
-set/dist/  set/electron/dist/            `npm run set`
 chart/dist/                              the band's page — `npm run build:chart`
-release/                                 packaged .app and .dmg — `npm run pack`
 ```
 
 **`npm run build` builds no front end at all**, and that is the point of the split: the

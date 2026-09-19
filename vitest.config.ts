@@ -10,11 +10,6 @@ const module = (name: string, include: string[], exclude?: string[]) => ({
 export default defineConfig({
   test: {
     projects: [
-      module('set', [
-        'set/src/lib/**/*.test.ts',
-        'set/src/components/**/*.test.ts',
-        'set/src/hooks/**/*.test.ts',
-      ]),
       module('chart', ['chart/**/*.test.ts']),
     ],
     // Vitest 5's HTML reporter takes a directory rather than outputFile.
@@ -31,7 +26,6 @@ export default defineConfig({
       // nobody imports is the interesting case, and it should read 0% rather
       // than go missing.
       include: [
-        'set/src/**/*.{ts,tsx}',
         'chart/src/**/*.{ts,tsx}',
         'chart/server/**/*.{ts,tsx}',
       ],

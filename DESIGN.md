@@ -1,7 +1,7 @@
 # Design system
 
 This file records design choices already implemented in the app. Component details and
-the reasons behind them remain in [`set/README.md`](set/README.md).
+the reasons behind them remain in [set[flow]'s README](https://github.com/openflowfm/set/blob/main/README.md).
 
 ## Foundations
 
@@ -12,7 +12,7 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   app because more than one app reads them —
   [`widgets/src/tokens.css`](https://github.com/openflowfm/widgets/blob/main/src/tokens.css) was already reading them from the
   host with fallbacks, and mix[flow] was the second app to need the same table.
-  [`set/src/shared.css`](set/src/shared.css) imports it and adds what is only set[flow]'s:
+  [`src/shared.css`](https://github.com/openflowfm/set/blob/main/src/shared.css) imports it and adds what is only set[flow]'s:
   the stacking tiers and the grid column widths.
 - Neutral text comes from one five-step ramp, described under *Text* below.
 - **One typeface, two cuts.** Both stacks start with Recursive, a variable font bundled
@@ -63,10 +63,10 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   palette when a second app needs it, and not before.
 - The grid uses a 2px gutter. Its metadata column is a constant 108px; Master is a track
   column and takes the track width, so the role painting it moves with the setting.
-  Track width modes are defined in [`set/src/lib/columnWidth.ts`](set/src/lib/columnWidth.ts).
+  Track width modes are defined in [`src/lib/columnWidth.ts`](https://github.com/openflowfm/set/blob/main/src/lib/columnWidth.ts).
 - The song index is as wide as the columns it shows and no wider: both its width and its
   grid track list are computed from the same visible-column list in
-  [`set/src/lib/songIndexColumns.ts`](set/src/lib/songIndexColumns.ts), so turning a column
+  [`src/lib/songIndexColumns.ts`](https://github.com/openflowfm/set/blob/main/src/lib/songIndexColumns.ts), so turning a column
   off narrows the pane instead of widening the name. Name and artist are `fr` tracks;
   key, BPM and type are fixed. Which columns are on is a browser preference in
   `localStorage`, alongside track width — set-owned configuration goes to the device.
@@ -133,7 +133,7 @@ earns it.
   rather than the type. Every decibel field in the mixer shows whole decibels, so Live's
   `-12.75 dB` reads `-12` and the exact value stays one hover away in the field's title.
   Peak, volume, pan and sends all trim through the same helpers in
-  [`set/src/lib/meterScale.ts`](set/src/lib/meterScale.ts), and they trim rather than round,
+  [`src/lib/meterScale.ts`](https://github.com/openflowfm/set/blob/main/src/lib/meterScale.ts), and they trim rather than round,
   so no two of them can disagree about the same signal. With the reading that short, the
   8px mono size those fields share is a choice about weight rather than about room: they
   annotate the meter, and the reading taken at a glance is the bar's own height. Volume

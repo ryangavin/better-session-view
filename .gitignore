@@ -2,13 +2,9 @@ node_modules/
 # generated: tsc output consumed directly by node.script and [v8]
 bridge/bridge.js
 bridge/lom.js
-# generated: every module's build output — a vite build for the apps and the chart,
-# Globbed rather than listed, because a new app
-# that is otherwise a registry entry should not need a line here to stop being committed.
-*/dist/
-# generated: the Electron main, preload, server and icon
-*/electron/dist/
-# generated: packaged .app and .dmg — npm run pack
+# generated: the chart's vite build
+chart/dist/
+# generated: packaged .app and .dmg from an earlier checkout, or a sibling app repo
 release/
 # generated: device binary + debug patcher
 bridge/SessionBridge.amxd

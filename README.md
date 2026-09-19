@@ -104,15 +104,10 @@ Session Manager**. Full instructions: [`bridge/README.md`](bridge/README.md).
 | script | does |
 |---|---|
 | `npm run build` | a bundled bridge.js, lom.js, and the device |
-| `npm run set` | the session manager, set[flow] — builds it and opens the window |
-| `npm run pack` | every app as a `.app` and a `.dmg` under `release/` |
-| `npm run install:apps` | copies those into `/Applications/open[flow]`, together in one folder |
 | `npm run install:device` | the device into the Ableton User Library, as `SessionBridge-qa` |
-| `npm run qa` | all of the above at once — built and installed, ready to try. Packs the `.app` alone and unsigned, which is what installing locally needs and about twenty times quicker, and empties `release/` first so what is in there is what it built |
-| `npm run dev` | every watcher and dev server at once — set[flow] on :5173, the widget bench on :5273 |
-| `npm run dev:set` | just set[flow]: its dev server and its window, one command, closing either closes both |
-| `npm run dev:set-ui` | the set[flow] dev server alone, against a device someone else is running |
-| `npm run dev:set-app` | the set[flow] window alone, on a dev server that is already up — hot reload, in the real app |
+| `npm run qa` | build and install the device at once, ready to try |
+| `npm run dev` | every watcher and dev server at once — the bridge, and the chart |
+| the session manager, set[flow] | its own repo now — [openflowfm/set](https://github.com/openflowfm/set#readme) |
 | `npm run dev` in [Widgets](https://github.com/openflowfm/widgets) | the widget bench alone — no device needed |
 | the VJ rig, visual[flow] | its own repo now — [openflowfm/visuals](https://github.com/openflowfm/visuals#readme) |
 | stem separation, mix[flow] | its own repo now — [openflowfm/mix](https://github.com/openflowfm/mix#readme) |

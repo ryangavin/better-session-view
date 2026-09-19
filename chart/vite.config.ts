@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 // The chart builds to `chart/dist`, which `server/index.ts` serves. A separate
-// build from `set/` because it is a separate app for a different pair of eyes —
+// build from set[flow] because it is a separate app for a different pair of eyes —
 // nothing here ships inside the device.
 //
 // The dev port follows set[flow]'s at +400, continuing the offsets in
