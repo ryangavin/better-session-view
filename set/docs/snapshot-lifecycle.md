@@ -49,7 +49,7 @@ rather than to N tabs reaching the same conclusion at the same moment. Everythin
 a write Live took only half of, a delta that didn't line up — asks without `fresh`, because
 in each of those the bridge either holds a set that is current or has already dropped its
 own and will walk on that very request. What the bridge does with the two cases is in
-[`bridge/docs/multiple-clients.md`](../../bridge/docs/multiple-clients.md).
+[`bridge/docs/multiple-clients.md`](https://github.com/ryangavin/better-session-view/blob/main/bridge/docs/multiple-clients.md).
 
 The reply carries `cached`, which says which of the two happened.
 
@@ -91,7 +91,7 @@ Coming back to the window re-asks the bridge for the set, which is a message and
 rather than a walk.
 
 The middle one is the interesting one, and how it works is in
-[`bridge/README.md`](../../bridge/README.md) under *Following Live*: the bridge watches
+[`bridge/README.md`](https://github.com/ryangavin/better-session-view/blob/main/bridge/README.md) under *Following Live*: the bridge watches
 Live's Session cursor — two observers, not one per slot — and re-reads the track the
 cursor moved to **and the one it left**, because you have to select a clip to drag it, so
 the position it left is where the clip came from.
@@ -135,7 +135,7 @@ alt-tab to answer a question that is almost always "nothing changed". Focus is a
 convenient moment to ask, not a reason in itself; the trigger that matches the job is
 **age**. Then it moved again, out of the browser entirely: a tab that was merely *open*
 was deciding Live should spend ~2.6s, and several tabs decided it at once. `shouldWalk` is
-still in [`core/`](../../core/README.md) with tests rather than as two constants
+still in [`core/`](https://github.com/openflowfm/core#readme) with tests rather than as two constants
 somewhere, and it answers three things at once — `bridge.ts` is what calls it now, on a
 fixed tick:
 

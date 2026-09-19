@@ -9,7 +9,7 @@ Both were the wrong way round: the device should bridge Live and nothing else, a
 manager is something you open when you are working on a set — deliberately, and not during
 a show.
 
-So it is a window now. `npm run set` builds the renderer, builds the shell, and launches it.
+So it is a window now. `npm start` builds the renderer, builds the shell, and launches it.
 
 ## What is in this app's `main.ts`, and what is not
 
@@ -70,29 +70,29 @@ only worth having if what crosses it stays this small.
 
 ## The build
 
-`npm run app -- electron set` esbuilds `main.ts` and `preload.ts` — plus everything they
-import from `@openflow/desktop` — into `set/electron/dist/`. The details are in
+`npm run electron` esbuilds `main.ts` and `preload.ts` — plus everything they
+import from `@openflow/desktop` — into `electron/dist/`. The details are in
 [`packaging.md`](https://github.com/openflowfm/desktop/blob/main/docs/packaging.md).
 
 It is deliberately **not** part of `npm run build`. That script is what produces the device;
-it has no business needing an Electron binary. `npm run set` builds what it needs at launch,
-which also means `set/dist` can never be stale.
+it has no business needing an Electron binary. `npm start` builds what it needs at launch,
+which also means `dist` can never be stale.
 
 ## The dev loop, in this window
 
-`npm run set` is a rebuild and a relaunch, which is right for checking what ships and wrong
-for the twenty edits before it. `npm run dev:set-app` opens the same shell on the vite dev
+`npm start` is a rebuild and a relaunch, which is right for checking what ships and wrong
+for the twenty edits before it. `npm run dev` opens the same shell on the vite dev
 server instead of on the scheme, so an edit lands in the window that ships with Fast Refresh
 intact — including the connection and the snapshot behind it, which is the whole argument in
 [`dev-server.md`](dev-server.md).
 
-`npm run dev:set` starts both halves together and is the one to type; `dev:set-app` alone
-needs a dev server already up (`npm run dev`, or `npm run dev:set-ui`) and starts none. The switches and the retry are [`window.md`](https://github.com/openflowfm/desktop/blob/main/docs/window.md); the port
+`npm run watch` starts both halves together and is the one to type; `npm run dev` alone
+needs a dev server already up (`npm run ui`) and starts none. The switches and the retry are [`window.md`](https://github.com/openflowfm/desktop/blob/main/docs/window.md); the port
 comes from `OPENFLOW_PORT_BASE` plus this app's offset in `desktop/src/apps.ts`, so a
 worktree that moved its servers takes the app with it rather than being the one thing left
 behind.
 
-Three things differ from `npm run set`, all of them on purpose:
+Three things differ from `npm start`, all of them on purpose:
 
 - **No bridge flag crosses the preload.** `bridgeUrl()` falls back to the origin the page
   came from, and vite's `/ws` proxy carries it — so the app reaches whatever device its dev
@@ -105,18 +105,9 @@ Three things differ from `npm run set`, all of them on purpose:
 
 ## Packaging
 
-`npm run pack:set` builds the renderer, the shell, an icon, and a `.app` plus a `.dmg`
-under `release/set/`. `npm run pack` does every app.
-
-`npm run install:apps` copies what that produced into `/Applications/open[flow]`, and
-`install:apps set` does this one alone. The folder is so the three arrive as one suite
-rather than as three unrelated icons; installing also clears away the loose copy an earlier
-install left in `/Applications` itself, which would otherwise sit there as a second bundle
-of the same name for Spotlight and the Dock to choose between. It **replaces** rather than merges — `ditto` into an existing bundle
-leaves an old build's files inside the new one, and the app that launches is then neither
-version — and it refuses while the app is open, because deleting a running bundle is
-permitted and fails later, somewhere confusing. `OPENFLOW_APPS` moves the destination for a
-machine where `/Applications` is not yours to write.
+`npm run pack` builds the renderer, the shell, an icon, and a `.app` plus a `.dmg`
+under `release/`. Drag the `.app` into `/Applications` to install it; replace rather than
+merge, since `ditto` into an existing bundle leaves an old build's files inside the new one.
 
 The shape of the config, and what an app's own `electron-builder.yml` still has to say, is
 [`packaging.md`](https://github.com/openflowfm/desktop/blob/main/docs/packaging.md). Signing and notarisation are on whenever
@@ -135,11 +126,11 @@ squeezed. And the mark is padded into 824 of 1024 with a transparent margin — 
 for a circular icon — because a disc drawn edge to edge overhangs every neighbour in the
 Dock by 7%, which reads as a wrong icon rather than a big one. Both numbers assume the
 mark's disc is 440 of a 512 viewBox; a mark drawn to other proportions wants `INSET` in
-`tools/build-icons.ts` adjusted to match.
+`tools/icons.ts` adjusted to match.
 
 **A locally built bundle opens here regardless**, because quarantine is set by whatever
-*downloads* a file, and a bundle you built never had one. `npm run install:apps` strips it
-anyway and checks that the strip took, so an installed copy always double-clicks open.
+*downloads* a file, and a bundle you built never had one, so a copy you built and dragged
+into `/Applications` double-clicks open.
 
 Where a *missing* signature bites is a copy that travelled. That is not the usual
 "unidentified developer" prompt you can right-click past: electron-builder rewrote the

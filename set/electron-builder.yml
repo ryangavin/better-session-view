@@ -1,8 +1,8 @@
-# set[flow], packaged. `npm run pack:set`.
+# set[flow], packaged. `npm run pack`.
 #
 # The shape is `@openflow/desktop/electron-builder.base.yml`; this is what is only true of
 # this app.
-extends: ../node_modules/@openflow/desktop/electron-builder.base.yml
+extends: node_modules/@openflow/desktop/electron-builder.base.yml
 
 appId: com.openflow.set
 productName: set[flow]
@@ -16,4 +16,4 @@ productName: set[flow]
 artifactName: set-flow-${version}-${arch}.${ext}
 
 directories:
-  output: ../release/set
+  output: release

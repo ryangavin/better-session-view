@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Asks the only question worth asking about a regression net: would it notice?
 //
-//   npm run dev:mutate -- set/src/lib/chainStore.ts
+//   npm run mutate -- src/lib/chainStore.ts
 //
 // Breaks the source one small edit at a time — a `<` for a `<=`, a `&&` for an
 // `||`, a `true` for a `false` — and runs the colocated spec against each. A
@@ -60,7 +60,7 @@ const arg = process.argv[2];
 const budget = Number(process.env.OPENFLOW_MUTANTS ?? 40);
 
 if (!arg) {
-  console.error('usage: npm run dev:mutate -- <source file>');
+  console.error('usage: npm run mutate -- <source file>');
   process.exit(1);
 }
 

@@ -5,14 +5,14 @@ Running the dev server, and what a hot update costs — why BridgeProvider sits 
 ## Dev
 
 ```sh
-npm run dev:set        # just this app: its dev server and its window, one command
-npm run dev            # every server in the repo — this, the bridge watchers, the device bench
-npm run dev:set-ui     # the dev server alone, against a device someone else is running
-npm run dev:set-app    # the window alone, pointed at a dev server that is already up
-npm run set            # the desktop app, on the built output — see docs/desktop.md
+npm run watch      # its dev server and its window, one command — the one to type
+npm run ui         # the dev server alone, against a device someone else is running
+npm run dev        # the window alone, pointed at a dev server that is already up
+npm run bench      # the device bench, with no connection at all
+npm start          # the desktop app, on the built output — see docs/desktop.md
 ```
 
-Use **<http://localhost:5173>** for the dev loop — in a browser, or in `npm run dev:set-app`,
+Use **<http://localhost:5173>** for the dev loop — in a browser, or in `npm run dev`,
 which is the same page inside the window that ships. Vite proxies `/ws` through to the
 device, so you get HMR with React Fast Refresh — and, more to the point, a loaded snapshot
 that survives your edits. A walk is ~950ms of Live's main thread; an edit to a CSS
@@ -100,11 +100,11 @@ it is the one dev server that says nothing about whether the bridge is up.
 Several dev servers can share one device — they all proxy to the same bridge, and
 `bridgeUrl()` falls back to `location.host` when nothing has told it otherwise, so nothing
 needs telling which port it's on. That's the multi-client path, so see
-[`bridge/README.md`](../../bridge/README.md) for what the bridge does and doesn't yet
+[`bridge/README.md`](https://github.com/ryangavin/better-session-view/blob/main/bridge/README.md) for what the bridge does and doesn't yet
 guarantee when more than one client is connected.
 
 **:17800 is not a URL any more.** The device serves no page — it answers a browser with one
-sentence and nothing else. To test what actually ships, run `npm run set`, which builds the
+sentence and nothing else. To test what actually ships, run `npm start`, which builds the
 same output the dev server compiles and opens it in the desktop app; the address only ever
 appears now as the thing that app dials. The `reload` event the device used to push when its
 `public/` folder changed went with the folder, so there is one path here rather than two,

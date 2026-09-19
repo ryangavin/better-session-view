@@ -2,10 +2,10 @@
 // Records a real session off the bridge, so tests can be written against the
 // set you actually play rather than a fixture somebody imagined.
 //
-//   npm run dev:record -- <name> [seconds]
+//   npm run record -- <name> [seconds]
 //
 // Requires Live open with the device loaded. Writes two files under
-// `set/test/corpus/<name>/`:
+// `test/corpus/<name>/`:
 //
 //   snapshot.json  one `snapshot` event — the set, and the model derived from it
 //   stream.json    every broadcast that arrived while recording, in order
@@ -43,8 +43,8 @@ const name = process.argv[2] ?? 'session';
 const seconds = Number(process.argv[3] ?? 60);
 
 if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) {
-  console.error('usage: npm run dev:record -- <name> [seconds]');
-  console.error('name is a directory under set/test/corpus, so: lowercase, digits, dashes');
+  console.error('usage: npm run record -- <name> [seconds]');
+  console.error('name is a directory under test/corpus, so: lowercase, digits, dashes');
   process.exit(1);
 }
 if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 600) {
@@ -175,7 +175,7 @@ ws.send(JSON.stringify({ type: 'watchChains', subs: [] } satisfies Request));
 await new Promise((done) => setTimeout(done, 100));
 ws.close();
 
-const dir = resolve(root, 'set/test/corpus', name);
+const dir = resolve(root, 'test', 'corpus', name);
 mkdirSync(dir, { recursive: true });
 
 const recordedAt = new Date().toISOString();

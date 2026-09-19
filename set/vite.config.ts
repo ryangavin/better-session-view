@@ -24,11 +24,11 @@ const PORT = uiPort(APPS.set);
 export default defineConfig({
   root: here,
   plugins: [react()],
-  // Named, because `npm run dev` runs this and the widget bench at once and the
-  // default resolves to the same `node_modules/.vite` for both. Two servers
-  // sharing one dep cache re-optimize over each other's work on every start —
-  // the config hash differs, so each one decides the cache is stale.
-  cacheDir: path.resolve(here, '../node_modules/.vite/set'),
+  // Named, because the device bench runs beside this one and the default
+  // resolves to the same `node_modules/.vite` for both. Two servers sharing
+  // one dep cache re-optimize over each other's work on every start — the
+  // config hash differs, so each one decides the cache is stale.
+  cacheDir: path.resolve(here, 'node_modules/.vite/set'),
   // Nothing may come from a CDN — this eventually runs on stage.
   build: {
     outDir: path.resolve(here, 'dist'),

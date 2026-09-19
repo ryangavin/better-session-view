@@ -28,7 +28,7 @@ Beside each track's stop button, Live's own Track Status Display: a pie filling 
 looping clip goes round, a `m:ss` countdown for a one-shot, and a red `bars.beats` count
 while Live records into a slot. Nothing when the track is silent. Live's help text names
 two further forms — an Arrangement miniature and an input-monitoring glyph — that this
-does not implement; [`core/docs/trackStatus.md`](../../core/docs/trackStatus.md) has the
+does not implement; [`core/docs/trackStatus.md`](https://github.com/openflowfm/core/blob/main/docs/trackStatus.md) has the
 reasons and owns the rules for the three that are here.
 
 It is drawn *over* the stop button, absolutely positioned and with `pointer-events: none`,
@@ -46,7 +46,7 @@ Frames arrive at 20 Hz and never enter React state, exactly like the meters — 
 
 The watch is held only while the stop row is on screen, since that is where it draws — its
 toggle *is* the subscription. See
-[`bridge/docs/message-protocol.md`](../../bridge/docs/message-protocol.md) for what the
+[`bridge/docs/message-protocol.md`](https://github.com/ryangavin/better-session-view/blob/main/bridge/docs/message-protocol.md) for what the
 device does with it, and why that one is polled where everything else here is observed.
 
 The header's meter icon opens a column-aligned mixer below the grid. Every visible track

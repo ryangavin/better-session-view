@@ -59,7 +59,7 @@ this one has to be refcounted per kind *and per target* — two clients looking 
 different tracks both want it on, and neither may release the other's.
 
 That now exists. The footer declares every run it is looking at, the bridge unions those
-across clients ([`core/docs/chainWatch.md`](../../core/docs/chainWatch.md)), and `lom.ts`
+across clients ([`core/docs/chainWatch.md`](https://github.com/openflowfm/core/blob/main/docs/chainWatch.md)), and `lom.ts`
 follows the union. **A device added, renamed, deactivated or folded in Live now appears
 here without anyone asking**, which is what the refresh button used to stand in for.
 
@@ -182,7 +182,7 @@ enum indexes by.
 
 `str_for_value(min + k)` per member has no such ambiguity. It costs n calls instead of one,
 once, when the device opens, and it is the same function every other readout in this
-project already trusts. See [`LOM.md`](../../bridge/LOM.md) under `DeviceParameter`.
+project already trusts. See [`LOM.md`](https://github.com/ryangavin/better-session-view/blob/main/bridge/LOM.md) under `DeviceParameter`.
 
 ### Values land in a store, not in React state
 
@@ -275,7 +275,7 @@ float off the run it heads. A mark on one edge has no such relationship to break
 and ordinary headers need no case for either.
 
 The bridge observes `selected_track` for its own delta detection (see
-[`bridge/docs/following-live.md`](../../bridge/docs/following-live.md)), so this write is
+[`bridge/docs/following-live.md`](https://github.com/ryangavin/better-session-view/blob/main/bridge/docs/following-live.md)), so this write is
 seen by the cursor watcher and re-reads that track. That's the intended behavior of that
 watcher and costs one track read, but it does mean clicking headers is not free.
 
@@ -313,7 +313,7 @@ patcher change, because anything the `route` doesn't match falls through to `lom
 - that opening a rack chain subscribes and fills — the round-trip-per-level expansion;
 - **the entire parameter tier.** Nothing has read a `DeviceParameter` off a real device:
   not the descriptor read, not `str_for_value` spelling an enum's members, not the value
-  observers firing, not `state` answering 0/1/2. `npm run dev:diag -- param` reads this
+  observers firing, not `state` answering 0/1/2. `npm run dev:diag -- param` in better-session-view reads this
   device's own parameters and is the closest thing to a probe that already exists;
 - **every write in `set_device`**, which is all three of them. That `is_active` and
   `is_collapsed` accept a write at all, that a parameter's `value` does, that Live's

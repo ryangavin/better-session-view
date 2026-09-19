@@ -79,7 +79,7 @@ Two separate things, and keeping them separate is the point:
 
 - **selection** — a `Set` of `"t:s"` keys. What `apply` writes to.
 - **the active cell** — exactly one cell, `ActiveCell` in
-  [`core/src/gridRange.ts`](../../core/docs/gridRange.md). What you're listening to, what the arrow
+  [`core/src/gridRange.ts`](https://github.com/openflowfm/core/blob/main/docs/gridRange.md). What you're listening to, what the arrow
   keys move, and what will hold the name field. Called *active cell* after spreadsheets
   rather than *cursor*, which in a DAW means a position on the timeline.
 
@@ -246,7 +246,7 @@ you can tell in advance which you'll get:
   form of it.
 - **● records into the slot**, once the track is armed. Nothing else changes — no second
   callback, no `record` message. `Track.arm` reaches the grid on the play-state push
-  (see [`protocol/README.md`](../../protocol/README.md)) precisely so that every empty
+  (see [`protocol/README.md`](https://github.com/openflowfm/protocol#readme)) precisely so that every empty
   cell can answer this without the mixer footer being open.
 
 Red is what Arm already means on the mixer strip, so a column of ● reads as the state

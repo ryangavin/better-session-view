@@ -1,13 +1,13 @@
 ---
 name: set-spec
-description: Write a regression spec for one file in set/. Use when adding tests to set/src — a hook, a component or a lib helper — or when asked to raise set/ coverage. Drives specs from the recorded corpus and gates them on mutation score rather than coverage.
+description: Write a regression spec for one file  Use when adding tests to set/src — a hook, a component or a lib helper — or when asked to raise . Drives specs from the recorded corpus and gates them on mutation score rather than coverage.
 ---
 
 # Writing a spec in set/
 
-**These specs are a regression net, not a specification.** The behaviour in `set/` has been
+**These specs are a regression net, not a specification.** The behaviour  has been
 validated in the app; you are recording it so a later change cannot alter it unnoticed. You
-are not deciding whether it is correct, and `set/docs/` is not your oracle — it describes
+are not deciding whether it is correct, and `docs/` is not your oracle — it describes
 intent, and intent is not what you are pinning.
 
 That framing decides everything below. In particular it means the usual defence against
@@ -20,8 +20,8 @@ worth nothing at all.
 ### 1. Read the target and one neighbour
 
 Read the file. Read one existing spec beside it for house style —
-`set/src/hooks/useSnapshotLookups.test.ts` for derivation,
-`set/src/hooks/useSongLayout.folding.test.ts` for gestures. Match their comment density:
+`src/hooks/useSnapshotLookups.test.ts` for derivation,
+`src/hooks/useSongLayout.folding.test.ts` for gestures. Match their comment density:
 a `describe` says what area, an `it` says what behaviour, and a comment explains only what
 the assertion cannot.
 
@@ -31,7 +31,7 @@ the assertion cannot.
 import { corpusSnapshot, corpusStream } from '../../test/corpus.ts';
 ```
 
-`set/test/corpus/main-set/` is a real recording: 36 tracks, 272 scenes, 454 clips, 36
+`test/corpus/main-set/` is a real recording: 36 tracks, 272 scenes, 454 clips, 36
 songs, group nesting, 95 empty scenes, real device chains and 200 meter frames. Counts off
 it are the strongest assertions you have — a lookup that silently drops one track's clips
 is exactly what a three-clip fixture cannot show.
@@ -64,7 +64,7 @@ Never bend `firstRender` into something that transitions state. It renders once;
 - Prefer several small assertions over one large `toEqual`. A giant equality catches
   everything and screams at every legitimate change, and a net that cries wolf gets deleted.
 - Identity is a behaviour here. `collapsedSongs` and the lookup Maps reach memoized rows, so
-  `toBe` on a no-op path is pinning a real promise — see `set/docs/performance.md`.
+  `toBe` on a no-op path is pinning a real promise — see `docs/performance.md`.
 
 ### 5. Label what nobody has walked
 
@@ -83,7 +83,7 @@ snapshot lands is what every launch does.
 
 ```sh
 npx vitest run <spec> --coverage --coverage.include='<source>' --coverage.reporter=text
-npm run dev:mutate -- <source>
+npm run mutate -- <source>
 ```
 
 Coverage tells you which lines ran. It cannot tell a spec that checks something from one

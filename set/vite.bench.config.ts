@@ -22,12 +22,11 @@ export default defineConfig({
   plugins: [react()],
   // Named for the same reason the other two are: three Vite servers sharing one
   // dep cache each decide the others' is stale and re-optimize on every start.
-  cacheDir: path.resolve(here, '../node_modules/.vite/devices'),
+  cacheDir: path.resolve(here, 'node_modules/.vite/devices'),
   server: {
     port: PORT,
     strictPort: true,
-    // The bench reaches up into `set/src` for the faces and across into
-    // `widgets/src` for what they're made of, so the root of both is the repo.
-    fs: { allow: [path.resolve(here, '..')] },
+    // The bench reaches up into `src` for the faces, so the root is the repo.
+    fs: { allow: [here] },
   },
 });

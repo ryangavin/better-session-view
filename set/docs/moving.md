@@ -60,7 +60,7 @@ addressable from both sides — a song ending at scene 5 and the next starting a
 set and the one gap `above` can't express.
 
 What it costs in Live, and the four passes it runs, is in
-[`bridge/README.md`](../../bridge/README.md) under *Reordering scenes*. **It is unverified
+[`bridge/README.md`](https://github.com/ryangavin/better-session-view/blob/main/bridge/README.md) under *Reordering scenes*. **It is unverified
 against a real set.**
 
 ## Dragging clips
@@ -74,7 +74,7 @@ color for "what your gesture is about to act on".
 including the clip about to be replaced, which is why it's an outline and not a fill.
 
 The ordering, the refusals and what gets cleared afterwards all live in
-[`core/src/clipMove.ts`](../../core/docs/clipMove.md). Two things belong here:
+[`core/src/clipMove.ts`](https://github.com/openflowfm/core/blob/main/docs/clipMove.md). Two things belong here:
 
 - **An invalid drop draws nothing and does nothing.** `planClipMove` returns `null` for
   the whole drag if any clip would land off the grid, on a group track, or on a track of

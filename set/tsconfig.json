@@ -1,5 +1,5 @@
 {
-  "extends": "../tsconfig.base.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -17,7 +17,9 @@
     "bench/**/*.tsx",
     "vite.config.ts",
     "vite.bench.config.ts",
-    "../node_modules/@openflow/protocol/global.d.ts",
-    "../types/assets.d.ts"
+    "vitest.config.ts",
+    "tools/**/*.ts",
+    "node_modules/@openflow/protocol/global.d.ts",
+    "types/assets.d.ts"
   ]
 }

@@ -7,9 +7,9 @@ The directory is `set/` and the package is `@openflow/set`, because the module m
 the **Live Set** — the same noun `SetModel`, `SetState` and `SetGrid` already use.
 `set[flow]` is what the app calls itself; the paths are what the compiler calls it.
 
-It runs as a **desktop app** — `npm run set` — and builds to `set/dist`, which the app
-serves from a scheme of its own. The device still inlines that same build for now; the
-commit that stops it doing so is next.
+It runs as a **desktop app** — `npm start` — and builds to `dist`, which the app
+serves from a scheme of its own. It talks to the Session Bridge — the Max for Live
+device in [better-session-view](https://github.com/ryangavin/better-session-view) — over WebSocket.
 
 ## Where the reasoning lives
 
@@ -34,7 +34,7 @@ doc is self-contained, so the index below is meant to be enough to pick one and 
 | [performance notes](docs/performance.md) | **anything that reaches a memoized row** — props on `Row`, `SongHeaderRow`, or callbacks from `App` | `components/ClipGrid/Row.tsx`, `SongHeaderRow.tsx`, `App.tsx` |
 | [layout and CSS](docs/layout-and-css.md) | any stylesheet, a token, or a `z-index` | `src/shared.css`, `App.css`, `components/Control.css` |
 | [dev server](docs/dev-server.md) | the dev loop, HMR, the provider/App boundary, or either bench's port | `src/main.tsx`, `components/BridgeProvider.tsx`, `vite.config.ts`, `vite.bench.config.ts` |
-| [the desktop app](docs/desktop.md) | the window, the custom scheme, where state lives, how the renderer learns the bridge's address | `electron/main.ts`, `electron/preload.ts`, `src/lib/bridgeUrl.ts`, `tools/build-electron.ts` |
+| [the desktop app](docs/desktop.md) | the window, the custom scheme, where state lives, how the renderer learns the bridge's address | `electron/main.ts`, `electron/preload.ts`, `src/lib/bridgeUrl.ts`, `tools/electron.ts` |
 
 Cross-cutting: **performance notes governs every component under `ClipGrid/`** regardless
 of which feature you came for — a prop that changes identity per render re-renders 848 rows.

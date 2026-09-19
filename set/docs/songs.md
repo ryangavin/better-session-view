@@ -71,7 +71,7 @@ Three things about it are load-bearing:
 - **`rows` replaces `sceneCount` everywhere movement or selection happens.**
   `useSongLayout` computes it from `songRows`, and `App` threads it into
   `moveActive` and `cellsInBlock` exactly as it threads `trackColumns`. Without that, `⌘↓` walks into folded scenes and fires
-  them — see [`core/docs/songRows.md`](../../core/docs/songRows.md).
+  them — see [`core/docs/songRows.md`](https://github.com/openflowfm/core/blob/main/docs/songRows.md).
 - **`SongHeaderRow` is memoized on primitives**, for the same reason `Row` is. There can
   be a hundred of them and they must not all re-render because one song folded.
 
@@ -202,7 +202,7 @@ named above it. `blockTrackRoles` in core does the counting; `useSongLayout`
 memoizes it against the *songs*, not against `collapsedSongs`, so folding one
 song doesn't rebuild the map and hand all hundred headers a new prop. It reads the clips,
 which is why it stays in the browser rather than riding along on the bridge's `SetModel` —
-see [`core/docs/setModel.md`](../../core/docs/setModel.md).
+see [`core/docs/setModel.md`](https://github.com/openflowfm/core/blob/main/docs/setModel.md).
 
 - **Color only, names on the cell's tooltip.** A hundred folded songs are a page of color
   signatures, and at that density a word per role is what turns a table of contents into a
@@ -237,7 +237,7 @@ without the information — and dropping it gives the name the rest of the lead 
 
 The **Songs** and **Unmapped** tiles in the status strip are derived, not stored — every
 snapshot re-reads the scene names through the scene pattern and works out which song each
-scene belongs to (see [`core/docs/derive.md`](../../core/docs/derive.md)). Clicking either opens
+scene belongs to (see [`core/docs/derive.md`](https://github.com/openflowfm/core/blob/main/docs/derive.md)). Clicking either opens
 `SongsModal`, and clicking a song there selects its scenes.
 
 **The modal is read-only on purpose.** Its job is to answer "does derivation work on a
