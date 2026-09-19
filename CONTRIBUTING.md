@@ -80,7 +80,7 @@ and comparison harness, with mix[flow] as its intended first consumer.
 | [`tools/`](tools/README.md) | `.amxd` container format, device generator, the app driver | changing the patcher, the device type, or how an app is built |
 | [`visuals`](https://github.com/openflowfm/visuals/blob/main/README.md) | a VJ rig: Link peer, bridge client, WebGL2 renderer | visuals, the clock, or a second kind of client |
 | [`chart/`](chart/README.md) | what the band reads: a read-only view of the playing song, on a phone | the section list, the LAN binding, or a client with no dependencies |
-| [`mix/`](mix/README.md) | stem separation with Demucs, **mix[flow]** — a skeleton | the model, the job runner, or what a third app costs |
+| [`mix`](https://github.com/openflowfm/mix/blob/main/README.md) | stem separation with Demucs, **mix[flow]** | the model, the job runner, or an app that never touches Live |
 
 `visuals` was the first thing to take rule 5 up on its offer of "a second kind of client":
 it follows the bridge, perturbs nothing, and needs no browser open anywhere else. It was a
@@ -104,12 +104,11 @@ what is only true of it, plus an entry in `desktop/src/apps.ts` that every build
 workflow and vite config reads. It is also where a change that should reach every app —
 an updater, most obviously — is written once.
 
-`mix/` is the first module that touches Live not at all. It has no bridge connection, no
-server and no protocol — a file goes in and four files come out — and it exists partly to
-find out what an app costs now that `desktop/` holds the shell. The answer was a registry
-entry, a `main.ts` of fifty lines, a preload, and a renderer. What it does *not* have yet is
-an answer to where several gigabytes of Python and model weights come from in a shipped
-bundle; [`mix/docs/demucs.md`](mix/docs/demucs.md) lays out the three candidates.
+`mix` was the first app that touches Live not at all. It has no bridge connection, no
+server and no protocol — a file goes in and four files come out — and it existed here partly
+to find out what an app costs now that `desktop/` holds the shell. The answer was a registry
+entry, a `main.ts` of fifty lines, a preload, and a renderer, which is also what made it
+the second app to leave for its own repo, [openflowfm/mix](https://github.com/openflowfm/mix).
 
 `core/` and `widgets/` are the same rule on two axes, and between them they are what keeps
 a DAW of our own possible: domain logic that has never heard of a transport, and controls
@@ -157,7 +156,6 @@ The apps make their own at launch, which is what keeps them from ever being stal
 
 ```
 set/dist/  set/electron/dist/            `npm run set`
-mix/dist/  mix/electron/dist/            `npm run mix`
 chart/dist/                              the band's page — `npm run build:chart`
 release/                                 packaged .app and .dmg — `npm run pack`
 ```

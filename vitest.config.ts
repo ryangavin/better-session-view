@@ -10,7 +10,6 @@ const module = (name: string, include: string[], exclude?: string[]) => ({
 export default defineConfig({
   test: {
     projects: [
-      module('mix', ['mix/electron/**/*.test.ts', 'mix/src/**/*.test.ts', 'mix/harness/**/*.test.ts']),
       module('set', [
         'set/src/lib/**/*.test.ts',
         'set/src/components/**/*.test.ts',
@@ -33,16 +32,6 @@ export default defineConfig({
       // than go missing.
       include: [
         'set/src/**/*.{ts,tsx}',
-        'mix/src/**/*.{ts,tsx}',
-        // Not the whole of electron/: main.ts and library.ts import electron,
-        // which only exists inside a main process. These are the parts
-        // that own a person's library and what gets written into it, and they
-        // have no electron in them precisely so they can be reached from here.
-        'mix/electron/manifest.ts',
-        'mix/electron/job.ts',
-        'mix/electron/models.ts',
-        'mix/electron/runtime.ts',
-        'mix/electron/youtube.ts',
         'chart/src/**/*.{ts,tsx}',
         'chart/server/**/*.{ts,tsx}',
       ],

@@ -1,9 +1,0 @@
-.mf-track-analysis { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
-.mf-analysis-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:18px 24px; border-bottom:1px solid var(--bd); flex:none; }
-.mf-analysis-heading h2 { margin:5px 0; font-size:var(--text-title); font-weight:var(--weight-medium); }
-.mf-analysis-heading p:not(.mf-eyebrow) { margin:6px 0 0; color:var(--detail); font-size:var(--text-body); line-height:1.5; }
-.mf-analysis-content { overflow:auto; min-height:0; padding:22px 24px; }
-.mf-review-source h3 { font-size:18px; font-weight:var(--weight-medium); margin:6px 0 10px; }
-.mf-review-hint { color:var(--detail); font-size:12px; line-height:1.6; margin:9px 0 0; }
-.mf-review-source .mf-page { padding:0; overflow:visible; }
-.mf-review-source .mf-page-body { max-width:none; }

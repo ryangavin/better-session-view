@@ -59,7 +59,7 @@ the reasons behind them remain in [`set/README.md`](set/README.md).
   so a control is the same height in every app here.
 - **An app's own colors are roles, and they stay in that app.** mix[flow] paints six
   sources and names them `--stem-vocals` and so on rather than by hue, in
-  `mix/src/tokens.css`; three of the six *are* palette accents. A role moves into the
+  mix[flow]'s `src/tokens.css`; three of the six *are* palette accents. A role moves into the
   palette when a second app needs it, and not before.
 - The grid uses a 2px gutter. Its metadata column is a constant 108px; Master is a track
   column and takes the track width, so the role painting it moves with the setting.
