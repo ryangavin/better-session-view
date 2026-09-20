@@ -1,30 +1,13 @@
-node_modules/
-# generated: tsc output consumed directly by node.script and [v8]
-bridge/bridge.js
-bridge/lom.js
-# generated: every module's build output — the chart's vite build, and whatever a
-# sibling app checkout left behind
-*/dist/
-*/electron/dist/
-# generated: packaged .app and .dmg from an earlier checkout, or a sibling app repo
-release/
-# generated: device binary + debug patcher
-bridge/SessionBridge.amxd
-bridge/SessionBridge.maxpat
-# derived from Live at runtime
-bridge/palette.json
-bridge/palette.json.tmp
-# the role vocabulary — yours, not the repo's
-bridge/roles.json
-bridge/roles.json.tmp
-# the user manual — its own repo (…wiki.git), cloned here so it edits alongside the code
+# the user manual — its own repo (…wiki.git), cloned here so it edits alongside the archive
 wiki/
 .DS_Store
-# generated: vitest coverage report and ui — npm run test:coverage
+demucs/__pycache__/
+# leftovers of the build that used to happen here
+node_modules/
+release/
 coverage/
 report/
 html/
-
 # obsolete local widgets bench build and machine-specific design-sync state
 widgets/bench/dist/
 widgets/ds-bundle/.stories-map.json
