@@ -22,8 +22,6 @@ What is still here:
 - [`demucs/`](demucs/README.md) — the stem-separation research spike that settled how
   mix[flow]'s engine had to be built. A record, not a runtime; mix[flow]'s
   [`docs/demucs.md`](https://github.com/openflowfm/mix/blob/main/docs/demucs.md) cites it.
-- [`widgets/ds-bundle/`](widgets/README.md) — an archived design-system export of the
-  original widgets package, kept as provenance.
 - The [wiki](https://github.com/ryangavin/better-session-view/wiki) — the user manual for
   the device and set[flow]. Still edited here, still linked from every release.
 - The [releases](https://github.com/ryangavin/better-session-view/releases) up to and
